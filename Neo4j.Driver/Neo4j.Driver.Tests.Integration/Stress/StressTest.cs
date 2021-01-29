@@ -1,4 +1,4 @@
-// Copyright (c) 2002-2020 "Neo4j,"
+// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -40,17 +40,18 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         where TContext : StressTestContext
     {
         private const bool LoggingEnabled = false;
+		private const int DefaultExecutionTime = 30;
 
         private const int StressTestThreadCount = 8;
         private const int StressTestAsyncBatchSize = 10;
-        private static readonly TimeSpan StressTestExecutionTime = TimeSpan.FromSeconds(30);
+		private static TimeSpan StressTestExecutionTime = TimeSpan.FromSeconds(DefaultExecutionTime);
 
-        private const int BigDataTestBatchCount = 3;
-        private const int BigDataTestBatchSize = 10_000;
-        private const int BigDataTestBatchBuffer = 500;
+		protected const int BigDataTestBatchCount = 3;
+		protected const int BigDataTestBatchSize = 10_000;
+		protected const int BigDataTestBatchBuffer = 500;
 
         private const int PoolTestThreadCount = 50;
-        private static readonly TimeSpan PoolTestDuration = TimeSpan.FromSeconds(15);
+		private static readonly TimeSpan PoolTestDuration = TimeSpan.FromSeconds(15);
 
         protected readonly ITestOutputHelper _output;
         protected readonly IDriver _driver;
@@ -65,7 +66,11 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             _authToken = authToken;
             _configure = configure;
 
-            _driver = GraphDatabase.Driver(databaseUri, authToken, builder =>
+			var seconds = Environment.GetEnvironmentVariable("TEST_NEO4J_STRESS_DURATION");
+			if (!string.IsNullOrEmpty(seconds))
+				StressTestExecutionTime = TimeSpan.FromSeconds(Convert.ToDouble(seconds) / 3);	//There are three areas so divide by 3, async, blocking and reactive.
+				
+			_driver = GraphDatabase.Driver(databaseUri, authToken, builder =>
             {
                 builder
                     .WithLogger(new StressTestLogger(_output, LoggingEnabled))
@@ -91,14 +96,19 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         protected abstract void VerifyReadQueryDistribution(TContext context);
 
+		protected virtual void RunReactiveBigData()
+		{
+			//Base implementation does nothing.
+		}
+
         public abstract bool HandleWriteFailure(Exception error, TContext context);
 
-        #endregion
+		#endregion
 
-        #region Blocking Stress Test
+		#region Blocking Stress Test
 
-        [RequireServerFact]
-        public async Task Blocking()
+		[RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+		public async Task Blocking()
         {
             await RunStressTest(LaunchBlockingWorkers);
         }
@@ -107,18 +117,12 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         {
             var result = new List<IBlockingCommand<TContext>>
             {
-                new BlockingReadCommand<TContext>(_driver, false),
-                new BlockingReadCommand<TContext>(_driver, true),
-                new BlockingReadCommandInTx<TContext>(_driver, false),
-                new BlockingReadCommandInTx<TContext>(_driver, true),
-                new BlockingWriteCommand<TContext>(this, _driver, false),
-                new BlockingWriteCommand<TContext>(this, _driver, true),
-                new BlockingWriteCommandInTx<TContext>(this, _driver, false),
-                new BlockingWriteCommandInTx<TContext>(this, _driver, true),
-                new BlockingWrongCommand<TContext>(_driver),
-                new BlockingWrongCommandInTx<TContext>(_driver),
-                new BlockingFailingCommand<TContext>(_driver),
-                new BlockingFailingCommandInTx<TContext>(_driver)
+                new BlockingReadCommandTxFunc<TContext>(_driver, false),
+                new BlockingReadCommandTxFunc<TContext>(_driver, true),                
+                new BlockingWriteCommandTxFunc<TContext>(this, _driver, false),
+                new BlockingWriteCommandTxFunc<TContext>(this, _driver, true),
+                new BlockingWrongCommandTxFunc<TContext>(_driver),
+                new BlockingFailingCommandTxFunc<TContext>(_driver)                
             };
 
             result.AddRange(CreateTestSpecificBlockingCommands());
@@ -150,33 +154,43 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             }, TaskCreationOptions.LongRunning);
         }
 
-        #endregion
+		#endregion
 
-        #region Async Stress Test
+		#region Async Stress Test
 
-        [RequireServerFact]
-        public async Task Async()
+		[RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+		public async Task Async()
         {
             await RunStressTest(LaunchAsyncWorkers);
         }
 
         private IList<IAsyncCommand<TContext>> CreateAsyncCommands()
         {
-            var result = new List<IAsyncCommand<TContext>>
-            {
-                new AsyncReadCommand<TContext>(_driver, false),
-                new AsyncReadCommand<TContext>(_driver, true),
-                new AsyncReadCommandInTx<TContext>(_driver, false),
-                new AsyncReadCommandInTx<TContext>(_driver, true),
-                new AsyncWriteCommand<TContext>(this, _driver, false),
-                new AsyncWriteCommand<TContext>(this, _driver, true),
-                new AsyncWriteCommandInTx<TContext>(this, _driver, false),
-                new AsyncWriteCommandInTx<TContext>(this, _driver, true),
-                new AsyncWrongCommand<TContext>(_driver),
-                new AsyncWrongCommandInTx<TContext>(_driver),
-                new AsyncFailingCommand<TContext>(_driver),
-                new AsyncFailingCommandInTx<TContext>(_driver)
-            };
+			/* 
+				Optional tests that can be run. Currenlty only want to run the transaction functions as these are what are used with Aura
+				AsyncReadCommand
+				AsyncReadCommandInTx
+				AsyncReadCommandTxFunc
+				AsyncWriteCommand
+				AsyncWriteCommandInTx
+				AsyncWriteCommandTxFunc
+				AsyncWrongCommand
+				AsyncWrongCommandInTx
+				AsyncWrongCommandTxFunc
+				AsyncFailingCommand
+				AsyncFailingCommandInTx
+				AsyncFailingCommandTxFunc
+			*/
+
+			var result = new List<IAsyncCommand<TContext>>
+			{
+				new AsyncReadCommandTxFunc<TContext>(_driver, false),
+				new AsyncReadCommandTxFunc<TContext>(_driver, true),
+				new AsyncWriteCommandTxFunc<TContext>(this, _driver, false),
+				new AsyncWriteCommandTxFunc<TContext>(this, _driver, true),
+				new AsyncWrongCommandTxFunc<TContext>(_driver),
+				new AsyncFailingCommandTxFunc<TContext>(_driver)
+			};
 
             result.AddRange(CreateTestSpecificAsyncCommands());
 
@@ -221,36 +235,23 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         private IList<IRxCommand<TContext>> CreateRxCommands()
         {
-            var result = new List<IRxCommand<TContext>>
-            {
-                new RxReadCommand<TContext>(_driver, false),
-                new RxReadCommand<TContext>(_driver, true),
-                new RxReadCommandInTx<TContext>(_driver, false),
-                new RxReadCommandInTx<TContext>(_driver, true),
-                new RxWriteCommand<TContext>(this, _driver, false),
-                new RxWriteCommand<TContext>(this, _driver, true),
-                new RxWriteCommandInTx<TContext>(this, _driver, false),
-                new RxWriteCommandInTx<TContext>(this, _driver, true),
-                new RxWrongCommand<TContext>(_driver),
-                new RxWrongCommandInTx<TContext>(_driver),
-                new RxFailingCommand<TContext>(_driver),
-                new RxFailingCommandInTx<TContext>(_driver)
-            };
-
-            result.AddRange(CreateTestSpecificRxCommands());
-
-            return result;
-        }
+			var result = new List<IRxCommand<TContext>>();
+			result.AddRange(CreateTestSpecificRxCommands());
+			return result;
+		}
 
         private IEnumerable<Task> LaunchRxWorkers(TContext context)
         {
-            var commands = CreateRxCommands();
+			var commands = CreateRxCommands();
+			var tasks = new List<Task>();
 
-            var tasks = new List<Task>();
-            for (var i = 0; i < StressTestThreadCount; i++)
-            {
-                tasks.Add(LaunchRxWorkerThread(context, commands));
-            }
+			if (commands.Count > 0)
+			{
+				for (var i = 0; i < StressTestThreadCount; i++)
+				{
+					tasks.Add(LaunchRxWorkerThread(context, commands));
+				}
+			}
 
             return tasks;
         }
@@ -268,15 +269,14 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             }, TaskCreationOptions.LongRunning);
         }
 
-        #endregion
+		#endregion
 
-        #region Async Big Data Tests
+		#region Async Big Data Tests
 
-        [RequireServerFact]
-        public async Task AsyncBigData()
+		[RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+		public async Task AsyncBigData()
         {
-            var bookmark = await CreateNodesAsync(BigDataTestBatchCount, BigDataTestBatchSize, BigDataTestBatchBuffer,
-                _driver);
+            var bookmark = await CreateNodesAsync(BigDataTestBatchCount, BigDataTestBatchSize, BigDataTestBatchBuffer, _driver);
             await ReadNodesAsync(_driver, bookmark, BigDataTestBatchCount * BigDataTestBatchSize);
         }
 
@@ -372,15 +372,14 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             _output.WriteLine("Reading nodes with Async API took: {0}ms", timer.ElapsedMilliseconds);
         }
 
-        #endregion
+		#endregion
 
-        #region Blocking Big Data Tests
+		#region Blocking Big Data Tests
 
-        [RequireServerFact]
-        public void BlockingBigData()
+		[RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+		public void BlockingBigData()
         {
-            var bookmark = CreateNodes(BigDataTestBatchCount, BigDataTestBatchSize, BigDataTestBatchBuffer,
-                _driver);
+            var bookmark = CreateNodes(BigDataTestBatchCount, BigDataTestBatchSize, BigDataTestBatchBuffer, _driver);
             ReadNodes(_driver, bookmark, BigDataTestBatchCount * BigDataTestBatchSize);
         }
 
@@ -457,12 +456,10 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public void ReactiveBigData()
         {
-            var bookmark = CreateNodesRx(BigDataTestBatchCount, BigDataTestBatchSize, BigDataTestBatchBuffer,
-                _driver);
-            ReadNodesRx(_driver, bookmark, BigDataTestBatchCount * BigDataTestBatchSize);
+			RunReactiveBigData();            
         }
 
-        private Bookmark CreateNodesRx(int batchCount, int batchSize, int batchBuffer, IDriver driver)
+        protected Bookmark CreateNodesRx(int batchCount, int batchSize, int batchBuffer, IDriver driver)
         {
             var timer = Stopwatch.StartNew();
             var session = driver.RxSession();
@@ -482,7 +479,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             return session.LastBookmark;
         }
 
-        private void ReadNodesRx(IDriver driver, Bookmark bookmark, int expectedNodes)
+        protected void ReadNodesRx(IDriver driver, Bookmark bookmark, int expectedNodes)
         {
             var timer = Stopwatch.StartNew();
 
@@ -524,12 +521,12 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             _output.WriteLine("Reading nodes with Async API took: {0}ms", timer.ElapsedMilliseconds);
         }
 
-        #endregion
+		#endregion
 
-        #region Pooling Stress Tests
+		#region Pooling Stress Tests
 
-        [RequireServerFact]
-        public void Pool()
+		[RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+		public void Pool()
         {
             var tokenSource = new CancellationTokenSource();
             var failure = new AtomicReference<Exception>(null);
@@ -790,7 +787,10 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             var context = CreateContext();
             var workers = launcher(context);
 
-            await Task.Delay(StressTestExecutionTime);
+			if (!workers.Any())
+				return;
+
+            await Task.Delay(StressTestExecutionTime);	//Divide by three because there are three sets of tests
             context.Stop();
 
             await Task.WhenAll(workers);
