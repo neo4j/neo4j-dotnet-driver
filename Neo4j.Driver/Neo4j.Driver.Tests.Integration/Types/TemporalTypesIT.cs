@@ -31,7 +31,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
 {
     public class TemporalTypesIT : DirectDriverTestBase
     {
-        private const int NumberOfRandomSequences = 2000;
+        private const int NumberOfRandomSequences = 100;
         private const int MinArrayLength = 5;
         private const int MaxArrayLength = 1000;
 
