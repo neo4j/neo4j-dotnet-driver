@@ -262,4 +262,4 @@ Target/
 Build/
 
 # Testkit CAs
-Testkit/CAs/*
+testkit/CAs/*
