@@ -260,3 +260,6 @@ paket-files/
 # Test artifacts
 Target/
 Build/
+
+# Testkit CAs
+Testkit/CAs/*
