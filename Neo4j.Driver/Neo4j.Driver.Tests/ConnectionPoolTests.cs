@@ -62,34 +62,36 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public async Task ShouldBlockWhenMaxPoolSizeReached()
-            {
-                var connectionPoolSettings = new ConnectionPoolSettings(new Config {MaxConnectionPoolSize = 2});
-                var pool = NewConnectionPool(poolSettings: connectionPoolSettings);
-                var conn1 = await pool.AcquireAsync(AccessMode.Read, null, Bookmark.Empty);
-                var conn2 = await pool.AcquireAsync(AccessMode.Read, null, Bookmark.Empty);
-                pool.NumberOfIdleConnections.Should().Be(0);
-                pool.NumberOfInUseConnections.Should().Be(2);
+			public async Task ShouldBlockWhenMaxPoolSizeReached()
+			{
+				const int delayTime = 2000; //Dealy time in milliseconds.
+				var connectionPoolSettings = new ConnectionPoolSettings(new Config { MaxConnectionPoolSize = 2, ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(2) });
+				var pool = NewConnectionPool(poolSettings: connectionPoolSettings);
+				var conn1 = await pool.AcquireAsync(AccessMode.Read, null, Bookmark.Empty);
+				var conn2 = await pool.AcquireAsync(AccessMode.Read, null, Bookmark.Empty);
+				pool.NumberOfIdleConnections.Should().Be(0);
+				pool.NumberOfInUseConnections.Should().Be(2);
 
-                var timer = new Stopwatch();
-                var blockingAcquire =
-                    new Task<Task<IConnection>>(() => pool.AcquireAsync(AccessMode.Read, null, Bookmark.Empty));
+				var timer = new Stopwatch();
+				var blockingAcquire =
+					new Task<Task<IConnection>>(() => pool.AcquireAsync(AccessMode.Read, null, Bookmark.Empty));
 
-                timer.Start();
-                blockingAcquire.Start();
+				timer.Start();
+				blockingAcquire.Start();
 
-                await Task.Delay(1000); // delay a bit here
-                await conn1.CloseAsync();
+				await Task.Delay(delayTime); // delay a bit here
+				await conn1.CloseAsync();
 
-                var conn3 = await blockingAcquire.Unwrap();
-                timer.Stop();
+				var conn3 = await blockingAcquire.Unwrap();
+				timer.Stop();
 
-                pool.NumberOfIdleConnections.Should().Be(0);
-                pool.NumberOfInUseConnections.Should().Be(2);
-                timer.Elapsed.TotalSeconds.Should().BeGreaterOrEqualTo(1, 0.1);
-            }
+				pool.NumberOfIdleConnections.Should().Be(0);
+				pool.NumberOfInUseConnections.Should().Be(2);
+				timer.Elapsed.TotalMilliseconds.Should().BeGreaterOrEqualTo(delayTime, 100);
+				//TotalSeconds.Should().BeGreaterOrEqualTo(1, 0.1);
+			}
 
-            [Fact]
+			[Fact]
             public async Task ShouldThrowClientExceptionWhenFailedToAcquireWithinTimeout()
             {
                 var connectionPoolSettings = new ConnectionPoolSettings(
