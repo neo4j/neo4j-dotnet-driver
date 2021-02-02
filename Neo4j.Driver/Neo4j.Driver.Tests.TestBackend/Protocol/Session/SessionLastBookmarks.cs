@@ -17,7 +17,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         public override async Task Process()
         {
             IAsyncSession session = ((NewSession)ObjManager.GetObject(data.sessionId)).Session;
-            Bookmarks = session.LastBookmark.Values;
+            Bookmarks = session.LastBookmark is null ? Array.Empty<string>() : session.LastBookmark.Values;
             await Task.CompletedTask;
         }
 
