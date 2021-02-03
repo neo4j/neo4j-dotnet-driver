@@ -28,8 +28,9 @@ namespace Neo4j.Driver.Tests.TestBackend
             await sessionContainer.Session.ReadTransactionAsync(async tx =>
             {
                 TransactionId = controller.TransactionManagager.AddTransaction(tx);
+				sessionContainer.SessionTransactions.Add(TransactionId);
 
-                await controller.SendResponse(new ProtocolResponse("RetryableTry", TransactionId).Encode()).ConfigureAwait(false);
+				await controller.SendResponse(new ProtocolResponse("RetryableTry", TransactionId).Encode()).ConfigureAwait(false);
 
 				try
 				{

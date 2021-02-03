@@ -7,40 +7,43 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class NewSession : IProtocolObject
-    {
-        public NewSessionType data { get; set; } = new NewSessionType();
-        [JsonIgnore]
-        public IAsyncSession Session { get; set; }
+	internal class NewSession : IProtocolObject
+	{
+		public NewSessionType data { get; set; } = new NewSessionType();
+		[JsonIgnore]
+		public IAsyncSession Session { get; set; }
 
-        public class NewSessionType
-        {
-            public string driverId { get; set; }
-            
-            [JsonProperty(Required = Required.AllowNull)]
-            public string accessMode { get; set; }
-            
-            [JsonProperty(Required = Required.AllowNull)]
-            public List<string> bookmarks { get; set; } = new List<string>();
-           
-            [JsonProperty(Required = Required.AllowNull)]
-            public string database { get; set; }
-            
-            [JsonProperty(Required = Required.AllowNull)]
-            public long fetchSize { get; set; } = 1000;
-        }
+		public class NewSessionType
+		{
+			public string driverId { get; set; }
 
-        [JsonIgnore]
-        public AccessMode GetAccessMode
-        {
-            get
-            {
-                if (data.accessMode == "r")
-                    return AccessMode.Read;
-                else
-                    return AccessMode.Write;
-            }
-        }
+			[JsonProperty(Required = Required.AllowNull)]
+			public string accessMode { get; set; }
+
+			[JsonProperty(Required = Required.AllowNull)]
+			public List<string> bookmarks { get; set; } = new List<string>();
+
+			[JsonProperty(Required = Required.AllowNull)]
+			public string database { get; set; }
+
+			[JsonProperty(Required = Required.AllowNull)]
+			public long fetchSize { get; set; } = 1000;
+		}
+
+		[JsonIgnore]
+		public AccessMode GetAccessMode
+		{
+			get
+			{
+				if (data.accessMode == "r")
+					return AccessMode.Read;
+				else
+					return AccessMode.Write;
+			}
+		}
+
+		[JsonIgnore]
+		public List<string> SessionTransactions { get; } = new List<string>();
 
         void SessionConfig(SessionConfigBuilder configBuilder)
         {
