@@ -17,14 +17,10 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string resultId { get; set; }
         }
 
-        public override async Task Process()
-        {
-            var results = ((Result)ObjManager.GetObject(data.resultId)).Results;
-
-            if (await results.FetchAsync().ConfigureAwait(false))
-                Records = results.Current;
-            else
-                Records = null;            
+		public override async Task Process()
+		{
+			var result = (Result)ObjManager.GetObject(data.resultId);
+			Records = await result.GetNextRecord();
         }
 
         public override string Respond()

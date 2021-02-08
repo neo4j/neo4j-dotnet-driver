@@ -18,17 +18,16 @@ namespace Neo4j.Driver.Tests.TestBackend
         public override async Task Process(Controller controller)
         {
             //Client failed in some way.
-            //Notify any subscribers.
-			
-			//Get the session
-			//rollback any transactions in progress
+            //Get the session
 			var sessionContainer = ((NewSession)ObjManager.GetObject(data.sessionId));
 
+			//rollback any transactions in progress
 			sessionContainer.SessionTransactions.ForEach(async t =>
 			{
 				await controller.
 						TransactionManagager.
 						FindTransaction(t).
+						Transaction.
 						RollbackAsync().
 						ConfigureAwait(false);
 			});

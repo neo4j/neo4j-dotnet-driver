@@ -17,8 +17,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 		public override async Task Process()
 		{
-			var results = ((Result)ObjManager.GetObject(data.resultId)).Results;
-			await results.ConsumeAsync().ConfigureAwait(false);
+			await ((SessionResult)ObjManager.GetObject(data.resultId)).ConsumeResults().ConfigureAwait(false);
 		}
 
 		public override string Respond()

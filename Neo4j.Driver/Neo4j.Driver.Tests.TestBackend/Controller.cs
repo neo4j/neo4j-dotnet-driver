@@ -3,7 +3,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.IO;
-using Neo4j.Driver.Tests.TestBackend.Transaction;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {

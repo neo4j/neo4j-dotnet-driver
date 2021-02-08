@@ -25,7 +25,13 @@ namespace Neo4j.Driver.Tests.TestBackend
             var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
             await sessionContainer.Session.WriteTransactionAsync(async tx =>
             {
-                TransactionId = controller.TransactionManagager.AddTransaction(tx);
+                TransactionId = controller.TransactionManagager.AddTransaction(new TransactionWrapper(tx, async cursor => 
+				{
+					var result = (TransactionResult)ProtocolObjectFactory.CreateObject(Protocol.Types.TransactionResult);
+					await result.PopulateRecords(cursor).ConfigureAwait(false);
+					return result.uniqueId;
+				}));
+
 				sessionContainer.SessionTransactions.Add(TransactionId);
 
 				await controller.SendResponse(new ProtocolResponse("RetryableTry", TransactionId).Encode()).ConfigureAwait(false);

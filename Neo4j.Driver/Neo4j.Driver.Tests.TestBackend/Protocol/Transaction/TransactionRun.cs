@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Neo4j.Driver;
+using System.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -22,14 +23,12 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override async Task Process(Controller controller)
         {
-            var transaction = controller.TransactionManagager.FindTransaction(data.txId);
+            var transactionWrapper = controller.TransactionManagager.FindTransaction(data.txId);
 
-            IResultCursor cursor = await transaction.RunAsync(data.cypher, data.parameters).ConfigureAwait(false);
-                
-            var result = new Result() { Results = cursor };
-            ObjManager.AddProtocolObject(result);
-            ResultId = result.uniqueId;
-        }
+            IResultCursor cursor = await transactionWrapper.Transaction.RunAsync(data.cypher, data.parameters).ConfigureAwait(false);
+
+			ResultId = await transactionWrapper.ProcessResults(cursor);
+		}
 
         public override string Respond()
         {   
