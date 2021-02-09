@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 	internal class TransactionResult : Result 
 	{
 		[JsonIgnore]
-		private List<IRecord> Records { get; set; }
+		private List<IRecord> Records { get; set; } = new List<IRecord>();
 		[JsonIgnore]
 		private int CurrentRecordIndex { get; set; } = 0;
 
@@ -52,8 +52,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 		public async Task PopulateRecords(IResultCursor cursor)
 		{
-			Records = await cursor.ToListAsync();
-			//await cursor.ForEachAsync(record => Records.Add(record)).ConfigureAwait(false);
+			await cursor.ForEachAsync(record => Records.Add(record)).ConfigureAwait(false);
 		}
 	}
 
