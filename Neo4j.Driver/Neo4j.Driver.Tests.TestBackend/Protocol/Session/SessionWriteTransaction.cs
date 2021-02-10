@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Neo4j.Driver;
+using System.Diagnostics;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {

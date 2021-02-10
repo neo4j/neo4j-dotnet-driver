@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
+using System.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -20,23 +22,24 @@ namespace Neo4j.Driver.Tests.TestBackend
             //Client failed in some way.
             //Get the session
 			var sessionContainer = ((NewSession)ObjManager.GetObject(data.sessionId));
-
-			//rollback any transactions in progress
-			sessionContainer.SessionTransactions.ForEach(async t =>
-			{
-				await controller.
-						TransactionManagager.
-						FindTransaction(t).
-						Transaction.
-						RollbackAsync().
-						ConfigureAwait(false);
-			});
-
+			var tasks = sessionContainer.SessionTransactions.Select(t => TransactionRollBackDelegate(t, controller));			
+			await Task.WhenAll(tasks);
 
 			TriggerException();
+		}
 
-            await Task.CompletedTask;
-        }
+		private async Task TransactionRollBackDelegate(string transactionId, Controller controller)
+		{
+			var transactionWrapper = controller.TransactionManagager.FindTransaction(transactionId);
+
+			if (transactionWrapper != null)
+			{
+				await transactionWrapper.
+					  Transaction.
+					  RollbackAsync().
+					  ConfigureAwait(false);
+			}
+		}
 
         public override string Respond()
         {

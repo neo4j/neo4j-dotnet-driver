@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Neo4j.Driver;
 using System.Collections.Generic;
+using System.Diagnostics;
+
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -27,9 +29,8 @@ namespace Neo4j.Driver.Tests.TestBackend
         }
 
 		public async virtual Task<IRecord> GetNextRecord()
-		{
-			await Task.CompletedTask;
-			return null;
+		{	
+			return await Task.FromResult<IRecord>(null);
 		}
     }
 
@@ -42,12 +43,10 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 		public async override Task<IRecord> GetNextRecord()
 		{
-			await Task.CompletedTask;
-
 			if (CurrentRecordIndex >= Records.Count)
 				return null;
 
-			return Records[CurrentRecordIndex++];
+			return await Task.FromResult<IRecord>(Records[CurrentRecordIndex++]);
 		}
 
 		public async Task PopulateRecords(IResultCursor cursor)
@@ -63,10 +62,12 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 		public async override Task<IRecord> GetNextRecord()
 		{
-			if(await Results.FetchAsync().ConfigureAwait(false))
-				return Results.Current;
+			if (await Results.FetchAsync().ConfigureAwait(false))
+			{
+				return await Task.FromResult<IRecord>(Results.Current);
+			}
 
-			return null;
+			return await Task.FromResult<IRecord>(null);
 		}
 
 		public async Task ConsumeResults()

@@ -3,6 +3,8 @@ using Newtonsoft.Json;
 using System.Threading.Tasks;
 using Neo4j.Driver;
 using System.Linq;
+using System.Diagnostics;
+
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -27,13 +29,13 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
             if (!(Records is null))
             {
-                //Generate list of ordered records
-                var valuesList = Records.Keys.Select(v => NativeToCypher.Convert(Records[v]));
+				//Generate list of ordered records
+				var valuesList = Records.Keys.Select(v => NativeToCypher.Convert(Records[v]));
                 return new ProtocolResponse("Record", new { values = valuesList }).Encode();
             }
             else
             {
-                return new ProtocolResponse("NullRecord", (object)null).Encode();
+				return new ProtocolResponse("NullRecord", (object)null).Encode();
             }
         }
     }
