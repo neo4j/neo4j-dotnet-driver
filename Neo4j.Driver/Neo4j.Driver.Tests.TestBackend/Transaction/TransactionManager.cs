@@ -1,15 +1,35 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Linq;
 using System.Text;
 
-namespace Neo4j.Driver.Tests.TestBackend.Transaction
+namespace Neo4j.Driver.Tests.TestBackend
 {
-	class TransactionManager
+	internal class TransactionWrapper
 	{
-		private Dictionary<string, IAsyncTransaction> Transactions { get; set; } = new Dictionary<string, IAsyncTransaction>();
+		public IAsyncTransaction Transaction { get; private set; }
+		private Func<IResultCursor, Task<string>> ResultHandler;
 
-		public string AddTransaction(IAsyncTransaction transation)
+		public TransactionWrapper(IAsyncTransaction transaction, Func<IResultCursor, Task<string>>resultHandler)
+		{
+			Transaction = transaction;
+			ResultHandler = resultHandler;
+		}
+
+		public async Task<string> ProcessResults(IResultCursor cursor)
+		{
+			return await ResultHandler(cursor);
+		}
+
+	}
+
+
+	internal class TransactionManager
+	{
+		private Dictionary<string, TransactionWrapper> Transactions { get; set; } = new Dictionary<string, TransactionWrapper>();
+
+		public string AddTransaction(TransactionWrapper transation)
 		{
 			var key = ProtocolObjectManager.GenerateUniqueIdString();
 			Transactions.Add(key, transation);
@@ -21,7 +41,7 @@ namespace Neo4j.Driver.Tests.TestBackend.Transaction
 			Transactions.Remove(key);
 		}
 
-		public IAsyncTransaction FindTransaction(string key)
+		public TransactionWrapper FindTransaction(string key)
 		{
 			return Transactions[key];
 		}

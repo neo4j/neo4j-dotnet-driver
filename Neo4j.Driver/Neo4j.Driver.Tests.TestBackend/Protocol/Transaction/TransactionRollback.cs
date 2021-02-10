@@ -14,8 +14,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override async Task Process(Controller controller)
         {
-            var transaction = controller.TransactionManagager.FindTransaction(data.txId);
-            await transaction.RollbackAsync();
+            var transactionWrapper = controller.TransactionManagager.FindTransaction(data.txId);
+            await transactionWrapper.Transaction.RollbackAsync();
         }
 
         public override string Respond()

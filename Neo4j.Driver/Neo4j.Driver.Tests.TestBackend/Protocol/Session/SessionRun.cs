@@ -61,10 +61,10 @@ namespace Neo4j.Driver.Tests.TestBackend
             var newSession = (NewSession)ObjManager.GetObject(data.sessionId);
             IResultCursor cursor = await newSession.Session.RunAsync(data.cypher, ConvertParameters(data.parameters), TransactionConfig).ConfigureAwait(false);
 
-            var result = (Result)ProtocolObjectFactory.CreateObject(Protocol.Types.Result);
-            result.Results = cursor;
-            
-            ResultId = result.uniqueId;
+            var result = (SessionResult)ProtocolObjectFactory.CreateObject(Protocol.Types.SessionResult);
+			result.Results = cursor;
+
+			ResultId = result.uniqueId;
         }
 
         public override string Respond()
