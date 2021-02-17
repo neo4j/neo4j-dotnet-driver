@@ -76,7 +76,13 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 .AssertEqual(OnCompleted<int>(0));
         }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+		public bool OutputMessage(string message, string expectedMessage)
+		{
+			Output.WriteLine(message);
+			return message.Contains(expectedMessage);
+		}
+
+		[RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public void ShouldErrorToRunNestedQueriesWithTransactionFunctions()
         {
             const int size = 1024;
@@ -95,7 +101,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 .AssertEqual(
                     OnError<int>(0,
                         MatchesException<ClientException>(e =>
-                            e.Message.Contains("close the currently open transaction object before"))));
+                            OutputMessage(e.Message, "close the currently open transaction object before"))));
         }
 
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
