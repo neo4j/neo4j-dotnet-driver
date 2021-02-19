@@ -78,8 +78,8 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
 		public bool OutputMessage(string message, string expectedMessage)
 		{
-			Output.WriteLine(message);
-			return message.Contains(expectedMessage);
+			Output.WriteLine("Actual Message: " + message);
+			return message.Contains("Excpeted Message: " + expectedMessage);
 		}
 
 		[RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
