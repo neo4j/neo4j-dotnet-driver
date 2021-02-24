@@ -16,7 +16,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
             
             writer.WriteStructHeader(2, BoltProtocolV4_3MessageFormat.MsgRoute);
             writer.Write(msg.Routing);
-            writer.Write(msg.DatabaseParam);
+            writer.Write(!string.IsNullOrEmpty(msg.DatabaseParam) ? msg.DatabaseParam : "none");
         }
     }
 }

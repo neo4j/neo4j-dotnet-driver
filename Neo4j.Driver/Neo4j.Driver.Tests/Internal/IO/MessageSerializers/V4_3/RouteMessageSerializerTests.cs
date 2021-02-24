@@ -43,10 +43,12 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
 			ex.Should().BeOfType<ProtocolException>();
 		}
 
-		[Fact]
-		public void ShouldSerialize()
-		{
-			const string db = "adb";
+		[Theory]
+		[InlineData("adb", "adb")]
+		[InlineData("", "none")]
+		[InlineData(null, "none")]
+		public void ShouldSerialize(string db, string serializedDb)
+		{	
 			var writerMachine = CreateWriterMachine();
 			var writer = writerMachine.Writer();
 			var routingContext = new Dictionary<string, string> { {"ContextKey1", "ContextValue1"},
@@ -66,6 +68,9 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
 			readMap.Should().HaveCount(3).And.Contain(new[] { new KeyValuePair<string, object>( "ContextKey1", "ContextValue1" ),
 															  new KeyValuePair<string, object>( "ContextKey2", "ContextValue2" ),
 															  new KeyValuePair<string, object>( "ContextKey3", "ContextValue3" ) });
+
+			reader.PeekNextType().Should().Be(PackStream.PackType.String);
+			reader.ReadString().Should().Be(serializedDb);
 		}
 
         [Fact]
