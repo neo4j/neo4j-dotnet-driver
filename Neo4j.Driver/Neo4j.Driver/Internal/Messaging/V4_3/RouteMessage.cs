@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Internal.Messaging.V4_3
 
             message += " }";
 
-            message += (!string.IsNullOrEmpty(DatabaseParam)) ? " \'" + DatabaseParam + "\'" : " \'none\'";
+            message += (!string.IsNullOrEmpty(DatabaseParam)) ? " \'" + DatabaseParam + "\'" : " None";
 
             return message;
         }
