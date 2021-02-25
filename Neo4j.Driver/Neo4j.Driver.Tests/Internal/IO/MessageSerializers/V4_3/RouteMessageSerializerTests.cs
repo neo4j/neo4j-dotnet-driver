@@ -45,8 +45,8 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
 
 		[Theory]
 		[InlineData("adb", "adb")]
-		[InlineData("", "none")]
-		[InlineData(null, "none")]
+		[InlineData("", "None")]
+		[InlineData(null, "None")]
 		public void ShouldSerialize(string db, string serializedDb)
 		{	
 			var writerMachine = CreateWriterMachine();
@@ -69,8 +69,13 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
 															  new KeyValuePair<string, object>( "ContextKey2", "ContextValue2" ),
 															  new KeyValuePair<string, object>( "ContextKey3", "ContextValue3" ) });
 
-			reader.PeekNextType().Should().Be(PackStream.PackType.String);
-			reader.ReadString().Should().Be(serializedDb);
+			if (!string.IsNullOrEmpty(db))
+			{
+				reader.PeekNextType().Should().Be(PackStream.PackType.String);
+				reader.ReadString().Should().Be(serializedDb);
+			}
+			else
+				reader.PeekNextType().Should().Be(PackStream.PackType.Null);
 		}
 
         [Fact]
