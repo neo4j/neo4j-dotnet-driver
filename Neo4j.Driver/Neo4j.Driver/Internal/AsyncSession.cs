@@ -39,8 +39,9 @@ namespace Neo4j.Driver.Internal
 
         private readonly IAsyncRetryLogic _retryLogic;
         private bool _isOpen = true;
+		private bool _disposed = false;
 
-        private Bookmark _bookmark;
+		private Bookmark _bookmark;
         private readonly ILogger _logger;
 
         public Bookmark LastBookmark => _bookmark;
@@ -48,8 +49,9 @@ namespace Neo4j.Driver.Internal
         private readonly string _database;
         private readonly bool _reactive;
         private readonly long _fetchSize;
+		
 
-        public AsyncSession(IConnectionProvider provider, ILogger logger, IAsyncRetryLogic retryLogic = null,
+		public AsyncSession(IConnectionProvider provider, ILogger logger, IAsyncRetryLogic retryLogic = null,
             AccessMode defaultMode = AccessMode.Write,
             string database = null,
             Bookmark bookmark = null, bool reactive = false, long fetchSize = Config.Infinite)
@@ -227,5 +229,28 @@ namespace Neo4j.Driver.Internal
             return _transaction;
         }
 
+		protected override void Dispose(bool disposing)
+		{
+			if (_disposed)
+				return;
+
+			if(disposing)
+			{
+				//Dispose managed resources
+				
+				//call it synchronously
+				//CloseAsync().GetAwaiter().GetResult();
+				Task.Run(() => CloseAsync()).GetAwaiter().GetResult();
+			}
+
+			_disposed = true;
+			base.Dispose(disposing);
+		}
+
+		protected override async ValueTask DisposeAsyncCore()
+		{
+			await CloseAsync().ConfigureAwait(false);
+			await base.DisposeAsyncCore();
+		}
     }
 }
