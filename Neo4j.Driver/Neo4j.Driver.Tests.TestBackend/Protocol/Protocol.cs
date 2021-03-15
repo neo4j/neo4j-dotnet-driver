@@ -30,6 +30,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             RetryableNegative,
             ProtocolException,
             SessionLastBookmarks,
+			VerifyConnectivity,
 
             NumTypes
         };
@@ -54,7 +55,8 @@ namespace Neo4j.Driver.Tests.TestBackend
                                                                  { Types.RetryablePositive,         new Tuple<string, Type>("RetryablePositive",        typeof(RetryablePositive)) },
                                                                  { Types.RetryableNegative,         new Tuple<string, Type>("RetryableNegative",        typeof(RetryableNegative)) },
                                                                  { Types.ProtocolException,         new Tuple<string, Type>("ProtocolException",        typeof(ProtocolException)) },
-                                                                 { Types.SessionLastBookmarks,      new Tuple<string, Type>("SessionLastBookmarks",     typeof(SessionLastBookmarks)) } };
+                                                                 { Types.SessionLastBookmarks,      new Tuple<string, Type>("SessionLastBookmarks",     typeof(SessionLastBookmarks)) },
+																 { Types.VerifyConnectivity,        new Tuple<string, Type>("VerifyConnectivity",       typeof(VerifyConnectivity)) }};
 
         static Protocol()
         {
