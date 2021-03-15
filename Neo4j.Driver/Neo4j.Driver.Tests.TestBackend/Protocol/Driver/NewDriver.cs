@@ -22,10 +22,6 @@ namespace Neo4j.Driver.Tests.TestBackend
         void DriverConfig(ConfigBuilder configBuilder)
         {
             if (!string.IsNullOrEmpty(data.userAgent)) configBuilder.WithUserAgent(data.userAgent);
-
-            //Test code...
-            //configBuilder.WithConnectionTimeout(TimeSpan.FromSeconds(1));
-            //configBuilder.WithConnectionIdleTimeout(TimeSpan.FromSeconds(1));
         }
 
         public override async Task Process()
