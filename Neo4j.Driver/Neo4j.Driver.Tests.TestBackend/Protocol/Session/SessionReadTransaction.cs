@@ -29,7 +29,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             {
                 TransactionId = controller.TransactionManagager.AddTransaction(new TransactionWrapper(tx, async cursor =>
 				{
-					var result = (TransactionResult)ProtocolObjectFactory.CreateObject(Protocol.Types.TransactionResult);
+					var result = ProtocolObjectFactory.CreateObject<TransactionResult>();
 					await result.PopulateRecords(cursor).ConfigureAwait(false);
 					return result.uniqueId;
 				}));

@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			var transaction = await sessionContainer.Session.BeginTransactionAsync(TransactionConfig);
 			TransactionId = controller.TransactionManagager.AddTransaction(new TransactionWrapper(transaction, async cursor => 
 			{	
-				var result = (SessionResult)ProtocolObjectFactory.CreateObject(Protocol.Types.SessionResult);
+				var result = ProtocolObjectFactory.CreateObject<SessionResult>();
 				result.Results = cursor;
 
 				return await Task.FromResult<string>(result.uniqueId);				

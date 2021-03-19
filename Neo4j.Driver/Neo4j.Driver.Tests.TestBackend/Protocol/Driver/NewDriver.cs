@@ -40,7 +40,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			Control.SendResponse(response).ConfigureAwait(false);
 
 			//Read the ResolverResolutionCompleted request, throw if another type of request has come in
-			var result = (ResolverResolutionCompleted)Control.TryProcessStreamObjectOfType<ResolverResolutionCompleted>().Result;
+			var result = (ResolverResolutionCompleted)Control.TryConsumeStreamObjectOfType<ResolverResolutionCompleted>().Result;
 			if(result is null)
 				throw new NotSupportedException(errorMessage);
 

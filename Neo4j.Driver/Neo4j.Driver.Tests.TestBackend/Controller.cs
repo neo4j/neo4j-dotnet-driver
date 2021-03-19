@@ -40,10 +40,10 @@ namespace Neo4j.Driver.Tests.TestBackend
 			BreakProcessLoop = false;   //Ensure that any process loops that this one is running within still continue.
 		}
 
-		public async Task<IProtocolObject> TryProcessStreamObjectOfType(Protocol.Types type)
+		public async Task<IProtocolObject> TryConsumeStreamObjectOfType(Type type)
 		{
 			//Read the next incoming request message
-			while (await RequestReader.ParseNextRequest().ConfigureAwait(false)) ;
+			while (await RequestReader.ParseNextRequest().ConfigureAwait(false) == false) ;
 
 			//Is it of the correct type
 			if (RequestReader.GetObjectType() != type)
@@ -54,17 +54,9 @@ namespace Neo4j.Driver.Tests.TestBackend
 		}
 
 
-		public async Task<IProtocolObject> TryProcessStreamObjectOfType<T>()
+		public async Task<IProtocolObject> TryConsumeStreamObjectOfType<T>()
 		{
-			//Read the next incoming request message
-			while (await RequestReader.ParseNextRequest().ConfigureAwait(false)) ;
-
-			//Is it of the correct type
-			if (RequestReader.GetObjectType() != Protocol.GetObjectType<T>())
-				return null;
-
-			//Create and return an object from the request message
-			return ProtocolObjectFactory.CreateObject(RequestReader.GetObjectType(), RequestReader.CurrentObjectData);
+			return await TryConsumeStreamObjectOfType(typeof(T));
 		}
 
 		private async Task InitialiseCommunicationLayer()
