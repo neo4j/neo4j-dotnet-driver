@@ -23,24 +23,51 @@ namespace Neo4j.Driver.Tests.TestBackend
             ProtocolObjectFactory.ObjManager = ObjManager;
         }
 
-        public async Task ProcessStreamObjects()
+		public async Task ProcessStreamObjects()
 		{
-            BreakProcessLoop = false;
+			BreakProcessLoop = false;
 
-            while (!BreakProcessLoop  &&  await RequestReader.ParseNextRequest().ConfigureAwait(false))
-            {
-                var protocolObject = ProtocolObjectFactory.CreateObject(RequestReader.GetObjectType(), RequestReader.CurrentObjectData);
-                protocolObject.ProtocolEvent += BreakLoopEvent;
+			while (!BreakProcessLoop && await RequestReader.ParseNextRequest().ConfigureAwait(false))
+			{
+				var protocolObject = ProtocolObjectFactory.CreateObject(RequestReader.GetObjectType(), RequestReader.CurrentObjectData);
+				protocolObject.ProtocolEvent += BreakLoopEvent;
 
-                await protocolObject.Process(this).ConfigureAwait(false);
-                await SendResponse(protocolObject).ConfigureAwait(false);
-                Trace.Flush();                
-            }
+				await protocolObject.Process(this).ConfigureAwait(false);
+				await SendResponse(protocolObject).ConfigureAwait(false);
+				Trace.Flush();
+			}
 
-            BreakProcessLoop = false;   //Ensure that any process loops that this one is running within still continue.
-        }
+			BreakProcessLoop = false;   //Ensure that any process loops that this one is running within still continue.
+		}
 
-        private async Task InitialiseCommunicationLayer()
+		public async Task<IProtocolObject> TryProcessStreamObjectOfType(Protocol.Types type)
+		{
+			//Read the next incoming request message
+			while (await RequestReader.ParseNextRequest().ConfigureAwait(false)) ;
+
+			//Is it of the correct type
+			if (RequestReader.GetObjectType() != type)
+				return null;
+
+			//Create and return an object from the request message
+			return ProtocolObjectFactory.CreateObject(RequestReader.GetObjectType(), RequestReader.CurrentObjectData);
+		}
+
+
+		public async Task<IProtocolObject> TryProcessStreamObjectOfType<T>()
+		{
+			//Read the next incoming request message
+			while (await RequestReader.ParseNextRequest().ConfigureAwait(false)) ;
+
+			//Is it of the correct type
+			if (RequestReader.GetObjectType() != Protocol.GetObjectType<T>())
+				return null;
+
+			//Create and return an object from the request message
+			return ProtocolObjectFactory.CreateObject(RequestReader.GetObjectType(), RequestReader.CurrentObjectData);
+		}
+
+		private async Task InitialiseCommunicationLayer()
 		{
             await Connection.Open();
 
