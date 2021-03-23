@@ -12,12 +12,12 @@ namespace Neo4j.Driver.Tests.TestBackend
 	{
 		private readonly ServerAddress[] servers;
 		Controller Control { get; }
-		string Uri { get; }
+		Uri Uri { get; }
 
 		public ListAddressResolver(Controller control, string uri)
 		{
 			Control = control;
-			Uri = uri;
+			Uri = new Uri(uri);
 		}
 
 		public ListAddressResolver(params ServerAddress[] servers)
@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 												new
 												{
 													id = ProtocolObjectManager.GenerateUniqueIdString(),
-													address = Uri
+													address = Uri.Host + ":" + Uri.Port
 												})
 												.Encode();
 
@@ -40,7 +40,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			Control.SendResponse(response).ConfigureAwait(false);
 
 			//Read the ResolverResolutionCompleted request, throw if another type of request has come in
-			var result = (ResolverResolutionCompleted)Control.TryConsumeStreamObjectOfType<ResolverResolutionCompleted>().Result;
+			var result = Control.TryConsumeStreamObjectOfType<ResolverResolutionCompleted>().Result;
 			if(result is null)
 				throw new NotSupportedException(errorMessage);
 
@@ -48,7 +48,11 @@ namespace Neo4j.Driver.Tests.TestBackend
 			return new HashSet<ServerAddress>(result
 											  .data
 											  .addresses
-											  .Select(x => ServerAddress.From(new Uri(x))));
+											  .Select(x =>
+											  {
+												  string[] split = x.Split(':');
+												  return ServerAddress.From(split[0], Convert.ToInt32(split[1]));
+											  }));
 		}
 	}
 
@@ -59,7 +63,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 		public IDriver Driver { get; set; }
 		[JsonIgnore]
 		private Controller Control { get; set; }
-		 
+
 
 		public class NewDriverType
 		{
@@ -67,6 +71,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 			public AuthorizationToken authorizationToken { get; set; } = new AuthorizationToken();
 			public string userAgent { get; set; }
 			public bool resolverRegistered { get; set; } = false;
+			public bool domainNameResolverRegistered { get; set; } = false;
+			public int connectionTimeoutMs { get; set; } = -1;
 		}
 
 		public override async Task Process(Controller controller)
@@ -90,6 +96,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 			if (!string.IsNullOrEmpty(data.userAgent)) configBuilder.WithUserAgent(data.userAgent);
 
 			if (data.resolverRegistered) configBuilder.WithResolver(new ListAddressResolver(Control, data.uri));
+
+			if (data.connectionTimeoutMs > 0) configBuilder.WithConnectionTimeout(TimeSpan.FromMilliseconds(data.connectionTimeoutMs));
 		}
 	}
 }
