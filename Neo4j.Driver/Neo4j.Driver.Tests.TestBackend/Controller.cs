@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.IO;
+using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -43,7 +44,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 		public async Task<IProtocolObject> TryConsumeStreamObjectOfType(Type type)
 		{
 			//Read the next incoming request message
-			while (await RequestReader.ParseNextRequest().ConfigureAwait(false) == false) ;
+			await RequestReader.ParseNextRequest().ConfigureAwait(false);
 
 			//Is it of the correct type
 			if (RequestReader.GetObjectType() != type)
@@ -54,9 +55,10 @@ namespace Neo4j.Driver.Tests.TestBackend
 		}
 
 
-		public async Task<IProtocolObject> TryConsumeStreamObjectOfType<T>()
+		public async Task<T> TryConsumeStreamObjectOfType<T>() where T : IProtocolObject
 		{
-			return await TryConsumeStreamObjectOfType(typeof(T));
+			var result = await TryConsumeStreamObjectOfType(typeof(T)).ConfigureAwait(false);
+			return (T)result;
 		}
 
 		private async Task InitialiseCommunicationLayer()
@@ -99,17 +101,20 @@ namespace Neo4j.Driver.Tests.TestBackend
                     }
                     catch (NotSupportedException ex)
                     {
-                        // Get this sometimes during protocol handshake, like when connectiong with bolt:// on server
-                        // with TLS. Could be a dirty read in the driver or a write from TLS server that causes strange
-                        // version received..
                         await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
                         restartConnection = false;
                     }
-                    catch (IOException ex)
+					catch (JsonSerializationException ex)
+					{	
+						await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+						restartConnection = false;
+					}
+					catch (IOException ex)
                     {
                         Trace.WriteLine($"Socket exception detected: {ex.Message}");    //Handled outside of the exception manager because there is no connection to reply on.
                         restartConnection = true;
                     }
+					
                     finally
                     {
                         if (restartConnection)

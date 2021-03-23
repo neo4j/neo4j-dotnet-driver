@@ -12,7 +12,8 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
 			Protocol.ValidateType(type);
 
-            var newObject = (IProtocolObject)CreateNewObjectOfType(type, jsonString, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+            var newObject = (IProtocolObject)CreateNewObjectOfType(type, jsonString, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore,
+																												  MissingMemberHandling = MissingMemberHandling.Error });
 			ProcessNewObject(newObject);
 
 			return newObject;
