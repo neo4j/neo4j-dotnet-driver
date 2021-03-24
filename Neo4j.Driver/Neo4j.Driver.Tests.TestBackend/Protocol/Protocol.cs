@@ -6,6 +6,14 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
+	public class TestKitProtocolException : Exception 
+	{
+		public TestKitProtocolException(string message) : base(message)
+		{
+
+		}
+	}
+
     public static class Protocol
     {
 		public static readonly HashSet<Type> ProtocolTypes =
@@ -31,7 +39,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 									typeof(SessionLastBookmarks),
 									typeof(VerifyConnectivity),
 									typeof(CheckMultiDBSupport),
-									typeof(ResolverResolutionCompleted) };
+									typeof(ResolverResolutionCompleted),
+									typeof(StartTest)};
 
         
 		static Protocol()
@@ -47,7 +56,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 		public static void ValidateType(Type objectType)
 		{
-			if (!ProtocolTypes.Contains(objectType)) throw new Exception($"Attempting to use an unrecognized type: {objectType}");
+			if (!ProtocolTypes.Contains(objectType)) throw new TestKitProtocolException($"Attempting to use an unrecognized type: {objectType}");
 		}
     }
 

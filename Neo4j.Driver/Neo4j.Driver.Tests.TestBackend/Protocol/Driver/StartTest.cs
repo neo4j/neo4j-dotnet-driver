@@ -19,12 +19,12 @@ namespace Neo4j.Driver.Tests.TestBackend
 		}
 
 		public override string Respond()
-		{
-			string responseName = "RunTest";
+		{	
 			string reason = string.Empty;
-			if (TestBlackList.FindTest(data.testName, out reason)) responseName = "SkipTest";
-			
-			return new ProtocolResponse(responseName, reason).Encode();
+			if (TestBlackList.FindTest(data.testName, out reason))			
+				return new ProtocolResponse("SkipTest", new { reason }).Encode();
+			else
+				return new ProtocolResponse("RunTest").Encode();
 		}
 	}
 }

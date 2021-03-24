@@ -18,7 +18,10 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
             public string sessionId { get; set; }  
             public string cypher { get; set; }
-        }
+
+			[JsonProperty(Required = Required.AllowNull)]
+			public Dictionary<string, object> txMeta { get; set; } = new Dictionary<string, object>();
+		}
 
         public override async Task Process(Controller controller)
         {
@@ -49,7 +52,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 				}
 
                 controller.TransactionManagager.RemoveTransaction(TransactionId);                
-            });
+            }, TransactionConfig);
         }
 
         public override string Respond()
@@ -63,5 +66,10 @@ namespace Neo4j.Driver.Tests.TestBackend
 				return ExceptionManager.GenerateExceptionResponse(new ClientException("Error from client in retryable tx")).Encode();
 			}
 		}
-    }
+
+		void TransactionConfig(TransactionConfigBuilder configBuilder)
+		{
+			if (data.txMeta.Count > 0) configBuilder.WithMetadata(data.txMeta);
+		}
+	}
 }

@@ -25,6 +25,12 @@ namespace Neo4j.Driver.Tests.TestBackend
             data = dataType;
         }
 
+		public ProtocolResponse(string newName)
+		{
+			name = newName;
+			data = null;
+		}
+
         public string Encode()
         {
             return JsonConvert.SerializeObject(this);
