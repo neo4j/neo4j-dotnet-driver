@@ -19,6 +19,8 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
             public string sessionId { get; set; }
 
+			public int timeout { get; set; } = -1;
+
 			[JsonProperty(Required = Required.AllowNull)]
 			public Dictionary<string, object> txMeta { get; set; } = new Dictionary<string, object>();
 		}
@@ -70,6 +72,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 		void TransactionConfig(TransactionConfigBuilder configBuilder)
 		{
 			if (data.txMeta.Count > 0) configBuilder.WithMetadata(data.txMeta);
+
+			if (data.timeout > 0) configBuilder.WithTimeout(TimeSpan.FromSeconds(data.timeout));
 		}
 	}
 }
