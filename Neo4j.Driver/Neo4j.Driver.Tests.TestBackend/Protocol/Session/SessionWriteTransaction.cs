@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Newtonsoft.Json;
 using Neo4j.Driver;
 using System.Diagnostics;
@@ -17,7 +18,12 @@ namespace Neo4j.Driver.Tests.TestBackend
         public class SessionWriteTransactionType
         {
             public string sessionId { get; set; }
-        }
+
+			public int timeout { get; set; } = -1;
+
+			[JsonProperty(Required = Required.AllowNull)]
+			public Dictionary<string, object> txMeta { get; set; } = new Dictionary<string, object>();
+		}
 
         public override async Task Process(Controller controller)
         {
@@ -28,7 +34,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             {
                 TransactionId = controller.TransactionManagager.AddTransaction(new TransactionWrapper(tx, async cursor => 
 				{
-					var result = (TransactionResult)ProtocolObjectFactory.CreateObject(Protocol.Types.TransactionResult);
+					var result = ProtocolObjectFactory.CreateObject<TransactionResult>();
 					await result.PopulateRecords(cursor).ConfigureAwait(false);
 					return result.uniqueId;
 				}));
@@ -48,7 +54,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 				}               
 
                 controller.TransactionManagager.RemoveTransaction(TransactionId);
-            });
+            }, TransactionConfig);
         }
 
         public override string Respond()
@@ -62,5 +68,12 @@ namespace Neo4j.Driver.Tests.TestBackend
 				return ExceptionManager.GenerateExceptionResponse(new ClientException("Error from client in retryable tx")).Encode();
 			} 
         }
-    }
+
+		void TransactionConfig(TransactionConfigBuilder configBuilder)
+		{
+			if (data.txMeta.Count > 0) configBuilder.WithMetadata(data.txMeta);
+
+			if (data.timeout > 0) configBuilder.WithTimeout(TimeSpan.FromSeconds(data.timeout));
+		}
+	}
 }

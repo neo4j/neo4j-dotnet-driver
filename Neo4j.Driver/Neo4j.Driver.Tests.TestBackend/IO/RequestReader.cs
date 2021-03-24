@@ -1,7 +1,9 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using Newtonsoft.Json.Linq;
+using System.Reflection;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -11,7 +13,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         private bool MessageOpen { get; set; }
         private const string OpenTag = "#request begin";
         private const string CloseTag = "#request end";
-
+		
         public string CurrentObjectData { get; set; }
 
         public RequestReader(StreamReader reader)
@@ -92,10 +94,9 @@ namespace Neo4j.Driver.Tests.TestBackend
             return (string)jsonObject["name"];
         }
 
-        public Protocol.Types GetObjectType()
-        {
-            var name = GetObjectTypeName();
-            return Protocol.Type(name);
-        }
+		public Type GetObjectType()
+		{	
+			return Type.GetType(this.GetType().Namespace + "." + GetObjectTypeName(), true);
+		}
     }
 }

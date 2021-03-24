@@ -11,15 +11,15 @@ namespace Neo4j.Driver.Tests.TestBackend
         [JsonIgnore]
         public string TransactionId { get; set; }
 
-        public class SessionBeginTransactionType
-        {
-            public string sessionId { get; set; }
+		public class SessionBeginTransactionType
+		{
+			public string sessionId { get; set; }
 
-            [JsonProperty(Required = Required.AllowNull)]
-            public Dictionary<string, object> txMeta { get; set; } = new Dictionary<string, object>();
+			[JsonProperty(Required = Required.AllowNull)]
+			public Dictionary<string, object> txMeta { get; set; } = new Dictionary<string, object>();
 
-            [JsonProperty(Required = Required.AllowNull)]
-            public int timeout { get; set; } = -1;
+			[JsonProperty(Required = Required.AllowNull)]
+			public int timeout { get; set; } = -1;
         }
 
         void TransactionConfig(TransactionConfigBuilder configBuilder)
@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			var transaction = await sessionContainer.Session.BeginTransactionAsync(TransactionConfig);
 			TransactionId = controller.TransactionManagager.AddTransaction(new TransactionWrapper(transaction, async cursor => 
 			{	
-				var result = (SessionResult)ProtocolObjectFactory.CreateObject(Protocol.Types.SessionResult);
+				var result = ProtocolObjectFactory.CreateObject<SessionResult>();
 				result.Results = cursor;
 
 				return await Task.FromResult<string>(result.uniqueId);				

@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.IO;
+using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -23,24 +24,44 @@ namespace Neo4j.Driver.Tests.TestBackend
             ProtocolObjectFactory.ObjManager = ObjManager;
         }
 
-        public async Task ProcessStreamObjects()
+		public async Task ProcessStreamObjects()
 		{
-            BreakProcessLoop = false;
+			BreakProcessLoop = false;
 
-            while (!BreakProcessLoop  &&  await RequestReader.ParseNextRequest().ConfigureAwait(false))
-            {
-                var protocolObject = ProtocolObjectFactory.CreateObject(RequestReader.GetObjectType(), RequestReader.CurrentObjectData);
-                protocolObject.ProtocolEvent += BreakLoopEvent;
+			while (!BreakProcessLoop && await RequestReader.ParseNextRequest().ConfigureAwait(false))
+			{
+				var protocolObject = ProtocolObjectFactory.CreateObject(RequestReader.GetObjectType(), RequestReader.CurrentObjectData);
+				protocolObject.ProtocolEvent += BreakLoopEvent;
 
-                await protocolObject.Process(this).ConfigureAwait(false);
-                await SendResponse(protocolObject).ConfigureAwait(false);
-                Trace.Flush();                
-            }
+				await protocolObject.Process(this).ConfigureAwait(false);
+				await SendResponse(protocolObject).ConfigureAwait(false);
+				Trace.Flush();
+			}
 
-            BreakProcessLoop = false;   //Ensure that any process loops that this one is running within still continue.
-        }
+			BreakProcessLoop = false;   //Ensure that any process loops that this one is running within still continue.
+		}
 
-        private async Task InitialiseCommunicationLayer()
+		public async Task<IProtocolObject> TryConsumeStreamObjectOfType(Type type)
+		{
+			//Read the next incoming request message
+			await RequestReader.ParseNextRequest().ConfigureAwait(false);
+
+			//Is it of the correct type
+			if (RequestReader.GetObjectType() != type)
+				return null;
+
+			//Create and return an object from the request message
+			return ProtocolObjectFactory.CreateObject(RequestReader.GetObjectType(), RequestReader.CurrentObjectData);
+		}
+
+
+		public async Task<T> TryConsumeStreamObjectOfType<T>() where T : IProtocolObject
+		{
+			var result = await TryConsumeStreamObjectOfType(typeof(T)).ConfigureAwait(false);
+			return (T)result;
+		}
+
+		private async Task InitialiseCommunicationLayer()
 		{
             await Connection.Open();
 
@@ -80,17 +101,24 @@ namespace Neo4j.Driver.Tests.TestBackend
                     }
                     catch (NotSupportedException ex)
                     {
-                        // Get this sometimes during protocol handshake, like when connectiong with bolt:// on server
-                        // with TLS. Could be a dirty read in the driver or a write from TLS server that causes strange
-                        // version received..
                         await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
                         restartConnection = false;
                     }
-                    catch (IOException ex)
+					catch (JsonSerializationException ex)
+					{	
+						await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+						restartConnection = false;
+					}
+					catch (TestKitProtocolException ex)
+					{
+						Trace.WriteLine($"TestKit protocol exception detected: {ex.Message}");
+						restartConnection = true;
+					}
+					catch (IOException ex)
                     {
                         Trace.WriteLine($"Socket exception detected: {ex.Message}");    //Handled outside of the exception manager because there is no connection to reply on.
                         restartConnection = true;
-                    }
+                    }									
                     finally
                     {
                         if (restartConnection)

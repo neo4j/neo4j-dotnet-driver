@@ -8,29 +8,38 @@ namespace Neo4j.Driver.Tests.TestBackend
         
         public static ProtocolObjectManager ObjManager { get; set; }
        
-
-        public static IProtocolObject CreateObject(Protocol.Types type, string jsonString = null)
+		public static IProtocolObject CreateObject(Type type, string jsonString = null)
         {
-            var newObject = (IProtocolObject)CreateNewObjectOfType(Protocol.GetObjectType(type), jsonString, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+			Protocol.ValidateType(type);
 
-            if (newObject is null)
-                throw new Exception($"Trying to create a none supported object in the ProtocolObjectFactory of type {type}");
+            var newObject = (IProtocolObject)CreateNewObjectOfType(type, jsonString, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore,
+																												  MissingMemberHandling = MissingMemberHandling.Error });
+			ProcessNewObject(newObject);
 
-            newObject.SetObjectManager(ObjManager);
-            ObjManager.AddProtocolObject(newObject);
-            return newObject;
+			return newObject;
         }
+		
+		public static T CreateObject<T>(string jsonString = null) where T : IProtocolObject, new()
+		{
+			return (T)CreateObject(typeof(T), jsonString);			
+		}
 
-        static object CreateNewObjectOfType(Type newType, string jsonString, JsonSerializerSettings jsonSettings = null)
+        private static object CreateNewObjectOfType(Type newType, string jsonString, JsonSerializerSettings jsonSettings = null)
 		{
             var settings = jsonSettings ?? new JsonSerializerSettings();
             return string.IsNullOrEmpty(jsonString) ? Activator.CreateInstance(newType) : JsonConvert.DeserializeObject(jsonString, newType, jsonSettings);
         }
 
-        static T CreateNewObjectOfType<T>(string jsonString, JsonSerializerSettings jsonSettings = null) where T : new()
+        private static T CreateNewObjectOfType<T>(string jsonString, JsonSerializerSettings jsonSettings = null) where T : new()
 		{
             var settings = jsonSettings ?? new JsonSerializerSettings();  
             return string.IsNullOrEmpty(jsonString) ? new T() : JsonConvert.DeserializeObject<T>(jsonString, settings);
+		}
+
+		private static void ProcessNewObject(IProtocolObject newObject)
+		{
+			newObject.SetObjectManager(ObjManager);
+			ObjManager.AddProtocolObject(newObject);
 		}
     }
 }
