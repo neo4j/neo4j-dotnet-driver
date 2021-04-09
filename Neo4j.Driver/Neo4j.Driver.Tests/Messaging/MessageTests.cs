@@ -36,10 +36,11 @@ namespace Neo4j.Driver.Tests
         {
             public static IEnumerable<object[]> MessageData => new[]
             {
-				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "Empty" } }, ""), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'Empty\' } None" },
-				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "Null" } }, null), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'Null\' } None" },
-				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "adb" } }, "adb"), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'adb\' } \'adb\'" },
-                new object[] {new FailureMessage("CODE", "MESSAGE"), "FAILURE code=CODE, message=MESSAGE"},
+				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "Empty" } }, Bookmark.From("bookmark-1"), ""), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'Empty\' } { bookmarks, [bookmark-1] } None" },
+				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "Null" } }, Bookmark.From("bookmark-1"), null), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'Null\' } { bookmarks, [bookmark-1] } None" },
+				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "adb" } }, Bookmark.From("bookmark-1"), "adb"), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'adb\' } { bookmarks, [bookmark-1] } \'adb\'" },
+				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "adb" } }, null, "adb"), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'adb\' } [] \'adb\'" },
+				new object[] {new FailureMessage("CODE", "MESSAGE"), "FAILURE code=CODE, message=MESSAGE"},
                 new object[] {new V4_3.HelloMessage("mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}]"},
                 new object[] {new V4_3.HelloMessage("mydriver", null, new Dictionary<string, string>()), "HELLO [{user_agent, mydriver}, {routing, []}]"},
                 new object[] {new V4_3.HelloMessage("mydriver", null, null), "HELLO [{user_agent, mydriver}, {routing, NULL}]"},

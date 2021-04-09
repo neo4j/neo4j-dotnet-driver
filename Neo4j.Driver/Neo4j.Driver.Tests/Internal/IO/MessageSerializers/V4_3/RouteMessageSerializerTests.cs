@@ -44,18 +44,20 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
 		}
 
 		[Theory]
-		[InlineData("adb", "adb")]
-		[InlineData("", "None")]
-		[InlineData(null, "None")]
-		public void ShouldSerialize(string db, string serializedDb)
-		{	
+		[InlineData("adb", new[] { "Bookmark-1", "Bookmark-2" }, "adb")]
+		[InlineData("", new[] { "Bookmark-1", "Bookmark-2" }, "None")]
+		[InlineData(null, new[] { "Bookmark-1", "Bookmark-2" }, "None")]
+		[InlineData(null, new string[] { }, "None")]
+		public void ShouldSerialize(string db, string[] bm, string serializedDb)
+		{
+			var bookmarks = Bookmark.From(bm);
 			var writerMachine = CreateWriterMachine();
 			var writer = writerMachine.Writer();
 			var routingContext = new Dictionary<string, string> { {"ContextKey1", "ContextValue1"},
 																  {"ContextKey2", "ContextValue2"},
 																  {"ContextKey3", "ContextValue3"} };
 
-			writer.Write(new RouteMessage(routingContext, db));
+			writer.Write(new RouteMessage(routingContext, bookmarks, db));
 
 			var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
 			var reader = readerMachine.Reader();
@@ -68,6 +70,17 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
 			readMap.Should().HaveCount(3).And.Contain(new[] { new KeyValuePair<string, object>( "ContextKey1", "ContextValue1" ),
 															  new KeyValuePair<string, object>( "ContextKey2", "ContextValue2" ),
 															  new KeyValuePair<string, object>( "ContextKey3", "ContextValue3" ) });
+
+			if (bm.Length > 0)
+			{
+				reader.ReadListHeader().Should().Be(2);
+				reader.ReadString().Should().Be("Bookmark-1");
+				reader.ReadString().Should().Be("Bookmark-2");
+			}
+			else
+			{
+				reader.ReadListHeader().Should().Be(0);
+			}
 
 			if (!string.IsNullOrEmpty(db))
 			{
@@ -84,7 +97,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(new RouteMessage(null, "adb"));
+            writer.Write(new RouteMessage(null, null, "adb"));
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
@@ -103,7 +116,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(new RouteMessage(new Dictionary<string, string>(), "adb"));
+            writer.Write(new RouteMessage(new Dictionary<string, string>(), null, "adb"));
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
@@ -114,6 +127,55 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
 
             var readMap = reader.ReadMap();
 			readMap.Should().NotBeNull().And.HaveCount(0);
-        }
-    }
+
+			reader.ReadListHeader().Should().Be(0);     //read the empty bookmarks array
+
+			reader.PeekNextType().Should().Be(PackStream.PackType.String);  //read the db string
+			reader.ReadString().Should().Be("adb");
+		}
+
+
+		[Fact]
+		public void ShouldSerializeWithNullBookmark()
+		{
+			var writerMachine = CreateWriterMachine();
+			var writer = writerMachine.Writer();
+
+			writer.Write(new RouteMessage(null, null, "adb"));
+
+			var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+			var reader = readerMachine.Reader();
+
+			reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+			reader.ReadStructHeader().Should().Be(2);
+			reader.ReadStructSignature().Should().Be(BoltProtocolV4_3MessageFormat.MsgRoute);
+
+			var readMap = reader.ReadMap();
+			readMap.Should().NotBeNull().And.HaveCount(0);
+		}
+
+		[Fact]
+		public void ShouldSerializeWithEmptyBookmark()
+		{
+			var writerMachine = CreateWriterMachine();
+			var writer = writerMachine.Writer();
+
+			writer.Write(new RouteMessage(new Dictionary<string, string>(), Bookmark.From(Array.Empty<string>()), "adb"));
+
+			var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+			var reader = readerMachine.Reader();
+
+			reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+			reader.ReadStructHeader().Should().Be(2);
+			reader.ReadStructSignature().Should().Be(BoltProtocolV4_3MessageFormat.MsgRoute);
+
+			var readMap = reader.ReadMap();
+			readMap.Should().NotBeNull().And.HaveCount(0);
+
+			reader.ReadListHeader().Should().Be(0);     //read the empty bookmarks array
+
+			reader.PeekNextType().Should().Be(PackStream.PackType.String);	//read the db string
+			reader.ReadString().Should().Be("adb");
+		}
+	}
 }

@@ -23,29 +23,36 @@ using System.Text;
 namespace Neo4j.Driver.Internal.Messaging.V4_3
 {
 	internal class RouteMessage : IRequestMessage
-	{	
-        public IDictionary<string, string> Routing { get; set; }
-        public string DatabaseParam { get; set; }
+	{
+
+		public IDictionary<string, string> Routing { get;}
+		public Bookmark Bookmark { get; }
+		public string DatabaseParam { get; }
 
 
-        public RouteMessage(IDictionary<string, string> routingContext, string db)
+		public RouteMessage(IDictionary<string, string> routingContext, Bookmark bookmark, string db)
 		{
             Routing = routingContext ?? new Dictionary<string,string>();
+			Bookmark = bookmark ?? Bookmark.From(Array.Empty<string>());
             DatabaseParam = db;            
 		}
 
 		public override string ToString()   
 		{
-            string message = "ROUTE {";
+			string message = "ROUTE {";
 
-            foreach(var data in Routing)
+			foreach(var data in Routing)
 			{
                 message += $" \'{data.Key}\':\'{data.Value}\'";
-            }
+			}
 
-            message += " }";
+            message += " } ";
 
-            message += (!string.IsNullOrEmpty(DatabaseParam)) ? " \'" + DatabaseParam + "\'" : " None";
+			message += (Bookmark is not null && Bookmark.Values.Length > 0) 
+				? "{ bookmarks, " + Bookmark.Values.ToContentString() + " }" 
+				: Array.Empty<string>().ToContentString();
+			
+			message += (!string.IsNullOrEmpty(DatabaseParam)) ? " \'" + DatabaseParam + "\'" : " None";
 
             return message;
         }

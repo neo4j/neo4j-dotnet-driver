@@ -323,7 +323,7 @@ namespace Neo4j.Driver.Tests.Routing
         {
             var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
             {
-                MessagePair(new RouteMessage(routingContext, database), SuccessMessage(recordFields))                            
+                MessagePair(new RouteMessage(routingContext, bookmark, database), SuccessMessage(recordFields))                            
             };
 
             var serverInfo = new ServerInfo(new Uri("bolt://123:456")) { Version = "Neo4j/4.3.0" };
