@@ -53,7 +53,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
             var responseHandler = new RouteResponseHandler();
 
-            await connection.EnqueueAsync(new RouteMessage(connection.RoutingContext, database), responseHandler).ConfigureAwait(false);
+            await connection.EnqueueAsync(new RouteMessage(connection.RoutingContext, bookmark, database), responseHandler).ConfigureAwait(false);
 
             await connection.SyncAsync().ConfigureAwait(false);
             await connection.CloseAsync().ConfigureAwait(false);
