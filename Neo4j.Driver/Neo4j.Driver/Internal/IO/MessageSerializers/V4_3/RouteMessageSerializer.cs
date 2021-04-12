@@ -14,10 +14,10 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
         {
             var msg = value.CastOrThrow<RouteMessage>();
             
-            writer.WriteStructHeader(2, BoltProtocolV4_3MessageFormat.MsgRoute);
+            writer.WriteStructHeader(3, BoltProtocolV4_3MessageFormat.MsgRoute);
             writer.Write(msg.Routing);
 			writer.Write(msg.Bookmark.Values);
-            writer.Write(!string.IsNullOrEmpty(msg.DatabaseParam) ? msg.DatabaseParam : null);
-        }
+			writer.Write(string.IsNullOrEmpty(msg.DatabaseParam) ? null : msg.DatabaseParam);			
+		}
     }
 }
