@@ -63,7 +63,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
 			var reader = readerMachine.Reader();
 
 			reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-			reader.ReadStructHeader().Should().Be(2);
+			reader.ReadStructHeader().Should().Be(3);
 			reader.ReadStructSignature().Should().Be(BoltProtocolV4_3MessageFormat.MsgRoute);
 
 			var readMap = reader.ReadMap();
@@ -103,7 +103,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
             var reader = readerMachine.Reader();
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-            reader.ReadStructHeader().Should().Be(2);
+            reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be(BoltProtocolV4_3MessageFormat.MsgRoute);
 
             var readMap = reader.ReadMap();
@@ -122,7 +122,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
             var reader = readerMachine.Reader();
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-            reader.ReadStructHeader().Should().Be(2);
+            reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be(BoltProtocolV4_3MessageFormat.MsgRoute);
 
             var readMap = reader.ReadMap();
@@ -147,7 +147,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
 			var reader = readerMachine.Reader();
 
 			reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-			reader.ReadStructHeader().Should().Be(2);
+			reader.ReadStructHeader().Should().Be(3);
 			reader.ReadStructSignature().Should().Be(BoltProtocolV4_3MessageFormat.MsgRoute);
 
 			var readMap = reader.ReadMap();
@@ -166,7 +166,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
 			var reader = readerMachine.Reader();
 
 			reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-			reader.ReadStructHeader().Should().Be(2);
+			reader.ReadStructHeader().Should().Be(3);
 			reader.ReadStructSignature().Should().Be(BoltProtocolV4_3MessageFormat.MsgRoute);
 
 			var readMap = reader.ReadMap();
