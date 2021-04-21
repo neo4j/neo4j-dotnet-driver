@@ -57,12 +57,10 @@ namespace Neo4j.Driver.IntegrationTests
 			StringBuilder skipText = new StringBuilder();
 			
 			CheckStubServer(skipText);
-
 			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
 			
 			if (skipText.Length > 0)
 				Skip = skipText.ToString();
-			
         }
 
 		private void CheckStubServer(StringBuilder skipText)
@@ -192,6 +190,7 @@ namespace Neo4j.Driver.IntegrationTests
     /// </summary>
     public class RequireServerTheoryAttribute : TheoryAttribute
     {
+
 		public RequireServerTheoryAttribute(string versionText = null,
 			VersionComparison versionCompare = VersionComparison.EqualTo)
 		{
