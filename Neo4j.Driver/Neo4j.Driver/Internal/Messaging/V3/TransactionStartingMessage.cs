@@ -68,7 +68,7 @@ namespace Neo4j.Driver.Internal.Messaging.V3
                 // We don't add a key for Write, treating it as a default
                 case AccessMode.Read:
                     result.Add(AccessModeKey, "r");
-					break;
+					          break;
             }
 
             if (database != null)
