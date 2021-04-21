@@ -25,24 +25,48 @@ namespace Neo4j.Driver.IntegrationTests
 {
     public class RequireBoltStubServerFactAttribute : FactAttribute
     {
-        public RequireBoltStubServerFactAttribute()
-        {
-            if (!BoltkitHelper.StubServerAvailable())
-            {
-                Skip = BoltkitHelper.TestRequireBoltkit;
-            }
-        }
-    }
+		//Default server version required to run stub tests is anything less than 4.3. After this version testkit takes over the stub tests.
+		public RequireBoltStubServerFactAttribute(string versionText = "4.3.0",
+												  VersionComparison versionCompare = VersionComparison.LessThan)
+		{
+			StringBuilder skipText = new StringBuilder();
+
+			CheckStubServer(skipText);
+			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
+
+			Skip = skipText.ToString();
+		}
+
+		private void CheckStubServer(StringBuilder skipText)
+		{
+			if (!BoltkitHelper.StubServerAvailable())
+			{
+				skipText.Append(BoltkitHelper.TestRequireBoltkit);
+			}
+		}
+	}
 
     public class RequireBoltStubServerTheoryAttribute : TheoryAttribute
     {
-        public RequireBoltStubServerTheoryAttribute()
+		//Default server version required to run stub tests is anything less than 4.3. After this version testkit takes over the stub tests.
+        public RequireBoltStubServerTheoryAttribute(string versionText = "4.3.0",
+													VersionComparison versionCompare = VersionComparison.LessThan)
         {
-            if (!BoltkitHelper.StubServerAvailable())
-            {
-                Skip = BoltkitHelper.TestRequireBoltkit;
-            }
+			StringBuilder skipText = new StringBuilder();
+			
+			CheckStubServer(skipText);
+			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
+			
+			Skip = skipText.ToString();
         }
+
+		private void CheckStubServer(StringBuilder skipText)
+		{
+			if (!BoltkitHelper.StubServerAvailable())
+			{
+				 skipText.Append(BoltkitHelper.TestRequireBoltkit);
+			}
+		}
     }
 
     public enum VersionComparison
@@ -53,6 +77,50 @@ namespace Neo4j.Driver.IntegrationTests
         GreaterThanOrEqualTo,
         GreaterThan,
     }
+
+	public static class RequireServer
+	{ 
+		public static bool RequiredServerAvailable(string versionText, VersionComparison versionCompare, StringBuilder skipText)
+		{
+			var satisfy = true;
+
+			if (!string.IsNullOrWhiteSpace(versionText))
+			{
+				var version = ServerVersion.From(versionText);
+				var availableVersion = ServerVersion.From(BoltkitHelper.ServerVersion());
+
+				
+				switch (versionCompare)
+				{
+					case VersionComparison.LessThan:
+						satisfy = availableVersion.CompareTo(version) < 0;
+						break;
+					case VersionComparison.LessThanOrEqualTo:
+						satisfy = availableVersion.CompareTo(version) <= 0;
+						break;
+					case VersionComparison.EqualTo:
+						satisfy = availableVersion.CompareTo(version) == 0;
+						break;
+					case VersionComparison.GreaterThanOrEqualTo:
+						satisfy = availableVersion.CompareTo(version) >= 0;
+						break;
+					case VersionComparison.GreaterThan:
+						satisfy = availableVersion.CompareTo(version) > 0;
+						break;
+					default:
+						throw new ArgumentOutOfRangeException(nameof(versionCompare));
+				}
+
+				if (!satisfy)
+				{
+					skipText.AppendLine(
+						$"Test requires available server version {availableVersion} to be {versionCompare.ToString()} {version}.");
+				}
+			}
+
+			return satisfy;
+		}
+	}
 
 
     /// <summary>
@@ -70,41 +138,9 @@ namespace Neo4j.Driver.IntegrationTests
                 skipText.AppendLine(BoltkitHelper.TestRequireBoltkit);
             }
 
-            if (!string.IsNullOrWhiteSpace(versionText))
-            {
-                var version = ServerVersion.From(versionText);
-                var availableVersion = ServerVersion.From(BoltkitHelper.ServerVersion());
-                
-                var satisfy = false;
-                switch (versionCompare)
-                {
-                    case VersionComparison.LessThan:
-                        satisfy = availableVersion.CompareTo(version) < 0;
-                        break;
-                    case VersionComparison.LessThanOrEqualTo:
-                        satisfy = availableVersion.CompareTo(version) <= 0;
-                        break;
-                    case VersionComparison.EqualTo:
-                        satisfy = availableVersion.CompareTo(version) == 0;
-                        break;
-                    case VersionComparison.GreaterThanOrEqualTo:
-                        satisfy = availableVersion.CompareTo(version) >= 0;
-                        break;
-                    case VersionComparison.GreaterThan:
-                        satisfy = availableVersion.CompareTo(version) > 0;
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(versionCompare));
-                }
+			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
 
-                if (!satisfy)
-                {
-                    skipText.AppendLine(
-                        $"Test requires available server version {availableVersion} to be {versionCompare.ToString()} {version}.");
-                }
-            }
-
-            Skip = skipText.ToString();
+			Skip = skipText.ToString();
         }
     }
     
@@ -160,42 +196,9 @@ namespace Neo4j.Driver.IntegrationTests
                 skipText.AppendLine(BoltkitHelper.TestRequireBoltkit);
             }
 
-            if (!string.IsNullOrWhiteSpace(versionText))
-            {
-                var version = ServerVersion.From(versionText);
-                var availableVersion = ServerVersion.From(BoltkitHelper.ServerVersion());
-
-                var satisfy = false;
-                switch (versionCompare)
-                {
-                    case VersionComparison.LessThan:
-                        satisfy = availableVersion.CompareTo(version) < 0;
-                        break;
-                    case VersionComparison.LessThanOrEqualTo:
-                        satisfy = availableVersion.CompareTo(version) <= 0;
-                        break;
-                    case VersionComparison.EqualTo:
-                        satisfy = availableVersion.CompareTo(version) == 0;
-                        break;
-                    case VersionComparison.GreaterThanOrEqualTo:
-                        satisfy = availableVersion.CompareTo(version) >= 0;
-                        break;
-                    case VersionComparison.GreaterThan:
-                        satisfy = availableVersion.CompareTo(version) > 0;
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(versionCompare));
-                }
-
-                if (!satisfy)
-                {
-                    skipText.AppendLine(
-                        $"Test requires available server version {availableVersion} to be {versionCompare} {version}.");
-                }
-
-                Skip = skipText.ToString();
-            }
-        }
+			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
+			Skip = skipText.ToString();
+		}
     }
 
     /// <summary>
@@ -213,41 +216,9 @@ namespace Neo4j.Driver.IntegrationTests
                 skipText.AppendLine(BoltkitHelper.TestRequireBoltkit);
             }
 
-            if (!string.IsNullOrWhiteSpace(versionText))
-            {
-                var version = ServerVersion.From(versionText);
-                var availableVersion = ServerVersion.From(BoltkitHelper.ServerVersion());
-
-                var satisfy = false;
-                switch (versionCompare)
-                {
-                    case VersionComparison.LessThan:
-                        satisfy = availableVersion.CompareTo(version) < 0;
-                        break;
-                    case VersionComparison.LessThanOrEqualTo:
-                        satisfy = availableVersion.CompareTo(version) <= 0;
-                        break;
-                    case VersionComparison.EqualTo:
-                        satisfy = availableVersion.CompareTo(version) == 0;
-                        break;
-                    case VersionComparison.GreaterThanOrEqualTo:
-                        satisfy = availableVersion.CompareTo(version) >= 0;
-                        break;
-                    case VersionComparison.GreaterThan:
-                        satisfy = availableVersion.CompareTo(version) > 0;
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(versionCompare));
-                }
-
-                if (!satisfy)
-                {
-                    skipText.AppendLine(
-                        $"Test requires available server version {availableVersion} to be {versionCompare.ToString()} {version}.");
-                }
-            }
-
-            Skip = skipText.ToString();
+			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
+			
+			Skip = skipText.ToString();
         }
     }
 
