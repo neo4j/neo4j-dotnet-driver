@@ -32,12 +32,11 @@ namespace Neo4j.Driver.IntegrationTests
 			StringBuilder skipText = new StringBuilder();
 
 			CheckStubServer(skipText);
-			
-			if (!RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText))
-				Skip = skipText.ToString();
-			
 
-			Skip = skipText.ToString();
+			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
+			
+			if (skipText.Length > 0) 
+				Skip = skipText.ToString();
 		}
 
 		private void CheckStubServer(StringBuilder skipText)
@@ -59,10 +58,11 @@ namespace Neo4j.Driver.IntegrationTests
 			
 			CheckStubServer(skipText);
 
-			if (!RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText))
+			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
+			
+			if (skipText.Length > 0)
 				Skip = skipText.ToString();
-
-			Skip = skipText.ToString();
+			
         }
 
 		private void CheckStubServer(StringBuilder skipText)
@@ -143,11 +143,11 @@ namespace Neo4j.Driver.IntegrationTests
                 skipText.AppendLine(BoltkitHelper.TestRequireBoltkit);
             }
 
-			if (!RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText))
-				Skip = skipText.ToString();
+			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
 
-			Skip = skipText.ToString();
-        }
+			if (skipText.Length > 0)
+				Skip = skipText.ToString();
+		}
     }
     
     public class RequireEnterpriseEdition : RequireServerFactAttribute
@@ -202,7 +202,9 @@ namespace Neo4j.Driver.IntegrationTests
 				skipText.AppendLine(BoltkitHelper.TestRequireBoltkit);
 			}
 
-			if (!RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText))
+			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
+
+			if (skipText.Length > 0)
 				Skip = skipText.ToString();
 		}
     }
@@ -222,11 +224,11 @@ namespace Neo4j.Driver.IntegrationTests
                 skipText.AppendLine(BoltkitHelper.TestRequireBoltkit);
             }
 
-			if (!RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText))
-				Skip = skipText.ToString();
+			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
 
-			Skip = skipText.ToString();
-        }
+			if (skipText.Length > 0)
+				Skip = skipText.ToString();
+		}
     }
 
     /// <summary>
