@@ -70,7 +70,8 @@ namespace Neo4j.Driver.Internal.Messaging.V3
                     result.Add(AccessModeKey, "r");
                     break;
                 case AccessMode.Write:
-                    break;
+					result.Add(AccessModeKey, "w");
+					break;
             }
 
             if (database != null)
