@@ -32,7 +32,10 @@ namespace Neo4j.Driver.IntegrationTests
 			StringBuilder skipText = new StringBuilder();
 
 			CheckStubServer(skipText);
-			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
+			
+			if (!RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText))
+				Skip = skipText.ToString();
+			
 
 			Skip = skipText.ToString();
 		}
@@ -55,8 +58,10 @@ namespace Neo4j.Driver.IntegrationTests
 			StringBuilder skipText = new StringBuilder();
 			
 			CheckStubServer(skipText);
-			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
-			
+
+			if (!RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText))
+				Skip = skipText.ToString();
+
 			Skip = skipText.ToString();
         }
 
@@ -138,7 +143,8 @@ namespace Neo4j.Driver.IntegrationTests
                 skipText.AppendLine(BoltkitHelper.TestRequireBoltkit);
             }
 
-			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
+			if (!RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText))
+				Skip = skipText.ToString();
 
 			Skip = skipText.ToString();
         }
@@ -186,18 +192,18 @@ namespace Neo4j.Driver.IntegrationTests
     /// </summary>
     public class RequireServerTheoryAttribute : TheoryAttribute
     {
-        public RequireServerTheoryAttribute(string versionText = null,
-            VersionComparison versionCompare = VersionComparison.EqualTo)
-        {
-            var skipText = new StringBuilder();
+		public RequireServerTheoryAttribute(string versionText = null,
+			VersionComparison versionCompare = VersionComparison.EqualTo)
+		{
+			var skipText = new StringBuilder();
 
-            if (!BoltkitHelper.ServerAvailable())
-            {
-                skipText.AppendLine(BoltkitHelper.TestRequireBoltkit);
-            }
+			if (!BoltkitHelper.ServerAvailable())
+			{
+				skipText.AppendLine(BoltkitHelper.TestRequireBoltkit);
+			}
 
-			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
-			Skip = skipText.ToString();
+			if (!RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText))
+				Skip = skipText.ToString();
 		}
     }
 
@@ -216,8 +222,9 @@ namespace Neo4j.Driver.IntegrationTests
                 skipText.AppendLine(BoltkitHelper.TestRequireBoltkit);
             }
 
-			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
-			
+			if (!RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText))
+				Skip = skipText.ToString();
+
 			Skip = skipText.ToString();
         }
     }
