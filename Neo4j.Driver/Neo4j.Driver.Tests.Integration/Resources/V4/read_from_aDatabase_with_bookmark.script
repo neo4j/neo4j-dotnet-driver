@@ -3,7 +3,7 @@
 !: AUTO RESET
 !: AUTO GOODBYE
 
-C: RUN "MATCH (n) RETURN n.name" {} {"mode": "r", "db": "aDatabase", "bookmarks": ["system:1111", "aDatabase:5555"]}
+C: RUN "MATCH (n) RETURN n.name" {} {"bookmarks": ["system:1111", "aDatabase:5555"], "db": "aDatabase"}
    PULL {"n": 1000}
 S: SUCCESS {"fields": ["n.name"]}
    RECORD ["Bob"]
