@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\common.props" />
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
-    <PackageId>Neo4j.Driver.Simple$(PackageIdSuffix)</PackageId>
+    <TargetFrameworks>netstandard2.0;net5.0</TargetFrameworks>
+	<PackageId>Neo4j.Driver.Simple$(PackageIdSuffix)</PackageId>
     <Authors>Neo4j</Authors>
     <Description>Synchronous extensions for the official .NET driver.</Description>
     <Copyright>Copyright 2002-2020</Copyright>
@@ -21,6 +21,9 @@
     <RootNamespace>Neo4j.Driver</RootNamespace>
     <Version>4.3.0</Version>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="5.0.0" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />
   </ItemGroup>
