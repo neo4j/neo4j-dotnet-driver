@@ -108,12 +108,12 @@ namespace Neo4j.Driver.IntegrationTests.Routing
             var session = driver.AsyncSession(ForDatabase("system"));
             try
             {
-				await session.WriteTransactionAsync(async txc =>
-				{
-					var result = await txc.RunAsync($"CREATE DATABASE {name}");
+                await session.WriteTransactionAsync(async txc =>
+                {
+                  var result = await txc.RunAsync($"CREATE DATABASE {name}");
 
-					while (await result.FetchAsync()) ;
-				});
+                  while (await result.FetchAsync()) ;
+                });
 
                 return session.LastBookmark;
             }
