@@ -54,8 +54,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
         {
             var bookmark = await CreateDatabase(_driver, "foo");
 
-			Thread.Sleep(1000);
-            try
+			try
             {
                 await VerifyDatabaseNameOnSummaryTxFunc("foo", "foo", bookmark);
             }
@@ -113,7 +112,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
             var session = driver.AsyncSession(ForDatabase("system"));
             try
             {
-                await session.WriteTransactionAsync(txc => txc.RunAndConsumeAsync($"CREATE DATABASE {name}"));
+                await session.WriteTransactionAsync(async txc => await txc.RunAndConsumeAsync($"CREATE DATABASE {name}"));
                 return session.LastBookmark;
             }
             finally
