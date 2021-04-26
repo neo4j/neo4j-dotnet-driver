@@ -54,7 +54,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
         {
             var bookmark = await CreateDatabase(_driver, "foo");
 
-			try
+            try
             {
                 await VerifyDatabaseNameOnSummaryTxFunc("foo", "foo", bookmark);
             }
