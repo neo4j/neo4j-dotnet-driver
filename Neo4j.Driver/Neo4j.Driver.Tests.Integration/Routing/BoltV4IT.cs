@@ -22,6 +22,7 @@ using Neo4j.Driver.TestUtil;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
 using static Neo4j.Driver.SessionConfigBuilder;
+using System.Threading;
 
 namespace Neo4j.Driver.IntegrationTests.Routing
 {
@@ -52,6 +53,8 @@ namespace Neo4j.Driver.IntegrationTests.Routing
         public async Task ShouldReturnDatabaseInfoForDatabaseInTxFunc()
         {
             var bookmark = await CreateDatabase(_driver, "foo");
+
+			Thread.Sleep(1000);
             try
             {
                 await VerifyDatabaseNameOnSummaryTxFunc("foo", "foo", bookmark);
