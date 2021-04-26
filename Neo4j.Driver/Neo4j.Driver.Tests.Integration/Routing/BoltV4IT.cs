@@ -92,11 +92,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
 
             try
             {
-                var summary = await session.ReadTransactionAsync(async txc =>
-                {
-                    var cursor = await txc.RunAsync("RETURN 1");
-                    return await cursor.ConsumeAsync();
-                });
+				var summary = await session.ReadTransactionAsync(async txc => { return await txc.RunAndConsumeAsync("RETURN 1"); });
 
                 summary.Database.Should().NotBeNull();
                 summary.Database.Name.Should().Be(expected);
@@ -126,7 +122,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
             var session = driver.AsyncSession(o => o.WithDatabase("system").WithBookmarks(bookmark));
             try
             {
-                await session.WriteTransactionAsync(txc => txc.RunAndConsumeAsync($"DROP DATABASE {name}"));
+                await session.WriteTransactionAsync(async txc => await txc.RunAndConsumeAsync($"DROP DATABASE {name}"));
             }
             finally
             {
