@@ -49,7 +49,8 @@ namespace Neo4j.Driver.IntegrationTests.Routing
             await VerifyDatabaseNameOnSummaryTxFunc("neo4j", "neo4j");
         }
 
-        [RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]
+        //[RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]
+		[RequireClusterFact(Skip = "Requires server fix")]
 		public async Task ShouldReturnDatabaseInfoForDatabaseInTxFunc()
         {
             var bookmark = await CreateDatabase(_driver, "foo");
@@ -64,7 +65,8 @@ namespace Neo4j.Driver.IntegrationTests.Routing
             }
         }
 
-		[RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]
+		//[RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]
+		[RequireClusterFact(Skip = "Requires server fix")]
 		public async Task ShouldReturnDatabaseInfoForDatabaseInAutoCommit()
 		{	
 			string dbname = "foo"; 
