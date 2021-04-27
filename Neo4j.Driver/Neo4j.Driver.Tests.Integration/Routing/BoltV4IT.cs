@@ -50,7 +50,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
         }
 
         [RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]
-        public async Task ShouldReturnDatabaseInfoForDatabaseInTxFunc()
+		public async Task ShouldReturnDatabaseInfoForDatabaseInTxFunc()
         {
             var bookmark = await CreateDatabase(_driver, "foo");
 
@@ -64,7 +64,49 @@ namespace Neo4j.Driver.IntegrationTests.Routing
             }
         }
 
-        [RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]
+		[RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]
+		public async Task ShouldReturnDatabaseInfoForDatabaseInAutoCommit()
+		{	
+			string dbname = "foo"; 
+			var session = _driver.AsyncSession(ForDatabase("system"));
+			Bookmark bookmark;
+
+			try
+			{
+				
+				await session.RunAsync(new Query($"CREATE DATABASE { dbname }"));
+				bookmark = session.LastBookmark;
+			}
+			finally
+			{
+				await session.CloseAsync();
+			}
+
+
+			session = _driver.AsyncSession(o =>
+			{
+				if (!string.IsNullOrEmpty(dbname))
+				{
+					o.WithDatabase(dbname);
+				}
+
+				o.WithBookmarks(bookmark ?? Bookmark.Empty);
+			});
+
+			try
+			{
+				var result = await session.RunAsync(new Query("RETURN 1"));
+				var summary = await result.ConsumeAsync();
+				summary.Database.Should().NotBeNull();
+				summary.Database.Name.Should().Be(dbname);
+			}
+			finally
+			{
+				await session.CloseAsync();
+			}
+		}
+
+		[RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]
         public void ShouldThrowForNonExistentDatabaseInTxFunc()
         {
             this.Awaiting(_ => VerifyDatabaseNameOnSummaryTxFunc("bar", "bar")).Should().Throw<ClientException>()
