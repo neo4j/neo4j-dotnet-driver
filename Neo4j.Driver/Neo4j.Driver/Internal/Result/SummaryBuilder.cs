@@ -101,8 +101,26 @@ namespace Neo4j.Driver.Internal.Result
             Address = $"{uri.Host}:{uri.Port}";
         }
 
+		public string ProtocolVersion { get; set; }
+
+		public string Agent { get; set; }
+
         public string Address { get; }
-        public string Version { get; set; }
+
+		string _version;
+        public string Version 
+		{ 
+			get 
+			{
+				Console.Error.WriteLine("Warning: ServerInfo.Version is depricated from driver version 4.3 onwards and will be removed in 5.0. " +
+										"Please use ServerInfo.ProtocolVersion and ServerInfo.Agent instead.");
+				return _version;
+			}
+			set
+			{
+				_version = value;
+			} 
+		}
 
         public override string ToString()
         {

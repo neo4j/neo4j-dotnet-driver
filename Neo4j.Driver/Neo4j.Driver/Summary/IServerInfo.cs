@@ -25,11 +25,25 @@ namespace Neo4j.Driver
         /// Get the address of the server
         /// </summary>
         string Address { get; }
+
+		/// <summary>
+		/// Get the protocol version
+		/// </summary>
+		string ProtocolVersion { get; }
+
+		/// <summary>
+		/// Get the entire server agent string
+		/// </summary>
+		string Agent { get; }
+
         /// <summary>
         /// Get the version of Neo4j running at the server.
         /// </summary>
         /// <remarks>
         /// Introduced since Neo4j 3.1. Default to <c>null</c> if not supported by server
+		/// Deprecated since Neo4j 4.3.
+		/// Will be removed in Neo4j 5.0.
+		/// Please use IServerInfo.Agent, IServerInfo.ProtocolVersion or call the dbms.components procedure instead.
         /// </remarks>
         string Version { get; }
     }
