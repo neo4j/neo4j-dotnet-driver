@@ -25,16 +25,16 @@ namespace Neo4j.Driver.Tests
     public class SummaryBuilderTests
     {
         [Theory]
-        [InlineData("bolt://localhost:7687", "1.2.3", "ServerInfo{Address=localhost:7687, Version=1.2.3}")]
-        [InlineData("bolt://127.0.0.1:7687", "1.2.3", "ServerInfo{Address=127.0.0.1:7687, Version=1.2.3}")]
+        [InlineData("bolt://localhost:7687", "1.2.3", "ServerInfo{Address=localhost:7687, Agent=1.2.3, ProtocolVersion=1.2}")]
+        [InlineData("bolt://127.0.0.1:7687", "1.2.3", "ServerInfo{Address=127.0.0.1:7687, Agent=1.2.3, ProtocolVersion=1.2}")]
         // If no port provided, it will be port=-1. This should never happen as we always default to 7687 if no port provided.
-        [InlineData("bolt://localhost", "1.2.3", "ServerInfo{Address=localhost:-1, Version=1.2.3}")]
-        [InlineData("https://neo4j.com:9999", "1.2.3", "ServerInfo{Address=neo4j.com:9999, Version=1.2.3}")]
+        [InlineData("bolt://localhost", "1.2.3", "ServerInfo{Address=localhost:-1, Agent=1.2.3, ProtocolVersion=1.2}")]
+        [InlineData("https://neo4j.com:9999", "1.2.3", "ServerInfo{Address=neo4j.com:9999, Agent=1.2.3, ProtocolVersion=1.2}")]
         public void CreateServerInfoCorrectly(string uriStr, string version, string expected)
         {
             var uri = new Uri(uriStr);
             var serverInfo = new ServerInfo(uri);
-            serverInfo.Version = version;
+            serverInfo.Update(new Internal.Protocol.BoltProtocolVersion(1, 2), version);
 
             serverInfo.ToString().Should().Be(expected);
         }

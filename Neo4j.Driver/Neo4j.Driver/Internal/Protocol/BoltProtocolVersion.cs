@@ -218,6 +218,11 @@ namespace Neo4j.Driver.Internal.Protocol
             //Be aware of perfomance of Tuple instantiation if using a lot of BoltProtocolVersion in containers.
             return Tuple.Create(MajorVersion, MinorVersion).GetHashCode();
         }
+
+		public override string ToString()
+		{
+			return $"{MajorVersion}.{MinorVersion}";
+		}
     }
 
 }

@@ -18,7 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Neo4j.Driver;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.Result
 {
@@ -101,13 +101,39 @@ namespace Neo4j.Driver.Internal.Result
             Address = $"{uri.Host}:{uri.Port}";
         }
 
+		public void Update(BoltProtocolVersion boltVersion, string agent)
+		{
+			Protocol = boltVersion;
+			Agent = agent;
+		}
+
+		private BoltProtocolVersion Protocol { get; set; } = new BoltProtocolVersion(0, 0);
+
+		public string ProtocolVersion { get { return Protocol.ToString(); } }
+
+		public string Agent { get; set; }
+
         public string Address { get; }
-        public string Version { get; set; }
+
+        public string Version 
+		{ 
+			get 
+			{
+				Console.Error.WriteLine("Warning: ServerInfo.Version is depricated from driver version 4.3 onwards and will be removed in 5.0. " +
+										"Please use ServerInfo.ProtocolVersion and ServerInfo.Agent instead.");
+				return Agent;
+			}
+			set
+			{
+				Agent = value;
+			} 
+		}
 
         public override string ToString()
         {
             return $"{GetType().Name}{{{nameof(Address)}={Address}, " +
-                   $"{nameof(Version)}={Version}}}";
+                   $"{nameof(Agent)}={Agent}, " +
+				   $"{nameof(ProtocolVersion)}={ProtocolVersion}}}";
         }
     }
 

@@ -70,9 +70,9 @@ namespace Neo4j.Driver.Tests.TestBackend
 			return await Task.FromResult<IRecord>(null);
 		}
 
-		public async Task ConsumeResults()
+		public async Task<IResultSummary> ConsumeResults()
 		{
-			await Results.ConsumeAsync().ConfigureAwait(false);
+			return await Results.ConsumeAsync().ConfigureAwait(false);
 		}
 	}
 }

@@ -9,20 +9,29 @@ namespace Neo4j.Driver.Tests.TestBackend
 		public ResultConsumeType data { get; set; } = new ResultConsumeType();
 		[JsonIgnore]
 		public IRecord Records { get; set; }
+		[JsonIgnore]
+		public IResultSummary Summary { get; set; }
 
 		public class ResultConsumeType
 		{
-			public string resultId { get; set; }
+			public string resultId { get; set; }			
 		}
 
 		public override async Task Process()
 		{
-			await ((SessionResult)ObjManager.GetObject(data.resultId)).ConsumeResults().ConfigureAwait(false);
+			Summary = await ((SessionResult)ObjManager.GetObject(data.resultId)).ConsumeResults().ConfigureAwait(false);
 		}
 
 		public override string Respond()
 		{
-			return new ProtocolResponse("Summary", (object)null).Encode();
+			return new ProtocolResponse("Summary", new
+			{
+				serverInfo = new
+				{
+					protocolVersion = Summary.Server.ProtocolVersion,
+					agent = Summary.Server.Agent
+				}
+			}).Encode();
 		}
 	}
 }

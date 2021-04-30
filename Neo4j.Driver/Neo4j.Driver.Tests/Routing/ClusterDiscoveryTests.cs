@@ -292,7 +292,7 @@ namespace Neo4j.Driver.Tests.Routing
                 MessagePair(PullAll, SuccessMessage())
             };
 
-            var serverInfo = new ServerInfo(new Uri("bolt://123:456")) {Version = "Neo4j/3.2.2"};
+            var serverInfo = new ServerInfo(new Uri("bolt://123:456")) { Agent = "Neo4j/3.2.2"};
 
             return new MockedConnection(AccessMode.Write, pairs, serverInfo).MockConn;
         }
@@ -314,7 +314,7 @@ namespace Neo4j.Driver.Tests.Routing
                 MessagePair(new PullMessage(PullMessage.All), SuccessMessage())
             };
 
-            var serverInfo = new ServerInfo(new Uri("bolt://123:456")) {Version = "Neo4j/4.0.0"};
+            var serverInfo = new ServerInfo(new Uri("bolt://123:456")) { Agent = "Neo4j/4.0.0"};
 
             return new MockedConnection(AccessMode.Read, pairs, serverInfo).MockConn;
         }
@@ -326,7 +326,7 @@ namespace Neo4j.Driver.Tests.Routing
                 MessagePair(new RouteMessage(routingContext, bookmark, database), SuccessMessage(recordFields))                            
             };
 
-            var serverInfo = new ServerInfo(new Uri("bolt://123:456")) { Version = "Neo4j/4.3.0" };
+            var serverInfo = new ServerInfo(new Uri("bolt://123:456")) { Agent = "Neo4j/4.3.0" };
 
             return new MockedConnection(AccessMode.Read, pairs, serverInfo, routingContext).MockConn;
         }
@@ -415,11 +415,11 @@ namespace Neo4j.Driver.Tests.Routing
                 var protocol = new BoltProtocolV3();
                 if (serverInfo != null)
                 {
-                    if (ServerVersion.From(serverInfo.Version) >= new ServerVersion(4, 0, 0))                        
+                    if (ServerVersion.From(serverInfo.Agent) >= new ServerVersion(4, 0, 0))                        
                     {
                         protocol = new BoltProtocolV4_0();
                     }
-                    if(ServerVersion.From(serverInfo.Version) >= new ServerVersion(4, 3, 0))
+                    if(ServerVersion.From(serverInfo.Agent) >= new ServerVersion(4, 3, 0))
 					{
                         protocol = new BoltProtocolV4_3(routingContext);
                     }
@@ -429,7 +429,7 @@ namespace Neo4j.Driver.Tests.Routing
                 else
                 {
                     _mockConn.Setup(x => x.Server)
-                        .Returns(new ServerInfo(new Uri("bolt://123:456")) {Version = "Neo4j/3.5.0"});
+                        .Returns(new ServerInfo(new Uri("bolt://123:456")) { Agent = "Neo4j/3.5.0"});
                 }
 
                 _mockConn.Setup(x => x.BoltProtocol).Returns(protocol);
