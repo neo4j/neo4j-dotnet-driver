@@ -82,7 +82,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4_3
             responseHandler.OnSuccess(new[] { ServerVersionCollectorTests.TestMetadata, ConnectionIdCollectorTests.TestMetadata }.ToDictionary());
 
             //Ensure it is using the protocol version and not the version sent in the metadata
-            conn.Server.Version.Should().ContainAll("Neo4j/" + MajorVersion + "." + MinorVersion + ".0");
+            conn.Server.Agent.Should().ContainAll("Neo4j/" + MajorVersion + "." + MinorVersion + ".0");
         }
     }
 }

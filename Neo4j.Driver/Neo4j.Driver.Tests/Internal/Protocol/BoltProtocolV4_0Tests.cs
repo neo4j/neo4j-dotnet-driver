@@ -230,7 +230,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var mockConnection = new Mock<IConnection>();
                 var serverInfoMock = new Mock<IServerInfo>();
 
-                serverInfoMock.Setup(m => m.Version).Returns(version);
+                serverInfoMock.Setup(m => m.Agent).Returns(version);
                 mockConnection.Setup(m => m.Server).Returns(serverInfoMock.Object);
                 mockConnection.Setup(m => m.BoltProtocol).Returns(V4);
                 mockConnection.Setup(m => m.RoutingContext).Returns(context);

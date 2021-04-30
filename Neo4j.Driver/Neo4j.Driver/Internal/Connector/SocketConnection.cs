@@ -205,8 +205,9 @@ namespace Neo4j.Driver.Internal.Connector
         {
             if (Server is ServerInfo info)
             {
-                info.Version = newVersion.ToString();
-            }
+				info.Update(new BoltProtocolVersion(newVersion.Major, newVersion.Minor), 
+							newVersion.ToString());				
+			}
             else
             {
                 throw new InvalidOperationException(

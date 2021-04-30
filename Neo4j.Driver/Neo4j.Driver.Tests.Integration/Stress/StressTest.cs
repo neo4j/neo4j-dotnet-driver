@@ -618,7 +618,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                 {
                     if (connections.Count > minimalConnCount && connections.TryDequeue(out var conn))
                     {
-                        if (conn.Server.Version != null)
+                        if (conn.Server.Agent != null)
                         {
                             await conn.DestroyAsync();
                             _output.WriteLine($"Terminator killed connection {conn} towards server {conn.Server}");
