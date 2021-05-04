@@ -25,6 +25,7 @@ using Neo4j.Driver.Internal.MessageHandling.Metadata;
 using Neo4j.Driver.Internal.Util;
 using Xunit;
 using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.MessageHandling.V4_2
 {
@@ -72,10 +73,13 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4_2
         }
 
         [Fact]
-        public void ShouldUseProtocolVersionWhenPassedMetadata()
+        public async Task ShouldUseProtocolVersionWhenPassedMetadata()
         {
             var mockClient = new Mock<ISocketClient>();
-            var conn = new SocketConnection(mockClient.Object, AuthTokens.None, ConnectionSettings.DefaultUserAgent, new Mock<ILogger>().Object, new ServerInfo(new Uri("http://neo4j.com")));
+			mockClient.Setup(x => x.ConnectAsync(null)).Returns(Task.FromResult(new Mock<IBoltProtocol>().Object));
+
+			var conn = new SocketConnection(mockClient.Object, AuthTokens.None, ConnectionSettings.DefaultUserAgent, new Mock<ILogger>().Object, new ServerInfo(new Uri("http://neo4j.com")));
+			await conn.InitAsync();
 
             var responseHandler = new HelloResponseHandler(conn, new Protocol.BoltProtocolVersion(MajorVersion, MinorVersion));
 
