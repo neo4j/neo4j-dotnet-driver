@@ -8,6 +8,13 @@ namespace Neo4j.Driver.Tests.TestBackend
 {
 	internal class GetFeatures : IProtocolObject
 	{
+		public GetFeaturesType data { get; set; } = new GetFeaturesType();
+
+		public class GetFeaturesType
+		{
+
+		}
+
 		public override async Task Process()
 		{
 			await Task.CompletedTask;

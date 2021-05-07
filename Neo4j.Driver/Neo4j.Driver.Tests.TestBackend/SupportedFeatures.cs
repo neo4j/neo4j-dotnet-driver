@@ -8,11 +8,11 @@ namespace Neo4j.Driver.Tests.TestBackend
 {
 	internal static class SupportedFeatures
 	{
-		public static List<string> FeaturesList { get; }
+		public static List<string> FeaturesList { get; } = new List<string>();
 
 		static SupportedFeatures()
 		{
-			FeaturesList.Add("AutorizationExpiredTreament");
+			FeaturesList.Add("AuthorizationExpiredTreatment");
 		}
 	}
 }
