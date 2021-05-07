@@ -68,21 +68,24 @@ namespace Neo4j.Driver.Internal.Connector
         /// </summary>
         internal bool HasUnrecoverableError { private set; get; }
 
-        public override Task OnErrorAsync(Exception error)
+        public override async Task OnErrorAsync(Exception error)
         {
             if (!error.IsRecoverableError())
             {
                 HasUnrecoverableError = true;
             }
+			
+			if (error is Neo4jException)
+            {	
+				if (error.IsAuthorizationError())
+					await CloseAsync();
 
-            if (error is Neo4jException)
-            {
-                return Task.FromException(error);
+				await Task.FromException(error);
             }
 
-            if (error.IsConnectionError())
+			if (error.IsConnectionError())
             {
-                return Task.FromException(new ServiceUnavailableException(
+                await Task.FromException(new ServiceUnavailableException(
                     $"Connection with the server breaks due to {error.GetType().Name}: {error.Message} " +
                     "Please ensure that your database is listening on the correct host and port " +
                     "and that you have compatible encryption settings both on Neo4j server and driver. " +
@@ -90,7 +93,7 @@ namespace Neo4j.Driver.Internal.Connector
             }
             else
             {
-                return Task.FromException(error);
+                await Task.FromException(error);
             }
         }
 

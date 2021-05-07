@@ -25,9 +25,9 @@ namespace Neo4j.Driver.Internal.Routing
     internal class ClusterConnection : DelegatedConnection
     {
         private readonly Uri _uri;
-        private readonly IClusterErrorHandler _errorHandler;
+        private readonly IErrorHandler _errorHandler;
 
-        public ClusterConnection(IConnection connection, Uri uri, IClusterErrorHandler errorHandler)
+        public ClusterConnection(IConnection connection, Uri uri, IErrorHandler errorHandler)
             : base(connection)
         {
             _uri = uri;
@@ -42,8 +42,11 @@ namespace Neo4j.Driver.Internal.Routing
                 throw new SessionExpiredException(
                     $"Server at {_uri} is no longer available due to error: {error.Message}.", error);
             }
-
-            if (error.IsDatabaseUnavailableError())
+			else if(error is AuthorizationException)
+			{
+				await _errorHandler.OnAuthorizationErrorAsync(error);
+			}
+            else if (error.IsDatabaseUnavailableError())
             {
                 await _errorHandler.OnConnectionErrorAsync(_uri, Database, error).ConfigureAwait(false);
             }
