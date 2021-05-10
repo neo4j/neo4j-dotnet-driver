@@ -119,7 +119,7 @@ namespace Neo4j.Driver.Internal.Protocol
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V3.RunResponseHandler>(),
                         PullAllMessage.PullAll,
                         It.IsAny<V3.PullResponseHandler>()), Times.Once);
-                mockConn.Verify(x => x.SendAsync());
+                mockConn.Verify(x => x.SyncAsync());
             }
 
             [Fact]
@@ -190,36 +190,7 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         public class BeginTransactionAsyncMethod
-        {
-            [Fact]
-            public async Task ShouldNotSyncIfBookmarkIsNull()
-            {
-                var mockConn = NewConnectionWithMode();
-                var V3 = new BoltProtocolV3();
-
-                await V3.BeginTransactionAsync(mockConn.Object, null, null, null);
-
-                mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V3.BeginResponseHandler>(), null, null),
-                    Times.Once);
-                mockConn.Verify(x => x.SyncAsync(), Times.Never);
-            }
-
-            [Fact]
-            public async Task ShouldNotSyncIfInvalidBookmarkGiven()
-            {
-                var mockConn = NewConnectionWithMode();
-                var bookmark = Bookmark.From((string) null);
-                var V3 = new BoltProtocolV3();
-
-                await V3.BeginTransactionAsync(mockConn.Object, null, bookmark, null);
-
-                mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V3.BeginResponseHandler>(), null, null),
-                    Times.Once);
-                mockConn.Verify(x => x.SyncAsync(), Times.Never);
-            }
-
+        {   
             [Fact]
             public async Task ShouldSyncIfValidBookmarkGiven()
             {
