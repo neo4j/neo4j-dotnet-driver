@@ -79,7 +79,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V4.RunResponseHandler>(), null,
                         null), Times.Once);
-                mockConn.Verify(x => x.SyncAsync());
+                mockConn.Verify(x => x.SendAsync());
             }
 
             [Fact]
@@ -103,7 +103,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V4.RunResponseHandler>(),
                         It.IsAny<PullMessage>(), It.IsAny<V4.PullResponseHandler>()), Times.Once);
-                mockConn.Verify(x => x.SyncAsync());
+                mockConn.Verify(x => x.SendAsync());
             }
 
             [Fact]
