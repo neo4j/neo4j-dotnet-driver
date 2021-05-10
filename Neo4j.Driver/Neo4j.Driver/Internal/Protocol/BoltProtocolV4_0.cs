@@ -62,18 +62,17 @@ namespace Neo4j.Driver.Internal.Protocol
                 bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V4);
         }
 
-        public override async Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark,
-            TransactionConfig config)
+        public override async Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark, TransactionConfig config)
         {
-            await connection.EnqueueAsync(
-                    new BeginMessage(database, bookmark, config?.Timeout, config?.Metadata,
-                        connection.GetEnforcedAccessMode()),
-                    new V3.BeginResponseHandler())
-                .ConfigureAwait(false);
-            if (bookmark != null && bookmark.Values.Any())
-            {
-                await connection.SyncAsync().ConfigureAwait(false);
-            }
+			await connection.EnqueueAsync(	new BeginMessage(database, 
+														   bookmark, 
+														   config?.Timeout, 
+														   config?.Metadata, 
+														   connection.GetEnforcedAccessMode()), 
+											new V3.BeginResponseHandler()
+										 ).ConfigureAwait(false);
+
+            await connection.SyncAsync().ConfigureAwait(false);            
         }
 
         public override async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
@@ -103,7 +102,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         connection.GetEnforcedAccessMode()), runHandler,
                     pullMessage, pullHandler)
                 .ConfigureAwait(false);
-            await connection.SendAsync().ConfigureAwait(false);
+            await connection.SyncAsync().ConfigureAwait(false);
             return streamBuilder.CreateCursor();
         }
 

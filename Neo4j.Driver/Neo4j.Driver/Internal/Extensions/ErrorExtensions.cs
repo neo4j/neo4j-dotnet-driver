@@ -36,6 +36,10 @@ namespace Neo4j.Driver.Internal
                     {
                         error = new AuthenticationException(message);
                     }
+					else if(AuthorizationException.IsAuthorizationError(code))
+					{
+						error = new AuthorizationException(message);
+					}
                     else if (ProtocolException.IsProtocolError(code))
                     {
                         error = new ProtocolException(code, message);
@@ -86,6 +90,11 @@ namespace Neo4j.Driver.Internal
             return error is IOException || error is SocketException ||
                    error.GetBaseException() is IOException || error.GetBaseException() is SocketException;
         }
+
+		public static bool IsAuthorizationError(this Exception error)
+		{
+			return error is AuthorizationException;
+		}
 
         public static bool IsDatabaseUnavailableError(this Exception error)
         {

@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public async Task ConvertConnectionErrorToSessionExpired()
             {
-                var handlerMock = new Mock<IClusterErrorHandler>();
+                var handlerMock = new Mock<IErrorHandler>();
                 var clusterConn =
                     new ClusterConnection(CreateConnectionWithMode(AccessMode.Read), Uri, handlerMock.Object);
 
@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public async Task TreatsDatabaseUnavailableAsConnectionError()
             {
-                var handlerMock = new Mock<IClusterErrorHandler>();
+                var handlerMock = new Mock<IErrorHandler>();
                 var clusterConn =
                     new ClusterConnection(CreateConnectionWithMode(AccessMode.Read), Uri, handlerMock.Object);
 
@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Tests.Routing
             [InlineData("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase")]
             public async Task ConvertReadClusterErrorToClientError(string code)
             {
-                var handlerMock = new Mock<IClusterErrorHandler>();
+                var handlerMock = new Mock<IErrorHandler>();
                 var clusterConn =
                     new ClusterConnection(CreateConnectionWithMode(AccessMode.Read), Uri, handlerMock.Object);
 
@@ -82,7 +82,7 @@ namespace Neo4j.Driver.Tests.Routing
             [InlineData("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase")]
             public async Task ConvertWriteClusterErrorToSessionExpiredError(string code)
             {
-                var handlerMock = new Mock<IClusterErrorHandler>();
+                var handlerMock = new Mock<IErrorHandler>();
                 var clusterConn =
                     new ClusterConnection(CreateConnectionWithMode(AccessMode.Write), Uri, handlerMock.Object);
 
@@ -96,7 +96,7 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public async Task ConvertClusterErrorToClientError()
             {
-                var handlerMock = new Mock<IClusterErrorHandler>();
+                var handlerMock = new Mock<IErrorHandler>();
                 var clusterConn =
                     new ClusterConnection(CreateConnectionWithMode(AccessMode.Read), Uri, handlerMock.Object);
 
