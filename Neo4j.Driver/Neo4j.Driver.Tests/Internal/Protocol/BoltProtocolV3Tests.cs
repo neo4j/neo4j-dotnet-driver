@@ -119,7 +119,7 @@ namespace Neo4j.Driver.Internal.Protocol
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V3.RunResponseHandler>(),
                         PullAllMessage.PullAll,
                         It.IsAny<V3.PullResponseHandler>()), Times.Once);
-                mockConn.Verify(x => x.SyncAsync());
+                mockConn.Verify(x => x.SendAsync());
             }
 
             [Fact]

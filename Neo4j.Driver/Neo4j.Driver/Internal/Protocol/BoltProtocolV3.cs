@@ -82,7 +82,7 @@ namespace Neo4j.Driver.Internal.Protocol
             var runHandler = new V3.RunResponseHandler(streamBuilder, summaryBuilder);
             var pullAllHandler = new V3.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
             await connection.EnqueueAsync(new RunWithMetadataMessage(query, bookmark, config, connection.GetEnforcedAccessMode()), runHandler, PullAll, pullAllHandler).ConfigureAwait(false);
-            await connection.SyncAsync().ConfigureAwait(false);
+            await connection.SendAsync().ConfigureAwait(false);
             return streamBuilder.CreateCursor();
         }
 

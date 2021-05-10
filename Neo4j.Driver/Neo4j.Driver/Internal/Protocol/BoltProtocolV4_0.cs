@@ -102,7 +102,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         connection.GetEnforcedAccessMode()), runHandler,
                     pullMessage, pullHandler)
                 .ConfigureAwait(false);
-            await connection.SyncAsync().ConfigureAwait(false);
+            await connection.SendAsync().ConfigureAwait(false);
             return streamBuilder.CreateCursor();
         }
 
