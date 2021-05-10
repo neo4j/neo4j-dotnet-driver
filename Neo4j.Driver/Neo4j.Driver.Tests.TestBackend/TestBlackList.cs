@@ -94,20 +94,20 @@ namespace Neo4j.Driver.Tests.TestBackend
 			("stub.authorization.AuthorizationTests.test_should_fail_with_auth_expired_on_pull_using_session_run",
 				"Temporarily disabled whilst being developed"),
 
-			//("stub.authorization.AuthorizationTests.test_should_fail_with_auth_expired_on_begin_using_tx_run",
-			//	"Temporarily disabled whilst being developed"),
+			("stub.authorization.AuthorizationTests.test_should_fail_with_auth_expired_on_begin_using_tx_run",
+				"Temporarily disabled whilst being developed"),
 
 			("stub.authorization.AuthorizationTests.test_should_fail_with_auth_expired_on_run_using_tx_run",
 				"Temporarily disabled whilst being developed"),
 
-			//("stub.authorization.AuthorizationTests.test_should_fail_with_auth_expired_on_pull_using_tx_run",
-			//	"Temporarily disabled whilst being developed"),
+			("stub.authorization.AuthorizationTests.test_should_fail_with_auth_expired_on_pull_using_tx_run",
+				"Temporarily disabled whilst being developed"),
 
-			//("stub.authorization.AuthorizationTests.test_should_fail_with_auth_expired_on_commit_using_tx_run",
-			//	"Temporarily disabled whilst being developed"),
+			("stub.authorization.AuthorizationTests.test_should_fail_with_auth_expired_on_commit_using_tx_run",
+				"Temporarily disabled whilst being developed"),
 
-			//("stub.authorization.AuthorizationTests.test_should_fail_with_auth_expired_on_rollback_using_tx_run",
-			//	"Temporarily disabled whilst being developed"),
+			("stub.authorization.AuthorizationTests.test_should_fail_with_auth_expired_on_rollback_using_tx_run",
+				"Temporarily disabled whilst being developed"),
 
 			("stub.authorization.AuthorizationTests.test_should_retry_on_auth_expired_on_begin_using_tx_function",
 				"Temporarily disabled whilst being developed"),
@@ -121,11 +121,11 @@ namespace Neo4j.Driver.Tests.TestBackend
 			("stub.authorization.AuthorizationTests.test_should_retry_on_auth_expired_on_commit_using_tx_function",
 				"Temporarily disabled whilst being developed"),
 
-			//("stub.authorization.AuthorizationTests.test_should_drop_connection_after_AuthorizationExpired",
-			//	"Temporarily disabled whilst being developed"),
+			("stub.authorization.AuthorizationTests.test_should_drop_connection_after_AuthorizationExpired",
+				"Temporarily disabled whilst being developed"),
 
-			//("stub.authorization.AuthorizationTests.test_should_be_able_to_use_current_sessions_after_AuthorizationExpired",
-			//	"Temporarily disabled whilst being developed"),
+			("stub.authorization.AuthorizationTests.test_should_be_able_to_use_current_sessions_after_AuthorizationExpired",
+				"Temporarily disabled whilst being developed"),
 
 
 
@@ -138,20 +138,20 @@ namespace Neo4j.Driver.Tests.TestBackend
 			("stub.authorization.AuthorizationTestsV4.test_should_fail_with_auth_expired_on_pull_using_session_run",
 				"Temporarily disabled whilst being developed"),
 
-			//("stub.authorization.AuthorizationTestsV4.test_should_fail_with_auth_expired_on_begin_using_tx_run",
-			//	"Temporarily disabled whilst being developed"),
+			("stub.authorization.AuthorizationTestsV4.test_should_fail_with_auth_expired_on_begin_using_tx_run",
+				"Temporarily disabled whilst being developed"),
 
 			("stub.authorization.AuthorizationTestsV4.test_should_fail_with_auth_expired_on_run_using_tx_run",
 				"Temporarily disabled whilst being developed"),
 
-			//("stub.authorization.AuthorizationTestsV4.test_should_fail_with_auth_expired_on_pull_using_tx_run",
-			//	"Temporarily disabled whilst being developed"),
+			("stub.authorization.AuthorizationTestsV4.test_should_fail_with_auth_expired_on_pull_using_tx_run",
+				"Temporarily disabled whilst being developed"),
 
-			//("stub.authorization.AuthorizationTestsV4.test_should_fail_with_auth_expired_on_commit_using_tx_run",
-			//	"Temporarily disabled whilst being developed"),
+			("stub.authorization.AuthorizationTestsV4.test_should_fail_with_auth_expired_on_commit_using_tx_run",
+				"Temporarily disabled whilst being developed"),
 
-			//("stub.authorization.AuthorizationTestsV4.test_should_fail_with_auth_expired_on_rollback_using_tx_run",
-			//	"Temporarily disabled whilst being developed"),
+			("stub.authorization.AuthorizationTestsV4.test_should_fail_with_auth_expired_on_rollback_using_tx_run",
+				"Temporarily disabled whilst being developed"),
 
 			("stub.authorization.AuthorizationTestsV4.test_should_retry_on_auth_expired_on_begin_using_tx_function",
 				"Temporarily disabled whilst being developed"),
@@ -165,11 +165,11 @@ namespace Neo4j.Driver.Tests.TestBackend
 			("stub.authorization.AuthorizationTestsV4.test_should_retry_on_auth_expired_on_commit_using_tx_function",
 				"Temporarily disabled whilst being developed"),
 
-			//("stub.authorization.AuthorizationTestsV4.test_should_drop_connection_after_AuthorizationExpired",
-			//	"Temporarily disabled whilst being developed"),
+			("stub.authorization.AuthorizationTestsV4.test_should_drop_connection_after_AuthorizationExpired",
+				"Temporarily disabled whilst being developed"),
 
-			//("stub.authorization.AuthorizationTestsV4.test_should_be_able_to_use_current_sessions_after_AuthorizationExpired",
-			//	"Temporarily disabled whilst being developed"),
+			("stub.authorization.AuthorizationTestsV4.test_should_be_able_to_use_current_sessions_after_AuthorizationExpired",
+				"Temporarily disabled whilst being developed"),
 
 
 
@@ -181,20 +181,20 @@ namespace Neo4j.Driver.Tests.TestBackend
 			("stub.authorization.AuthorizationTestsV3.test_should_fail_with_auth_expired_on_pull_using_session_run",
 				"Temporarily disabled whilst being developed"),
 
-			//("stub.authorization.AuthorizationTestsV3.test_should_fail_with_auth_expired_on_begin_using_tx_run",
-			//	"Temporarily disabled whilst being developed"),
+			("stub.authorization.AuthorizationTestsV3.test_should_fail_with_auth_expired_on_begin_using_tx_run",
+				"Temporarily disabled whilst being developed"),
 
 			("stub.authorization.AuthorizationTestsV3.test_should_fail_with_auth_expired_on_run_using_tx_run",
 				"Temporarily disabled whilst being developed"),
 
-			//("stub.authorization.AuthorizationTestsV3.test_should_fail_with_auth_expired_on_pull_using_tx_run",
-			//	"Temporarily disabled whilst being developed"),
+			("stub.authorization.AuthorizationTestsV3.test_should_fail_with_auth_expired_on_pull_using_tx_run",
+				"Temporarily disabled whilst being developed"),
 
-			//("stub.authorization.AuthorizationTestsV3.test_should_fail_with_auth_expired_on_commit_using_tx_run",
-			//	"Temporarily disabled whilst being developed"),
+			("stub.authorization.AuthorizationTestsV3.test_should_fail_with_auth_expired_on_commit_using_tx_run",
+				"Temporarily disabled whilst being developed"),
 
-			//("stub.authorization.AuthorizationTestsV3.test_should_fail_with_auth_expired_on_rollback_using_tx_run",
-			//	"Temporarily disabled whilst being developed"),
+			("stub.authorization.AuthorizationTestsV3.test_should_fail_with_auth_expired_on_rollback_using_tx_run",
+				"Temporarily disabled whilst being developed"),
 
 			("stub.authorization.AuthorizationTestsV3.test_should_retry_on_auth_expired_on_begin_using_tx_function",
 				"Temporarily disabled whilst being developed"),
@@ -208,11 +208,11 @@ namespace Neo4j.Driver.Tests.TestBackend
 			("stub.authorization.AuthorizationTestsV3.test_should_retry_on_auth_expired_on_commit_using_tx_function",
 				"Temporarily disabled whilst being developed"),
 
-			//("stub.authorization.AuthorizationTestsV3.test_should_drop_connection_after_AuthorizationExpired",
-			//	"Temporarily disabled whilst being developed"),
+			("stub.authorization.AuthorizationTestsV3.test_should_drop_connection_after_AuthorizationExpired",
+				"Temporarily disabled whilst being developed"),
 
-			//("stub.authorization.AuthorizationTestsV3.test_should_be_able_to_use_current_sessions_after_AuthorizationExpired",
-			//	"Temporarily disabled whilst being developed"),
+			("stub.authorization.AuthorizationTestsV3.test_should_be_able_to_use_current_sessions_after_AuthorizationExpired",
+				"Temporarily disabled whilst being developed"),
 		}; 
 
 		public static bool FindTest(string testName, out string reason)
