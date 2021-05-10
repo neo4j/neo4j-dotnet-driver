@@ -99,6 +99,11 @@ namespace Neo4j.Driver.Tests.TestBackend
                         await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
                         restartConnection = false;
                     }
+                    catch (ArgumentException ex) 
+                    {
+                        await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+                        restartConnection = false;
+                    }
                     catch (NotSupportedException ex)
                     {
                         await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
