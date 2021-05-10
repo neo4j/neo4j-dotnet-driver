@@ -94,9 +94,6 @@ namespace Neo4j.Driver.Tests.TestBackend
 			("stub.authorization.AuthorizationTests.test_should_fail_with_auth_expired_on_pull_using_session_run",
 				"Temporarily disabled whilst being developed"),
 
-			("stub.authorization.AuthorizationTests.test_should_fail_with_auth_expired_on_pull_using_session_run",
-				"Temporarily disabled whilst being developed"),
-
 			("stub.authorization.AuthorizationTests.test_should_fail_with_auth_expired_on_begin_using_tx_run",
 				"Temporarily disabled whilst being developed"),
 
