@@ -61,19 +61,5 @@ namespace Neo4j.Driver.Internal.Protocol
 
             return (IReadOnlyDictionary<string, object>)responseHandler.RoutingInformation;            
         }
-
-		public override async Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark, TransactionConfig config)
-		{	
-			await connection.EnqueueAsync(new BeginMessage(database,
-														   bookmark,
-														   config?.Timeout,
-														   config?.Metadata,
-														   connection.GetEnforcedAccessMode()),
-											new V3.BeginResponseHandler()
-										 ).ConfigureAwait(false);
-			
-			await connection.SyncAsync().ConfigureAwait(false);			
-		}
-
 	}
 }

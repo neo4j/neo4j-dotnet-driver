@@ -82,7 +82,7 @@ namespace Neo4j.Driver.Internal.Protocol
             var runHandler = new V3.RunResponseHandler(streamBuilder, summaryBuilder);
             var pullAllHandler = new V3.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
             await connection.EnqueueAsync(new RunWithMetadataMessage(query, bookmark, config, connection.GetEnforcedAccessMode()), runHandler, PullAll, pullAllHandler).ConfigureAwait(false);
-            await connection.SendAsync().ConfigureAwait(false);
+            await connection.SyncAsync().ConfigureAwait(false);
             return streamBuilder.CreateCursor();
         }
 
@@ -90,11 +90,12 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             AssertNullDatabase(database);
 
-            await connection.EnqueueAsync(new BeginMessage(bookmark, config, connection.GetEnforcedAccessMode()), new V3.BeginResponseHandler()).ConfigureAwait(false);
-            if (bookmark != null && bookmark.Values.Any())
-            {
-                await connection.SyncAsync().ConfigureAwait(false);
-            }
+            await connection.EnqueueAsync(	new BeginMessage(bookmark, 
+														   config, 
+														   connection.GetEnforcedAccessMode()),
+											new V3.BeginResponseHandler()
+										  ).ConfigureAwait(false);
+            await connection.SyncAsync().ConfigureAwait(false);            
         }
 
         public virtual async Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection, Query query, bool reactive, long fetchSize = Config.Infinite)
