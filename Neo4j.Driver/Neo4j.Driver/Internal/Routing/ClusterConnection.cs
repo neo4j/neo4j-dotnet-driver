@@ -36,27 +36,24 @@ namespace Neo4j.Driver.Internal.Routing
 
         public override async Task OnErrorAsync(Exception error)
         {
-            if (error is ServiceUnavailableException)
-            {
-                await _errorHandler.OnConnectionErrorAsync(_uri, Database, error).ConfigureAwait(false);
-                throw new SessionExpiredException(
-                    $"Server at {_uri} is no longer available due to error: {error.Message}.", error);
-            }
-			else if(error is AuthorizationException)
+			if (error is ServiceUnavailableException)
 			{
-				await _errorHandler.OnAuthorizationErrorAsync(error);
+				await _errorHandler.OnConnectionErrorAsync(_uri, Database, error).ConfigureAwait(false);
+				throw new SessionExpiredException(
+					$"Server at {_uri} is no longer available due to error: {error.Message}.", error);
 			}
-            else if (error.IsDatabaseUnavailableError())
-            {
-                await _errorHandler.OnConnectionErrorAsync(_uri, Database, error).ConfigureAwait(false);
-            }
-            else
-            {
-                HandleClusterError(error);
-            }
 
-            throw error;
-        }
+			if (error.IsDatabaseUnavailableError())
+			{
+				await _errorHandler.OnConnectionErrorAsync(_uri, Database, error).ConfigureAwait(false);
+			}
+			else
+			{
+				HandleClusterError(error);
+			}
+
+			throw error;
+		}
 
         private void HandleClusterError(Exception error)
         {

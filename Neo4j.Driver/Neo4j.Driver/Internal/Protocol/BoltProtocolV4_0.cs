@@ -64,16 +64,16 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public override async Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark, TransactionConfig config)
         {
-			await connection.EnqueueAsync(	new BeginMessage(database, 
-														   bookmark, 
-														   config?.Timeout, 
-														   config?.Metadata, 
-														   connection.GetEnforcedAccessMode()), 
-											new V3.BeginResponseHandler()
-										 ).ConfigureAwait(false);
-
-            await connection.SyncAsync().ConfigureAwait(false);            
-        }
+			await connection.EnqueueAsync(
+					new BeginMessage(database, bookmark, config?.Timeout, config?.Metadata,
+						connection.GetEnforcedAccessMode()),
+					new V3.BeginResponseHandler())
+				.ConfigureAwait(false);
+			if (bookmark != null && bookmark.Values.Any())
+			{
+				await connection.SyncAsync().ConfigureAwait(false);
+			}
+		}
 
         public override async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
             Query query, bool reactive, IBookmarkTracker bookmarkTracker,
