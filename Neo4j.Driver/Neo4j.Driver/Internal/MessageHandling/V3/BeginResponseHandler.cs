@@ -22,8 +22,5 @@ namespace Neo4j.Driver.Internal.MessageHandling.V3
 {
     internal class BeginResponseHandler : NoOpResponseHandler
     {
-		public override void OnFailure(IResponsePipelineError error)
-		{
-		}
 	}
 }

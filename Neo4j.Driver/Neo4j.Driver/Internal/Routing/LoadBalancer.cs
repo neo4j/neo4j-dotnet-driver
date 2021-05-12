@@ -107,12 +107,6 @@ namespace Neo4j.Driver.Internal.Routing
             _routingTableManager.ForgetWriter(uri, database);
         }
 
-		public async Task OnAuthorizationErrorAsync(Exception e)
-		{
-			_logger?.Info($"AuthorizationError received from server. Closing connections to re-authorize : {e.Message}");
-			await _clusterConnectionPool.CloseAsync();			
-		}
-
         public Task AddConnectionPoolAsync(IEnumerable<Uri> uris)
         {
             return _clusterConnectionPool.AddAsync(uris);
