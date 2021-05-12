@@ -219,6 +219,14 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 			("stub.authorization.NoRoutingAuthorizationTests.test_should_be_able_to_use_current_sessions_after_AuthorizationExpired",
 				"Temporarily disabled whilst being developed"),
+
+
+
+
+
+			("stub.retry.test_retry.TestRetry.test_no_retry_on_syntax_error",
+				"Crashes the backend"),
+
 		}; 
 
 		public static bool FindTest(string testName, out string reason)
