@@ -74,7 +74,10 @@ namespace Neo4j.Driver.Tests.TestBackend
 				"add code support"),
 
 			("tlsversions.TestTlsVersions.test_1_1",
-				"TLS 1.1 is not supported in .Net"), 
+				"TLS 1.1 is not supported in .Net"),
+
+			("stub.routing.RoutingV3.test_should_ignore_system_bookmark_when_getting_rt_for_multi_db",
+				"Test is not valid for protocol V3"),
 
 
 			//TODO: fix these pronto!!
@@ -86,6 +89,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 			("stub.routing.RoutingV3.test_should_use_read_session_mode_and_initial_bookmark_when_reading_using_tx_run",
 				"Temporarily disabled due a bug with bookmarks being sent when they should not in bolt 3"),
+
+			
 
 			//TODO: Authorization tests
 			("stub.authorization.AuthorizationTests.test_should_fail_with_auth_expired_on_pull_using_session_run",
@@ -121,10 +126,11 @@ namespace Neo4j.Driver.Tests.TestBackend
 			("stub.authorization.AuthorizationTests.test_should_retry_on_auth_expired_on_commit_using_tx_function",
 				"Temporarily disabled whilst being developed"),
 
-			("stub.authorization.AuthorizationTests.test_should_drop_connection_after_AuthorizationExpired",
+			
+			("stub.authorization.NoRoutingAuthorizationTests.test_should_drop_connection_after_AuthorizationExpired",
 				"Temporarily disabled whilst being developed"),
 
-			("stub.authorization.AuthorizationTests.test_should_be_able_to_use_current_sessions_after_AuthorizationExpired",
+			("stub.authorization.NoRoutingAuthorizationTests.test_should_be_able_to_use_current_sessions_after_AuthorizationExpired",
 				"Temporarily disabled whilst being developed"),
 
 
@@ -165,10 +171,10 @@ namespace Neo4j.Driver.Tests.TestBackend
 			("stub.authorization.AuthorizationTestsV4.test_should_retry_on_auth_expired_on_commit_using_tx_function",
 				"Temporarily disabled whilst being developed"),
 
-			("stub.authorization.AuthorizationTestsV4.test_should_drop_connection_after_AuthorizationExpired",
+			("stub.authorization.NoRoutingAuthorizationTests.test_should_drop_connection_after_AuthorizationExpired",
 				"Temporarily disabled whilst being developed"),
 
-			("stub.authorization.AuthorizationTestsV4.test_should_be_able_to_use_current_sessions_after_AuthorizationExpired",
+			("stub.authorization.NoRoutingAuthorizationTests.test_should_be_able_to_use_current_sessions_after_AuthorizationExpired",
 				"Temporarily disabled whilst being developed"),
 
 
@@ -208,10 +214,10 @@ namespace Neo4j.Driver.Tests.TestBackend
 			("stub.authorization.AuthorizationTestsV3.test_should_retry_on_auth_expired_on_commit_using_tx_function",
 				"Temporarily disabled whilst being developed"),
 
-			("stub.authorization.AuthorizationTestsV3.test_should_drop_connection_after_AuthorizationExpired",
+			("stub.authorization.NoRoutingAuthorizationTests..test_should_drop_connection_after_AuthorizationExpired",
 				"Temporarily disabled whilst being developed"),
 
-			("stub.authorization.AuthorizationTestsV3.test_should_be_able_to_use_current_sessions_after_AuthorizationExpired",
+			("stub.authorization.NoRoutingAuthorizationTests.test_should_be_able_to_use_current_sessions_after_AuthorizationExpired",
 				"Temporarily disabled whilst being developed"),
 		}; 
 
