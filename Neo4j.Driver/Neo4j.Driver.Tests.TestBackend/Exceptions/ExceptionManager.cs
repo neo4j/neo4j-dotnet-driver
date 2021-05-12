@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			{ typeof(ProtocolException),                "ProtocolError" },
 			{ typeof(SecurityException),                "SecurityError" },
 			{ typeof(AuthenticationException),          "AuthenticationError" },
-			{ typeof(AuthorizationException),           "AuthorizationExpired" },
+			//{ typeof(AuthorizationException),           "AuthorizationExpired" },
 			{ typeof(ValueTruncationException),         "ValueTruncationError" },
 			{ typeof(ValueOverflowException),           "ValueOverflowError" },
 			{ typeof(FatalDiscoveryException),          "FatalDiscoveryError" },
