@@ -1160,7 +1160,7 @@ namespace Neo4j.Driver.Tests
 
                 var exception = await Record.ExceptionAsync(() => pool.AcquireAsync(AccessMode.Read, null, Bookmark.Empty));
 
-                exception.Should().BeOfType<ClientException>();
+                exception.Should().BeOfType<ServiceUnavailableException>();
                 pool.Status.Should().Be(ConnectionPoolStatus.Inactive);
             }
 
@@ -1422,7 +1422,7 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfInUseConnections.Should().Be(0);
                 closedConnMock.Verify(x => x.IsOpen, Times.Once);
                 closedConnMock.Verify(x => x.DestroyAsync(), Times.Once);
-                exception.Should().BeOfType<ClientException>();
+                exception.Should().BeOfType<ServiceUnavailableException>();
                 exception.Message.Should().StartWith("Failed to acquire a connection");
             }
 

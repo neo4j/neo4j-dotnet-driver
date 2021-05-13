@@ -183,6 +183,14 @@ namespace Neo4j.Driver
         {
         }
 
+		/// <summary>
+		/// Create a new <see cref="DatabaseException"/> with an error error message.
+		/// </summary>
+		/// <param name="message">The error message.</param>
+		public DatabaseException(string message) : base(string.Empty, message)
+		{
+		}
+
         /// <summary>
         /// Create a new <see cref="DatabaseException"/> with an error code and an error message.
         /// </summary>
