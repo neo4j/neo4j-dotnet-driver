@@ -75,19 +75,13 @@ namespace Neo4j.Driver.Internal.Routing
         {
             database = database ?? string.Empty;
 
-            if (_routingTables.TryGetValue(database, out var existingTable) &&
-                !existingTable.IsStale(mode))
-            {
-                return existingTable;
-            }
-
             var semaphore = GetLock(database);
 
             // now lock
             await semaphore.WaitAsync().ConfigureAwait(false);
             try
             {
-                if (_routingTables.TryGetValue(database, out existingTable) &&
+                if (_routingTables.TryGetValue(database, out var existingTable) &&
                     !existingTable.IsStale(mode))
                 {
                     return existingTable;
