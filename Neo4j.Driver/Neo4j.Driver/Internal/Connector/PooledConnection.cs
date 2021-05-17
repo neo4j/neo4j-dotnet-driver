@@ -68,7 +68,7 @@ namespace Neo4j.Driver.Internal.Connector
         /// </summary>
         internal bool HasUnrecoverableError { private set; get; }
 
-        public override async Task OnErrorAsync(Exception error)
+        public override Task OnErrorAsync(Exception error)
         {
 			if (!error.IsRecoverableError())
 			{
