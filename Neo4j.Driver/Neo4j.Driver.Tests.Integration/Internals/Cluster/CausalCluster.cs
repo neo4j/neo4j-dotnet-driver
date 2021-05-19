@@ -30,7 +30,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
     public class CausalCluster : ICausalCluster
     {
         private bool _disposed = false;
-        private static readonly TimeSpan ClusterOnlineTimeout = TimeSpan.FromMinutes(2);
+        private static readonly TimeSpan ClusterOnlineTimeout = TimeSpan.FromMinutes(3);
 
         private readonly ExternalBoltkitClusterInstaller _installer = new ExternalBoltkitClusterInstaller();
         private ISet<ISingleInstance> Members { get; }
