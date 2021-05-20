@@ -2,7 +2,7 @@
 !: AUTO HELLO
 !: AUTO RESET
 
-C: RUN "CALL dbms.routing.getRoutingTable($context, $database)" {"context": {"address": "127.0.0.1:9001", "policy": "my_policy", "region": "china"}, "database": null} {"db": "system"}
+C: RUN "CALL dbms.routing.getRoutingTable($context, $database)" {"context": {"address": "127.0.0.1:9001", "policy": "my_policy", "region": "china"}, "database": null} {"mode": "r", "db": "system"}
    PULL {"n": -1}
 S: SUCCESS {"fields": ["ttl", "servers"]}
    RECORD [300, [{"addresses": ["127.0.0.1:9001", "127.0.0.1:9002"],"role": "WRITE"}, {"addresses": ["127.0.0.1:9001", "127.0.0.1:9002"], "role": "READ"},{"addresses": ["127.0.0.1:9001", "127.0.0.1:9002"], "role": "ROUTE"}]]
