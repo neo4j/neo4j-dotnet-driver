@@ -153,6 +153,8 @@ namespace Neo4j.Driver.Internal.Protocol
 		{
             connection = connection ?? throw new ProtocolException("Attempting to get a routing table on a null connection");
 
+			connection.Mode = AccessMode.Read;
+
             string procedure;
             var parameters = new Dictionary<string, object>();
 
