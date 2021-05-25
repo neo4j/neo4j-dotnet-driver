@@ -33,6 +33,10 @@
       <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
       <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
       <PackageProjectUrl>https://github.com/neo4j/neo4j-dotnet-driver</PackageProjectUrl>
-      <PackageIcon>..\Neo4j-icon-color.png</PackageIcon>
+      <PackageIcon>Neo4j-icon-color.png</PackageIcon>
     </PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\Neo4j-icon-color.png" Pack="true" PackagePath=""/>
+	</ItemGroup>
 </Project>
