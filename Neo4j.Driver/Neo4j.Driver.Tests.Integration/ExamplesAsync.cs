@@ -151,6 +151,54 @@ namespace Neo4j.Driver.ExamplesAsync
             }
             // end::async-explicit-transaction[]
 
+            // tag::async-multiple-tx[]
+            public async Task<int?> EmployEveryoneInCompany(string companyName)
+            {
+                int? jobsFilled = null;
+
+                var session = Driver.AsyncSession();
+
+                try 
+                {
+                    var names = await session.ReadTransactionAsync(async tx =>
+                    {
+                        var cursor = await tx.RunAsync("MATCH (a:Person) RETURN a.name AS name");
+                        var people = await cursor.ToListAsync();
+                        return people.Select(person => {
+                            return Neo4j.Driver.ValueExtensions.As<string>(person["name"]);
+                        });
+                    });
+
+                    jobsFilled = await session.WriteTransactionAsync(tx =>
+                    {
+                        return Task.WhenAll(names.Select(async personName => 
+                        {
+                            var cursor = await tx.RunAsync("MATCH (emp:Person {name: $person_name}) " +
+                                                       "MERGE (com:Company {name: $company_name}) " +
+                                                       "MERGE (emp)-[:WORKS_FOR]->(com)",
+                            new
+                            {
+                                person_name = personName,
+                                company_name = companyName
+                            });
+
+                            var summary = await cursor.ConsumeAsync();
+
+                            return summary.Counters.RelationshipsCreated;
+                        }))
+                            .ContinueWith(t => t.Result.Sum());
+                        
+                    });
+                }
+                finally
+                {
+                    await session.CloseAsync();
+                }
+
+                return jobsFilled;
+            }
+            // end::async-multiple-tx[]
+
             [RequireServerFact]
             public async void TestAutocommitTransactionExample()
             {
@@ -187,6 +235,18 @@ namespace Neo4j.Driver.ExamplesAsync
 
                 result.Should().NotBeNull();
                 result.Should().Contain("Product-0");
+            }
+
+            [RequireServerFact]
+            public async void TestAsyncMultipleTxExample()
+            {
+                await WriteAsync("CREATE (a:Person {name: $nameA}), (b:Person {name: $nameB})",
+                    new {nameA = "Alice", nameB = "Bob"});
+
+                var result = await EmployEveryoneInCompany("Acme");
+
+                result.Should().NotBeNull();
+                result.Should().Be(2);
             }
         }
 
