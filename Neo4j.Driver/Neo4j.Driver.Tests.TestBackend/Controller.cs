@@ -93,7 +93,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                         await ProcessStreamObjects().ConfigureAwait(false);
                         restartConnection = true;
                     }
-                    catch (Neo4jException ex)
+                    catch (Neo4jException ex)		//TODO: sort this catch list out...reduce it down using where clauses?
                     {
                         // Generate "driver" exception something happened within the driver
                         await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
