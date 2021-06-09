@@ -99,7 +99,12 @@ namespace Neo4j.Driver.Tests.TestBackend
                         await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
                         restartConnection = false;
                     }
-                    catch (ArgumentException ex) 
+					catch (TestKitClientException ex)
+					{
+						await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+						restartConnection = false;
+					}
+					catch (ArgumentException ex) 
                     {
                         await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
                         restartConnection = false;
@@ -118,7 +123,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 					{
 						Trace.WriteLine($"TestKit protocol exception detected: {ex.Message}");
 						restartConnection = true;
-					}
+					}					
 					catch (IOException ex)
                     {
                         Trace.WriteLine($"Socket exception detected: {ex.Message}");    //Handled outside of the exception manager because there is no connection to reply on.

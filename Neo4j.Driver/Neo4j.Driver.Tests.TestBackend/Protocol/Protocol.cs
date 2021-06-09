@@ -14,6 +14,15 @@ namespace Neo4j.Driver.Tests.TestBackend
 		}
 	}
 
+	public class TestKitClientException : Exception 
+	{
+		public TestKitClientException(string message) : base(message)
+		{
+
+		}
+	}
+
+
     public static class Protocol
     {
 		public static readonly HashSet<Type> ProtocolTypes =

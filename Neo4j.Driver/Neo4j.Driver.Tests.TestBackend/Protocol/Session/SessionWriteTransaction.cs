@@ -41,7 +41,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 				
 				await controller.SendResponse(new ProtocolResponse("RetryableTry", TransactionId).Encode()).ConfigureAwait(false);
 
-				Exception storedException = null;
+				Exception storedException = new TestKitClientException("Error from client");
 				
 				while (true)
 				{
