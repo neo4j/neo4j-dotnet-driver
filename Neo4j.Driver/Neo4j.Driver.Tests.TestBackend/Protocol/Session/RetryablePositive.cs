@@ -17,11 +17,15 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override async Task Process()
         {
-            //Client succeded and wants to commit. 
-            //Notify any subscribers.
-            TriggerEvent();
+			var sessionContainer = ((NewSession)ObjManager.GetObject(data.sessionId));
+			sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAblePositive);
 
-            await Task.CompletedTask;
+			//Client succeded and wants to commit. 
+			//Notify any subscribers.
+
+			TriggerEvent();			
+
+			await Task.CompletedTask;
         }
 
         public override string Respond()

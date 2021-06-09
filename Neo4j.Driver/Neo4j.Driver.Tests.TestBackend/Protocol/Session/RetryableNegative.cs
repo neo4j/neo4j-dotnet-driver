@@ -19,46 +19,18 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override async Task Process(Controller controller)
         {
-            //Client failed in some way.
-            //Get the session
 			var sessionContainer = ((NewSession)ObjManager.GetObject(data.sessionId));
-			var tasks = sessionContainer.SessionTransactions.Select(t => TransactionRollBackDelegate(t, controller));			
-			await Task.WhenAll(tasks);
+			sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAbleNegative, data.errorId);
 
-			TriggerException();
+			TriggerEvent();
+
+			await Task.CompletedTask;
 		}
 
-		private async Task TransactionRollBackDelegate(string transactionId, Controller controller)
-		{
-			var transactionWrapper = controller.TransactionManagager.FindTransaction(transactionId);
-
-			if (transactionWrapper != null)
-			{
-				await transactionWrapper.
-					  Transaction.
-					  RollbackAsync().
-					  ConfigureAwait(false);
-			}
-		}
 
         public override string Respond()
         {
 			return string.Empty;
         }
-
-		private void TriggerException()
-		{
-			Exception ex = null;
-			if (string.IsNullOrEmpty(data.errorId))
-			{
-				ex = new ClientException("Error from client in retryable tx");
-			}
-			else
-			{
-				ex = ((ProtocolException)ObjManager.GetObject(data.errorId)).ExceptionObj;
-			}
-
-			throw ex;
-		}
     }
 }
