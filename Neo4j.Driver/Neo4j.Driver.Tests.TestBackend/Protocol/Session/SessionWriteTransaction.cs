@@ -2,18 +2,15 @@
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using Neo4j.Driver;
-using System.Diagnostics;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
 	internal class SessionWriteTransaction : IProtocolObject
-	{
+	{	
 		public SessionWriteTransactionType data { get; set; } = new SessionWriteTransactionType();
 		[JsonIgnore]
 		public string TransactionId { get; set; }
-		[JsonIgnore]
-		private bool Success { get; set; } = true;
+				
 
         public class SessionWriteTransactionType
         {
@@ -27,12 +24,13 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override async Task Process(Controller controller)
         {
-			Success = true;
+            var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);			
 
-            var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
             await sessionContainer.Session.WriteTransactionAsync(async tx =>
             {
-                TransactionId = controller.TransactionManagager.AddTransaction(new TransactionWrapper(tx, async cursor => 
+				sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAbleNothing);
+
+				TransactionId = controller.TransactionManagager.AddTransaction(new TransactionWrapper(tx, async cursor => 
 				{
 					var result = ProtocolObjectFactory.CreateObject<TransactionResult>();
 					await result.PopulateRecords(cursor).ConfigureAwait(false);
@@ -40,34 +38,66 @@ namespace Neo4j.Driver.Tests.TestBackend
 				}));
 
 				sessionContainer.SessionTransactions.Add(TransactionId);
-
+				
 				await controller.SendResponse(new ProtocolResponse("RetryableTry", TransactionId).Encode()).ConfigureAwait(false);
 
-				try
+				Exception storedException = new TestKitClientException("Error from client");
+				
+				while (true)
 				{
-					//Start another message processing loop to handle the retry mechanism.
-					await controller.ProcessStreamObjects().ConfigureAwait(false);
-				}
-				catch
-				{
-					Success = false;
-				}               
+					try
+					{
+						//Start another message processing loop to handle the retry mechanism.
+						await controller.ProcessStreamObjects().ConfigureAwait(false);
+					}
+					catch (Exception ex)       
+					{
+						// Generate "driver" exception something happened within the driver
+						await controller.SendResponse(ExceptionManager.GenerateExceptionResponse(ex).Encode());
+						storedException = ex;
+					}
+					
+					switch (sessionContainer.RetryState)
+					{
+						case NewSession.SessionState.RetryAbleNothing:
+							break;
+						case NewSession.SessionState.RetryAblePositive:
+							return;
+						case NewSession.SessionState.RetryAbleNegative:
+							throw storedException;
+							
+						default:
+							break;
+					}
 
-                controller.TransactionManagager.RemoveTransaction(TransactionId);
+					//Otherwise keep processing unrelated commands.
+					
+				}
+				
+                //controller.TransactionManagager.RemoveTransaction(TransactionId);
             }, TransactionConfig);
         }
 
         public override string Respond()
         {
-			if (Success)
+			var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);			
+
+			if(sessionContainer.RetryState == NewSession.SessionState.RetryAbleNothing)
+				throw new ArgumentException("Should never hit this code with a RetryAbleNothing");
+
+			else if(sessionContainer.RetryState == NewSession.SessionState.RetryAbleNegative)
 			{
-				return new ProtocolResponse("RetryableDone", new { }).Encode();
+				if (string.IsNullOrEmpty(sessionContainer.RetryableErrorId))
+					return ExceptionManager.GenerateExceptionResponse(new ClientException("Error from client in retryable tx")).Encode();
+				else
+				{
+					var exception = ((ProtocolException)(ObjManager.GetObject(sessionContainer.RetryableErrorId))).ExceptionObj;
+					return ExceptionManager.GenerateExceptionResponse(exception).Encode();
+				}
 			}
-			else
-			{
-				return ExceptionManager.GenerateExceptionResponse(new ClientException("Error from client in retryable tx")).Encode();
-			} 
-        }
+
+			return new ProtocolResponse("RetryableDone", new { }).Encode();
+		}
 
 		void TransactionConfig(TransactionConfigBuilder configBuilder)
 		{
