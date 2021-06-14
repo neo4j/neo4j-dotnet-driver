@@ -73,7 +73,6 @@ namespace Neo4j.Driver.Tests.TestBackend
 					}
 
 					//Otherwise keep processing unrelated commands.
-
 				}
 				
 				//controller.TransactionManagager.RemoveTransaction(TransactionId);                
