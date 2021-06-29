@@ -213,6 +213,39 @@ Snapshot builds are available at our [MyGet feed](https://www.myget.org/gallery/
 
 * [https://www.myget.org/F/neo4j-driver-snapshots/api/v3/index.json](https://www.myget.org/F/neo4j-driver-snapshots/api/v3/index.json)
 
+### Testing
+
+Tests **require** the latest [Testkit 4.3](https://github.com/neo4j-drivers/testkit/tree/4.3), Python3 and Docker.
+
+Testkit is needed to be cloned and configured to run against the Dotnet Driver. Use the following steps to configure Testkit.
+
+1. Clone the Testkit repository
+
+```
+git clone https://github.com/neo4j-drivers/testkit.git
+```
+
+2. Under the Testkit folder, install the requirements.
+
+```
+pip3 install -r requirements.txt
+```
+
+3. Define some enviroment variables to configure Testkit
+
+```
+export TEST_DRIVER_NAME=dotnet
+export TEST_DRIVER_REPO=<path for the root folder of driver repository>
+```
+
+To run test against against some Neo4j version:
+
+```
+python3 main.py
+```
+
+More details about how to use Teskit could be found on [its repository](https://github.com/neo4j-drivers/testkit/tree/4.3)
+
 ### Building the Source Code on Windows
 
 #### Visual Studio Version
