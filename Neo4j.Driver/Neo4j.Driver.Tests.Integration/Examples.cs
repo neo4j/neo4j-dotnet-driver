@@ -741,6 +741,66 @@ namespace Neo4j.Driver.Examples
             }
         }
         
+        [SuppressMessage("ReSharper", "xUnit1013")]
+        public class TransactionTimeoutConfigExample : BaseExample
+        {
+            public TransactionTimeoutConfigExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+            }
+
+            // tag::transaction-timeout-config[]
+            public void AddPerson(string name)
+            {
+                using (var session = Driver.Session())
+                {
+                    session.WriteTransaction(tx => tx.Run("CREATE (a:Person {name: $name})", new {name}), 
+                        txConfig => txConfig.WithTimeout(TimeSpan.FromSeconds(5)));
+                }
+            }
+            // end::transaction-timeout-config[]
+
+            [RequireServerFact]
+            public void TestTransactionTimeoutConfigExample()
+            {
+                // Given & When
+                AddPerson("Alice");
+                // Then
+                CountPerson("Alice").Should().Be(1);
+            }
+        }
+        
+                
+        [SuppressMessage("ReSharper", "xUnit1013")]
+        public class TransactionMetadataConfigExample : BaseExample
+        {
+            public TransactionMetadataConfigExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+            }
+
+            // tag::transaction-metadata-config[]
+            public void AddPerson(string name)
+            {
+                using (var session = Driver.Session())
+                {
+                    IDictionary<string, Object> txMetadata = new Dictionary<string, object> {{"applicationId", "123"}};
+                    session.WriteTransaction(tx => tx.Run("CREATE (a:Person {name: $name})", new {name}), 
+                        txConfig => txConfig.WithMetadata(txMetadata));
+                }
+            }
+            // end::transaction-metadata-config[]
+
+            [RequireServerFact]
+            public void TestTransactionMetadataConfigExample()
+            {
+                // Given & When
+                AddPerson("Alice");
+                // Then
+                CountPerson("Alice").Should().Be(1);
+            }
+        }
+        
         public class DatabaseSelectionExampleTest : BaseExample
         {
             public DatabaseSelectionExampleTest(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)

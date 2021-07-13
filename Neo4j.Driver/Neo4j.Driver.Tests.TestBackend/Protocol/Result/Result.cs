@@ -34,26 +34,29 @@ namespace Neo4j.Driver.Tests.TestBackend
 		}
     }
 
-	internal class TransactionResult : Result 
+	internal class TransactionResult : Result
 	{
 		[JsonIgnore]
-		private List<IRecord> Records { get; set; } = new List<IRecord>();
-		[JsonIgnore]
-		private int CurrentRecordIndex { get; set; } = 0;
+		private IResultCursor ResultCursor { get; set; }
+		
 
 		public async override Task<IRecord> GetNextRecord()
 		{
-			if (CurrentRecordIndex >= Records.Count)
-				return null;
+			if(await ResultCursor.FetchAsync())
+			{
+				return await Task.FromResult<IRecord>(ResultCursor.Current);
+			}
 
-			return await Task.FromResult<IRecord>(Records[CurrentRecordIndex++]);
+			return await Task.FromResult<IRecord>(null);
 		}
 
 		public async Task PopulateRecords(IResultCursor cursor)
 		{
-			await cursor.ForEachAsync(record => Records.Add(record)).ConfigureAwait(false);
+			ResultCursor = cursor;
+			await Task.CompletedTask;
 		}
 	}
+
 
 	internal class SessionResult : Result
 	{

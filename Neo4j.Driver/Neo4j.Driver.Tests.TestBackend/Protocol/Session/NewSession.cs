@@ -9,6 +9,18 @@ namespace Neo4j.Driver.Tests.TestBackend
 {
 	internal class NewSession : IProtocolObject
 	{
+		public enum SessionState
+		{
+			RetryAbleNothing,
+			RetryAblePositive,
+			RetryAbleNegative
+		}
+
+		[JsonIgnore]
+		public SessionState RetryState { get; private set; } = SessionState.RetryAbleNothing;
+		[JsonIgnore]
+		public string RetryableErrorId { get; private set; }
+		
 		public NewSessionType data { get; set; } = new NewSessionType();
 		[JsonIgnore]
 		public IAsyncSession Session { get; set; }
@@ -66,5 +78,11 @@ namespace Neo4j.Driver.Tests.TestBackend
         {  
             return new ProtocolResponse("Session", uniqueId).Encode();
         }
+
+		public void SetupRetryAbleState(SessionState state, string retryableErrorId = "")
+		{
+			RetryState = state;
+			RetryableErrorId = retryableErrorId;
+		}
     }
 }

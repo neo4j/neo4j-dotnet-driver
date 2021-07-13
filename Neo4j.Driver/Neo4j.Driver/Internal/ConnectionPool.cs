@@ -274,7 +274,7 @@ namespace Neo4j.Driver.Internal
                         }
                         else if (IsInactive)
                         {
-                            ThrowClientExceptionDueToDeactivated();
+                            ThrowServerUnavailableExceptionDueToDeactivated();
                         }
 
                         if (!_idleConnections.TryTake(out connection))
@@ -462,11 +462,11 @@ namespace Neo4j.Driver.Internal
             FailedToAcquireConnectionDueToPoolClosed(this);
         }
 
-        private void ThrowClientExceptionDueToDeactivated()
+        private void ThrowServerUnavailableExceptionDueToDeactivated()
         {
             throw new ServiceUnavailableException(
                 $"Failed to acquire a connection from connection pool for server with URI `{_uri}` " +
-                "as this server has already been removed from routing table.");
+                "as this server has already been removed from routing table. ");
         }
 
         private static ConnectionPoolStatus AtomicRead(ref ConnectionPoolStatus value)
