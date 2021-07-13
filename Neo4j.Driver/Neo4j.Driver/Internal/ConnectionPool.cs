@@ -352,9 +352,9 @@ namespace Neo4j.Driver.Internal
             return _maxIdlePoolSize != Config.Infinite && _idleConnections.Count >= _maxIdlePoolSize;
         }
 
-        public Task ReleaseAsync(IPooledConnection connection)
+        public async Task ReleaseAsync(IPooledConnection connection)
         {
-            return TryExecuteAsync(_logger, async () =>
+            await TryExecuteAsync(_logger, async () =>
             {
                 if (IsClosed)
                 {
