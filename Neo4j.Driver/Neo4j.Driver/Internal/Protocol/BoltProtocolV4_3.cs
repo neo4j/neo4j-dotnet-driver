@@ -5,13 +5,13 @@ using System.Collections.Generic;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling.V4_3;
-using Neo4j.Driver.Internal.Messaging.V4_3;
-using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver.Internal.MessageHandling;
+using V4_3 = Neo4j.Driver.Internal.Messaging.V4_3;
+using Neo4j.Driver.Internal.Messaging.V3;
+using V3 = Neo4j.Driver.Internal.MessageHandling.V3;
+
 
 namespace Neo4j.Driver.Internal.Protocol
-{
-	class BoltProtocolV4_3 : BoltProtocolV4_2
+{	class BoltProtocolV4_3 : BoltProtocolV4_2
 	{
 		private static int _major = 4;
 		private static int _minor = 3;
@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Internal.Protocol
 		public override async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
 		{
 			await connection
-				.EnqueueAsync(new HelloMessage(userAgent, authToken.AsDictionary(), RoutingContext),
+				.EnqueueAsync(new V4_3.HelloMessage(userAgent, authToken.AsDictionary(), RoutingContext),
 					new HelloResponseHandler(connection, Version)).ConfigureAwait(false);
 			await connection.SyncAsync().ConfigureAwait(false);
 		}
@@ -53,13 +53,12 @@ namespace Neo4j.Driver.Internal.Protocol
 
 			var responseHandler = new RouteResponseHandler();
 
-			await connection.EnqueueAsync(new RouteMessage(connection.RoutingContext, bookmark, database), responseHandler).ConfigureAwait(false);
+			await connection.EnqueueAsync(new V4_3.RouteMessage(connection.RoutingContext, bookmark, database), responseHandler).ConfigureAwait(false);
 
 			await connection.SyncAsync().ConfigureAwait(false);
 			await connection.CloseAsync().ConfigureAwait(false);
 
 			return (IReadOnlyDictionary<string, object>)responseHandler.RoutingInformation;
 		}
-
 	}
 }
