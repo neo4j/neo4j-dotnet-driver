@@ -130,16 +130,6 @@ namespace Neo4j.Driver.Internal.Routing
             return Task.CompletedTask;
         }
 
-		public async Task ResetAsync()
-		{
-			var uris = _pools.Keys;
-			foreach (var pool in _pools.Values)
-			{
-				await pool.DeactivateAsync();
-				pool.Activate();
-			}
-		}
-
         public int NumberOfInUseConnections(Uri uri)
         {
             if (_pools.TryGetValue(uri, out var pool))

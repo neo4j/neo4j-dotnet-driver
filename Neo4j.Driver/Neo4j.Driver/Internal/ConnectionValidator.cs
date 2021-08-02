@@ -72,7 +72,8 @@ namespace Neo4j.Driver.Internal
         {
             var isRequirable = connection.IsOpen
                    && !HasBeenIdleForTooLong(connection)
-                   && !HasBeenAliveForTooLong(connection);
+                   && !HasBeenAliveForTooLong(connection)
+				   && !HasBeenMarkedForReauthorization(connection);
 
             if (isRequirable)
             {
@@ -124,5 +125,10 @@ namespace Neo4j.Driver.Internal
 
             return false;
         }
+
+		private bool HasBeenMarkedForReauthorization(IPooledConnection connection)
+		{
+			return connection.ReAuthorizationRequired;
+		}
     }
 }

@@ -41,6 +41,5 @@ namespace Neo4j.Driver.Internal.Routing
 
         Task CloseAsync();
 
-		Task ResetAsync();
     }
 }

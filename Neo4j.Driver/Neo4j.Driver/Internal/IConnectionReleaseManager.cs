@@ -23,5 +23,6 @@ namespace Neo4j.Driver.Internal
     internal interface IConnectionReleaseManager
     {
         Task ReleaseAsync(IPooledConnection connection);
+		void MarkConnectionsForReauthorization(IPooledConnection connection);
     }
 }

@@ -25,6 +25,5 @@ namespace Neo4j.Driver.Internal.Routing
     {
         Task OnConnectionErrorAsync(Uri uri, string database, Exception e);
         void OnWriteError(Uri uri, string database);
-		Task OnAuthorizationErrorAsync(Exception e);
 	}
 }

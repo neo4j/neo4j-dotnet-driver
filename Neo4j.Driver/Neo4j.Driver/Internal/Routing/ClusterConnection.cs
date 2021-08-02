@@ -42,10 +42,6 @@ namespace Neo4j.Driver.Internal.Routing
 				throw new SessionExpiredException(
 					$"Server at {_uri} is no longer available due to error: {error.Message}.", error);
 			}
-			else if (error is AuthorizationException)
-			{
-				await _errorHandler.OnAuthorizationErrorAsync(error);
-			}
 			else if (error.IsDatabaseUnavailableError())
 			{
 				await _errorHandler.OnConnectionErrorAsync(_uri, Database, error).ConfigureAwait(false);

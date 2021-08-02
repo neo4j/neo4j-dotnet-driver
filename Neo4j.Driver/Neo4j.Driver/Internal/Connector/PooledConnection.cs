@@ -26,6 +26,7 @@ namespace Neo4j.Driver.Internal.Connector
     internal class PooledConnection : DelegatedConnection, IPooledConnection
     {
         private readonly IConnectionReleaseManager _releaseManager;
+		public bool ReAuthorizationRequired { get; set; } = false;
 
         public PooledConnection(IConnection conn, IConnectionReleaseManager releaseManager = null)
             : base(conn)
@@ -68,7 +69,7 @@ namespace Neo4j.Driver.Internal.Connector
         /// </summary>
         internal bool HasUnrecoverableError { private set; get; }
 
-        public override async Task OnErrorAsync(Exception error)
+        public override Task OnErrorAsync(Exception error)
         {
 			if (!error.IsRecoverableError())
 			{
@@ -78,7 +79,9 @@ namespace Neo4j.Driver.Internal.Connector
 			if (error is Neo4jException)
 			{
 				if (error.IsAuthorizationError())
-					await CloseAsync();
+				{
+					_releaseManager.MarkConnectionsForReauthorization(this);					
+				}
 
 				throw error;
 			}
@@ -121,5 +124,5 @@ namespace Neo4j.Driver.Internal.Connector
         {
             _stopwatch.Start();
         }
-    }
+	}
 }
