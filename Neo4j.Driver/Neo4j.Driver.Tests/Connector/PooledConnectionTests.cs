@@ -75,7 +75,7 @@ namespace Neo4j.Driver.Tests
 
 			var resultException = await Record.ExceptionAsync(async () => await pooledConnection.OnErrorAsync(new AuthorizationException("Authorization error")));
 
-			releaseManager.Verify(rm => rm.ReleaseAsync(pooledConnection), Times.Once());
+			releaseManager.Verify(rm => rm.MarkConnectionsForReauthorization(pooledConnection), Times.Once());
 		}
 
 	}
