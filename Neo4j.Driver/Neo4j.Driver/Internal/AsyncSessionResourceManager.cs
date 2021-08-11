@@ -87,15 +87,15 @@ namespace Neo4j.Driver.Internal
         {
             // When there is a open transaction, this method will also try to close the tx
             if (_transaction != null)
-            {
-                try
+            {	
+				try
                 {
                     await _transaction.RollbackAsync().ConfigureAwait(false);
                 }
-                catch (Exception e)
-                {
-                    throw new ClientException($"Error when disposing unclosed transaction in session: {e.Message}", e);
-                }
+				catch (Exception e)
+                {	
+					throw new ClientException((e as Neo4jException)?.Code, $"Error when disposing unclosed transaction in session: {e.Message}", e);
+				}
             }
         }
 
