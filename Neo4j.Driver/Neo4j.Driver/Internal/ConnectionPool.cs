@@ -352,9 +352,9 @@ namespace Neo4j.Driver.Internal
             return _maxIdlePoolSize != Config.Infinite && _idleConnections.Count >= _maxIdlePoolSize;
         }
 
-        public Task ReleaseAsync(IPooledConnection connection)
+        public async Task ReleaseAsync(IPooledConnection connection)
         {
-            return TryExecuteAsync(_logger, async () =>
+            await TryExecuteAsync(_logger, async () =>
             {
                 if (IsClosed)
                 {
@@ -389,30 +389,16 @@ namespace Neo4j.Driver.Internal
             }, $"Failed to release connection '{connection}' asynchronously back to pool.");
         }
 
-        public Task CloseAsync()
+        public async Task CloseAsync()
         {
             if (Interlocked.Exchange(ref _poolStatus, Closed) != Closed)
             {
-                var allCloseTasks = new List<Task>();
-
-                foreach (var inUseConnection in _inUseConnections)
-                {
-                    _logger?.Info($"Disposing In Use Connection {inUseConnection}");
-                    if (_inUseConnections.TryRemove(inUseConnection))
-                    {
-                        allCloseTasks.Add(DestroyConnectionAsync(inUseConnection));
-                    }
-                }
-
-                allCloseTasks.AddRange(TerminateIdleConnectionsAsync());
-
-                _poolMetricsListener?.Dispose();
-                return Task.WhenAll(allCloseTasks);
+				await CloseAllConnectionsAsync();
             }
 
-            return Task.CompletedTask;
+            await Task.CompletedTask;
         }
-
+		
         public async Task VerifyConnectivityAsync()
         {
             // Establish a connection with the server and immediately close it.
@@ -481,5 +467,44 @@ namespace Neo4j.Driver.Internal
             return $"{nameof(_id)}: {{{_id}}}, {nameof(_idleConnections)}: {{{_idleConnections.ToContentString()}}}, " +
                    $"{nameof(_inUseConnections)}: {{{_inUseConnections}}}";
         }
-    }
+		
+		private Task CloseAllConnectionsAsync()
+		{
+			var allCloseTasks = new List<Task>();
+
+			foreach (var inUseConnection in _inUseConnections)
+			{
+				_logger?.Info($"Disposing In Use Connection {inUseConnection}");
+				if (_inUseConnections.TryRemove(inUseConnection))
+				{
+					allCloseTasks.Add(DestroyConnectionAsync(inUseConnection));
+				}
+			}
+
+			allCloseTasks.AddRange(TerminateIdleConnectionsAsync());
+
+			return Task.WhenAll(allCloseTasks);
+		}
+
+		/// <summary>
+		/// When a connection is marked as requiring reauthorization then all older connections also need to be marked in such a way.
+		/// This will cause such marked connections to be closed and re-established with new authorization next time they are used.
+		/// </summary>
+		/// <param name="connection"></param>
+		/// <returns></returns>
+		public void MarkConnectionsForReauthorization(IPooledConnection connection)
+		{
+			var connectionAge = connection.LifetimeTimer.ElapsedMilliseconds;
+
+			connection.ReAuthorizationRequired = true;
+
+			foreach (var inUseConn in _inUseConnections)
+			{
+				if (inUseConn.LifetimeTimer.ElapsedMilliseconds >= connectionAge)
+				{
+					inUseConn.ReAuthorizationRequired = true;
+				}
+			}
+		}
+	}
 }

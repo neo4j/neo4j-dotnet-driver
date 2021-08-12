@@ -27,5 +27,5 @@ namespace Neo4j.Driver.Internal
         ConnectionPoolStatus Status { get; }
         Task DeactivateAsync();
         void Activate();
-    }
+	}
 }

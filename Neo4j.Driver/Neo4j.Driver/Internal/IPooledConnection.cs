@@ -29,7 +29,10 @@ namespace Neo4j.Driver.Internal
         ITimer IdleTimer { get; }
 
         ITimer LifetimeTimer { get; }
-    }
+
+		bool ReAuthorizationRequired { get; set; }
+
+	}
 
     internal interface ITimer
     {

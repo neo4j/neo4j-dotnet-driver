@@ -40,5 +40,6 @@ namespace Neo4j.Driver.Internal.Routing
         int NumberOfInUseConnections(Uri uri);
 
         Task CloseAsync();
+
     }
 }

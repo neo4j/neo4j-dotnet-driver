@@ -107,7 +107,7 @@ namespace Neo4j.Driver.Internal.Routing
             _routingTableManager.ForgetWriter(uri, database);
         }
 
-        public Task AddConnectionPoolAsync(IEnumerable<Uri> uris)
+		public Task AddConnectionPoolAsync(IEnumerable<Uri> uris)
         {
             return _clusterConnectionPool.AddAsync(uris);
         }
