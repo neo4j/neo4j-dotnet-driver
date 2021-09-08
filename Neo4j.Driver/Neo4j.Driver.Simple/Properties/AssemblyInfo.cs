@@ -30,7 +30,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Neo4j.Driver")]
-[assembly: AssemblyCopyright("Copyright ©  2002-2020")]
+[assembly: AssemblyCopyright("Copyright ©  2002-2021")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: NeutralResourcesLanguage("en")]
