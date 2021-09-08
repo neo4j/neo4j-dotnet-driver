@@ -56,6 +56,38 @@ namespace Neo4j.Driver.Tests.TestBackend
 		}
 	}
 
+	internal class SimpleLogger : ILogger
+	{
+		public void Debug(string message, params Object[] args)
+		{
+			Console.WriteLine("[DEBUG]" + message, args);
+		}
+		public void Error(System.Exception error, string message, params Object[] args)
+		{
+			Console.WriteLine("[ERROR]" + message, args);
+		}
+		public void Info(string message, params Object[] args)
+		{
+			Console.WriteLine("[INFO]" + message, args);
+		}
+		public bool IsDebugEnabled()
+		{
+			return true;
+		}
+		public bool IsTraceEnabled()
+		{
+			return false;
+		}
+		public void Trace(string message, params Object[] args)
+		{
+			Console.WriteLine("[TRACE]" + message, args);
+		}
+		public void Warn(System.Exception error, string message, params Object[] args)
+		{
+			Console.WriteLine("[WARM]" + message, args);
+		}
+	}
+
 	internal class NewDriver : IProtocolObject
 	{
 		public NewDriverType data { get; set; } = new NewDriverType();
@@ -98,6 +130,10 @@ namespace Neo4j.Driver.Tests.TestBackend
 			if (data.resolverRegistered) configBuilder.WithResolver(new ListAddressResolver(Control, data.uri));
 
 			if (data.connectionTimeoutMs > 0) configBuilder.WithConnectionTimeout(TimeSpan.FromMilliseconds(data.connectionTimeoutMs));
+
+			SimpleLogger logger = new SimpleLogger();
+
+			configBuilder.WithLogger(logger);
 		}
 	}
 }
