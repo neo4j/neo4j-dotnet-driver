@@ -1,8 +1,10 @@
 <Project>
   <PropertyGroup>
-	<Version>4.1.0</Version>
-	<AssemblyVersion>4.1.0.0</AssemblyVersion>
-	<AssemblyFileVersion>4.1.0.0</AssemblyFileVersion>
+    <Copyright>Copyright 2002-2021</Copyright>
+	  <Version>4.3.2</Version>
+	  <AssemblyVersion>4.3.2.0</AssemblyVersion>
+	  <AssemblyFileVersion>4.3.2.0</AssemblyFileVersion>
+    <FileVersion>4.3.2.0</FileVersion>
   </PropertyGroup>
   <PropertyGroup>
     <XunitVersion>2.4.1</XunitVersion>

@@ -1,15 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\common.props" />
   <PropertyGroup>
+    <IsPackable>false</IsPackable>
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
-	<GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
-	<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-
-	<Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
-
-	<Version>4.3.0</Version>
-  </PropertyGroup>
+	  <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+	  <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+	  <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
+	</PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
