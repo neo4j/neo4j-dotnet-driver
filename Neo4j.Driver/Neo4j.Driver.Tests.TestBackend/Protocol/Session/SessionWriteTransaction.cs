@@ -6,11 +6,11 @@ using Newtonsoft.Json;
 namespace Neo4j.Driver.Tests.TestBackend
 {
 	internal class SessionWriteTransaction : IProtocolObject
-	{	
+	{
 		public SessionWriteTransactionType data { get; set; } = new SessionWriteTransactionType();
 		[JsonIgnore]
 		public string TransactionId { get; set; }
-				
+
 
         public class SessionWriteTransactionType
         {
@@ -24,25 +24,25 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override async Task Process(Controller controller)
         {
-            var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);			
+            var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
 
             await sessionContainer.Session.WriteTransactionAsync(async tx =>
             {
 				sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAbleNothing);
 
-				TransactionId = controller.TransactionManagager.AddTransaction(new TransactionWrapper(tx, async cursor => 
+				TransactionId = controller.TransactionManagager.AddTransaction(new TransactionWrapper(tx, async cursor =>
 				{
-					var result = ProtocolObjectFactory.CreateObject<TransactionResult>();
+					var result = ProtocolObjectFactory.CreateObject<Result>();
 					await result.PopulateRecords(cursor).ConfigureAwait(false);
 					return result.uniqueId;
 				}));
 
 				sessionContainer.SessionTransactions.Add(TransactionId);
-				
+
 				await controller.SendResponse(new ProtocolResponse("RetryableTry", TransactionId).Encode()).ConfigureAwait(false);
 
 				Exception storedException = new TestKitClientException("Error from client");
-				
+
 				while (true)
 				{
 					try
@@ -50,13 +50,13 @@ namespace Neo4j.Driver.Tests.TestBackend
 						//Start another message processing loop to handle the retry mechanism.
 						await controller.ProcessStreamObjects().ConfigureAwait(false);
 					}
-					catch (Exception ex)       
+					catch (Exception ex)
 					{
 						// Generate "driver" exception something happened within the driver
 						await controller.SendResponse(ExceptionManager.GenerateExceptionResponse(ex).Encode());
 						storedException = ex;
 					}
-					
+
 					switch (sessionContainer.RetryState)
 					{
 						case NewSession.SessionState.RetryAbleNothing:
@@ -65,21 +65,21 @@ namespace Neo4j.Driver.Tests.TestBackend
 							return;
 						case NewSession.SessionState.RetryAbleNegative:
 							throw storedException;
-							
+
 						default:
 							break;
 					}
 
-					//Otherwise keep processing unrelated commands.					
+					//Otherwise keep processing unrelated commands.
 				}
-				
+
                 //controller.TransactionManagager.RemoveTransaction(TransactionId);
             }, TransactionConfig);
         }
 
         public override string Respond()
         {
-			var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);			
+			var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
 
 			if(sessionContainer.RetryState == NewSession.SessionState.RetryAbleNothing)
 				throw new ArgumentException("Should never hit this code with a RetryAbleNothing");

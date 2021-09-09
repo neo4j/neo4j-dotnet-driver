@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-	public class TestKitProtocolException : Exception 
+	public class TestKitProtocolException : Exception
 	{
 		public TestKitProtocolException(string message) : base(message)
 		{
@@ -14,7 +14,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 		}
 	}
 
-	public class TestKitClientException : Exception 
+	public class TestKitClientException : Exception
 	{
 		public TestKitClientException(string message) : base(message)
 		{
@@ -38,8 +38,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 									typeof(SessionReadTransaction),
 									typeof(SessionWriteTransaction),
 									typeof(SessionBeginTransaction),
-									typeof(TransactionResult),
-									typeof(SessionResult),
+									typeof(Result),
 									typeof(ResultNext),
 									typeof(ResultConsume),
 									typeof(RetryablePositive),
@@ -52,13 +51,13 @@ namespace Neo4j.Driver.Tests.TestBackend
 									typeof(StartTest),
 									typeof(GetFeatures)};
 
-        
+
 		static Protocol()
         {
-            
+
         }
 
-        public static void ValidateType(string typeName) 
+        public static void ValidateType(string typeName)
         {
 			var objectType = Type.GetType(typeName, true);
 			ValidateType(objectType);
@@ -77,7 +76,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         [JsonProperty("id")]
         public string uniqueId { get; internal set; }    //Only exposes the get option so that the serializer will output it.  Don't want to read in on deserialization.
         [JsonIgnore]
-        protected ProtocolObjectManager ObjManager { get; set; }        
+        protected ProtocolObjectManager ObjManager { get; set; }
         public event EventHandler ProtocolEvent;
 
         public void SetObjectManager(ProtocolObjectManager objManager)
@@ -98,7 +97,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             await Process();
         }
 
-        public string Encode()      
+        public string Encode()
         {
             return JsonConvert.SerializeObject(this, Formatting.Indented);
         }

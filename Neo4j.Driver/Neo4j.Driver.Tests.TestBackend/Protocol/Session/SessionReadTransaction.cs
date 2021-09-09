@@ -6,15 +6,15 @@ using System.Collections.Generic;
 namespace Neo4j.Driver.Tests.TestBackend
 {
     internal class SessionReadTransaction : IProtocolObject
-    {   
+    {
         public SessionReadTransactionType data { get; set; } = new SessionReadTransactionType();
         [JsonIgnore]
         private string TransactionId { get; set; }
-		
+
 
         public class SessionReadTransactionType
         {
-            public string sessionId { get; set; }  
+            public string sessionId { get; set; }
 
             public string cypher { get; set; }
 
@@ -34,7 +34,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 				TransactionId = controller.TransactionManagager.AddTransaction(new TransactionWrapper(tx, async cursor =>
 				{
-					var result = ProtocolObjectFactory.CreateObject<TransactionResult>();
+					var result = ProtocolObjectFactory.CreateObject<Result>();
 					await result.PopulateRecords(cursor).ConfigureAwait(false);
 					return result.uniqueId;
 				}));
@@ -74,8 +74,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 					//Otherwise keep processing unrelated commands.
 				}
-				
-				//controller.TransactionManagager.RemoveTransaction(TransactionId);                
+
+				//controller.TransactionManagager.RemoveTransaction(TransactionId);
 			}, TransactionConfig);
         }
 
