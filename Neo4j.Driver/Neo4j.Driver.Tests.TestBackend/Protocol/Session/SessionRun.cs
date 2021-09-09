@@ -16,9 +16,9 @@ namespace Neo4j.Driver.Tests.TestBackend
         public class SessionRunType
         {
             public string sessionId { get; set; }
-            
+
             public string cypher { get; set; }
-            
+
             [JsonProperty("params")]
             public Dictionary<string, CypherToNativeObject> parameters { get; set; } = new Dictionary<string, CypherToNativeObject>();
 
@@ -27,7 +27,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             [JsonProperty(Required = Required.AllowNull)]
             public int timeout { get; set; } = -1;
-            
+
         }
 
         private Dictionary<string, object> ConvertParameters(Dictionary<string, CypherToNativeObject> source)
@@ -61,14 +61,14 @@ namespace Neo4j.Driver.Tests.TestBackend
             var newSession = (NewSession)ObjManager.GetObject(data.sessionId);
             IResultCursor cursor = await newSession.Session.RunAsync(data.cypher, ConvertParameters(data.parameters), TransactionConfig).ConfigureAwait(false);
 
-            var result = ProtocolObjectFactory.CreateObject<SessionResult>();
-			result.Results = cursor;
+            var result = ProtocolObjectFactory.CreateObject<Result>();
+			result.ResultCursor = cursor;
 
 			ResultId = result.uniqueId;
         }
 
         public override string Respond()
-        {   
+        {
             return ((Result)ObjManager.GetObject(ResultId)).Respond();
         }
     }
