@@ -14,12 +14,12 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 		public class ResultConsumeType
 		{
-			public string resultId { get; set; }			
+			public string resultId { get; set; }
 		}
 
 		public override async Task Process()
 		{
-			Summary = await ((SessionResult)ObjManager.GetObject(data.resultId)).ConsumeResults().ConfigureAwait(false);
+			Summary = await ((Result)ObjManager.GetObject(data.resultId)).ConsumeResults().ConfigureAwait(false);
 		}
 
 		public override string Respond()

@@ -11,7 +11,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 	internal class Result : IProtocolObject
 	{
 		public ResultType data { get; set; } = new ResultType();
-		
+
         public class ResultType
         {
             public string id { get; set; }
@@ -29,16 +29,21 @@ namespace Neo4j.Driver.Tests.TestBackend
         }
 
 		public async virtual Task<IRecord> GetNextRecord()
-		{	
+		{
 			return await Task.FromResult<IRecord>(null);
 		}
-    }
+
+		public async virtual Task<IResultSummary> ConsumeResults()
+		{
+			return await Task.FromResult<IResultSummary>(null);
+		}
+	}
 
 	internal class TransactionResult : Result
 	{
 		[JsonIgnore]
 		private IResultCursor ResultCursor { get; set; }
-		
+
 
 		public async override Task<IRecord> GetNextRecord()
 		{
@@ -54,6 +59,11 @@ namespace Neo4j.Driver.Tests.TestBackend
 		{
 			ResultCursor = cursor;
 			await Task.CompletedTask;
+		}
+
+		public async override Task<IResultSummary> ConsumeResults()
+		{
+			return await ResultCursor.ConsumeAsync().ConfigureAwait(false);
 		}
 	}
 
@@ -73,7 +83,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			return await Task.FromResult<IRecord>(null);
 		}
 
-		public async Task<IResultSummary> ConsumeResults()
+		public async override Task<IResultSummary> ConsumeResults()
 		{
 			return await Results.ConsumeAsync().ConfigureAwait(false);
 		}
