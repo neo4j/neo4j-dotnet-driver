@@ -91,9 +91,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 var result = await session.RunAsync("Invalid Cypher");
                 var ex = await Record.ExceptionAsync(() => result.ConsumeAsync());
 
-                ex.Should().BeOfType<ClientException>().Which
-                    .Message.Should().StartWith("Invalid input");
-            }
+				ex.Should().BeOfType<ClientException>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
+			}
             finally
             {
                 await session.CloseAsync();

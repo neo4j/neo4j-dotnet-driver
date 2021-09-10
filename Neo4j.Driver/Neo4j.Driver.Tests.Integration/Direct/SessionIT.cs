@@ -137,8 +137,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 			{
 				var ex = await Record.ExceptionAsync(() => session.RunAndConsumeAsync("Invalid Cypher"));
 
-				ex.Should().BeOfType<ClientException>().Which
-					.Message.Should().StartWith("Invalid input");
+				ex.Should().BeOfType<ClientException>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
 			}
             
 
@@ -156,8 +155,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 			await using (session.ConfigureAwait(false))
 			{
 				var ex = await Record.ExceptionAsync(() => session.RunAndConsumeAsync("Invalid Cypher"));
-				ex.Should().BeOfType<ClientException>().Which
-					.Message.Should().StartWith("Invalid input");
+				ex.Should().BeOfType<ClientException>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
 
 				var result = await session.RunAndSingleAsync("RETURN 1", null);
 				result[0].Should().BeEquivalentTo(1);
@@ -176,8 +174,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 				try
 				{
 					var ex = await Record.ExceptionAsync(() => tx.RunAndConsumeAsync("Invalid Cypher"));
-					ex.Should().BeOfType<ClientException>().Which
-						.Message.Should().StartWith("Invalid input");
+					ex.Should().BeOfType<ClientException>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
 				}
 				finally
 				{
@@ -203,11 +200,10 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 await tx.RunAsync("Invalid Cypher");
 
                 var ex = await Record.ExceptionAsync(() => tx.CommitAsync());
-                ex.Should().BeOfType<ClientException>().Which
-                    .Message.Should().StartWith("Invalid input");
+				ex.Should().BeOfType<ClientException>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
 
-                // Then can still run more afterwards
-                var anotherTx = await session.BeginTransactionAsync();
+				// Then can still run more afterwards
+				var anotherTx = await session.BeginTransactionAsync();
                 try
                 {
                     var result =
@@ -236,8 +232,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 				try
 				{
 					var ex = await Record.ExceptionAsync(() => tx.RunAndConsumeAsync("Invalid Cypher"));
-					ex.Should().BeOfType<ClientException>().Which
-						.Message.Should().StartWith("Invalid input");
+					ex.Should().BeOfType<ClientException>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
 				}
 				finally
 				{
