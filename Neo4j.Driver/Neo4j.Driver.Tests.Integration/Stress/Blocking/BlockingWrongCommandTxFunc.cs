@@ -39,7 +39,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 				var result = txc.Run("RETURN");
 				var exc = Record.Exception(() => result.Consume());
 
-				exc.Should().BeOfType<ClientException>().Which.Message.Should().Contain("Unexpected end of input");
+				exc.Should().BeOfType<ClientException>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
 
 				return result;
 			});
