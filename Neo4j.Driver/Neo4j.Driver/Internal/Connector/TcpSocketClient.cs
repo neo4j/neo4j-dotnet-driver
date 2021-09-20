@@ -222,5 +222,12 @@ namespace Neo4j.Driver.Internal.Connector
                     return trust;
                 });
         }
-    }
+
+		public void SetRecvTimeOut(int seconds)
+		{
+			//if (ReadStream is not null)
+			//	ReadStream.ReadTimeout = (seconds > 0) ? (int)TimeSpan.FromSeconds(seconds).TotalMilliseconds : System.Threading.Timeout.Infinite; 
+			_client.ReceiveTimeout = (int)TimeSpan.FromSeconds(seconds).TotalMilliseconds;
+		}
+	}
 }

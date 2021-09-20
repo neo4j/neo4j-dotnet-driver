@@ -86,5 +86,8 @@ namespace Neo4j.Driver.Internal.Connector
         void UpdateVersion(ServerVersion newVersion);
 
         IDictionary<string, string> RoutingContext { get; set; }
-    }
+
+		void SetRecvTimeOut(int seconds);
+
+	}
 }

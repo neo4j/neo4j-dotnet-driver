@@ -24,6 +24,8 @@ using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.Util;
 
+using HintsType = System.Collections.Generic.Dictionary<string, object>;
+
 namespace Neo4j.Driver.Internal.MessageHandling.V4_3
 {
     internal class HelloResponseHandler : MetadataCollectingResponseHandler
@@ -41,6 +43,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4_3
 
             AddMetadata<ServerVersionCollector, ServerVersion>();
             AddMetadata<ConnectionIdCollector, string>();
+			AddMetadata<ConfigurationHintsCollector, HintsType>();
         }
 
         public override void OnSuccess(IDictionary<string, object> metadata)
@@ -52,6 +55,10 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4_3
             _connection.UpdateVersion(new ServerVersion(Version.MajorVersion, Version.MinorVersion, 0));
 
             _connection.UpdateId(GetMetadata<ConnectionIdCollector, string>());
-        }
+
+			
+			var timeout = new ConfigHintRecvTimeout(GetMetadata<ConfigurationHintsCollector, HintsType>()).Get;
+			_connection.SetRecvTimeOut(timeout);			
+		}
     }
 }

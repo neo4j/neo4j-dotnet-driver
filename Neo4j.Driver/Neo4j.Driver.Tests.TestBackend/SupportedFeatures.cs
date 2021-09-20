@@ -13,6 +13,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 		static SupportedFeatures()
 		{
 			FeaturesList.Add("AuthorizationExpiredTreatment");
+			FeaturesList.Add("ConfHint:connection.recv_timeout_seconds");
 		}
 	}
 }

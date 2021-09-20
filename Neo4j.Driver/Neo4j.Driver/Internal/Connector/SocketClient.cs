@@ -181,5 +181,11 @@ namespace Neo4j.Driver.Internal.Connector
                 _logger?.Debug(message, args);
             }
         }
-    }
+
+		public void SetRecvTimeOut(int seconds)
+		{
+			if (_tcpSocketClient is not null)
+				_tcpSocketClient.SetRecvTimeOut(seconds);
+		}
+	}
 }

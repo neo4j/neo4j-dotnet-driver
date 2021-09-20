@@ -32,5 +32,6 @@ namespace Neo4j.Driver.Internal.Connector
         Task ReceiveOneAsync(IResponsePipeline responsePipeline);
         bool IsOpen { get; }
         Task StopAsync();
-    }
+		void SetRecvTimeOut(int seconds);
+	}
 }

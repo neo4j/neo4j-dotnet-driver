@@ -27,5 +27,7 @@ namespace Neo4j.Driver.Internal.Connector
         Stream WriteStream { get; }
         Task ConnectAsync(Uri uri);
         Task DisconnectAsync();
-    }
+
+		void SetRecvTimeOut(int seconds);
+	}
 }
