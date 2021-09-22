@@ -77,8 +77,8 @@ namespace Neo4j.Driver.Internal.IO
 
             while ( requiredSize > 0)
 			{
-                numBytesRead = await InputStream.ReadAsync(data, 0, bufferSize).ConfigureAwait(false);
-                
+				numBytesRead = await InputStream.ReadWithTimeoutAsync(data, 0, bufferSize, InputStream.ReadTimeout).ConfigureAwait(false);
+				
                 if (numBytesRead <= 0) break;
 
                 ChunkBuffer.Write(data, 0, numBytesRead);
