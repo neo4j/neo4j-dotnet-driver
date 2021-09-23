@@ -75,11 +75,8 @@ namespace Neo4j.Driver.Internal
 			}
 
 			// Means that main task completed. We use Result directly.
-			// If the main task failed the following line will throw an exception and
-			// we'll catch it above.
-			int readBytes = readBytesTask.Result;
-
-			return readBytes;
+			// If the main task failed the following line will throw an exception and we'll catch it above.
+			return readBytesTask.Result;
 		}
 	}
 }

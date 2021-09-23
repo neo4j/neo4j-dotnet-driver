@@ -286,7 +286,6 @@ namespace Neo4j.Driver.Internal.Connector
 
 		public void SetRecvTimeOut(int seconds)
 		{
-
 			_client.SetRecvTimeOut(seconds);			
 		}
 	}

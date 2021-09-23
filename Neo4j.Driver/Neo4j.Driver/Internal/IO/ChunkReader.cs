@@ -35,6 +35,31 @@ namespace Neo4j.Driver.Internal.IO
         private long ChunkBufferRemaining { get { return ChunkBuffer.Length - ChunkBuffer.Position; } }
 
         private const int ChunkHeaderSize = 2;
+		private int _readTimeoutMs = -1;
+
+		public double ReadTimeoutSeconds 
+		{
+			get
+			{
+				return TimeSpan.FromMilliseconds(_readTimeoutMs).TotalSeconds;
+			} 
+			set
+			{
+				_readTimeoutMs = (int)TimeSpan.FromSeconds(value).TotalMilliseconds;
+			}
+		} 
+
+		public int ReadTimeoutMs
+		{
+			get
+			{
+				return _readTimeoutMs;
+			}
+			set
+			{
+				_readTimeoutMs = value;
+			}
+		}
 
 
         public ChunkReader(Stream downStream)
@@ -77,7 +102,7 @@ namespace Neo4j.Driver.Internal.IO
 
             while ( requiredSize > 0)
 			{
-				numBytesRead = await InputStream.ReadWithTimeoutAsync(data, 0, bufferSize, InputStream.ReadTimeout).ConfigureAwait(false);
+				numBytesRead = await InputStream.ReadWithTimeoutAsync(data, 0, bufferSize, (int)_readTimeoutMs).ConfigureAwait(false);
 				
                 if (numBytesRead <= 0) break;
 
