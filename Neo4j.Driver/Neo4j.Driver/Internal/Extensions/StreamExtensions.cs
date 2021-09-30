@@ -58,15 +58,29 @@ namespace Neo4j.Driver.Internal
 		/// <param name="timeoutMS">The timeout in milliseconds that the stream will close after if there is no activity. </param>
 		/// <returns>The number of bytes read</returns>
 		public static async Task<int> ReadWithTimeoutAsync(this Stream stream, byte[] buffer,int offset, int count, int timeoutMS)
-		{	
+		{
 			var cancellationDelayTask = Task.Delay(timeoutMS);
+			int result;
 
-			// Stream.ReadAsync doesn't honor cancellation token. It only checks it at the beginning. The actual
-			// operation is not guarded. As a result if remote server never responds and connection never closed
-			// it will lead to this operation hanging forever.
-			Task<int> readBytesTask = stream.ReadAsync(buffer, offset, count);
-			await Task.WhenAny(readBytesTask, cancellationDelayTask).ConfigureAwait(false);
+			try
+			{
+				// Stream.ReadAsync doesn't honor cancellation token. It only checks it at the beginning. The actual
+				// operation is not guarded. As a result if remote server never responds and connection never closed
+				// it will lead to this operation hanging forever.
+				Task<int> readBytesTask = stream.ReadAsync(buffer, offset, count);
 
+				await Task.WhenAny(readBytesTask, cancellationDelayTask).ConfigureAwait(false);
+
+				result = readBytesTask.Result;
+			}
+			catch(Exception ex)
+			{
+				if (ex.InnerException is not null)  //We want to throw the inner exception if anything goes wrong with the stream. If we don't
+					throw ex.InnerException;        //then the Task.WhenAny exception will be propogated
+				else                                
+					throw;
+			}
+						
 			// Check whether cancellation task is cancelled (or completed).
 			if (cancellationDelayTask.IsCanceled || cancellationDelayTask.IsCompleted)
 			{
@@ -76,7 +90,9 @@ namespace Neo4j.Driver.Internal
 
 			// Means that main task completed. We use Result directly.
 			// If the main task failed the following line will throw an exception and we'll catch it above.
-			return readBytesTask.Result;
+			return result;
+			
+			
 		}
 	}
 }

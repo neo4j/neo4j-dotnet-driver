@@ -45,7 +45,8 @@ namespace Neo4j.Driver.Internal.IO
 			} 
 			set
 			{
-				_readTimeoutMs = (int)TimeSpan.FromSeconds(value).TotalMilliseconds;
+				//Convert to milliseconds ensuring that any negative numbers are set to -1 which means no timeout.
+				_readTimeoutMs = (int)Math.Max(TimeSpan.FromSeconds(value).TotalMilliseconds, -1);
 			}
 		} 
 
