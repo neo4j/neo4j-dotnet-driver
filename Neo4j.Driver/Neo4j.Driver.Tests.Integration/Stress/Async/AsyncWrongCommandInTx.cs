@@ -45,7 +45,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                         await cursor.ConsumeAsync();
                     });
 
-                    exc.Should().BeOfType<ClientException>().Which.Message.Should().Contain("Unexpected end of input");
+                    exc.Should().BeOfType<ClientException>().Which.Message.Should().Contain("Invalid input");
                 }
                 finally
                 {

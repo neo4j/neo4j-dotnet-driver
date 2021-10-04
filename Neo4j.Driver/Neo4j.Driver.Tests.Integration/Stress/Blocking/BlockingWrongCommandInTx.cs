@@ -37,7 +37,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             {
                 var exc = Record.Exception(() => txc.Run("RETURN").Consume());
 
-                exc.Should().BeOfType<ClientException>().Which.Message.Should().Contain("Unexpected end of input");
+                exc.Should().BeOfType<ClientException>().Which.Message.Should().Contain("Invalid input");
             }
         }
     }

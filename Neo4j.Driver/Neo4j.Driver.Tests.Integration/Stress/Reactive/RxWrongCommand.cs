@@ -52,7 +52,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
             result.AssertEqual(
                 OnError<IRecord>(0,
-                    MatchesException<ClientException>(exc => exc.Message.Contains("Unexpected end of input"))));
+                    MatchesException<ClientException>(exc => exc.Message.Contains("Invalid input"))));
         }
     }
 }
