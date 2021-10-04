@@ -112,7 +112,7 @@ namespace Neo4j.Driver.Internal
         public async Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode,
             Action<TransactionConfigBuilder> action, bool disposeUnconsumedSessionResult)
         {
-            var tx = await BeginTransactionWithoutLoggingAsync(mode, action, disposeUnconsumedSessionResult)
+            var tx = await TryExecuteAsync(_logger, () => BeginTransactionWithoutLoggingAsync(mode, action, disposeUnconsumedSessionResult))
                 .ConfigureAwait(false);
             return tx;
         }
@@ -239,7 +239,6 @@ namespace Neo4j.Driver.Internal
 				//Dispose managed resources
 				
 				//call it synchronously
-				//CloseAsync().GetAwaiter().GetResult();
 				Task.Run(() => CloseAsync()).GetAwaiter().GetResult();
 			}
 

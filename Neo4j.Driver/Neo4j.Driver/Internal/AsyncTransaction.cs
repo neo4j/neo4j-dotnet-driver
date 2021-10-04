@@ -129,7 +129,15 @@ namespace Neo4j.Driver.Internal
             }
         }
 
-        private async Task DiscardUnconsumed()
+		//Needed to implement the DisposeAsync interface correctly. This is called from the parent class that is
+		//implementing the rest of the pattern.
+		protected override async ValueTask DisposeAsyncCore()
+		{
+			if (IsOpen)
+				await RollbackAsync();
+		}
+
+		private async Task DiscardUnconsumed()
         {
             foreach (var result in _results)
             {
