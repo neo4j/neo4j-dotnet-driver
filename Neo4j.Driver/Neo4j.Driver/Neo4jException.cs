@@ -455,6 +455,24 @@ namespace Neo4j.Driver
         /// <param name="message">The error message</param>
         public ResultConsumedException(string message) : base(message)
         {
-        }
-    }
+		}
+	}
+
+	/// <summary>
+	/// An attempt to BeginTransaction has been made before the sessions existing transaction
+	/// has been consumed or rolledback. e.g. An attempt to nest transactions has occured.
+	/// A session can only have a single transaction at a time.
+	/// </summary>
+	[DataContract]
+	public class TransactionNestingException : ClientException
+	{ 
+		/// <summary>
+		/// Creaet a new <see cref="TransactionNestingException"/> with an error message
+		/// </summary>
+		/// <param name="message">The error message</param>
+		public TransactionNestingException(string message) : base(message)		
+		{
+		}
+	}
+
 }

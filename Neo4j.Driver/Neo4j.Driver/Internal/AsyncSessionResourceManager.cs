@@ -164,9 +164,9 @@ namespace Neo4j.Driver.Internal
         {
             if (_transaction != null)
             {
-                throw new ClientException("Please close the currently open transaction object before running " +
-                                          "more queries/transactions in the current session.");
-            }
+				throw new TransactionNestingException("Attempting to nest transactions. A session can only have a single " +
+					"transaction open at a time. Ensure to commit or rollback the previous transaction before opening the next.");
+			}
         }
 
         private void EnsureSessionIsOpen()

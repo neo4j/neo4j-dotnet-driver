@@ -142,9 +142,9 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                                 new {x = record["x"].As<int>()});
                         }
                     });
-                    error.Should().BeOfType<ClientException>();
+                    error.Should().BeOfType<TransactionNestingException>();
                     error.Message.Should()
-                        .Contain("Please close the currently open transaction object before running more");
+                        .Contain("Attempting to nest transactions");
                 }
                 finally
                 {
@@ -171,9 +171,9 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                             await session.BeginTransactionAsync();
                         }
                     });
-                    error.Should().BeOfType<ClientException>();
+                    error.Should().BeOfType<TransactionNestingException>();
                     error.Message.Should()
-                        .Contain("Please close the currently open transaction object before running more");
+                        .Contain("Attempting to nest transactions");
                 }
                 finally
                 {
@@ -203,9 +203,9 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                                 new {x = record["x"].As<int>()}));
                         }
                     });
-                    error.Should().BeOfType<ClientException>();
+                    error.Should().BeOfType<TransactionNestingException>();
                     error.Message.Should()
-                        .Contain("Please close the currently open transaction object before running more");
+                        .Contain("Attempting to nest transactions");
                 }
                 finally
                 {
@@ -236,9 +236,9 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                             }
                         }));
 
-                    error.Should().BeOfType<ClientException>();
+                    error.Should().BeOfType<TransactionNestingException>();
                     error.Message.Should()
-                        .Contain("Please close the currently open transaction object before running more");
+                        .Contain("Attempting to nest transactions");
                 }
                 finally
                 {
@@ -269,9 +269,9 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                             }
                         }));
 
-                    error.Should().BeOfType<ClientException>();
+                    error.Should().BeOfType<TransactionNestingException>();
                     error.Message.Should()
-                        .Contain("Please close the currently open transaction object before running more");
+                        .Contain("Attempting to nest transactions");
                 }
                 finally
                 {
@@ -299,9 +299,9 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                             }
                         }));
 
-                    error.Should().BeOfType<ClientException>();
+                    error.Should().BeOfType<TransactionNestingException>();
                     error.Message.Should()
-                        .Contain("Please close the currently open transaction object before running more");
+                        .Contain("Attempting to nest transactions");
                 }
                 finally
                 {

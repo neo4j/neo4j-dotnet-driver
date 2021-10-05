@@ -101,8 +101,8 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 .WaitForCompletion()
                 .AssertEqual(
                     OnError<int>(0,
-                        MatchesException<ClientException>(e =>
-                            OutputMessage(e.Message, "close the currently open transaction object before"))));
+                        MatchesException<TransactionNestingException>(e =>
+                            OutputMessage(e.Message, "Attempting to nest transactions"))));
         }
 
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
@@ -181,8 +181,8 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 .WaitForCompletion()
                 .AssertEqual(
                     OnError<int>(0,
-                        MatchesException<ClientException>(e =>
-                            e.Message.Contains("close the currently open transaction object before"))));
+                        MatchesException<TransactionNestingException>(e =>
+                            e.Message.Contains("Attempting to nest transactions"))));
         }
 
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]

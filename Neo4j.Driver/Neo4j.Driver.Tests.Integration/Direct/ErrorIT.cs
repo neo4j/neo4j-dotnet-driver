@@ -43,8 +43,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 {
                     var ex = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
 
-                    ex.Should().BeOfType<ClientException>().Which
-                        .Message.Should().StartWith("Please close the currently open transaction object");
+                    ex.Should().BeOfType<TransactionNestingException>().Which
+                        .Message.Should().StartWith("Attempting to nest transactions");
                 }
                 finally
                 {
@@ -68,8 +68,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 {
                     var ex = await Record.ExceptionAsync(() => session.BeginTransactionAsync());
 
-                    ex.Should().BeOfType<ClientException>().Which
-                        .Message.Should().StartWith("Please close the currently open transaction object");
+                    ex.Should().BeOfType<TransactionNestingException>().Which
+                        .Message.Should().StartWith("Attempting to nest transactions");
                 }
                 finally
                 {
@@ -91,9 +91,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 var result = await session.RunAsync("Invalid Cypher");
                 var ex = await Record.ExceptionAsync(() => result.ConsumeAsync());
 
-                ex.Should().BeOfType<ClientException>().Which
-                    .Message.Should().StartWith("Invalid input");
-            }
+				ex.Should().BeOfType<ClientException>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
+			}
             finally
             {
                 await session.CloseAsync();
