@@ -35,9 +35,8 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             using (var session = NewSession(AccessMode.Read, context))
             {
                 var exc = Record.Exception(() => session.Run("RETURN").Consume());
-
-				exc.Should().BeOfType<ClientException>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
-			}
+                exc.Should().BeOfType<ClientException>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
+            }
         }
     }
 }

@@ -133,7 +133,7 @@ namespace Neo4j.Driver.Tests
                 var session = NewSession(mockConn.Object);
                 await session.BeginTransactionAsync();
                 var error = await Record.ExceptionAsync(() => session.BeginTransactionAsync());
-                error.Should().BeOfType<ClientException>();
+                error.Should().BeOfType<TransactionNestingException>();
             }
 
             [Fact]
@@ -154,7 +154,7 @@ namespace Neo4j.Driver.Tests
                 var tx = await session.BeginTransactionAsync();
 
                 var error = await Record.ExceptionAsync(() => session.RunAsync("lalal"));
-                error.Should().BeOfType<ClientException>();
+                error.Should().BeOfType<TransactionNestingException>();
             }
 
             [Fact]
