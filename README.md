@@ -277,7 +277,7 @@ Any parameter to this powershell script will be used to reset environment variab
 
 ### Building the Source Code on MacOS and/or Linux
 
-The driver targets at .NET Standard 2.0.
+The driver targets at .NET Standard 2.0. and .NET 5.0
 As a result, it can be compiled and run on linux machines after installing for example .NET Core 2.0 library.
 As for IDE, we recommend Rider for daily development.
 The integration tests require [boltkit](https://github.com/neo4j-contrib/boltkit) to be installed and accessible via command line.
