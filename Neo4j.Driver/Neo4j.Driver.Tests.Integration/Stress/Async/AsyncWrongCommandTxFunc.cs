@@ -46,7 +46,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 							var cursor = await tx.RunAsync("RETURN").ConfigureAwait(false);
 							await cursor.ConsumeAsync();
 						}).ConfigureAwait(false);
-          
+
 						exc.Should().BeOfType<ClientException>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
 					}
 					finally
