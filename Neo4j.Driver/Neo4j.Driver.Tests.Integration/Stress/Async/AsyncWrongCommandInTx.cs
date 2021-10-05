@@ -44,8 +44,8 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                         var cursor = await txc.RunAsync("RETURN");
                         await cursor.ConsumeAsync();
                     });
-
-                    exc.Should().BeOfType<ClientException>().Which.Message.Should().Contain("Invalid input");
+        
+                    exc.Should().BeOfType<ClientException>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
                 }
                 finally
                 {

@@ -24,6 +24,7 @@ using Neo4j.Driver.Reactive;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
 using static Neo4j.Driver.Reactive.Utils;
+using FluentAssertions;
 
 namespace Neo4j.Driver.IntegrationTests.Reactive
 {
@@ -359,14 +360,14 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldFailOnKeysWhenRunFails()
             {
-                NewRunnable()
-                    .Run("THIS IS NOT A CYPHER")
-                    .Keys()
-                    .WaitForCompletion()
-                    .AssertEqual(
-                        OnError<string[]>(0,
-                            MatchesException<ClientException>(e => e.Message.StartsWith("Invalid input")))
-                    );
+				NewRunnable()
+					.Run("THIS IS NOT A CYPHER")
+					.Keys()
+					.WaitForCompletion()
+					.AssertEqual(
+						OnError<string[]>(0,
+							MatchesException<ClientException>(e => e.Code.Equals("Neo.ClientError.Statement.SyntaxError")))						
+					);
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
@@ -378,7 +379,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 var keys2 = result.Keys().WaitForCompletion();
 
                 keys1.AssertEqual(
-                    OnError<string[]>(0, MatchesException<ClientException>(e => e.Message.StartsWith("Invalid input")))
+                    OnError<string[]>(0, MatchesException<ClientException>(e => e.Code.Equals("Neo.ClientError.Statement.SyntaxError")))
                 );
                 keys1.AssertEqual(keys2);
             }
@@ -394,7 +395,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     .WaitForCompletion()
                     .AssertEqual(
                         OnError<IRecord>(0,
-                            MatchesException<ClientException>(e => e.Message.StartsWith("Invalid input")))
+                            MatchesException<ClientException>(e => e.Code.Equals("Neo.ClientError.Statement.SyntaxError")))
                     );
 
                 result
@@ -417,7 +418,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     .WaitForCompletion()
                     .AssertEqual(
                         OnError<IResultSummary>(0,
-                            MatchesException<ClientException>(e => e.Message.StartsWith("Invalid input")))
+                            MatchesException<ClientException>(e => e.Code.Equals("Neo.ClientError.Statement.SyntaxError")))
                     );
 
                 summary2.AssertEqual(summary1);
