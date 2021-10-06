@@ -85,18 +85,12 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public IProtocolObject CreateObjectFromData()
         {
-            return ProtocolObjectFactory.CreateObject(GetObjectType(), CurrentObjectData);
-        }
-
-        private string GetObjectTypeName()
-        {
-            JObject jsonObject = JObject.Parse(CurrentObjectData);
-            return (string)jsonObject["name"];
+            return ProtocolObjectFactory.CreateObject(CurrentObjectData);
         }
 
 		public Type GetObjectType()
-		{	
-			return Type.GetType(this.GetType().Namespace + "." + GetObjectTypeName(), true);
+		{
+			return ProtocolObjectFactory.GetObjectType(CurrentObjectData);			
 		}
     }
 }

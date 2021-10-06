@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 			while (!BreakProcessLoop && await RequestReader.ParseNextRequest().ConfigureAwait(false))
 			{
-				var protocolObject = ProtocolObjectFactory.CreateObject(RequestReader.GetObjectType(), RequestReader.CurrentObjectData);
+				var protocolObject = RequestReader.CreateObjectFromData();
 				protocolObject.ProtocolEvent += BreakLoopEvent;
 
 				await protocolObject.Process(this).ConfigureAwait(false);
@@ -51,7 +51,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 				return null;
 
 			//Create and return an object from the request message
-			return ProtocolObjectFactory.CreateObject(RequestReader.GetObjectType(), RequestReader.CurrentObjectData);
+			return ProtocolObjectFactory.CreateObject(RequestReader.CurrentObjectData);
 		}
 
 
@@ -122,6 +122,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 					catch (TestKitProtocolException ex)
 					{
 						Trace.WriteLine($"TestKit protocol exception detected: {ex.Message}");
+						await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
 						restartConnection = true;
 					}					
 					catch (IOException ex)
