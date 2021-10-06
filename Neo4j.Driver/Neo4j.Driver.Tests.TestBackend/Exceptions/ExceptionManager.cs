@@ -43,6 +43,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			{ typeof(ValueOverflowException),           "ValueOverflowError" },
 			{ typeof(FatalDiscoveryException),          "FatalDiscoveryError" },
 			{ typeof(ResultConsumedException),          "ResultConsumedError" },
+			{ typeof(TransactionNestingException),      "TransactionNestingException"},
 
             { typeof(NotSupportedException),            "NotSupportedException" }
         };

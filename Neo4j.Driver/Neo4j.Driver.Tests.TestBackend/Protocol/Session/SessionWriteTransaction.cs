@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             {
 				sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAbleNothing);
 
-				TransactionId = controller.TransactionManagager.AddTransaction(new TransactionWrapper(tx, async cursor =>
+				TransactionId = controller.TransactionManager.AddTransaction(new TransactionWrapper(tx, async cursor =>
 				{
 					var result = ProtocolObjectFactory.CreateObject<Result>();
 					await result.PopulateRecords(cursor).ConfigureAwait(false);
@@ -73,7 +73,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 					//Otherwise keep processing unrelated commands.
 				}
 
-                //controller.TransactionManagager.RemoveTransaction(TransactionId);
+                //controller.TransactionManager.RemoveTransaction(TransactionId);
             }, TransactionConfig);
         }
 

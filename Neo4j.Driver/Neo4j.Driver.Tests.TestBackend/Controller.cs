@@ -14,7 +14,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         private bool BreakProcessLoop { get; set; } = false;
         private RequestReader RequestReader { get; set; }
         private ResponseWriter ResponseWriter { get; set; }
-        public TransactionManager TransactionManagager { get; set; } = new TransactionManager();
+        public TransactionManager TransactionManager { get; set; } = new TransactionManager();
 
 
         public Controller(IConnection conn)

@@ -35,6 +35,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 									typeof(TransactionRun),
 									typeof(TransactionCommit),
 									typeof(TransactionRollback),
+									typeof(TransactionClose),
 									typeof(SessionReadTransaction),
 									typeof(SessionWriteTransaction),
 									typeof(SessionBeginTransaction),
