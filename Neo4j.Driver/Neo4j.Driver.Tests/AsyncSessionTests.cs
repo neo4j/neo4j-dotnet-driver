@@ -29,6 +29,7 @@ using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.MessageHandling;
 using Xunit;
 using Record = Xunit.Record;
+using Neo4j.Driver.Internal.Routing;
 
 namespace Neo4j.Driver.Tests
 {
@@ -391,6 +392,11 @@ namespace Neo4j.Driver.Tests
             {
                 return Task.FromResult(true);
             }
+
+			public IRoutingTable GetRoutingTable(string database)
+			{
+				throw new NotSupportedException();
+			}
         }
     }
 }

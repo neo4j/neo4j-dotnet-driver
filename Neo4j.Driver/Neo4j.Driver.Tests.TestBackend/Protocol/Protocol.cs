@@ -50,7 +50,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 									typeof(CheckMultiDBSupport),
 									typeof(ResolverResolutionCompleted),
 									typeof(StartTest),
-									typeof(GetFeatures)};
+									typeof(GetFeatures),
+									typeof(GetRoutingTable)};
 
 
 		static Protocol()

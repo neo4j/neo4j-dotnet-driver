@@ -139,6 +139,11 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 throw new NotSupportedException();
             }
+
+			public IRoutingTable GetRoutingTable(string database)
+			{
+				throw new NotSupportedException();
+			}
         }
     }
 }

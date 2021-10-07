@@ -23,6 +23,7 @@ using Neo4j.Driver;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Util;
+using Neo4j.Driver.Internal.Routing;
 
 namespace Neo4j.Driver.Internal
 {
@@ -127,6 +128,12 @@ namespace Neo4j.Driver.Internal
         {
             return _connectionProvider.SupportsMultiDbAsync();
         }
+
+		//Non public facing api. Used for testing with testkit only
+		public IRoutingTable GetRoutingTable(string database)
+		{
+			return _connectionProvider.GetRoutingTable(database);		
+		}
 
         public void Dispose()
         {

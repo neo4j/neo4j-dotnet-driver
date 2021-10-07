@@ -20,6 +20,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal.Routing;
 
 namespace Neo4j.Driver.Internal
 {
@@ -29,6 +30,7 @@ namespace Neo4j.Driver.Internal
         Task CloseAsync();
         Task VerifyConnectivityAsync();
         Task<bool> SupportsMultiDbAsync();
+		IRoutingTable GetRoutingTable(string database);
 
         IDictionary<string, string> RoutingContext { get; set; }
     }
