@@ -97,7 +97,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                     {
                         // Generate "driver" exception something happened within the driver
                         await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-                        restartConnection = false;
+                        restartConnection = true;
                     }
 					catch (TestKitClientException ex)
 					{
