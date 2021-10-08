@@ -97,7 +97,8 @@ namespace Neo4j.Driver.Tests.TestBackend
                     {
                         // Generate "driver" exception something happened within the driver
                         await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-                        restartConnection = true;
+
+						restartConnection = false;
                     }
 					catch (TestKitClientException ex)
 					{
@@ -129,7 +130,12 @@ namespace Neo4j.Driver.Tests.TestBackend
                     {
                         Trace.WriteLine($"Socket exception detected: {ex.Message}");    //Handled outside of the exception manager because there is no connection to reply on.
                         restartConnection = true;
-                    }									
+                    }	
+					catch(Exception ex)
+					{
+						Trace.WriteLine($"General exception detected, restarting connection: {ex.Message}");
+						restartConnection = true;
+					}
                     finally
                     {
                         if (restartConnection)
