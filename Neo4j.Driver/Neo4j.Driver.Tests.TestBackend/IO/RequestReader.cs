@@ -38,9 +38,9 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
             var input = await InputReader.ReadLineAsync();
 
-            if (string.IsNullOrEmpty(input))
-                return false;
-
+			if (string.IsNullOrEmpty(input))
+				throw new IOException("The stream has been closed, and/or there is no more data on it.");
+		
             if (IsOpenTag(input))
                 return true;
 

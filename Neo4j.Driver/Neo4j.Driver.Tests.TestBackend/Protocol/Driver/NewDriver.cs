@@ -8,67 +8,19 @@ using System.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-	internal class ListAddressResolver : IServerAddressResolver
-	{
-		private readonly ServerAddress[] servers;
-		Controller Control { get; }
-		Uri Uri { get; }
-
-		public ListAddressResolver(Controller control, string uri)
-		{
-			Control = control;
-			Uri = new Uri(uri);
-		}
-
-		public ListAddressResolver(params ServerAddress[] servers)
-		{
-			this.servers = servers;
-		}
-
-		public ISet<ServerAddress> Resolve(ServerAddress address)
-		{
-			string errorMessage = "A ResolverResolutionCompleted request is expected straight after a ResolverResolutionRequired reponse is sent";
-			var response = new ProtocolResponse("ResolverResolutionRequired",
-												new
-												{
-													id = ProtocolObjectManager.GenerateUniqueIdString(),
-													address = Uri.Host + ":" + Uri.Port
-												})
-												.Encode();
-
-			//Send the ResolverResolutionRequired response
-			Control.SendResponse(response).ConfigureAwait(false);
-
-			//Read the ResolverResolutionCompleted request, throw if another type of request has come in
-			var result = Control.TryConsumeStreamObjectOfType<ResolverResolutionCompleted>().Result;
-			if(result is null)
-				throw new NotSupportedException(errorMessage);
-
-			//Return a IServerAddressResolver instance thats Resolve method uses the addresses in the ResolverResolutionoCompleted request.
-			return new HashSet<ServerAddress>(result
-											  .data
-											  .addresses
-											  .Select(x =>
-											  {
-												  string[] split = x.Split(':');
-												  return ServerAddress.From(split[0], Convert.ToInt32(split[1]));
-											  }));
-		}
-	}
-
 	internal class SimpleLogger : ILogger
 	{
 		public void Debug(string message, params Object[] args)
 		{
-			Console.WriteLine("[DEBUG]" + message, args);
+			Console.WriteLine("[DRIVER-DEBUG]" + message, args);
 		}
 		public void Error(System.Exception error, string message, params Object[] args)
 		{
-			Console.WriteLine("[ERROR]" + message, args);
+			Console.WriteLine("[DRIVER-ERROR]" + message, args);
 		}
 		public void Info(string message, params Object[] args)
 		{
-			Console.WriteLine("[INFO]" + message, args);
+			Console.WriteLine("[DRIVER-INFO]" + message, args);
 		}
 		public bool IsDebugEnabled()
 		{
@@ -76,15 +28,15 @@ namespace Neo4j.Driver.Tests.TestBackend
 		}
 		public bool IsTraceEnabled()
 		{
-			return false;
+			return true;
 		}
 		public void Trace(string message, params Object[] args)
 		{
-			Console.WriteLine("[TRACE]" + message, args);
+			Console.WriteLine("[DRIVER-TRACE]" + message, args);
 		}
 		public void Warn(System.Exception error, string message, params Object[] args)
 		{
-			Console.WriteLine("[WARM]" + message, args);
+			Console.WriteLine("[DRIVER-WARN]" + message, args);
 		}
 	}
 
