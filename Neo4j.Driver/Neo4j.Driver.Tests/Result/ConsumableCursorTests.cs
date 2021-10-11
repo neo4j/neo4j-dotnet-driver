@@ -25,6 +25,23 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests
 {
+	public class ConsumedException
+	{
+		public static void ThrowsResultConsumedException(Func<object> func)
+		{
+			var ex = Xunit.Record.Exception(func);
+			ex.Should().NotBeNull();
+			ex.Should().BeOfType<ResultConsumedException>();
+		}
+
+		public static async Task ThrowsResultConsumedException<T>(Func<Task<T>> func)
+		{
+			var ex = await Xunit.Record.ExceptionAsync(func);
+			ex.Should().NotBeNull();
+			ex.Should().BeOfType<ResultConsumedException>();
+		}
+	}
+
     public class ConsumableCursorTests
     {
         [Fact]
@@ -33,9 +50,9 @@ namespace Neo4j.Driver.Tests
             var result = ResultCursorCreator.CreateResultCursor(1, 3);
             await result.ConsumeAsync();
 
-            await ThrowsResultConsumedException(async () => await result.FetchAsync());
-            await ThrowsResultConsumedException(async () => await result.PeekAsync());
-            ThrowsResultConsumedException(() => result.Current);
+            await ConsumedException.ThrowsResultConsumedException(async () => await result.FetchAsync());
+            await ConsumedException.ThrowsResultConsumedException(async () => await result.PeekAsync());
+			ConsumedException.ThrowsResultConsumedException(() => result.Current);
         }
 
         [Fact]
@@ -44,9 +61,9 @@ namespace Neo4j.Driver.Tests
             var result = ResultCursorCreator.CreateResultCursor(1, 3);
             await result.ConsumeAsync();
 
-            await ThrowsResultConsumedException(async () => await result.SingleAsync());
-            await ThrowsResultConsumedException(async () => await result.ToListAsync());
-            await ThrowsResultConsumedException(async () => await result.ForEachAsync(r => { }));
+            await ConsumedException.ThrowsResultConsumedException(async () => await result.SingleAsync());
+            await ConsumedException.ThrowsResultConsumedException(async () => await result.ToListAsync());
+            await ConsumedException.ThrowsResultConsumedException(async () => await result.ForEachAsync(r => { }));
         }
 
         [Fact]
@@ -65,21 +82,7 @@ namespace Neo4j.Driver.Tests
             summary2.Should().Be(summary0);
 
             keys1.Should().BeEquivalentTo(keys2);
-        }
-
-        public static void ThrowsResultConsumedException(Func<object> func)
-        {
-            var ex = Xunit.Record.Exception(func);
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ResultConsumedException>();
-        }
-
-        public static async Task ThrowsResultConsumedException<T>(Func<Task<T>> func)
-        {
-            var ex = await Xunit.Record.ExceptionAsync(func);
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ResultConsumedException>();
-        }
+        }       
 
         private static class ResultCursorCreator
         {
