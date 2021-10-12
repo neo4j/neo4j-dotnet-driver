@@ -806,7 +806,8 @@ namespace Neo4j.Driver.ExamplesAsync
                     _disposed = true;
                 }
 
-                public static async Task Main(string[] args)
+				#pragma warning disable CS8892
+				public static async Task Main(string[] args)
                 {
                     // Aura queries use an encrypted connection using the "neo4j+s" protocol
                     var boltUrl = "%%BOLT_URL_PLACEHOLDER%%";
