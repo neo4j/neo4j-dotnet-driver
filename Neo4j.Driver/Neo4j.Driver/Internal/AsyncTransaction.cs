@@ -133,8 +133,8 @@ namespace Neo4j.Driver.Internal
 		//implementing the rest of the pattern.
 		protected override async ValueTask DisposeAsyncCore()
 		{
-			//if (IsOpen)
-			//	await RollbackAsync();
+			if (IsOpen)
+				await RollbackAsync();
 		}
 
 		private async Task DiscardUnconsumed()
