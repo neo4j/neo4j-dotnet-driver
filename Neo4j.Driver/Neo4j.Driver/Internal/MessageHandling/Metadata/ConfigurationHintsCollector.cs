@@ -38,7 +38,11 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 				{
 					Collected = hints;					
 				}
-
+				else
+				{
+					throw new ProtocolException(
+					   $"Expected '{ConfigHintsKey}' metadata to be of type 'Dictionary<string, object>', but got '{configHintsObject?.GetType().Name}'.");
+				}
 			}			
 		}
 	}
