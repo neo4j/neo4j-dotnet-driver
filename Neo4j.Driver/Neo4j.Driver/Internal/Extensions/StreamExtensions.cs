@@ -59,6 +59,7 @@ namespace Neo4j.Driver.Internal
 		/// <returns>The number of bytes read</returns>
 		public static async Task<int> ReadWithTimeoutAsync(this Stream stream, byte[] buffer,int offset, int count, int timeoutMS)
 		{
+			timeoutMS = (timeoutMS <= 0) ? -1 : timeoutMS;
 			var cancellationDelayTask = Task.Delay(timeoutMS);
 			int result;
 

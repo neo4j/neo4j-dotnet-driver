@@ -14,7 +14,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 		{
 			FeaturesList.Add("AuthorizationExpiredTreatment");
 			FeaturesList.Add("ConfHint:connection.recv_timeout_seconds");
-			//FeaturesList.Add("Optimization:EagerTransactionBegin");
+			FeaturesList.Add("Optimization:EagerTransactionBegin");
 		}
 	}
 }
