@@ -14,7 +14,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         private bool BreakProcessLoop { get; set; } = false;
         private RequestReader RequestReader { get; set; }
         private ResponseWriter ResponseWriter { get; set; }
-        public TransactionManager TransactionManagager { get; set; } = new TransactionManager();
+        public TransactionManager TransactionManager { get; set; } = new TransactionManager();
 
 
         public Controller(IConnection conn)
@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 			while (!BreakProcessLoop && await RequestReader.ParseNextRequest().ConfigureAwait(false))
 			{
-				var protocolObject = ProtocolObjectFactory.CreateObject(RequestReader.GetObjectType(), RequestReader.CurrentObjectData);
+				var protocolObject = RequestReader.CreateObjectFromData();
 				protocolObject.ProtocolEvent += BreakLoopEvent;
 
 				await protocolObject.Process(this).ConfigureAwait(false);
@@ -51,7 +51,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 				return null;
 
 			//Create and return an object from the request message
-			return ProtocolObjectFactory.CreateObject(RequestReader.GetObjectType(), RequestReader.CurrentObjectData);
+			return ProtocolObjectFactory.CreateObject(RequestReader.CurrentObjectData);
 		}
 
 
@@ -77,77 +77,82 @@ namespace Neo4j.Driver.Tests.TestBackend
             Trace.WriteLine("Starting to listen for requests");
         }
 
-        public async Task Process()
+        public async Task Process(bool restartInitialState, Func<Exception, bool> loopConditional)
         {
-            bool restartConnection = true;
-            try
-            {
-                Trace.WriteLine("Starting Controller.Process");
+            bool restartConnection = restartInitialState;
 
-                while (true)
+            Trace.WriteLine("Starting Controller.Process");
+
+			Exception storedException = new TestKitClientException("Error from client");
+
+			while (loopConditional(storedException))
+            {
+                if (restartConnection) await InitialiseCommunicationLayer();
+
+                try
                 {
-                    if (restartConnection) await InitialiseCommunicationLayer();
-
-                    try
-                    {
-                        await ProcessStreamObjects().ConfigureAwait(false);
-                        restartConnection = true;
-                    }
-                    catch (Neo4jException ex)		//TODO: sort this catch list out...reduce it down using where clauses?
-                    {
-                        // Generate "driver" exception something happened within the driver
-                        await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-                        restartConnection = false;
-                    }
-					catch (TestKitClientException ex)
-					{
-						await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-						restartConnection = false;
-					}
-					catch (ArgumentException ex) 
-                    {
-                        await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-                        restartConnection = false;
-                    }
-                    catch (NotSupportedException ex)
-                    {
-                        await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-                        restartConnection = false;
-                    }
-					catch (JsonSerializationException ex)
-					{	
-						await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-						restartConnection = false;
-					}
-					catch (TestKitProtocolException ex)
-					{
-						Trace.WriteLine($"TestKit protocol exception detected: {ex.Message}");
-						restartConnection = true;
-					}					
-					catch (IOException ex)
-                    {
-                        Trace.WriteLine($"Socket exception detected: {ex.Message}");    //Handled outside of the exception manager because there is no connection to reply on.
-                        restartConnection = true;
-                    }									
-                    finally
-                    {
-                        if (restartConnection)
-                        {
-                            Trace.WriteLine("Closing Connection");
-                            Connection.Close();
-                        }
-                    }
-                    Trace.Flush();
+                    await ProcessStreamObjects().ConfigureAwait(false);
                 }
-            }
-            catch(Exception ex)
-            {
-                Trace.WriteLine($"It looks like the ExceptionExtensions system has failed in an unexpected way. \n{ex}");
-            }
-            finally
-            {
-                Connection.StopServer();
-            }
+                catch (Neo4jException ex)		//TODO: sort this catch list out...reduce it down using where clauses?
+                {
+                    // Generate "driver" exception something happened within the driver
+                    await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+					storedException = ex;
+					restartConnection = false;
+                }
+				catch (TestKitClientException ex)
+				{
+					await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+					storedException = ex;
+					restartConnection = false;
+				}
+				catch (ArgumentException ex) 
+                {
+                    await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+					storedException = ex;
+					restartConnection = false;
+                }
+                catch (NotSupportedException ex)
+                {
+                    await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+					storedException = ex;
+					restartConnection = false;
+                }
+				catch (JsonSerializationException ex)
+				{	
+					await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+					storedException = ex;
+					restartConnection = false;
+				}
+				catch (TestKitProtocolException ex)
+				{
+					Trace.WriteLine($"TestKit protocol exception detected: {ex.Message}");
+					await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+					storedException = ex;
+					restartConnection = true;
+				}					
+				catch (IOException ex)
+                {
+                    Trace.WriteLine($"Socket exception detected: {ex.Message}");    //Handled outside of the exception manager because there is no connection to reply on.
+					storedException = ex;
+					restartConnection = true;
+                }	
+				catch(Exception ex)
+				{
+					Trace.WriteLine($"General exception detected, restarting connection: {ex.Message}");
+					storedException = ex;
+					restartConnection = true;
+				}
+                finally
+                {
+                    if (restartConnection)
+                    {
+                        Trace.WriteLine("Closing Connection");
+                        Connection.Close();
+                    }
+                }
+                Trace.Flush();
+            }            
         }
 
         private void BreakLoopEvent(object sender, EventArgs e)

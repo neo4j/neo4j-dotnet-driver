@@ -222,5 +222,5 @@ namespace Neo4j.Driver.Internal.Connector
                     return trust;
                 });
         }
-    }
+	}
 }

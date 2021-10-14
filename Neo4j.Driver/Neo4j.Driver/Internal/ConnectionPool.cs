@@ -24,6 +24,7 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Protocol;
+using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;
 using static Neo4j.Driver.Internal.ConnectionPoolStatus;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
@@ -415,6 +416,11 @@ namespace Neo4j.Driver.Internal
 
             return multiDb;
         }
+
+		public IRoutingTable GetRoutingTable(string database)
+		{
+			throw new NotSupportedException("Should not be getting a routing table on a connection pool when it is the connection provider to the driver. Only Loadbalancer should do that.");
+		}
 
         public Task DeactivateAsync()
         {

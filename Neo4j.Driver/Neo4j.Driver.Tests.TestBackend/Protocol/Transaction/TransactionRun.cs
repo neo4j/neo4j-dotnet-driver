@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using Neo4j.Driver;
-using System.Linq;
+
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -38,7 +36,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override async Task Process(Controller controller)
         {
-            var transactionWrapper = controller.TransactionManagager.FindTransaction(data.txId);
+            var transactionWrapper = controller.TransactionManager.FindTransaction(data.txId);
 
             IResultCursor cursor = await transactionWrapper.Transaction.RunAsync(data.cypher, ConvertParameters(data.parameters)).ConfigureAwait(false);
 

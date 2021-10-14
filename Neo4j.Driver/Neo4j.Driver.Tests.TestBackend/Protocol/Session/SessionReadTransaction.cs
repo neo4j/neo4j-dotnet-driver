@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             {
 				sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAbleNothing);
 
-				TransactionId = controller.TransactionManagager.AddTransaction(new TransactionWrapper(tx, async cursor =>
+				TransactionId = controller.TransactionManager.AddTransaction(new TransactionWrapper(tx, async cursor =>
 				{
 					var result = ProtocolObjectFactory.CreateObject<Result>();
 					await result.PopulateRecords(cursor).ConfigureAwait(false);
@@ -45,37 +45,22 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 				Exception storedException = new TestKitClientException("Error from client");
 
-				while (true)
+				await controller.Process(false, e =>
 				{
-					try
-					{
-						//Start another message processing loop to handle the retry mechanism.
-						await controller.ProcessStreamObjects().ConfigureAwait(false);
-					}
-					catch (Exception ex)
-					{
-						// Generate "driver" exception something happened within the driver
-						await controller.SendResponse(ExceptionManager.GenerateExceptionResponse(ex).Encode());
-						storedException = ex;
-					}
-
 					switch (sessionContainer.RetryState)
 					{
 						case NewSession.SessionState.RetryAbleNothing:
-							break;
+							return true;
 						case NewSession.SessionState.RetryAblePositive:
-							return;
+							return false;
 						case NewSession.SessionState.RetryAbleNegative:
-							throw storedException;
-
+							throw e;
+							
 						default:
-							break;
+							return true;						
 					}
+				});
 
-					//Otherwise keep processing unrelated commands.
-				}
-
-				//controller.TransactionManagager.RemoveTransaction(TransactionId);
 			}, TransactionConfig);
         }
 

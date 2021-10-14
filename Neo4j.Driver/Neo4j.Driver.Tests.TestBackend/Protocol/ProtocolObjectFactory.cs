@@ -1,5 +1,6 @@
 ﻿using System;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -7,22 +8,51 @@ namespace Neo4j.Driver.Tests.TestBackend
     {
         
         public static ProtocolObjectManager ObjManager { get; set; }
-       
-		public static IProtocolObject CreateObject(Type type, string jsonString = null)
-        {
-			Protocol.ValidateType(type);
 
-            var newObject = (IProtocolObject)CreateNewObjectOfType(type, jsonString, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore,
-																												  MissingMemberHandling = MissingMemberHandling.Error });
+		public static IProtocolObject CreateObject(string jsonString)
+		{
+			Type type = GetObjectType(jsonString);
+			Protocol.ValidateType(type);
+			return CreateObject(type, jsonString);
+		}
+
+		public static T CreateObject<T>() where T : IProtocolObject
+		{
+			Protocol.ValidateType(typeof(T));
+			return (T)CreateObject(typeof(T));
+		}
+
+		private static IProtocolObject CreateObject(Type type, string jsonString = null)
+		{
+			var newObject = (IProtocolObject)CreateNewObjectOfType(type, jsonString, new JsonSerializerSettings
+			{
+				NullValueHandling = NullValueHandling.Ignore,
+				MissingMemberHandling = MissingMemberHandling.Error
+			});
 			ProcessNewObject(newObject);
 
 			return newObject;
-        }
-		
+		}
+
+		public static Type GetObjectType(string jsonString)
+		{
+			var objectTypeName = GetObjectTypeName(jsonString) ;
+			Protocol.ValidateType(objectTypeName);
+			return Type.GetType(typeof(ProtocolObjectFactory).Namespace + "." + objectTypeName, true);
+		}
+
+		private static string GetObjectTypeName(string jsonString)
+		{
+			JObject jsonObject = JObject.Parse(jsonString);
+			return (string)jsonObject["name"];
+		}
+
+
 		public static T CreateObject<T>(string jsonString = null) where T : IProtocolObject, new()
 		{
-			return (T)CreateObject(typeof(T), jsonString);			
+			return (T)CreateObject(jsonString);			
 		}
+
 
         private static object CreateNewObjectOfType(Type newType, string jsonString, JsonSerializerSettings jsonSettings = null)
 		{

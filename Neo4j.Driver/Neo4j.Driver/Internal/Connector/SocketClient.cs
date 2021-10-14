@@ -181,5 +181,10 @@ namespace Neo4j.Driver.Internal.Connector
                 _logger?.Debug(message, args);
             }
         }
-    }
+
+		public void SetRecvTimeOut(int seconds)
+		{
+			Reader.ReadTimeoutSeconds = seconds;
+		}
+	}
 }

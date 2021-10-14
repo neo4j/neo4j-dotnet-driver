@@ -35,6 +35,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 									typeof(TransactionRun),
 									typeof(TransactionCommit),
 									typeof(TransactionRollback),
+									typeof(TransactionClose),
 									typeof(SessionReadTransaction),
 									typeof(SessionWriteTransaction),
 									typeof(SessionBeginTransaction),
@@ -49,7 +50,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 									typeof(CheckMultiDBSupport),
 									typeof(ResolverResolutionCompleted),
 									typeof(StartTest),
-									typeof(GetFeatures)};
+									typeof(GetFeatures),
+									typeof(GetRoutingTable)};
 
 
 		static Protocol()
@@ -59,13 +61,20 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public static void ValidateType(string typeName)
         {
-			var objectType = Type.GetType(typeName, true);
-			ValidateType(objectType);
+			try
+			{
+				var objectType = Type.GetType(typeof(Protocol).Namespace + "." + typeName, true);
+				ValidateType(objectType);
+			}
+			catch
+			{
+				throw new TestKitProtocolException($"Attempting to use an unrecognized protocol type: {typeName}");
+			}			
         }
 
 		public static void ValidateType(Type objectType)
 		{
-			if (!ProtocolTypes.Contains(objectType)) throw new TestKitProtocolException($"Attempting to use an unrecognized type: {objectType}");
+			if (!ProtocolTypes.Contains(objectType)) throw new TestKitProtocolException($"Attempting to use an unrecognized protocol type: {objectType}");
 		}
     }
 

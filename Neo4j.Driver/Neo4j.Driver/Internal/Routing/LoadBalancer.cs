@@ -180,7 +180,12 @@ namespace Neo4j.Driver.Internal.Routing
                 new AggregateException(exceptions));
         }
 
-        public async Task<IConnection> AcquireConnectionAsync(AccessMode mode, string database, Bookmark bookmark)
+		public IRoutingTable GetRoutingTable(string database)
+		{
+			return  _routingTableManager.RoutingTableFor(database);
+		}
+
+		public async Task<IConnection> AcquireConnectionAsync(AccessMode mode, string database, Bookmark bookmark)
         {
             var routingTable = await _routingTableManager.EnsureRoutingTableForModeAsync(mode, database, bookmark)
                 .ConfigureAwait(false);

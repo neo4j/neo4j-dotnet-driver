@@ -283,5 +283,10 @@ namespace Neo4j.Driver.Internal.Connector
         {
             return $"[{id}]";
         }
-    }
+
+		public void SetRecvTimeOut(int seconds)
+		{
+			_client.SetRecvTimeOut(seconds);			
+		}
+	}
 }

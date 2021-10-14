@@ -38,9 +38,9 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
             var input = await InputReader.ReadLineAsync();
 
-            if (string.IsNullOrEmpty(input))
-                return false;
-
+			if (string.IsNullOrEmpty(input))
+				throw new IOException("The stream has been closed, and/or there is no more data on it.");
+		
             if (IsOpenTag(input))
                 return true;
 
@@ -85,18 +85,12 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public IProtocolObject CreateObjectFromData()
         {
-            return ProtocolObjectFactory.CreateObject(GetObjectType(), CurrentObjectData);
-        }
-
-        private string GetObjectTypeName()
-        {
-            JObject jsonObject = JObject.Parse(CurrentObjectData);
-            return (string)jsonObject["name"];
+            return ProtocolObjectFactory.CreateObject(CurrentObjectData);
         }
 
 		public Type GetObjectType()
-		{	
-			return Type.GetType(this.GetType().Namespace + "." + GetObjectTypeName(), true);
+		{
+			return ProtocolObjectFactory.GetObjectType(CurrentObjectData);			
 		}
     }
 }

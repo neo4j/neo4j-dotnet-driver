@@ -25,6 +25,7 @@ using static Neo4j.Driver.SessionConfigBuilder;
 using static Neo4j.Driver.Tests.ConsumableCursorTests;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Record = Xunit.Record;
+using Neo4j.Driver.Tests;
 
 namespace Neo4j.Driver.IntegrationTests.Direct
 {
@@ -316,12 +317,12 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
         private static async Task AssertCannotAccessRecords(IResultCursor cursor)
         {
-            await ThrowsResultConsumedException(async () => await cursor.FetchAsync());
-            await ThrowsResultConsumedException(async () => await cursor.PeekAsync());
-            ThrowsResultConsumedException(() => cursor.Current);
-            await ThrowsResultConsumedException(async () => await cursor.SingleAsync());
-            await ThrowsResultConsumedException(async () => await cursor.ToListAsync());
-            await ThrowsResultConsumedException(async () => await cursor.ForEachAsync(r => { }));
+            await ConsumedException.ThrowsResultConsumedException(async () => await cursor.FetchAsync());
+            await ConsumedException.ThrowsResultConsumedException(async () => await cursor.PeekAsync());
+			ConsumedException.ThrowsResultConsumedException(() => cursor.Current);
+            await ConsumedException.ThrowsResultConsumedException(async () => await cursor.SingleAsync());
+            await ConsumedException.ThrowsResultConsumedException(async () => await cursor.ToListAsync());
+            await ConsumedException.ThrowsResultConsumedException(async () => await cursor.ForEachAsync(r => { }));
         }
     }
 }

@@ -539,7 +539,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             tokenSource.Cancel();
             Task.WaitAll(tasks);
 
-            failure.Get().Should().BeNull("Some workers have failed");
+            failure.Get().Should().BeNull("Some workers have failed. Exception {failure.Get()?.Message}");
         }
 
         [RequireServerFact]
@@ -553,25 +553,8 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             tokenSource.Cancel();
             Task.WaitAll(tasks);
 
-            failure.Get().Should().BeNull("Some workers have failed");
+            failure.Get().Should().BeNull($"Some workers have failed. Exception {failure.Get()?.Message}");
         }
-
-        [RequireServerFact]
-        public void PoolWithTxFuncWithFailingConnections()
-        {
-            var tokenSource = new CancellationTokenSource();
-            var failure = new AtomicReference<Exception>(null);
-            var (driver, connections) = SetupMonitoredDriver();
-
-            var terminator = LaunchConnectionTerminator(connections, tokenSource.Token);
-            var tasks = LaunchPoolWorkers(driver, tokenSource.Token, worker => worker.RunWithTxFunc(), failure);
-            Thread.Sleep(PoolTestDuration);
-            tokenSource.Cancel();
-            Task.WaitAll(tasks.Union(new[] {terminator}).ToArray());
-
-            failure.Get().Should().BeNull("no workers should fail");
-        }
-
 
         private static Task[] LaunchPoolWorkers(IDriver driver, CancellationToken token, Action<Worker> job,
             AtomicReference<Exception> failure)
@@ -607,43 +590,6 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
             return ((Internal.Driver) GraphDatabase.CreateDriver(_databaseUri, config, connectionFactory),
                 connectionFactory.Connections);
-        }
-
-        private Task LaunchConnectionTerminator(ConcurrentQueue<IPooledConnection> connections, CancellationToken token)
-        {
-            return Task.Factory.StartNew(async () =>
-            {
-                const int minimalConnCount = 3;
-                while (!token.IsCancellationRequested)
-                {
-                    if (connections.Count > minimalConnCount && connections.TryDequeue(out var conn))
-                    {
-                        if (conn.Server.Agent != null)
-                        {
-                            await conn.DestroyAsync();
-                            _output.WriteLine($"Terminator killed connection {conn} towards server {conn.Server}");
-                        }
-                        else
-                        {
-                            // connection is still being initialized, put it back to the connections list
-                            connections.Enqueue(conn);
-                        }
-                    }
-                    else
-                    {
-                        _output.WriteLine("Terminator failed to find a open connection to kill.");
-                    }
-
-                    try
-                    {
-                        await Task.Delay(1000, token); // sleep
-                    }
-                    catch (TaskCanceledException)
-                    {
-                        // we are fine with cancelled sleep
-                    }
-                }
-            }, TaskCreationOptions.LongRunning);
         }
 
         private class Worker
