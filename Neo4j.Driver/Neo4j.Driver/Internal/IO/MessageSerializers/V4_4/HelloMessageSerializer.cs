@@ -17,29 +17,21 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.MessageHandling.Metadata;
+using Neo4j.Driver.Internal.Messaging.V4_4;
 using Neo4j.Driver.Internal.Protocol;
-using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver.Internal.Util;
 
-namespace Neo4j.Driver.Internal.MessageHandling.V4_1
+namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_4
 {
-    internal class HelloResponseHandler : V4.HelloResponseHandler
+	internal class HelloMessageSerializer : WriteOnlySerializer
 	{
-		readonly BoltProtocolVersion MinVersion = new BoltProtocolVersion(4, 1);
+		public override IEnumerable<Type> WritableTypes => new[] { typeof(HelloMessage) };
 
-		public HelloResponseHandler(IConnection connection, BoltProtocolVersion version) : base(connection, version)
-        {
-			//Add version specific Metadata collectors here...
-		}
-
-		public override void OnSuccess(IDictionary<string, object> metadata)
+		public override void Serialize(IPackStreamWriter writer, object value)
 		{
-			base.OnSuccess(metadata);
+			var msg = value.CastOrThrow<HelloMessage>();
 
-			//Version specific handling goes here...
+			writer.WriteStructHeader(1, BoltProtocolV4_4MessageFormat.MsgHello);
+			writer.Write(msg.MetaData);
 		}
 	}
 }

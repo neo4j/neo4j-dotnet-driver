@@ -26,34 +26,41 @@ using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.MessageHandling.V4
 {
-    internal class HelloResponseHandler : MetadataCollectingResponseHandler
-    {
-        private readonly IConnection _connection;
-        private BoltProtocolVersion Version { get; set; }
+    internal class HelloResponseHandler : V3.HelloResponseHandler
+	{
+		readonly BoltProtocolVersion MinVersion = new BoltProtocolVersion(4, 0);
+		protected BoltProtocolVersion _version;
 
-        public HelloResponseHandler(IConnection connection, BoltProtocolVersion version)
+		protected BoltProtocolVersion Version
+		{
+			get
+			{
+				return _version;
+			}
+			set
+			{
+				_version = value ?? throw new ArgumentNullException("Attempting to create a HelloResponseHandler v{MinVersion.ToString()} with a null BoltProtocolVersion object");
+				if (Version < MinVersion)
+					throw new ArgumentOutOfRangeException($"Attempting to initialise a v{MinVersion.ToString()} HelloResponseHandler with a protocol version less than {MinVersion.ToString()}");
+			}
+		}
+
+		public HelloResponseHandler(IConnection connection, BoltProtocolVersion version) : base(connection)
         {
-            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
-            
-            Version = version ?? throw new ArgumentNullException("Attempting to create a HelloResponseHandler v4 with a null BoltProtocolVersion object");
-            
-            if (Version < new BoltProtocolVersion(4, 0))
-                throw new ArgumentOutOfRangeException("Attempting to initialise a v4 HelloResponseHandler with a protocol version less than 4.0");
-                     
+			//Add version specific Metadata collectors here...
+			Version = version;
+		}
 
-            AddMetadata<ServerVersionCollector, ServerVersion>();
-            AddMetadata<ConnectionIdCollector, string>();
+		public override void OnSuccess(IDictionary<string, object> metadata)
+        {
+			base.OnSuccess(metadata);
+
+			//Version specific handling goes here...
         }
 
-        public override void OnSuccess(IDictionary<string, object> metadata)
-        {
-            base.OnSuccess(metadata);
-
-            // From Server V4 extracting server from metadata in the success message is unreliable.
-            // The server version is now tied to the protocol version.
-            _connection.UpdateVersion(new ServerVersion(Version.MajorVersion, Version.MinorVersion, 0));
-
-            _connection.UpdateId(GetMetadata<ConnectionIdCollector, string>());
-        }
+		protected override void UpdateVersion()
+		{
+			_connection.UpdateVersion(new ServerVersion(Version.MajorVersion, Version.MinorVersion, 0));
+		}
     }
 }

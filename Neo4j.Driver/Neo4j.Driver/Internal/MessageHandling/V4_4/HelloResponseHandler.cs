@@ -26,25 +26,22 @@ using Neo4j.Driver.Internal.Util;
 
 using HintsType = System.Collections.Generic.Dictionary<string, object>;
 
-namespace Neo4j.Driver.Internal.MessageHandling.V4_3
+namespace Neo4j.Driver.Internal.MessageHandling.V4_4
 {
-    internal class HelloResponseHandler : V4_2.HelloResponseHandler
+	internal class HelloResponseHandler : V4_3.HelloResponseHandler
 	{
-		readonly BoltProtocolVersion MinVersion = new BoltProtocolVersion(4, 3);
+		readonly BoltProtocolVersion MinVersion = new BoltProtocolVersion(4, 4);		
 
 		public HelloResponseHandler(IConnection connection, BoltProtocolVersion version) : base(connection, version)
-        {
+		{
 			//Add version specific Metadata collectors here...
-			AddMetadata<ConfigurationHintsCollector, HintsType>();
-        }
+		}
 
-        public override void OnSuccess(IDictionary<string, object> metadata)
-        {
-            base.OnSuccess(metadata);
+		public override void OnSuccess(IDictionary<string, object> metadata)
+		{
+			base.OnSuccess(metadata);
 
 			//Version specific handling goes here...
-			var timeout = new ConfigHintRecvTimeout(GetMetadata<ConfigurationHintsCollector, HintsType>()).Get;
-			_connection.SetRecvTimeOut(timeout);			
 		}
-    }
+	}
 }

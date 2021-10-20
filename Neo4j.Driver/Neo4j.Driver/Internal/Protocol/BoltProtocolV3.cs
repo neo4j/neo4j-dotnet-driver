@@ -29,7 +29,7 @@ using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
 using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
-using V3 = Neo4j.Driver.Internal.MessageHandling.V3;
+using Neo4j.Driver.Internal.MessageHandling.V3;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
@@ -42,26 +42,34 @@ namespace Neo4j.Driver.Internal.Protocol
         public static BoltProtocolVersion Version { get; } = new BoltProtocolVersion(_major, _minor);
         public virtual BoltProtocolVersion GetVersion() { return Version; }
 
-        public BoltProtocolV3()
+		protected virtual IMessageFormat MessageFormat { get { return BoltProtocolMessageFormat.V3; } }
+		protected virtual IRequestMessage HelloMessage(string userAgent,
+														IDictionary<string, object> auth)
+		{
+			return new Messaging.V3.HelloMessage(userAgent, auth);
+		}
+		protected virtual IResponseHandler HelloResponseHandler(IConnection conn) { return new HelloResponseHandler(conn); }
+
+		public BoltProtocolV3()
         {
 
         }
 
-        public virtual IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
-            ILogger logger = null)
+        public virtual IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger = null)
         {
-            return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize, bufferSettings.MaxWriteBufferSize, logger, BoltProtocolMessageFormat.V3);
+            return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize, bufferSettings.MaxWriteBufferSize, logger, MessageFormat);
         }
 
         public virtual IMessageReader NewReader(Stream stream, BufferSettings bufferSettings,
             ILogger logger = null)
         {
-            return new MessageReader(stream, bufferSettings.DefaultReadBufferSize, bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V3);
+            return new MessageReader(stream, bufferSettings.DefaultReadBufferSize, bufferSettings.MaxReadBufferSize, logger, MessageFormat);
         }
 
         public virtual async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
         {
-            await connection.EnqueueAsync(new HelloMessage(userAgent, authToken.AsDictionary()), new V3.HelloResponseHandler(connection)).ConfigureAwait(false);
+            await connection.EnqueueAsync(HelloMessage(userAgent, authToken.AsDictionary()),
+										  HelloResponseHandler(connection)).ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
         }
 
@@ -79,8 +87,8 @@ namespace Neo4j.Driver.Internal.Protocol
 
             var summaryBuilder = new SummaryBuilder(query, connection.Server);
             var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, resultResourceHandler);
-            var runHandler = new V3.RunResponseHandler(streamBuilder, summaryBuilder);
-            var pullAllHandler = new V3.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
+            var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
+            var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
             await connection.EnqueueAsync(new RunWithMetadataMessage(query, bookmark, config, connection.GetEnforcedAccessMode()), runHandler, PullAll, pullAllHandler).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
             return streamBuilder.CreateCursor();
@@ -93,7 +101,7 @@ namespace Neo4j.Driver.Internal.Protocol
 			await connection.EnqueueAsync(new BeginMessage(bookmark,
 														   config,
 														   connection.GetEnforcedAccessMode()),
-											new V3.BeginResponseHandler()
+											new BeginResponseHandler()
 										  ).ConfigureAwait(false);
 			
 			await connection.SyncAsync().ConfigureAwait(false);
@@ -103,8 +111,8 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             var summaryBuilder = new SummaryBuilder(query, connection.Server);
             var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, null);
-            var runHandler = new V3.RunResponseHandler(streamBuilder, summaryBuilder);
-            var pullAllHandler = new V3.PullResponseHandler(streamBuilder, summaryBuilder, null);
+            var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
+            var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, null);
             await connection.EnqueueAsync(new RunWithMetadataMessage(query), runHandler, PullAll, pullAllHandler).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
             return streamBuilder.CreateCursor();
@@ -112,21 +120,21 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public async Task CommitTransactionAsync(IConnection connection, IBookmarkTracker bookmarkTracker)
         {
-            await connection.EnqueueAsync(CommitMessage.Commit, new V3.CommitResponseHandler(bookmarkTracker))
+            await connection.EnqueueAsync(CommitMessage.Commit, new CommitResponseHandler(bookmarkTracker))
                 .ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
         }
 
         public async Task RollbackTransactionAsync(IConnection connection)
         {
-            await connection.EnqueueAsync(RollbackMessage.Rollback, new V3.RollbackResponseHandler())
+            await connection.EnqueueAsync(RollbackMessage.Rollback, new RollbackResponseHandler())
                 .ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
         }
 
         public Task ResetAsync(IConnection connection)
         {
-            return connection.EnqueueAsync(ResetMessage.Reset, new V3.ResetResponseHandler());
+            return connection.EnqueueAsync(ResetMessage.Reset, new ResetResponseHandler());
         }
 
         public async Task LogoutAsync(IConnection connection)

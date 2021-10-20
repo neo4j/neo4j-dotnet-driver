@@ -42,24 +42,17 @@ namespace Neo4j.Driver.Internal.Protocol
         public static new BoltProtocolVersion Version { get; } = new BoltProtocolVersion(_major, _minor);
         public override BoltProtocolVersion GetVersion() { return Version; }
 
-        private const string GetRoutingTableForDatabaseProcedure = "CALL dbms.routing.getRoutingTable($context, $database)";
+		protected override IMessageFormat MessageFormat { get { return BoltProtocolMessageFormat.V4; } }
+		protected override IRequestMessage HelloMessage(string userAgent, IDictionary<string, object> auth)
+		{
+			return new HelloMessage(userAgent, auth);
+		}
+		protected override IResponseHandler HelloResponseHandler(IConnection conn) { return new V3.HelloResponseHandler(conn); }
+
+		private const string GetRoutingTableForDatabaseProcedure = "CALL dbms.routing.getRoutingTable($context, $database)";
 
         public BoltProtocolV4_0()
         {
-        }
-
-        public override IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
-            ILogger logger = null)
-        {
-            return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize,
-                bufferSettings.MaxWriteBufferSize, logger, BoltProtocolMessageFormat.V4);
-        }
-
-        public override IMessageReader NewReader(Stream stream, BufferSettings bufferSettings,
-            ILogger logger = null)
-        {
-            return new MessageReader(stream, bufferSettings.DefaultReadBufferSize,
-                bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V4);
         }
 
         public override async Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark, TransactionConfig config)
@@ -155,14 +148,6 @@ namespace Neo4j.Driver.Internal.Protocol
                     .ConfigureAwait(false);
                 await connection.SendAsync().ConfigureAwait(false);
             };
-        }
-
-        public override async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
-        {
-            await connection
-                .EnqueueAsync(new HelloMessage(userAgent, authToken.AsDictionary()),
-                    new V4.HelloResponseHandler(connection, Version)).ConfigureAwait(false);
-            await connection.SyncAsync().ConfigureAwait(false);
         }
 
         protected internal override void GetProcedureAndParameters(IConnection connection, string database, out string procedure, out Dictionary<string, object> parameters)

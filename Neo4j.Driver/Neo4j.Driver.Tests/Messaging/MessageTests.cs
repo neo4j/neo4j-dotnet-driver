@@ -23,6 +23,7 @@ using V4 = Neo4j.Driver.Internal.Messaging.V4;
 using V4_1 = Neo4j.Driver.Internal.Messaging.V4_1;
 using V4_2 = Neo4j.Driver.Internal.Messaging.V4_2;
 using V4_3 = Neo4j.Driver.Internal.Messaging.V4_3;
+using V4_4 = Neo4j.Driver.Internal.Messaging.V4_4;
 using Xunit;
 using static Neo4j.Driver.Internal.Messaging.DiscardAllMessage;
 using static Neo4j.Driver.Internal.Messaging.IgnoredMessage;
@@ -41,7 +42,10 @@ namespace Neo4j.Driver.Tests
 				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "adb" } }, Bookmark.From("bookmark-1"), "adb"), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'adb\' } { bookmarks, [bookmark-1] } \'adb\'" },
 				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "adb" } }, null, "adb"), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'adb\' } [] \'adb\'" },
 				new object[] {new FailureMessage("CODE", "MESSAGE"), "FAILURE code=CODE, message=MESSAGE"},
-                new object[] {new V4_3.HelloMessage("mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}]"},
+				new object[] {new V4_4.HelloMessage("mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}]"},
+				new object[] {new V4_4.HelloMessage("mydriver", null, new Dictionary<string, string>()), "HELLO [{user_agent, mydriver}, {routing, []}]"},
+				new object[] {new V4_4.HelloMessage("mydriver", null, null), "HELLO [{user_agent, mydriver}, {routing, NULL}]"},
+				new object[] {new V4_3.HelloMessage("mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}]"},
                 new object[] {new V4_3.HelloMessage("mydriver", null, new Dictionary<string, string>()), "HELLO [{user_agent, mydriver}, {routing, []}]"},
                 new object[] {new V4_3.HelloMessage("mydriver", null, null), "HELLO [{user_agent, mydriver}, {routing, NULL}]"},
                 new object[] {new V4_2.HelloMessage("mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}]"},

@@ -6,7 +6,8 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling.V4_2;
 using Neo4j.Driver.Internal.Messaging.V4_2;
-
+using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
@@ -17,34 +18,21 @@ namespace Neo4j.Driver.Internal.Protocol
         public static new BoltProtocolVersion Version { get; } = new BoltProtocolVersion(_major, _minor);
         public override BoltProtocolVersion GetVersion() { return Version; }
 
-        private IDictionary<string, string> RoutingContext { get; set; }
+		protected override IMessageFormat MessageFormat { get { return BoltProtocolMessageFormat.V4_2; } }
+		protected override IRequestMessage HelloMessage(string userAgent,
+														IDictionary<string, object> auth,
+														IDictionary<string, string> routingContext)
+		{
+			return new HelloMessage(userAgent, auth, routingContext);
+		}
+		protected override IResponseHandler HelloResponseHandler(IConnection conn) { return new HelloResponseHandler(conn, Version); }
 
-        protected BoltProtocolV4_2()
+		protected BoltProtocolV4_2()
         {
         }
 
-        public BoltProtocolV4_2(IDictionary<string, string> routingContext)
+        public BoltProtocolV4_2(IDictionary<string, string> routingContext) : base(routingContext)
         {
-            RoutingContext = routingContext;
         }
-
-        public override IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger = null)
-        {
-            return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize, bufferSettings.MaxWriteBufferSize, logger, BoltProtocolMessageFormat.V4_2);
-        }
-
-        public override IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null)
-        {
-            return new MessageReader(stream, bufferSettings.DefaultReadBufferSize, bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V4_2);
-        }
-
-        public override async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
-        {
-            await connection
-                .EnqueueAsync(new HelloMessage(userAgent, authToken.AsDictionary(), RoutingContext),
-                    new HelloResponseHandler(connection, Version)).ConfigureAwait(false);
-            await connection.SyncAsync().ConfigureAwait(false);
-        }
-
     }
 }
