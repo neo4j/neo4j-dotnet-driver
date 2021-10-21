@@ -24,14 +24,21 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 		private static IProtocolObject CreateObject(Type type, string jsonString = null)
 		{
-			var newObject = (IProtocolObject)CreateNewObjectOfType(type, jsonString, new JsonSerializerSettings
+			try
 			{
-				NullValueHandling = NullValueHandling.Ignore,
-				MissingMemberHandling = MissingMemberHandling.Error
-			});
-			ProcessNewObject(newObject);
+				var newObject = (IProtocolObject)CreateNewObjectOfType(type, jsonString, new JsonSerializerSettings
+				{
+					NullValueHandling = NullValueHandling.Ignore,
+					MissingMemberHandling = MissingMemberHandling.Error
+				});
+				ProcessNewObject(newObject);
 
-			return newObject;
+				return newObject;
+			}
+			catch(JsonException ex)
+			{
+				throw new Exception($"Json protocol Error: {ex.Message}");
+			}
 		}
 
 		public static Type GetObjectType(string jsonString)
