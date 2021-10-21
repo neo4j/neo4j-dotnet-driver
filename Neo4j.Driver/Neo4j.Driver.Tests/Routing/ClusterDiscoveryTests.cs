@@ -72,7 +72,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var manager = new ClusterDiscovery(routingContext, null);
 
                 // When
-                var table = await manager.DiscoverAsync(mockConn.Object, null, Bookmark.Empty);
+                var table = await manager.DiscoverAsync(mockConn.Object, null, null, Bookmark.Empty);
 
                 // Then
                 table.Readers.Count().Should().Be(readerCount);
@@ -109,7 +109,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var manager = new ClusterDiscovery(routingContext, null);
 
                 // When
-                var table = await manager.DiscoverAsync(mockConn.Object, database, Bookmark.From(bookmarks));
+                var table = await manager.DiscoverAsync(mockConn.Object, database, null, Bookmark.From(bookmarks));
 
                 // Then
                 table.Database.Should().Be(database ?? "");
@@ -147,7 +147,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var manager = new ClusterDiscovery(routingContext, null);
 
                 // When
-                var table = await manager.DiscoverAsync(mockConn.Object, database, Bookmark.From(bookmarks));
+                var table = await manager.DiscoverAsync(mockConn.Object, database, null, Bookmark.From(bookmarks));
 
                 // Then
                 table.Database.Should().Be(database ?? "");
@@ -175,7 +175,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var manager = new ClusterDiscovery(null, null);
 
                 // When & Then
-                manager.Awaiting(m => m.DiscoverAsync(connMock.Object, null, Bookmark.Empty)).Should()
+                manager.Awaiting(m => m.DiscoverAsync(connMock.Object, null, null, Bookmark.Empty)).Should()
                     .Throw<ClientException>().WithMessage("*not found*");
                 connMock.Verify(x => x.CloseAsync(), Times.Once);
             }

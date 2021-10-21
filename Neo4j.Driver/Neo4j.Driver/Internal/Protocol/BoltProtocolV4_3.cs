@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Internal.Protocol
 		{
 		}
 
-		public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, Bookmark bookmark)
+		public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmark bookmark)
 		{
 			connection = connection ?? throw new ProtocolException("Attempting to get a routing table on a null connection");
 

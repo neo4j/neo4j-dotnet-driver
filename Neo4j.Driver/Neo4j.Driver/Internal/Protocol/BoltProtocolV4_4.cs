@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Text;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
@@ -33,7 +34,21 @@ namespace Neo4j.Driver.Internal.Protocol
 			
 		}
 
-		
+		public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmark bookmark)
+		{
+			connection = connection ?? throw new ProtocolException("Attempting to get a routing table on a null connection");
+
+			var responseHandler = new RouteResponseHandler();
+
+			await connection.EnqueueAsync(new RouteMessage(connection.RoutingContext, bookmark, database, impersonatedUser), responseHandler).ConfigureAwait(false);
+
+			await connection.SyncAsync().ConfigureAwait(false);
+			await connection.CloseAsync().ConfigureAwait(false);
+
+			return (IReadOnlyDictionary<string, object>)responseHandler.RoutingInformation;
+		}
+
+
 	}
 }
 

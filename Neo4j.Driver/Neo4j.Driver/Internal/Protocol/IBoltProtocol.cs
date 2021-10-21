@@ -58,8 +58,9 @@ namespace Neo4j.Driver.Internal.Protocol
         BoltProtocolVersion GetVersion();
 
         Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection,
-                                            string database,
-                                            Bookmark bookmark); 
+																  string database,
+																  string impersonated_user,
+																  Bookmark bookmark); 
     }
 
 }

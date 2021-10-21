@@ -72,7 +72,7 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             var protocol = new BoltProtocolV4_3(new Dictionary<string, string> { { "ContextKey", "ContextValue" } });
 
-            var ex = await Xunit.Record.ExceptionAsync(async () => await protocol.GetRoutingTable(null, "adb", null));
+            var ex = await Xunit.Record.ExceptionAsync(async () => await protocol.GetRoutingTable(null, "adb", null, null));
 
             ex.Should().BeOfType<ProtocolException>().Which
                 .Message.Should()

@@ -28,9 +28,6 @@ namespace Neo4j.Driver.Tests.TestBackend
 			("retry.TestRetry.test_retry_ForbiddenOnReadOnlyDatabase_ChangingWriter", 														
 			 "Behaves strange"),
 
-
-			("routing.Routing.test_should_retry_write_until_success_with_leader_change_using_tx_function",									
-				"requires investigation"),
 			
 			("routing.Routing.test_should_retry_write_until_success_with_leader_shutdown_during_tx_using_tx_function", 						
 				"requires investigation"),
@@ -55,9 +52,6 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 			("routing.Routing.test_should_serve_reads_and_fail_writes_when_no_writers_available",											
 				"consume not implemented in backend or requires investigation"),
-
-			("routing.Routing.test_should_forget_address_on_database_unavailable_error", 													
-				"requires investigation"),
 
 			("routing.Routing.test_should_use_resolver_during_rediscovery_when_existing_routers_fail", 										
 				"resolver not implemented in backend"),
@@ -92,33 +86,18 @@ namespace Neo4j.Driver.Tests.TestBackend
 				"Test failing requires investigation"),
 			("test_routing_v3.RoutingV3.test_should_pass_bookmark_from_tx_to_tx_using_tx_run",
 				"Test failing requires investigation"),
-			("test_routing_v3.RoutingV3.test_should_request_rt_from_all_initial_routers_until_successful",
-				"Test failing requires investigation"),
-			("test_routing_v3.RoutingV3.test_should_retry_write_until_success_with_leader_change_using_tx_function",
-				"Test failing requires investigation"),
-			("test_routing_v3.RoutingV3.test_should_retry_write_until_success_with_leader_shutdown_during_tx_using_tx_function",
-				"Test failing requires investigation"),
-			("test_routing_v3.RoutingV3.test_should_revert_to_initial_router_if_known_router_throws_protocol_errors",
-				"Test failing requires investigation"),
 			("test_routing_v3.RoutingV3.test_should_successfully_send_multiple_bookmarks",
 				"Test failing requires investigation"),
 
-
-			("test_routing_v4x3.RoutingV4x3.test_should_request_rt_from_all_initial_routers_until_successful",
+			
+			
+			("test_should_revert_to_initial_router_if_known_router_throws_protocol_errors",
 				"Test failing requires investigation"),
-
-			("test_routing_v4x1.RoutingV4x1.test_should_request_rt_from_all_initial_routers_until_successful",
+			("test_should_request_rt_from_all_initial_routers_until_successful",
 				"Test failing requires investigation"),
-			("test_routing_v4x1.RoutingV4x1.test_should_retry_write_until_success_with_leader_change_using_tx_function",
+			("test_should_retry_write_until_success_with_leader_change_using_tx_function",
 				"Test failing requires investigation"),
-			("test_routing_v4x1.RoutingV4x1.test_should_retry_write_until_success_with_leader_shutdown_during_tx_using_tx_function",
-				"Test failing requires investigation"),
-			("test_routing_v4x1.RoutingV4x1.test_should_revert_to_initial_router_if_known_router_throws_protocol_errors",
-				"Test failing requires investigation"),
-
-			("test_routing_v4x3.RoutingV4x3.test_should_request_rt_from_all_initial_routers_until_successful",
-				"Test failing requires investigation"),
-			("test_routing_v4x3.RoutingV4x3.test_should_request_rt_from_all_initial_routers_until_successful",
+			("test_should_retry_write_until_success_with_leader_shutdown_during_tx_using_tx_function",
 				"Test failing requires investigation"),
 		}; 
 

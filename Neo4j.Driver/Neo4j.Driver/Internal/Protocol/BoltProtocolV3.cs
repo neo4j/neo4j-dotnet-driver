@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Internal.Protocol
     {
         private const string GetRoutingTableProcedure = "CALL dbms.cluster.routing.getRoutingTable($context)";
 
-        private static int _major = 3;
+		private static int _major = 3;
         private static int _minor = 0;
         public static BoltProtocolVersion Version { get; } = new BoltProtocolVersion(_major, _minor);
         public virtual BoltProtocolVersion GetVersion() { return Version; }
@@ -159,7 +159,7 @@ namespace Neo4j.Driver.Internal.Protocol
             parameters = new Dictionary<string, object> { { "context", connection.RoutingContext } };
         }
 
-        public virtual async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, Bookmark bookmark)
+        public virtual async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmark bookmark)
 		{
             connection = connection ?? throw new ProtocolException("Attempting to get a routing table on a null connection");
 
