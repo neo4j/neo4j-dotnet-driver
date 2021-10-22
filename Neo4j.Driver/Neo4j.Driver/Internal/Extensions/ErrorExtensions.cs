@@ -46,8 +46,12 @@ namespace Neo4j.Driver.Internal
                     }
                     else if (FatalDiscoveryException.IsFatalDiscoveryError(code))
                     {
-                        error = new FatalDiscoveryException(code, message);
+                        error = new FatalDiscoveryException(message);
                     }
+					else if(TokenExpiredException.IsTokenExpiredError(code))
+					{
+						error = new TokenExpiredException(message);
+					}
                     else
                     {
                         error = new ClientException(code, message);

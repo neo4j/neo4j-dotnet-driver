@@ -146,5 +146,29 @@ namespace Neo4j.Driver
 
             return new AuthToken(token);
         }
+
+
+		/// <summary>
+		///		The bearer authentication scheme, using a base64 encoded token, such as those supplied by SSO providers.
+		///     Gets an authentication token that can be used to connect to Neo4j.
+		/// </summary>
+		/// <remarks>
+		///     <see cref="GraphDatabase.Driver(string, IAuthToken, Action{ConfigBuilder})" />
+		/// </remarks>
+		/// <param name="token">Base64 encoded token</param>
+		/// <returns>An authentication token that can be used to connect to Neo4j.</returns>
+		public static IAuthToken Bearer(string token)
+		{
+			if (string.IsNullOrEmpty(token))
+				throw new ArgumentException("Bearer token cannot be null or an empty string");
+
+			var authtoken = new Dictionary<string, object>
+			{
+				{SchemeKey, "bearer"},
+				{CredentialsKey, token}
+			};
+
+			return new AuthToken(authtoken);
+		}
     }
 }

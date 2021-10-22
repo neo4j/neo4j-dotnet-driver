@@ -671,7 +671,7 @@ namespace Neo4j.Driver.Tests.Routing
                 discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", null, Bookmark.Empty))
                     .ReturnsAsync(fooRoutingTable);
                 discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "bar", null, Bookmark.Empty))
-                    .ThrowsAsync(new FatalDiscoveryException("code", "message"));
+                    .ThrowsAsync(new FatalDiscoveryException("message"));
 
                 var poolManager = new Mock<IClusterConnectionPoolManager>();
                 poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>()))
@@ -700,7 +700,7 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public void ShouldThrowOnFatalDiscovery()
             {
-                var error = new FatalDiscoveryException("code", "message");
+                var error = new FatalDiscoveryException("message");
 
                 var discovery = new Mock<IDiscovery>();
                 discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "bar", null, Bookmark.Empty))
