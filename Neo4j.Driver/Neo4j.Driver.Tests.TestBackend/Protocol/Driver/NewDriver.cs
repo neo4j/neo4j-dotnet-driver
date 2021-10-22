@@ -75,7 +75,11 @@ namespace Neo4j.Driver.Tests.TestBackend
 					break;
 
 				default:
-					authToken = AuthTokens.Custom(authTokenData.principal, authTokenData.credentials, authTokenData.realm, authTokenData.scheme);
+					authToken = AuthTokens.Custom(authTokenData.principal, 
+												  authTokenData.credentials, 
+												  authTokenData.realm, 
+												  authTokenData.scheme, 
+												  authTokenData.parameters);
 					break;
 
 			} 
