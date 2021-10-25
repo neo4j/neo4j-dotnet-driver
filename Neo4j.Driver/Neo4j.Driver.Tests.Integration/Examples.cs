@@ -549,9 +549,9 @@ namespace Neo4j.Driver.Examples
                 }
             }
 
-            private static IResult CreatePersonNode(ITransaction tx, string name)
+            private static IResultSummary CreatePersonNode(ITransaction tx, string name)
             {
-                return tx.Run("CREATE (a:Person {name: $name})", new {name});
+                return tx.Run("CREATE (a:Person {name: $name})", new {name}).Consume();
             }
 
             private static long MatchPersonNode(ITransaction tx, string name)
@@ -611,10 +611,11 @@ namespace Neo4j.Driver.Examples
                         session.ReadTransaction(tx => tx.Run("MATCH (a:Person) RETURN a.name AS name").ToList());
                     return persons.Sum(person => session.WriteTransaction(tx =>
                     {
-                        tx.Run("MATCH (emp:Person {name: $person_name}) " +
-                               "MERGE (com:Company {name: $company_name}) " +
-                               "MERGE (emp)-[:WORKS_FOR]->(com)",
-                            new {person_name = person["name"].As<string>(), company_name = companyName});
+                        var result = tx.Run("MATCH (emp:Person {name: $person_name}) " +
+                                        "MERGE (com:Company {name: $company_name}) " +
+                                        "MERGE (emp)-[:WORKS_FOR]->(com)",
+                                    new { person_name = person["name"].As<string>(), company_name = companyName });
+                        result.Consume();
                         return 1;
                     }));
                 }
@@ -665,7 +666,7 @@ namespace Neo4j.Driver.Examples
                         return session.WriteTransaction(
                             tx =>
                             {
-                                tx.Run("CREATE (a:Item)");
+                                tx.Run("CREATE (a:Item)").Consume();
                                 return true;
                             }
                         );
@@ -726,7 +727,7 @@ namespace Neo4j.Driver.Examples
             {
                 using (var session = Driver.Session())
                 {
-                    session.WriteTransaction(tx => tx.Run("CREATE (a:Person {name: $name})", new {name}));
+                    session.WriteTransaction(tx => tx.Run("CREATE (a:Person {name: $name})", new {name}).Consume());
                 }
             }
             // end::transaction-function[]
@@ -754,7 +755,7 @@ namespace Neo4j.Driver.Examples
             {
                 using (var session = Driver.Session())
                 {
-                    session.WriteTransaction(tx => tx.Run("CREATE (a:Person {name: $name})", new {name}), 
+                    session.WriteTransaction(tx => tx.Run("CREATE (a:Person {name: $name})", new {name}).Consume(), 
                         txConfig => txConfig.WithTimeout(TimeSpan.FromSeconds(5)));
                 }
             }
@@ -785,7 +786,7 @@ namespace Neo4j.Driver.Examples
                 using (var session = Driver.Session())
                 {
                     IDictionary<string, Object> txMetadata = new Dictionary<string, object> {{"applicationId", "123"}};
-                    session.WriteTransaction(tx => tx.Run("CREATE (a:Person {name: $name})", new {name}), 
+                    session.WriteTransaction(tx => tx.Run("CREATE (a:Person {name: $name})", new {name}).Consume(), 
                         txConfig => txConfig.WithMetadata(txMetadata));
                 }
             }
@@ -907,32 +908,32 @@ namespace Neo4j.Driver.Examples
 
             // tag::pass-bookmarks[]
             // Create a company node
-            private IResult AddCompany(ITransaction tx, string name)
+            private IResultSummary AddCompany(ITransaction tx, string name)
             {
-                return tx.Run("CREATE (a:Company {name: $name})", new {name});
+                return tx.Run("CREATE (a:Company {name: $name})", new {name}).Consume();
             }
 
             // Create a person node
-            private IResult AddPerson(ITransaction tx, string name)
+            private IResultSummary AddPerson(ITransaction tx, string name)
             {
-                return tx.Run("CREATE (a:Person {name: $name})", new {name});
+                return tx.Run("CREATE (a:Person {name: $name})", new {name}).Consume();
             }
 
             // Create an employment relationship to a pre-existing company node.
             // This relies on the person first having been created.
-            private IResult Employ(ITransaction tx, string personName, string companyName)
+            private IResultSummary Employ(ITransaction tx, string personName, string companyName)
             {
                 return tx.Run(@"MATCH (person:Person {name: $personName}) 
                          MATCH (company:Company {name: $companyName}) 
-                         CREATE (person)-[:WORKS_FOR]->(company)", new {personName, companyName});
+                         CREATE (person)-[:WORKS_FOR]->(company)", new {personName, companyName}).Consume();
             }
 
             // Create a friendship between two people.
-            private IResult MakeFriends(ITransaction tx, string name1, string name2)
+            private IResultSummary MakeFriends(ITransaction tx, string name1, string name2)
             {
                 return tx.Run(@"MATCH (a:Person {name: $name1}) 
                          MATCH (b:Person {name: $name2})
-                         MERGE (a)-[:KNOWS]->(b)", new {name1, name2});
+                         MERGE (a)-[:KNOWS]->(b)", new {name1, name2}).Consume();
             }
 
             // Match and display all friendships.
@@ -1077,7 +1078,7 @@ namespace Neo4j.Driver.Examples
             using (var session = Driver.Session())
             {
                 session.WriteTransaction(tx =>
-                    tx.Run(query, parameters));
+                    tx.Run(query, parameters).Consume());
             }
         }
 
