@@ -1069,7 +1069,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 try
                 {
                     await session.WriteTransactionAsync(
-                        tx => tx.RunAsync("CREATE (a:Person {name: $name})", new {name}));
+                        async tx => await tx.RunAsync("CREATE (a:Person {name: $name})", new {name}));
                 }
                 finally
                 {
@@ -1154,7 +1154,7 @@ namespace Neo4j.Driver.ExamplesAsync
             var session = Driver.AsyncSession();
             try
             {
-                await session.WriteTransactionAsync(tx => tx.RunAsync(query, parameters));
+                await session.WriteTransactionAsync(async tx => await tx.RunAsync(query, parameters));
             }
             finally
             {
@@ -1167,7 +1167,7 @@ namespace Neo4j.Driver.ExamplesAsync
             var session = Driver.AsyncSession();
             try
             {
-                await session.WriteTransactionAsync(tx => tx.RunAsync(query, parameters));
+                await session.WriteTransactionAsync(async tx => await tx.RunAsync(query, parameters));
             }
             finally
             {
