@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal
 {
     internal interface IConnectionProvider
     {
-        Task<IConnection> AcquireAsync(AccessMode mode, string database, Bookmark bookmark);
+        Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark);
         Task CloseAsync();
         Task VerifyConnectivityAsync();
         Task<bool> SupportsMultiDbAsync();

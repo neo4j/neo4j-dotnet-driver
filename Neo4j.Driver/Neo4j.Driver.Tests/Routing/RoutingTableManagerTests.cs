@@ -139,7 +139,7 @@ namespace Neo4j.Driver.Tests.Routing
                 // When
                 // should throw an exception as the initial routers should not be tried again
                 manager.Awaiting(m =>
-                        m.UpdateRoutingTableAsync(AccessMode.Read, "", Bookmark.Empty)).Should()
+                        m.UpdateRoutingTableAsync(AccessMode.Read, "", null, Bookmark.Empty)).Should()
                     .Throw<ServiceUnavailableException>();
 
                 // Then
@@ -172,7 +172,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var manager = NewRoutingTableManager(routingTableMock.Object, poolManagerMock.Object, discovery.Object);
 
                 // When
-                await manager.UpdateRoutingTableAsync(AccessMode.Read, "", Bookmark.Empty);
+                await manager.UpdateRoutingTableAsync(AccessMode.Read, "", null, Bookmark.Empty);
 
                 // Then
                 poolManagerMock.Verify(x => x.AddConnectionPoolAsync(It.IsAny<IEnumerable<Uri>>()), Times.Once);
@@ -214,7 +214,7 @@ namespace Neo4j.Driver.Tests.Routing
                         mockProvider.Object);
 
                 // When
-                await manager.UpdateRoutingTableAsync(AccessMode.Read, "", Bookmark.Empty);
+                await manager.UpdateRoutingTableAsync(AccessMode.Read, "", null, Bookmark.Empty);
 
                 // Then
                 // verify the method is actually called
@@ -246,7 +246,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // When
                 var newRoutingTable =
-                    await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", Bookmark.Empty);
+                    await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmark.Empty);
 
                 // Then
                 newRoutingTable.Should().BeNull();
@@ -282,7 +282,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // When
                 var newRoutingTable =
-                    await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", Bookmark.Empty);
+                    await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmark.Empty);
 
                 // Then
                 newRoutingTable.All().Should().ContainInOrder(uriA);
@@ -308,7 +308,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object,
                     logger: logger.Object);
 
-                await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", Bookmark.Empty);
+                await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmark.Empty);
 
                 logger.Verify(x => x.Warn(error, It.IsAny<string>(), It.IsAny<object[]>()));
             }
@@ -333,7 +333,7 @@ namespace Neo4j.Driver.Tests.Routing
                     logger: logger.Object);
 
                 var exc = await Record.ExceptionAsync(() =>
-                    manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", Bookmark.Empty));
+                    manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmark.Empty));
 
                 exc.Should().Be(error);
                 logger.Verify(x => x.Error(error, It.IsAny<string>(), It.IsAny<object[]>()));
@@ -371,7 +371,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // When
                 var updateRoutingTable =
-                    await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", Bookmark.Empty, null);
+                    await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmark.Empty, null);
 
                 // Then
                 updateRoutingTable.All().Should().ContainInOrder(uriY);
@@ -402,7 +402,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // When
                 var updateRoutingTable =
-                    await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", Bookmark.Empty, null);
+                    await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmark.Empty, null);
 
                 // Then
                 updateRoutingTable.All().Should().ContainInOrder(uriX);
@@ -444,7 +444,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // When
                 var result =
-                    await manager.UpdateRoutingTableAsync(existingRoutingTable, AccessMode.Read, "", Bookmark.Empty);
+                    await manager.UpdateRoutingTableAsync(existingRoutingTable, AccessMode.Read, "", null, Bookmark.Empty);
 
                 // Then
                 result.Should().Be(routingTable);
@@ -491,7 +491,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // When
                 var result =
-                    await manager.UpdateRoutingTableAsync(existingRoutingTable, AccessMode.Read, "", Bookmark.Empty);
+                    await manager.UpdateRoutingTableAsync(existingRoutingTable, AccessMode.Read, "", null, Bookmark.Empty);
 
                 // Then
                 result.Should().Be(routingTable);
@@ -599,11 +599,11 @@ namespace Neo4j.Driver.Tests.Routing
                     poolManager.Object, Mock.Of<ILogger>(), TimeSpan.MaxValue);
 
                 // When
-                var routingTable1 = await manager.EnsureRoutingTableForModeAsync(mode, null, Bookmark.Empty);
+                var routingTable1 = await manager.EnsureRoutingTableForModeAsync(mode, null, null, Bookmark.Empty);
                 var routingTable2 =
-                    await manager.EnsureRoutingTableForModeAsync(mode, "foo", Bookmark.Empty);
+                    await manager.EnsureRoutingTableForModeAsync(mode, "foo", null, Bookmark.Empty);
                 var routingTable3 =
-                    await manager.EnsureRoutingTableForModeAsync(mode, "bar", Bookmark.Empty);
+                    await manager.EnsureRoutingTableForModeAsync(mode, "bar", null, Bookmark.Empty);
 
                 routingTable1.Should().Be(defaultRoutingTable);
                 routingTable2.Should().Be(fooRoutingTable);
@@ -642,7 +642,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // When
                 var routingTable1 =
-                    await manager.EnsureRoutingTableForModeAsync(AccessMode.Read, "foo", Bookmark.Empty);
+                    await manager.EnsureRoutingTableForModeAsync(AccessMode.Read, "foo", null, Bookmark.Empty);
                 routingTable1.Should().Be(fooRoutingTable);
 
                 // Fake the timer to make foo routing table to be recognized as stale
@@ -650,7 +650,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // An update should trigger an implicit clean-up of stale entries
                 var routingTable2 =
-                    await manager.EnsureRoutingTableForModeAsync(AccessMode.Read, "bar", Bookmark.Empty);
+                    await manager.EnsureRoutingTableForModeAsync(AccessMode.Read, "bar", null, Bookmark.Empty);
                 routingTable2.Should().Be(barRoutingTable);
 
                 manager.RoutingTableFor("foo").Should().BeNull();
@@ -685,13 +685,13 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // When
                 var routingTable1 =
-                    await manager.EnsureRoutingTableForModeAsync(AccessMode.Write, null, Bookmark.Empty);
+                    await manager.EnsureRoutingTableForModeAsync(AccessMode.Write, null, null, Bookmark.Empty);
                 var routingTable2 =
-                    await manager.EnsureRoutingTableForModeAsync(AccessMode.Write, "foo", Bookmark.Empty);
+                    await manager.EnsureRoutingTableForModeAsync(AccessMode.Write, "foo", null, Bookmark.Empty);
                 routingTable1.Should().Be(defaultRoutingTable);
                 routingTable2.Should().Be(fooRoutingTable);
 
-                manager.Awaiting(m => m.EnsureRoutingTableForModeAsync(AccessMode.Write, "bar", Bookmark.Empty))
+                manager.Awaiting(m => m.EnsureRoutingTableForModeAsync(AccessMode.Write, "bar", null, Bookmark.Empty))
                     .Should().Throw<FatalDiscoveryException>();
                 manager.RoutingTableFor("").Should().Be(defaultRoutingTable);
                 manager.RoutingTableFor("foo").Should().Be(fooRoutingTable);
@@ -716,7 +716,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var manager = new RoutingTableManager(initialAddressProvider.Object, discovery.Object,
                     poolManager.Object, Mock.Of<ILogger>(), TimeSpan.MaxValue);
 
-                manager.Awaiting(m => m.EnsureRoutingTableForModeAsync(AccessMode.Write, "bar", Bookmark.Empty))
+                manager.Awaiting(m => m.EnsureRoutingTableForModeAsync(AccessMode.Write, "bar", null, Bookmark.Empty))
                     .Should().Throw<FatalDiscoveryException>().Which.Should().Be(error);
             }
 
@@ -741,7 +741,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var manager = new RoutingTableManager(initialAddressProvider.Object, discovery.Object,
                     poolManager.Object, Mock.Of<ILogger>(), TimeSpan.MaxValue);
 
-                var routingTable = await manager.EnsureRoutingTableForModeAsync(AccessMode.Write, "foo", bookmark);
+                var routingTable = await manager.EnsureRoutingTableForModeAsync(AccessMode.Write, "foo", null, bookmark);
 
                 routingTable.Should().Be(rt);
                 discovery.Verify(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", null, bookmark), Times.Once);

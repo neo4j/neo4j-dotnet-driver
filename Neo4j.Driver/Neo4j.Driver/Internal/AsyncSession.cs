@@ -124,7 +124,7 @@ namespace Neo4j.Driver.Internal
             var result = TryExecuteAsync(_logger, async () =>
             {
                 await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
-                _connection = await _connectionProvider.AcquireAsync(_defaultMode, _database, _bookmark)
+                _connection = await _connectionProvider.AcquireAsync(_defaultMode, _database, SessionConfig.ImpersonatedUser, _bookmark)
                     .ConfigureAwait(false);
                 var protocol = _connection.BoltProtocol;
                 return await protocol
@@ -222,7 +222,7 @@ namespace Neo4j.Driver.Internal
             var config = BuildTransactionConfig(action);
             await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
 
-            _connection = await _connectionProvider.AcquireAsync(mode, _database, _bookmark).ConfigureAwait(false);
+            _connection = await _connectionProvider.AcquireAsync(mode, _database, SessionConfig.ImpersonatedUser, _bookmark).ConfigureAwait(false);
             var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmark, _reactive, _fetchSize);
             await tx.BeginTransactionAsync(config).ConfigureAwait(false);
             _transaction = tx;

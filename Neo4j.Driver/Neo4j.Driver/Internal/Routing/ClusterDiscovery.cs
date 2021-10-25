@@ -111,7 +111,7 @@ namespace Neo4j.Driver.Internal.Routing
                 RoutingContext = connection.RoutingContext;
             }
 
-            public Task<IConnection> AcquireAsync(AccessMode mode, string database, Bookmark bookmark)
+            public Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark)
             {
                 var conn = _connection;
                 conn.Mode = mode;

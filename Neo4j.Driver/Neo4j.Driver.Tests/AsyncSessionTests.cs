@@ -373,7 +373,7 @@ namespace Neo4j.Driver.Tests
                 // do nothing
             }
 
-            public Task<IConnection> AcquireAsync(AccessMode mode, string database, Bookmark bookmark)
+            public Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark)
             {
                 return Task.FromResult(Connection);
             }

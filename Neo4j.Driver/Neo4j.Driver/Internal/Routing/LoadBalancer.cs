@@ -78,14 +78,14 @@ namespace Neo4j.Driver.Internal.Routing
 
         private bool IsClosed => _closedMarker > 0;
 
-        public async Task<IConnection> AcquireAsync(AccessMode mode, string database, Bookmark bookmark)
+        public async Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark)
         {
             if (IsClosed)
             {
                 ThrowObjectDisposedException();
             }
 
-            var conn = await AcquireConnectionAsync(mode, database, bookmark).ConfigureAwait(false);
+            var conn = await AcquireConnectionAsync(mode, database, impersonatedUser, bookmark).ConfigureAwait(false);
 
             if (IsClosed)
             {
@@ -119,7 +119,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         public Task<IConnection> CreateClusterConnectionAsync(Uri uri)
         {
-            return CreateClusterConnectionAsync(uri, AccessMode.Write, null, Bookmark.Empty);
+            return CreateClusterConnectionAsync(uri, AccessMode.Write, null, null, Bookmark.Empty);
         }
 
         public Task CloseAsync()
@@ -139,7 +139,7 @@ namespace Neo4j.Driver.Internal.Routing
             try
             {
                 var database = await SupportsMultiDbAsync().ConfigureAwait(false) ? "system" : null;
-                await _routingTableManager.EnsureRoutingTableForModeAsync(Simple.Mode, database,
+                await _routingTableManager.EnsureRoutingTableForModeAsync(Simple.Mode, database, null,
                     Simple.Bookmark).ConfigureAwait(false);
             }
             catch (ServiceUnavailableException e)
@@ -159,7 +159,7 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 try
                 {
-                    var connection = await CreateClusterConnectionAsync(uri, Simple.Mode, Simple.Database,
+                    var connection = await CreateClusterConnectionAsync(uri, Simple.Mode, Simple.Database, null,
                         Simple.Bookmark).ConfigureAwait(false);
                     var multiDb = connection.SupportsMultidatabase();
                     await connection.CloseAsync().ConfigureAwait(false);
@@ -185,9 +185,9 @@ namespace Neo4j.Driver.Internal.Routing
 			return  _routingTableManager.RoutingTableFor(database);
 		}
 
-		public async Task<IConnection> AcquireConnectionAsync(AccessMode mode, string database, Bookmark bookmark)
+		public async Task<IConnection> AcquireConnectionAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark)
         {
-            var routingTable = await _routingTableManager.EnsureRoutingTableForModeAsync(mode, database, bookmark)
+            var routingTable = await _routingTableManager.EnsureRoutingTableForModeAsync(mode, database, impersonatedUser, bookmark)
                 .ConfigureAwait(false);
 
             while (true)
@@ -213,7 +213,7 @@ namespace Neo4j.Driver.Internal.Routing
                 }
 
                 var conn =
-                    await CreateClusterConnectionAsync(uri, mode, database, bookmark).ConfigureAwait(false);
+                    await CreateClusterConnectionAsync(uri, mode, database, impersonatedUser, bookmark).ConfigureAwait(false);
                 if (conn != null)
                 {
                     return conn;
@@ -225,12 +225,12 @@ namespace Neo4j.Driver.Internal.Routing
             throw new SessionExpiredException($"Failed to connect to any {mode.ToString().ToLower()} server.");
         }
 
-        private async Task<IConnection> CreateClusterConnectionAsync(Uri uri, AccessMode mode, string database,
-            Bookmark bookmark)
+        private async Task<IConnection> CreateClusterConnectionAsync(Uri uri, AccessMode mode, string database, 
+			string impersonatedUser, Bookmark bookmark)
         {
             try
             {
-                var conn = await _clusterConnectionPool.AcquireAsync(uri, mode, database, bookmark)
+                var conn = await _clusterConnectionPool.AcquireAsync(uri, mode, database, impersonatedUser, bookmark)
                     .ConfigureAwait(false);
                 if (conn != null)
                 {
