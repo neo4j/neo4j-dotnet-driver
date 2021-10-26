@@ -40,6 +40,9 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 			[JsonProperty(Required = Required.AllowNull)]
 			public long fetchSize { get; set; } = 1000;
+
+			[JsonProperty(Required = Required.AllowNull)]
+			public string impersonatedUser { get; set; }
 		}
 
 		[JsonIgnore]
