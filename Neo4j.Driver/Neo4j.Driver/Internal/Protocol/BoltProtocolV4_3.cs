@@ -24,6 +24,7 @@ namespace Neo4j.Driver.Internal.Protocol
 		{
 			return new HelloMessage(userAgent, auth, routingContext);
 		}
+
 		protected override IResponseHandler HelloResponseHandler(IConnection conn) { return new HelloResponseHandler(conn, Version); }
 
 
@@ -45,6 +46,9 @@ namespace Neo4j.Driver.Internal.Protocol
 
 			await connection.SyncAsync().ConfigureAwait(false);
 			await connection.CloseAsync().ConfigureAwait(false);
+
+			//Since 4.4 the Routing information will contain a db. 4.3 needs to populate this here as it's not received in the older route response...
+			responseHandler.RoutingInformation.Add("db", database);
 
 			return (IReadOnlyDictionary<string, object>)responseHandler.RoutingInformation;
 		}

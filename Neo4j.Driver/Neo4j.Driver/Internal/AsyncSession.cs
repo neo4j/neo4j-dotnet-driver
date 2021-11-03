@@ -46,7 +46,7 @@ namespace Neo4j.Driver.Internal
 
         public Bookmark LastBookmark => _bookmark;
 
-        private readonly string _database;
+        private string _database;
         private readonly bool _reactive;
         private readonly long _fetchSize;
 		
@@ -124,10 +124,12 @@ namespace Neo4j.Driver.Internal
             var result = TryExecuteAsync(_logger, async () =>
             {
                 await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
-                _connection = await _connectionProvider.AcquireAsync(_defaultMode, _database, SessionConfig.ImpersonatedUser, _bookmark)
-                    .ConfigureAwait(false);
-                var protocol = _connection.BoltProtocol;
-                return await protocol
+                
+				await AcquireConnectionAndDBName(_defaultMode);
+
+				var protocol = _connection.BoltProtocol;
+
+				return await protocol
                     .RunInAutoCommitTransactionAsync(_connection, query, _reactive, this, this, _database,
                         _bookmark, options, _fetchSize)
                     .ConfigureAwait(false);
@@ -222,12 +224,22 @@ namespace Neo4j.Driver.Internal
             var config = BuildTransactionConfig(action);
             await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
 
-            _connection = await _connectionProvider.AcquireAsync(mode, _database, SessionConfig.ImpersonatedUser, _bookmark).ConfigureAwait(false);
-            var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmark, _reactive, _fetchSize);
+			await AcquireConnectionAndDBName(mode);
+
+			var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmark, _reactive, _fetchSize, ImpersonatedUser());
             await tx.BeginTransactionAsync(config).ConfigureAwait(false);
             _transaction = tx;
             return _transaction;
         }
+
+		private async Task AcquireConnectionAndDBName(AccessMode mode)
+		{
+			_connection = await _connectionProvider.AcquireAsync(mode, _database, ImpersonatedUser(), _bookmark).ConfigureAwait(false);
+
+			//Update the database. If a routing request occured it may have returned a differing DB alias name that needs to be used for the 
+			//rest of the sessions lifetime.
+			_database = _connection.Database;
+		}
 
 		protected override void Dispose(bool disposing)
 		{
@@ -250,6 +262,11 @@ namespace Neo4j.Driver.Internal
 		{
 			await CloseAsync().ConfigureAwait(false);
 			await base.DisposeAsyncCore();
+		}
+
+		private string ImpersonatedUser()
+		{
+			return SessionConfig is not null ? SessionConfig.ImpersonatedUser : string.Empty;
 		}
     }
 }

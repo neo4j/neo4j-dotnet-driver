@@ -47,44 +47,44 @@ namespace Neo4j.Driver.Internal.Routing
         public async Task<IRoutingTable> DiscoverAsync(IConnection connection, string database, string impersonatedUser, Bookmark bookmark)
         {
             var routingTable = await connection.BoltProtocol.GetRoutingTable(connection, database, impersonatedUser, bookmark).ConfigureAwait(false);  //Not ideal passing the connection in... but protocol currently doesn't know what connection it is on. Needs some though...
-                        
-            return ParseDiscoveryResult(database, routingTable);
+
+            return ParseDiscoveryResult(routingTable);
         }
 
-        private static RoutingTable ParseDiscoveryResult(string database, IReadOnlyDictionary<string, object> routingTable)
-        {
-            var routers = default(Uri[]);
-            var readers = default(Uri[]);
-            var writers = default(Uri[]);
+		private static RoutingTable ParseDiscoveryResult(IReadOnlyDictionary<string, object> routingTable)
+		{
+			var routers = default(Uri[]);
+			var readers = default(Uri[]);
+			var writers = default(Uri[]);
 
-            foreach (var servers in routingTable["servers"].As<List<Dictionary<string, object>>>())
-            {
-                var addresses = servers["addresses"].As<List<string>>();
-                var role = servers["role"].As<string>();
-                switch (role)
-                {
-                    case "READ":
-                        readers = addresses.Select(BoltRoutingUri).ToArray();
-                        break;
-                    case "WRITE":
-                        writers = addresses.Select(BoltRoutingUri).ToArray();
-                        break;
-                    case "ROUTE":
-                        routers = addresses.Select(BoltRoutingUri).ToArray();
-                        break;
-                    default:
-                        throw new ProtocolException(
-                            $"Role '{role}' returned from discovery procedure is not recognized by the driver");
-                }
-            }
+			foreach (var servers in routingTable["servers"].As<List<Dictionary<string, object>>>())
+			{
+				var addresses = servers["addresses"].As<List<string>>();
+				var role = servers["role"].As<string>();
+				switch (role)
+				{
+					case "READ":
+						readers = addresses.Select(BoltRoutingUri).ToArray();
+						break;
+					case "WRITE":
+						writers = addresses.Select(BoltRoutingUri).ToArray();
+						break;
+					case "ROUTE":
+						routers = addresses.Select(BoltRoutingUri).ToArray();
+						break;
+					default:
+						throw new ProtocolException(
+							$"Role '{role}' returned from discovery procedure is not recognized by the driver");
+				}
+			}
 
-            if ((readers == null || readers.Length == 0) || (routers == null || routers.Length == 0))
-            {
-                throw new ProtocolException(
-                    $"Invalid discovery result: discovered {routers?.Length ?? 0} routers, {writers?.Length ?? 0} writers and {readers?.Length ?? 0} readers.");
-            }
+			if ((readers == null || readers.Length == 0) || (routers == null || routers.Length == 0))
+			{
+				throw new ProtocolException(
+					$"Invalid discovery result: discovered {routers?.Length ?? 0} routers, {writers?.Length ?? 0} writers and {readers?.Length ?? 0} readers.");
+			}
 
-            return new RoutingTable(database, routers, readers, writers, routingTable["ttl"].As<long>());
+			return new RoutingTable(routingTable["db"].As<string>(), routers, readers, writers, routingTable["ttl"].As<long>());
         }
 
         public static Uri BoltRoutingUri(string address)

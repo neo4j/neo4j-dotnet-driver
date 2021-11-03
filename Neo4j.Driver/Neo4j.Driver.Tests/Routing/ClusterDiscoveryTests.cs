@@ -280,7 +280,7 @@ namespace Neo4j.Driver.Tests.Routing
             return list;
         }
 
-        private static Mock<IConnection> Setup32SocketConnection(IDictionary<string, string> routingContext, object[] recordFields)
+        internal static Mock<IConnection> Setup32SocketConnection(IDictionary<string, string> routingContext, object[] recordFields)
         {
             var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
             {

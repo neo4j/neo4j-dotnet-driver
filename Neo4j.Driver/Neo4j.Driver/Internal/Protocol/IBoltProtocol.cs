@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Internal.Protocol
                                                             TransactionConfig config, 
                                                             long fetchSize);
 
-        Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark, TransactionConfig config);
+        Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark, TransactionConfig config, string impersonatedUser);
 
         Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection, Query query, bool reactive, long fetchSize);
 

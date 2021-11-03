@@ -20,6 +20,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
+using FluentAssertions.Collections;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -112,6 +113,8 @@ namespace Neo4j.Driver.Internal.Protocol
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
+				
+
                 await V3.RunInAutoCommitTransactionAsync(mockConn.Object, query, true, bookmarkTracker.Object,
                     resourceHandler.Object, null, null, null);
 
@@ -198,7 +201,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var bookmark = Bookmark.From(AsyncSessionTests.FakeABookmark(234));
                 var V3 = new BoltProtocolV3();
 
-                await V3.BeginTransactionAsync(mockConn.Object, null, bookmark, null);
+                await V3.BeginTransactionAsync(mockConn.Object, null, bookmark, null, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V3.BeginResponseHandler>(), null, null),
@@ -224,7 +227,7 @@ namespace Neo4j.Driver.Internal.Protocol
                             VerifyMetadata(msg.Metadata, mode);
                         });
 
-                await V3.BeginTransactionAsync(mockConn.Object, null, Bookmark, TxConfig);
+                await V3.BeginTransactionAsync(mockConn.Object, null, Bookmark, TxConfig, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V3.BeginResponseHandler>(), null, null),
@@ -237,11 +240,21 @@ namespace Neo4j.Driver.Internal.Protocol
             public void ShouldThrowWhenADatabaseIsGiven(string database)
             {
                 var V3 = new BoltProtocolV3();
+				var mockConn = NewConnectionWithMode(AccessMode.Read);
 
-                V3.Awaiting(p => p.BeginTransactionAsync(Mock.Of<IConnection>(), database, Bookmark.From("123"),
-                        TransactionConfig.Default))
+				V3.Awaiting(p => p.BeginTransactionAsync(mockConn.Object, database, Bookmark.From("123"),
+                        TransactionConfig.Default, null))
                     .Should().Throw<ClientException>().WithMessage("*that does not support multiple databases*");
             }
+
+			[Fact]
+			public void ShouldThrowOnImpersonatedUser()
+			{
+				var V3 = new BoltProtocolV3();
+				var mockConn = NewConnectionWithMode(AccessMode.Read);
+				
+				Assert.ThrowsAsync<ArgumentException>(() => V3.BeginTransactionAsync(mockConn.Object, string.Empty, Bookmark.From("123"), TransactionConfig.Default, "ImpersonatedUser"));
+			}
         }
 
         public class CommitTransactionAsyncMethod
@@ -352,6 +365,68 @@ namespace Neo4j.Driver.Internal.Protocol
                     .Message.Should()
                     .Contain("Attempting to get a routing table on a null connection");
             }
+
+			[Fact]
+			public async Task RoutingTableShouldContainDatabase()
+			{
+				var connection = SetupMockedConnection();
+				var boltProtocolV3 = new BoltProtocolV3();
+				
+				//When
+				var routingTableDictionary = await boltProtocolV3.GetRoutingTable(connection, "myTestDatabase", string.Empty, null);
+
+				//Then
+				routingTableDictionary.ToDictionary().Should().ContainKey("db").WhichValue.Should().Be("myTestDatabase");
+			}
+
+			[Fact]
+			public void ShouldThrowOnImpersonatedUser()
+			{
+				var connection = SetupMockedConnection();
+				var boltProtocolV3 = new BoltProtocolV3();
+
+				//When
+				Assert.ThrowsAsync<ArgumentException>(() => boltProtocolV3.GetRoutingTable(connection, "myTestDatabase", string.Empty, null));
+			}
+
+			private IConnection SetupMockedConnection()
+			{
+				//Given
+				var routingContext = new Dictionary<string, string>
+				{
+					{"name", "molly"},
+					{"age", "1"},
+					{"color", "white"}
+				};
+
+				var results = new object[]
+				{
+					"15000",
+					new List<object>
+					{
+						new Dictionary<string, object>
+						{
+							{"addresses", "routing ip addresses"},
+							{"role", "ROUTE"}
+						},
+						new Dictionary<string, object>
+						{
+							{"addresses", "write ip addresses"},
+							{"role", "WRITE"}
+						},
+						new Dictionary<string, object>
+						{
+							{"addresses", "read ip addresses"},
+							{"role", "READ"}
+						}
+					}
+				};
+
+				var mockConn = Tests.Routing.ClusterDiscoveryTests.Setup32SocketConnection(routingContext, results);
+				mockConn.Setup(m => m.RoutingContext).Returns(routingContext);
+
+				return mockConn.Object;
+			}
         }
 
 

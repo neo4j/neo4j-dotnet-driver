@@ -64,7 +64,7 @@ namespace Neo4j.Driver.Tests.Routing
                 routingTable);
         }
 
-        internal static Mock<IRoutingTable> NewMockedRoutingTable(AccessMode mode, Uri uri)
+		internal static Mock<IRoutingTable> NewMockedRoutingTable(AccessMode mode, Uri uri, string database)
         {
             var mock = new Mock<IRoutingTable>();
             mock.Setup(m => m.IsStale(It.IsAny<AccessMode>())).Returns(false);
@@ -86,6 +86,8 @@ namespace Neo4j.Driver.Tests.Routing
                     throw new InvalidOperationException($"unknown access mode {mode}");
             }
 
+			mock.Setup(m => m.Database).Returns(database);
+
             mock.Setup(m => m.Remove(It.IsAny<Uri>())).Callback<Uri>(u => list.Remove(u));
             return mock;
         }
@@ -94,7 +96,7 @@ namespace Neo4j.Driver.Tests.Routing
             IEnumerable<Uri> routers = null,
             IEnumerable<Uri> readers = null,
             IEnumerable<Uri> writers = null,
-            string database = null)
+            string database = "")
         {
             // assign default value of uri
             if (routers == null)

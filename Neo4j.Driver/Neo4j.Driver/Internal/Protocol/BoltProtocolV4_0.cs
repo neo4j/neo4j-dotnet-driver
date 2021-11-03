@@ -47,6 +47,14 @@ namespace Neo4j.Driver.Internal.Protocol
 		{
 			return new HelloMessage(userAgent, auth);
 		}
+
+		protected override IRequestMessage BeginMessage(string database, Bookmark bookmark, TransactionConfig config, AccessMode mode, string impersonatedUser)
+		{
+			if (impersonatedUser is not null) throw new ArgumentException($"Boltprotocol {Version.ToString()} does not support impersonatedUser, yet has been passed a non null impersonated user string");
+
+			return new BeginMessage(database, bookmark, config?.Timeout, config?.Metadata, mode);
+		}
+
 		protected override IResponseHandler HelloResponseHandler(IConnection conn) { return new V3.HelloResponseHandler(conn); }
 
 		private const string GetRoutingTableForDatabaseProcedure = "CALL dbms.routing.getRoutingTable($context, $database)";
@@ -54,19 +62,6 @@ namespace Neo4j.Driver.Internal.Protocol
         public BoltProtocolV4_0()
         {
         }
-
-        public override async Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark, TransactionConfig config)
-        {
-			await connection.EnqueueAsync(new BeginMessage(database,
-														   bookmark,
-														   config?.Timeout,
-														   config?.Metadata,
-														   connection.GetEnforcedAccessMode()),
-											new V3.BeginResponseHandler()
-										 ).ConfigureAwait(false);
-
-			await connection.SyncAsync().ConfigureAwait(false);
-		}
 
         public override async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
             Query query, bool reactive, IBookmarkTracker bookmarkTracker,

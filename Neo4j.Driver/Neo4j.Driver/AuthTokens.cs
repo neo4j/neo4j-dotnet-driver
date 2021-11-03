@@ -93,7 +93,7 @@ namespace Neo4j.Driver
             var token = new Dictionary<string, object>
             {
                 {SchemeKey, "kerberos"},
-                {PrincipalKey, ""}, //This empty string is required for backwards compatibility.
+                {PrincipalKey, string.Empty}, //This empty string is required for backwards compatibility.
                 {CredentialsKey, base64EncodedTicket}
             };
             return new AuthToken(token);
@@ -134,17 +134,17 @@ namespace Neo4j.Driver
             Dictionary<string, object> parameters)
         {
             var token = new Dictionary<string, object>();
-            if (!string.IsNullOrEmpty(principal)) token.Add(PrincipalKey, principal);
+            if (principal is not null) token.Add(PrincipalKey, principal);
             if (!string.IsNullOrEmpty(scheme)) token.Add(SchemeKey, scheme);
             if (!string.IsNullOrEmpty(credentials)) token.Add(CredentialsKey, credentials);
             if (!string.IsNullOrEmpty(realm)) token.Add(RealmKey, realm);
-            
-            if (parameters != null)
-            {
-                token.Add(ParametersKey, parameters);
-            }
 
-            return new AuthToken(token);
+			if (parameters is not null)
+			{
+				token.Add(ParametersKey, parameters);
+			}
+	
+			return new AuthToken(token);
         }
 
 

@@ -9,6 +9,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         internal const string RoutingTableKey = "rt";
         internal const string TimeoutKey = "ttl";
         internal const string ServersKey = "servers";
+		internal const string DatabaseKey = "db";
 
         object IMetadataCollector.Collected => Collected;
 

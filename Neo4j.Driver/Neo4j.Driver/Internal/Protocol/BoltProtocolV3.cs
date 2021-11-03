@@ -48,6 +48,15 @@ namespace Neo4j.Driver.Internal.Protocol
 		{
 			return new Messaging.V3.HelloMessage(userAgent, auth);
 		}
+
+		protected virtual IRequestMessage BeginMessage(string database, Bookmark bookmark, TransactionConfig config, AccessMode mode, string impersonatedUser)
+		{
+			ValidateImpersonatedUserForVersion(impersonatedUser);
+			AssertNullDatabase(database);
+
+			return new BeginMessage(bookmark, config, mode);
+		}
+
 		protected virtual IResponseHandler HelloResponseHandler(IConnection conn) { return new HelloResponseHandler(conn); }
 
 		public BoltProtocolV3()
@@ -94,15 +103,15 @@ namespace Neo4j.Driver.Internal.Protocol
             return streamBuilder.CreateCursor();
         }
 
-        public virtual async Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark, TransactionConfig config)
-        {
-			AssertNullDatabase(database);
-
-			await connection.EnqueueAsync(new BeginMessage(bookmark,
-														   config,
-														   connection.GetEnforcedAccessMode()),
-											new BeginResponseHandler()
-										  ).ConfigureAwait(false);
+        public virtual async Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark, TransactionConfig config, string impersonatedUser)
+        {	
+			await connection.EnqueueAsync(BeginMessage(database, 
+													   bookmark, 
+													   config, 
+													   connection.GetEnforcedAccessMode(), 
+													   impersonatedUser),
+										  new BeginResponseHandler())
+							.ConfigureAwait(false);
 			
 			await connection.SyncAsync().ConfigureAwait(false);
 		}
@@ -161,7 +170,8 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public virtual async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmark bookmark)
 		{
-            connection = connection ?? throw new ProtocolException("Attempting to get a routing table on a null connection");
+			ValidateImpersonatedUserForVersion(impersonatedUser);
+			connection = connection ?? throw new ProtocolException("Attempting to get a routing table on a null connection");
 
 			connection.Mode = AccessMode.Read;
 
@@ -178,10 +188,19 @@ namespace Neo4j.Driver.Internal.Protocol
             var result = await RunInAutoCommitTransactionAsync(connection, query, false, bookmarkTracker, resourceHandler, sessionDb, bookmark, null).ConfigureAwait(false);
             var record = await result.SingleAsync();
 
-            return record.Values;
+			//Since 4.4 the Routing information will contain a db. Earlier versions need to populate this here as it's not received in the older route response...
+			var finalDictionary = record.Values.ToDictionary();
+			finalDictionary["db"] = database;
+
+			return (IReadOnlyDictionary<string, object>)finalDictionary;
         }
 
-        private class ConnectionResourceHandler : IResultResourceHandler
+		protected virtual void ValidateImpersonatedUserForVersion(string impersonatedUser)
+		{
+			if (impersonatedUser is not null) throw new ArgumentException($"Boltprotocol {Version.ToString()} does not support impersonatedUser, yet has been passed a non null impersonated user string");
+		}
+
+		private class ConnectionResourceHandler : IResultResourceHandler
         {
             IConnection Connection { get; }
             public ConnectionResourceHandler(IConnection conn)
@@ -197,8 +216,8 @@ namespace Neo4j.Driver.Internal.Protocol
             private async Task CloseConnection()
             {
                 await Connection.CloseAsync().ConfigureAwait(false);
-            }
-        }
+            }			
+		}
 
         private class BookmarkTracker : IBookmarkTracker
         {

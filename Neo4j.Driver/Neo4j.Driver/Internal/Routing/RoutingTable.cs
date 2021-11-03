@@ -57,7 +57,7 @@ namespace Neo4j.Driver.Internal.Routing
         public RoutingTable(string database, IEnumerable<Uri> routers, IEnumerable<Uri> readers,
             IEnumerable<Uri> writers, long expireAfterSeconds, ITimer timer)
         {
-            _database = database ?? "";
+            _database = database ?? string.Empty;
 
             _routers.Add(routers ?? Enumerable.Empty<Uri>());
             _readers.Add(readers ?? Enumerable.Empty<Uri>());

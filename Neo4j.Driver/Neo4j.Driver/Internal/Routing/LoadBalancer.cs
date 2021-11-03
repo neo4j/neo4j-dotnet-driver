@@ -185,7 +185,7 @@ namespace Neo4j.Driver.Internal.Routing
 			return  _routingTableManager.RoutingTableFor(database);
 		}
 
-		public async Task<IConnection> AcquireConnectionAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark)
+		private async Task<IConnection> AcquireConnectionAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark)
         {
             var routingTable = await _routingTableManager.EnsureRoutingTableForModeAsync(mode, database, impersonatedUser, bookmark)
                 .ConfigureAwait(false);
@@ -213,7 +213,7 @@ namespace Neo4j.Driver.Internal.Routing
                 }
 
                 var conn =
-                    await CreateClusterConnectionAsync(uri, mode, database, impersonatedUser, bookmark).ConfigureAwait(false);
+                    await CreateClusterConnectionAsync(uri, mode, routingTable.Database, impersonatedUser, bookmark).ConfigureAwait(false);
                 if (conn != null)
                 {
                     return conn;

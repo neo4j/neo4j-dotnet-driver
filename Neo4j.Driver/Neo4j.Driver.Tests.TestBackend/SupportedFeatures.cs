@@ -21,8 +21,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 			FeaturesList.Add("Feature:Auth:Bearer");
 			FeaturesList.Add("Feature:Auth:Custom");
 			FeaturesList.Add("Feature:Auth:Kerberos");
-			//FeaturesList.Add(Feature: Impersonation);
-			//FeaturesList.Add("Feature:Bolt:4.4");
+			FeaturesList.Add("Feature: Impersonation");
+			FeaturesList.Add("Feature:Bolt:4.4");
 
 			//FeaturesList.Add("Temporary:TransactionClose");
 			//FeaturesList.Add("Temporary:DriverFetchSize");

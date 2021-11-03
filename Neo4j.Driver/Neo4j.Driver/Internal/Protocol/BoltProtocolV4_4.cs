@@ -8,6 +8,8 @@ using Neo4j.Driver.Internal.MessageHandling.V4_4;
 using Neo4j.Driver.Internal.Messaging.V4_4;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
+using V3 = Neo4j.Driver.Internal.MessageHandling.V3;
+
 
 namespace Neo4j.Driver.Internal.Protocol
 {
@@ -25,13 +27,20 @@ namespace Neo4j.Driver.Internal.Protocol
 		{
 			return new HelloMessage(userAgent, auth, routingContext);
 		}
+
+		protected override IRequestMessage BeginMessage(string database, Bookmark bookmark, TransactionConfig config, AccessMode mode, string impersonatedUser)
+		{
+			ValidateImpersonatedUserForVersion(impersonatedUser);
+			return new BeginMessage(database, bookmark, config?.Timeout, config?.Metadata, mode, impersonatedUser);
+		}
+
 		protected override IResponseHandler HelloResponseHandler(IConnection conn) { return new HelloResponseHandler(conn, Version); }
 
 
-		public BoltProtocolV4_4(IDictionary<string, string> routingContext) 
+		public BoltProtocolV4_4(IDictionary<string, string> routingContext)
 			: base(routingContext)
 		{
-			
+
 		}
 
 		public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmark bookmark)
@@ -48,6 +57,10 @@ namespace Neo4j.Driver.Internal.Protocol
 			return (IReadOnlyDictionary<string, object>)responseHandler.RoutingInformation;
 		}
 
+		protected override void ValidateImpersonatedUserForVersion(string impersonatedUser)
+		{
+			//do nothing as all values of impersonated user string are valid for version 4.4 onwards.
+		}
 
 	}
 }

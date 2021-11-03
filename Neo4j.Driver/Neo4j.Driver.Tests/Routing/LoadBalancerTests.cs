@@ -87,7 +87,7 @@ namespace Neo4j.Driver.Tests.Routing
                 // Given
                 var mock = new Mock<IRoutingTableManager>();
                 mock.Setup(x => x.EnsureRoutingTableForModeAsync(mode, null, null, Bookmark.Empty))
-                    .ReturnsAsync(NewMockedRoutingTable(mode, null).Object);
+                    .ReturnsAsync(NewMockedRoutingTable(mode, null, string.Empty).Object);
                 var balancer = new LoadBalancer(null, mock.Object);
 
                 // When
@@ -106,7 +106,7 @@ namespace Neo4j.Driver.Tests.Routing
                 // Given
                 var uri = new Uri("neo4j://123:456");
                 var mock = new Mock<IRoutingTableManager>();
-                var routingTableMock = NewMockedRoutingTable(mode, uri);
+                var routingTableMock = NewMockedRoutingTable(mode, uri, string.Empty);
                 mock.Setup(x => x.EnsureRoutingTableForModeAsync(mode, null, null, Bookmark.Empty))
                     .ReturnsAsync(routingTableMock.Object);
 
@@ -125,14 +125,45 @@ namespace Neo4j.Driver.Tests.Routing
                 acquiredConn.Server.Address.Should().Be(uri.ToString());
             }
 
-            [Theory]
+
+			[Theory]
+			[InlineData("OriginalDB", "AliasDB", "AliasDB")]
+			[InlineData("OriginalDB", "OriginalDB", "OriginalDB")]
+			[InlineData("", "AliasDB", "AliasDB")]
+			[InlineData(null, "AliasDB", "AliasDB")]
+			public async Task ShouldReturnConnectionWithDBFromRoutingTable(string dbName, string aliasDbName, string desiredResult)
+			{
+				AccessMode mode = AccessMode.Read;
+				// Given
+				var uri = new Uri("neo4j://123:456");
+				var mockManager = new Mock<IRoutingTableManager>();
+				var routingTableMock = NewMockedRoutingTable(mode, uri, aliasDbName);
+				mockManager.Setup(x => x.EnsureRoutingTableForModeAsync(mode, dbName, null, Bookmark.Empty))
+					.ReturnsAsync(routingTableMock.Object);
+
+				var clusterPoolMock = new Mock<IClusterConnectionPool>();
+				var mockedConn = new Mock<IConnection>();
+				mockedConn.Setup(x => x.Server.Address).Returns(uri.ToString);
+				mockedConn.Setup(x => x.Mode).Returns(mode);
+				mockedConn.Setup(x => x.Database).Returns(aliasDbName);				
+				clusterPoolMock.Setup(x => x.AcquireAsync(uri, mode, aliasDbName, null, Bookmark.Empty)).ReturnsAsync(mockedConn.Object);
+				var balancer = new LoadBalancer(clusterPoolMock.Object, mockManager.Object);
+
+				// When
+				var acquiredConn = await balancer.AcquireAsync(mode, dbName, null, Bookmark.Empty);
+
+				// Then
+				acquiredConn.Database.Should().Be(desiredResult);
+			}
+
+			[Theory]
             [InlineData(AccessMode.Read)]
             [InlineData(AccessMode.Write)]
             public void ShouldForgetServerWhenFailedToEstablishConn(AccessMode mode)
             {
                 // Given
                 var uri = new Uri("neo4j://123:456");
-                var routingTableMock = NewMockedRoutingTable(mode, uri);
+                var routingTableMock = NewMockedRoutingTable(mode, uri, string.Empty);
                 var mock = new Mock<IRoutingTableManager>();
                 mock.Setup(x => x.EnsureRoutingTableForModeAsync(mode, null, null, Bookmark.Empty))
                     .ReturnsAsync(routingTableMock.Object);
@@ -163,7 +194,7 @@ namespace Neo4j.Driver.Tests.Routing
             {
                 // Given
                 var uri = new Uri("neo4j://123:456");
-                var routingTableMock = NewMockedRoutingTable(mode, uri);
+                var routingTableMock = NewMockedRoutingTable(mode, uri, string.Empty);
                 var mock = new Mock<IRoutingTableManager>();
                 mock.Setup(x => x.EnsureRoutingTableForModeAsync(mode, null, null, Bookmark.Empty))
                     .ReturnsAsync(routingTableMock.Object);
@@ -194,7 +225,7 @@ namespace Neo4j.Driver.Tests.Routing
             {
                 // Given
                 var uri = new Uri("neo4j://123:456");
-                var routingTableMock = NewMockedRoutingTable(mode, uri);
+                var routingTableMock = NewMockedRoutingTable(mode, uri, string.Empty);
                 var mock = new Mock<IRoutingTableManager>();
                 mock.Setup(x => x.EnsureRoutingTableForModeAsync(mode, null, null, Bookmark.Empty))
                     .ReturnsAsync(routingTableMock.Object);
@@ -229,8 +260,8 @@ namespace Neo4j.Driver.Tests.Routing
                     .ReturnsAsync(routingTable);
 
                 var clusterPoolMock = new Mock<IClusterConnectionPool>();
-                clusterPoolMock.Setup(x => x.AcquireAsync(It.IsAny<Uri>(), mode, null, null, Bookmark.Empty))
-                    .ReturnsAsync((Uri uri, AccessMode m, string d, Bookmark b) => NewConnectionMock(uri, m));
+                clusterPoolMock.Setup(x => x.AcquireAsync(It.IsAny<Uri>(), mode, It.IsAny<string>(), It.IsAny<string>(), Bookmark.Empty))
+                    .ReturnsAsync((Uri uri, AccessMode m, string d, string u, Bookmark b) => NewConnectionMock(uri, m));
 
                 var balancer = new LoadBalancer(clusterPoolMock.Object, routingTableManager.Object);
 

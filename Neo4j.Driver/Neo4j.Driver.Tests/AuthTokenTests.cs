@@ -103,6 +103,21 @@ namespace Neo4j.Driver.Tests
                 nums["Two"].Should().Be(2);
                 nums["Three"].Should().Be(3);
             }
+
+			[Fact]
+			public void ShouldNotAddPrincipalIfNull()
+			{
+				var authToken = AuthTokens.Custom(null, "toufu", "foo", "custom");
+				var dict = authToken.AsDictionary();
+				
+				dict.Count.Should().Be(3);
+				dict["scheme"].Should().Be("custom");
+				dict["credentials"].Should().Be("toufu");
+				dict["realm"].Should().Be("foo");
+				
+				dict.ContainsKey("parameters").Should().BeFalse();
+				dict.ContainsKey("principal").Should().BeFalse();
+			}
         }
     }
 }
