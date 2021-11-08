@@ -79,5 +79,36 @@ namespace Neo4j.Driver.Internal.Protocol
                 .Contain("Attempting to get a routing table on a null connection");
         }
 
-    }
+		[Fact]
+		public async Task RoutingTableShouldContainDatabaseName()
+		{
+			var databaseName = "myDatabaseName";
+			var protocol = new BoltProtocolV4_3(new Dictionary<string, string> { { "ContextKey", "ContextValue" } });
+			var connection = SetupMockedConnection(databaseName);
+
+			var routingTable = await protocol.GetRoutingTable(connection, databaseName, null, null);
+
+			routingTable.ToDictionary().Should().ContainKey("db").WhichValue.Should().Be(databaseName);
+		}
+
+		private IConnection SetupMockedConnection(string databaseName)
+		{
+			//Given
+			var routingContext = new Dictionary<string, string>
+				{
+					{"name", "molly"},
+					{"age", "1"},
+					{"color", "white"}
+				};
+
+			var mockConn = Tests.Routing.ClusterDiscoveryTests.Setup43SocketConnection(routingContext, 
+																					   databaseName, 
+																					   null, 
+																					   Tests.Routing.ClusterDiscoveryTests.CreateGetServersDictionary(1, 1, 1));
+			mockConn.Setup(m => m.RoutingContext).Returns(routingContext);
+
+			return mockConn.Object;
+		}
+
+	}
 }

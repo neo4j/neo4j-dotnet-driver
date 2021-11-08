@@ -30,6 +30,7 @@ using Xunit;
 using static Neo4j.Driver.Internal.Protocol.BoltProtocolUtils;
 using V3 = Neo4j.Driver.Internal.MessageHandling.V3;
 using V4 = Neo4j.Driver.Internal.MessageHandling.V4;
+using static Neo4j.Driver.Internal.Protocol.BoltProtocolV3;
 using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal.Protocol
@@ -246,7 +247,26 @@ namespace Neo4j.Driver.Internal.Protocol
                 procedure.Should().Be("CALL dbms.routing.getRoutingTable($context, $database)");
                 parameters["context"].Should().Be(context);
                 parameters["database"].Should().Be(db);
-            }
-        }
-    }
+			}
+		}
+
+		public class BeginTransactionAsyncMethod
+		{
+			[Fact]
+			public async Task ShouldThrowOnImpersonatedUserAsync()
+			{
+				var protocol = new BoltProtocolV4_0();
+				var mockConn = NewConnectionWithMode(AccessMode.Read);
+
+				var ex = await Assert.ThrowsAsync<ArgumentException>(() => protocol.BeginTransactionAsync(mockConn.Object, 
+																						   string.Empty, 
+																						   Bookmark.From("123"), 
+																						   TransactionConfig.Default, 
+																						   "ImpersonatedUser"));
+
+				ex.Message.Should().Contain("4.0");
+			}
+		}
+
+	}
 }

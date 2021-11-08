@@ -238,7 +238,7 @@ namespace Neo4j.Driver.Tests.Routing
             };
         }
 
-        private static Dictionary<string, object> CreateGetServersDictionary(int routerCount, int writerCount, int readerCount)
+        internal static Dictionary<string, object> CreateGetServersDictionary(int routerCount, int writerCount, int readerCount)
 		{
             return new Dictionary<string, object>
             {
@@ -297,7 +297,7 @@ namespace Neo4j.Driver.Tests.Routing
             return new MockedConnection(AccessMode.Write, pairs, serverInfo).MockConn;
         }
 
-        private static Mock<IConnection> Setup40SocketConnection(IDictionary<string, string> routingContext, string database, Bookmark bookmark, object[] recordFields)
+        internal static Mock<IConnection> Setup40SocketConnection(IDictionary<string, string> routingContext, string database, Bookmark bookmark, object[] recordFields)
         {
             var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
             {
@@ -319,7 +319,7 @@ namespace Neo4j.Driver.Tests.Routing
             return new MockedConnection(AccessMode.Read, pairs, serverInfo).MockConn;
         }
 
-        private static Mock<IConnection> Setup43SocketConnection(IDictionary<string, string> routingContext, string database, Bookmark bookmark, Dictionary<string, object> recordFields)
+        internal static Mock<IConnection> Setup43SocketConnection(IDictionary<string, string> routingContext, string database, Bookmark bookmark, Dictionary<string, object> recordFields)
         {
             var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
             {

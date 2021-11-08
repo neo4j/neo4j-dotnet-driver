@@ -25,6 +25,7 @@ using Neo4j.Driver.Internal.Messaging.V4_4;
 using Neo4j.Driver.Internal.Result;
 using Xunit;
 using Neo4j.Driver.Internal.MessageHandling.V4_4;
+using static Neo4j.Driver.Internal.Protocol.BoltProtocolUtils;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
@@ -79,5 +80,24 @@ namespace Neo4j.Driver.Internal.Protocol
 				.Contain("Attempting to get a routing table on a null connection");
 		}
 
+
+		[Theory]
+		[InlineData("ImpersonatedUser")]
+		[InlineData("")]
+		[InlineData(null)]
+		public async Task ShouldNotThrowOnImpersonatedUserAsync(string impUser)
+		{
+			var protocol = new BoltProtocolV4_4(new Dictionary<string, string> { { "ContextKey", "ContextValue" } });
+			var mockConn = NewConnectionWithMode(AccessMode.Read);
+
+			var exception = await Xunit.Record.ExceptionAsync(async () => await protocol.BeginTransactionAsync(mockConn.Object,
+																											   string.Empty,
+																											   Bookmark.From("123"),
+																											   TransactionConfig.Default,
+																											   impUser));
+
+			Assert.Null(exception);
+		}
+		
 	}
 }

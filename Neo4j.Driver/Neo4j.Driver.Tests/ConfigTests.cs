@@ -166,7 +166,7 @@ namespace Neo4j.Driver.Tests
                 config.TrustManager.Should().BeNull();
                 config.Logger.Should().BeOfType<NullLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(100);
-            }
+            }			
         }
     }
 }

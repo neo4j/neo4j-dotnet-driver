@@ -60,7 +60,7 @@ namespace Neo4j.Driver.Internal.Messaging.V4_4
 				message += $" \'{data.Key}\':\'{data.Value}\'";
 			}
 
-			message += " } ";
+			message += " }";
 
 			return message;
 		}

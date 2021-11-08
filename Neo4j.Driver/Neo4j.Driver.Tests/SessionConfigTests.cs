@@ -42,9 +42,9 @@ namespace Neo4j.Driver.Tests
 		[Theory]
 		[InlineData(null)]
 		[InlineData("")]
-		public void ShouldThrowExceptionForNullOrEmptyImpersonatedUser(string impUser)
+		public void ShouldThrowWithInvalidImpersoantedUser(string impUser)
 		{
 			this.Invoking(_ => SessionConfig.Builder.WithImpersonatedUser(impUser)).Should().Throw<ArgumentNullException>();
 		}
-    }
+	}
 }

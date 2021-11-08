@@ -248,12 +248,18 @@ namespace Neo4j.Driver.Internal.Protocol
             }
 
 			[Fact]
-			public void ShouldThrowOnImpersonatedUser()
+			public async Task ShouldThrowOnImpersonatedUserAsync()
 			{
-				var V3 = new BoltProtocolV3();
+				var protocol = new BoltProtocolV3();
 				var mockConn = NewConnectionWithMode(AccessMode.Read);
 				
-				Assert.ThrowsAsync<ArgumentException>(() => V3.BeginTransactionAsync(mockConn.Object, string.Empty, Bookmark.From("123"), TransactionConfig.Default, "ImpersonatedUser"));
+				var ex = await Assert.ThrowsAsync<ArgumentException>(() => protocol.BeginTransactionAsync(mockConn.Object, 
+																						   string.Empty, 
+																						   Bookmark.From("123"), 
+																						   TransactionConfig.Default, 
+																						   "ImpersonatedUser"));
+
+				ex.Message.Should().Contain("3.0");
 			}
         }
 
@@ -373,20 +379,22 @@ namespace Neo4j.Driver.Internal.Protocol
 				var boltProtocolV3 = new BoltProtocolV3();
 				
 				//When
-				var routingTableDictionary = await boltProtocolV3.GetRoutingTable(connection, "myTestDatabase", string.Empty, null);
+				var routingTableDictionary = await boltProtocolV3.GetRoutingTable(connection, "myTestDatabase", null, null);
 
 				//Then
 				routingTableDictionary.ToDictionary().Should().ContainKey("db").WhichValue.Should().Be("myTestDatabase");
 			}
 
 			[Fact]
-			public void ShouldThrowOnImpersonatedUser()
+			public async Task ShouldThrowOnImpersonatedUser()
 			{
 				var connection = SetupMockedConnection();
 				var boltProtocolV3 = new BoltProtocolV3();
 
 				//When
-				Assert.ThrowsAsync<ArgumentException>(() => boltProtocolV3.GetRoutingTable(connection, "myTestDatabase", string.Empty, null));
+				var ex = await Assert.ThrowsAsync<ArgumentException>(() => boltProtocolV3.GetRoutingTable(connection, "myTestDatabase", string.Empty, null));
+
+				ex.Message.Should().Contain("3.0");
 			}
 
 			private IConnection SetupMockedConnection()

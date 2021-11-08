@@ -114,7 +114,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var mockedConnectionPool = new Mock<IConnectionPool>();
                 var mockedConnection = new Mock<IConnection>();
                 mockedConnectionPool.Setup(x =>
-                        x.AcquireAsync(It.IsAny<AccessMode>(), It.IsAny<string>(), null, It.IsAny<Bookmark>()))
+                        x.AcquireAsync(It.IsAny<AccessMode>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Bookmark>()))
                     .ReturnsAsync(mockedConnection.Object);
                 var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
                 connectionPoolDict.GetOrAdd(new Uri(first), mockedConnectionPool.Object);
