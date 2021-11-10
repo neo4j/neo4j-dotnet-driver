@@ -52,9 +52,12 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         internal static ProtocolResponse GenerateExceptionResponse(Exception ex)
         {
+			string outerExceptionMessage = ex.Message;
             string exceptionMessage = (ex.InnerException != null) ? ex.InnerException.Message : ex.Message;
+			var type = TypeMap.GetValueOrDefault(ex.GetType());
 
-            if (ex is Neo4jException || ex is NotSupportedException) 
+
+			if (ex is Neo4jException || ex is NotSupportedException) 
 			{
                 ProtocolException newError = ProtocolObjectFactory.CreateObject<ProtocolException>();
                 newError.ExceptionObj = ex;
@@ -62,12 +65,12 @@ namespace Neo4j.Driver.Tests.TestBackend
 				return new ProtocolResponse("DriverError", new
 				{
 					id = newError.uniqueId,
-					errorType = TypeMap[ex.GetType()],
+					errorType = type,
 					msg = exceptionMessage,
 					code = errorCode
 				});
             }
-            Trace.WriteLine($"Exception thrown {exceptionMessage}\n{ex.StackTrace}");
+            Trace.WriteLine($"Exception thrown {outerExceptionMessage}\n     which contained -- {exceptionMessage}\n{ex.StackTrace}");
             return new ProtocolResponse("BackendError", new { msg = exceptionMessage } );
         }
     }    

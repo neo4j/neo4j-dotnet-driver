@@ -61,7 +61,6 @@ namespace Neo4j.Driver.Internal.Protocol
 		{
 			//do nothing as all values of impersonated user string are valid for version 4.4 onwards.
 		}
-
 	}
 }
 
