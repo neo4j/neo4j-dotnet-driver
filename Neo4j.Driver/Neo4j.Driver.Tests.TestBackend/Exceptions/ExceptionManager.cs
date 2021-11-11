@@ -45,6 +45,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			{ typeof(ResultConsumedException),          "ResultConsumedError" },
 			{ typeof(TransactionNestingException),      "TransactionNestingException" },
 			{ typeof(TokenExpiredException),			"TokenExpiredError"  },
+			{ typeof(ConnectionReadTimeoutException),   "ConnectionReadTimeoutError"},
 
             { typeof(NotSupportedException),            "NotSupportedException" }
         };

@@ -86,7 +86,7 @@ namespace Neo4j.Driver.Internal
 			if (cancellationDelayTask.IsCanceled || cancellationDelayTask.IsCompleted)
 			{
 				stream.Close();
-				throw new ServiceUnavailableException($"Socket/Stream timed out afer {timeoutMS}ms, socket closed.");
+				throw new ConnectionReadTimeoutException($"Socket/Stream timed out afer {timeoutMS}ms, socket closed.");
 			}
 
 			// Means that main task completed. We use Result directly.
