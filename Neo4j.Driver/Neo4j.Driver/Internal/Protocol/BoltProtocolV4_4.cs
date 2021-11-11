@@ -8,7 +8,6 @@ using Neo4j.Driver.Internal.MessageHandling.V4_4;
 using Neo4j.Driver.Internal.Messaging.V4_4;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
-using V3 = Neo4j.Driver.Internal.MessageHandling.V3;
 
 
 namespace Neo4j.Driver.Internal.Protocol
