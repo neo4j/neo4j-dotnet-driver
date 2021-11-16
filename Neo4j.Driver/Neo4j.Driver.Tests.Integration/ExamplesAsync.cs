@@ -500,6 +500,27 @@ namespace Neo4j.Driver.ExamplesAsync
             }
         }
 
+		public class BearerAuthExample : BaseAsyncExample
+		{
+			public BearerAuthExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+				: base(output, fixture)
+			{
+				
+			}
+
+			public IDriver CreateDriverWithBearerAuth(string uri, string bearerToken)
+			{
+				return GraphDatabase.Driver(uri, 
+											AuthTokens.Bearer(bearerToken),
+											o => o.WithEncryptionLevel(EncryptionLevel.None));
+			}		
+
+
+		}
+
+
+
+
         public class CypherErrorExample : BaseAsyncExample
         {
             public CypherErrorExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
