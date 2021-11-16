@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Internal.Messaging.V4_4
 			Bookmark = bookmark ?? Bookmark.From(Array.Empty<string>());
 			DatabaseContext = new Dictionary<string, string>();
 
-			DatabaseContext.Add(DBNameKey, databaseName);
+			if(!string.IsNullOrEmpty(databaseName)) DatabaseContext.Add(DBNameKey, databaseName);
 			if (!string.IsNullOrEmpty(impersonatedUser)) DatabaseContext.Add(ImpersonatedUserKey, impersonatedUser);
 		}
 

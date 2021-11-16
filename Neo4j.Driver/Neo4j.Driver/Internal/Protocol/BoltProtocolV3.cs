@@ -154,7 +154,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
         private void AssertNullDatabase(string database)
         {
-            if (database != null)
+			if(!string.IsNullOrEmpty(database))
             {
                 throw new ClientException(
                     "Driver is connected to a server that does not support multiple databases. " +

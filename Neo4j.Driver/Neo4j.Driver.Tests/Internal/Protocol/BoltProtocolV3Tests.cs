@@ -235,7 +235,6 @@ namespace Neo4j.Driver.Internal.Protocol
             }
 
             [Theory]
-            [InlineData("")]
             [InlineData("database")]
             public void ShouldThrowWhenADatabaseIsGiven(string database)
             {
