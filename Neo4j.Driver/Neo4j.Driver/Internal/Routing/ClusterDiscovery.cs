@@ -84,7 +84,8 @@ namespace Neo4j.Driver.Internal.Routing
 					$"Invalid discovery result: discovered {routers?.Length ?? 0} routers, {writers?.Length ?? 0} writers and {readers?.Length ?? 0} readers.");
 			}
 
-			return new RoutingTable(routingTable["db"].As<string>(), routers, readers, writers, routingTable["ttl"].As<long>());
+			routingTable.TryGetValue("db", out var db);
+			return new RoutingTable((string)db, routers, readers, writers, routingTable["ttl"].As<long>());
         }
 
         public static Uri BoltRoutingUri(string address)

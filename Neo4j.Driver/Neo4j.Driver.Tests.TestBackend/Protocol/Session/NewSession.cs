@@ -66,6 +66,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             if(!string.IsNullOrEmpty(data.accessMode)) configBuilder.WithDefaultAccessMode(GetAccessMode);
             if(data.bookmarks.Count > 0) configBuilder.WithBookmarks(Bookmark.From(data.bookmarks.ToArray()));
             configBuilder.WithFetchSize(data.fetchSize);
+			if (!string.IsNullOrEmpty(data.impersonatedUser)) configBuilder.WithImpersonatedUser(data.impersonatedUser);
         }
 
         public override async Task Process()

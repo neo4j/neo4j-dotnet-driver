@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal.Protocol
 			return new HelloMessage(userAgent, auth, routingContext);
 		}
 
-		protected override IResponseHandler HelloResponseHandler(IConnection conn) { return new HelloResponseHandler(conn, Version); }
+		protected override IResponseHandler GetHelloResponseHandler(IConnection conn) { return new HelloResponseHandler(conn, Version); }
 
 
 		protected BoltProtocolV4_3()

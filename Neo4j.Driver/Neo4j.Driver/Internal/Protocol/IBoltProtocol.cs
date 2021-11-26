@@ -40,8 +40,9 @@ namespace Neo4j.Driver.Internal.Protocol
                                                             IResultResourceHandler resultResourceHandler,
                                                             string database, 
                                                             Bookmark bookmark, 
-                                                            TransactionConfig config, 
-                                                            long fetchSize);
+                                                            TransactionConfig config,
+															string impersonatedUser,
+															long fetchSize);
 
         Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark, TransactionConfig config, string impersonatedUser);
 

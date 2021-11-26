@@ -131,7 +131,7 @@ namespace Neo4j.Driver.Internal
 
 				return await protocol
                     .RunInAutoCommitTransactionAsync(_connection, query, _reactive, this, this, _database,
-                        _bookmark, options, _fetchSize)
+                        _bookmark, options, ImpersonatedUser(), _fetchSize)
                     .ConfigureAwait(false);
             });
 

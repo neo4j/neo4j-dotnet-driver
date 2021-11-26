@@ -24,8 +24,8 @@ namespace Neo4j.Driver.Internal.Messaging.V4_4
 {
 	internal class RunWithMetadataMessage : TransactionStartingMessage
 	{
-		public RunWithMetadataMessage(Query query, AccessMode mode, string impersonatedUser)
-			: this(query, null, null, mode, impersonatedUser)
+		public RunWithMetadataMessage(Query query, AccessMode mode)
+			: this(query, null, null, mode, null)
 		{
 		}
 
@@ -40,15 +40,24 @@ namespace Neo4j.Driver.Internal.Messaging.V4_4
 			: this(query, database, bookmark, configBuilder?.Timeout, configBuilder?.Metadata, mode, impersonatedUser)
 		{
 		}
-
+		
 		public RunWithMetadataMessage(Query query, string database, Bookmark bookmark, TimeSpan? txTimeout,
 			IDictionary<string, object> txMetadata, AccessMode mode, string impersonatedUser)
 			: base(database, bookmark, txTimeout, txMetadata, mode)
 		{
+			Query = query;
+
 			if (!string.IsNullOrEmpty(impersonatedUser))
 			{
 				Metadata.Add("imp_user", impersonatedUser);
 			}
+		}
+
+		public Query Query { get; }
+
+		public override string ToString()
+		{
+			return $"RUN {Query} {Metadata.ToContentString()}";
 		}
 	}
 }

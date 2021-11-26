@@ -60,7 +60,7 @@ namespace Neo4j.Driver.Tests
                 protocol.Setup(x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Query>(),
                         false,
                         It.IsAny<IBookmarkTracker>(), It.IsAny<IResultResourceHandler>(), It.IsAny<string>(),
-                        It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>(), It.IsAny<long>()))
+                        It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>(), It.IsAny<string>(), It.IsAny<long>()))
                     .ReturnsAsync(new Mock<IResultCursor>().Object);
                 protocol.Setup(x =>
                         x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmark>(),
@@ -103,7 +103,7 @@ namespace Neo4j.Driver.Tests
 
                 mockProtocol.Verify(
                     x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Query>(), reactive,
-                        session, session, It.IsAny<string>(), It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>(), It.IsAny<long>()),
+                        session, session, It.IsAny<string>(), It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>(), It.IsAny<string>(), It.IsAny<long>()),
                     Times.Once);
             }
         }

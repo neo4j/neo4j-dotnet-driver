@@ -32,15 +32,14 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly ConcurrentOrderedSet<Uri> _routers = new ConcurrentOrderedSet<Uri>();
         private readonly ConcurrentOrderedSet<Uri> _readers = new ConcurrentOrderedSet<Uri>();
         private readonly ConcurrentOrderedSet<Uri> _writers = new ConcurrentOrderedSet<Uri>();
-        private readonly long _expireAfterMilliseconds;
         private readonly string _database;
-        private readonly ITimer _timer;
+		DateTime _expirationTimeStamp;
 
         public string Database => _database;
         public IList<Uri> Routers => _routers.Snapshot;
         public IList<Uri> Readers => _readers.Snapshot;
         public IList<Uri> Writers => _writers.Snapshot;
-        public long ExpireAfterSeconds => _expireAfterMilliseconds / 1000;
+        public long ExpireAfterSeconds { get; }
 
 
         public RoutingTable(string database, IEnumerable<Uri> routers, long expireAfterSeconds = 0)
@@ -50,12 +49,6 @@ namespace Neo4j.Driver.Internal.Routing
 
         public RoutingTable(string database, IEnumerable<Uri> routers, IEnumerable<Uri> readers,
             IEnumerable<Uri> writers, long expireAfterSeconds)
-            : this(database, routers, readers, writers, expireAfterSeconds, new StopwatchBasedTimer())
-        {
-        }
-
-        public RoutingTable(string database, IEnumerable<Uri> routers, IEnumerable<Uri> readers,
-            IEnumerable<Uri> writers, long expireAfterSeconds, ITimer timer)
         {
             _database = database ?? string.Empty;
 
@@ -63,10 +56,16 @@ namespace Neo4j.Driver.Internal.Routing
             _readers.Add(readers ?? Enumerable.Empty<Uri>());
             _writers.Add(writers ?? Enumerable.Empty<Uri>());
 
-            _expireAfterMilliseconds = expireAfterSeconds * 1000;
-            _timer = timer ?? throw new ArgumentNullException(nameof(timer));
-            _timer.Reset();
-            _timer.Start();
+			ExpireAfterSeconds = expireAfterSeconds;
+			try
+			{
+				_expirationTimeStamp = DateTime.Now.AddSeconds(Convert.ToDouble(expireAfterSeconds));
+			}
+			catch
+			{
+				throw new ArgumentOutOfRangeException("Trying to set a TTL value for the routing table that is too large");
+			}
+			
         }
 
         public bool IsStale(AccessMode mode)
@@ -74,12 +73,12 @@ namespace Neo4j.Driver.Internal.Routing
             return _routers.Count < MinRouterCount
                    || mode == AccessMode.Read && _readers.IsEmpty
                    || mode == AccessMode.Write && _writers.IsEmpty
-                   || _expireAfterMilliseconds < _timer.ElapsedMilliseconds;
+                   || DateTime.Now >= _expirationTimeStamp;
         }
 
         public bool IsExpiredFor(TimeSpan duration)
-        {
-            return (_timer.ElapsedMilliseconds - _expireAfterMilliseconds) >= duration.TotalMilliseconds;
+		{ 
+			return  (DateTime.Now - _expirationTimeStamp).TotalMilliseconds >= duration.TotalMilliseconds;
         }
 
         public bool IsReadingInAbsenceOfWriter(AccessMode mode)
@@ -116,7 +115,7 @@ namespace Neo4j.Driver.Internal.Routing
                 .AppendFormat("routers=[{0}], ", _routers)
                 .AppendFormat("writers=[{0}], ", _writers)
                 .AppendFormat("readers=[{0}], ", _readers)
-                .AppendFormat("expiresAfter={0}s", _expireAfterMilliseconds / 1000)
+                .AppendFormat("expiresAfter={0}s", ExpireAfterSeconds)
                 .Append("}")
                 .ToString();
         }

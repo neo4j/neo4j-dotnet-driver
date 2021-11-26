@@ -26,14 +26,20 @@ namespace Neo4j.Driver.Internal.Protocol
 		{
 			return new HelloMessage(userAgent, auth, routingContext);
 		}
-
-		protected override IRequestMessage BeginMessage(string database, Bookmark bookmark, TransactionConfig config, AccessMode mode, string impersonatedUser)
+				
+		protected override IRequestMessage GetBeginMessage(string database, Bookmark bookmark, TransactionConfig config, AccessMode mode, string impersonatedUser)
 		{
 			ValidateImpersonatedUserForVersion(impersonatedUser);
 			return new BeginMessage(database, bookmark, config?.Timeout, config?.Metadata, mode, impersonatedUser);
 		}
 
-		protected override IResponseHandler HelloResponseHandler(IConnection conn) { return new HelloResponseHandler(conn, Version); }
+		protected override IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmark bookmark = null, TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null, string impersonatedUser = null)
+		{
+			ValidateImpersonatedUserForVersion(impersonatedUser);
+			return new RunWithMetadataMessage(query, database, bookmark, config, mode, impersonatedUser);
+		}
+
+		protected override IResponseHandler GetHelloResponseHandler(IConnection conn) { return new HelloResponseHandler(conn, Version); }
 
 
 		public BoltProtocolV4_4(IDictionary<string, string> routingContext)

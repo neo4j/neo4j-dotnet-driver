@@ -76,7 +76,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
                 await V4.RunInAutoCommitTransactionAsync(mockConn.Object, query, true, bookmarkTracker.Object,
-                    resourceHandler.Object, null, null, null);
+                    resourceHandler.Object, null, null, null, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V4.RunResponseHandler>(), null,
@@ -100,7 +100,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
                 await V4.RunInAutoCommitTransactionAsync(mockConn.Object, query, false, bookmarkTracker.Object,
-                    resourceHandler.Object, null, null, null);
+                    resourceHandler.Object, null, null, null, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V4.RunResponseHandler>(),
@@ -124,7 +124,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
                 await V4.RunInAutoCommitTransactionAsync(mockConn.Object, query, true, bookmarkTracker.Object,
-                    resourceHandler.Object, null, null, null);
+                    resourceHandler.Object, null, null, null, null);
 
                 mockConn.Verify(x => x.Server, Times.Once);
             }
@@ -149,7 +149,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         });
 
                 await V4.RunInAutoCommitTransactionAsync(mockConn.Object, query, true, bookmarkTracker.Object,
-                    resourceHandler.Object, Database, Bookmark, TxConfig);
+                    resourceHandler.Object, Database, Bookmark, TxConfig, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V4.RunResponseHandler>(), null,

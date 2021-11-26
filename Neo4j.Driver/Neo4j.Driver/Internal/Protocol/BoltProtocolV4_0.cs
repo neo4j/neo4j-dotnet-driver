@@ -43,19 +43,26 @@ namespace Neo4j.Driver.Internal.Protocol
         public override BoltProtocolVersion GetVersion() { return Version; }
 
 		protected override IMessageFormat MessageFormat { get { return BoltProtocolMessageFormat.V4; } }
-		protected override IRequestMessage HelloMessage(string userAgent, IDictionary<string, object> auth)
+		protected override IRequestMessage GetHelloMessage(string userAgent, IDictionary<string, object> auth)
 		{
 			return new HelloMessage(userAgent, auth);
 		}
 
-		protected override IRequestMessage BeginMessage(string database, Bookmark bookmark, TransactionConfig config, AccessMode mode, string impersonatedUser)
+		protected override IRequestMessage GetBeginMessage(string database, Bookmark bookmark, TransactionConfig config, AccessMode mode, string impersonatedUser)
 		{
-			if (impersonatedUser is not null) throw new ArgumentException($"Boltprotocol {Version.ToString()} does not support impersonatedUser, yet has been passed a non null impersonated user string");
+			ValidateImpersonatedUserForVersion(impersonatedUser);
 
 			return new BeginMessage(database, bookmark, config?.Timeout, config?.Metadata, mode);
 		}
 
-		protected override IResponseHandler HelloResponseHandler(IConnection conn) { return new V3.HelloResponseHandler(conn); }
+		protected override IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmark bookmark = null, TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null, string impersonatedUser = null)
+		{
+			ValidateImpersonatedUserForVersion(impersonatedUser);
+
+			return new RunWithMetadataMessage(query, database, bookmark, config, mode);
+		}
+
+		protected override IResponseHandler GetHelloResponseHandler(IConnection conn) { return new V3.HelloResponseHandler(conn); }
 
 		private const string GetRoutingTableForDatabaseProcedure = "CALL dbms.routing.getRoutingTable($context, $database)";
 
@@ -64,9 +71,15 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         public override async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-            Query query, bool reactive, IBookmarkTracker bookmarkTracker,
-            IResultResourceHandler resultResourceHandler,
-            string database, Bookmark bookmark, TransactionConfig config, long fetchSize = Config.Infinite)
+																				  Query query, 
+																				  bool reactive, 
+																				  IBookmarkTracker bookmarkTracker,
+																				  IResultResourceHandler resultResourceHandler,
+																				  string database, 
+																				  Bookmark bookmark, 
+																				  TransactionConfig config,
+																				  string impersonatedUser,
+																				  long fetchSize = Config.Infinite)
         {
             var summaryBuilder = new SummaryBuilder(query, connection.Server);
             var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,
@@ -86,8 +99,8 @@ namespace Neo4j.Driver.Internal.Protocol
 
             await connection
                 .EnqueueAsync(
-                    new RunWithMetadataMessage(query, database, bookmark, config,
-                        connection.GetEnforcedAccessMode()), runHandler,
+                    GetRunWithMetaDataMessage(query, bookmark, config,
+                        connection.GetEnforcedAccessMode(), database, impersonatedUser), runHandler,
                     pullMessage, pullHandler)
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
@@ -112,7 +125,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 pullHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, null);
             }
 
-            await connection.EnqueueAsync(new RunWithMetadataMessage(query),
+            await connection.EnqueueAsync(GetRunWithMetaDataMessage(query),
                     runHandler, pullMessage, pullHandler)
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);

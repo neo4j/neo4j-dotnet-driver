@@ -619,12 +619,11 @@ namespace Neo4j.Driver.Tests.Routing
 
             [Fact]
             public async Task ShouldRemoveStaleEntriesOnUpdate()
-            {
-                var timer = new Mock<ITimer>();
+            {   
                 var fooRoutingTable =
-                    new RoutingTable("foo", new[] {server04}, new[] {server05}, new[] {server06}, 1, timer.Object);
+                    new RoutingTable("foo", new[] {server04}, new[] {server05}, new[] {server06}, 1);
                 var barRoutingTable =
-                    new RoutingTable("bar", new[] {server07}, new[] {server08}, new[] {server09}, 4, timer.Object);
+                    new RoutingTable("bar", new[] {server07}, new[] {server08}, new[] {server09}, 4);
 
                 var discovery = new Mock<IDiscovery>();
                 discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", null, Bookmark.Empty))
@@ -647,8 +646,7 @@ namespace Neo4j.Driver.Tests.Routing
                     await manager.EnsureRoutingTableForModeAsync(AccessMode.Read, "foo", null, Bookmark.Empty);
                 routingTable1.Should().Be(fooRoutingTable);
 
-                // Fake the timer to make foo routing table to be recognized as stale
-                timer.Setup(x => x.ElapsedMilliseconds).Returns(2 * 1000 + 1);
+				await Task.Delay(2001);
 
                 // An update should trigger an implicit clean-up of stale entries
                 var routingTable2 =

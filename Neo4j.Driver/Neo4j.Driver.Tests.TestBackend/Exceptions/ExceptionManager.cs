@@ -47,7 +47,9 @@ namespace Neo4j.Driver.Tests.TestBackend
 			{ typeof(TokenExpiredException),			"TokenExpiredError"  },
 			{ typeof(ConnectionReadTimeoutException),   "ConnectionReadTimeoutError"},
 
-            { typeof(NotSupportedException),            "NotSupportedException" }
+            { typeof(NotSupportedException),            "NotSupportedException" },
+
+			{ typeof(ArgumentException),				"ArgumentError"}	
         };
 
 
@@ -58,11 +60,12 @@ namespace Neo4j.Driver.Tests.TestBackend
 			var type = TypeMap.GetValueOrDefault(ex.GetType());
 
 
-			if (ex is Neo4jException || ex is NotSupportedException) 
+			//if (ex is Neo4jException || ex is NotSupportedException) 
+			if(type is not null)
 			{
                 ProtocolException newError = ProtocolObjectFactory.CreateObject<ProtocolException>();
                 newError.ExceptionObj = ex;
-				string errorCode = (ex is Neo4jException) ? ((Neo4jException)ex).Code : string.Empty;
+				string errorCode = (ex is Neo4jException) ? ((Neo4jException)ex).Code : type;
 				return new ProtocolResponse("DriverError", new
 				{
 					id = newError.uniqueId,
@@ -71,6 +74,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 					code = errorCode
 				});
             }
+
             Trace.WriteLine($"Exception thrown {outerExceptionMessage}\n     which contained -- {exceptionMessage}\n{ex.StackTrace}");
             return new ProtocolResponse("BackendError", new { msg = exceptionMessage } );
         }

@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal.Protocol
 			return new HelloMessage(userAgent, auth, routingContext);
 		}
 
-		protected override IResponseHandler HelloResponseHandler(IConnection conn) { return new HelloResponseHandler(conn, Version); }
+		protected override IResponseHandler GetHelloResponseHandler(IConnection conn) { return new HelloResponseHandler(conn, Version); }
 
 		protected IDictionary<string, string> RoutingContext { get; set; }
 
@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public override async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
         {
             await connection.EnqueueAsync(HelloMessage(userAgent, authToken.AsDictionary(), RoutingContext),
-										  HelloResponseHandler(connection)).ConfigureAwait(false);
+										  GetHelloResponseHandler(connection)).ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
         }
 

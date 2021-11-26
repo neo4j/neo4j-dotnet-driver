@@ -116,7 +116,7 @@ namespace Neo4j.Driver.Internal.Protocol
 				
 
                 await V3.RunInAutoCommitTransactionAsync(mockConn.Object, query, true, bookmarkTracker.Object,
-                    resourceHandler.Object, null, null, null);
+                    resourceHandler.Object, null, null, null, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V3.RunResponseHandler>(),
@@ -141,7 +141,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
                 await V3.RunInAutoCommitTransactionAsync(mockConn.Object, query, true, bookmarkTracker.Object,
-                    resourceHandler.Object, null, null, null);
+                    resourceHandler.Object, null, null, null, null);
 
                 mockConn.Verify(x => x.Server, Times.Once);
             }
@@ -168,7 +168,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         });
 
                 await V3.RunInAutoCommitTransactionAsync(mockConn.Object, query, true, bookmarkTracker.Object,
-                    resourceHandler.Object, null, Bookmark, TxConfig);
+                    resourceHandler.Object, null, Bookmark, TxConfig, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V3.RunResponseHandler>(),
@@ -178,7 +178,6 @@ namespace Neo4j.Driver.Internal.Protocol
             }
 
             [Theory]
-            [InlineData("")]
             [InlineData("database")]
             public void ShouldThrowWhenADatabaseIsGiven(string database)
             {
@@ -187,7 +186,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 V3.Awaiting(p => p.RunInAutoCommitTransactionAsync(Mock.Of<IConnection>(), new Query("text"),
                         false, Mock.Of<IBookmarkTracker>(), Mock.Of<IResultResourceHandler>(), database,
                         Bookmark.From("123"),
-                        TransactionConfig.Default))
+                        TransactionConfig.Default, null))
                     .Should().Throw<ClientException>().WithMessage("*that does not support multiple databases*");
             }
         }
