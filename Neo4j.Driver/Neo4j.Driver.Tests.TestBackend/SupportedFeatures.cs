@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			FeaturesList.Add("Feature:Bolt:4.4");
 
 			FeaturesList.Add("Feature:TLS:1.2");
-			FeaturesList.Add("Feature:TLS:1.3");
+			//FeaturesList.Add("Feature:TLS:1.3");
 
 			//FeaturesList.Add("Feature:API:SSLSchemes");
 			//FeaturesList.Add("Feature:API:Result.Single");
