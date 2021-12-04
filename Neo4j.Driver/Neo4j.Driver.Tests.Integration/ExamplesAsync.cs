@@ -697,7 +697,7 @@ namespace Neo4j.Driver.ExamplesAsync
                 using (var example = new DriverIntroductionExample(Uri, User, Password))
                 {
                     // When & Then
-                    await example.CreateFriendship("Alice", "David");
+                    await example.CreateFriendship("Alice", "David", "School");
                     await example.FindPerson("Alice");
                 }
             }
@@ -712,18 +712,19 @@ namespace Neo4j.Driver.ExamplesAsync
 
                 public DriverIntroductionExample(string uri, string user, string password)
                 {
-                    _driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
+                    _driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password), 
+                        configBuilder => configBuilder.WithLogger(new SimpleLogger()));
                 }
 
-                public async Task CreateFriendship(string person1Name, string person2Name)
+                public async Task CreateFriendship(string person1Name, string person2Name, string knowsFrom)
                 {
                     // To learn more about the Cypher syntax, see https://neo4j.com/docs/cypher-manual/current/
                     // The Reference Card is also a good resource for keywords https://neo4j.com/docs/cypher-refcard/current/
                     var query = @"
                     MERGE (p1:Person { name: $person1Name })
                     MERGE (p2:Person { name: $person2Name })
-                    MERGE (p1)-[:KNOWS]->(p2)
-                    RETURN p1, p2";
+                    MERGE (p1)-[k:KNOWS { from: $knowsFrom }]->(p2)
+                    RETURN p1, p2, k";
 
                     var session = _driver.AsyncSession();
                     try
@@ -731,7 +732,7 @@ namespace Neo4j.Driver.ExamplesAsync
                         // Write transactions allow the driver to handle retries and transient error
                         var writeResults = await session.WriteTransactionAsync(async tx =>
                         {
-                            var result = await tx.RunAsync(query, new {person1Name, person2Name});
+                            var result = await tx.RunAsync(query, new {person1Name, person2Name, knowsFrom});
                             return (await result.ToListAsync());
                         });
 
@@ -739,7 +740,8 @@ namespace Neo4j.Driver.ExamplesAsync
                         {
                             var person1 = result["p1"].As<INode>().Properties["name"];
                             var person2 = result["p2"].As<INode>().Properties["name"];
-                            Console.WriteLine($"Created friendship between: {person1}, {person2}");
+                            var from = result["k"].As<IRelationship>().Properties["from"];
+                            Console.WriteLine($"Created friendship between: {person1}, {person2} from {from}");
                         }
                     }
                     // Capture any errors along with the query and data for traceability
@@ -817,9 +819,41 @@ namespace Neo4j.Driver.ExamplesAsync
                     
                     using (var example = new DriverIntroductionExample(boltUrl, user, password))
                     {
-                        await example.CreateFriendship("Alice", "David");
+                        await example.CreateFriendship("Alice", "David", "School");
                         await example.FindPerson("Alice");
                     }
+                }
+            }
+
+            internal class SimpleLogger : ILogger
+            {
+                public void Debug(string message, params Object[] args)
+                {
+                    Console.WriteLine("[DRIVER-DEBUG]" + message, args);
+                }
+                public void Error(System.Exception error, string message, params Object[] args)
+                {
+                    Console.WriteLine("[DRIVER-ERROR]" + message, args);
+                }
+                public void Info(string message, params Object[] args)
+                {
+                    Console.WriteLine("[DRIVER-INFO]" + message, args);
+                }
+                public bool IsDebugEnabled()
+                {
+                    return false;
+                }
+                public bool IsTraceEnabled()
+                {
+                    return false;
+                }
+                public void Trace(string message, params Object[] args)
+                {
+                    Console.WriteLine("[DRIVER-TRACE]" + message, args);
+                }
+                public void Warn(System.Exception error, string message, params Object[] args)
+                {
+                    Console.WriteLine("[DRIVER-WARN]" + message, args);
                 }
             }
             // end::driver-introduction-example[]
