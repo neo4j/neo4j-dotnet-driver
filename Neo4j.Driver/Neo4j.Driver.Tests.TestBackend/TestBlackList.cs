@@ -71,7 +71,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 
 
-			//TODO: fix these pronto!!
+			//TODO:
 			("RoutingV3.test_should_ignore_system_bookmark_when_getting_rt_for_multi_db",
 				"Test is not valid for protocol V3"),
 
@@ -99,6 +99,12 @@ namespace Neo4j.Driver.Tests.TestBackend
 				"Test failing requires investigation"),
 			("test_should_retry_write_until_success_with_leader_shutdown_during_tx_using_tx_function",
 				"Test failing requires investigation"),
+
+
+			("test_should_echo_relationship", 
+				"Backend does not yet support serializing relationships"),
+			("test_should_echo_path", 
+				"Backend does not yet support serializing paths")
 		}; 
 
 		public static bool FindTest(string testName, out string reason)
