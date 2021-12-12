@@ -127,7 +127,7 @@ namespace Neo4j.Driver
         /// Setting this value to <see cref="Infinite"/> will result in an infinite pool.
         /// </remarks>
         /// <remarks>Also see <see cref="MaxIdleConnectionPoolSize"/></remarks>
-        public int MaxConnectionPoolSize { get; internal set; } = 500;
+        public int MaxConnectionPoolSize { get; internal set; } = 100;
 
         /// <summary>
         /// The maximum waiting time to either acquire an idle connection from the pool when connection pool is full

@@ -1,4 +1,5 @@
 ﻿
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 
@@ -14,7 +15,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string principal { get; set; }
             public string credentials { get; set; }
             public string realm { get; set; }
-            public string ticket { get; set; }
+            public Dictionary<string, object> parameters { get; set; }
         }
 
         public override async Task Process()

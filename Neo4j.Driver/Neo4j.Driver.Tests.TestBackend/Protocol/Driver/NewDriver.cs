@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Linq;
 
-
 namespace Neo4j.Driver.Tests.TestBackend
 {
 	internal class SimpleLogger : ILogger
@@ -63,7 +62,27 @@ namespace Neo4j.Driver.Tests.TestBackend
 		{
 			Control = controller;
 			var authTokenData = data.authorizationToken.data;
-			var authToken = AuthTokens.Custom(authTokenData.principal, authTokenData.credentials, authTokenData.realm, authTokenData.scheme);
+
+			IAuthToken authToken;
+
+			switch (authTokenData.scheme)
+			{
+				case "bearer":
+					authToken = AuthTokens.Bearer(authTokenData.credentials);
+					break;
+				case "kerberos":
+					authToken = AuthTokens.Kerberos(authTokenData.credentials);
+					break;
+
+				default:
+					authToken = AuthTokens.Custom(authTokenData.principal, 
+												  authTokenData.credentials, 
+												  authTokenData.realm, 
+												  authTokenData.scheme, 
+												  authTokenData.parameters);
+					break;
+
+			} 
 
 			Driver = GraphDatabase.Driver(data.uri, authToken, DriverConfig);
 

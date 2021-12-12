@@ -28,7 +28,9 @@ using Neo4j.Driver.Internal.Messaging.V4;
 using Neo4j.Driver.Tests;
 using Xunit;
 using static Neo4j.Driver.Internal.Protocol.BoltProtocolUtils;
+using V3 = Neo4j.Driver.Internal.MessageHandling.V3;
 using V4 = Neo4j.Driver.Internal.MessageHandling.V4;
+using static Neo4j.Driver.Internal.Protocol.BoltProtocolV3;
 using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal.Protocol
@@ -74,7 +76,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
                 await V4.RunInAutoCommitTransactionAsync(mockConn.Object, query, true, bookmarkTracker.Object,
-                    resourceHandler.Object, null, null, null);
+                    resourceHandler.Object, null, null, null, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V4.RunResponseHandler>(), null,
@@ -98,7 +100,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
                 await V4.RunInAutoCommitTransactionAsync(mockConn.Object, query, false, bookmarkTracker.Object,
-                    resourceHandler.Object, null, null, null);
+                    resourceHandler.Object, null, null, null, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V4.RunResponseHandler>(),
@@ -122,7 +124,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
                 await V4.RunInAutoCommitTransactionAsync(mockConn.Object, query, true, bookmarkTracker.Object,
-                    resourceHandler.Object, null, null, null);
+                    resourceHandler.Object, null, null, null, null);
 
                 mockConn.Verify(x => x.Server, Times.Once);
             }
@@ -147,7 +149,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         });
 
                 await V4.RunInAutoCommitTransactionAsync(mockConn.Object, query, true, bookmarkTracker.Object,
-                    resourceHandler.Object, Database, Bookmark, TxConfig);
+                    resourceHandler.Object, Database, Bookmark, TxConfig, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V4.RunResponseHandler>(), null,
@@ -189,24 +191,24 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public class ShouldEnqueueAndSyncHello
         {
-            private async Task EnqueAndSync(IBoltProtocol V4)
+            private async Task EnqueAndSync(IBoltProtocol protocol)
             {
                 var mockConn = new Mock<IConnection>();
 
                 mockConn.Setup(x => x.Server).Returns(new ServerInfo(new Uri("http://neo4j.com")));
-                await V4.LoginAsync(mockConn.Object, "user-andy", AuthTokens.None);
+                await protocol.LoginAsync(mockConn.Object, "user-andy", AuthTokens.None);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<HelloMessage>(), It.IsAny<V4.HelloResponseHandler>(), null, null),
-                    Times.Once);
+                    x => x.EnqueueAsync(It.IsAny<HelloMessage>(), It.IsAny<V3.HelloResponseHandler>(), null, null),
+					Times.Once);
                 mockConn.Verify(x => x.SyncAsync());
             }
 
             [Fact]
             public async Task ShouldEnqueueHelloAndSync()
             {
-                var V4 = new BoltProtocolV4_0();
-                await EnqueAndSync(V4);
+                var protocol = new BoltProtocolV4_0();
+                await EnqueAndSync(protocol);
             }
         }
 
@@ -245,7 +247,26 @@ namespace Neo4j.Driver.Internal.Protocol
                 procedure.Should().Be("CALL dbms.routing.getRoutingTable($context, $database)");
                 parameters["context"].Should().Be(context);
                 parameters["database"].Should().Be(db);
-            }
-        }
-    }
+			}
+		}
+
+		public class BeginTransactionAsyncMethod
+		{
+			[Fact]
+			public async Task ShouldThrowOnImpersonatedUserAsync()
+			{
+				var protocol = new BoltProtocolV4_0();
+				var mockConn = NewConnectionWithMode(AccessMode.Read);
+
+				var ex = await Assert.ThrowsAsync<ArgumentException>(() => protocol.BeginTransactionAsync(mockConn.Object, 
+																						   string.Empty, 
+																						   Bookmark.From("123"), 
+																						   TransactionConfig.Default, 
+																						   "ImpersonatedUser"));
+
+				ex.Message.Should().Contain("4.0");
+			}
+		}
+
+	}
 }

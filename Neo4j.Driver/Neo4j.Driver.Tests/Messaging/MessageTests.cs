@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Messaging;
@@ -23,6 +24,7 @@ using V4 = Neo4j.Driver.Internal.Messaging.V4;
 using V4_1 = Neo4j.Driver.Internal.Messaging.V4_1;
 using V4_2 = Neo4j.Driver.Internal.Messaging.V4_2;
 using V4_3 = Neo4j.Driver.Internal.Messaging.V4_3;
+using V4_4 = Neo4j.Driver.Internal.Messaging.V4_4;
 using Xunit;
 using static Neo4j.Driver.Internal.Messaging.DiscardAllMessage;
 using static Neo4j.Driver.Internal.Messaging.IgnoredMessage;
@@ -34,14 +36,34 @@ namespace Neo4j.Driver.Tests
     {
         public class MessageToStringMethod
         {
-            public static IEnumerable<object[]> MessageData => new[]
+			private static TransactionConfig TransactionConfigGenerator()
+			{
+				var config = new TransactionConfig();
+				config.Timeout = TimeSpan.FromMilliseconds(1000);
+				return config;
+			}
+
+			public static IEnumerable<object[]> MessageData => new[]
             {
+				new object[] {new V4_4.BeginMessage(Bookmark.From(new []{ "bookmark1", "bookmark2" }), 
+													TransactionConfigGenerator(), 
+													AccessMode.Read, 
+													"Impersonated User"), 
+							  "BEGIN [{bookmarks, [bookmark1, bookmark2]}, {tx_timeout, 1000}, {mode, r}, {imp_user, Impersonated User}]" },
+				new object[] {new V4_4.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "Empty" } }, 
+													Bookmark.From("bookmark-1"), 
+													"myDB", 
+													"Impersonated User"), 
+							  "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'Empty\' } { bookmarks, [bookmark-1] } { \'db\':\'myDB\' \'imp_user\':\'Impersonated User\' }" },
 				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "Empty" } }, Bookmark.From("bookmark-1"), ""), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'Empty\' } { bookmarks, [bookmark-1] } None" },
 				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "Null" } }, Bookmark.From("bookmark-1"), null), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'Null\' } { bookmarks, [bookmark-1] } None" },
 				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "adb" } }, Bookmark.From("bookmark-1"), "adb"), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'adb\' } { bookmarks, [bookmark-1] } \'adb\'" },
 				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "adb" } }, null, "adb"), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'adb\' } [] \'adb\'" },
 				new object[] {new FailureMessage("CODE", "MESSAGE"), "FAILURE code=CODE, message=MESSAGE"},
-                new object[] {new V4_3.HelloMessage("mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}]"},
+				new object[] {new V4_4.HelloMessage("mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}]"},
+				new object[] {new V4_4.HelloMessage("mydriver", null, new Dictionary<string, string>()), "HELLO [{user_agent, mydriver}, {routing, []}]"},
+				new object[] {new V4_4.HelloMessage("mydriver", null, null), "HELLO [{user_agent, mydriver}, {routing, NULL}]"},
+				new object[] {new V4_3.HelloMessage("mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}]"},
                 new object[] {new V4_3.HelloMessage("mydriver", null, new Dictionary<string, string>()), "HELLO [{user_agent, mydriver}, {routing, []}]"},
                 new object[] {new V4_3.HelloMessage("mydriver", null, null), "HELLO [{user_agent, mydriver}, {routing, NULL}]"},
                 new object[] {new V4_2.HelloMessage("mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}]"},
@@ -79,7 +101,8 @@ namespace Neo4j.Driver.Tests
             [Theory, MemberData(nameof(MessageData))]
             internal void ShouldPrintTheMessageAsExpected(IMessage message, string expected)
             {
-                message.ToString().Should().Be(expected);
+				var m = message.ToString();
+                m.Should().Be(expected);
             }
         }
     }

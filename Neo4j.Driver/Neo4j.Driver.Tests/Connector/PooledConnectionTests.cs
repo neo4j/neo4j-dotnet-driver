@@ -40,6 +40,7 @@ namespace Neo4j.Driver.Tests
 		[InlineData(typeof(SecurityException))]
 		[InlineData(typeof(AuthenticationException))]
 		[InlineData(typeof(AuthorizationException))]
+		[InlineData(typeof(TokenExpiredException))]
 		public async Task ShouldHaveUnrecoverableErrorOnErrorAsync(Type exceptionType)
 		{
 			var connection = new Mock<IConnection>().Object;

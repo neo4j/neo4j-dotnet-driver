@@ -60,11 +60,11 @@ namespace Neo4j.Driver.Tests
                 protocol.Setup(x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Query>(),
                         false,
                         It.IsAny<IBookmarkTracker>(), It.IsAny<IResultResourceHandler>(), It.IsAny<string>(),
-                        It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>(), It.IsAny<long>()))
+                        It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>(), It.IsAny<string>(), It.IsAny<long>()))
                     .ReturnsAsync(new Mock<IResultCursor>().Object);
                 protocol.Setup(x =>
                         x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmark>(),
-                            It.IsAny<TransactionConfig>()))
+                            It.IsAny<TransactionConfig>(), null))
                     .Returns(Task.CompletedTask);
                 protocol.Setup(x =>
                         x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Query>(), false, It.IsAny<long>()))
@@ -103,7 +103,7 @@ namespace Neo4j.Driver.Tests
 
                 mockProtocol.Verify(
                     x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Query>(), reactive,
-                        session, session, It.IsAny<string>(), It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>(), It.IsAny<long>()),
+                        session, session, It.IsAny<string>(), It.IsAny<Bookmark>(), It.IsAny<TransactionConfig>(), It.IsAny<string>(), It.IsAny<long>()),
                     Times.Once);
             }
         }
@@ -202,7 +202,7 @@ namespace Neo4j.Driver.Tests
 
                 mockProtocol.Setup(x =>
                         x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmark>(),
-                            It.IsAny<TransactionConfig>()))
+                            It.IsAny<TransactionConfig>(), It.IsAny<string>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
                 var session = NewSession(mockConn.Object);
                 var exc = await Record.ExceptionAsync(() => session.BeginTransactionAsync());
@@ -224,7 +224,7 @@ namespace Neo4j.Driver.Tests
                 var calls = 0;
                 mockProtocol.Setup(x =>
                         x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmark>(),
-                            It.IsAny<TransactionConfig>()))
+                            It.IsAny<TransactionConfig>(), It.IsAny<string>()))
                     .Returns(Task.CompletedTask).Callback(() =>
                     {
                         // only throw exception on the first beginTx call
@@ -256,7 +256,7 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection(mockProtocol.Object);
                 mockProtocol.Setup(x =>
                         x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmark>(),
-                            It.IsAny<TransactionConfig>()))
+                            It.IsAny<TransactionConfig>(), It.IsAny<string>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
                 var session = NewSession(mockConn.Object);
                 var error = await Record.ExceptionAsync(() => session.BeginTransactionAsync());
@@ -373,7 +373,7 @@ namespace Neo4j.Driver.Tests
                 // do nothing
             }
 
-            public Task<IConnection> AcquireAsync(AccessMode mode, string database, Bookmark bookmark)
+            public Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark)
             {
                 return Task.FromResult(Connection);
             }

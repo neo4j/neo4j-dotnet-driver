@@ -71,7 +71,7 @@ namespace Neo4j.Driver.Internal.Routing
         }
 
         public async Task<IRoutingTable> EnsureRoutingTableForModeAsync(AccessMode mode, string database,
-            Bookmark bookmark)
+            string impersonatedUser, Bookmark bookmark)
         {
             database = database ?? string.Empty;
 
@@ -87,7 +87,7 @@ namespace Neo4j.Driver.Internal.Routing
                     return existingTable;
                 }
 
-                var refreshedTable = await UpdateRoutingTableAsync(mode, database, bookmark)
+                var refreshedTable = await UpdateRoutingTableAsync(mode, database, impersonatedUser, bookmark)
                     .ConfigureAwait(false);
                 await UpdateAsync(refreshedTable).ConfigureAwait(false);
                 return refreshedTable;
@@ -172,7 +172,7 @@ namespace Neo4j.Driver.Internal.Routing
         }
 
         internal async Task<IRoutingTable> UpdateRoutingTableAsync(AccessMode mode,
-            string database, Bookmark bookmark)
+            string database, string impersonatedUser, Bookmark bookmark)
         {
             if (database == null)
             {
@@ -196,7 +196,7 @@ namespace Neo4j.Driver.Internal.Routing
             }
 
             var triedUris = new HashSet<Uri>();
-            var newRoutingTable = await UpdateRoutingTableAsync(existingTable, mode, database, bookmark, triedUris)
+            var newRoutingTable = await UpdateRoutingTableAsync(existingTable, mode, database, impersonatedUser, bookmark, triedUris)
                 .ConfigureAwait(false);
             if (newRoutingTable != null)
             {
@@ -210,7 +210,7 @@ namespace Neo4j.Driver.Internal.Routing
                 if (uris.Count != 0)
                 {
                     await PrependRoutersAsync(existingTable, uris).ConfigureAwait(false);
-                    newRoutingTable = await UpdateRoutingTableAsync(existingTable, mode, database, bookmark)
+                    newRoutingTable = await UpdateRoutingTableAsync(existingTable, mode, database, impersonatedUser, bookmark)
                         .ConfigureAwait(false);
                     if (newRoutingTable != null)
                     {
@@ -227,7 +227,7 @@ namespace Neo4j.Driver.Internal.Routing
         }
 
         internal async Task<IRoutingTable> UpdateRoutingTableAsync(IRoutingTable routingTable, AccessMode mode,
-            string database, Bookmark bookmark, ISet<Uri> triedUris = null)
+            string database, string impersonatedUser, Bookmark bookmark, ISet<Uri> triedUris = null)
         {
             if (database == null)
             {
@@ -248,7 +248,7 @@ namespace Neo4j.Driver.Internal.Routing
                     else
                     {
                         var newRoutingTable =
-                            await _discovery.DiscoverAsync(conn, database, bookmark).ConfigureAwait(false);
+                            await _discovery.DiscoverAsync(conn, database, impersonatedUser, bookmark).ConfigureAwait(false);	//TODO: need to pass in a valid impersonated user
                         if (!newRoutingTable.IsStale(mode))
                         {
                             return newRoutingTable;
@@ -272,6 +272,13 @@ namespace Neo4j.Driver.Internal.Routing
                         router, database);
                     throw;
                 }
+				catch (InvalidBookmarkException e)
+				{
+					_logger?.Error(e,
+					   "Failed to update routing table from server '{0}' for database '{1}' because of an invalid bookmark exception.",
+					   router, database);
+					throw;
+				}
                 catch (Exception e)
                 {
                     _logger?.Warn(e, "Failed to update routing table from server '{0}' for database '{1}'.", router,

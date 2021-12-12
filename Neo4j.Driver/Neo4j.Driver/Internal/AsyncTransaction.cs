@@ -39,6 +39,7 @@ namespace Neo4j.Driver.Internal
         private readonly bool _reactive;
         private readonly ITransactionResourceHandler _resourceHandler;
         private readonly string _database;
+		private readonly string _impersonatedUser = null;
 
         private Bookmark _bookmark;
 
@@ -51,7 +52,7 @@ namespace Neo4j.Driver.Internal
 
         public AsyncTransaction(IConnection connection, ITransactionResourceHandler resourceHandler,
             ILogger logger = null, string database = null, Bookmark bookmark = null, bool reactive = false,
-            long fetchSize = Config.Infinite)
+            long fetchSize = Config.Infinite, string impersonatedUser = null)
         {
             _connection = new TransactionConnection(this, connection);
             _protocol = _connection.BoltProtocol;
@@ -61,6 +62,7 @@ namespace Neo4j.Driver.Internal
             _reactive = reactive;
             _database = database;
             _fetchSize = fetchSize;
+			_impersonatedUser = impersonatedUser;
         }
 
         public bool IsOpen => _state == Active;
@@ -68,7 +70,7 @@ namespace Neo4j.Driver.Internal
         public Task BeginTransactionAsync(TransactionConfig config)
         {
             TransactionConfig = config;
-            return _protocol.BeginTransactionAsync(_connection, _database, _bookmark, config);
+            return _protocol.BeginTransactionAsync(_connection, _database, _bookmark, config, _impersonatedUser);
         }
 
         public override Task<IResultCursor> RunAsync(Query query)

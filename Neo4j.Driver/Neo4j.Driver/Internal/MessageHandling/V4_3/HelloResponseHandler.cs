@@ -28,21 +28,13 @@ using HintsType = System.Collections.Generic.Dictionary<string, object>;
 
 namespace Neo4j.Driver.Internal.MessageHandling.V4_3
 {
-    internal class HelloResponseHandler : MetadataCollectingResponseHandler
-    {
-        private readonly IConnection _connection;
-        private BoltProtocolVersion Version { get; set; }
+    internal class HelloResponseHandler : V4_2.HelloResponseHandler
+	{
+		readonly BoltProtocolVersion MinVersion = new BoltProtocolVersion(4, 3);
 
-        public HelloResponseHandler(IConnection connection, BoltProtocolVersion version)
+		public HelloResponseHandler(IConnection connection, BoltProtocolVersion version) : base(connection, version)
         {
-            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
-            Version = version ?? throw new ArgumentNullException("Attempting to create a HelloResponseHandler v4.3 with a null BoltProtocolVersion object");
-
-            if (Version < new BoltProtocolVersion(4, 3))
-                throw new ArgumentOutOfRangeException("Attempting to initialise a v4.1 HelloResponseHandler with a protocol version less than 4.3");
-
-            AddMetadata<ServerVersionCollector, ServerVersion>();
-            AddMetadata<ConnectionIdCollector, string>();
+			//Add version specific Metadata collectors here...
 			AddMetadata<ConfigurationHintsCollector, HintsType>();
         }
 
@@ -50,13 +42,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4_3
         {
             base.OnSuccess(metadata);
 
-            // From Server V4 extracting server from metadata in the success message is unreliable.
-            // The server version is now tied to the protocol version.
-            _connection.UpdateVersion(new ServerVersion(Version.MajorVersion, Version.MinorVersion, 0));
-
-            _connection.UpdateId(GetMetadata<ConnectionIdCollector, string>());
-
-			
+			//Version specific handling goes here...
 			var timeout = new ConfigHintRecvTimeout(GetMetadata<ConfigurationHintsCollector, HintsType>()).Get;
 			_connection.SetRecvTimeOut(timeout);			
 		}

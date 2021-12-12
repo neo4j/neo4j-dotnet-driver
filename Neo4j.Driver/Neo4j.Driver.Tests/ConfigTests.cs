@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Tests
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeNull();
                 config.Logger.Should().BeOfType<NullLogger>();
-                config.MaxIdleConnectionPoolSize.Should().Be(500);
+                config.MaxIdleConnectionPoolSize.Should().Be(100);
                 config.ConnectionTimeout.Should().Be(TimeSpan.FromSeconds(30));
             }
 
@@ -89,7 +89,7 @@ namespace Neo4j.Driver.Tests
                 config.EncryptionLevel.Should().Be(EncryptionLevel.Encrypted);
                 config.TrustManager.Should().BeNull();
                 config.Logger.Should().BeOfType<NullLogger>();
-                config.MaxIdleConnectionPoolSize.Should().Be(500);
+                config.MaxIdleConnectionPoolSize.Should().Be(100);
             }
 
             [Fact]
@@ -115,7 +115,7 @@ namespace Neo4j.Driver.Tests
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeNull();
                 config.Logger.Should().BeNull();
-                config.MaxIdleConnectionPoolSize.Should().Be(500);
+                config.MaxIdleConnectionPoolSize.Should().Be(100);
             }
 
             [Fact]
@@ -136,7 +136,7 @@ namespace Neo4j.Driver.Tests
                 config.NullableEncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeNull();
                 config.Logger.Should().BeOfType<NullLogger>();
-                config.MaxIdleConnectionPoolSize.Should().Be(500);
+                config.MaxIdleConnectionPoolSize.Should().Be(100);
             }
 
             [Fact]
@@ -146,7 +146,7 @@ namespace Neo4j.Driver.Tests
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeOfType<ChainTrustManager>();
                 config.Logger.Should().BeOfType<NullLogger>();
-                config.MaxIdleConnectionPoolSize.Should().Be(500);
+                config.MaxIdleConnectionPoolSize.Should().Be(100);
             }
 
             [Fact]
@@ -157,7 +157,7 @@ namespace Neo4j.Driver.Tests
                 var config2 = Config.Builder.WithLogger(null).Build();
 
                 config2.Logger.Should().BeNull();
-                config2.MaxIdleConnectionPoolSize.Should().Be(500);
+                config2.MaxIdleConnectionPoolSize.Should().Be(100);
 
                 config1.MaxIdleConnectionPoolSize.Should().Be(3);
                 config1.Logger.Should().BeOfType<NullLogger>();
@@ -165,8 +165,8 @@ namespace Neo4j.Driver.Tests
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeNull();
                 config.Logger.Should().BeOfType<NullLogger>();
-                config.MaxIdleConnectionPoolSize.Should().Be(500);
-            }
+                config.MaxIdleConnectionPoolSize.Should().Be(100);
+            }			
         }
     }
 }

@@ -239,7 +239,7 @@ namespace Neo4j.Driver.Internal
                 $"Failed to obtain a connection from pool within {_connAcquisitionTimeout}", ex);
         }
 
-        public Task<IConnection> AcquireAsync(AccessMode mode, string database, Bookmark bookmark)
+        public Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark)
         {
             _poolMetricsListener?.PoolAcquiring();
             var timeOutTokenSource = new CancellationTokenSource(_connAcquisitionTimeout);
@@ -403,14 +403,14 @@ namespace Neo4j.Driver.Internal
         public async Task VerifyConnectivityAsync()
         {
             // Establish a connection with the server and immediately close it.
-            var connection = await AcquireAsync(Simple.Mode, Simple.Database, Simple.Bookmark).ConfigureAwait(false);
+            var connection = await AcquireAsync(Simple.Mode, Simple.Database, null, Simple.Bookmark).ConfigureAwait(false);
             await connection.CloseAsync().ConfigureAwait(false);
         }
 
         public async Task<bool> SupportsMultiDbAsync()
         {
             // Establish a connection with the server and immediately close it.
-            var connection = await AcquireAsync(Simple.Mode, Simple.Database, Simple.Bookmark).ConfigureAwait(false);
+            var connection = await AcquireAsync(Simple.Mode, Simple.Database, null, Simple.Bookmark).ConfigureAwait(false);
             var multiDb = connection.SupportsMultidatabase();
             await connection.CloseAsync().ConfigureAwait(false);
 

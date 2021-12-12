@@ -42,43 +42,44 @@ namespace Neo4j.Driver.Internal.Protocol
         public static new BoltProtocolVersion Version { get; } = new BoltProtocolVersion(_major, _minor);
         public override BoltProtocolVersion GetVersion() { return Version; }
 
-        private const string GetRoutingTableForDatabaseProcedure = "CALL dbms.routing.getRoutingTable($context, $database)";
+		protected override IMessageFormat MessageFormat { get { return BoltProtocolMessageFormat.V4; } }
+		protected override IRequestMessage GetHelloMessage(string userAgent, IDictionary<string, object> auth)
+		{
+			return new HelloMessage(userAgent, auth);
+		}
+
+		protected override IRequestMessage GetBeginMessage(string database, Bookmark bookmark, TransactionConfig config, AccessMode mode, string impersonatedUser)
+		{
+			ValidateImpersonatedUserForVersion(impersonatedUser);
+
+			return new BeginMessage(database, bookmark, config?.Timeout, config?.Metadata, mode);
+		}
+
+		protected override IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmark bookmark = null, TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null, string impersonatedUser = null)
+		{
+			ValidateImpersonatedUserForVersion(impersonatedUser);
+
+			return new RunWithMetadataMessage(query, database, bookmark, config, mode);
+		}
+
+		protected override IResponseHandler GetHelloResponseHandler(IConnection conn) { return new V3.HelloResponseHandler(conn); }
+
+		private const string GetRoutingTableForDatabaseProcedure = "CALL dbms.routing.getRoutingTable($context, $database)";
 
         public BoltProtocolV4_0()
         {
         }
 
-        public override IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
-            ILogger logger = null)
-        {
-            return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize,
-                bufferSettings.MaxWriteBufferSize, logger, BoltProtocolMessageFormat.V4);
-        }
-
-        public override IMessageReader NewReader(Stream stream, BufferSettings bufferSettings,
-            ILogger logger = null)
-        {
-            return new MessageReader(stream, bufferSettings.DefaultReadBufferSize,
-                bufferSettings.MaxReadBufferSize, logger, BoltProtocolMessageFormat.V4);
-        }
-
-        public override async Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark, TransactionConfig config)
-        {
-			await connection.EnqueueAsync(new BeginMessage(database,
-														   bookmark,
-														   config?.Timeout,
-														   config?.Metadata,
-														   connection.GetEnforcedAccessMode()),
-											new V3.BeginResponseHandler()
-										 ).ConfigureAwait(false);
-
-			await connection.SyncAsync().ConfigureAwait(false);
-		}
-
         public override async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-            Query query, bool reactive, IBookmarkTracker bookmarkTracker,
-            IResultResourceHandler resultResourceHandler,
-            string database, Bookmark bookmark, TransactionConfig config, long fetchSize = Config.Infinite)
+																				  Query query, 
+																				  bool reactive, 
+																				  IBookmarkTracker bookmarkTracker,
+																				  IResultResourceHandler resultResourceHandler,
+																				  string database, 
+																				  Bookmark bookmark, 
+																				  TransactionConfig config,
+																				  string impersonatedUser,
+																				  long fetchSize = Config.Infinite)
         {
             var summaryBuilder = new SummaryBuilder(query, connection.Server);
             var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,
@@ -98,8 +99,8 @@ namespace Neo4j.Driver.Internal.Protocol
 
             await connection
                 .EnqueueAsync(
-                    new RunWithMetadataMessage(query, database, bookmark, config,
-                        connection.GetEnforcedAccessMode()), runHandler,
+                    GetRunWithMetaDataMessage(query, bookmark, config,
+                        connection.GetEnforcedAccessMode(), database, impersonatedUser), runHandler,
                     pullMessage, pullHandler)
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
@@ -124,7 +125,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 pullHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, null);
             }
 
-            await connection.EnqueueAsync(new RunWithMetadataMessage(query),
+            await connection.EnqueueAsync(GetRunWithMetaDataMessage(query),
                     runHandler, pullMessage, pullHandler)
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
@@ -155,14 +156,6 @@ namespace Neo4j.Driver.Internal.Protocol
                     .ConfigureAwait(false);
                 await connection.SendAsync().ConfigureAwait(false);
             };
-        }
-
-        public override async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
-        {
-            await connection
-                .EnqueueAsync(new HelloMessage(userAgent, authToken.AsDictionary()),
-                    new V4.HelloResponseHandler(connection, Version)).ConfigureAwait(false);
-            await connection.SyncAsync().ConfigureAwait(false);
         }
 
         protected internal override void GetProcedureAndParameters(IConnection connection, string database, out string procedure, out Dictionary<string, object> parameters)

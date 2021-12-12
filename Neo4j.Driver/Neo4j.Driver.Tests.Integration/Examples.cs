@@ -354,8 +354,35 @@ namespace Neo4j.Driver.Examples
                 }
             }
         }
+		
+		public class BearerAuthExample : BaseExample
+		{
+			public BearerAuthExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+				: base(output, fixture)
+			{
+			}
 
-        public class CypherErrorExample : BaseExample
+			// tag::bearer-auth[]
+			public IDriver CreateDriverWithBearerAuth(string uri, string bearerToken)
+			{
+				return GraphDatabase.Driver(uri, AuthTokens.Bearer(bearerToken),
+					o => o.WithEncryptionLevel(EncryptionLevel.None));
+			}
+			// end::bearer-auth[]
+
+			[RequireServerFact]
+			public void TestBearerAuthExample()
+			{
+				// Given
+				using (var driver = CreateDriverWithBearerAuth(Uri, "bearerToken"))
+				{
+					// When & Then
+					driver.Should().BeOfType<Internal.Driver>();
+				}
+			}
+		}
+
+		public class CypherErrorExample : BaseExample
         {
             public CypherErrorExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
                 : base(output, fixture)

@@ -71,7 +71,7 @@ namespace Neo4j.Driver.Internal.Messaging.V3
 					          break;
             }
 
-            if (database != null)
+            if (!string.IsNullOrEmpty(database))
             {
                 result.Add(DbKey, database);
             }

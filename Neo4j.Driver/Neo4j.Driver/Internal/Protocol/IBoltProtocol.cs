@@ -40,10 +40,11 @@ namespace Neo4j.Driver.Internal.Protocol
                                                             IResultResourceHandler resultResourceHandler,
                                                             string database, 
                                                             Bookmark bookmark, 
-                                                            TransactionConfig config, 
-                                                            long fetchSize);
+                                                            TransactionConfig config,
+															string impersonatedUser,
+															long fetchSize);
 
-        Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark, TransactionConfig config);
+        Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark, TransactionConfig config, string impersonatedUser);
 
         Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection, Query query, bool reactive, long fetchSize);
 
@@ -58,8 +59,9 @@ namespace Neo4j.Driver.Internal.Protocol
         BoltProtocolVersion GetVersion();
 
         Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection,
-                                            string database,
-                                            Bookmark bookmark); 
+																  string database,
+																  string impersonated_user,
+																  Bookmark bookmark); 
     }
 
 }

@@ -24,21 +24,21 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging.V4_2;
 using Neo4j.Driver.Internal.Result;
 using Xunit;
-using V4_2 = Neo4j.Driver.Internal.MessageHandling.V4_2;
+using Neo4j.Driver.Internal.MessageHandling.V4_2;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
     public class BoltProtocolV4_2Tests
     {
-        private async Task EnqueAndSync(IBoltProtocol V4_2)
+        private async Task EnqueAndSync(IBoltProtocol V4_2Protocol)
         {
             var mockConn = new Mock<IConnection>();
 
             mockConn.Setup(x => x.Server).Returns(new ServerInfo(new Uri("http://neo4j.com")));
-            await V4_2.LoginAsync(mockConn.Object, "user-andy", AuthTokens.None);
+            await V4_2Protocol.LoginAsync(mockConn.Object, "user-andy", AuthTokens.None);
 
             mockConn.Verify(
-                x => x.EnqueueAsync(It.IsAny<HelloMessage>(), It.IsAny<V4_2.HelloResponseHandler>(), null, null),
+                x => x.EnqueueAsync(It.IsAny<HelloMessage>(), It.IsAny<HelloResponseHandler>(), null, null),
                 Times.Once);
             mockConn.Verify(x => x.SyncAsync());
         }
@@ -46,25 +46,25 @@ namespace Neo4j.Driver.Internal.Protocol
         [Fact]
         public async Task ShouldEnqueueHelloAndSync()
         {
-            var V4_2 = new BoltProtocolV4_2(new Dictionary<string, string> { { "ContextKey", "ContextValue" } });
+            var protocol = new BoltProtocolV4_2(new Dictionary<string, string> { { "ContextKey", "ContextValue" } });
 
-            await EnqueAndSync(V4_2);
+            await EnqueAndSync(protocol);
         }
 
         [Fact]
         public async Task ShouldEnqueueHelloAndSyncEmptyContext()
         {
-            var V4_2 = new BoltProtocolV4_2(new Dictionary<string, string>());
+            var protocol = new BoltProtocolV4_2(new Dictionary<string, string>());
 
-            await EnqueAndSync(V4_2);
+            await EnqueAndSync(protocol);
         }
 
         [Fact]
         public async void ShouldEnqueueHelloAndSyncNullContext()
         {
-            var V4_2 = new BoltProtocolV4_2(null);
+            var protocol = new BoltProtocolV4_2(null);
 
-            await EnqueAndSync(V4_2);
+            await EnqueAndSync(protocol);
         }
 
     }

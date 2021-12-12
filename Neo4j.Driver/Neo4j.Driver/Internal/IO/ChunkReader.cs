@@ -115,7 +115,7 @@ namespace Neo4j.Driver.Internal.IO
 
             if (ChunkBuffer.Length == 0)  //No data so stop
             {
-                throw new IOException($"Unexpected end of stream, ChunkBuffer was not populated with any data");
+                throw new IOException($"Unexpected end of stream, unable to read expected data from the network connection");
             }
         }
 

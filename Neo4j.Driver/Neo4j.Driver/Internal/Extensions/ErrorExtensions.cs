@@ -46,8 +46,16 @@ namespace Neo4j.Driver.Internal
                     }
                     else if (FatalDiscoveryException.IsFatalDiscoveryError(code))
                     {
-                        error = new FatalDiscoveryException(code, message);
+                        error = new FatalDiscoveryException(message);
                     }
+					else if(TokenExpiredException.IsTokenExpiredError(code))
+					{
+						error = new TokenExpiredException(message);
+					}
+					else if(InvalidBookmarkException.IsInvalidBookmarkException(code))
+					{
+						error = new InvalidBookmarkException(message);
+					}
                     else
                     {
                         error = new ClientException(code, message);
@@ -68,7 +76,8 @@ namespace Neo4j.Driver.Internal
         public static bool IsRetriableError(this Exception error)
         {
 			return error is SessionExpiredException || error.IsRetriableTransientError() ||
-				   error is ServiceUnavailableException || error.IsAuthorizationError();
+				   error is ServiceUnavailableException || error.IsAuthorizationError() ||
+				   error is ConnectionReadTimeoutException;
 		}
 
         public static bool IsRetriableTransientError(this Exception error)

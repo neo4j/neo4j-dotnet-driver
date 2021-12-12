@@ -64,7 +64,7 @@ namespace Neo4j.Driver.Tests.Routing
                 routingTable);
         }
 
-        internal static Mock<IRoutingTable> NewMockedRoutingTable(AccessMode mode, Uri uri)
+		internal static Mock<IRoutingTable> NewMockedRoutingTable(AccessMode mode, Uri uri, string database)
         {
             var mock = new Mock<IRoutingTable>();
             mock.Setup(m => m.IsStale(It.IsAny<AccessMode>())).Returns(false);
@@ -86,6 +86,8 @@ namespace Neo4j.Driver.Tests.Routing
                     throw new InvalidOperationException($"unknown access mode {mode}");
             }
 
+			mock.Setup(m => m.Database).Returns(database);
+
             mock.Setup(m => m.Remove(It.IsAny<Uri>())).Callback<Uri>(u => list.Remove(u));
             return mock;
         }
@@ -94,7 +96,7 @@ namespace Neo4j.Driver.Tests.Routing
             IEnumerable<Uri> routers = null,
             IEnumerable<Uri> readers = null,
             IEnumerable<Uri> writers = null,
-            string database = null)
+            string database = "")
         {
             // assign default value of uri
             if (routers == null)
@@ -139,7 +141,7 @@ namespace Neo4j.Driver.Tests.Routing
                 // When
                 // should throw an exception as the initial routers should not be tried again
                 manager.Awaiting(m =>
-                        m.UpdateRoutingTableAsync(AccessMode.Read, "", Bookmark.Empty)).Should()
+                        m.UpdateRoutingTableAsync(AccessMode.Read, "", null, Bookmark.Empty)).Should()
                     .Throw<ServiceUnavailableException>();
 
                 // Then
@@ -166,13 +168,13 @@ namespace Neo4j.Driver.Tests.Routing
                     .ReturnsAsync(Mock.Of<IConnection>());
 
                 var discovery = new Mock<IDiscovery>();
-                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", Bookmark.Empty))
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmark.Empty))
                     .ReturnsAsync(Mock.Of<IRoutingTable>());
 
                 var manager = NewRoutingTableManager(routingTableMock.Object, poolManagerMock.Object, discovery.Object);
 
                 // When
-                await manager.UpdateRoutingTableAsync(AccessMode.Read, "", Bookmark.Empty);
+                await manager.UpdateRoutingTableAsync(AccessMode.Read, "", null, Bookmark.Empty);
 
                 // Then
                 poolManagerMock.Verify(x => x.AddConnectionPoolAsync(It.IsAny<IEnumerable<Uri>>()), Times.Once);
@@ -206,7 +208,7 @@ namespace Neo4j.Driver.Tests.Routing
                 mockProvider.Setup(x => x.Get()).Returns(initialUriSet);
 
                 var discovery = new Mock<IDiscovery>();
-                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", Bookmark.Empty))
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmark.Empty))
                     .ReturnsAsync(Mock.Of<IRoutingTable>());
 
                 var manager =
@@ -214,7 +216,7 @@ namespace Neo4j.Driver.Tests.Routing
                         mockProvider.Object);
 
                 // When
-                await manager.UpdateRoutingTableAsync(AccessMode.Read, "", Bookmark.Empty);
+                await manager.UpdateRoutingTableAsync(AccessMode.Read, "", null, Bookmark.Empty);
 
                 // Then
                 // verify the method is actually called
@@ -239,14 +241,14 @@ namespace Neo4j.Driver.Tests.Routing
                     .ReturnsAsync((ClusterConnection) null);
 
                 var discovery = new Mock<IDiscovery>();
-                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", Bookmark.Empty))
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmark.Empty))
                     .Throws<NotSupportedException>();
 
                 var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object);
 
                 // When
                 var newRoutingTable =
-                    await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", Bookmark.Empty);
+                    await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmark.Empty);
 
                 // Then
                 newRoutingTable.Should().BeNull();
@@ -269,20 +271,20 @@ namespace Neo4j.Driver.Tests.Routing
                     .ReturnsAsync(connA).ReturnsAsync(connB);
 
                 var discovery = new Mock<IDiscovery>();
-                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), null, Bookmark.Empty)).Callback(
-                    (IConnection c, string database, Bookmark bookmark) =>
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), null, null, Bookmark.Empty)).Callback(
+                    (IConnection c, string database, string impersonatedUser, Bookmark bookmark) =>
                         throw new NotSupportedException($"Unknown uri: {c.Server.Address}"));
-                discovery.Setup(x => x.DiscoverAsync(connA, "", Bookmark.Empty))
-                    .Callback((IConnection c, string database, Bookmark bookmark) => routingTable.Remove(uriA))
+                discovery.Setup(x => x.DiscoverAsync(connA, "", null, Bookmark.Empty))
+                    .Callback((IConnection c, string database, string impersonatedUser, Bookmark bookmark) => routingTable.Remove(uriA))
                     .Throws(new SessionExpiredException("failed init"));
-                discovery.Setup(x => x.DiscoverAsync(connB, "", Bookmark.Empty))
+                discovery.Setup(x => x.DiscoverAsync(connB, "", null, Bookmark.Empty))
                     .ReturnsAsync(NewRoutingTable(new[] {uriA}, new[] {uriA}, new[] {uriA}));
 
                 var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object);
 
                 // When
                 var newRoutingTable =
-                    await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", Bookmark.Empty);
+                    await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmark.Empty);
 
                 // Then
                 newRoutingTable.All().Should().ContainInOrder(uriA);
@@ -300,7 +302,7 @@ namespace Neo4j.Driver.Tests.Routing
                     .Returns(Task.FromResult(new Mock<IConnection>().Object));
 
                 var discovery = new Mock<IDiscovery>();
-                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", Bookmark.Empty)).Throws(error);
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmark.Empty)).Throws(error);
 
                 var logger = new Mock<ILogger>();
                 logger.Setup(x => x.Warn(It.IsAny<Exception>(), It.IsAny<string>(), It.IsAny<object[]>()));
@@ -308,7 +310,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object,
                     logger: logger.Object);
 
-                await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", Bookmark.Empty);
+                await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmark.Empty);
 
                 logger.Verify(x => x.Warn(error, It.IsAny<string>(), It.IsAny<object[]>()));
             }
@@ -324,7 +326,7 @@ namespace Neo4j.Driver.Tests.Routing
                     .ReturnsAsync(new Mock<IConnection>().Object);
 
                 var discovery = new Mock<IDiscovery>();
-                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", Bookmark.Empty)).Throws(error);
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmark.Empty)).Throws(error);
 
                 var logger = new Mock<ILogger>();
                 logger.Setup(x => x.Error(It.IsAny<Exception>(), It.IsAny<string>(), It.IsAny<object[]>()));
@@ -333,13 +335,39 @@ namespace Neo4j.Driver.Tests.Routing
                     logger: logger.Object);
 
                 var exc = await Record.ExceptionAsync(() =>
-                    manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", Bookmark.Empty));
+                    manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmark.Empty));
 
                 exc.Should().Be(error);
                 logger.Verify(x => x.Error(error, It.IsAny<string>(), It.IsAny<object[]>()));
             }
 
-            [Fact]
+			[Fact]
+			public async Task ShouldPropagateInvalidBookmarkException()
+			{
+				var error = new InvalidBookmarkException("Invalid bookmark");
+				var uri = new Uri("neo4j://123:456");
+				var routingTable = new RoutingTable(null, new List<Uri> { uri });
+				var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
+				poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(uri))
+					.ReturnsAsync(new Mock<IConnection>().Object);
+
+				var discovery = new Mock<IDiscovery>();
+				discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmark.From("Invalid bookmark"))).Throws(error);
+
+				var logger = new Mock<ILogger>();
+				logger.Setup(x => x.Error(It.IsAny<Exception>(), It.IsAny<string>(), It.IsAny<object[]>()));
+
+				var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object,
+					logger: logger.Object);
+
+				var exc = await Record.ExceptionAsync(() =>
+					manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmark.From("Invalid bookmark")));
+
+				exc.Should().Be(error);
+				logger.Verify(x => x.Error(error, It.IsAny<string>(), It.IsAny<object[]>()));
+			}
+
+			[Fact]
             public async Task ShouldTryNextRouterIfNoReader()
             {
                 // Given
@@ -357,12 +385,12 @@ namespace Neo4j.Driver.Tests.Routing
                     .ReturnsAsync(connA).ReturnsAsync(connB);
 
                 var discovery = new Mock<IDiscovery>();
-                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", Bookmark.Empty)).Callback(
-                    (IConnection c, string database, Bookmark bookmark) =>
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmark.Empty)).Callback(
+                    (IConnection c, string database, string impersonatedUser, Bookmark bookmark) =>
                         throw new NotSupportedException($"Unknown uri: {c.Server.Address}"));
-                discovery.Setup(x => x.DiscoverAsync(connA, "", Bookmark.Empty))
+                discovery.Setup(x => x.DiscoverAsync(connA, "", null, Bookmark.Empty))
                     .ReturnsAsync(NewRoutingTable(new[] {uriX}, new Uri[0], new[] {uriX}));
-                discovery.Setup(x => x.DiscoverAsync(connB, "", Bookmark.Empty))
+                discovery.Setup(x => x.DiscoverAsync(connB, "", null, Bookmark.Empty))
                     .ReturnsAsync(NewRoutingTable(new[] {uriY}, new[] {uriY}, new[] {uriY}));
 
 
@@ -371,7 +399,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // When
                 var updateRoutingTable =
-                    await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", Bookmark.Empty, null);
+                    await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmark.Empty, null);
 
                 // Then
                 updateRoutingTable.All().Should().ContainInOrder(uriY);
@@ -392,17 +420,17 @@ namespace Neo4j.Driver.Tests.Routing
                     .ReturnsAsync(connA);
 
                 var discovery = new Mock<IDiscovery>();
-                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", Bookmark.Empty)).Callback(
-                    (IConnection c, string database, Bookmark bookmark) =>
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmark.Empty)).Callback(
+                    (IConnection c, string database, string impersonatedUser, Bookmark bookmark) =>
                         throw new NotSupportedException($"Unknown uri: {c.Server?.Address}"));
-                discovery.Setup(x => x.DiscoverAsync(connA, "", Bookmark.Empty))
+                discovery.Setup(x => x.DiscoverAsync(connA, "", null, Bookmark.Empty))
                     .ReturnsAsync(NewRoutingTable(new[] {uriX}, new[] {uriX}));
 
                 var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object);
 
                 // When
                 var updateRoutingTable =
-                    await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", Bookmark.Empty, null);
+                    await manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmark.Empty, null);
 
                 // Then
                 updateRoutingTable.All().Should().ContainInOrder(uriX);
@@ -429,9 +457,9 @@ namespace Neo4j.Driver.Tests.Routing
                 poolManager.Setup(x => x.CreateClusterConnectionAsync(uriE)).ReturnsAsync(connE);
 
                 var discovery = new Mock<IDiscovery>();
-                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", Bookmark.Empty))
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmark.Empty))
                     .Throws(new ServiceUnavailableException("something went wrong"));
-                discovery.Setup(x => x.DiscoverAsync(connE, "", Bookmark.Empty)).ReturnsAsync(routingTable);
+                discovery.Setup(x => x.DiscoverAsync(connE, "", null, Bookmark.Empty)).ReturnsAsync(routingTable);
 
                 var logger = new Mock<ILogger>();
                 logger.Setup(x =>
@@ -444,13 +472,13 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // When
                 var result =
-                    await manager.UpdateRoutingTableAsync(existingRoutingTable, AccessMode.Read, "", Bookmark.Empty);
+                    await manager.UpdateRoutingTableAsync(existingRoutingTable, AccessMode.Read, "", null, Bookmark.Empty);
 
                 // Then
                 result.Should().Be(routingTable);
-                discovery.Verify(x => x.DiscoverAsync(It.Is<IConnection>(c => c != connE), "", Bookmark.Empty),
+                discovery.Verify(x => x.DiscoverAsync(It.Is<IConnection>(c => c != connE), "", null, Bookmark.Empty),
                     Times.Exactly(4));
-                discovery.Verify(x => x.DiscoverAsync(connE, "", Bookmark.Empty), Times.Once);
+                discovery.Verify(x => x.DiscoverAsync(connE, "", null, Bookmark.Empty), Times.Once);
                 logger.Verify(
                     x => x.Warn(It.IsAny<ServiceUnavailableException>(), It.IsAny<string>(), It.IsAny<object[]>()),
                     Times.Exactly(4));
@@ -476,9 +504,9 @@ namespace Neo4j.Driver.Tests.Routing
                 poolManager.Setup(x => x.CreateClusterConnectionAsync(uriE)).ReturnsAsync(connE);
 
                 var discovery = new Mock<IDiscovery>();
-                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", Bookmark.Empty))
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmark.Empty))
                     .Throws(new ServiceUnavailableException("something went wrong"));
-                discovery.Setup(x => x.DiscoverAsync(connE, "", Bookmark.Empty)).ReturnsAsync(routingTable);
+                discovery.Setup(x => x.DiscoverAsync(connE, "", null, Bookmark.Empty)).ReturnsAsync(routingTable);
 
                 var logger = new Mock<ILogger>();
                 logger.Setup(x =>
@@ -491,13 +519,13 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // When
                 var result =
-                    await manager.UpdateRoutingTableAsync(existingRoutingTable, AccessMode.Read, "", Bookmark.Empty);
+                    await manager.UpdateRoutingTableAsync(existingRoutingTable, AccessMode.Read, "", null, Bookmark.Empty);
 
                 // Then
                 result.Should().Be(routingTable);
-                discovery.Verify(x => x.DiscoverAsync(It.Is<IConnection>(c => c != connE), "", Bookmark.Empty),
+                discovery.Verify(x => x.DiscoverAsync(It.Is<IConnection>(c => c != connE), "", null, Bookmark.Empty),
                     Times.Never);
-                discovery.Verify(x => x.DiscoverAsync(connE, "", Bookmark.Empty), Times.Once);
+                discovery.Verify(x => x.DiscoverAsync(connE, "", null, Bookmark.Empty), Times.Once);
                 logger.Verify(
                     x => x.Warn(It.IsAny<ClientException>(), It.IsAny<string>(), It.IsAny<object[]>()),
                     Times.Exactly(4));
@@ -581,11 +609,11 @@ namespace Neo4j.Driver.Tests.Routing
                     new RoutingTable("bar", new[] {server07}, new[] {server08}, new[] {server09}, 100);
 
                 var discovery = new Mock<IDiscovery>();
-                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", Bookmark.Empty))
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmark.Empty))
                     .ReturnsAsync(defaultRoutingTable);
-                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", Bookmark.Empty))
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", null, Bookmark.Empty))
                     .ReturnsAsync(fooRoutingTable);
-                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "bar", Bookmark.Empty))
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "bar", null, Bookmark.Empty))
                     .ReturnsAsync(barRoutingTable);
 
                 var poolManager = new Mock<IClusterConnectionPoolManager>();
@@ -599,11 +627,11 @@ namespace Neo4j.Driver.Tests.Routing
                     poolManager.Object, Mock.Of<ILogger>(), TimeSpan.MaxValue);
 
                 // When
-                var routingTable1 = await manager.EnsureRoutingTableForModeAsync(mode, null, Bookmark.Empty);
+                var routingTable1 = await manager.EnsureRoutingTableForModeAsync(mode, null, null, Bookmark.Empty);
                 var routingTable2 =
-                    await manager.EnsureRoutingTableForModeAsync(mode, "foo", Bookmark.Empty);
+                    await manager.EnsureRoutingTableForModeAsync(mode, "foo", null, Bookmark.Empty);
                 var routingTable3 =
-                    await manager.EnsureRoutingTableForModeAsync(mode, "bar", Bookmark.Empty);
+                    await manager.EnsureRoutingTableForModeAsync(mode, "bar", null, Bookmark.Empty);
 
                 routingTable1.Should().Be(defaultRoutingTable);
                 routingTable2.Should().Be(fooRoutingTable);
@@ -617,17 +645,16 @@ namespace Neo4j.Driver.Tests.Routing
 
             [Fact]
             public async Task ShouldRemoveStaleEntriesOnUpdate()
-            {
-                var timer = new Mock<ITimer>();
+            {   
                 var fooRoutingTable =
-                    new RoutingTable("foo", new[] {server04}, new[] {server05}, new[] {server06}, 1, timer.Object);
+                    new RoutingTable("foo", new[] {server04}, new[] {server05}, new[] {server06}, 1);
                 var barRoutingTable =
-                    new RoutingTable("bar", new[] {server07}, new[] {server08}, new[] {server09}, 4, timer.Object);
+                    new RoutingTable("bar", new[] {server07}, new[] {server08}, new[] {server09}, 4);
 
                 var discovery = new Mock<IDiscovery>();
-                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", Bookmark.Empty))
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", null, Bookmark.Empty))
                     .ReturnsAsync(fooRoutingTable);
-                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "bar", Bookmark.Empty))
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "bar", null, Bookmark.Empty))
                     .ReturnsAsync(barRoutingTable);
 
                 var poolManager = new Mock<IClusterConnectionPoolManager>();
@@ -642,15 +669,14 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // When
                 var routingTable1 =
-                    await manager.EnsureRoutingTableForModeAsync(AccessMode.Read, "foo", Bookmark.Empty);
+                    await manager.EnsureRoutingTableForModeAsync(AccessMode.Read, "foo", null, Bookmark.Empty);
                 routingTable1.Should().Be(fooRoutingTable);
 
-                // Fake the timer to make foo routing table to be recognized as stale
-                timer.Setup(x => x.ElapsedMilliseconds).Returns(2 * 1000 + 1);
+				await Task.Delay(2001);
 
                 // An update should trigger an implicit clean-up of stale entries
                 var routingTable2 =
-                    await manager.EnsureRoutingTableForModeAsync(AccessMode.Read, "bar", Bookmark.Empty);
+                    await manager.EnsureRoutingTableForModeAsync(AccessMode.Read, "bar", null, Bookmark.Empty);
                 routingTable2.Should().Be(barRoutingTable);
 
                 manager.RoutingTableFor("foo").Should().BeNull();
@@ -666,12 +692,12 @@ namespace Neo4j.Driver.Tests.Routing
                     new RoutingTable("foo", new[] {server04}, new[] {server05}, new[] {server06}, 80);
 
                 var discovery = new Mock<IDiscovery>();
-                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", Bookmark.Empty))
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmark.Empty))
                     .ReturnsAsync(defaultRoutingTable);
-                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", Bookmark.Empty))
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", null, Bookmark.Empty))
                     .ReturnsAsync(fooRoutingTable);
-                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "bar", Bookmark.Empty))
-                    .ThrowsAsync(new FatalDiscoveryException("code", "message"));
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "bar", null, Bookmark.Empty))
+                    .ThrowsAsync(new FatalDiscoveryException("message"));
 
                 var poolManager = new Mock<IClusterConnectionPoolManager>();
                 poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>()))
@@ -685,13 +711,13 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // When
                 var routingTable1 =
-                    await manager.EnsureRoutingTableForModeAsync(AccessMode.Write, null, Bookmark.Empty);
+                    await manager.EnsureRoutingTableForModeAsync(AccessMode.Write, null, null, Bookmark.Empty);
                 var routingTable2 =
-                    await manager.EnsureRoutingTableForModeAsync(AccessMode.Write, "foo", Bookmark.Empty);
+                    await manager.EnsureRoutingTableForModeAsync(AccessMode.Write, "foo", null, Bookmark.Empty);
                 routingTable1.Should().Be(defaultRoutingTable);
                 routingTable2.Should().Be(fooRoutingTable);
 
-                manager.Awaiting(m => m.EnsureRoutingTableForModeAsync(AccessMode.Write, "bar", Bookmark.Empty))
+                manager.Awaiting(m => m.EnsureRoutingTableForModeAsync(AccessMode.Write, "bar", null, Bookmark.Empty))
                     .Should().Throw<FatalDiscoveryException>();
                 manager.RoutingTableFor("").Should().Be(defaultRoutingTable);
                 manager.RoutingTableFor("foo").Should().Be(fooRoutingTable);
@@ -700,10 +726,10 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public void ShouldThrowOnFatalDiscovery()
             {
-                var error = new FatalDiscoveryException("code", "message");
+                var error = new FatalDiscoveryException("message");
 
                 var discovery = new Mock<IDiscovery>();
-                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "bar", Bookmark.Empty))
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "bar", null, Bookmark.Empty))
                     .ThrowsAsync(error);
 
                 var poolManager = new Mock<IClusterConnectionPoolManager>();
@@ -716,7 +742,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var manager = new RoutingTableManager(initialAddressProvider.Object, discovery.Object,
                     poolManager.Object, Mock.Of<ILogger>(), TimeSpan.MaxValue);
 
-                manager.Awaiting(m => m.EnsureRoutingTableForModeAsync(AccessMode.Write, "bar", Bookmark.Empty))
+                manager.Awaiting(m => m.EnsureRoutingTableForModeAsync(AccessMode.Write, "bar", null, Bookmark.Empty))
                     .Should().Throw<FatalDiscoveryException>().Which.Should().Be(error);
             }
 
@@ -728,7 +754,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var rt = new RoutingTable("foo", new[] {server01}, new[] {server02}, new[] {server03}, 10);
 
                 var discovery = new Mock<IDiscovery>();
-                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", bookmark))
+                discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", null, bookmark))
                     .ReturnsAsync(rt);
 
                 var poolManager = new Mock<IClusterConnectionPoolManager>();
@@ -741,10 +767,10 @@ namespace Neo4j.Driver.Tests.Routing
                 var manager = new RoutingTableManager(initialAddressProvider.Object, discovery.Object,
                     poolManager.Object, Mock.Of<ILogger>(), TimeSpan.MaxValue);
 
-                var routingTable = await manager.EnsureRoutingTableForModeAsync(AccessMode.Write, "foo", bookmark);
+                var routingTable = await manager.EnsureRoutingTableForModeAsync(AccessMode.Write, "foo", null, bookmark);
 
                 routingTable.Should().Be(rt);
-                discovery.Verify(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", bookmark), Times.Once);
+                discovery.Verify(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", null, bookmark), Times.Once);
             }
         }
     }

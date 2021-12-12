@@ -26,32 +26,20 @@ using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.MessageHandling.V4_1
 {
-    internal class HelloResponseHandler : MetadataCollectingResponseHandler
-    {
-        private readonly IConnection _connection;
-        private BoltProtocolVersion Version { get; set; }
+    internal class HelloResponseHandler : V4.HelloResponseHandler
+	{
+		readonly BoltProtocolVersion MinVersion = new BoltProtocolVersion(4, 1);
 
-        public HelloResponseHandler(IConnection connection, BoltProtocolVersion version)
+		public HelloResponseHandler(IConnection connection, BoltProtocolVersion version) : base(connection, version)
         {
-            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
-            Version = version ?? throw new ArgumentNullException("Attempting to create a HelloResponseHandler v4.1 with a null BoltProtocolVersion object");
+			//Add version specific Metadata collectors here...
+		}
 
-            if (Version < new BoltProtocolVersion(4, 1))
-                throw new ArgumentOutOfRangeException("Attempting to initialise a v4.1 HelloResponseHandler with a protocol version less than 4.1");
+		public override void OnSuccess(IDictionary<string, object> metadata)
+		{
+			base.OnSuccess(metadata);
 
-            AddMetadata<ServerVersionCollector, ServerVersion>();
-            AddMetadata<ConnectionIdCollector, string>();
-        }
-
-        public override void OnSuccess(IDictionary<string, object> metadata)
-        {
-            base.OnSuccess(metadata);
-
-            // From Server V4 extracting server from metadata in the success message is unreliable.
-            // The server version is now tied to the protocol version.
-            _connection.UpdateVersion(new ServerVersion(Version.MajorVersion, Version.MinorVersion, 0));
-
-            _connection.UpdateId(GetMetadata<ConnectionIdCollector, string>());
-        }
-    }
+			//Version specific handling goes here...
+		}
+	}
 }

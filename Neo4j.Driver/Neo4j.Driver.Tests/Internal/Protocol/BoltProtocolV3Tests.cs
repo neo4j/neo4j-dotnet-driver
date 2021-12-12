@@ -20,6 +20,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
+using FluentAssertions.Collections;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -72,8 +73,8 @@ namespace Neo4j.Driver.Internal.Protocol
                 await V3.LoginAsync(mockConn.Object, "user-zhen", AuthTokens.None);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<HelloMessage>(), It.IsAny<V3.HelloResponseHandler>(), null, null),
-                    Times.Once);
+                    x => x.EnqueueAsync(It.IsAny<Messaging.V3.HelloMessage>(), It.IsAny<V3.HelloResponseHandler>(), null, null),
+					Times.Once);
                 mockConn.Verify(x => x.SyncAsync());
             }
         }
@@ -112,8 +113,10 @@ namespace Neo4j.Driver.Internal.Protocol
                     .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
+				
+
                 await V3.RunInAutoCommitTransactionAsync(mockConn.Object, query, true, bookmarkTracker.Object,
-                    resourceHandler.Object, null, null, null);
+                    resourceHandler.Object, null, null, null, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V3.RunResponseHandler>(),
@@ -138,7 +141,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
                 await V3.RunInAutoCommitTransactionAsync(mockConn.Object, query, true, bookmarkTracker.Object,
-                    resourceHandler.Object, null, null, null);
+                    resourceHandler.Object, null, null, null, null);
 
                 mockConn.Verify(x => x.Server, Times.Once);
             }
@@ -165,7 +168,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         });
 
                 await V3.RunInAutoCommitTransactionAsync(mockConn.Object, query, true, bookmarkTracker.Object,
-                    resourceHandler.Object, null, Bookmark, TxConfig);
+                    resourceHandler.Object, null, Bookmark, TxConfig, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V3.RunResponseHandler>(),
@@ -175,7 +178,6 @@ namespace Neo4j.Driver.Internal.Protocol
             }
 
             [Theory]
-            [InlineData("")]
             [InlineData("database")]
             public void ShouldThrowWhenADatabaseIsGiven(string database)
             {
@@ -184,7 +186,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 V3.Awaiting(p => p.RunInAutoCommitTransactionAsync(Mock.Of<IConnection>(), new Query("text"),
                         false, Mock.Of<IBookmarkTracker>(), Mock.Of<IResultResourceHandler>(), database,
                         Bookmark.From("123"),
-                        TransactionConfig.Default))
+                        TransactionConfig.Default, null))
                     .Should().Throw<ClientException>().WithMessage("*that does not support multiple databases*");
             }
         }
@@ -198,7 +200,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var bookmark = Bookmark.From(AsyncSessionTests.FakeABookmark(234));
                 var V3 = new BoltProtocolV3();
 
-                await V3.BeginTransactionAsync(mockConn.Object, null, bookmark, null);
+                await V3.BeginTransactionAsync(mockConn.Object, null, bookmark, null, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V3.BeginResponseHandler>(), null, null),
@@ -224,7 +226,7 @@ namespace Neo4j.Driver.Internal.Protocol
                             VerifyMetadata(msg.Metadata, mode);
                         });
 
-                await V3.BeginTransactionAsync(mockConn.Object, null, Bookmark, TxConfig);
+                await V3.BeginTransactionAsync(mockConn.Object, null, Bookmark, TxConfig, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V3.BeginResponseHandler>(), null, null),
@@ -232,16 +234,31 @@ namespace Neo4j.Driver.Internal.Protocol
             }
 
             [Theory]
-            [InlineData("")]
             [InlineData("database")]
             public void ShouldThrowWhenADatabaseIsGiven(string database)
             {
                 var V3 = new BoltProtocolV3();
+				var mockConn = NewConnectionWithMode(AccessMode.Read);
 
-                V3.Awaiting(p => p.BeginTransactionAsync(Mock.Of<IConnection>(), database, Bookmark.From("123"),
-                        TransactionConfig.Default))
+				V3.Awaiting(p => p.BeginTransactionAsync(mockConn.Object, database, Bookmark.From("123"),
+                        TransactionConfig.Default, null))
                     .Should().Throw<ClientException>().WithMessage("*that does not support multiple databases*");
             }
+
+			[Fact]
+			public async Task ShouldThrowOnImpersonatedUserAsync()
+			{
+				var protocol = new BoltProtocolV3();
+				var mockConn = NewConnectionWithMode(AccessMode.Read);
+				
+				var ex = await Assert.ThrowsAsync<ArgumentException>(() => protocol.BeginTransactionAsync(mockConn.Object, 
+																						   string.Empty, 
+																						   Bookmark.From("123"), 
+																						   TransactionConfig.Default, 
+																						   "ImpersonatedUser"));
+
+				ex.Message.Should().Contain("3.0");
+			}
         }
 
         public class CommitTransactionAsyncMethod
@@ -346,12 +363,76 @@ namespace Neo4j.Driver.Internal.Protocol
 			{
                 var v3 = new BoltProtocolV3();
 
-                var ex = await Xunit.Record.ExceptionAsync(async () => await v3.GetRoutingTable(null, "adb", null));
+                var ex = await Xunit.Record.ExceptionAsync(async () => await v3.GetRoutingTable(null, "adb", null, null));
 
                 ex.Should().BeOfType<ProtocolException>().Which
                     .Message.Should()
                     .Contain("Attempting to get a routing table on a null connection");
             }
+
+			[Fact]
+			public async Task RoutingTableShouldContainDatabase()
+			{
+				var connection = SetupMockedConnection();
+				var boltProtocolV3 = new BoltProtocolV3();
+				
+				//When
+				var routingTableDictionary = await boltProtocolV3.GetRoutingTable(connection, "myTestDatabase", null, null);
+
+				//Then
+				routingTableDictionary.ToDictionary().Should().ContainKey("db").WhichValue.Should().Be("myTestDatabase");
+			}
+
+			[Fact]
+			public async Task ShouldThrowOnImpersonatedUser()
+			{
+				var connection = SetupMockedConnection();
+				var boltProtocolV3 = new BoltProtocolV3();
+
+				//When
+				var ex = await Assert.ThrowsAsync<ArgumentException>(() => boltProtocolV3.GetRoutingTable(connection, "myTestDatabase", string.Empty, null));
+
+				ex.Message.Should().Contain("3.0");
+			}
+
+			private IConnection SetupMockedConnection()
+			{
+				//Given
+				var routingContext = new Dictionary<string, string>
+				{
+					{"name", "molly"},
+					{"age", "1"},
+					{"color", "white"}
+				};
+
+				var results = new object[]
+				{
+					"15000",
+					new List<object>
+					{
+						new Dictionary<string, object>
+						{
+							{"addresses", "routing ip addresses"},
+							{"role", "ROUTE"}
+						},
+						new Dictionary<string, object>
+						{
+							{"addresses", "write ip addresses"},
+							{"role", "WRITE"}
+						},
+						new Dictionary<string, object>
+						{
+							{"addresses", "read ip addresses"},
+							{"role", "READ"}
+						}
+					}
+				};
+
+				var mockConn = Tests.Routing.ClusterDiscoveryTests.Setup32SocketConnection(routingContext, results);
+				mockConn.Setup(m => m.RoutingContext).Returns(routingContext);
+
+				return mockConn.Object;
+			}
         }
 
 

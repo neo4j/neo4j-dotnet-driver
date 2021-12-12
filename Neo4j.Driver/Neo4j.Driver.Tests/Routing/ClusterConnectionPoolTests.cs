@@ -64,7 +64,7 @@ namespace Neo4j.Driver.Tests.Routing
                 connectionPoolDict.Count.Should().Be(0);
 
                 // When
-                var connection = await pool.AcquireAsync(ServerUri, AccessMode.Write, null, Bookmark.Empty);
+                var connection = await pool.AcquireAsync(ServerUri, AccessMode.Write, null, null, Bookmark.Empty);
 
                 // Then
                 connection.Should().BeNull();
@@ -80,7 +80,7 @@ namespace Neo4j.Driver.Tests.Routing
                 mockedConnection.Setup(c => c.InitAsync())
                     .Returns(Task.FromException(new InvalidOperationException("An exception")));
                 mockedConnectionPool.Setup(x =>
-                        x.AcquireAsync(It.IsAny<AccessMode>(), It.IsAny<string>(), It.IsAny<Bookmark>()))
+                        x.AcquireAsync(It.IsAny<AccessMode>(), It.IsAny<string>(), null, It.IsAny<Bookmark>()))
                     .ReturnsAsync(mockedConnection.Object);
 
                 var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
@@ -93,7 +93,7 @@ namespace Neo4j.Driver.Tests.Routing
                 connectionPoolDict[ServerUri].Should().Be(mockedConnectionPool.Object);
 
                 // When
-                var connection = await pool.AcquireAsync(ServerUri, AccessMode.Write, null, Bookmark.Empty);
+                var connection = await pool.AcquireAsync(ServerUri, AccessMode.Write, null, null, Bookmark.Empty);
 
                 // Then
                 connection.Should().NotBeNull();
@@ -114,13 +114,13 @@ namespace Neo4j.Driver.Tests.Routing
                 var mockedConnectionPool = new Mock<IConnectionPool>();
                 var mockedConnection = new Mock<IConnection>();
                 mockedConnectionPool.Setup(x =>
-                        x.AcquireAsync(It.IsAny<AccessMode>(), It.IsAny<string>(), It.IsAny<Bookmark>()))
+                        x.AcquireAsync(It.IsAny<AccessMode>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Bookmark>()))
                     .ReturnsAsync(mockedConnection.Object);
                 var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
                 connectionPoolDict.GetOrAdd(new Uri(first), mockedConnectionPool.Object);
 
                 var pool = new ClusterConnectionPool(null, connectionPoolDict);
-                var connection = await pool.AcquireAsync(new Uri(second), AccessMode.Write, null, Bookmark.Empty);
+                var connection = await pool.AcquireAsync(new Uri(second), AccessMode.Write, null, null, Bookmark.Empty);
 
                 if (expectedResult)
                 {

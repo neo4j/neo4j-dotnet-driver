@@ -263,11 +263,35 @@ namespace Neo4j.Driver
         }
     }
 
-    /// <summary>
-    /// There was a bolt protocol violation of the contract between the driver and the server. 
-    /// When seen this error, contact driver developers.
-    /// </summary>
-    [DataContract]
+	/// <summary>
+	///  A <see cref="ConnectionReadTimeoutException"/> indicates that the driver timed out trying to read from the network socket.
+	/// </summary>
+	[DataContract]
+	public class ConnectionReadTimeoutException : Neo4jException
+	{
+		/// <summary>
+		/// Create a new <see cref="ConnectionReadTimeoutException"/> with an error message.
+		/// </summary>
+		/// <param name="message">The error message.</param>
+		public ConnectionReadTimeoutException(string message) : base(message)
+		{
+		}
+
+		/// <summary>
+		/// Create a new <see cref="ConnectionReadTimeoutException"/> with an error message and an exception.
+		/// </summary>
+		/// <param name="message">The error message.</param>
+		/// <param name="innerException">The inner exception.</param>
+		public ConnectionReadTimeoutException(string message, Exception innerException) : base(message, innerException)
+		{
+		}
+	}
+
+	/// <summary>
+	/// There was a bolt protocol violation of the contract between the driver and the server. 
+	/// When seen this error, contact driver developers.
+	/// </summary>
+	[DataContract]
     public class ProtocolException : Neo4jException
     {
         private const string ErrorCodeInvalid = "Neo.ClientError.Request.Invalid";
@@ -384,11 +408,58 @@ namespace Neo4j.Driver
 		}
 	}
 
-    /// <summary>
-    /// A value retrieved from the database needs to be truncated for this conversion to work, and will
-    /// cause working with a modified data.
-    /// </summary>
-    [DataContract]
+	/// <summary>
+	/// The provided token has expired. The current driver instance is considered invalid. It should not 
+	/// be used anymore. The client must create a new driver instance with a valid token.
+	/// </summary>
+	public class TokenExpiredException : SecurityException 
+	{
+		private const string ErrorCode = "Neo.ClientError.Security.TokenExpiredException";
+
+		internal static bool IsTokenExpiredError(string code)
+		{
+			return string.Equals(code, ErrorCode);
+		}
+
+		/// <summary>
+		/// Create a new <see cref="TokenExpiredException"/> with an error message.
+		/// </summary>
+		/// <param name="message">The error message.</param>
+		public TokenExpiredException(string message) : base(ErrorCode, message)
+		{
+
+		}
+	}
+
+	/// <summary>
+	/// The provided bookmark is invalid. To recover from this a new session needs to be created.
+	/// </summary>
+	public class InvalidBookmarkException : ClientException
+	{
+		private const string ErrorCode = "Neo.ClientError.Transaction.InvalidBookmark";
+
+		internal static bool IsInvalidBookmarkException(string code)
+		{
+			return string.Equals(code, ErrorCode);
+		}
+
+		/// <summary>
+		/// Create a new <see cref="InvalidBookmarkException"/> with an error message.
+		/// </summary>
+		/// <param name="message">The error message.</param>
+		public InvalidBookmarkException(string message) : base(ErrorCode, message)
+		{
+
+		}
+	}
+		
+
+
+	/// <summary>
+	/// A value retrieved from the database needs to be truncated for this conversion to work, and will
+	/// cause working with a modified data.
+	/// </summary>
+	[DataContract]
     public class ValueTruncationException : ClientException
     {
         /// <summary>
@@ -433,10 +504,9 @@ namespace Neo4j.Driver
         /// <summary>
         /// Create a new <see cref="FatalDiscoveryException"/> with an error code and an error message.
         /// </summary>
-        /// <param name="code">The error code.</param>
         /// <param name="message">The error message.</param>
-        public FatalDiscoveryException(string code, string message)
-            : base(code, message)
+        public FatalDiscoveryException(string message)
+            : base(ErrorCode, message)
         {
         }
     }
