@@ -272,6 +272,13 @@ namespace Neo4j.Driver.Internal.Routing
                         router, database);
                     throw;
                 }
+				catch (InvalidBookmarkException e)
+				{
+					_logger?.Error(e,
+					   "Failed to update routing table from server '{0}' for database '{1}' because of an invalid bookmark exception.",
+					   router, database);
+					throw;
+				}
                 catch (Exception e)
                 {
                     _logger?.Warn(e, "Failed to update routing table from server '{0}' for database '{1}'.", router,

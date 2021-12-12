@@ -341,7 +341,33 @@ namespace Neo4j.Driver.Tests.Routing
                 logger.Verify(x => x.Error(error, It.IsAny<string>(), It.IsAny<object[]>()));
             }
 
-            [Fact]
+			[Fact]
+			public async Task ShouldPropagateInvalidBookmarkException()
+			{
+				var error = new InvalidBookmarkException("Invalid bookmark");
+				var uri = new Uri("neo4j://123:456");
+				var routingTable = new RoutingTable(null, new List<Uri> { uri });
+				var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
+				poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(uri))
+					.ReturnsAsync(new Mock<IConnection>().Object);
+
+				var discovery = new Mock<IDiscovery>();
+				discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmark.From("Invalid bookmark"))).Throws(error);
+
+				var logger = new Mock<ILogger>();
+				logger.Setup(x => x.Error(It.IsAny<Exception>(), It.IsAny<string>(), It.IsAny<object[]>()));
+
+				var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object,
+					logger: logger.Object);
+
+				var exc = await Record.ExceptionAsync(() =>
+					manager.UpdateRoutingTableAsync(routingTable, AccessMode.Read, "", null, Bookmark.From("Invalid bookmark")));
+
+				exc.Should().Be(error);
+				logger.Verify(x => x.Error(error, It.IsAny<string>(), It.IsAny<object[]>()));
+			}
+
+			[Fact]
             public async Task ShouldTryNextRouterIfNoReader()
             {
                 // Given

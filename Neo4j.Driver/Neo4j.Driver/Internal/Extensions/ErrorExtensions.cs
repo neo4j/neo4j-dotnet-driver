@@ -52,6 +52,10 @@ namespace Neo4j.Driver.Internal
 					{
 						error = new TokenExpiredException(message);
 					}
+					else if(InvalidBookmarkException.IsInvalidBookmarkException(code))
+					{
+						error = new InvalidBookmarkException(message);
+					}
                     else
                     {
                         error = new ClientException(code, message);
