@@ -48,7 +48,7 @@ namespace Neo4j.Driver.Internal.Protocol
 			await connection.CloseAsync().ConfigureAwait(false);
 
 			//Since 4.4 the Routing information will contain a db. 4.3 needs to populate this here as it's not received in the older route response...
-			responseHandler.RoutingInformation.Add("db", database);
+			responseHandler.RoutingInformation.Add(RoutingTableDBKey, database);
 
 			return (IReadOnlyDictionary<string, object>)responseHandler.RoutingInformation;
 		}

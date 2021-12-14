@@ -36,6 +36,7 @@ namespace Neo4j.Driver.Internal.Protocol
     internal class BoltProtocolV3 : IBoltProtocol
     {
         private const string GetRoutingTableProcedure = "CALL dbms.cluster.routing.getRoutingTable($context)";
+		protected const string RoutingTableDBKey = "db";
 
 		private static int _major = 3;
         private static int _minor = 0;
@@ -197,7 +198,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
 			//Since 4.4 the Routing information will contain a db. Earlier versions need to populate this here as it's not received in the older route response...
 			var finalDictionary = record.Values.ToDictionary();
-			finalDictionary["db"] = database;
+			finalDictionary[RoutingTableDBKey] = database;
 
 			return (IReadOnlyDictionary<string, object>)finalDictionary;
         }
