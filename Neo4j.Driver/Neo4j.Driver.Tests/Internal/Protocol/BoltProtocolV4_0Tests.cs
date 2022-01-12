@@ -52,7 +52,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 .BeEquivalentTo(new Dictionary<string, object>
                 {
                     {"bookmarks", new[] {"bookmark-123"}},
-                    {"tx_timeout", TxConfig.Timeout.Value},
+                    {"tx_timeout", TxConfig.Timeout.Value.TotalMilliseconds},
                     {"db", Database},
                     {"tx_metadata", TxConfig.Metadata}
                 });
