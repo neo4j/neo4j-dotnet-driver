@@ -1,19 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json;
-using Neo4j.Driver;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class SessionRun : IProtocolObject
+	internal class SessionRun : IProtocolObject
     {
         public SessionRunType data { get; set; } = new SessionRunType();
+
         [JsonIgnore]
         private string ResultId { get; set; }
 
-        public class SessionRunType
+		public class SessionRunType
         {
             public string sessionId { get; set; }
 
@@ -25,9 +24,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             [JsonProperty(Required = Required.AllowNull)]
             public Dictionary<string, object> txMeta { get; set; } = new Dictionary<string, object>();
 
-            [JsonProperty(Required = Required.AllowNull)]
-            public int timeout { get; set; } = -1;
-
+            public int? timeout { get; set; }
         }
 
         private Dictionary<string, object> ConvertParameters(Dictionary<string, CypherToNativeObject> source)
@@ -47,10 +44,9 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         void TransactionConfig(TransactionConfigBuilder configBuilder)
         {
-            if (data.timeout != -1)
+            if (data.timeout.HasValue)
             {
-                var time = TimeSpan.FromMilliseconds(data.timeout);
-                configBuilder.WithTimeout(time);
+                configBuilder.WithTimeout(TimeSpan.FromMilliseconds(data.timeout.Value));
             }
 
             if (data.txMeta.Count > 0) configBuilder.WithMetadata(data.txMeta);
