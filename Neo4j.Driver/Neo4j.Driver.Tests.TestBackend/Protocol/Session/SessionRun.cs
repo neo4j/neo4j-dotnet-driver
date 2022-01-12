@@ -5,14 +5,14 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-	internal class SessionRun : IProtocolObject
+    internal class SessionRun : IProtocolObject
     {
         public SessionRunType data { get; set; } = new SessionRunType();
 
         [JsonIgnore]
         private string ResultId { get; set; }
 
-		public class SessionRunType
+        public class SessionRunType
         {
             public string sessionId { get; set; }
 
@@ -28,19 +28,19 @@ namespace Neo4j.Driver.Tests.TestBackend
         }
 
         private Dictionary<string, object> ConvertParameters(Dictionary<string, CypherToNativeObject> source)
-		{
+        {
             if (data.parameters == null)
                 return null;
 
             Dictionary<string, object> newParams = new Dictionary<string, object>();
 
             foreach(KeyValuePair<string, CypherToNativeObject> element in source)
-			{
+            {
                 newParams.Add(element.Key, CypherToNative.Convert(element.Value));
-			}
+            }
 
             return newParams;
-		}
+        }
 
         void TransactionConfig(TransactionConfigBuilder configBuilder)
         {
@@ -58,9 +58,9 @@ namespace Neo4j.Driver.Tests.TestBackend
             IResultCursor cursor = await newSession.Session.RunAsync(data.cypher, ConvertParameters(data.parameters), TransactionConfig).ConfigureAwait(false);
 
             var result = ProtocolObjectFactory.CreateObject<Result>();
-			result.ResultCursor = cursor;
+            result.ResultCursor = cursor;
 
-			ResultId = result.uniqueId;
+            ResultId = result.uniqueId;
         }
 
         public override string Respond()

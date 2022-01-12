@@ -46,16 +46,16 @@ namespace Neo4j.Driver
 
         internal static TransactionConfigBuilder Builder => new TransactionConfigBuilder(new TransactionConfig());
 
-		/// <summary>
-		/// Transaction timeout.
-		/// Transactions that execute longer than the configured timeout will be terminated by the database.
-		/// This functionality allows to limit query/transaction execution time.
-		/// Specified timeout overrides the default timeout configured in the database using <code>dbms.transaction.timeout</code> setting.
-		/// Leave this field unmodified to use default timeout configured on database.
-		/// Setting a zero timeout will result in no timeout.
+        /// <summary>
+        /// Transaction timeout.
+        /// Transactions that execute longer than the configured timeout will be terminated by the database.
+        /// This functionality allows to limit query/transaction execution time.
+        /// Specified timeout overrides the default timeout configured in the database using <code>dbms.transaction.timeout</code> setting.
+        /// Leave this field unmodified to use default timeout configured on database.
+        /// Setting a zero timeout will result in no timeout.
         /// </summary>
-		/// <exception cref="ArgumentOutOfRangeException">If the value given to transaction timeout in milliseconds is less than zero</exception>
-		public TimeSpan? Timeout
+        /// <exception cref="ArgumentOutOfRangeException">If the value given to transaction timeout in milliseconds is less than zero</exception>
+        public TimeSpan? Timeout
         {
             get => _timeout;
             internal set
@@ -107,18 +107,18 @@ namespace Neo4j.Driver
             _config = config;
         }
 
-		/// <summary>
-		/// Sets the transaction timeout.
-		/// Transactions that execute longer than the configured timeout will be terminated by the database.
-		/// This functionality allows to limit query/transaction execution time.
-		/// Specified timeout overrides the default timeout configured in the database using <code>dbms.transaction.timeout</code> setting.
-		/// Leave this field unmodified to use default timeout configured on database.
-		/// Setting a zero timeout will result in no timeout.
+        /// <summary>
+        /// Sets the transaction timeout.
+        /// Transactions that execute longer than the configured timeout will be terminated by the database.
+        /// This functionality allows to limit query/transaction execution time.
+        /// Specified timeout overrides the default timeout configured in the database using <code>dbms.transaction.timeout</code> setting.
+        /// Leave this field unmodified to use default timeout configured on database.
+        /// Setting a zero timeout will result in no timeout.
         /// </summary>
-		/// <exception cref="ArgumentOutOfRangeException">If the value given to transaction timeout in milliseconds is less than zero</exception>
-		/// <param name="timeout">the new timeout</param>
-		/// <returns>this <see cref="TransactionConfigBuilder"/> instance</returns>
-		public TransactionConfigBuilder WithTimeout(TimeSpan? timeout)
+        /// <exception cref="ArgumentOutOfRangeException">If the value given to transaction timeout in milliseconds is less than zero</exception>
+        /// <param name="timeout">the new timeout</param>
+        /// <returns>this <see cref="TransactionConfigBuilder"/> instance</returns>
+        public TransactionConfigBuilder WithTimeout(TimeSpan? timeout)
         {
             _config.Timeout = timeout;
             return this;
