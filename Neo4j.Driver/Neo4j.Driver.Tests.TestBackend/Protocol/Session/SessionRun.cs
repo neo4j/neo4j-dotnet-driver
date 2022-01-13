@@ -59,7 +59,8 @@ namespace Neo4j.Driver.Tests.TestBackend
                     configBuilder.WithTimeout(timeout);
                 }
             }
-            catch (ArgumentOutOfRangeException e) when ((data.timeout ?? 0) < 0)
+            catch (ArgumentOutOfRangeException e) when ((data.timeout ?? 0) < 0
+            && e.ParamName == "value")
             {
                 throw new DriverExceptionWrapper(e);
             }
