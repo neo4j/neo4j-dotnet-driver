@@ -13,9 +13,9 @@ namespace Neo4j.Driver.Tests.TestBackend
 		static SupportedFeatures()
 		{
 			FeaturesList.Add("AuthorizationExpiredTreatment");
-			
+
 			FeaturesList.Add("ConfHint:connection.recv_timeout_seconds");
-			
+
 			FeaturesList.Add("Optimization:EagerTransactionBegin");
 
 			FeaturesList.Add("Feature:Auth:Bearer");
@@ -34,7 +34,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 			//FeaturesList.Add("Feature:API:SSLSchemes");
 			//FeaturesList.Add("Feature:API:Result.Single");
-			//FeaturesList.Add("Feature:API:Result.Peek");
+			FeaturesList.Add("Feature:API:Result.Peek");
 			//FeaturesList.Add("Feature:API:Result.List");
 
 
