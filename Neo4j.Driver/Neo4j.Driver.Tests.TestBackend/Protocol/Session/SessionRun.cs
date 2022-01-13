@@ -59,12 +59,13 @@ namespace Neo4j.Driver.Tests.TestBackend
                     configBuilder.WithTimeout(timeout);
                 }
             }
-            catch (ArgumentOutOfRangeException e)
+            catch (ArgumentOutOfRangeException e) when ((data.timeout ?? 0) < 0)
             {
                 throw new DriverExceptionWrapper(e);
             }
 
-            if (data.txMeta.Count > 0) configBuilder.WithMetadata(data.txMeta);
+            if (data.txMeta.Count > 0) 
+                configBuilder.WithMetadata(data.txMeta);
         }
 
         public override async Task Process()
