@@ -12,13 +12,17 @@ namespace Neo4j.Driver.Tests.TestBackend
         private string TransactionId { get; set; }
 
 
+        [JsonConverter(typeof(SessionReadTransactionTypeJsonConverter))]
         public class SessionReadTransactionType
         {
             public string sessionId { get; set; }
 
             public string cypher { get; set; }
 
-			public int timeout { get; set; } = 0;
+            public int? timeout { get; set; }
+
+            [JsonIgnore]
+            public bool TimeoutSet { get; set; }
 
 			[JsonProperty(Required = Required.AllowNull)]
 			public Dictionary<string, object> txMeta { get; set; } = new Dictionary<string, object>();
@@ -55,9 +59,9 @@ namespace Neo4j.Driver.Tests.TestBackend
 							return false;
 						case NewSession.SessionState.RetryAbleNegative:
 							throw e;
-							
+
 						default:
-							return true;						
+							return true;
 					}
 				});
 
@@ -89,7 +93,20 @@ namespace Neo4j.Driver.Tests.TestBackend
 		{
 			if (data.txMeta.Count > 0) configBuilder.WithMetadata(data.txMeta);
 
-			if (data.timeout > 0) configBuilder.WithTimeout(TimeSpan.FromSeconds(data.timeout));
+            try
+            {
+                if (data.TimeoutSet)
+                {
+                    var timeout = data.timeout.HasValue
+                    ? TimeSpan.FromMilliseconds(data.timeout.Value)
+                        : default(TimeSpan?);
+                    configBuilder.WithTimeout(timeout);
+                }
+            }
+            catch (ArgumentOutOfRangeException e)
+            {
+                throw new DriverExceptionWrapper(e);
+            }
 		}
 	}
 }

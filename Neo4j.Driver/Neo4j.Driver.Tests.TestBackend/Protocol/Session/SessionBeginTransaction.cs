@@ -11,6 +11,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         [JsonIgnore]
         public string TransactionId { get; set; }
 
+        [JsonConverter(typeof(SessionBeginTransactionTypeJsonConverter))]
 		public class SessionBeginTransactionType
 		{
 			public string sessionId { get; set; }
@@ -19,15 +20,27 @@ namespace Neo4j.Driver.Tests.TestBackend
 			public Dictionary<string, object> txMeta { get; set; } = new Dictionary<string, object>();
 
 			[JsonProperty(Required = Required.AllowNull)]
-			public int timeout { get; set; } = -1;
+            public int? timeout { get; set; }
+
+            [JsonIgnore]
+            public bool TimeoutSet { get; set; }
         }
 
         void TransactionConfig(TransactionConfigBuilder configBuilder)
         {
-            if (data.timeout != -1)
+            try
             {
-                var time = TimeSpan.FromMilliseconds(data.timeout);
-                configBuilder.WithTimeout(time);
+                if (data.TimeoutSet)
+                {
+                    var timeout = data.timeout.HasValue
+                    ? TimeSpan.FromMilliseconds(data.timeout.Value)
+                        : default(TimeSpan?);
+                    configBuilder.WithTimeout(timeout);
+                }
+            }
+            catch (ArgumentOutOfRangeException e)
+            {
+                throw new DriverExceptionWrapper(e);
             }
 
             if (data.txMeta.Count > 0) configBuilder.WithMetadata(data.txMeta);

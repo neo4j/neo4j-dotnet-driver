@@ -106,7 +106,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 					storedException = ex;
 					restartConnection = false;
 				}
-				catch (ArgumentException ex) 
+				catch (ArgumentException ex)
                 {
                     await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
 					storedException = ex;
@@ -119,7 +119,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 					restartConnection = false;
                 }
 				catch (JsonSerializationException ex)
-				{	
+				{
 					await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
 					storedException = ex;
 					restartConnection = false;
@@ -130,13 +130,19 @@ namespace Neo4j.Driver.Tests.TestBackend
 					await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
 					storedException = ex;
 					restartConnection = true;
-				}					
+				}
+                catch (DriverExceptionWrapper ex)
+                {
+                    storedException = ex;
+                    await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+                    restartConnection = false;
+                }
 				catch (IOException ex)
                 {
                     Trace.WriteLine($"Socket exception detected: {ex.Message}");    //Handled outside of the exception manager because there is no connection to reply on.
 					storedException = ex;
 					restartConnection = true;
-                }	
+                }
 				catch(Exception ex)
 				{
 					Trace.WriteLine($"General exception detected, restarting connection: {ex.Message}");
@@ -152,7 +158,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                     }
                 }
                 Trace.Flush();
-            }            
+            }
         }
 
         private void BreakLoopEvent(object sender, EventArgs e)

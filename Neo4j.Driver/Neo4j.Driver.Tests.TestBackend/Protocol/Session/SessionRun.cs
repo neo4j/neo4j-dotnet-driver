@@ -12,7 +12,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         [JsonIgnore]
         private string ResultId { get; set; }
-		
+
         [JsonConverter(typeof(SeessionRunTypeJsonConverter))]
         public class SessionRunType
         {
@@ -28,8 +28,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             public int? timeout { get; set; }
 
-			[JsonIgnore]
-			public bool TimeoutSet { get; set; }
+            [JsonIgnore]
+            public bool TimeoutSet { get; set; }
         }
 
         private Dictionary<string, object> ConvertParameters(Dictionary<string, CypherToNativeObject> source)
@@ -49,12 +49,19 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         void TransactionConfig(TransactionConfigBuilder configBuilder)
         {
-            if (data.TimeoutSet)
+            try
             {
-	            var timeout = data.timeout.HasValue
-		            ? TimeSpan.FromMilliseconds(data.timeout.Value)
-		            : default(TimeSpan?);
-				configBuilder.WithTimeout(timeout);
+                if (data.TimeoutSet)
+                {
+                    var timeout = data.timeout.HasValue
+                    ? TimeSpan.FromMilliseconds(data.timeout.Value)
+                        : default(TimeSpan?);
+                    configBuilder.WithTimeout(timeout);
+                }
+            }
+            catch (ArgumentOutOfRangeException e)
+            {
+                throw new DriverExceptionWrapper(e);
             }
 
             if (data.txMeta.Count > 0) configBuilder.WithMetadata(data.txMeta);
