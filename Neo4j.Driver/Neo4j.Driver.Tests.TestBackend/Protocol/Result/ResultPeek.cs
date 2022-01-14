@@ -7,7 +7,7 @@ namespace Neo4j.Driver.Tests.TestBackend
     internal class ResultPeek : IProtocolObject
     {
         public ResultPeekType data { get; set; } = new ResultPeekType();
-        [JsonIgnore]
+
         public IRecord Records { get; set; }
 
         public class ResultPeekType
