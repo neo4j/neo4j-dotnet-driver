@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
@@ -11,19 +10,10 @@ namespace Neo4j.Driver.Tests.TestBackend
         [JsonIgnore]
         public string TransactionId { get; set; }
 
-        [JsonConverter(typeof(SessionBeginTransactionTypeJsonConverter))]
-		public class SessionBeginTransactionType
-		{
-			public string sessionId { get; set; }
 
-			[JsonProperty(Required = Required.AllowNull)]
-			public Dictionary<string, object> txMeta { get; set; } = new Dictionary<string, object>();
-
-			[JsonProperty(Required = Required.AllowNull)]
-            public int? timeout { get; set; }
-
-            [JsonIgnore]
-            public bool TimeoutSet { get; set; }
+        [JsonConverter(typeof(BaseSessionTypeJsonConverter<SessionBeginTransactionType>))]
+        public class SessionBeginTransactionType : BaseSessionType
+        {
         }
 
         void TransactionConfig(TransactionConfigBuilder configBuilder)

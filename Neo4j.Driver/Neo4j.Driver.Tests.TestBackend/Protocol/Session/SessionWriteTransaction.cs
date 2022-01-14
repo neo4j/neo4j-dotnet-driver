@@ -12,18 +12,9 @@ namespace Neo4j.Driver.Tests.TestBackend
 		public string TransactionId { get; set; }
 
 
-        [JsonConverter(typeof(SessionWriteTransactionTypeJsonConverter))]
-        public class SessionWriteTransactionType
+        [JsonConverter(typeof(BaseSessionTypeJsonConverter<SessionWriteTransactionType>))]
+        public class SessionWriteTransactionType: BaseSessionType
         {
-            public string sessionId { get; set; }
-
-            public int? timeout { get; set; }
-
-            [JsonIgnore]
-            public bool TimeoutSet { get; set; }
-
-			[JsonProperty(Required = Required.AllowNull)]
-			public Dictionary<string, object> txMeta { get; set; } = new Dictionary<string, object>();
 		}
 
         public override async Task Process(Controller controller)

@@ -13,23 +13,13 @@ namespace Neo4j.Driver.Tests.TestBackend
         [JsonIgnore]
         private string ResultId { get; set; }
 
-        [JsonConverter(typeof(SeessionRunTypeJsonConverter))]
-        public class SessionRunType
+        [JsonConverter(typeof(SessionTypeJsonConverter))]
+        public class SessionRunType : BaseSessionType
         {
-            public string sessionId { get; set; }
-
             public string cypher { get; set; }
 
             [JsonProperty("params")]
             public Dictionary<string, CypherToNativeObject> parameters { get; set; } = new Dictionary<string, CypherToNativeObject>();
-
-            [JsonProperty(Required = Required.AllowNull)]
-            public Dictionary<string, object> txMeta { get; set; } = new Dictionary<string, object>();
-
-            public int? timeout { get; set; }
-
-            [JsonIgnore]
-            public bool TimeoutSet { get; set; }
         }
 
         private Dictionary<string, object> ConvertParameters(Dictionary<string, CypherToNativeObject> source)
