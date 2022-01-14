@@ -57,10 +57,5 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
 
 			//Version specific handling goes here...
         }
-
-		protected override void UpdateVersion()
-		{
-			_connection.UpdateVersion(new ServerVersion(Version.MajorVersion, Version.MinorVersion, 0));
-		}
     }
 }
