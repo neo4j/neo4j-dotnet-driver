@@ -1,13 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
     class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
     {
-        public int MajorVersion { get; set; }
-        public int MinorVersion { get; set; }
+        public static BoltProtocolVersion V3_0 = new(3, 0);
+        public static BoltProtocolVersion V4_0 = new(4, 0);
+        public static BoltProtocolVersion V4_1 = new(4, 1);
+        public static BoltProtocolVersion V4_2 = new(4, 2);
+        public static BoltProtocolVersion V4_3 = new(4, 3);
+        public static BoltProtocolVersion V4_4 = new(4, 4);
+        public static BoltProtocolVersion V5_0 = new(5, 0);
+
+        public int MajorVersion { get; }
+        public int MinorVersion { get; }
 
         // The int 1213486160 is 0x‭48 54 54 50 - or HTTP in ascii codes... this determines the max major and minor versions supported.
         public const int MaxMajorVersion = 80;
@@ -199,16 +205,9 @@ namespace Neo4j.Driver.Internal.Protocol
                 return false;
 
             if (lhs.MajorVersion > rhs.MajorVersion)
-            {
                 return false;
-            }
-            else
-            {
-                if (lhs.MinorVersion > rhs.MinorVersion)
-                    return false;
-            }
 
-            return true;
+            return lhs.MinorVersion <= rhs.MinorVersion;
         }
 
         public override int GetHashCode()

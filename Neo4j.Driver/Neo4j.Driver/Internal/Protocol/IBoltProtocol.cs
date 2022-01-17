@@ -20,9 +20,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
-using System;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
@@ -56,7 +54,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
         Task LogoutAsync(IConnection connection);
 
-        BoltProtocolVersion GetVersion();
+        BoltProtocolVersion Version { get; }
 
         Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection,
 																  string database,

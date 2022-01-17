@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
 {
     internal class HelloResponseHandler : V3.HelloResponseHandler
 	{
-		readonly BoltProtocolVersion MinVersion = new BoltProtocolVersion(4, 0);
+		readonly BoltProtocolVersion MinVersion = BoltProtocolVersion.V4_0;
 		protected BoltProtocolVersion _version;
 
 		protected BoltProtocolVersion Version
