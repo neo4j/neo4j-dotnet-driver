@@ -14,34 +14,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.MessageHandling.Metadata;
 using Neo4j.Driver.Internal.Protocol;
-using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver.Internal.Util;
-
-using HintsType = System.Collections.Generic.Dictionary<string, object>;
 
 namespace Neo4j.Driver.Internal.MessageHandling.V4_4
 {
 	internal class HelloResponseHandler : V4_3.HelloResponseHandler
 	{
-		readonly BoltProtocolVersion MinVersion = new BoltProtocolVersion(4, 4);		
-
-		public HelloResponseHandler(IConnection connection, BoltProtocolVersion version) : base(connection, version)
+        protected override BoltProtocolVersion MinVersion => BoltProtocolVersion.V4_4;
+        public HelloResponseHandler(IConnection connection, BoltProtocolVersion version) : base(connection, version)
 		{
-			//Add version specific Metadata collectors here...
-		}
-
-		public override void OnSuccess(IDictionary<string, object> metadata)
-		{
-			base.OnSuccess(metadata);
-
-			//Version specific handling goes here...
 		}
 	}
 }

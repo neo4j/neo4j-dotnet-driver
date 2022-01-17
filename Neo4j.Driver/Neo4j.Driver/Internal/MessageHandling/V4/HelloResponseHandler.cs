@@ -28,34 +28,23 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
 {
     internal class HelloResponseHandler : V3.HelloResponseHandler
 	{
-		readonly BoltProtocolVersion MinVersion = BoltProtocolVersion.V4_0;
-		protected BoltProtocolVersion _version;
+		protected virtual BoltProtocolVersion MinVersion => BoltProtocolVersion.V4_0;
+		private BoltProtocolVersion _version;
 
 		protected BoltProtocolVersion Version
 		{
-			get
+			get => _version;
+            set
 			{
-				return _version;
-			}
-			set
-			{
-				_version = value ?? throw new ArgumentNullException("Attempting to create a HelloResponseHandler v{MinVersion.ToString()} with a null BoltProtocolVersion object");
+				_version = value ?? throw new ArgumentNullException($"Attempting to create a HelloResponseHandler v{MinVersion} with a null BoltProtocolVersion object");
 				if (Version < MinVersion)
-					throw new ArgumentOutOfRangeException($"Attempting to initialise a v{MinVersion.ToString()} HelloResponseHandler with a protocol version less than {MinVersion.ToString()}");
+					throw new ArgumentOutOfRangeException($"Attempting to initialise a v{MinVersion} HelloResponseHandler with a protocol version less than {MinVersion}(v{Version} passed)");
 			}
 		}
 
 		public HelloResponseHandler(IConnection connection, BoltProtocolVersion version) : base(connection)
         {
-			//Add version specific Metadata collectors here...
 			Version = version;
 		}
-
-		public override void OnSuccess(IDictionary<string, object> metadata)
-        {
-			base.OnSuccess(metadata);
-
-			//Version specific handling goes here...
-        }
     }
 }
