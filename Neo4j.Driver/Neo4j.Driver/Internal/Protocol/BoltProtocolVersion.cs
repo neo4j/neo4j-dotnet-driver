@@ -4,13 +4,13 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
     {
-        public static BoltProtocolVersion V3_0 = new(3, 0);
-        public static BoltProtocolVersion V4_0 = new(4, 0);
-        public static BoltProtocolVersion V4_1 = new(4, 1);
-        public static BoltProtocolVersion V4_2 = new(4, 2);
-        public static BoltProtocolVersion V4_3 = new(4, 3);
-        public static BoltProtocolVersion V4_4 = new(4, 4);
-        public static BoltProtocolVersion V5_0 = new(5, 0);
+        public static readonly BoltProtocolVersion V3_0 = new BoltProtocolVersion(3, 0);
+        public static readonly BoltProtocolVersion V4_0 = new BoltProtocolVersion(4, 0);
+        public static readonly BoltProtocolVersion V4_1 = new BoltProtocolVersion(4, 1);
+        public static readonly BoltProtocolVersion V4_2 = new BoltProtocolVersion(4, 2);
+        public static readonly BoltProtocolVersion V4_3 = new BoltProtocolVersion(4, 3);
+        public static readonly BoltProtocolVersion V4_4 = new BoltProtocolVersion(4, 4);
+        public static readonly BoltProtocolVersion V5_0 = new BoltProtocolVersion(5, 0);
 
         public int MajorVersion { get; }
         public int MinorVersion { get; }

@@ -29,5 +29,10 @@ namespace Neo4j.Driver.Internal.Protocol
         public BoltProtocolV5_0(IDictionary<string, string> routingContext) : base(routingContext)
         {
         }
+
+        protected override IResponseHandler GetHelloResponseHandler(IConnection conn)
+        {
+            return new HelloResponseHandler(conn, Version);
+        }
     }
 }

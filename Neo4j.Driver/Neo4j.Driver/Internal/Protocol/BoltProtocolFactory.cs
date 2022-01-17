@@ -17,9 +17,7 @@
 
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver;
 using System.Linq;
 
 namespace Neo4j.Driver.Internal.Protocol
@@ -31,10 +29,10 @@ namespace Neo4j.Driver.Internal.Protocol
         private const int BoltHTTPIdentifier = 1213486160;  //0x‭48 54 54 50 - or HTTP ascii codes...
 
         private static readonly int[] SupportedVersions = 
-        { 
+        {
+            BoltProtocolVersion.V5_0.PackToInt(),
             BoltProtocolVersion.V4_4.PackToIntRange(BoltProtocolVersion.V4_2),
             BoltProtocolVersion.V4_1.PackToInt(),
-            BoltProtocolVersion.V4_0.PackToInt(),
             BoltProtocolVersion.V3_0.PackToInt()
         };
 
@@ -65,6 +63,10 @@ namespace Neo4j.Driver.Internal.Protocol
 			{
 				return new BoltProtocolV4_4(routingContext);
 			}
+            else if (version.Equals(5, 0))
+            {
+                return new BoltProtocolV5_0(routingContext);
+            }
             else if(version.Equals(0, 0))
 			{
                 throw new NotSupportedException(
