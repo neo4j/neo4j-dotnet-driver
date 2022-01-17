@@ -205,9 +205,16 @@ namespace Neo4j.Driver.Internal.Protocol
                 return false;
 
             if (lhs.MajorVersion > rhs.MajorVersion)
+            {
                 return false;
+            }
+            else
+            {
+                if (lhs.MinorVersion > rhs.MinorVersion)
+                    return false;
+            }
 
-            return lhs.MinorVersion <= rhs.MinorVersion;
+            return true;
         }
 
         public override int GetHashCode()
