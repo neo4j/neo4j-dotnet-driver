@@ -51,7 +51,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4_2
             handler.OnSuccess(new[]
                 {ServerVersionCollectorTests.TestMetadata, ConnectionIdCollectorTests.TestMetadata}.ToDictionary());
 
-            tracker.Verify(x => x.UpdateVersion(new ServerVersion(MajorVersion, MinorVersion, 0, null)), Times.Once);
+            tracker.Verify(x => x.UpdateVersion(ServerVersionCollectorTests.TestMetadataCollected), Times.Once);
             tracker.Verify(x => x.UpdateId(ConnectionIdCollectorTests.TestMetadataCollected), Times.Once);
         }
 
@@ -70,23 +70,6 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4_2
             var exc = Xunit.Record.Exception(() => new HelloResponseHandler(null, null));
 
             exc.Should().BeOfType<ArgumentNullException>();
-        }
-
-        [Fact]
-        public async Task ShouldUseProtocolVersionWhenPassedMetadata()
-        {
-            var mockClient = new Mock<ISocketClient>();
-			mockClient.Setup(x => x.ConnectAsync(null)).Returns(Task.FromResult(new Mock<IBoltProtocol>().Object));
-
-			var conn = new SocketConnection(mockClient.Object, AuthTokens.None, ConnectionSettings.DefaultUserAgent, new Mock<ILogger>().Object, new ServerInfo(new Uri("http://neo4j.com")));
-			await conn.InitAsync();
-
-            var responseHandler = new HelloResponseHandler(conn, new Protocol.BoltProtocolVersion(MajorVersion, MinorVersion));
-
-            responseHandler.OnSuccess(new[] { ServerVersionCollectorTests.TestMetadata, ConnectionIdCollectorTests.TestMetadata }.ToDictionary());
-
-            //Ensure it is using the protocol version and not the version sent in the metadata
-            conn.Server.Agent.Should().ContainAll("Neo4j/" + MajorVersion + "." + MinorVersion + ".0");
         }
     }
 }

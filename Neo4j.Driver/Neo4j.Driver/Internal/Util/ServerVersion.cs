@@ -27,7 +27,7 @@ namespace Neo4j.Driver.Internal.Util
         private const string InDevVersionString = "Neo4j/dev";
 
         public static IComparer<ServerVersion> Comparer { get; } = new ServerVersionRelationalComparer();
-        public static readonly ServerVersion VInDev = new ServerVersion(int.MaxValue, int.MaxValue, int.MaxValue);
+        public static readonly ServerVersion VInDev = new ServerVersion(int.MaxValue, int.MaxValue, int.MaxValue, InDevVersionString);
         
         
 
@@ -35,16 +35,16 @@ namespace Neo4j.Driver.Internal.Util
             new Regex($@"({Neo4jProduct}/)?(\d+)\.(\d+)(?:\.)?(\d*)(\.|-|\+)?([0-9A-Za-z-.]*)?",
                 RegexOptions.IgnoreCase);
 
-        private readonly string _versionStr;
+        public readonly string Agent;
 
-        public ServerVersion(int major, int minor, int patch, string versionStr = null)
+        public ServerVersion(int major, int minor, int patch, string versionStr)
             : this(Neo4jProduct, major, minor, patch, versionStr)
         {
         }
 
-        public ServerVersion(string product, int major, int minor, int patch, string versionStr = null)
+        public ServerVersion(string product, int major, int minor, int patch, string agent)
         {
-            _versionStr = versionStr;
+            Agent = agent;
             Product = string.IsNullOrEmpty(product) ? Neo4jProduct : product;
             Major = major;
             Minor = minor;
@@ -59,15 +59,7 @@ namespace Neo4j.Driver.Internal.Util
 
         public int Patch { get; }
 
-        public override string ToString()
-        {
-            if (Equals(VInDev))
-            {
-                return InDevVersionString;
-            }
-
-            return _versionStr ?? $"{Product}/{Major}.{Minor}.{Patch}";
-        }
+        public override string ToString() => Agent;
 
         protected bool Equals(ServerVersion other)
         {
@@ -109,16 +101,16 @@ namespace Neo4j.Driver.Internal.Util
             return Comparer.Compare(v1, v2) >= 0;
         }
 
-        public static ServerVersion From(string version)
+        public static ServerVersion From(string serverAgent)
         {
-            if (string.IsNullOrEmpty(version))
+            if (string.IsNullOrEmpty(serverAgent))
             {
-                throw new ArgumentNullException(nameof(version));
+                throw new ArgumentNullException(nameof(serverAgent));
             }
 
-            if (version == InDevVersionString) return VInDev;
+            if (serverAgent == InDevVersionString) return VInDev;
 
-            var match = VersionRegex.Match(version);
+            var match = VersionRegex.Match(serverAgent);
             if (match.Success)
             {
                 var product = match.Groups[1].Value.TrimEnd('/');
@@ -131,10 +123,10 @@ namespace Neo4j.Driver.Internal.Util
                     patch = int.Parse(patchString);
                 }
 
-                return new ServerVersion(product, major, minor, patch, version);
+                return new ServerVersion(product, major, minor, patch, serverAgent);
             }
 
-            throw new ArgumentOutOfRangeException($"Unexpected server version format: {version}");
+            throw new ArgumentOutOfRangeException($"Unexpected server version format: {serverAgent}");
         }
 
         private sealed class ServerVersionRelationalComparer : IComparer<ServerVersion>
