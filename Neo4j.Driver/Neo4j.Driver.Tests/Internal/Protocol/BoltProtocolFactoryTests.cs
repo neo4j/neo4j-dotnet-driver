@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var connMock = new Mock<ITcpSocketClient>();
                 TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
                 TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolV3.Version);
+                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V3_0);
                 boltProtocol.Should().BeOfType<BoltProtocolV3>();
             }
 
@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var connMock = new Mock<ITcpSocketClient>();
                 TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
                 TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolV4_0.Version);
+                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V4_0);
                 boltProtocol.Should().BeOfType<BoltProtocolV4_0>();
             }
 
@@ -55,7 +55,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var connMock = new Mock<ITcpSocketClient>();
                 TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
                 TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolV4_1.Version, new Dictionary<string, string>());
+                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V4_1, new Dictionary<string, string>());
                 boltProtocol.Should().BeOfType<BoltProtocolV4_1>();
             }
 
@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var connMock = new Mock<ITcpSocketClient>();
                 TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
                 TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolV4_2.Version, new Dictionary<string, string>());
+                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V4_2, new Dictionary<string, string>());
                 boltProtocol.Should().BeOfType<BoltProtocolV4_2>();
             }
 
@@ -75,7 +75,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var connMock = new Mock<ITcpSocketClient>();
                 TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
                 TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolV4_3.Version, new Dictionary<string, string>());
+                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V4_3, new Dictionary<string, string>());
                 boltProtocol.Should().BeOfType<BoltProtocolV4_3>();
             }
 
@@ -85,12 +85,21 @@ namespace Neo4j.Driver.Internal.Protocol
 				var connMock = new Mock<ITcpSocketClient>();
 				TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
 				TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-				var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolV4_4.Version, new Dictionary<string, string>());
+				var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V4_4, new Dictionary<string, string>());
 				boltProtocol.Should().BeOfType<BoltProtocolV4_4>();
 			}
 
+            [Fact]
+            public void ShouldCreateBoltProtocolV5_0()
+            {
+                var connMock = new Mock<ITcpSocketClient>();
+                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
+                TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
+                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V5_0, new Dictionary<string, string>());
+                boltProtocol.Should().BeOfType<BoltProtocolV5_0>();
+            }
 
-			[Theory]
+            [Theory]
             [InlineData(0, 0, "The Neo4j server does not support any of the protocol versions supported by this client")]
             [InlineData(1, 0, "Protocol error, server suggested unexpected protocol version: 1.0")]
             [InlineData(2, 0, "Protocol error, server suggested unexpected protocol version: 2.0")]            
