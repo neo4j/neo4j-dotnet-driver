@@ -15,26 +15,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling.Metadata;
 using Neo4j.Driver.Internal.Protocol;
-using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver.Internal.Util;
 
 using HintsType = System.Collections.Generic.Dictionary<string, object>;
 
 namespace Neo4j.Driver.Internal.MessageHandling.V4_3
 {
     internal class HelloResponseHandler : V4_2.HelloResponseHandler
-	{
-		readonly BoltProtocolVersion MinVersion = new BoltProtocolVersion(4, 3);
-
-		public HelloResponseHandler(IConnection connection, BoltProtocolVersion version) : base(connection, version)
+    {
+        protected override BoltProtocolVersion MinVersion => BoltProtocolVersion.V4_3;
+        public HelloResponseHandler(IConnection connection, BoltProtocolVersion version) : base(connection, version)
         {
-			//Add version specific Metadata collectors here...
 			AddMetadata<ConfigurationHintsCollector, HintsType>();
         }
 
@@ -42,7 +36,6 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4_3
         {
             base.OnSuccess(metadata);
 
-			//Version specific handling goes here...
 			var timeout = new ConfigHintRecvTimeout(GetMetadata<ConfigurationHintsCollector, HintsType>()).Get;
 			_connection.SetRecvTimeOut(timeout);			
 		}

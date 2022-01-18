@@ -33,9 +33,9 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         {
             if (metadata != null && metadata.TryGetValue(ServerKey, out var serverValue))
             {
-                if (serverValue is string server)
+                if (serverValue is string serverAgent)
                 {
-                    Collected = ServerVersion.From(server);
+                    Collected = ServerVersion.From(serverAgent);
                 }
                 else
                 {
