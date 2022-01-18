@@ -27,12 +27,12 @@ using Xunit;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.MessageHandling.V4_4
+namespace Neo4j.Driver.Internal.MessageHandling.V5_0
 {
 	public class HelloResponseHandlerTests
 	{
-		const int MajorVersion = 4;
-		const int MinorVersion = 4;
+		const int MajorVersion = 5;
+		const int MinorVersion = 0;
 		[Fact]
 		public void ShouldThrowIfConnectionIsNull()
 		{

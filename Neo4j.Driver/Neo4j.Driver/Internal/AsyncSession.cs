@@ -39,9 +39,9 @@ namespace Neo4j.Driver.Internal
 
         private readonly IAsyncRetryLogic _retryLogic;
         private bool _isOpen = true;
-		private bool _disposed = false;
+        private bool _disposed = false;
 
-		private Bookmark _bookmark;
+        private Bookmark _bookmark;
         private readonly ILogger _logger;
 
         public Bookmark LastBookmark => _bookmark;
@@ -49,9 +49,9 @@ namespace Neo4j.Driver.Internal
         private string _database;
         private readonly bool _reactive;
         private readonly long _fetchSize;
-		
+        
 
-		public AsyncSession(IConnectionProvider provider, ILogger logger, IAsyncRetryLogic retryLogic = null,
+        public AsyncSession(IConnectionProvider provider, ILogger logger, IAsyncRetryLogic retryLogic = null,
             AccessMode defaultMode = AccessMode.Write,
             string database = null,
             Bookmark bookmark = null, bool reactive = false, long fetchSize = Config.Infinite)
@@ -125,11 +125,11 @@ namespace Neo4j.Driver.Internal
             {
                 await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
                 
-				await AcquireConnectionAndDBName(_defaultMode);
+                await AcquireConnectionAndDBName(_defaultMode);
 
-				var protocol = _connection.BoltProtocol;
+                var protocol = _connection.BoltProtocol;
 
-				return await protocol
+                return await protocol
                     .RunInAutoCommitTransactionAsync(_connection, query, _reactive, this, this, _database,
                         _bookmark, options, ImpersonatedUser(), _fetchSize)
                     .ConfigureAwait(false);
@@ -224,49 +224,49 @@ namespace Neo4j.Driver.Internal
             var config = BuildTransactionConfig(action);
             await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
 
-			await AcquireConnectionAndDBName(mode);
+            await AcquireConnectionAndDBName(mode);
 
-			var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmark, _reactive, _fetchSize, ImpersonatedUser());
+            var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmark, _reactive, _fetchSize, ImpersonatedUser());
             await tx.BeginTransactionAsync(config).ConfigureAwait(false);
             _transaction = tx;
             return _transaction;
         }
 
-		private async Task AcquireConnectionAndDBName(AccessMode mode)
-		{
-			_connection = await _connectionProvider.AcquireAsync(mode, _database, ImpersonatedUser(), _bookmark).ConfigureAwait(false);
+        private async Task AcquireConnectionAndDBName(AccessMode mode)
+        {
+            _connection = await _connectionProvider.AcquireAsync(mode, _database, ImpersonatedUser(), _bookmark).ConfigureAwait(false);
 
-			//Update the database. If a routing request occured it may have returned a differing DB alias name that needs to be used for the 
-			//rest of the sessions lifetime.
-			_database = _connection.Database;
-		}
+            //Update the database. If a routing request occured it may have returned a differing DB alias name that needs to be used for the 
+            //rest of the sessions lifetime.
+            _database = _connection.Database;
+        }
 
-		protected override void Dispose(bool disposing)
-		{
-			if (_disposed)
-				return;
+        protected override void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
 
-			if(disposing)
-			{
-				//Dispose managed resources
-				
-				//call it synchronously
-				Task.Run(() => CloseAsync()).GetAwaiter().GetResult();
-			}
+            if(disposing)
+            {
+                //Dispose managed resources
+                
+                //call it synchronously
+                Task.Run(() => CloseAsync()).GetAwaiter().GetResult();
+            }
 
-			_disposed = true;
-			base.Dispose(disposing);
-		}
+            _disposed = true;
+            base.Dispose(disposing);
+        }
 
-		protected override async ValueTask DisposeAsyncCore()
-		{
-			await CloseAsync().ConfigureAwait(false);
-			await base.DisposeAsyncCore();
-		}
+        protected override async ValueTask DisposeAsyncCore()
+        {
+            await CloseAsync().ConfigureAwait(false);
+            await base.DisposeAsyncCore();
+        }
 
-		private string ImpersonatedUser()
-		{
-			return SessionConfig is not null ? SessionConfig.ImpersonatedUser : string.Empty;
-		}
+        private string ImpersonatedUser()
+        {
+            return SessionConfig is not null ? SessionConfig.ImpersonatedUser : string.Empty;
+        }
     }
 }

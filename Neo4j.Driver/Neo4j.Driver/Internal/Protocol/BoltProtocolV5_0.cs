@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+﻿// Copyright (c) 2002-2022 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -14,16 +14,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.MessageHandling.V4_4
+using System.Collections.Generic;
+using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.MessageHandling.V5_0;
+
+namespace Neo4j.Driver.Internal.Protocol
 {
-	internal class HelloResponseHandler : V4_3.HelloResponseHandler
-	{
-        protected override BoltProtocolVersion MinVersion => BoltProtocolVersion.V4_4;
-        public HelloResponseHandler(IConnection connection, BoltProtocolVersion version) : base(connection, version)
-		{
-		}
-	}
+    internal class BoltProtocolV5_0 : BoltProtocolV4_4
+    {
+        public override BoltProtocolVersion Version => BoltProtocolVersion.V5_0;
+
+        public BoltProtocolV5_0(IDictionary<string, string> routingContext) : base(routingContext)
+        {
+        }
+
+        protected override IResponseHandler GetHelloResponseHandler(IConnection conn)
+        {
+            return new HelloResponseHandler(conn, Version);
+        }
+    }
 }

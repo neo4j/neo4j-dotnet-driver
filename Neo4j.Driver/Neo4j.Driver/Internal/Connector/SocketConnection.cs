@@ -205,7 +205,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             if (Server is ServerInfo info)
             {
-				info.Update(_boltProtocol.GetVersion(), newVersion.ToString());				
+				info.Update(_boltProtocol.Version, newVersion.Agent);				
 			}
             else
             {

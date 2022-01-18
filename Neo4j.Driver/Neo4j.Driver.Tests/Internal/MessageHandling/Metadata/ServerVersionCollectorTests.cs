@@ -86,9 +86,11 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
             ((IMetadataCollector) collector).Collected.Should().BeSameAs(collector.Collected);
         }
 
-        internal static KeyValuePair<string, object> TestMetadata =>
-            new KeyValuePair<string, object>(Key, "Neo4j/3.5.2");
+        internal static string TestServerAgent = "Neo4j/3.5.2";
 
-        internal static ServerVersion TestMetadataCollected => ServerVersion.From("Neo4j/3.5.2");
+        internal static KeyValuePair<string, object> TestMetadata =>
+            new KeyValuePair<string, object>(Key, TestServerAgent);
+
+        internal static ServerVersion TestMetadataCollected => ServerVersion.From(TestServerAgent);
     }
 }
