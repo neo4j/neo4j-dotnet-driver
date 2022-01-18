@@ -37,13 +37,11 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     internal class BoltProtocolV4_0 : BoltProtocolV3
     {
-        private static int _major = 4;
-        private static int _minor = 0;
-        public static new BoltProtocolVersion Version { get; } = new BoltProtocolVersion(_major, _minor);
-        public override BoltProtocolVersion GetVersion() { return Version; }
-
-		protected override IMessageFormat MessageFormat { get { return BoltProtocolMessageFormat.V4; } }
-		protected override IRequestMessage GetHelloMessage(string userAgent, IDictionary<string, object> auth)
+        private const string GetRoutingTableForDatabaseProcedure = "CALL dbms.routing.getRoutingTable($context, $database)";
+        public override BoltProtocolVersion Version => BoltProtocolVersion.V4_0;
+        protected override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V4;
+		
+        protected override IRequestMessage GetHelloMessage(string userAgent, IDictionary<string, object> auth)
 		{
 			return new HelloMessage(userAgent, auth);
 		}
@@ -64,11 +62,6 @@ namespace Neo4j.Driver.Internal.Protocol
 
 		protected override IResponseHandler GetHelloResponseHandler(IConnection conn) { return new V3.HelloResponseHandler(conn); }
 
-		private const string GetRoutingTableForDatabaseProcedure = "CALL dbms.routing.getRoutingTable($context, $database)";
-
-        public BoltProtocolV4_0()
-        {
-        }
 
         public override async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
 																				  Query query, 
