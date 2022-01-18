@@ -36,11 +36,11 @@ namespace Neo4j.Driver
     {
         internal static readonly TransactionConfig Default = new TransactionConfig();
         private IDictionary<string, object> _metadata;
-        private TimeSpan _timeout;
+        private TimeSpan? _timeout;
 
         internal TransactionConfig()
         {
-            _timeout = TimeSpan.Zero;
+            _timeout = null;
             _metadata = PackStream.EmptyDictionary;
         }
 
@@ -52,17 +52,18 @@ namespace Neo4j.Driver
         /// This functionality allows to limit query/transaction execution time.
         /// Specified timeout overrides the default timeout configured in the database using <code>dbms.transaction.timeout</code> setting.
         /// Leave this field unmodified to use default timeout configured on database.
+        /// Setting a zero timeout will result in no timeout.
         /// </summary>
-        /// <exception cref="ArgumentOutOfRangeException">If the value given to transaction timeout in milliseconds is less or equal to zero</exception>
-        public TimeSpan Timeout
+        /// <exception cref="ArgumentOutOfRangeException">If the value given to transaction timeout in milliseconds is less than zero</exception>
+        public TimeSpan? Timeout
         {
             get => _timeout;
             internal set
             {
-                if (value <= TimeSpan.Zero)
+                if ((value ?? TimeSpan.Zero) < TimeSpan.Zero)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value,
-                        "Transaction timeout should not be zero or negative.");
+                        "Transaction timeout should not be negative.");
                 }
 
                 _timeout = value;
@@ -112,11 +113,12 @@ namespace Neo4j.Driver
         /// This functionality allows to limit query/transaction execution time.
         /// Specified timeout overrides the default timeout configured in the database using <code>dbms.transaction.timeout</code> setting.
         /// Leave this field unmodified to use default timeout configured on database.
+        /// Setting a zero timeout will result in no timeout.
         /// </summary>
-        /// <exception cref="ArgumentOutOfRangeException">If the value given to transaction timeout in milliseconds is less or equal to zero</exception>
+        /// <exception cref="ArgumentOutOfRangeException">If the value given to transaction timeout in milliseconds is less than zero</exception>
         /// <param name="timeout">the new timeout</param>
         /// <returns>this <see cref="TransactionConfigBuilder"/> instance</returns>
-        public TransactionConfigBuilder WithTimeout(TimeSpan timeout)
+        public TransactionConfigBuilder WithTimeout(TimeSpan? timeout)
         {
             _config.Timeout = timeout;
             return this;

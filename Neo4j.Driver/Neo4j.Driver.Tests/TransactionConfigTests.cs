@@ -18,7 +18,6 @@
 using System;
 using System.Collections.Generic;
 using FluentAssertions;
-using Neo4j.Driver;
 using Xunit;
 
 namespace Neo4j.Driver.Tests
@@ -29,35 +28,45 @@ namespace Neo4j.Driver.Tests
         {
             public static IEnumerable<object[]> InvalidTimeSpanValues => new[]
             {
-                new object[] {TimeSpan.Zero},
                 new object[] {TimeSpan.FromSeconds(-1)},
                 new object[] {TimeSpan.FromHours(-2)}
             };
-            
+
+            public static IEnumerable<object[]> ValidTimeSpanValues => new[]
+            {
+                new object[] {null},
+                new object[] {(TimeSpan?)TimeSpan.Zero},
+                new object[] {(TimeSpan?)TimeSpan.FromMilliseconds(0.1)},
+                new object[] {(TimeSpan?)TimeSpan.FromMinutes(30)},
+                new object[] {(TimeSpan?)TimeSpan.MaxValue}
+            };
+
             [Fact]
-            public void ShouldReturnDefaultValueTimeSpanZero()
+            public void ShouldReturnDefaultValueAsNull()
             {
                 var config = new TransactionConfig();
-                config.Timeout.Should().Be(TimeSpan.Zero);
-                (config.Timeout == TimeSpan.Zero).Should().BeTrue();
+
+                config.Timeout.Should().Be(null);
             }
             
-            [Fact]
-            public void ShouldAllowToSetToNewValue()
+            [Theory, MemberData(nameof(ValidTimeSpanValues))]
+            public void ShouldAllowToSetToNewValue(TimeSpan? input)
             {
                 var builder = TransactionConfig.Builder;
-                builder.WithTimeout(TimeSpan.FromSeconds(1));
+                builder.WithTimeout(input);
+                
                 var config = builder.Build();
-                config.Timeout.Should().Be(TimeSpan.FromSeconds(1));
-                (config.Timeout == TimeSpan.FromSeconds(1)).Should().BeTrue();
+                
+                config.Timeout.Should().Be(input);
             }
 
             [Theory, MemberData(nameof(InvalidTimeSpanValues))]
-            public void ShouldThrowExceptionIfAssigningValueZero(TimeSpan input)
+            public void ShouldThrowExceptionIfAssigningValueLessThanZero(TimeSpan input)
             {
-                var error = Record.Exception(()=>TransactionConfig.Builder.WithTimeout(input));
+                var error = Record.Exception(() => TransactionConfig.Builder.WithTimeout(input));
+
                 error.Should().BeOfType<ArgumentOutOfRangeException>();
-                error.Message.Should().Contain("not be zero or negative");
+                error.Message.Should().Contain("not be negative");
             }
         }
 
@@ -67,6 +76,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnDefaultValueEmptyDictionary()
             {
                 var config = new TransactionConfig();
+
                 config.Metadata.Should().BeEmpty();
             }
             
@@ -75,14 +85,18 @@ namespace Neo4j.Driver.Tests
             {
                 var builder = TransactionConfig.Builder;
                 builder.WithMetadata(new Dictionary<string, object> {{"key", "value"}});
+                
                 var config = builder.Build();
-                config.Metadata.Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("key", "value"));
+
+                config.Metadata.Should().HaveCount(1)
+                    .And.Contain(new KeyValuePair<string, object>("key", "value"));
             }
 
             [Fact]
             public void ShouldThrowExceptionIfAssigningNull()
             {
                 var error = Record.Exception(() => TransactionConfig.Builder.WithMetadata(null));
+
                 error.Should().BeOfType<ArgumentNullException>();
                 error.Message.Should().Contain("should not be null");
             }
