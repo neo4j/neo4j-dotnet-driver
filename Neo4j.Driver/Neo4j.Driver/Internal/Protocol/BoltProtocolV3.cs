@@ -18,7 +18,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Connector;
@@ -26,7 +25,6 @@ using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
 using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
 using Neo4j.Driver.Internal.MessageHandling.V3;
@@ -38,13 +36,10 @@ namespace Neo4j.Driver.Internal.Protocol
         private const string GetRoutingTableProcedure = "CALL dbms.cluster.routing.getRoutingTable($context)";
 		protected const string RoutingTableDBKey = "db";
 
-		private static int _major = 3;
-        private static int _minor = 0;
-        public static BoltProtocolVersion Version { get; } = new BoltProtocolVersion(_major, _minor);
-        public virtual BoltProtocolVersion GetVersion() { return Version; }
+		protected virtual IMessageFormat MessageFormat  => BoltProtocolMessageFormat.V3;
+        public virtual BoltProtocolVersion Version => BoltProtocolVersion.V3_0;
 
-		protected virtual IMessageFormat MessageFormat { get { return BoltProtocolMessageFormat.V3; } }
-		protected virtual IRequestMessage GetHelloMessage(string userAgent,
+        protected virtual IRequestMessage GetHelloMessage(string userAgent,
 														IDictionary<string, object> auth)
 		{
 			return new Messaging.V3.HelloMessage(userAgent, auth);
@@ -64,12 +59,7 @@ namespace Neo4j.Driver.Internal.Protocol
 			return new RunWithMetadataMessage(query, bookmark, config, mode);
 		}
 
-		protected virtual IResponseHandler GetHelloResponseHandler(IConnection conn) { return new HelloResponseHandler(conn); }
-
-		public BoltProtocolV3()
-        {
-
-        }
+        protected virtual IResponseHandler GetHelloResponseHandler(IConnection conn) => new HelloResponseHandler(conn);
 
         public virtual IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger = null)
         {
@@ -205,7 +195,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
 		protected virtual void ValidateImpersonatedUserForVersion(string impersonatedUser)
 		{
-			if (impersonatedUser is not null) throw new ArgumentException($"Boltprotocol {GetVersion().ToString()} does not support impersonatedUser, yet has been passed a non null impersonated user string");
+			if (impersonatedUser is not null) throw new ArgumentException($"Boltprotocol {Version} does not support impersonatedUser, yet has been passed a non null impersonated user string");
 		}
 
 		private class ConnectionResourceHandler : IResultResourceHandler

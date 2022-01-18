@@ -107,7 +107,7 @@ namespace Neo4j.Driver.Internal.Result
 			Agent = agent;
 		}
 
-		private BoltProtocolVersion Protocol { get; set; } = new BoltProtocolVersion(0, 0);
+		internal BoltProtocolVersion Protocol { get; set; } = new BoltProtocolVersion(0, 0);
 
 		public string ProtocolVersion { get { return Protocol.ToString(); } }
 

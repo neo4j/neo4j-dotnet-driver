@@ -14,16 +14,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.MessageHandling.V4_4
+namespace Neo4j.Driver.Internal.MessageHandling.V5_0
 {
-	internal class HelloResponseHandler : V4_3.HelloResponseHandler
-	{
-        protected override BoltProtocolVersion MinVersion => BoltProtocolVersion.V4_4;
+    internal class HelloResponseHandler : V4_4.HelloResponseHandler
+    {
+        protected override BoltProtocolVersion MinVersion => BoltProtocolVersion.V5_0;
+
         public HelloResponseHandler(IConnection connection, BoltProtocolVersion version) : base(connection, version)
-		{
-		}
-	}
+        {
+        }
+    }
 }

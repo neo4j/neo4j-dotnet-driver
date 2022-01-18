@@ -1,6 +1,4 @@
-﻿
-using System.IO;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
@@ -10,33 +8,27 @@ using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.Protocol
-{	class BoltProtocolV4_3 : BoltProtocolV4_2
+{
+    internal class BoltProtocolV4_3 : BoltProtocolV4_2
 	{
-		private static int _major = 4;
-		private static int _minor = 3;
-		public static new BoltProtocolVersion Version { get; } = new BoltProtocolVersion(_major, _minor);
-		public override BoltProtocolVersion GetVersion() { return Version; }
-
-		protected override IMessageFormat MessageFormat { get { return BoltProtocolMessageFormat.V4_3; } }
-		protected override IRequestMessage HelloMessage(string userAgent,
-														IDictionary<string, object> auth,
-														IDictionary<string, string> routingContext)
-		{
-			return new HelloMessage(userAgent, auth, routingContext);
-		}
-
-		protected override IResponseHandler GetHelloResponseHandler(IConnection conn) { return new HelloResponseHandler(conn, Version); }
-
-
-		protected BoltProtocolV4_3()
-		{
-		}
+        public override BoltProtocolVersion Version => BoltProtocolVersion.V4_3;
+        protected override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V4_3;
 
 		public BoltProtocolV4_3(IDictionary<string, string> routingContext) : base(routingContext)
 		{
 		}
 
-		public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmark bookmark)
+        protected override IRequestMessage HelloMessage(string userAgent,
+            IDictionary<string, object> auth,
+            IDictionary<string, string> routingContext)
+        {
+            return new HelloMessage(userAgent, auth, routingContext);
+        }
+
+        protected override IResponseHandler GetHelloResponseHandler(IConnection conn) { return new HelloResponseHandler(conn, Version); }
+
+
+        public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmark bookmark)
 		{
 			connection = connection ?? throw new ProtocolException("Attempting to get a routing table on a null connection");
 
