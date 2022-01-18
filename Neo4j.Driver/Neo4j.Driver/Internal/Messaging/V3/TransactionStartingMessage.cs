@@ -33,16 +33,16 @@ namespace Neo4j.Driver.Internal.Messaging.V3
         protected TransactionStartingMessage(string database, Bookmark bookmark, TimeSpan? txTimeout,
             IDictionary<string, object> txMetadata, AccessMode mode)
         {
-            Metadata = BuildMetadata(bookmark, txTimeout ?? TimeSpan.Zero, txMetadata, mode, database);
+            Metadata = BuildMetadata(bookmark, txTimeout, txMetadata, mode, database);
         }
 
         public IDictionary<string, object> Metadata { get; }
 
-        private static IDictionary<string, object> BuildMetadata(Bookmark bookmark, TimeSpan txTimeout,
+        private static IDictionary<string, object> BuildMetadata(Bookmark bookmark, TimeSpan? txTimeout,
             IDictionary<string, object> txMetadata, AccessMode mode, string database)
         {
             var bookmarksPresent = bookmark != null && bookmark.Values.Any();
-            var txTimeoutPresent = txTimeout > TimeSpan.Zero;
+            var txTimeoutPresent = txTimeout.HasValue;
             var txMetadataPresent = txMetadata != null && txMetadata.Count != 0;
 
             IDictionary<string, object> result = new Dictionary<string, object>();
@@ -54,7 +54,7 @@ namespace Neo4j.Driver.Internal.Messaging.V3
 
             if (txTimeoutPresent)
             {
-                var txTimeoutInMs = Math.Max(0L, (long) txTimeout.TotalMilliseconds);
+                var txTimeoutInMs = Math.Max(0L, (long) txTimeout.Value.TotalMilliseconds);
                 result.Add(TxTimeoutMetadataKey, txTimeoutInMs);
             }
 
