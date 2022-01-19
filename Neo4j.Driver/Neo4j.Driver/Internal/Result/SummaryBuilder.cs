@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Internal.Result
                 Counters = builder.Counters ?? new Counters();
                 Profile = builder.Profile;
                 Plan = Profile ?? builder.Plan;
-                Notifications = builder.Notifications ?? new List<INotification>();
+                Notifications = builder.Notifications;
                 ResultAvailableAfter = TimeSpan.FromMilliseconds(builder.ResultAvailableAfter);
                 ResultConsumedAfter = TimeSpan.FromMilliseconds(builder.ResultConsumedAfter);
                 Server = builder.Server;

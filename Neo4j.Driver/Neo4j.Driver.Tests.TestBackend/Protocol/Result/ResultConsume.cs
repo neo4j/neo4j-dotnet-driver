@@ -1,6 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -23,17 +27,130 @@ namespace Neo4j.Driver.Tests.TestBackend
 		}
 
 		public override string Respond()
-		{
-			return new ProtocolResponse("Summary", new
-			{
-                database = Summary.Database.Name,
-				serverInfo = new
-				{
-					protocolVersion = Summary.Server.ProtocolVersion,
-					agent = Summary.Server.Agent
-                    
-				}
-			}).Encode();
+        {
+            var queryType = Summary?.QueryType switch
+            {
+                QueryType.ReadOnly => "r",
+                QueryType.ReadWrite => "rw",
+                QueryType.WriteOnly => "w",
+                QueryType.SchemaWrite => "s",
+                QueryType.Unknown => null,
+                _ => throw new ArgumentOutOfRangeException()
+            };
+
+            var response = new ProtocolResponse("Summary", new
+            {
+                query = Summary?.Query == null
+                    ? null
+                    : new
+                    {
+                        text = Summary.Query.Text,
+                        parameters = Summary.Query.Parameters
+                            .Select(x => new { x.Key, Value = NativeToCypher.Convert(x.Value) })
+                            .ToDictionary(x => x.Key, x => x.Value)
+                    },
+                queryType = queryType,
+                plan = Summary?.Plan == null 
+                    ? null
+                    : MapToPlanJson(Summary.Plan),
+                notifications = CreateNotificationList(),
+                database = Summary.Database?.Name,
+                resultAvailableAfter = Summary?.ResultAvailableAfter.TotalMilliseconds >= 0L
+                        ? Summary?.ResultAvailableAfter.TotalMilliseconds
+                        : default(long?),
+                resultConsumedAfter = Summary?.ResultConsumedAfter.TotalMilliseconds >= 0L
+                    ? Summary?.ResultConsumedAfter.TotalMilliseconds
+                    : default(long?),
+                serverInfo = Summary?.Server == null
+                    ? null
+                    : new
+                    {
+                        protocolVersion = Summary.Server.ProtocolVersion,
+                        agent = Summary.Server.Agent
+
+                    },
+                counters = new
+                {
+                    constraintsAdded = Summary.Counters.ConstraintsAdded,
+                    constraintsRemoved = Summary.Counters.ConstraintsRemoved,
+                    containsUpdates = Summary.Counters.ContainsUpdates,
+                    nodesCreated = Summary.Counters.NodesCreated,
+                    nodesDeleted = Summary.Counters.NodesDeleted,
+                    relationshipsCreated = Summary.Counters.RelationshipsCreated,
+                    relationshipsDeleted = Summary.Counters.RelationshipsDeleted,
+                    propertiesSet = Summary.Counters.PropertiesSet,
+                    labelsAdded = Summary.Counters.LabelsAdded,
+                    labelsRemoved = Summary.Counters.LabelsRemoved,
+                    indexesAdded = Summary.Counters.IndexesAdded,
+                    indexesRemoved = Summary.Counters.IndexesRemoved,
+                    systemUpdates = Summary.Counters.SystemUpdates,
+                    containsSystemUpdates = Summary.Counters.ContainsSystemUpdates,
+                },
+                profile = MapToProfilePlan(Summary.Profile)
+            });
+                
+            return response.Encode();
 		}
-	}
+
+        private object MapToProfilePlan(IProfiledPlan plan)
+        {
+            return new
+            {
+                args = plan.Arguments,
+                operatorType = plan.OperatorType,
+                children = plan.Children.Select(MapToProfilePlan).ToList(),
+                identifiers = plan.Identifiers,
+                hasPageCacheStats = plan.HasPageCacheStats,
+                time = plan.Time,
+                pageCacheHitRatio = plan.PageCacheHitRatio,
+                pageCacheMisses = plan.PageCacheMisses,
+                pageCacheHits = plan.PageCacheHits,
+                rows = plan.Records,
+                dbHits = plan.DbHits,
+            };
+        }
+
+        private object MapToPlanJson(IPlan plan)
+        {
+            return new
+            {
+                args = plan.Arguments,
+                operatorType = plan.OperatorType,
+                children = plan.Children.Select(MapToPlanJson).ToList(),
+                identifiers = plan.Identifiers
+            };
+        }
+
+        private object CreateNotificationList()
+        {
+            if (Summary?.Notifications == null)
+                return null;
+            if (Summary?.Notifications?.All(x => x.Position == null) ?? false)
+            {
+                return Summary?.Notifications.Select(x => new
+                {
+                    severity = x.Severity,
+                    description = x.Description,
+                    code = x.Code,
+                    title = x.Title,
+                }).ToList();
+            }
+
+            return Summary?.Notifications.Select(x => new
+            {
+                severity = x.Severity,
+                description = x.Description,
+                code = x.Code,
+                title = x.Title,
+                position = x.Position == null 
+                    ? null
+                    : new
+                    {
+                        column = x.Position.Column,
+                        offset = x.Position.Offset,
+                        line = x.Position.Line
+                    }
+            }).ToList();
+        }
+    }
 }
