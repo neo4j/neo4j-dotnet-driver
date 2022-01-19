@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             { typeof(DatabaseException),                "DatabaseError" },
 			{ typeof(ServiceUnavailableException),      "ServiceUnavailableError" },
 			{ typeof(SessionExpiredException),          "SessionExpiredError" },
-			{ typeof(ProtocolException),                "ProtocolError" },
+			{ typeof(Driver.ProtocolException),         "ProtocolError" },
 			{ typeof(SecurityException),                "SecurityError" },
 			{ typeof(AuthenticationException),          "AuthenticationError" },
 			{ typeof(AuthorizationException),           "AuthorizationExpired" },
