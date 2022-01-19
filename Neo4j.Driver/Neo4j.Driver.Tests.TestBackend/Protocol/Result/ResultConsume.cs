@@ -26,10 +26,12 @@ namespace Neo4j.Driver.Tests.TestBackend
 		{
 			return new ProtocolResponse("Summary", new
 			{
+                database = Summary.Database.Name,
 				serverInfo = new
 				{
 					protocolVersion = Summary.Server.ProtocolVersion,
 					agent = Summary.Server.Agent
+                    
 				}
 			}).Encode();
 		}

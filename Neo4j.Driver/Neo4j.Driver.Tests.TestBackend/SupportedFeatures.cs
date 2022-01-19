@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			//FeaturesList.Add("Feature:API:Result.Peek");
 			//FeaturesList.Add("Feature:API:Result.List");
 
-
+            FeaturesList.Add("Temporary:FullSummary");
 			//FeaturesList.Add("Temporary:TransactionClose");
 			//FeaturesList.Add("Temporary:DriverFetchSize");
 		}
