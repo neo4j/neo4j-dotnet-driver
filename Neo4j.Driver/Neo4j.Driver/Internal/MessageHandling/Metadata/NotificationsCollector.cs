@@ -58,12 +58,13 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
             var description = notificationDict.GetValue("description", string.Empty);
             var posValue = notificationDict.GetValue("position", new Dictionary<string, object>());
             var severity = notificationDict.GetValue("severity", string.Empty);
+            var foundOffset = posValue.TryGetValue("offset", 0L, out var offset);
+            var foundLine = posValue.TryGetValue("line", 0L, out var line);
+            var foundColumn = posValue.TryGetValue("column", 0L, out var column);
 
-            if (posValue.TryGetValue("offset", out var offset) &&
-                posValue.TryGetValue("line", out var line) &&
-                posValue.TryGetValue("column", out var column))
-            { 
-                var position = new InputPosition(Convert.ToInt32(offset), Convert.ToInt32(line), Convert.ToInt32(column));
+            if (foundOffset || foundLine || foundColumn)
+            {
+                var position = new InputPosition((int) offset, (int) line, (int) column);
                 return new Notification(code, title, description, position, severity);
             }
 
