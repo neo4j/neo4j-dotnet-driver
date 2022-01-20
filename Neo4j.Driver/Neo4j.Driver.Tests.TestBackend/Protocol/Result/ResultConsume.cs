@@ -25,7 +25,44 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 		public override string Respond()
         {
-            var queryType = Summary?.QueryType switch
+            return new ProtocolResponse("Summary", new
+            {
+                query = GetQuery(Summary),
+                queryType = GetQueryTypeAsStringCode(Summary),
+                plan = GetPlan(Summary),
+                notifications = CreateNotificationList(),
+                database = Summary.Database?.Name,
+                serverInfo = GetServerInfo(Summary),
+                counters = GetCountersFromSummary(Summary),
+                profile = MapToProfilePlan(Summary.Profile),
+                resultAvailableAfter = GetTotalMilliseconds(Summary.ResultAvailableAfter),
+                resultConsumedAfter = GetTotalMilliseconds(Summary.ResultConsumedAfter)
+            }).Encode();
+		}
+
+        private static long? GetTotalMilliseconds(TimeSpan timespan)
+        {
+            return timespan.TotalMilliseconds >= 0L
+                ? (long)timespan.TotalMilliseconds
+                : default(long?);
+        }
+
+        private static object GetQuery(IResultSummary summary)
+        {
+            return summary?.Query == null
+                ? null
+                : new
+                {
+                    text = summary.Query.Text,
+                    parameters = summary.Query.Parameters
+                        .Select(x => new { x.Key, Value = NativeToCypher.Convert(x.Value) })
+                        .ToDictionary(x => x.Key, x => x.Value)
+                };
+        }
+
+        private static string GetQueryTypeAsStringCode(IResultSummary summary)
+        {
+            return summary?.QueryType switch
             {
                 QueryType.ReadOnly => "r",
                 QueryType.ReadWrite => "rw",
@@ -34,64 +71,52 @@ namespace Neo4j.Driver.Tests.TestBackend
                 QueryType.Unknown => null,
                 _ => throw new ArgumentOutOfRangeException()
             };
+        }
 
-            var response = new ProtocolResponse("Summary", new
-            {
-                query = Summary?.Query == null
-                    ? null
-                    : new
-                    {
-                        text = Summary.Query.Text,
-                        parameters = Summary.Query.Parameters
-                            .Select(x => new { x.Key, Value = NativeToCypher.Convert(x.Value) })
-                            .ToDictionary(x => x.Key, x => x.Value)
-                    },
-                queryType = queryType,
-                plan = Summary?.Plan == null 
-                    ? null
-                    : MapToPlanJson(Summary.Plan),
-                notifications = CreateNotificationList(),
-                database = Summary.Database?.Name,
-                resultAvailableAfter = Summary?.ResultAvailableAfter.TotalMilliseconds >= 0L
-                        ? (long)Summary?.ResultAvailableAfter.TotalMilliseconds
-                        : default(long?),
-                resultConsumedAfter = Summary?.ResultConsumedAfter.TotalMilliseconds >= 0L
-                    ? (long)Summary?.ResultConsumedAfter.TotalMilliseconds
-                    : default(long?),
-                serverInfo = Summary?.Server == null
-                    ? null
-                    : new
-                    {
-                        protocolVersion = Summary.Server.ProtocolVersion,
-                        agent = Summary.Server.Agent
-                    },
-                counters = new
+        private static object GetPlan(IResultSummary summary)
+        {
+            return summary?.Plan == null 
+                ? null
+                : MapToPlanJson(summary.Plan);
+        }
+
+        private static object GetServerInfo(IResultSummary summary)
+        {
+            return summary?.Server == null
+                ? null
+                : new
                 {
-                    constraintsAdded = Summary.Counters.ConstraintsAdded,
-                    constraintsRemoved = Summary.Counters.ConstraintsRemoved,
-                    nodesCreated = Summary.Counters.NodesCreated,
-                    nodesDeleted = Summary.Counters.NodesDeleted,
-                    relationshipsCreated = Summary.Counters.RelationshipsCreated,
-                    relationshipsDeleted = Summary.Counters.RelationshipsDeleted,
-                    propertiesSet = Summary.Counters.PropertiesSet,
-                    labelsAdded = Summary.Counters.LabelsAdded,
-                    labelsRemoved = Summary.Counters.LabelsRemoved,
-                    indexesAdded = Summary.Counters.IndexesAdded,
-                    indexesRemoved = Summary.Counters.IndexesRemoved,
-                    systemUpdates = Summary.Counters.SystemUpdates,
-                    containsUpdates = Summary.Counters.ContainsUpdates,
-                    containsSystemUpdates = Summary.Counters.ContainsSystemUpdates,
-                },
-                profile = MapToProfilePlan(Summary.Profile)
-            });
-                
-            return response.Encode();
-		}
+                    protocolVersion = summary.Server.ProtocolVersion,
+                    agent = summary.Server.Agent
+                };
+        }
 
-        private object MapToProfilePlan(IProfiledPlan plan)
+        private static object GetCountersFromSummary(IResultSummary summary)
+        {
+            return new
+            {
+                constraintsAdded = summary.Counters.ConstraintsAdded,
+                constraintsRemoved = summary.Counters.ConstraintsRemoved,
+                nodesCreated = summary.Counters.NodesCreated,
+                nodesDeleted = summary.Counters.NodesDeleted,
+                relationshipsCreated = summary.Counters.RelationshipsCreated,
+                relationshipsDeleted = summary.Counters.RelationshipsDeleted,
+                propertiesSet = summary.Counters.PropertiesSet,
+                labelsAdded = summary.Counters.LabelsAdded,
+                labelsRemoved = summary.Counters.LabelsRemoved,
+                indexesAdded = summary.Counters.IndexesAdded,
+                indexesRemoved = summary.Counters.IndexesRemoved,
+                systemUpdates = summary.Counters.SystemUpdates,
+                containsUpdates = summary.Counters.ContainsUpdates,
+                containsSystemUpdates = summary.Counters.ContainsSystemUpdates,
+            };
+        }
+
+        private static object MapToProfilePlan(IProfiledPlan plan)
         {
             if (plan == null)
                 return null;
+
             if (plan.HasPageCacheStats)
                 return new
                 {
@@ -118,7 +143,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             };
         }
 
-        private object MapToPlanJson(IPlan plan)
+        private static object MapToPlanJson(IPlan plan)
         {
             return new
             {
