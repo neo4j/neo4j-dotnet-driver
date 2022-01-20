@@ -69,7 +69,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             var children = profileDictionary.GetValue("children", new List<object>());
 
-            var foundStats = new []{ foundMisses, foundPage, foundHitRatio, foundTime }.Any(x => x);
+            var foundStats = foundMisses || foundPage || foundHitRatio || foundTime;
 
             var childPlans = children
                 .Select(child => child as IDictionary<string, object>)
