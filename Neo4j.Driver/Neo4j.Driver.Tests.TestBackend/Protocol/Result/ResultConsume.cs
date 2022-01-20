@@ -53,10 +53,10 @@ namespace Neo4j.Driver.Tests.TestBackend
                 notifications = CreateNotificationList(),
                 database = Summary.Database?.Name,
                 resultAvailableAfter = Summary?.ResultAvailableAfter.TotalMilliseconds >= 0L
-                        ? Summary?.ResultAvailableAfter.TotalMilliseconds
+                        ? (long)Summary?.ResultAvailableAfter.TotalMilliseconds
                         : default(long?),
                 resultConsumedAfter = Summary?.ResultConsumedAfter.TotalMilliseconds >= 0L
-                    ? Summary?.ResultConsumedAfter.TotalMilliseconds
+                    ? (long)Summary?.ResultConsumedAfter.TotalMilliseconds
                     : default(long?),
                 serverInfo = Summary?.Server == null
                     ? null
@@ -64,7 +64,6 @@ namespace Neo4j.Driver.Tests.TestBackend
                     {
                         protocolVersion = Summary.Server.ProtocolVersion,
                         agent = Summary.Server.Agent
-
                     },
                 counters = new
                 {
