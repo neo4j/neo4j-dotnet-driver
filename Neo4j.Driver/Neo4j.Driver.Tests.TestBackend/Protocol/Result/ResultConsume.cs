@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -73,7 +70,6 @@ namespace Neo4j.Driver.Tests.TestBackend
                 {
                     constraintsAdded = Summary.Counters.ConstraintsAdded,
                     constraintsRemoved = Summary.Counters.ConstraintsRemoved,
-                    containsUpdates = Summary.Counters.ContainsUpdates,
                     nodesCreated = Summary.Counters.NodesCreated,
                     nodesDeleted = Summary.Counters.NodesDeleted,
                     relationshipsCreated = Summary.Counters.RelationshipsCreated,
@@ -84,6 +80,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                     indexesAdded = Summary.Counters.IndexesAdded,
                     indexesRemoved = Summary.Counters.IndexesRemoved,
                     systemUpdates = Summary.Counters.SystemUpdates,
+                    containsUpdates = Summary.Counters.ContainsUpdates,
                     containsSystemUpdates = Summary.Counters.ContainsSystemUpdates,
                 },
                 profile = MapToProfilePlan(Summary.Profile)
@@ -94,17 +91,29 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         private object MapToProfilePlan(IProfiledPlan plan)
         {
+            if (plan == null)
+                return null;
+            if (plan.HasPageCacheStats)
+                return new
+                {
+                    args = plan.Arguments,
+                    operatorType = plan.OperatorType,
+                    children = plan.Children.Select(MapToProfilePlan).ToList(),
+                    identifiers = plan.Identifiers,
+                    time = plan.Time,
+                    pageCacheHitRatio = plan.PageCacheHitRatio,
+                    pageCacheMisses = plan.PageCacheMisses,
+                    pageCacheHits = plan.PageCacheHits,
+                    rows = plan.Records,
+                    dbHits = plan.DbHits,
+                };
+
             return new
             {
                 args = plan.Arguments,
                 operatorType = plan.OperatorType,
                 children = plan.Children.Select(MapToProfilePlan).ToList(),
                 identifiers = plan.Identifiers,
-                hasPageCacheStats = plan.HasPageCacheStats,
-                time = plan.Time,
-                pageCacheHitRatio = plan.PageCacheHitRatio,
-                pageCacheMisses = plan.PageCacheMisses,
-                pageCacheHits = plan.PageCacheHits,
                 rows = plan.Records,
                 dbHits = plan.DbHits,
             };
