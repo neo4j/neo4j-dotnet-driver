@@ -108,7 +108,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_1
         }
 
         [Fact]
-        public void ShouldSerializeWithNullRoutingContext()
+        public void ShouldNotSerializeWithNullRoutingContext()
         {
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
@@ -123,16 +123,13 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_1
             reader.ReadStructSignature().Should().Be(BoltProtocolV4_1MessageFormat.MsgHello);
 
             var readMap = reader.ReadMap();
-            readMap.Should().NotBeNull().And.HaveCount(2).And.Contain(
+            readMap.Should().NotBeNull().And.HaveCount(1).And.Contain(
                 new[]
                 {
                     new KeyValuePair<string, object>("user_agent", "Client-Version/1.0"),
                 });
 
-            object dic;
-            readMap.ContainsKey("routing").Should().BeTrue();
-            readMap.TryGetValue("routing", out dic);
-            (dic == null).Should().BeTrue();
+            readMap.ContainsKey("routing").Should().BeFalse();
         }
 
         [Fact]

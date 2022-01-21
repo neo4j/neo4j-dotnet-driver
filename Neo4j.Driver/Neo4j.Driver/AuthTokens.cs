@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Neo4j.Driver.Internal;
 using static Neo4j.Driver.Internal.AuthToken;
 
@@ -139,7 +140,7 @@ namespace Neo4j.Driver
             if (!string.IsNullOrEmpty(credentials)) token.Add(CredentialsKey, credentials);
             if (!string.IsNullOrEmpty(realm)) token.Add(RealmKey, realm);
 
-			if (parameters is not null)
+			if (parameters is not null && parameters.Any())
 			{
 				token.Add(ParametersKey, parameters);
 			}

@@ -17,6 +17,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			FeaturesList.Add("ConfHint:connection.recv_timeout_seconds");
 			
 			FeaturesList.Add("Optimization:EagerTransactionBegin");
+            FeaturesList.Add("Optimization:ImplicitDefaultArguments");
 
 			FeaturesList.Add("Feature:Auth:Bearer");
 			FeaturesList.Add("Feature:Auth:Custom");

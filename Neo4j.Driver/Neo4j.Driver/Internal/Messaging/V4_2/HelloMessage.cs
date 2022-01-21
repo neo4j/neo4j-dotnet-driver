@@ -42,7 +42,8 @@ namespace Neo4j.Driver.Internal.Messaging.V4_2
                 MetaData = new Dictionary<string, object>(authToken) { { UserAgentMetadataKey, userAgent } };
             }
 
-            MetaData.Add("routing", routingContext);
+            if (routingContext != null)
+                MetaData.Add("routing", routingContext);
         }
 
         public override string ToString()
