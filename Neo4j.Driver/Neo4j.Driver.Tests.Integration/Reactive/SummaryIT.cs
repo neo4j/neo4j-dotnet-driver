@@ -180,7 +180,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             public void ShouldNotReturnNotifications()
             {
                 VerifySummary("CREATE (n) RETURN n", null,
-                    Matches<IResultSummary>(s => s.Notifications.Should().BeEmpty()));
+                    Matches<IResultSummary>(s => s.Notifications.Should().BeNull()));
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
