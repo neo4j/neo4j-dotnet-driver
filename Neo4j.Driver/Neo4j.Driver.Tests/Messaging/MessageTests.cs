@@ -62,7 +62,7 @@ namespace Neo4j.Driver.Tests
 				new object[] {new FailureMessage("CODE", "MESSAGE"), "FAILURE code=CODE, message=MESSAGE"},
 				new object[] {new V4_4.HelloMessage("mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}]"},
 				new object[] {new V4_4.HelloMessage("mydriver", null, new Dictionary<string, string>()), "HELLO [{user_agent, mydriver}, {routing, []}]"},
-				new object[] {new V4_4.HelloMessage("mydriver", null, null), "HELLO [{user_agent, mydriver}, {routing, NULL}]"},
+				new object[] {new V4_4.HelloMessage("mydriver", null, null), "HELLO [{user_agent, mydriver}]"},
 				new object[] {new V4_3.HelloMessage("mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}]"},
                 new object[] {new V4_3.HelloMessage("mydriver", null, new Dictionary<string, string>()), "HELLO [{user_agent, mydriver}, {routing, []}]"},
                 new object[] {new V4_3.HelloMessage("mydriver", null, null), "HELLO [{user_agent, mydriver}]"},
