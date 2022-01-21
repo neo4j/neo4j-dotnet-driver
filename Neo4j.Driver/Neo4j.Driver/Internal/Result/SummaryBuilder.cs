@@ -289,8 +289,7 @@ namespace Neo4j.Driver.Internal.Result
                    $"{nameof(IndexesRemoved)}={IndexesRemoved}, " +
                    $"{nameof(ConstraintsAdded)}={ConstraintsAdded}, " +
                    $"{nameof(ConstraintsRemoved)}={ConstraintsRemoved}, " +
-                   $"{nameof(SystemUpdates)}={SystemUpdates}," +
-                   $"{nameof(ContainsSystemUpdates)}={ContainsSystemUpdates}}}";
+                   $"{nameof(SystemUpdates)}={SystemUpdates}}}";
         }
     }
 
