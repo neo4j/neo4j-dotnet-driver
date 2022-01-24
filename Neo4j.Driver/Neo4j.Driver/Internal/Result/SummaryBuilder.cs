@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Internal.Result
                 Counters = builder.Counters ?? new Counters();
                 Profile = builder.Profile;
                 Plan = Profile ?? builder.Plan;
-                Notifications = builder.Notifications ?? new List<INotification>();
+                Notifications = builder.Notifications;
                 ResultAvailableAfter = TimeSpan.FromMilliseconds(builder.ResultAvailableAfter);
                 ResultConsumedAfter = TimeSpan.FromMilliseconds(builder.ResultConsumedAfter);
                 Server = builder.Server;
@@ -166,7 +166,7 @@ namespace Neo4j.Driver.Internal.Result
     {
         public ProfiledPlan(string operatorType, IDictionary<string, object> arguments, IList<string> identifiers,
             IList<IProfiledPlan> children, long dbHits, long records,
-            long pageCacheHits, long pageCacheMisses, double pageCacheHitRatio, long time)
+            long pageCacheHits, long pageCacheMisses, double pageCacheHitRatio, long time, bool foundStats)
         {
             OperatorType = operatorType;
             Arguments = arguments;
@@ -177,7 +177,7 @@ namespace Neo4j.Driver.Internal.Result
             PageCacheHits = pageCacheHits;
             PageCacheMisses = pageCacheMisses;
             PageCacheHitRatio = pageCacheHitRatio;
-            HasPageCacheStats = pageCacheHits > 0 || pageCacheMisses > 0 || pageCacheHitRatio > 0;
+            HasPageCacheStats = foundStats;
             Time = time;
         }
 
@@ -217,7 +217,9 @@ namespace Neo4j.Driver.Internal.Result
 
     internal class Counters : ICounters
     {
-        public bool ContainsUpdates => (
+        private readonly bool? _containsUpdates;
+
+        public bool ContainsUpdates => _containsUpdates ?? (
             IsPositive(NodesCreated)
             || IsPositive(NodesDeleted)
             || IsPositive(RelationshipsCreated)
@@ -243,15 +245,15 @@ namespace Neo4j.Driver.Internal.Result
         public int ConstraintsRemoved { get; }
         public int SystemUpdates { get; }
 
-        public bool ContainsSystemUpdates => IsPositive(SystemUpdates);
+        public bool ContainsSystemUpdates { get; }
 
-        public Counters() : this(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        public Counters() : this(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, null, null)
         {
         }
 
         public Counters(int nodesCreated, int nodesDeleted, int relationshipsCreated, int relationshipsDeleted,
             int propertiesSet, int labelsAdded, int labelsRemoved, int indexesAdded, int indexesRemoved,
-            int constraintsAdded, int constraintsRemoved, int systemUpdates)
+            int constraintsAdded, int constraintsRemoved, int systemUpdates, bool? containsSystemUpdates, bool? containsUpdates)
         {
             NodesCreated = nodesCreated;
             NodesDeleted = nodesDeleted;
@@ -265,6 +267,8 @@ namespace Neo4j.Driver.Internal.Result
             ConstraintsAdded = constraintsAdded;
             ConstraintsRemoved = constraintsRemoved;
             SystemUpdates = systemUpdates;
+            ContainsSystemUpdates = containsSystemUpdates ?? IsPositive(systemUpdates);
+            _containsUpdates = containsUpdates;
         }
 
         private bool IsPositive(int value)

@@ -248,6 +248,7 @@ namespace Neo4j.Driver.Internal.Result
                     }
                     catch (ProtocolException)
                     {
+                        UpdateState(State.Completed);
                         throw;
                     }
                     catch (Exception exc)

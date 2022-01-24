@@ -51,7 +51,9 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                             CountersValue(countersDict, "indexes-removed"),
                             CountersValue(countersDict, "constraints-added"),
                             CountersValue(countersDict, "constraints-removed"),
-                            CountersValue(countersDict, "system-updates")
+                            CountersValue(countersDict, "system-updates"),
+                            countersDict.GetValue<bool?>("contains-system-updates", null),
+                            countersDict.GetValue<bool?>("contains-updates", null)
                         );
                         break;
                     default:

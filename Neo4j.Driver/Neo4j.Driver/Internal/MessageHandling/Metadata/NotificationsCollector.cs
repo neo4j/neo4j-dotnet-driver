@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Internal;
@@ -56,13 +57,18 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
             var title = notificationDict.GetValue("title", string.Empty);
             var description = notificationDict.GetValue("description", string.Empty);
             var posValue = notificationDict.GetValue("position", new Dictionary<string, object>());
-            var position = new InputPosition(
-                (int) posValue.GetValue("offset", 0L),
-                (int) posValue.GetValue("line", 0L),
-                (int) posValue.GetValue("column", 0L));
             var severity = notificationDict.GetValue("severity", string.Empty);
+            var foundOffset = posValue.TryGetValue("offset", 0L, out var offset);
+            var foundLine = posValue.TryGetValue("line", 0L, out var line);
+            var foundColumn = posValue.TryGetValue("column", 0L, out var column);
 
-            return new Notification(code, title, description, position, severity);
+            if (foundOffset || foundLine || foundColumn)
+            {
+                var position = new InputPosition((int) offset, (int) line, (int) column);
+                return new Notification(code, title, description, position, severity);
+            }
+
+            return new Notification(code, title, description, null, severity);
         }
     }
 }

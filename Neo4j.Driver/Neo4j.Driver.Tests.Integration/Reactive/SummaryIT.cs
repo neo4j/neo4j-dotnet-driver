@@ -97,7 +97,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             {
                 VerifySummary("CREATE (n:Label1 {id: $id1})-[:KNOWS]->(m:Label2 {id: $id2}) RETURN n, m",
                     new {id1 = 10, id2 = 20},
-                    MatchesSummary(new {Counters = new Counters(2, 0, 1, 0, 2, 2, 0, 0, 0, 0, 0, 0)}));
+                    MatchesSummary(new {Counters = new Counters(2, 0, 1, 0, 2, 2, 0, 0, 0, 0, 0, 0, null, null)}));
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
@@ -106,14 +106,14 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 VerifySummary("CREATE (n:Label3 {id: $id1})-[:KNOWS]->(m:Label4 {id: $id2}) RETURN n, m",
                     new {id1 = 10, id2 = 20}, s => true);
                 VerifySummary("MATCH (n:Label3)-[r:KNOWS]->(m:Label4) DELETE n, r", null,
-                    MatchesSummary(new {Counters = new Counters(0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0)}));
+                    MatchesSummary(new {Counters = new Counters(0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, null, null) }));
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnUpdateStatisticsWithIndexCreate()
             {
                 VerifySummary("CREATE INDEX on :Label(prop)", null,
-                    MatchesSummary(new {Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0)}));
+                    MatchesSummary(new {Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, null, null) }));
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
@@ -126,14 +126,14 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 }
 
                 VerifySummary("DROP INDEX on :Label(prop)", null,
-                    MatchesSummary(new {Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0)}));
+                    MatchesSummary(new {Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, null, null) }));
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnUpdateStatisticsWithConstraintCreate()
             {
                 VerifySummary("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE", null,
-                    MatchesSummary(new {Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0)}));
+                    MatchesSummary(new {Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, null, null) }));
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
@@ -146,7 +146,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 }
 
                 VerifySummary("DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE", null,
-                    MatchesSummary(new {Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0)}));
+                    MatchesSummary(new {Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, null, null) }));
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
@@ -180,7 +180,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             public void ShouldNotReturnNotifications()
             {
                 VerifySummary("CREATE (n) RETURN n", null,
-                    Matches<IResultSummary>(s => s.Notifications.Should().BeEmpty()));
+                    Matches<IResultSummary>(s => s.Notifications.Should().BeNull()));
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]

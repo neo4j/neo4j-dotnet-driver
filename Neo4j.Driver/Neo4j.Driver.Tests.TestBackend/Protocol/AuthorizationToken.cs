@@ -1,7 +1,5 @@
-﻿
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -18,9 +16,9 @@ namespace Neo4j.Driver.Tests.TestBackend
             public Dictionary<string, object> parameters { get; set; }
         }
 
-        public override async Task Process()
+        public override Task Process()
         {
-            await Task.Run(() => { });
+            return Task.CompletedTask;
         }
     }
 }
