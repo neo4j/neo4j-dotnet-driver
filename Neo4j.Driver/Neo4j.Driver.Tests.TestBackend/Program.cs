@@ -2,10 +2,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net;
-using System.Reflection;
-using System.Threading.Tasks;
-
-
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -24,24 +20,24 @@ namespace Neo4j.Driver.Tests.TestBackend
 
                 ArgumentsValidation(args);
 
-				using (var connection = new Connection(Address.ToString(), Port))
-				{
-					Controller controller = new Controller(connection);
+                using (var connection = new Connection(Address.ToString(), Port))
+                {
+                    Controller controller = new Controller(connection);
 
-					try
-					{
-						controller.Process(true, e => { return true; }).Wait();
-					}
-					catch (Exception ex)
-					{
-						Trace.WriteLine($"It looks like the ExceptionExtensions system has failed in an unexpected way. \n{ex}");
-					}
-					finally
-					{
-						connection.StopServer();
-					}
+                    try
+                    {
+                        controller.Process(true, e => { return true; }).Wait();
+                    }
+                    catch (Exception ex)
+                    {
+                        Trace.WriteLine($"It looks like the ExceptionExtensions system has failed in an unexpected way. \n{ex}");
+                    }
+                    finally
+                    {
+                        connection.StopServer();
+                    }
 
-				}
+                }
             }
             catch(System.Exception ex)
             {
@@ -83,8 +79,3 @@ namespace Neo4j.Driver.Tests.TestBackend
         }
     }
 }
-
-
-
-
-
