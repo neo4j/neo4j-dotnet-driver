@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 "AuthorizationExpiredTreatment",
                 //"Optimization:ConnectionReuse",
                 "Optimization:EagerTransactionBegin",
-                "Optimization:ImplicitDefaultArguments",
+                //"Optimization:ImplicitDefaultArguments",
                 //"Optimization:MinimalResets",
                 //"Optimization:PullPipelining",
                 //"Optimization:ResultListFetchAll",
@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 //"Temporary:DriverMaxConnectionPoolSize",
                 //"Temporary:DriverMaxTxRetryTime",
                 //"Temporary:FastFailingDiscovery",
-                //"Temporary:FullSummary",
+                "Temporary:FullSummary",
                 //"Temporary:GetConnectionPoolMetrics",
                 //"Temporary:ResultKeys",
                 //"Temporary:TransactionClose"

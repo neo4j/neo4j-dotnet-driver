@@ -193,6 +193,6 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                 {"system-updates", 12L},
             });
 
-        internal static ICounters TestMetadataCollected => new Counters(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
+        internal static ICounters TestMetadataCollected => new Counters(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, null, null);
     }
 }
