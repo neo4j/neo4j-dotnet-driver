@@ -62,11 +62,14 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
             var identifiers = profileDictionary.GetValue("identifiers", new List<object>()).Cast<string>();
             var dbHits = profileDictionary.GetMandatoryValue<long>("dbHits", m => new ProtocolException(m));
             var rows = profileDictionary.GetMandatoryValue<long>("rows", m => new ProtocolException(m));
-            var pageCacheHits = profileDictionary.GetValue<long>("pageCacheHits", 0);
-            var pageCacheMisses = profileDictionary.GetValue<long>("pageCacheMisses", 0);
-            var pageCacheHitRatio = profileDictionary.GetValue<double>("pageCacheHitRatio", 0);
-            var time = profileDictionary.GetValue<long>("time", 0);
+            var foundPage = profileDictionary.TryGetValue<long>("pageCacheHits", 0, out var pageCacheHits);
+            var foundMisses = profileDictionary.TryGetValue<long>("pageCacheMisses", 0L, out var pageCacheMisses);
+            var foundHitRatio = profileDictionary.TryGetValue<double>("pageCacheHitRatio", 0.0, out var pageCacheHitRatio);
+            var foundTime = profileDictionary.TryGetValue<long>("time", 0, out var time);
+
             var children = profileDictionary.GetValue("children", new List<object>());
+
+            var foundStats = foundMisses || foundPage || foundHitRatio || foundTime;
 
             var childPlans = children
                 .Select(child => child as IDictionary<string, object>)
@@ -74,7 +77,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                 .Where(childProfile => childProfile != null)
                 .ToList();
             return new ProfiledPlan(operationType, args, identifiers.ToList(), childPlans, dbHits, rows,
-                pageCacheHits, pageCacheMisses, pageCacheHitRatio, time);
+                pageCacheHits, pageCacheMisses, pageCacheHitRatio, time, foundStats);
         }
     }
 }

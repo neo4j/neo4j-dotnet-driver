@@ -43,6 +43,16 @@ namespace Neo4j.Driver.Internal
             return dict.ContainsKey(key) ? (T) dict[key] : defaultValue;
         }
 
+        public static bool TryGetValue<T>(this IDictionary<string, object> dict, string key, T defaultValue, out T value)
+        {
+            if (dict.TryGetValue(key, out var uncastValue))
+            {
+                value = (T)uncastValue;
+                return true;
+            }
+            value = defaultValue;
+            return false;
+        }
         private static string ToContentString(this IDictionary dict, string separator)
         {
             var dictStrings = from object key in dict.Keys

@@ -164,7 +164,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
             collector.Collect(metadata);
 
             collector.Collected.Should().BeEquivalentTo(new ProfiledPlan("opType", new Dictionary<string, object>(),
-                new List<string>(), new List<IProfiledPlan>(), 5, 10, 0, 0, 0, 0));
+                new List<string>(), new List<IProfiledPlan>(), 5, 10, 0, 0, 0, 0, false));
         }
 
         [Fact]
@@ -190,7 +190,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
             collector.Collect(metadata);
 
             collector.Collected.Should().BeEquivalentTo(new ProfiledPlan("opType", new Dictionary<string, object>(),
-                new List<string>(), new List<IProfiledPlan>(), 5, 10, 1, 2, 3, 4));
+                new List<string>(), new List<IProfiledPlan>(), 5, 10, 1, 2, 3, 4, true));
         }
 
         [Fact]
@@ -220,7 +220,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
             collector.Collected.Should().BeEquivalentTo(new ProfiledPlan("opType",
                 new Dictionary<string, object> {{"a", 1L}},
-                new List<string> {"a", "b", "c"}, new List<IProfiledPlan>(), 5, 10, 0, 0, 0, 0));
+                new List<string> {"a", "b", "c"}, new List<IProfiledPlan>(), 5, 10, 0, 0, 0, 0, false));
         }
 
         [Fact]
@@ -273,8 +273,8 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                 {
                     new ProfiledPlan("childOpType", new Dictionary<string, object> {{"b", 2L}},
                         new List<string> {"d", "e"},
-                        new List<IProfiledPlan>(), 15, 20, 0, 0, 0, 0)
-                }, 5, 10, 0, 0, 0, 0));
+                        new List<IProfiledPlan>(), 15, 20, 0, 0, 0, 0, false)
+                }, 5, 10, 0, 0, 0, 0, false));
         }
 
         [Fact]
@@ -349,9 +349,9 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                         {
                             new ProfiledPlan("childChildOpType", new Dictionary<string, object> {{"c", 3L}},
                                 new List<string> {"f"},
-                                new List<IProfiledPlan>(), 25, 30, 0, 0, 0, 0)
-                        }, 15, 20, 0, 0, 0, 0)
-                }, 5, 10, 0, 0, 0, 0));
+                                new List<IProfiledPlan>(), 25, 30, 0, 0, 0, 0, false)
+                        }, 15, 20, 0, 0, 0, 0, false)
+                }, 5, 10, 0, 0, 0, 0, false));
         }
 
         [Fact]
@@ -392,6 +392,6 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 
         internal static IProfiledPlan TestMetadataCollected => new ProfiledPlan("opType",
             new Dictionary<string, object> {{"a", 1L}},
-            new List<string> {"a", "b", "c"}, new List<IProfiledPlan>(), 5, 10, 0, 0, 0, 0);
+            new List<string> {"a", "b", "c"}, new List<IProfiledPlan>(), 5, 10, 0, 0, 0, 0, false);
     }
 }
