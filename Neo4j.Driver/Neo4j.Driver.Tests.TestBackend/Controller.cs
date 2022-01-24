@@ -24,45 +24,45 @@ namespace Neo4j.Driver.Tests.TestBackend
             ProtocolObjectFactory.ObjManager = ObjManager;
         }
 
-		public async Task ProcessStreamObjects()
-		{
-			BreakProcessLoop = false;
+        public async Task ProcessStreamObjects()
+        {
+            BreakProcessLoop = false;
 
-			while (!BreakProcessLoop && await RequestReader.ParseNextRequest().ConfigureAwait(false))
-			{
-				var protocolObject = RequestReader.CreateObjectFromData();
-				protocolObject.ProtocolEvent += BreakLoopEvent;
+            while (!BreakProcessLoop && await RequestReader.ParseNextRequest().ConfigureAwait(false))
+            {
+                var protocolObject = RequestReader.CreateObjectFromData();
+                protocolObject.ProtocolEvent += BreakLoopEvent;
 
-				await protocolObject.Process(this).ConfigureAwait(false);
-				await SendResponse(protocolObject).ConfigureAwait(false);
-				Trace.Flush();
-			}
+                await protocolObject.Process(this).ConfigureAwait(false);
+                await SendResponse(protocolObject).ConfigureAwait(false);
+                Trace.Flush();
+            }
 
-			BreakProcessLoop = false;   //Ensure that any process loops that this one is running within still continue.
-		}
+            BreakProcessLoop = false;   //Ensure that any process loops that this one is running within still continue.
+        }
 
-		public async Task<IProtocolObject> TryConsumeStreamObjectOfType(Type type)
-		{
-			//Read the next incoming request message
-			await RequestReader.ParseNextRequest().ConfigureAwait(false);
+        public async Task<IProtocolObject> TryConsumeStreamObjectOfType(Type type)
+        {
+            //Read the next incoming request message
+            await RequestReader.ParseNextRequest().ConfigureAwait(false);
 
-			//Is it of the correct type
-			if (RequestReader.GetObjectType() != type)
-				return null;
+            //Is it of the correct type
+            if (RequestReader.GetObjectType() != type)
+                return null;
 
-			//Create and return an object from the request message
-			return ProtocolObjectFactory.CreateObject(RequestReader.CurrentObjectData);
-		}
+            //Create and return an object from the request message
+            return ProtocolObjectFactory.CreateObject(RequestReader.CurrentObjectData);
+        }
 
 
-		public async Task<T> TryConsumeStreamObjectOfType<T>() where T : IProtocolObject
-		{
-			var result = await TryConsumeStreamObjectOfType(typeof(T)).ConfigureAwait(false);
-			return (T)result;
-		}
+        public async Task<T> TryConsumeStreamObjectOfType<T>() where T : IProtocolObject
+        {
+            var result = await TryConsumeStreamObjectOfType(typeof(T)).ConfigureAwait(false);
+            return (T)result;
+        }
 
-		private async Task InitialiseCommunicationLayer()
-		{
+        private async Task InitialiseCommunicationLayer()
+        {
             await Connection.Open();
 
             var connectionReader = new StreamReader(Connection.ConnectionStream, new UTF8Encoding(false));
@@ -83,9 +83,9 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             Trace.WriteLine("Starting Controller.Process");
 
-			Exception storedException = new TestKitClientException("Error from client");
+            Exception storedException = new TestKitClientException("Error from client");
 
-			while (loopConditional(storedException))
+            while (loopConditional(storedException))
             {
                 if (restartConnection) await InitialiseCommunicationLayer();
 
@@ -97,58 +97,58 @@ namespace Neo4j.Driver.Tests.TestBackend
                 {
                     // Generate "driver" exception something happened within the driver
                     await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-					storedException = ex;
-					restartConnection = false;
+                    storedException = ex;
+                    restartConnection = false;
                 }
-				catch (TestKitClientException ex)
-				{
-					await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-					storedException = ex;
-					restartConnection = false;
-				}
-				catch (ArgumentException ex)
+                catch (TestKitClientException ex)
                 {
                     await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-					storedException = ex;
-					restartConnection = false;
+                    storedException = ex;
+                    restartConnection = false;
+                }
+                catch (ArgumentException ex)
+                {
+                    await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+                    storedException = ex;
+                    restartConnection = false;
                 }
                 catch (NotSupportedException ex)
                 {
                     await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-					storedException = ex;
-					restartConnection = false;
+                    storedException = ex;
+                    restartConnection = false;
                 }
-				catch (JsonSerializationException ex)
-				{
-					await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-					storedException = ex;
-					restartConnection = false;
-				}
-				catch (TestKitProtocolException ex)
-				{
-					Trace.WriteLine($"TestKit protocol exception detected: {ex.Message}");
-					await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-					storedException = ex;
-					restartConnection = true;
-				}
+                catch (JsonSerializationException ex)
+                {
+                    await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+                    storedException = ex;
+                    restartConnection = false;
+                }
+                catch (TestKitProtocolException ex)
+                {
+                    Trace.WriteLine($"TestKit protocol exception detected: {ex.Message}");
+                    await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+                    storedException = ex;
+                    restartConnection = true;
+                }
                 catch (DriverExceptionWrapper ex)
                 {
                     storedException = ex;
                     await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
                     restartConnection = false;
                 }
-				catch (IOException ex)
+                catch (IOException ex)
                 {
                     Trace.WriteLine($"Socket exception detected: {ex.Message}");    //Handled outside of the exception manager because there is no connection to reply on.
-					storedException = ex;
-					restartConnection = true;
+                    storedException = ex;
+                    restartConnection = true;
                 }
-				catch(Exception ex)
-				{
-					Trace.WriteLine($"General exception detected, restarting connection: {ex.Message}");
-					storedException = ex;
-					restartConnection = true;
-				}
+                catch(Exception ex)
+                {
+                    Trace.WriteLine($"General exception detected, restarting connection: {ex.Message}");
+                    storedException = ex;
+                    restartConnection = true;
+                }
                 finally
                 {
                     if (restartConnection)
@@ -162,18 +162,18 @@ namespace Neo4j.Driver.Tests.TestBackend
         }
 
         private void BreakLoopEvent(object sender, EventArgs e)
-		{
+        {
             BreakProcessLoop = true;
-		}
+        }
 
         public async Task SendResponse(IProtocolObject protocolObject)
-		{
+        {
             await ResponseWriter.WriteResponseAsync(protocolObject).ConfigureAwait(false);
         }
 
         public async Task SendResponse(string response)
-		{
+        {
             await ResponseWriter.WriteResponseAsync(response);
-		}
+        }
     }
 }
