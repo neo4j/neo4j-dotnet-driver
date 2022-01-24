@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 "AuthorizationExpiredTreatment",
                 //"Optimization:ConnectionReuse",
                 "Optimization:EagerTransactionBegin",
-                //"Optimization:ImplicitDefaultArguments",
+                "Optimization:ImplicitDefaultArguments",
                 //"Optimization:MinimalResets",
                 //"Optimization:PullPipelining",
                 //"Optimization:ResultListFetchAll",
