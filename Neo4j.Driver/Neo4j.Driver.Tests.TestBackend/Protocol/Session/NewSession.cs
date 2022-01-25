@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			public string database { get; set; }
 
 			[JsonProperty(Required = Required.AllowNull)]
-			public long fetchSize { get; set; } = 1000;
+			public long fetchSize { get; set; }
 
 			[JsonProperty(Required = Required.AllowNull)]
 			public string impersonatedUser { get; set; }
@@ -60,20 +60,27 @@ namespace Neo4j.Driver.Tests.TestBackend
 		[JsonIgnore]
 		public List<string> SessionTransactions { get; } = new List<string>();
 
-        void SessionConfig(SessionConfigBuilder configBuilder)
+        void SessionConfig(SessionConfigBuilder configBuilder, IDriver driver)
         {
             if(!string.IsNullOrEmpty(data.database)) configBuilder.WithDatabase(data.database);            
             if(!string.IsNullOrEmpty(data.accessMode)) configBuilder.WithDefaultAccessMode(GetAccessMode);
             if(data.bookmarks.Count > 0) configBuilder.WithBookmarks(Bookmark.From(data.bookmarks.ToArray()));
-            configBuilder.WithFetchSize(data.fetchSize);
-			if (!string.IsNullOrEmpty(data.impersonatedUser)) configBuilder.WithImpersonatedUser(data.impersonatedUser);
+
+            var fetchSize = data.fetchSize > 0
+                ? data.fetchSize
+                : driver.Config.FetchSize > 0 || driver.Config.FetchSize == -1
+                    ? driver.Config.FetchSize
+                    : 1000;
+            configBuilder.WithFetchSize(fetchSize);
+			
+            if (!string.IsNullOrEmpty(data.impersonatedUser)) configBuilder.WithImpersonatedUser(data.impersonatedUser);
         }
 
         public override async Task Process()
         {   
             IDriver driver = ((NewDriver)ObjManager.GetObject(data.driverId)).Driver;
 
-            Session = driver.AsyncSession(SessionConfig);
+            Session = driver.AsyncSession(x => SessionConfig(x, driver));
 
             await Task.CompletedTask;
         }

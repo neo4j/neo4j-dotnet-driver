@@ -1,9 +1,6 @@
 ﻿using System;
-using Neo4j.Driver;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using System.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -56,7 +53,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 			public bool resolverRegistered { get; set; } = false;
 			public bool domainNameResolverRegistered { get; set; } = false;
 			public int connectionTimeoutMs { get; set; } = -1;
-		}
+            public int fetchSize { get; set; } = 1000;
+        }
 
 		public override async Task Process(Controller controller)
 		{
@@ -101,6 +99,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 			if (data.resolverRegistered) configBuilder.WithResolver(new ListAddressResolver(Control, data.uri));
 
 			if (data.connectionTimeoutMs > 0) configBuilder.WithConnectionTimeout(TimeSpan.FromMilliseconds(data.connectionTimeoutMs));
+
+            if (data.fetchSize > 0 || data.fetchSize == -1) configBuilder.WithFetchSize(data.fetchSize);
 
 			SimpleLogger logger = new SimpleLogger();
 
