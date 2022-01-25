@@ -53,7 +53,9 @@ namespace Neo4j.Driver.Tests.TestBackend
 			public bool resolverRegistered { get; set; } = false;
 			public bool domainNameResolverRegistered { get; set; } = false;
 			public int connectionTimeoutMs { get; set; } = -1;
-            public int fetchSize { get; set; } = 1000;
+            public long fetchSize { get; set; } = 1000;
+            public int maxConnectionPoolSize { get; set; } = -1;
+            public int connectionAcquisitionTimeoutMs { get; set; } = -1;
         }
 
 		public override async Task Process(Controller controller)
@@ -94,15 +96,25 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 		private void DriverConfig(ConfigBuilder configBuilder)
 		{
-			if (!string.IsNullOrEmpty(data.userAgent)) configBuilder.WithUserAgent(data.userAgent);
+			if (!string.IsNullOrEmpty(data.userAgent))
+                configBuilder.WithUserAgent(data.userAgent);
 
-			if (data.resolverRegistered) configBuilder.WithResolver(new ListAddressResolver(Control, data.uri));
+			if (data.resolverRegistered)
+                configBuilder.WithResolver(new ListAddressResolver(Control, data.uri));
 
-			if (data.connectionTimeoutMs > 0) configBuilder.WithConnectionTimeout(TimeSpan.FromMilliseconds(data.connectionTimeoutMs));
+			if (data.connectionTimeoutMs > 0)
+                configBuilder.WithConnectionTimeout(TimeSpan.FromMilliseconds(data.connectionTimeoutMs));
 
-            if (data.fetchSize > 0 || data.fetchSize == -1) configBuilder.WithFetchSize(data.fetchSize);
+            if (data.fetchSize > 0 || data.fetchSize == -1)
+                configBuilder.WithFetchSize(data.fetchSize);
 
-			SimpleLogger logger = new SimpleLogger();
+            if (data.maxConnectionPoolSize > 0)
+                configBuilder.WithMaxConnectionPoolSize(data.maxConnectionPoolSize);
+
+            if (data.connectionAcquisitionTimeoutMs > 0)
+                configBuilder.WithConnectionAcquisitionTimeout(TimeSpan.FromMilliseconds(data.connectionAcquisitionTimeoutMs));
+
+            SimpleLogger logger = new SimpleLogger();
 
 			configBuilder.WithLogger(logger);
 		}

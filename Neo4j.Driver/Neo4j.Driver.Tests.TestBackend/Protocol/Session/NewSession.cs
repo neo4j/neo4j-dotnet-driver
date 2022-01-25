@@ -72,7 +72,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                     ? driver.Config.FetchSize
                     : 1000;
             configBuilder.WithFetchSize(fetchSize);
-			
+
             if (!string.IsNullOrEmpty(data.impersonatedUser)) configBuilder.WithImpersonatedUser(data.impersonatedUser);
         }
 
