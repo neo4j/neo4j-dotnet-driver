@@ -19,40 +19,47 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override async Task Process(Controller controller)
         {
-            var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
-
-            await sessionContainer.Session.WriteTransactionAsync(async tx =>
+            try
             {
-				sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAbleNothing);
+                var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
 
-				TransactionId = controller.TransactionManager.AddTransaction(new TransactionWrapper(tx, async cursor =>
-				{
-					var result = ProtocolObjectFactory.CreateObject<Result>();
-					await result.PopulateRecords(cursor).ConfigureAwait(false);
-					return result.uniqueId;
-				}));
+                await sessionContainer.Session.WriteTransactionAsync(async tx =>
+                {
+                    sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAbleNothing);
 
-				sessionContainer.SessionTransactions.Add(TransactionId);
+                    TransactionId = controller.TransactionManager.AddTransaction(new TransactionWrapper(tx, async cursor =>
+                    {
+                        var result = ProtocolObjectFactory.CreateObject<Result>();
+                        await result.PopulateRecords(cursor).ConfigureAwait(false);
+                        return result.uniqueId;
+                    }));
 
-				await controller.SendResponse(new ProtocolResponse("RetryableTry", TransactionId).Encode()).ConfigureAwait(false);
+                    sessionContainer.SessionTransactions.Add(TransactionId);
 
-				await controller.Process(false, e =>
-				{
-					switch (sessionContainer.RetryState)
-					{
-						case NewSession.SessionState.RetryAbleNothing:
-							return true;
-						case NewSession.SessionState.RetryAblePositive:
-							return false;
-						case NewSession.SessionState.RetryAbleNegative:
-							throw e;
+                    await controller.SendResponse(new ProtocolResponse("RetryableTry", TransactionId).Encode()).ConfigureAwait(false);
 
-						default:
-							return true;
-					}
-				});
+                    await controller.Process(false, e =>
+                    {
+                        switch (sessionContainer.RetryState)
+                        {
+                            case NewSession.SessionState.RetryAbleNothing:
+                                return true;
+                            case NewSession.SessionState.RetryAblePositive:
+                                return false;
+                            case NewSession.SessionState.RetryAbleNegative:
+                                throw e;
 
-			}, TransactionConfig);
+                            default:
+                                return true;
+                        }
+                    });
+
+                }, TransactionConfig);
+            }
+            catch (Exception ex) when (ex.InnerException is TaskCanceledException)
+            {
+                throw new DriverExceptionWrapper(ex);
+            }
         }
 
         public override string Respond()

@@ -56,6 +56,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public long fetchSize { get; set; } = 1000;
             public int maxConnectionPoolSize { get; set; } = -1;
             public int connectionAcquisitionTimeoutMs { get; set; } = -1;
+            public int maxTxRetryTimeMs { get; set; } = -1;
         }
 
 		public override async Task Process(Controller controller)
@@ -113,6 +114,9 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             if (data.connectionAcquisitionTimeoutMs > 0)
                 configBuilder.WithConnectionAcquisitionTimeout(TimeSpan.FromMilliseconds(data.connectionAcquisitionTimeoutMs));
+
+            if (data.connectionTimeoutMs > 0)
+                configBuilder.WithConnectionTimeout(TimeSpan.FromMilliseconds(data.connectionTimeoutMs));
 
             SimpleLogger logger = new SimpleLogger();
 
