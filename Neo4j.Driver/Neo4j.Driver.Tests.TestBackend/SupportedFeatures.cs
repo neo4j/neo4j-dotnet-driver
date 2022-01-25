@@ -11,7 +11,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             FeaturesList = new List<string>
             {
                 //"Feature:API:Result.List",
-                //"Feature:API:Result.Peek",
+                "Feature:API:Result.Peek",
                 //"Feature:API:Result.Single",
                 //"Feature:API:Liveness.Check",
                 //"Feature:API:SSLConfig",
