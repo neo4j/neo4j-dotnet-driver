@@ -33,7 +33,7 @@ namespace Neo4j.Driver
         private string _database;
         private IEnumerable<Bookmark> _bookmarks;
         private long? _fetchSize;
-		private string _impersonatedUser;
+        private string _impersonatedUser;
 
         internal SessionConfig()
         {
@@ -41,7 +41,7 @@ namespace Neo4j.Driver
             _database = null;
             _bookmarks = null;
             _fetchSize = null;
-			_impersonatedUser = null;
+            _impersonatedUser = null;
         }
 
         internal static SessionConfigBuilder Builder => new SessionConfigBuilder(new SessionConfig());
@@ -101,30 +101,30 @@ namespace Neo4j.Driver
             internal set => _bookmarks = value ?? throw new ArgumentNullException();
         }
 
-		/// <summary>
-		/// The default fetch size.
-		/// Since Bolt v4 (Neo4j 4.0+), the query running result (records) are pulled from server in batches.
-		/// This fetch size defines how many records to pull in each batch.
-		/// Use <see cref="Config.Infinite"/> to disable batching and always pull all records in one batch instead.
-		/// </summary>
-		public long? FetchSize
-		{
-			get => _fetchSize;
-			internal set => _fetchSize = FetchSizeUtil.AssertValidFetchSize(value);
-		}
+        /// <summary>
+        /// The default fetch size.
+        /// Since Bolt v4 (Neo4j 4.0+), the query running result (records) are pulled from server in batches.
+        /// This fetch size defines how many records to pull in each batch.
+        /// Use <see cref="Config.Infinite"/> to disable batching and always pull all records in one batch instead.
+        /// </summary>
+        public long? FetchSize
+        {
+            get => _fetchSize;
+            internal set => _fetchSize = FetchSizeUtil.AssertValidFetchSize(value);
+        }
 
-		/// <summary>
-		/// Allows the specification of a username that the user wants to impersonate for the duration of the
-		/// session. Once set this cannot be changed for the duration of the sessions liftime. 
-		/// </summary>
-		/// <exception cref="set_ImpersonatedUser">throws <see cref="System.ArgumentNullException"/> when provided with a
-		/// null or empty string</exception>
-		public string ImpersonatedUser
-		{
-			get => _impersonatedUser;
-			internal set => _impersonatedUser = (!string.IsNullOrEmpty(value)) ? value : throw new ArgumentNullException();
-		}
-	}
+        /// <summary>
+        /// Allows the specification of a username that the user wants to impersonate for the duration of the
+        /// session. Once set this cannot be changed for the duration of the sessions liftime. 
+        /// </summary>
+        /// <exception cref="set_ImpersonatedUser">throws <see cref="System.ArgumentNullException"/> when provided with a
+        /// null or empty string</exception>
+        public string ImpersonatedUser
+        {
+            get => _impersonatedUser;
+            internal set => _impersonatedUser = (!string.IsNullOrEmpty(value)) ? value : throw new ArgumentNullException();
+        }
+    }
 
     /// <summary>
     /// The builder to build a <see cref="SessionConfig"/>.
@@ -199,17 +199,17 @@ namespace Neo4j.Driver
             return this;
         }
 
-		/// <summary>
-		/// Allows the specification of a username that the user wants to impersonate for the duration of the
-		/// session. Once set this cannot be changed for the duration of the sessions liftime. 
-		/// </summary>
-		/// <param name="impersonatedUser">username that the user wants to impersonat</param>
-		/// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
-		public SessionConfigBuilder WithImpersonatedUser(string impersonatedUser)
-		{
-			_config.ImpersonatedUser = impersonatedUser;
-			return this;
-		}
+        /// <summary>
+        /// Allows the specification of a username that the user wants to impersonate for the duration of the
+        /// session. Once set this cannot be changed for the duration of the sessions liftime. 
+        /// </summary>
+        /// <param name="impersonatedUser">username that the user wants to impersonat</param>
+        /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
+        public SessionConfigBuilder WithImpersonatedUser(string impersonatedUser)
+        {
+            _config.ImpersonatedUser = impersonatedUser;
+            return this;
+        }
 
         internal SessionConfig Build()
         {
