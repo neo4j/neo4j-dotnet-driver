@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                     return await Task.FromResult<string>(result.uniqueId);
                 }));
             }
-            catch (Exception ex) when (ex.InnerException is OperationCanceledException)
+            catch (Exception ex)
             {
                 throw new DriverExceptionWrapper(ex);
             }
