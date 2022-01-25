@@ -41,6 +41,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 									typeof(SessionBeginTransaction),
 									typeof(Result),
 									typeof(ResultNext),
+                                    typeof(ResultList),
 									typeof(ResultConsume),
 									typeof(RetryablePositive),
 									typeof(RetryableNegative),
