@@ -54,9 +54,9 @@ namespace Neo4j.Driver.Tests.TestBackend
 			public bool domainNameResolverRegistered { get; set; } = false;
 			public int connectionTimeoutMs { get; set; } = -1;
             public long fetchSize { get; set; } = 1000;
-            public int maxConnectionPoolSize { get; set; } = -1;
-            public int connectionAcquisitionTimeoutMs { get; set; } = -1;
-            public int maxTxRetryTimeMs { get; set; } = -1;
+            public int? maxConnectionPoolSize { get; set; }
+            public int? connectionAcquisitionTimeoutMs { get; set; }
+            public int? maxTxRetryTimeMs { get; set; }
         }
 
 		public override async Task Process(Controller controller)
@@ -109,14 +109,14 @@ namespace Neo4j.Driver.Tests.TestBackend
             if (data.fetchSize > 0 || data.fetchSize == -1)
                 configBuilder.WithFetchSize(data.fetchSize);
 
-            if (data.maxConnectionPoolSize > 0)
-                configBuilder.WithMaxConnectionPoolSize(data.maxConnectionPoolSize);
+            if (data.maxConnectionPoolSize.HasValue)
+                configBuilder.WithMaxConnectionPoolSize(data.maxConnectionPoolSize.Value);
 
-            if (data.connectionAcquisitionTimeoutMs > 0)
-                configBuilder.WithConnectionAcquisitionTimeout(TimeSpan.FromMilliseconds(data.connectionAcquisitionTimeoutMs));
+            if (data.connectionAcquisitionTimeoutMs.HasValue)
+                configBuilder.WithConnectionAcquisitionTimeout(TimeSpan.FromMilliseconds(data.connectionAcquisitionTimeoutMs.Value));
 
-            if (data.connectionTimeoutMs > 0)
-                configBuilder.WithConnectionTimeout(TimeSpan.FromMilliseconds(data.connectionTimeoutMs));
+            if (data.maxTxRetryTimeMs.HasValue)
+                configBuilder.WithMaxTransactionRetryTime(TimeSpan.FromMilliseconds(data.maxTxRetryTimeMs.Value));
 
             SimpleLogger logger = new SimpleLogger();
 
