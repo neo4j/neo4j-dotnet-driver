@@ -53,6 +53,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 			return await ResultCursor.ConsumeAsync().ConfigureAwait(false);
 		}
 
+        public Task<List<IRecord>> ToListAsync() => ResultCursor.ToListAsync();
+
 		public async Task PopulateRecords(IResultCursor cursor)
 		{
 			ResultCursor = cursor;
