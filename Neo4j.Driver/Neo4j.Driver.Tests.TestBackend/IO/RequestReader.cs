@@ -13,7 +13,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         private bool MessageOpen { get; set; }
         private const string OpenTag = "#request begin";
         private const string CloseTag = "#request end";
-		
+        
         public string CurrentObjectData { get; set; }
 
         public RequestReader(StreamReader reader)
@@ -38,19 +38,19 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
             var input = await InputReader.ReadLineAsync();
 
-			if (string.IsNullOrEmpty(input))
-				throw new IOException("The stream has been closed, and/or there is no more data on it.");
-		
+            if (string.IsNullOrEmpty(input))
+                throw new IOException("The stream has been closed, and/or there is no more data on it.");
+        
             if (IsOpenTag(input))
                 return true;
 
-             if (IsCloseTag(input))
+            if (IsCloseTag(input))
                  return false;
 
             if (MessageOpen)
                 CurrentObjectData += input;
 
-             return true;
+            return true;
 
         }
 
@@ -88,9 +88,9 @@ namespace Neo4j.Driver.Tests.TestBackend
             return ProtocolObjectFactory.CreateObject(CurrentObjectData);
         }
 
-		public Type GetObjectType()
-		{
-			return ProtocolObjectFactory.GetObjectType(CurrentObjectData);			
-		}
+        public Type GetObjectType()
+        {
+            return ProtocolObjectFactory.GetObjectType(CurrentObjectData);			
+        }
     }
 }
