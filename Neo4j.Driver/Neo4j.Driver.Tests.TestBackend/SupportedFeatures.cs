@@ -12,7 +12,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             {
                 "Feature:API:Result.List",
                 "Feature:API:Result.Peek",
-                //"Feature:API:Result.Single",
+                "Feature:API:Result.Single",
                 //"Feature:API:Liveness.Check",
                 //"Feature:API:SSLConfig",
                 //"Feature:API:SSLSchemes",
