@@ -20,15 +20,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override async Task Process()
         {
-            try
-            {
-                var result = (Result)ObjManager.GetObject(data.resultId);
-                Records = await result.GetNextRecord();
-            }
-            catch (Exception ex)
-            {
-                throw new DriverExceptionWrapper(ex);
-            }
+            var result = (Result)ObjManager.GetObject(data.resultId);
+            Records = await result.GetNextRecord();
         }
 
         public override string Respond()

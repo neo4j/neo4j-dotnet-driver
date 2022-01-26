@@ -60,20 +60,13 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override async Task Process()
         {
-            try
-            {
-                var newSession = (NewSession)ObjManager.GetObject(data.sessionId);
-                IResultCursor cursor = await newSession.Session.RunAsync(data.cypher, ConvertParameters(data.parameters), TransactionConfig).ConfigureAwait(false);
+            var newSession = (NewSession)ObjManager.GetObject(data.sessionId);
+            IResultCursor cursor = await newSession.Session.RunAsync(data.cypher, ConvertParameters(data.parameters), TransactionConfig).ConfigureAwait(false);
 
-                var result = ProtocolObjectFactory.CreateObject<Result>();
-                result.ResultCursor = cursor;
+            var result = ProtocolObjectFactory.CreateObject<Result>();
+            result.ResultCursor = cursor;
 
-                ResultId = result.uniqueId;
-            }
-            catch (Exception ex)
-            {
-                throw new DriverExceptionWrapper(ex);
-            }
+            ResultId = result.uniqueId;
         }
 
         public override string Respond()
