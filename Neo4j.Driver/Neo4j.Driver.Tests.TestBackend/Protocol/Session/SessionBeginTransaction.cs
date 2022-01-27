@@ -38,22 +38,15 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 		public override async Task Process(Controller controller)
 		{
-            try
+            var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
+            var transaction = await sessionContainer.Session.BeginTransactionAsync(TransactionConfig);
+            TransactionId = controller.TransactionManager.AddTransaction(new TransactionWrapper(transaction, async cursor =>
             {
-                var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
-                var transaction = await sessionContainer.Session.BeginTransactionAsync(TransactionConfig);
-                TransactionId = controller.TransactionManager.AddTransaction(new TransactionWrapper(transaction, async cursor =>
-                {
-                    var result = ProtocolObjectFactory.CreateObject<Result>();
-                    result.ResultCursor = cursor;
+                var result = ProtocolObjectFactory.CreateObject<Result>();
+                result.ResultCursor = cursor;
 
-                    return await Task.FromResult<string>(result.uniqueId);
-                }));
-            }
-            catch (Exception ex)
-            {
-                throw new DriverExceptionWrapper(ex);
-            }
+                return await Task.FromResult<string>(result.uniqueId);
+            }));
         }
 
         public override string Respond()
