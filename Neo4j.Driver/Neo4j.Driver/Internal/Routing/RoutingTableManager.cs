@@ -233,10 +233,11 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 throw new ArgumentNullException(nameof(database));
             }
-
             var knownRouters = routingTable?.Routers ?? throw new ArgumentNullException(nameof(routingTable));
-            foreach (var router in knownRouters)
+
+            for (var i = 0; i < knownRouters.Count; i++)
             {
+                var router = knownRouters[i];
                 triedUris?.Add(router);
                 try
                 {
@@ -248,7 +249,12 @@ namespace Neo4j.Driver.Internal.Routing
                     else
                     {
                         var newRoutingTable =
-                            await _discovery.DiscoverAsync(conn, database, impersonatedUser, bookmark).ConfigureAwait(false);	//TODO: need to pass in a valid impersonated user
+                            await _discovery.DiscoverAsync(conn, database, impersonatedUser, bookmark)
+                                .ConfigureAwait(false); //TODO: need to pass in a valid impersonated user
+
+                        if (newRoutingTable == null)
+                            continue;
+
                         if (!newRoutingTable.IsStale(mode))
                         {
                             return newRoutingTable;
@@ -257,6 +263,9 @@ namespace Neo4j.Driver.Internal.Routing
                         _logger?.Debug("Skipping stale routing table received from server '{0}' for database '{1}'",
                             router, database);
                     }
+                }
+                catch (ProtocolException) when (i < knownRouters.Count - 1)
+                {   
                 }
                 catch (SecurityException e)
                 {
