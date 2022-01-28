@@ -35,7 +35,6 @@ namespace Neo4j.Driver.Internal.Routing
 
         private const string GetRoutingTableForDatabaseProcedure = "CALL dbms.routing.getRoutingTable($context, $database)";
 
-
         public ClusterDiscovery(IDictionary<string, string> context, ILogger logger)
         {
             _context = context;

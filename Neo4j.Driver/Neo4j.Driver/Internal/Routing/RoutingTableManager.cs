@@ -58,6 +58,7 @@ namespace Neo4j.Driver.Internal.Routing
             TimeSpan routingTablePurgeDelay,
             params IRoutingTable[] routingTables)
         {
+
             _initialServerAddressProvider = initialServerAddressProvider;
             _discovery = discovery;
             _poolManager = poolManager;
@@ -235,9 +236,8 @@ namespace Neo4j.Driver.Internal.Routing
             }
             var knownRouters = routingTable?.Routers ?? throw new ArgumentNullException(nameof(routingTable));
 
-            for (var i = 0; i < knownRouters.Count; i++)
+            foreach (var router in knownRouters)
             {
-                var router = knownRouters[i];
                 triedUris?.Add(router);
                 try
                 {
@@ -278,17 +278,10 @@ namespace Neo4j.Driver.Internal.Routing
                         router, database);
                     throw;
                 }
-                catch (InvalidBookmarkException e)
+                catch (ClientException e) when (e is InvalidBookmarkException or InvalidBookmarkMixtureException)
                 {
                     _logger?.Error(e,
                         "Failed to update routing table from server '{0}' for database '{1}' because of an invalid bookmark exception.",
-                        router, database);
-                    throw;
-                }
-                catch (Neo4jException e) when (i == knownRouters.Count - 1)
-                {
-                    _logger?.Error(e,
-                        "Failed to update routing table from server '{0}' for database '{1}' because of an Unknown client exception.",
                         router, database);
                     throw;
                 }
