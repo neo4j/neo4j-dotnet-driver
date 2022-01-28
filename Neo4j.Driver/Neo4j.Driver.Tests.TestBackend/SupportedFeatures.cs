@@ -20,7 +20,6 @@ namespace Neo4j.Driver.Tests.TestBackend
                 "Feature:Auth:Custom",
                 "Feature:Auth:Kerberos",
                 "Feature:Bolt:3.0",
-                "Feature:Bolt:4.0",
                 "Feature:Bolt:4.1",
                 "Feature:Bolt:4.2",
                 "Feature:Bolt:4.3",
