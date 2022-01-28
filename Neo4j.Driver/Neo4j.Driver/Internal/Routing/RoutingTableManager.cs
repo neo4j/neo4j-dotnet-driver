@@ -58,7 +58,6 @@ namespace Neo4j.Driver.Internal.Routing
             TimeSpan routingTablePurgeDelay,
             params IRoutingTable[] routingTables)
         {
-
             _initialServerAddressProvider = initialServerAddressProvider;
             _discovery = discovery;
             _poolManager = poolManager;
