@@ -56,10 +56,6 @@ namespace Neo4j.Driver.Internal
 					{
 						error = new InvalidBookmarkException(message);
                     }
-                    else if (InvalidBookmarkMixtureException.IsInvalidBookmarkException(code))
-                    {
-                        error = new InvalidBookmarkMixtureException(message);
-                    }
                     else if (SecurityException.IsSecurityException(code))
                     {
                         error = new SecurityException(code, message);

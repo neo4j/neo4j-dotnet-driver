@@ -278,10 +278,17 @@ namespace Neo4j.Driver.Internal.Routing
                         router, database);
                     throw;
                 }
-                catch (ClientException e) when (e is InvalidBookmarkException or InvalidBookmarkMixtureException)
+                catch (InvalidBookmarkException e)
                 {
                     _logger?.Error(e,
                         "Failed to update routing table from server '{0}' for database '{1}' because of an invalid bookmark exception.",
+                        router, database);
+                    throw;
+                }
+                catch (Neo4jException e) when (e.Code == "Neo.ClientError.Transaction.InvalidBookmarkMixture")
+                {
+                    _logger?.Error(e,
+                        "Failed to update routing table from server '{0}' for database '{1}' because of an invalid bookmark mixture exception.",
                         router, database);
                     throw;
                 }

@@ -457,28 +457,6 @@ namespace Neo4j.Driver
     }
 
     /// <summary>
-    /// The provided bookmark is invalid. To recover from this a new session needs to be created.
-    /// </summary>
-    public class InvalidBookmarkMixtureException : ClientException
-    {
-        private const string ErrorCode = "Neo.ClientError.Transaction.InvalidBookmarkMixture";
-
-        internal static bool IsInvalidBookmarkException(string code)
-        {
-            return string.Equals(code, ErrorCode);
-        }
-
-        /// <summary>
-        /// Create a new <see cref="InvalidBookmarkMixtureException"/> with an error message.
-        /// </summary>
-        /// <param name="message">The error message.</param>
-        public InvalidBookmarkMixtureException(string message) : base(ErrorCode, message)
-        {
-
-        }
-    }
-
-    /// <summary>
     /// A value retrieved from the database needs to be truncated for this conversion to work, and will
     /// cause working with a modified data.
     /// </summary>
