@@ -279,7 +279,7 @@ namespace Neo4j.Driver.Internal.Routing
                         router, database);
                     throw;
                 }
-                catch (Neo4jException e) when (e.Code == "Neo.ClientError.Transaction.InvalidBookmarkMixture")
+                catch (Neo4jException e) when (ShouldThrowCode(e.Code))
                 {
                     _logger?.Error(e,
                         "Failed to update routing table from server '{0}' for database '{1}' because of an invalid bookmark mixture exception.",
@@ -294,6 +294,12 @@ namespace Neo4j.Driver.Internal.Routing
             }
 
             return null;
+        }
+
+        public bool ShouldThrowCode(string code)
+        {
+            return code == "Neo.ClientError.Transaction.InvalidBookmarkMixture" || 
+                   code.StartsWith("Neo.ClientError.Security.") && code != "Neo.ClientError.Security.AuthorizationExpired";
         }
     }
 }

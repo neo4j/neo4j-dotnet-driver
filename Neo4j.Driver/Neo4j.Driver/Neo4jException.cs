@@ -362,9 +362,6 @@ namespace Neo4j.Driver
         public SecurityException(string message, Exception innerException) : base(message, innerException)
         {
         }
-
-        internal static bool IsSecurityException(string code) =>
-            code.StartsWith("Neo.ClientError.Security.") && code != "Neo.ClientError.Security.AuthorizationExpired";
     }
 
     /// <summary>
