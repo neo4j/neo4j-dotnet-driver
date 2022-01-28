@@ -41,6 +41,9 @@ namespace Neo4j.Driver.Tests.TestBackend
 									typeof(SessionBeginTransaction),
 									typeof(Result),
 									typeof(ResultNext),
+									typeof(ResultPeek),
+                                    typeof(ResultList),
+                                    typeof(ResultSingle),
 									typeof(ResultConsume),
 									typeof(RetryablePositive),
 									typeof(RetryableNegative),
@@ -69,7 +72,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			catch
 			{
 				throw new TestKitProtocolException($"Attempting to use an unrecognized protocol type: {typeName}");
-			}			
+			}
         }
 
 		public static void ValidateType(Type objectType)

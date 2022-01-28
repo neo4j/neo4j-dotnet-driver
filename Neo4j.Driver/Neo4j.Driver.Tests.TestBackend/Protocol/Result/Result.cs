@@ -41,10 +41,19 @@ namespace Neo4j.Driver.Tests.TestBackend
 			return await Task.FromResult<IRecord>(null);
 		}
 
-		public async Task<IResultSummary> ConsumeResults()
+        public Task<IRecord> PeekRecord()
+        {
+            return ResultCursor.PeekAsync();
+        }
+
+        public Task<IRecord> SingleAsync() => ResultCursor.SingleAsync();
+
+        public async Task<IResultSummary> ConsumeResults()
 		{
 			return await ResultCursor.ConsumeAsync().ConfigureAwait(false);
 		}
+
+        public Task<List<IRecord>> ToListAsync() => ResultCursor.ToListAsync();
 
 		public async Task PopulateRecords(IResultCursor cursor)
 		{
