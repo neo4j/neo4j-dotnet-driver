@@ -233,8 +233,8 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 throw new ArgumentNullException(nameof(database));
             }
-            var knownRouters = routingTable?.Routers ?? throw new ArgumentNullException(nameof(routingTable));
 
+            var knownRouters = routingTable?.Routers ?? throw new ArgumentNullException(nameof(routingTable));
             foreach (var router in knownRouters)
             {
                 triedUris?.Add(router);
@@ -247,12 +247,7 @@ namespace Neo4j.Driver.Internal.Routing
                     }
                     else
                     {
-                        var newRoutingTable =
-                            await _discovery.DiscoverAsync(conn, database, impersonatedUser, bookmark)
-                                .ConfigureAwait(false); //TODO: need to pass in a valid impersonated user
-
-                        if (newRoutingTable == null)
-                            continue;
+                        var newRoutingTable = await _discovery.DiscoverAsync(conn, database, impersonatedUser, bookmark).ConfigureAwait(false); //TODO: need to pass in a valid impersonated user
 
                         if (!newRoutingTable.IsStale(mode))
                         {
