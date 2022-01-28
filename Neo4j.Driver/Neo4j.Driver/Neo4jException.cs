@@ -183,13 +183,13 @@ namespace Neo4j.Driver
         {
         }
 
-		/// <summary>
-		/// Create a new <see cref="DatabaseException"/> with an error error message.
-		/// </summary>
-		/// <param name="message">The error message.</param>
-		public DatabaseException(string message) : base(string.Empty, message)
-		{
-		}
+        /// <summary>
+        /// Create a new <see cref="DatabaseException"/> with an error error message.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+        public DatabaseException(string message) : base(string.Empty, message)
+        {
+        }
 
         /// <summary>
         /// Create a new <see cref="DatabaseException"/> with an error code and an error message.
@@ -263,35 +263,35 @@ namespace Neo4j.Driver
         }
     }
 
-	/// <summary>
-	///  A <see cref="ConnectionReadTimeoutException"/> indicates that the driver timed out trying to read from the network socket.
-	/// </summary>
-	[DataContract]
-	public class ConnectionReadTimeoutException : Neo4jException
-	{
-		/// <summary>
-		/// Create a new <see cref="ConnectionReadTimeoutException"/> with an error message.
-		/// </summary>
-		/// <param name="message">The error message.</param>
-		public ConnectionReadTimeoutException(string message) : base(message)
-		{
-		}
+    /// <summary>
+    ///  A <see cref="ConnectionReadTimeoutException"/> indicates that the driver timed out trying to read from the network socket.
+    /// </summary>
+    [DataContract]
+    public class ConnectionReadTimeoutException : Neo4jException
+    {
+        /// <summary>
+        /// Create a new <see cref="ConnectionReadTimeoutException"/> with an error message.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+        public ConnectionReadTimeoutException(string message) : base(message)
+        {
+        }
 
-		/// <summary>
-		/// Create a new <see cref="ConnectionReadTimeoutException"/> with an error message and an exception.
-		/// </summary>
-		/// <param name="message">The error message.</param>
-		/// <param name="innerException">The inner exception.</param>
-		public ConnectionReadTimeoutException(string message, Exception innerException) : base(message, innerException)
-		{
-		}
-	}
+        /// <summary>
+        /// Create a new <see cref="ConnectionReadTimeoutException"/> with an error message and an exception.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+        /// <param name="innerException">The inner exception.</param>
+        public ConnectionReadTimeoutException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+    }
 
-	/// <summary>
-	/// There was a bolt protocol violation of the contract between the driver and the server. 
-	/// When seen this error, contact driver developers.
-	/// </summary>
-	[DataContract]
+    /// <summary>
+    /// There was a bolt protocol violation of the contract between the driver and the server. 
+    /// When seen this error, contact driver developers.
+    /// </summary>
+    [DataContract]
     public class ProtocolException : Neo4jException
     {
         private const string ErrorCodeInvalid = "Neo.ClientError.Request.Invalid";
@@ -390,71 +390,73 @@ namespace Neo4j.Driver
         }
     }
 
-	/// <summary>
-	/// The authorization information maintained on the server has expired. The client should reconnect.
-	/// </summary>
-	public class AuthorizationException : SecurityException
-	{
-		private const string ErrorCode = "Neo.ClientError.Security.AuthorizationExpired";
+    /// <summary>
+    /// The authorization information maintained on the server has expired. The client should reconnect.
+    /// </summary>
+    public class AuthorizationException : SecurityException
+    {
+        private const string ErrorCode = "Neo.ClientError.Security.AuthorizationExpired";
 
-		internal static bool IsAuthorizationError(string code)
-		{
-			return code.Equals(ErrorCode);
-		}
+        internal static bool IsAuthorizationError(string code)
+        {
+            return code.Equals(ErrorCode);
+        }
 
-		/// <summary>
-		/// Create a new <see cref="AuthorizationException"/> with an error message.
-		/// </summary>
-		/// <param name="message">The error message.</param>
-		public AuthorizationException(string message) : base(ErrorCode, message)
-		{
-		}
-	}
+        /// <summary>
+        /// Create a new <see cref="AuthorizationException"/> with an error message.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+        public AuthorizationException(string message) : base(ErrorCode, message)
+        {
+        }
+    }
 
-	/// <summary>
-	/// The provided token has expired. The current driver instance is considered invalid. It should not 
-	/// be used anymore. The client must create a new driver instance with a valid token.
-	/// </summary>
-	public class TokenExpiredException : SecurityException 
-	{
-		private const string ErrorCode = "Neo.ClientError.Security.TokenExpiredException";
+    /// <summary>
+    /// The provided token has expired. The current driver instance is considered invalid. It should not 
+    /// be used anymore. The client must create a new driver instance with a valid token.
+    /// </summary>
+    public class TokenExpiredException : SecurityException 
+    {
+        private const string ErrorCode = "Neo.ClientError.Security.TokenExpiredException";
 
-		internal static bool IsTokenExpiredError(string code)
-		{
-			return string.Equals(code, ErrorCode);
-		}
+        internal static bool IsTokenExpiredError(string code)
+        {
+            return string.Equals(code, ErrorCode);
+        }
 
-		/// <summary>
-		/// Create a new <see cref="TokenExpiredException"/> with an error message.
-		/// </summary>
-		/// <param name="message">The error message.</param>
-		public TokenExpiredException(string message) : base(ErrorCode, message)
-		{
+        /// <summary>
+        /// Create a new <see cref="TokenExpiredException"/> with an error message.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+        public TokenExpiredException(string message) : base(ErrorCode, message)
+        {
 
-		}
-	}
+        }
+    }
 
-	/// <summary>
-	/// The provided bookmark is invalid. To recover from this a new session needs to be created.
-	/// </summary>
-	public class InvalidBookmarkException : ClientException
-	{
-		private const string ErrorCode = "Neo.ClientError.Transaction.InvalidBookmark";
+    /// <summary>
+    /// The provided bookmark is invalid. To recover from this a new session needs to be created.
+    /// </summary>
+    public class InvalidBookmarkException : ClientException
+    {
+        private const string ErrorCode = "Neo.ClientError.Transaction.InvalidBookmark";
 
         internal static bool IsInvalidBookmarkException(string code)
-		{
-			return string.Equals(code, ErrorCode);
-		}
+        {
+            return string.Equals(code, ErrorCode);
+        }
 
-		/// <summary>
-		/// Create a new <see cref="InvalidBookmarkException"/> with an error message.
-		/// </summary>
-		/// <param name="message">The error message.</param>
-		public InvalidBookmarkException(string message) : base(ErrorCode, message)
-		{
+        /// <summary>
+        /// Create a new <see cref="InvalidBookmarkException"/> with an error message.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+        public InvalidBookmarkException(string message) : base(ErrorCode, message)
+        {
 
-		}
+        }
     }
+        
+
 
     /// <summary>
     /// A value retrieved from the database needs to be truncated for this conversion to work, and will
@@ -526,24 +528,24 @@ namespace Neo4j.Driver
         /// <param name="message">The error message</param>
         public ResultConsumedException(string message) : base(message)
         {
-		}
-	}
+        }
+    }
 
-	/// <summary>
-	/// An attempt to BeginTransaction has been made before the sessions existing transaction
-	/// has been consumed or rolledback. e.g. An attempt to nest transactions has occured.
-	/// A session can only have a single transaction at a time.
-	/// </summary>
-	[DataContract]
-	public class TransactionNestingException : ClientException
-	{ 
-		/// <summary>
-		/// Creaet a new <see cref="TransactionNestingException"/> with an error message
-		/// </summary>
-		/// <param name="message">The error message</param>
-		public TransactionNestingException(string message) : base(message)		
-		{
-		}
-	}
+    /// <summary>
+    /// An attempt to BeginTransaction has been made before the sessions existing transaction
+    /// has been consumed or rolledback. e.g. An attempt to nest transactions has occured.
+    /// A session can only have a single transaction at a time.
+    /// </summary>
+    [DataContract]
+    public class TransactionNestingException : ClientException
+    { 
+        /// <summary>
+        /// Creaet a new <see cref="TransactionNestingException"/> with an error message
+        /// </summary>
+        /// <param name="message">The error message</param>
+        public TransactionNestingException(string message) : base(message)		
+        {
+        }
+    }
 
 }
