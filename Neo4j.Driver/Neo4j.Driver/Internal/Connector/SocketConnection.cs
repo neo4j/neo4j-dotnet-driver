@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Logging;
@@ -51,6 +52,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         private string _id;
         private readonly string _idPrefix;
+        private long _lastQueryId;
 
         public IDictionary<string, string> RoutingContext { get; set; }
 
@@ -288,5 +290,13 @@ namespace Neo4j.Driver.Internal.Connector
 		{
 			_client.SetRecvTimeOut(seconds);			
 		}
-	}
+
+        public long LastQueryId => _lastQueryId;
+
+        public void UpdateQueryId(long id)
+        {
+            if (id > _lastQueryId)
+                _lastQueryId = id;
+        }
+    }
 }

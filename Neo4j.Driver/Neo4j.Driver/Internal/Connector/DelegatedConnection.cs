@@ -148,5 +148,7 @@ namespace Neo4j.Driver.Internal.Connector
 			Delegate.SetRecvTimeOut(seconds);
 		}
 
-	}
+        public long LastQueryId => Delegate.LastQueryId;
+        public void UpdateQueryId(long id) => Delegate.UpdateQueryId(id);
+    }
 }

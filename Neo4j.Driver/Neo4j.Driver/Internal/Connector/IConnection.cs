@@ -89,5 +89,8 @@ namespace Neo4j.Driver.Internal.Connector
 
 		void SetRecvTimeOut(int seconds);
 
-	}
+        long LastQueryId { get; }
+
+        void UpdateQueryId(long id);
+    }
 }

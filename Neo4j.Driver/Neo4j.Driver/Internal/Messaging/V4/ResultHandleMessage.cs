@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Neo4j.Driver.Internal.Messaging.V4
 {

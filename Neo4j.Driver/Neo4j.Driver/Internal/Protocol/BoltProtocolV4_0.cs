@@ -20,6 +20,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Threading;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -130,9 +131,10 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             return async (streamBuilder, id, n) =>
             {
+                connection.UpdateQueryId(id);
                 var pullAllHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
                 await connection
-                    .EnqueueAsync(new PullMessage(id, n), pullAllHandler)
+                    .EnqueueAsync(new PullMessage(connection.LastQueryId == id ? -1 : id, n), pullAllHandler)
                     .ConfigureAwait(false);
                 await connection.SendAsync().ConfigureAwait(false);
             };
@@ -143,9 +145,10 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             return async (streamBuilder, id) =>
             {
+                connection.UpdateQueryId(id);
                 var pullAllHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
                 await connection
-                    .EnqueueAsync(new DiscardMessage(id, All), pullAllHandler)
+                    .EnqueueAsync(new DiscardMessage(connection.LastQueryId == id ? -1 : id, All), pullAllHandler)
                     .ConfigureAwait(false);
                 await connection.SendAsync().ConfigureAwait(false);
             };
