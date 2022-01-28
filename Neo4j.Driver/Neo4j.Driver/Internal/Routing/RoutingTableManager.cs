@@ -264,9 +264,6 @@ namespace Neo4j.Driver.Internal.Routing
                             router, database);
                     }
                 }
-                catch (ProtocolException) when (i < knownRouters.Count - 1)
-                {   
-                }
                 catch (SecurityException e)
                 {
                     _logger?.Error(e,
@@ -288,7 +285,7 @@ namespace Neo4j.Driver.Internal.Routing
                         router, database);
                     throw;
                 }
-                catch (Neo4jException e)
+                catch (Neo4jException e) when (i == knownRouters.Count - 1)
                 {
                     _logger?.Error(e,
                         "Failed to update routing table from server '{0}' for database '{1}' because of an Unknown client exception.",
