@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             if(!string.IsNullOrEmpty(data.accessMode)) configBuilder.WithDefaultAccessMode(GetAccessMode);
             if(data.bookmarks.Count > 0) configBuilder.WithBookmarks(Bookmark.From(data.bookmarks.ToArray()));
 
-            var fetchSize = data.fetchSize > 0
+            var fetchSize = data.fetchSize > 0 || data.fetchSize == -1
                 ? data.fetchSize
                 : driver.Config.FetchSize > 0 || driver.Config.FetchSize == -1
                     ? driver.Config.FetchSize
