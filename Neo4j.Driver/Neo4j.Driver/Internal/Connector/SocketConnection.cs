@@ -295,8 +295,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void UpdateQueryId(long id)
         {
-            if (id > _lastQueryId)
-                _lastQueryId = id;
+            _lastQueryId = id;
         }
     }
 }

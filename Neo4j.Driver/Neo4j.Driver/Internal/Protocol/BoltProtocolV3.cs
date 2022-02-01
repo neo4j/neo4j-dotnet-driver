@@ -93,7 +93,7 @@ namespace Neo4j.Driver.Internal.Protocol
             AssertNullDatabase(database);
 
             var summaryBuilder = new SummaryBuilder(query, connection.Server);
-            var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, resultResourceHandler);
+            var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, connection.UpdateQueryId, resultResourceHandler);
             var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
             var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
             await connection.EnqueueAsync(GetRunWithMetaDataMessage(query, bookmark, config, connection.GetEnforcedAccessMode(), null, impersonatedUser), runHandler, PullAll, pullAllHandler).ConfigureAwait(false);
@@ -117,7 +117,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public virtual async Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection, Query query, bool reactive, long fetchSize = Config.Infinite)
         {
             var summaryBuilder = new SummaryBuilder(query, connection.Server);
-            var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, null);
+            var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, connection.UpdateQueryId, null);
             var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
             var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, null);
             await connection.EnqueueAsync(GetRunWithMetaDataMessage(query), runHandler, PullAll, pullAllHandler).ConfigureAwait(false);

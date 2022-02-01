@@ -28,6 +28,7 @@ namespace Neo4j.Driver.Internal.Result
     {
         private readonly long _fetchSize;
         private readonly Func<Task> _advanceFunction;
+        private readonly Action<long> _setId;
         private readonly Func<IResultStreamBuilder, long, long, Task> _moreFunction;
         private readonly Func<IResultStreamBuilder, long, Task> _cancelFunction;
         private readonly CancellationTokenSource _cancellationSource;
@@ -43,9 +44,12 @@ namespace Neo4j.Driver.Internal.Result
         private IResponsePipelineError _pendingError;
         private readonly IAutoPullHandler _autoPullHandler;
 
-        public ResultCursorBuilder(SummaryBuilder summaryBuilder, Func<Task> advanceFunction,
+        public ResultCursorBuilder(SummaryBuilder summaryBuilder, 
+            Func<Task> advanceFunction,
             Func<IResultStreamBuilder, long, long, Task> moreFunction,
-            Func<IResultStreamBuilder, long, Task> cancelFunction, IResultResourceHandler resourceHandler,
+            Func<IResultStreamBuilder, long, Task> cancelFunction, 
+            Action<long> setId,
+            IResultResourceHandler resourceHandler,
             long fetchSize = Config.Infinite, bool reactive = false)
         {
             _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
@@ -55,6 +59,7 @@ namespace Neo4j.Driver.Internal.Result
             _cancelFunction = cancelFunction ?? ((s, id) => Task.CompletedTask);
             _cancellationSource = new CancellationTokenSource();
             _resourceHandler = resourceHandler;
+            _setId = setId;
 
             _records = new ConcurrentQueue<IRecord>();
 
@@ -205,6 +210,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public void RunCompleted(long queryId, string[] fields, IResponsePipelineError error)
         {
+            _setId?.Invoke(queryId);
             _queryId = queryId;
             _fields = fields;
 

@@ -76,9 +76,11 @@ namespace Neo4j.Driver.Internal.Protocol
 																				  long fetchSize = Config.Infinite)
         {
             var summaryBuilder = new SummaryBuilder(query, connection.Server);
-            var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,
+            var streamBuilder = new ResultCursorBuilder(summaryBuilder,
+                connection.ReceiveOneAsync,
                 RequestMore(connection, summaryBuilder, bookmarkTracker),
                 CancelRequest(connection, summaryBuilder, bookmarkTracker),
+                connection.UpdateQueryId,
                 resultResourceHandler,
                 fetchSize, reactive);
             var runHandler = new V4.RunResponseHandler(streamBuilder, summaryBuilder);
@@ -105,9 +107,12 @@ namespace Neo4j.Driver.Internal.Protocol
             Query query, bool reactive, long fetchSize = Config.Infinite)
         {
             var summaryBuilder = new SummaryBuilder(query, connection.Server);
-            var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,
+            var streamBuilder = new ResultCursorBuilder(summaryBuilder,
+                connection.ReceiveOneAsync,
                 RequestMore(connection, summaryBuilder, null),
-                CancelRequest(connection, summaryBuilder, null), null,
+                CancelRequest(connection, summaryBuilder, null),
+                connection.UpdateQueryId,
+                null,
                 fetchSize, reactive);
             var runHandler = new V4.RunResponseHandler(streamBuilder, summaryBuilder);
 
@@ -131,7 +136,6 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             return async (streamBuilder, id, n) =>
             {
-                connection.UpdateQueryId(id);
                 var pullAllHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
                 await connection
                     .EnqueueAsync(new PullMessage(connection.LastQueryId == id ? -1 : id, n), pullAllHandler)
@@ -145,7 +149,6 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             return async (streamBuilder, id) =>
             {
-                connection.UpdateQueryId(id);
                 var pullAllHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
                 await connection
                     .EnqueueAsync(new DiscardMessage(connection.LastQueryId == id ? -1 : id, All), pullAllHandler)
