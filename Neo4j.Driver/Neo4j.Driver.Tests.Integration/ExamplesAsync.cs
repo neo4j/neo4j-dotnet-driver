@@ -149,57 +149,57 @@ namespace Neo4j.Driver.ExamplesAsync
 
                 return product;
             }
-			// end::async-explicit-transaction[]
+            // end::async-explicit-transaction[]
 
-			// tag::async-multiple-tx[]
-			public async Task<int?> EmployEveryoneInCompany(string companyName)
-			{
-				int? jobsFilled = null;
+            // tag::async-multiple-tx[]
+            public async Task<int?> EmployEveryoneInCompany(string companyName)
+            {
+                int? jobsFilled = null;
 
-				var session = Driver.AsyncSession();
+                var session = Driver.AsyncSession();
 
-				try
-				{
-					var names = await session.ReadTransactionAsync(async tx =>
-					{
-						var cursor = await tx.RunAsync("MATCH (a:Person) RETURN a.name AS name");
-						var people = await cursor.ToListAsync();
-						return people.Select(person => {
-							return Neo4j.Driver.ValueExtensions.As<string>(person["name"]);
-						});
-					});
+                try
+                {
+                    var names = await session.ReadTransactionAsync(async tx =>
+                    {
+                        var cursor = await tx.RunAsync("MATCH (a:Person) RETURN a.name AS name");
+                        var people = await cursor.ToListAsync();
+                        return people.Select(person => {
+                            return Neo4j.Driver.ValueExtensions.As<string>(person["name"]);
+                        });
+                    });
 
-					jobsFilled = await session.WriteTransactionAsync(tx =>
-					{
-						return Task.WhenAll(names.Select(async personName =>
-						{
-							var cursor = await tx.RunAsync("MATCH (emp:Person {name: $person_name}) " +
-													   "MERGE (com:Company {name: $company_name}) " +
-													   "MERGE (emp)-[:WORKS_FOR]->(com)",
-							new
-							{
-								person_name = personName,
-								company_name = companyName
-							});
+                    jobsFilled = await session.WriteTransactionAsync(tx =>
+                    {
+                        return Task.WhenAll(names.Select(async personName =>
+                        {
+                            var cursor = await tx.RunAsync("MATCH (emp:Person {name: $person_name}) " +
+                                                       "MERGE (com:Company {name: $company_name}) " +
+                                                       "MERGE (emp)-[:WORKS_FOR]->(com)",
+                            new
+                            {
+                                person_name = personName,
+                                company_name = companyName
+                            });
 
-							var summary = await cursor.ConsumeAsync();
+                            var summary = await cursor.ConsumeAsync();
 
-							return summary.Counters.RelationshipsCreated;
-						}))
-							.ContinueWith(t => t.Result.Sum());
+                            return summary.Counters.RelationshipsCreated;
+                        }))
+                            .ContinueWith(t => t.Result.Sum());
 
-					});
-				}
-				finally
-				{
-					await session.CloseAsync();
-				}
+                    });
+                }
+                finally
+                {
+                    await session.CloseAsync();
+                }
 
-				return jobsFilled;
-			}
-			// end::async-multiple-tx[]
+                return jobsFilled;
+            }
+            // end::async-multiple-tx[]
 
-			[RequireServerFact]
+            [RequireServerFact]
             public async void TestAutocommitTransactionExample()
             {
                 await WriteAsync("CREATE (p:Product) SET p.id = $id, p.title = $title",
@@ -237,18 +237,18 @@ namespace Neo4j.Driver.ExamplesAsync
                 result.Should().Contain("Product-0");
             }
 
-			[RequireServerFact]
-			public async void TestAsyncMultipleTxExample()
-			{
-				await WriteAsync("CREATE (a:Person {name: $nameA}), (b:Person {name: $nameB})",
-					new { nameA = "Alice", nameB = "Bob" });
+            [RequireServerFact]
+            public async void TestAsyncMultipleTxExample()
+            {
+                await WriteAsync("CREATE (a:Person {name: $nameA}), (b:Person {name: $nameB})",
+                    new { nameA = "Alice", nameB = "Bob" });
 
-				var result = await EmployEveryoneInCompany("Acme");
+                var result = await EmployEveryoneInCompany("Acme");
 
-				result.Should().NotBeNull();
-				result.Should().Be(2);
-			}
-		}
+                result.Should().NotBeNull();
+                result.Should().Be(2);
+            }
+        }
 
         [SuppressMessage("ReSharper", "xUnit1013")]
         public class AutocommitTransactionExample : BaseAsyncExample
@@ -500,23 +500,23 @@ namespace Neo4j.Driver.ExamplesAsync
             }
         }
 
-		public class BearerAuthExample : BaseAsyncExample
-		{
-			public BearerAuthExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
-				: base(output, fixture)
-			{
-				
-			}
+        public class BearerAuthExample : BaseAsyncExample
+        {
+            public BearerAuthExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+                : base(output, fixture)
+            {
+                
+            }
 
-			public IDriver CreateDriverWithBearerAuth(string uri, string bearerToken)
-			{
-				return GraphDatabase.Driver(uri, 
-											AuthTokens.Bearer(bearerToken),
-											o => o.WithEncryptionLevel(EncryptionLevel.None));
-			}		
+            public IDriver CreateDriverWithBearerAuth(string uri, string bearerToken)
+            {
+                return GraphDatabase.Driver(uri, 
+                                            AuthTokens.Bearer(bearerToken),
+                                            o => o.WithEncryptionLevel(EncryptionLevel.None));
+            }		
 
 
-		}
+        }
 
 
 
@@ -829,8 +829,8 @@ namespace Neo4j.Driver.ExamplesAsync
                     _disposed = true;
                 }
 
-				#pragma warning disable CS8892
-				public static async Task Main(string[] args)
+                #pragma warning disable CS8892
+                public static async Task Main(string[] args)
                 {
                     // Aura queries use an encrypted connection using the "neo4j+s" protocol
                     var boltUrl = "%%BOLT_URL_PLACEHOLDER%%";
