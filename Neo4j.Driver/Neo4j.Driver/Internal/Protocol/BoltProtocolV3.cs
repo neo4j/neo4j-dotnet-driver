@@ -183,7 +183,9 @@ namespace Neo4j.Driver.Internal.Protocol
             GetProcedureAndParameters(connection, database, out procedure, out parameters);            
             var query = new Query(procedure, parameters);
 
-            var result = await RunInAutoCommitTransactionAsync(connection, query, false, bookmarkTracker, resourceHandler, sessionDb, null, null, null).ConfigureAwait(false);
+            bookmark = Version == BoltProtocolVersion.V3_0 ? null : bookmark;
+
+            var result = await RunInAutoCommitTransactionAsync(connection, query, false, bookmarkTracker, resourceHandler, sessionDb, bookmark, null, null).ConfigureAwait(false);
             var record = await result.SingleAsync();
 
 			//Since 4.4 the Routing information will contain a db. Earlier versions need to populate this here as it's not received in the older route response...
