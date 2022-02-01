@@ -494,7 +494,8 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             VerifyCanRollback(txc);
         }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        //[RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        [Fact(Skip = "Unpredictable behavior to be replaced with an exception")]
         public void ShouldHandleNestedQueries()
         {
             const int size = 1024;
