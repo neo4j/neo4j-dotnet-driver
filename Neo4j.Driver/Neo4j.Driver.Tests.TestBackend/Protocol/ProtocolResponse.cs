@@ -10,13 +10,22 @@ namespace Neo4j.Driver.Tests.TestBackend
         public class ResponseType
         {
             public string id { get; set; }
+            public string[] keys { get; set; }
+
         }
 
-        public ProtocolResponse(string newName, string newId)
+        public ProtocolResponse(string newName, string newId): this(newName, newId, null)
         {
-            data = new ResponseType();
+        }
+
+        public ProtocolResponse(string newName, string newId, string[] keys)
+        {
+            data = new ResponseType
+            {
+                id = newId,
+                keys = keys
+            };
             name = newName;
-            ((ResponseType)data).id = newId;
         }
 
         public ProtocolResponse(string newName, object dataType)
@@ -25,15 +34,15 @@ namespace Neo4j.Driver.Tests.TestBackend
             data = dataType;
         }
 
-		public ProtocolResponse(string newName)
+        public ProtocolResponse(string newName):this(newName, null, null)
 		{
-			name = newName;
-			data = null;
 		}
+
 
         public string Encode()
         {
-            return JsonConvert.SerializeObject(this);
+            return JsonConvert.SerializeObject(this, 
+                new JsonSerializerSettings{ NullValueHandling = NullValueHandling.Ignore });
         }
     }
 }

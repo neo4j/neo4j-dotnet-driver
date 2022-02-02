@@ -5,7 +5,6 @@ using Neo4j.Driver;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-
 namespace Neo4j.Driver.Tests.TestBackend
 {
 	internal class Result : IProtocolObject
@@ -28,7 +27,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override string Respond()
         {
-            return new ProtocolResponse("Result", uniqueId).Encode();
+            return new ProtocolResponse("Result", uniqueId, ResultCursor?.KeysAsync().GetAwaiter().GetResult()).Encode();
         }
 
 		public async Task<IRecord> GetNextRecord()
