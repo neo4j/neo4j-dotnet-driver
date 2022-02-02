@@ -34,30 +34,30 @@ namespace Neo4j.Driver.Internal.Protocol
     internal class BoltProtocolV3 : IBoltProtocol
     {
         private const string GetRoutingTableProcedure = "CALL dbms.cluster.routing.getRoutingTable($context)";
-		protected const string RoutingTableDBKey = "db";
+        protected const string RoutingTableDBKey = "db";
 
-		protected virtual IMessageFormat MessageFormat  => BoltProtocolMessageFormat.V3;
+        protected virtual IMessageFormat MessageFormat  => BoltProtocolMessageFormat.V3;
         public virtual BoltProtocolVersion Version => BoltProtocolVersion.V3_0;
 
         protected virtual IRequestMessage GetHelloMessage(string userAgent,
-														IDictionary<string, object> auth)
-		{
-			return new Messaging.V3.HelloMessage(userAgent, auth);
-		}
+                                                        IDictionary<string, object> auth)
+        {
+            return new Messaging.V3.HelloMessage(userAgent, auth);
+        }
 
-		protected virtual IRequestMessage GetBeginMessage(string database, Bookmark bookmark, TransactionConfig config, AccessMode mode, string impersonatedUser)
-		{
-			ValidateImpersonatedUserForVersion(impersonatedUser);
-			AssertNullDatabase(database);
+        protected virtual IRequestMessage GetBeginMessage(string database, Bookmark bookmark, TransactionConfig config, AccessMode mode, string impersonatedUser)
+        {
+            ValidateImpersonatedUserForVersion(impersonatedUser);
+            AssertNullDatabase(database);
 
-			return new BeginMessage(bookmark, config, mode);
-		}
+            return new BeginMessage(bookmark, config, mode);
+        }
 
-		protected virtual IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmark bookmark = null, TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null, string impersonatedUser = null)
-		{
-			ValidateImpersonatedUserForVersion(impersonatedUser);
-			return new RunWithMetadataMessage(query, bookmark, config, mode);
-		}
+        protected virtual IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmark bookmark = null, TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null, string impersonatedUser = null)
+        {
+            ValidateImpersonatedUserForVersion(impersonatedUser);
+            return new RunWithMetadataMessage(query, bookmark, config, mode);
+        }
 
         protected virtual IResponseHandler GetHelloResponseHandler(IConnection conn) => new HelloResponseHandler(conn);
 
@@ -75,7 +75,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public virtual async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
         {
             await connection.EnqueueAsync(GetHelloMessage(userAgent, authToken.AsDictionary()),
-										  GetHelloResponseHandler(connection)).ConfigureAwait(false);
+                                          GetHelloResponseHandler(connection)).ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
         }
 
@@ -87,8 +87,8 @@ namespace Neo4j.Driver.Internal.Protocol
                                                                                  string database, 
                                                                                  Bookmark bookmark, 
                                                                                  TransactionConfig config,
-																				 string impersonatedUser,
-																				 long fetchSize = Config.Infinite)
+                                                                                 string impersonatedUser,
+                                                                                 long fetchSize = Config.Infinite)
         {
             AssertNullDatabase(database);
 
@@ -103,16 +103,16 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public virtual async Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark, TransactionConfig config, string impersonatedUser)
         {	
-			await connection.EnqueueAsync(GetBeginMessage(database, 
-													   bookmark, 
-													   config, 
-													   connection.GetEnforcedAccessMode(), 
-													   impersonatedUser),
-										  new BeginResponseHandler())
-							.ConfigureAwait(false);
-			
-			await connection.SyncAsync().ConfigureAwait(false);
-		}
+            await connection.EnqueueAsync(GetBeginMessage(database, 
+                                                       bookmark, 
+                                                       config, 
+                                                       connection.GetEnforcedAccessMode(), 
+                                                       impersonatedUser),
+                                          new BeginResponseHandler())
+                            .ConfigureAwait(false);
+            
+            await connection.SyncAsync().ConfigureAwait(false);
+        }
 
         public virtual async Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection, Query query, bool reactive, long fetchSize = Config.Infinite)
         {
@@ -152,7 +152,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
         private void AssertNullDatabase(string database)
         {
-			if(!string.IsNullOrEmpty(database))
+            if(!string.IsNullOrEmpty(database))
             {
                 throw new ClientException(
                     "Driver is connected to a server that does not support multiple databases. " +
@@ -161,17 +161,17 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         protected internal virtual void GetProcedureAndParameters(IConnection connection, string database, out string procedure, out Dictionary<string, object> parameters)
-		{
+        {
             procedure = GetRoutingTableProcedure;
             parameters = new Dictionary<string, object> { { "context", connection.RoutingContext } };
         }
 
         public virtual async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmark bookmark)
-		{
-			ValidateImpersonatedUserForVersion(impersonatedUser);
-			connection = connection ?? throw new ProtocolException("Attempting to get a routing table on a null connection");
+        {
+            ValidateImpersonatedUserForVersion(impersonatedUser);
+            connection = connection ?? throw new ProtocolException("Attempting to get a routing table on a null connection");
 
-			connection.Mode = AccessMode.Read;
+            connection.Mode = AccessMode.Read;
 
             string procedure;
             var parameters = new Dictionary<string, object>();
@@ -186,19 +186,19 @@ namespace Neo4j.Driver.Internal.Protocol
             var result = await RunInAutoCommitTransactionAsync(connection, query, false, bookmarkTracker, resourceHandler, sessionDb, bookmark, null, null).ConfigureAwait(false);
             var record = await result.SingleAsync();
 
-			//Since 4.4 the Routing information will contain a db. Earlier versions need to populate this here as it's not received in the older route response...
-			var finalDictionary = record.Values.ToDictionary();
-			finalDictionary[RoutingTableDBKey] = database;
+            //Since 4.4 the Routing information will contain a db. Earlier versions need to populate this here as it's not received in the older route response...
+            var finalDictionary = record.Values.ToDictionary();
+            finalDictionary[RoutingTableDBKey] = database;
 
-			return (IReadOnlyDictionary<string, object>)finalDictionary;
+            return (IReadOnlyDictionary<string, object>)finalDictionary;
         }
 
-		protected virtual void ValidateImpersonatedUserForVersion(string impersonatedUser)
-		{
-			if (impersonatedUser is not null) throw new ArgumentException($"Boltprotocol {Version} does not support impersonatedUser, yet has been passed a non null impersonated user string");
-		}
+        protected virtual void ValidateImpersonatedUserForVersion(string impersonatedUser)
+        {
+            if (impersonatedUser is not null) throw new ArgumentException($"Boltprotocol {Version} does not support impersonatedUser, yet has been passed a non null impersonated user string");
+        }
 
-		private class ConnectionResourceHandler : IResultResourceHandler
+        private class ConnectionResourceHandler : IResultResourceHandler
         {
             IConnection Connection { get; }
             public ConnectionResourceHandler(IConnection conn)
@@ -215,7 +215,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 await Connection.CloseAsync().ConfigureAwait(false);
             }			
-		}
+        }
 
         private class BookmarkTracker : IBookmarkTracker
         {
