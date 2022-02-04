@@ -56,6 +56,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 			public bool resolverRegistered { get; set; } = false;
 			public bool domainNameResolverRegistered { get; set; } = false;
 			public int connectionTimeoutMs { get; set; } = -1;
+			public int? maxConnectionPoolSize { get; set; }
+			public int? connectionAcquisitionTimeoutMs { get; set; }
 		}
 
 		public override async Task Process(Controller controller)
@@ -75,14 +77,14 @@ namespace Neo4j.Driver.Tests.TestBackend
 					break;
 
 				default:
-					authToken = AuthTokens.Custom(authTokenData.principal, 
-												  authTokenData.credentials, 
-												  authTokenData.realm, 
-												  authTokenData.scheme, 
+					authToken = AuthTokens.Custom(authTokenData.principal,
+												  authTokenData.credentials,
+												  authTokenData.realm,
+												  authTokenData.scheme,
 												  authTokenData.parameters);
 					break;
 
-			} 
+			}
 
 			Driver = GraphDatabase.Driver(data.uri, authToken, DriverConfig);
 
@@ -101,6 +103,10 @@ namespace Neo4j.Driver.Tests.TestBackend
 			if (data.resolverRegistered) configBuilder.WithResolver(new ListAddressResolver(Control, data.uri));
 
 			if (data.connectionTimeoutMs > 0) configBuilder.WithConnectionTimeout(TimeSpan.FromMilliseconds(data.connectionTimeoutMs));
+
+			if (data.maxConnectionPoolSize.HasValue) configBuilder.WithMaxConnectionPoolSize(data.maxConnectionPoolSize.Value);
+
+			if (data.connectionAcquisitionTimeoutMs.HasValue) configBuilder.WithConnectionAcquisitionTimeout(TimeSpan.FromMilliseconds(data.connectionAcquisitionTimeoutMs.Value));
 
 			SimpleLogger logger = new SimpleLogger();
 
