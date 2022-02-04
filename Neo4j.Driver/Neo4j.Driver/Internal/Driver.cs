@@ -59,6 +59,7 @@ namespace Neo4j.Driver.Internal
         private bool IsClosed => _closedMarker > 0;
 
         public Config Config => _config;
+        public bool Encrypted => Uri.Scheme.Contains("+s");
 
         public IAsyncSession AsyncSession()
         {
