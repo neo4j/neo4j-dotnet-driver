@@ -38,17 +38,20 @@ namespace Neo4j.Driver.Internal
         private readonly Config _config;
 
         public Uri Uri { get; }
+        public bool Encrypted { get; }
 
-        internal Driver(Uri uri, 
-                        IConnectionProvider connectionProvider, 
-                        IAsyncRetryLogic retryLogic,
-                        ILogger logger = null,
-                        IMetrics metrics = null, 
-                        Config config = null)
+        internal Driver(Uri uri,
+            bool encrypted,
+            IConnectionProvider connectionProvider,
+            IAsyncRetryLogic retryLogic,
+            ILogger logger = null,
+            IMetrics metrics = null,
+            Config config = null)
         {
             Throw.ArgumentNullException.IfNull(connectionProvider, nameof(connectionProvider));
 
             Uri = uri;
+            Encrypted = encrypted;
             _logger = logger;
             _connectionProvider = connectionProvider;
             _retryLogic = retryLogic;
@@ -59,7 +62,6 @@ namespace Neo4j.Driver.Internal
         private bool IsClosed => _closedMarker > 0;
 
         public Config Config => _config;
-        public bool Encrypted => Uri.Scheme.Contains("+s");
 
         public IAsyncSession AsyncSession()
         {

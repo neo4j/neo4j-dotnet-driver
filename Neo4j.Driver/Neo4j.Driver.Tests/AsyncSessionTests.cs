@@ -321,7 +321,7 @@ namespace Neo4j.Driver.Tests
 
             private static Internal.Driver NewDriver()
             {
-                var driver = new Internal.Driver(new Uri("neo4j://myTest.org"),
+                var driver = new Internal.Driver(new Uri("neo4j://myTest.org"), false,
                     new TestConnectionProvider(Mock.Of<IConnection>()),
                     null, null, null, Config.Default);
                 return driver;
