@@ -588,7 +588,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             var connectionFactory = new MonitoredPooledConnectionFactory(
                 new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logger));
 
-            return ((Internal.Driver) GraphDatabase.CreateDriver(_databaseUri, config, connectionFactory),
+            return ((Internal.Driver) GraphDatabase.CreateDriver(_databaseUri, config, connectionFactory, connectionSettings),
                 connectionFactory.Connections);
         }
 
