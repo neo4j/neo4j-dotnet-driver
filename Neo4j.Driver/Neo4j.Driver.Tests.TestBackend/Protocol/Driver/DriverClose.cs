@@ -1,7 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using Neo4j.Driver;
-
+﻿using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend
 { 
@@ -11,7 +8,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         
         public class DriverCloseType
         {
-            public string driverId { get; set; }            
+            public string driverId { get; set; }
         }
 
         public override async Task Process()

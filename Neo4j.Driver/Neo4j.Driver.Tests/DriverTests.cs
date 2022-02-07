@@ -137,7 +137,7 @@ namespace Neo4j.Driver.Tests
         {
             var mock = new Mock<IConnectionProvider>();
             mock.Setup(x => x.VerifyConnectivityAsync()).Returns(Task.CompletedTask);
-            var driver = new Internal.Driver(new Uri("bolt://localhost"), mock.Object, null);
+            var driver = new Internal.Driver(new Uri("bolt://localhost"), false, mock.Object, null);
             await driver.VerifyConnectivityAsync();
 
             mock.Verify(x => x.VerifyConnectivityAsync(), Times.Once);
@@ -148,7 +148,7 @@ namespace Neo4j.Driver.Tests
         {
             var mock = new Mock<IConnectionProvider>();
             mock.Setup(x => x.SupportsMultiDbAsync()).Returns(Task.FromResult(true));
-            var driver = new Internal.Driver(new Uri("bolt://localhost"), mock.Object, null);
+            var driver = new Internal.Driver(new Uri("bolt://localhost"), false, mock.Object, null);
             await driver.SupportsMultiDbAsync();
 
             mock.Verify(x => x.SupportsMultiDbAsync(), Times.Once);

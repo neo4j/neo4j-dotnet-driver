@@ -156,7 +156,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             var connectionFactory =
                 new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logger);
 
-            return GraphDatabase.CreateDriver(overridenUri, config, connectionFactory);
+            return GraphDatabase.CreateDriver(overridenUri, config, connectionFactory, connectionSettings);
         }
 
         private class CustomHostResolver : IHostResolver

@@ -213,10 +213,11 @@ namespace Neo4j.Driver
             var connectionFactory =
                 new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logger);
 
-            return CreateDriver(uri, config, connectionFactory);
+            return CreateDriver(uri, config, connectionFactory, connectionSettings);
         }
 
-        internal static IDriver CreateDriver(Uri uri, Config config, IPooledConnectionFactory connectionFactory)
+        internal static IDriver CreateDriver(Uri uri, Config config, IPooledConnectionFactory connectionFactory,
+            ConnectionSettings connectionSettings)
         {
             var logger = config.Logger;
 
@@ -243,7 +244,13 @@ namespace Neo4j.Driver
                     new ConnectionPool(parsedUri, connectionFactory, connectionPoolSettings, logger, null);
             }
 
-            return new Internal.Driver(parsedUri, connectionProvider, retryLogic, logger, metrics, config);
+            return new Internal.Driver(parsedUri, 
+                connectionSettings.SocketSettings.EncryptionManager.UseTls,
+                connectionProvider,
+                retryLogic,
+                logger,
+                metrics,
+                config);
         }
 
         private static void EnsureNoRoutingContextOnBolt(Uri uri, IDictionary<string, string> routingContext)

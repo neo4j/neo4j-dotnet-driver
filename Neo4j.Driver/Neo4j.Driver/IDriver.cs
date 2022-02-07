@@ -71,5 +71,10 @@ namespace Neo4j.Driver
         /// Gets the driver configurations.
         /// </summary>
         Config Config { get; }
+
+        /// <summary>
+        /// Gets Encrypted status
+        /// </summary>
+        bool Encrypted { get; }
     }
 }
