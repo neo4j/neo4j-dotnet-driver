@@ -16,6 +16,13 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
+using Neo4j.Driver.Internal.Connector.Trust;
 using Neo4j.Driver.Internal.Metrics;
 
 namespace Neo4j.Driver
@@ -282,5 +289,53 @@ namespace Neo4j.Driver
             _config.UserAgent = userAgent;
             return this;
 		}
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="encrypted"></param>
+        /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+        public ConfigBuilder WithEncrypted(bool encrypted)
+        {
+            _config.Encrypted = encrypted;
+            return this;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="certificateTrust"></param>
+        /// <param name="customCertificates"></param>
+        /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+        /// <exception cref="ArgumentException"></exception>
+        public ConfigBuilder WithCertificateTrust(CertificateTrust certificateTrust, List<X509Certificate2> customCertificates = null)
+        {
+            _config.TrustManager = certificateTrust switch
+            {
+                CertificateTrust.System when customCertificates != null => throw new ArgumentException($"{nameof(customCertificates)} is not valid when {nameof(certificateTrust)} is {nameof(CertificateTrust.System)}"),
+                CertificateTrust.Any when customCertificates == null => throw new ArgumentException($"{nameof(customCertificates)} is not valid when {nameof(certificateTrust)} is {nameof(CertificateTrust.Any)}"),
+                CertificateTrust.Custom when customCertificates == null => throw new ArgumentException($"{nameof(customCertificates)} must not be null when {nameof(certificateTrust)} is {nameof(CertificateTrust.Custom)}"),
+                CertificateTrust.System => TrustManager.CreateChainTrust(),
+                CertificateTrust.Custom => TrustManager.CreateCertTrust(customCertificates),
+                CertificateTrust.Any => TrustManager.CreateInsecure()
+            };
+
+            return this;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="certificateTrust"></param>
+        /// <param name="customCertificatePaths"></param>
+        /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+        /// <exception cref="ArgumentException"></exception>
+        public ConfigBuilder WithCertificateTrustPaths(CertificateTrust certificateTrust, List<string> customCertificatePaths = null)
+        {
+            WithCertificateTrust(certificateTrust,
+                customCertificatePaths?.Select(x => new X509Certificate2(File.ReadAllBytes(x))).ToList());
+            return this;
+        }
+
     }
 }

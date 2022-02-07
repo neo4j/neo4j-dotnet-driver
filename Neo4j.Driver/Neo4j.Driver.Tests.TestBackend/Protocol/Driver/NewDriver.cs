@@ -58,6 +58,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 			public int connectionTimeoutMs { get; set; } = -1;
 			public int? maxConnectionPoolSize { get; set; }
 			public int? connectionAcquisitionTimeoutMs { get; set; }
+            public string[] trustedCertificates { get; set; }
+            public bool? encrypted { get; set; }
 		}
 
 		public override async Task Process(Controller controller)
@@ -108,7 +110,16 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 			if (data.connectionAcquisitionTimeoutMs.HasValue) configBuilder.WithConnectionAcquisitionTimeout(TimeSpan.FromMilliseconds(data.connectionAcquisitionTimeoutMs.Value));
 
-			SimpleLogger logger = new SimpleLogger();
+            if (data.trustedCertificates == null)
+                configBuilder.WithCertificateTrust(CertificateTrust.System);
+
+            if (data.trustedCertificates != null)
+                configBuilder.WithCertificateTrust(data.trustedCertificates.Length == 0 ? CertificateTrust.Any : CertificateTrust.Custom);
+
+            if (data.encrypted.HasValue)
+                configBuilder.WithEncrypted(data.encrypted.Value);
+
+            SimpleLogger logger = new SimpleLogger();
 
 			configBuilder.WithLogger(logger);
 		}

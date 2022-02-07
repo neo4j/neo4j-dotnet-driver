@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Logging;
@@ -219,5 +220,10 @@ namespace Neo4j.Driver
         /// where x is the major version and y is the minor version.
         /// </summary>
         public string UserAgent { get; set; } = ConnectionSettings.DefaultUserAgent;
+
+        public bool Encrypted { get; set; }
+
+        public List<string> TrustedCertificates { get; set; }
+
     }
 }
