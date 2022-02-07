@@ -1,45 +1,10 @@
 ﻿using System;
-using Neo4j.Driver;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using System.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-	internal class SimpleLogger : ILogger
-	{
-		public void Debug(string message, params Object[] args)
-		{
-			Console.WriteLine("[DRIVER-DEBUG]" + message, args);
-		}
-		public void Error(System.Exception error, string message, params Object[] args)
-		{
-			Console.WriteLine("[DRIVER-ERROR]" + message, args);
-		}
-		public void Info(string message, params Object[] args)
-		{
-			Console.WriteLine("[DRIVER-INFO]" + message, args);
-		}
-		public bool IsDebugEnabled()
-		{
-			return true;
-		}
-		public bool IsTraceEnabled()
-		{
-			return true;
-		}
-		public void Trace(string message, params Object[] args)
-		{
-			Console.WriteLine("[DRIVER-TRACE]" + message, args);
-		}
-		public void Warn(System.Exception error, string message, params Object[] args)
-		{
-			Console.WriteLine("[DRIVER-WARN]" + message, args);
-		}
-	}
-
-	internal class NewDriver : IProtocolObject
+    internal class NewDriver : IProtocolObject
 	{
 		public NewDriverType data { get; set; } = new NewDriverType();
 		[JsonIgnore]
@@ -100,21 +65,29 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 		private void DriverConfig(ConfigBuilder configBuilder)
 		{
-			if (!string.IsNullOrEmpty(data.userAgent)) configBuilder.WithUserAgent(data.userAgent);
+			if (!string.IsNullOrEmpty(data.userAgent))
+                configBuilder.WithUserAgent(data.userAgent);
 
-			if (data.resolverRegistered) configBuilder.WithResolver(new ListAddressResolver(Control, data.uri));
+			if (data.resolverRegistered)
+                configBuilder.WithResolver(new ListAddressResolver(Control, data.uri));
 
-			if (data.connectionTimeoutMs > 0) configBuilder.WithConnectionTimeout(TimeSpan.FromMilliseconds(data.connectionTimeoutMs));
+			if (data.connectionTimeoutMs > 0)
+                configBuilder.WithConnectionTimeout(TimeSpan.FromMilliseconds(data.connectionTimeoutMs));
 
-			if (data.maxConnectionPoolSize.HasValue) configBuilder.WithMaxConnectionPoolSize(data.maxConnectionPoolSize.Value);
+			if (data.maxConnectionPoolSize.HasValue)
+                configBuilder.WithMaxConnectionPoolSize(data.maxConnectionPoolSize.Value);
 
-			if (data.connectionAcquisitionTimeoutMs.HasValue) configBuilder.WithConnectionAcquisitionTimeout(TimeSpan.FromMilliseconds(data.connectionAcquisitionTimeoutMs.Value));
+			if (data.connectionAcquisitionTimeoutMs.HasValue)
+                configBuilder.WithConnectionAcquisitionTimeout(
+                    TimeSpan.FromMilliseconds(data.connectionAcquisitionTimeoutMs.Value));
 
             if (data.trustedCertificates == null)
                 configBuilder.WithCertificateTrust(CertificateTrust.System);
 
             if (data.trustedCertificates != null)
-                configBuilder.WithCertificateTrust(data.trustedCertificates.Length == 0 ? CertificateTrust.Any : CertificateTrust.Custom);
+                configBuilder.WithCertificateTrust(data.trustedCertificates.Length == 0 
+                    ? CertificateTrust.Any 
+                    : CertificateTrust.Custom);
 
             if (data.encrypted.HasValue)
                 configBuilder.WithEncrypted(data.encrypted.Value);
