@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
@@ -15,7 +16,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 		public class NewDriverType
 		{
-			public string uri { get; set; }
+            private string[] _trustedCertificates;
+            public string uri { get; set; }
 			public AuthorizationToken authorizationToken { get; set; } = new AuthorizationToken();
 			public string userAgent { get; set; }
 			public bool resolverRegistered { get; set; } = false;
@@ -23,7 +25,18 @@ namespace Neo4j.Driver.Tests.TestBackend
 			public int connectionTimeoutMs { get; set; } = -1;
 			public int? maxConnectionPoolSize { get; set; }
 			public int? connectionAcquisitionTimeoutMs { get; set; }
-            public string[] trustedCertificates { get; set; }
+            [JsonIgnore]
+            public bool ModifiedTrustedCertificates = false;
+            public string[] trustedCertificates
+            {
+                get => _trustedCertificates;
+                set
+                {
+                    ModifiedTrustedCertificates = true;
+                    _trustedCertificates = value;
+                }
+            }
+
             public bool? encrypted { get; set; }
 		}
 
@@ -81,13 +94,17 @@ namespace Neo4j.Driver.Tests.TestBackend
                 configBuilder.WithConnectionAcquisitionTimeout(
                     TimeSpan.FromMilliseconds(data.connectionAcquisitionTimeoutMs.Value));
 
-            if (data.trustedCertificates == null)
+            if (data.ModifiedTrustedCertificates && data.trustedCertificates == null)
                 configBuilder.WithCertificateTrust(CertificateTrust.System);
 
-            if (data.trustedCertificates != null)
-                configBuilder.WithCertificateTrust(data.trustedCertificates.Length == 0 
-                    ? CertificateTrust.Any 
-                    : CertificateTrust.Custom);
+            if (data.ModifiedTrustedCertificates && data.trustedCertificates != null)
+                configBuilder.WithCertificateTrustPaths(
+                    data.trustedCertificates.Length == 0 
+                        ? CertificateTrust.Any 
+                        : CertificateTrust.Custom,
+                    data?.trustedCertificates
+                        .Select(x => "/usr/local/share/custom-ca-certificates/" + x)
+                        .ToList());
 
             if (data.encrypted.HasValue)
                 configBuilder.WithEncrypted(data.encrypted.Value);
