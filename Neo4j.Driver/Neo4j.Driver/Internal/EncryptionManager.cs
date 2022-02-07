@@ -16,9 +16,6 @@
 // limitations under the License.
 
 using System;
-using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver;
-using Neo4j.Driver.Internal.Connector.Trust;
 
 namespace Neo4j.Driver.Internal
 {
@@ -27,10 +24,9 @@ namespace Neo4j.Driver.Internal
     /// </summary>
     internal class EncryptionManager
     {
-        public EncryptionManager()
-        {
-        } // for test
-
+        public bool UseTls { get; }
+        public TrustManager TrustManager { get; }
+        
         public EncryptionManager(bool useTls, TrustManager trustManager)
         {
             UseTls = useTls;
@@ -104,8 +100,5 @@ namespace Neo4j.Driver.Internal
             trustManager.Logger = logger;
             return trustManager;
         }
-        public bool UseTls { get; }
-
-        public TrustManager TrustManager { get; }
     }
 }
