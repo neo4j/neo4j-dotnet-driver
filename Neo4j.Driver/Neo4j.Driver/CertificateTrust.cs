@@ -15,14 +15,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver;
-
-public enum CertificateTrust
+namespace Neo4j.Driver
 {
-    /// <summary>
-    /// 
-    /// </summary>
-    System = 0,
-    Any = 1,
-    Custom = 2
+    public enum CertificateTrust
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        System = 0,
+        Any = 1,
+        Custom = 2
+    }
 }
