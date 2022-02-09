@@ -231,6 +231,7 @@ namespace Neo4j.Driver
             var retryLogic = new AsyncRetryLogic(config.MaxTransactionRetryTime, logger);
 
             EnsureNoRoutingContextOnBolt(uri, routingContext);
+            EnsureConnectionEncryptionMatchesConfig(connectionSettings, config);
 
             IConnectionProvider connectionProvider = null;
             if (parsedUri.IsRoutingUri())
@@ -244,6 +245,7 @@ namespace Neo4j.Driver
                     new ConnectionPool(parsedUri, connectionFactory, connectionPoolSettings, logger, null);
             }
 
+
             return new Internal.Driver(parsedUri, 
                 connectionSettings.SocketSettings.EncryptionManager.UseTls,
                 connectionProvider,
@@ -251,6 +253,21 @@ namespace Neo4j.Driver
                 logger,
                 metrics,
                 config);
+        }
+
+        private static void EnsureConnectionEncryptionMatchesConfig(ConnectionSettings connectionSettings, Config config)
+        {
+            if (config.Encrypted == null)
+                return;
+
+            if (config.Encrypted.Value == connectionSettings.SocketSettings.EncryptionManager.UseTls)
+                return;
+
+            var reason = config.Encrypted.Value
+                ? "Config was passed Encrypted = true but Connection Scheme or Trust was not set to encrypt"
+                : "Config set Encrypted to false but Connection Scheme or Trust is set to encrypt";
+
+            throw new InvalidOperationException($"Config and ConnectionSettings have a mismatch on expected and actual encryption. Reason:{Environment.NewLine}{reason}");
         }
 
         private static void EnsureNoRoutingContextOnBolt(Uri uri, IDictionary<string, string> routingContext)

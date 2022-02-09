@@ -27,6 +27,11 @@ namespace Neo4j.Driver.Tests.TestBackend
             public int? connectionAcquisitionTimeoutMs { get; set; }
             [JsonIgnore]
             public bool ModifiedTrustedCertificates = false;
+            [JsonIgnore]
+            public bool ModifiedEncrypted = false;
+
+            private bool? _encrypted;
+
             public string[] trustedCertificates
             {
                 get => _trustedCertificates;
@@ -37,7 +42,15 @@ namespace Neo4j.Driver.Tests.TestBackend
                 }
             }
 
-            public bool? encrypted { get; set; }
+            public bool? encrypted
+            {
+                get => _encrypted;
+                set
+                {
+                    ModifiedEncrypted = true;
+                    _encrypted = value;
+                }
+            }
         }
 
         public override async Task Process(Controller controller)
@@ -106,7 +119,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                         .Select(x => "/usr/local/share/custom-ca-certificates/" + x)
                         .ToList());
 
-            if (data.encrypted.HasValue)
+            if (data.ModifiedEncrypted && data.encrypted.HasValue)
                 configBuilder.WithEncrypted(data.encrypted.Value);
 
             SimpleLogger logger = new SimpleLogger();

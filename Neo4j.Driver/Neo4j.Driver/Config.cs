@@ -221,7 +221,7 @@ namespace Neo4j.Driver
         /// </summary>
         public string UserAgent { get; set; } = ConnectionSettings.DefaultUserAgent;
 
-        public bool Encrypted { get; set; }
+        public bool? Encrypted { get; set; }
 
         public List<string> TrustedCertificates { get; set; }
 
