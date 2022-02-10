@@ -13,10 +13,10 @@ namespace Neo4j.Driver.Tests.TestBackend
         [JsonIgnore]
         private Controller Control { get; set; }
 
-
+        [JsonConverter(typeof(NewDriverConverter))]
         public class NewDriverType
         {
-            private string[] _trustedCertificates;
+            private string[] _trustedCertificates = new string[]{};
             public string uri { get; set; }
             public AuthorizationToken authorizationToken { get; set; } = new AuthorizationToken();
             public string userAgent { get; set; }
@@ -107,19 +107,13 @@ namespace Neo4j.Driver.Tests.TestBackend
                 configBuilder.WithConnectionAcquisitionTimeout(
                     TimeSpan.FromMilliseconds(data.connectionAcquisitionTimeoutMs.Value));
 
-            if (data.ModifiedTrustedCertificates && data.trustedCertificates == null)
-                configBuilder.WithCertificateTrust(CertificateTrust.System);
-
-            if (data.ModifiedTrustedCertificates && data.trustedCertificates != null)
+            ///usr/local/share/custom-ca-certificates/
+            // \\\\wsl$\\Ubuntu\\usr\\local\\share\\custom-ca-certificates\\
+            if (data.ModifiedTrustedCertificates)
                 configBuilder.WithCertificateTrustPaths(
-                    data.trustedCertificates.Length == 0 
-                        ? CertificateTrust.Any 
-                        : CertificateTrust.Custom,
-                    data?.trustedCertificates
-                        .Select(x => "/usr/local/share/custom-ca-certificates/" + x)
-                        .ToList());
+                    data?.trustedCertificates?.Select(x => "usr/local/share/custom-ca-certificates/" + x).ToList());
 
-            if (data.ModifiedEncrypted && data.encrypted.HasValue)
+            if (data.encrypted.HasValue)
                 configBuilder.WithEncrypted(data.encrypted.Value);
 
             SimpleLogger logger = new SimpleLogger();

@@ -231,20 +231,10 @@ namespace Neo4j.Driver
             var retryLogic = new AsyncRetryLogic(config.MaxTransactionRetryTime, logger);
 
             EnsureNoRoutingContextOnBolt(uri, routingContext);
-            EnsureConnectionEncryptionMatchesConfig(connectionSettings, config);
 
-            IConnectionProvider connectionProvider = null;
-            if (parsedUri.IsRoutingUri())
-            {
-                connectionProvider =
-                    new LoadBalancer(connectionFactory, routingSettings, connectionPoolSettings, logger);
-            }
-            else
-            {   
-                connectionProvider =
-                    new ConnectionPool(parsedUri, connectionFactory, connectionPoolSettings, logger, null);
-            }
-
+            var connectionProvider = parsedUri.IsRoutingUri()
+                ? new LoadBalancer(connectionFactory, routingSettings, connectionPoolSettings, logger)
+                : new ConnectionPool(parsedUri, connectionFactory, connectionPoolSettings, logger, null) as IConnectionProvider;
 
             return new Internal.Driver(parsedUri, 
                 connectionSettings.SocketSettings.EncryptionManager.UseTls,
@@ -253,21 +243,6 @@ namespace Neo4j.Driver
                 logger,
                 metrics,
                 config);
-        }
-
-        private static void EnsureConnectionEncryptionMatchesConfig(ConnectionSettings connectionSettings, Config config)
-        {
-            if (config.Encrypted == null)
-                return;
-
-            if (config.Encrypted.Value == connectionSettings.SocketSettings.EncryptionManager.UseTls)
-                return;
-
-            var reason = config.Encrypted.Value
-                ? "Config was passed Encrypted = true but Connection Scheme or Trust was not set to encrypt"
-                : "Config set Encrypted to false but Connection Scheme or Trust is set to encrypt";
-
-            throw new InvalidOperationException($"Config and ConnectionSettings have a mismatch on expected and actual encryption. Reason:{Environment.NewLine}{reason}");
         }
 
         private static void EnsureNoRoutingContextOnBolt(Uri uri, IDictionary<string, string> routingContext)

@@ -297,43 +297,36 @@ namespace Neo4j.Driver
         /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
         public ConfigBuilder WithEncrypted(bool encrypted)
         {
-            _config.Encrypted = encrypted;
+            _config.NullableEncryptionLevel = encrypted ? EncryptionLevel.Encrypted : EncryptionLevel.None;
             return this;
         }
 
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="certificateTrust"></param>
         /// <param name="customCertificates"></param>
         /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
         /// <exception cref="ArgumentException"></exception>
-        public ConfigBuilder WithCertificateTrust(CertificateTrust certificateTrust, List<X509Certificate2> customCertificates = null)
+        public ConfigBuilder WithCertificateTrust(List<X509Certificate2> customCertificates = null)
         {
-            _config.TrustManager = certificateTrust switch
+            _config.TrustManager = customCertificates switch
             {
-                CertificateTrust.System when customCertificates != null => throw new ArgumentException($"{nameof(customCertificates)} is not valid when {nameof(certificateTrust)} is {nameof(CertificateTrust.System)}"),
-                CertificateTrust.Any when customCertificates == null => throw new ArgumentException($"{nameof(customCertificates)} is not valid when {nameof(certificateTrust)} is {nameof(CertificateTrust.Any)}"),
-                CertificateTrust.Custom when customCertificates == null => throw new ArgumentException($"{nameof(customCertificates)} must not be null when {nameof(certificateTrust)} is {nameof(CertificateTrust.Custom)}"),
-                CertificateTrust.System => TrustManager.CreateChainTrust(),
-                CertificateTrust.Custom => TrustManager.CreateCertTrust(customCertificates),
-                CertificateTrust.Any => TrustManager.CreateInsecure()
+                null => TrustManager.CreateChainTrust(),
+                { Count: 0 } => TrustManager.CreateInsecure(false),
+                _ => TrustManager.CreateCertTrust(customCertificates)
             };
-
             return this;
         }
 
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="certificateTrust"></param>
         /// <param name="customCertificatePaths"></param>
         /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
         /// <exception cref="ArgumentException"></exception>
-        public ConfigBuilder WithCertificateTrustPaths(CertificateTrust certificateTrust, List<string> customCertificatePaths = null)
+        public ConfigBuilder WithCertificateTrustPaths(List<string> customCertificatePaths = null)
         {
-            WithCertificateTrust(certificateTrust,
-                customCertificatePaths?.Select(x => new X509Certificate2(File.ReadAllBytes(x))).ToList());
+            WithCertificateTrust(customCertificatePaths?.Select(x => new X509Certificate2(File.ReadAllBytes(x))).ToList());
             return this;
         }
 
