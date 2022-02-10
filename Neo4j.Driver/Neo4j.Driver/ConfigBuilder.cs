@@ -326,7 +326,7 @@ namespace Neo4j.Driver
         /// <exception cref="ArgumentException"></exception>
         public ConfigBuilder WithCertificateTrustPaths(List<string> customCertificatePaths = null)
         {
-            WithCertificateTrust(customCertificatePaths?.Select(x => new X509Certificate2(File.ReadAllBytes(x))).ToList());
+            WithCertificateTrust(customCertificatePaths?.Select(x => new X509Certificate2(x)).ToList());
             return this;
         }
 
