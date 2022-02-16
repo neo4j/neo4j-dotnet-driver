@@ -52,7 +52,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                         ?.Value<int?>();
 
             if (jsonObj.TryGetValue(nameof(NewDriver.NewDriverType.trustedCertificates), out var token))
-                type.trustedCertificates = token.HasValues ? token.ToObject<string[]>() : null;
+                type.trustedCertificates = token.ToObject<string[]>();
 
             if (jsonObj.TryGetValue(nameof(NewDriver.NewDriverType.encrypted), out token))
                 type.encrypted = token.Value<bool?>();

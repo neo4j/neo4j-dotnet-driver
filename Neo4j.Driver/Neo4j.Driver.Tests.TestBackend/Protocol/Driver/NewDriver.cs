@@ -107,16 +107,25 @@ namespace Neo4j.Driver.Tests.TestBackend
                 configBuilder.WithConnectionAcquisitionTimeout(
                     TimeSpan.FromMilliseconds(data.connectionAcquisitionTimeoutMs.Value));
 
-            ///usr/local/share/custom-ca-certificates/
-            // \\\\wsl$\\Ubuntu\\usr\\local\\share\\custom-ca-certificates\\
             if (data.ModifiedTrustedCertificates)
-                configBuilder.WithCertificateTrustPaths(
-                    data?.trustedCertificates?.Select(x => "usr/local/share/custom-ca-certificates/" + x).ToList());
+            {
+                var path = Environment.GetEnvironmentVariable("TK_CUSTOM_CA_PATH");
+                if (path == null)
+                    throw new Exception("Need to define path to custom CAs");
+
+                var certificateTrustStrategy = data?.trustedCertificates switch
+                {
+                    null => CertificateTrustRule.TrustSystem,
+                    { Length: 0 } => CertificateTrustRule.TrustAny,
+                    _ => CertificateTrustRule.TrustList
+                };
+                configBuilder.WithCertificateTrustRule(certificateTrustStrategy, data?.trustedCertificates?.Select(x => $"{path}{x}").ToList());
+            }
 
             if (data.encrypted.HasValue)
                 configBuilder.WithEncrypted(data.encrypted.Value);
 
-            SimpleLogger logger = new SimpleLogger();
+            var logger = new SimpleLogger();
 
             configBuilder.WithLogger(logger);
         }

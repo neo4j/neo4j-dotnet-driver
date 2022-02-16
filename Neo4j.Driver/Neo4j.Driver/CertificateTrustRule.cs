@@ -17,13 +17,23 @@
 
 namespace Neo4j.Driver
 {
-    public enum CertificateTrust
+    /// <summary>
+    /// Rules for how to validate a server certificate.
+    /// </summary>
+    public enum CertificateTrustRule
     {
         /// <summary>
-        /// 
+        /// Trust only certificates that can build a chain against
+        /// system's CA stores
         /// </summary>
-        System = 0,
-        Any = 1,
-        Custom = 2
+        TrustSystem = 0,
+        /// <summary>
+        /// Trust certificates that can build an x509Chain against list of specified certificates.
+        /// </summary>
+        TrustList = 1,
+        /// <summary>
+        /// Trust any certificate
+        /// </summary>
+        TrustAny = 2
     }
 }

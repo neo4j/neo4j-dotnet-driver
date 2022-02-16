@@ -16,11 +16,8 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
-using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Connector.Trust
 {
