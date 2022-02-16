@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -97,10 +98,6 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             if (data.ModifiedTrustedCertificates)
             {
-                var env = Environment.GetEnvironmentVariables();
-                if (!env.Contains("TK_CUSTOM_CA_PATH"))
-                    throw new Exception("Need to define path to custom CAs");
-
                 var certificateTrustStrategy = data?.trustedCertificates switch
                 {
                     null => CertificateTrustRule.TrustSystem,
@@ -108,10 +105,16 @@ namespace Neo4j.Driver.Tests.TestBackend
                     _ => CertificateTrustRule.TrustList
                 };
                 
-                var path = env["TK_CUSTOM_CA_PATH"].ToString();
-                var paths = data?.trustedCertificates?.Select(x => $"{path}{x}").ToList();
+                List<string> GetPaths()
+                {
+                    var env = Environment.GetEnvironmentVariables();
+                    if (!env.Contains("TK_CUSTOM_CA_PATH"))
+                        throw new Exception("Need to define path to custom CAs");
+                    var path = env["TK_CUSTOM_CA_PATH"].ToString();
+                    return data?.trustedCertificates?.Select(x => $"{path}{x}").ToList();
+                }
 
-                configBuilder.WithCertificateTrustRule(certificateTrustStrategy, paths?.Count > 0 ? paths : null);
+                configBuilder.WithCertificateTrustRule(certificateTrustStrategy, certificateTrustStrategy == CertificateTrustRule.TrustList ? GetPaths() : null);
             }
 
             if (data.encrypted.HasValue)
