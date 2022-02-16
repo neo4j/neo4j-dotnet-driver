@@ -15,11 +15,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+
 namespace Neo4j.Driver
 {
     /// <summary>
     /// Control the level of encryption to require.
     /// </summary>
+    [Obsolete("Will be removed in 6.0")]
     public enum EncryptionLevel
     {
         /// <summary>

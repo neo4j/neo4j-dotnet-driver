@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Tests.Connector
             public void ShouldNotCreateTrustManagerIfNotEncrypted()
             {
                 var encryption =
-                    EncryptionManager.CreateFromConfig(EncryptionLevel.None, null, null);
+                    EncryptionManager.CreateFromConfig(false, null, null);
 
                 encryption.UseTls.Should().BeFalse();
                 encryption.TrustManager.Should().BeNull();
@@ -56,7 +56,7 @@ namespace Neo4j.Driver.Tests.Connector
             public void ShouldCreateDefaultTrustManagerIfEncrypted()
             {
                 var encryption =
-                    EncryptionManager.CreateFromConfig(EncryptionLevel.Encrypted, null, null);
+                    EncryptionManager.CreateFromConfig(true, null, null);
 
                 encryption.UseTls.Should().BeTrue();
                 encryption.TrustManager.Should().NotBeNull().And.BeOfType<ChainTrustManager>();
@@ -96,7 +96,7 @@ namespace Neo4j.Driver.Tests.Connector
             {
                 var uri = new Uri($"{scheme}://localhost/?");
                 var encryption =
-                    EncryptionManager.Create(uri, EncryptionLevel.Encrypted, null, null);
+                    EncryptionManager.Create(uri, true, null, null);
 
                 encryption.UseTls.Should().BeTrue();
                 encryption.TrustManager.Should().BeOfType<ChainTrustManager>();
@@ -132,18 +132,18 @@ namespace Neo4j.Driver.Tests.Connector
             }
 
             [Theory]
-            [InlineData("bolt+s", EncryptionLevel.None)]
-            [InlineData("neo4j+s", EncryptionLevel.None)]
-            [InlineData("bolt+ssc", EncryptionLevel.None)]
-            [InlineData("neo4j+ssc", EncryptionLevel.None)]
-            [InlineData("bolt+s", EncryptionLevel.Encrypted)]
-            [InlineData("neo4j+s", EncryptionLevel.Encrypted)]
-            [InlineData("bolt+ssc", EncryptionLevel.Encrypted)]
-            [InlineData("neo4j+ssc", EncryptionLevel.Encrypted)]
-            public void ShouldErrorIfEncryptionLevelNotNull(string scheme, EncryptionLevel level)
+            [InlineData("bolt+s", false)]
+            [InlineData("neo4j+s", false)]
+            [InlineData("bolt+ssc", false)]
+            [InlineData("neo4j+ssc", false)]
+            [InlineData("bolt+s", true)]
+            [InlineData("neo4j+s", true)]
+            [InlineData("bolt+ssc", true)]
+            [InlineData("neo4j+ssc", true)]
+            public void ShouldErrorIfEncryptionLevelNotNull(string scheme, bool encrypt)
             {
                 var uri = new Uri($"{scheme}://localhost/?");
-                var ex = Record.Exception(() => EncryptionManager.Create(uri, level, null, null));
+                var ex = Record.Exception(() => EncryptionManager.Create(uri, encrypt, null, null));
 
                 ex.Should().BeOfType<ArgumentException>();
                 ex.Message.Should().Contain("cannot both be set via uri scheme and driver configuration");
