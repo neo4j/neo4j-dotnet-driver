@@ -97,8 +97,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             if (data.ModifiedTrustedCertificates)
             {
-                var path = Environment.GetEnvironmentVariable("TK_CUSTOM_CA_PATH");
-                if (path == null)
+                var env = Environment.GetEnvironmentVariables();
+                if (!env.Contains("TK_CUSTOM_CA_PATH"))
                     throw new Exception("Need to define path to custom CAs");
 
                 var certificateTrustStrategy = data?.trustedCertificates switch
@@ -107,7 +107,11 @@ namespace Neo4j.Driver.Tests.TestBackend
                     { Length: 0 } => CertificateTrustRule.TrustAny,
                     _ => CertificateTrustRule.TrustList
                 };
-                configBuilder.WithCertificateTrustRule(certificateTrustStrategy, data?.trustedCertificates?.Select(x => $"{path}{x}").ToList());
+                
+                var path = env["TK_CUSTOM_CA_PATH"].ToString();
+                var paths = data?.trustedCertificates?.Select(x => $"{path}{x}").ToList();
+
+                configBuilder.WithCertificateTrustRule(certificateTrustStrategy, paths?.Count > 0 ? paths : null);
             }
 
             if (data.encrypted.HasValue)
