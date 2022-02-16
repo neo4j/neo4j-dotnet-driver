@@ -223,7 +223,7 @@ namespace Neo4j.Driver
         public string UserAgent { get; set; } = ConnectionSettings.DefaultUserAgent;
 
         /// <summary>
-        /// whether an encrypted connection will be used for client server communications.
+        /// The use of encryption for all the connections created by the <see cref="IDriver"/>.
         /// </summary>
         public bool Encrypted
         {
