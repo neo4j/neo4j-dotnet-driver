@@ -59,9 +59,9 @@ namespace Neo4j.Driver.Internal.Connector
             _socketKeepAliveEnabled = socketSettings.SocketKeepAliveEnabled;
         }
 
-        public async Task ConnectAsync(Uri uri)
+        public async Task ConnectAsync(Uri uri, CancellationToken cancellationToken = default)
         {
-            await ConnectSocketAsync(uri).ConfigureAwait(false);
+            await ConnectSocketAsync(uri, cancellationToken).ConfigureAwait(false);
 
             _stream = new NetworkStream(_client);
             if (_encryptionManager.UseTls)
@@ -82,7 +82,7 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-        private async Task ConnectSocketAsync(Uri uri)
+        private async Task ConnectSocketAsync(Uri uri, CancellationToken cancellationToken = default)
         {
             var innerErrors = new List<Exception>();
             var addresses = await _resolver.ResolveAsync(uri.Host).ConfigureAwait(false);
@@ -91,7 +91,7 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 try
                 {
-                    await ConnectSocketAsync(address, uri.Port).ConfigureAwait(false);
+                    await ConnectSocketAsync(address, uri.Port, cancellationToken).ConfigureAwait(false);
 
                     return;
                 }
@@ -115,7 +115,7 @@ namespace Neo4j.Driver.Internal.Connector
                 new AggregateException(innerErrors));
         }
 
-        internal async Task ConnectSocketAsync(IPAddress address, int port)
+        internal async Task ConnectSocketAsync(IPAddress address, int port, CancellationToken cancellationToken = default)
         {
             InitClient();
 
@@ -124,7 +124,7 @@ namespace Neo4j.Driver.Internal.Connector
 #else
             var connectTask = _client.ConnectAsync(address, port);
 #endif
-            var finishedTask = await Task.WhenAny(connectTask, Task.Delay(_connectionTimeout)).ConfigureAwait(false);
+            var finishedTask = await Task.WhenAny(connectTask, Task.Delay(_connectionTimeout, cancellationToken)).ConfigureAwait(false);
             if (connectTask != finishedTask) // timed out
             {
                 try
@@ -138,6 +138,10 @@ namespace Neo4j.Driver.Internal.Connector
                                       $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms.");
                 }
 
+                if (cancellationToken.IsCancellationRequested)
+                    throw new OperationCanceledException(
+                        $"Failed to connect to server {address}:{port} due to acquisition timeout", cancellationToken);
+
                 throw new OperationCanceledException(
                     $"Failed to connect to server {address}:{port} within {_connectionTimeout.TotalMilliseconds}ms.");
             }
@@ -147,10 +151,11 @@ namespace Neo4j.Driver.Internal.Connector
 
         public virtual Task DisconnectAsync()
         {
-            if (_client != null)
+            if (_client == null)
+                return Task.CompletedTask;
+
+            if (_client.Connected)
             {
-                if (_client.Connected)
-                {
 #if NET452
                     return Task.Factory.FromAsync(_client.BeginDisconnect, _client.EndDisconnect, false, null)
                         .ContinueWith(
@@ -165,15 +170,14 @@ namespace Neo4j.Driver.Internal.Connector
                                 return Task.CompletedTask;
                             }).Unwrap();
 #else
-                    _client.Shutdown(SocketShutdown.Both);
+                _client.Shutdown(SocketShutdown.Both);
 #endif
-                }
-
-                _client.Dispose();
-
-                _client = null;
-                _stream = null;
             }
+
+            _client.Dispose();
+
+            _client = null;
+            _stream = null;
 
             return Task.CompletedTask;
         }

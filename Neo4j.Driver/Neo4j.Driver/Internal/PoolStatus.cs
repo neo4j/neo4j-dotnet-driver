@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) 2002-2022 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,18 +15,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace Neo4j.Driver.Internal.Connector
+namespace Neo4j.Driver.Internal
 {
-    internal interface ITcpSocketClient
+    internal enum PoolStatus
     {
-        Stream ReadStream { get; }
-        Stream WriteStream { get; }
-        Task ConnectAsync(Uri uri, CancellationToken cancellationToken = default);
-        Task DisconnectAsync();
-	}
+        Open,
+        Closed,
+        Inactive
+    }
 }

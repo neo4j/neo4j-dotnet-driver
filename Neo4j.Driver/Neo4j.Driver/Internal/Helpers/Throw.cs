@@ -22,16 +22,8 @@ namespace Neo4j.Driver.Internal
     {
         public static class ObjectDisposedException
         {
-            public static void FailedToAcquireConnectionDueToPoolClosed(object obj)
-            {
-                throw new System.ObjectDisposedException(obj.GetType().Name, $"Failed to acquire a new connection as the driver has already been disposed.");
-            }
-
-
-            public static void FailedToAcquireConnection(object obj)
-            {
-                throw new System.ObjectDisposedException(obj.GetType().Name, $"Failed to acquire a new connection as the driver has already been disposed.");
-            }
+            public static System.ObjectDisposedException GetDriverDisposedException(string typeName) => new(
+                typeName, "Failed to acquire a new connection as the driver has already been disposed.");
         }
 
         public static class ArgumentNullException
