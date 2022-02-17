@@ -13,6 +13,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 "ConfHint:connection.recv_timeout_seconds",
                 "AuthorizationExpiredTreatment",
                 "Detail:ClosedDriverIsEncrypted",
+                "Detail:DefaultSecurityConfigValueEquality",
                 "Feature:API:Driver.IsEncrypted",
                 //"Feature:API:Liveness.Check",
                 "Feature:API:Result.List",
