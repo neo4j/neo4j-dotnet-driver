@@ -96,7 +96,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public async Task InitAsync()
         {
-            _sendLock.Wait();
+            await _sendLock.WaitAsync().ConfigureAwait(false);
             try
             {
                 _boltProtocol = await _client.ConnectAsync(RoutingContext).ConfigureAwait(false);
