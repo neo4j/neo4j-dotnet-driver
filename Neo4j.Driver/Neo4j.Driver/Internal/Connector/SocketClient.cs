@@ -67,7 +67,7 @@ namespace Neo4j.Driver.Internal.Connector
         public async Task<IBoltProtocol> ConnectAsync(IDictionary<string, string> routingContext, CancellationToken cancellationToken = default)
         {
             await _tcpSocketClient.ConnectAsync(_uri, cancellationToken).ConfigureAwait(false);
-            
+
             SetOpened();
             _logger?.Debug($"~~ [CONNECT] {_uri}");
 
@@ -185,9 +185,9 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-		public void SetRecvTimeOut(int seconds)
-		{
-			Reader.ReadTimeoutSeconds = seconds;
-		}
-	}
+        public void SetRecvTimeOut(int seconds)
+        {
+            Reader.ReadTimeoutSeconds = seconds;
+        }
+    }
 }
