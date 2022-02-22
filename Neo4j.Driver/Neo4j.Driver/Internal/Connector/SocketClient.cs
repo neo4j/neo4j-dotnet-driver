@@ -72,7 +72,7 @@ namespace Neo4j.Driver.Internal.Connector
             _logger?.Debug($"~~ [CONNECT] {_uri}");
 
             var handShakeTask = DoHandshakeAsync(cancellationToken);
-            await Task.WhenAny(handShakeTask, Task.Delay(TimeSpan.FromMilliseconds(-1), cancellationToken)).ConfigureAwait(false);
+            await Task.WhenAny(handShakeTask, Task.Delay(-1, cancellationToken)).ConfigureAwait(false);
             
             cancellationToken.ThrowIfCancellationRequested();
 
