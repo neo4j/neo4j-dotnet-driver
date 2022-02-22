@@ -19,6 +19,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -77,7 +78,7 @@ namespace Neo4j.Driver.Tests.Routing
                 // Given
                 var mockedConnectionPool = new Mock<IConnectionPool>();
                 var mockedConnection = new Mock<IPooledConnection>();
-                mockedConnection.Setup(c => c.InitAsync())
+                mockedConnection.Setup(c => c.InitAsync(CancellationToken.None))
                     .Returns(Task.FromException(new InvalidOperationException("An exception")));
                 mockedConnectionPool.Setup(x =>
                         x.AcquireAsync(It.IsAny<AccessMode>(), It.IsAny<string>(), null, It.IsAny<Bookmark>()))
@@ -98,7 +99,7 @@ namespace Neo4j.Driver.Tests.Routing
                 // Then
                 connection.Should().NotBeNull();
                 var exception = await Record.ExceptionAsync(() => connection.InitAsync());
-                mockedConnection.Verify(c => c.InitAsync(), Times.Once);
+                mockedConnection.Verify(c => c.InitAsync(CancellationToken.None), Times.Once);
                 exception.Should().BeOfType<InvalidOperationException>();
                 exception.Message.Should().Be("An exception");
             }

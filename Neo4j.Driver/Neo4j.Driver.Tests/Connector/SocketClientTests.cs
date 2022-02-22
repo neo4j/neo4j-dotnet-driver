@@ -18,20 +18,18 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Internal.Protocol;
 using Xunit;
-using static Neo4j.Driver.Internal.ConnectionSettings;
 using static Xunit.Record;
 using Record = Xunit.Record;
 
@@ -54,7 +52,7 @@ namespace Neo4j.Driver.Tests
 
                 var client = new SocketClient(FakeUri, null, bufferSettings, socketClient: connMock.Object);
 
-                var ex = await Record.ExceptionAsync(() => client.ConnectAsync(new Dictionary<string, string>()));
+                var ex = await Record.ExceptionAsync(() => client.ConnectAsync(new Dictionary<string, string>(), CancellationToken.None));
 
                 ex.Should().NotBeNull().And.BeOfType<IOException>();
             }
@@ -79,7 +77,7 @@ namespace Neo4j.Driver.Tests
                 await client.ConnectAsync(new Dictionary<string, string>());
 
                 // Then
-                connMock.Verify(x => x.ConnectAsync(FakeUri), Times.Once);
+                connMock.Verify(x => x.ConnectAsync(FakeUri, CancellationToken.None), Times.Once);
             }
         }
 
