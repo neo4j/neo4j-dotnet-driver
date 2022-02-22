@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Internal.Connector
             _logger = logger;
             _bufferSettings = bufferSettings;
 
-            _tcpSocketClient = socketClient ?? new TcpSocketClient(socketSettings, _logger);    
+            _tcpSocketClient = socketClient ?? new TcpSocketClient(socketSettings, _logger);
         }
 
         // For testing only
