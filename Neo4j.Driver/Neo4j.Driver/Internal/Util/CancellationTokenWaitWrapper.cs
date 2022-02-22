@@ -25,22 +25,20 @@ namespace Neo4j.Driver.Internal.Util
     {
         private readonly CancellationToken _token;
         private readonly int _pollMs;
-        private readonly CancellationTokenSource _linkedSource;
 
         public CancellationTokenWaitWrapper(CancellationToken token, int pollMs = 100)
         {
             _token = token;
             _pollMs = pollMs;
-            _linkedSource = CancellationTokenSource.CreateLinkedTokenSource(token);
         }
 
         public async Task RunDelayAsync()
         {
             try
             {
-                while (!_linkedSource.Token.IsCancellationRequested)
+                while (!_token.IsCancellationRequested)
                 {
-                    await Task.Delay(_pollMs, _linkedSource.Token).ConfigureAwait(false);
+                    await Task.Delay(_pollMs, _token).ConfigureAwait(false);
                 }
             }
             catch (ObjectDisposedException)
@@ -55,7 +53,6 @@ namespace Neo4j.Driver.Internal.Util
 
         public void Dispose()
         {
-            _linkedSource.Cancel();
         }
     }
 }

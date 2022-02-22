@@ -49,6 +49,7 @@ namespace Neo4j.Driver.Internal.Connector
             _uri = uri;
             _logger = logger;
             _bufferSettings = bufferSettings;
+
             _tcpSocketClient = socketClient ?? new TcpSocketClient(socketSettings, _logger);    
         }
 
@@ -66,14 +67,12 @@ namespace Neo4j.Driver.Internal.Connector
         public async Task<IBoltProtocol> ConnectAsync(IDictionary<string, string> routingContext, CancellationToken cancellationToken = default)
         {
             await _tcpSocketClient.ConnectAsync(_uri, cancellationToken).ConfigureAwait(false);
-
+            
             SetOpened();
             _logger?.Debug($"~~ [CONNECT] {_uri}");
 
             var handShakeTask = DoHandshakeAsync(cancellationToken);
-            using var delay = new CancellationTokenWaitWrapper(cancellationToken);
-
-            await Task.WhenAny(handShakeTask, delay.RunDelayAsync()).ConfigureAwait(false);
+            await Task.WhenAny(handShakeTask, Task.Delay(TimeSpan.FromMilliseconds(-1), cancellationToken)).ConfigureAwait(false);
             
             cancellationToken.ThrowIfCancellationRequested();
 

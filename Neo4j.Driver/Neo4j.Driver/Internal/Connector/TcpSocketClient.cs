@@ -97,25 +97,22 @@ namespace Neo4j.Driver.Internal.Connector
                 }
                 catch (Exception e)
                 {
-                    var actualException = e;
-                    if (actualException is AggregateException)
-                    {
-                        actualException = ((AggregateException) actualException).GetBaseException();
-                    }
+                    var exception = e is AggregateException ? e.GetBaseException() : e;
 
                     innerErrors.Add(new IOException(
-                        $"Failed to connect to server '{uri}' via IP address '{address}': {actualException.Message}",
-                        actualException));
+                        $"Failed to connect to server '{uri}' via IP address '{address}': {exception.Message}",
+                        exception));
                 }
             }
-
+            
             // all failed
             throw new IOException(
                 $"Failed to connect to server '{uri}' via IP addresses'{addresses.ToContentString()}' at port '{uri.Port}'.",
                 new AggregateException(innerErrors));
         }
 
-        internal async Task ConnectSocketAsync(IPAddress address, int port, CancellationToken cancellationToken = default)
+        internal async Task ConnectSocketAsync(IPAddress address, int port,
+            CancellationToken cancellationToken = default)
         {
             InitClient();
 
@@ -124,29 +121,34 @@ namespace Neo4j.Driver.Internal.Connector
 #else
             var connectTask = _client.ConnectAsync(address, port);
 #endif
-            var finishedTask = await Task.WhenAny(connectTask, Task.Delay(_connectionTimeout, cancellationToken)).ConfigureAwait(false);
-            if (connectTask != finishedTask) // timed out
+            var finishedTask = await Task.WhenAny(connectTask, Task.Delay(_connectionTimeout, cancellationToken))
+                .ConfigureAwait(false);
+
+            if (connectTask == finishedTask)
             {
-                try
-                {
-                    // close client immediately when failed to connect within timeout
-                    await DisconnectAsync().ConfigureAwait(false);
-                }
-                catch (Exception e)
-                {
-                    _logger?.Error(e, $"Failed to close connect to the server {address}:{port}" +
-                                      $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms.");
-                }
-
-                if (cancellationToken.IsCancellationRequested)
-                    throw new OperationCanceledException(
-                        $"Failed to connect to server {address}:{port} due to acquisition timeout", cancellationToken);
-
-                throw new OperationCanceledException(
-                    $"Failed to connect to server {address}:{port} within {_connectionTimeout.TotalMilliseconds}ms.");
+                await connectTask.ConfigureAwait(false);
+                return;
             }
 
-            await connectTask.ConfigureAwait(false);
+            // timed out, clean up and throw
+            try
+            {
+                // close client immediately when failed to connect within timeout
+                await DisconnectAsync().ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                _logger?.Error(e, $"Failed to close connect to the server {address}:{port}" +
+                                  $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms.");
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+                throw new OperationCanceledException(
+                    $"Failed to connect to server {address}:{port} due to acquisition timeout",
+                    cancellationToken);
+
+            throw new OperationCanceledException(
+                $"Failed to connect to server {address}:{port} within {_connectionTimeout.TotalMilliseconds}ms.");
         }
 
         public virtual Task DisconnectAsync()
@@ -226,5 +228,5 @@ namespace Neo4j.Driver.Internal.Connector
                     return trust;
                 });
         }
-	}
+    }
 }

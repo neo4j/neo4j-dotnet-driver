@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
@@ -52,7 +53,7 @@ namespace Neo4j.Driver.Internal
         private readonly int _maxIdlePoolSize;
 
         private readonly object _poolSizeSync = new object();
-        private readonly TimeSpan _connAcquisitionTimeout;
+        private readonly TimeSpan _connectionAcquisitionTimeout;
 
         private readonly IConnectionValidator _connectionValidator;
         private readonly IPooledConnectionFactory _connectionFactory;
@@ -86,7 +87,8 @@ namespace Neo4j.Driver.Internal
             _logger = new PrefixLogger(logger, $"[{_id}]");
             _maxPoolSize = connectionPoolSettings.MaxConnectionPoolSize;
             _maxIdlePoolSize = connectionPoolSettings.MaxIdleConnectionPoolSize;
-            _connAcquisitionTimeout = connectionPoolSettings.ConnectionAcquisitionTimeout;
+            _connectionAcquisitionTimeout = connectionPoolSettings.ConnectionAcquisitionTimeout;
+
             _connectionFactory = connectionFactory;
 
             var connIdleTimeout = connectionPoolSettings.ConnectionIdleTimeout;
@@ -125,15 +127,23 @@ namespace Neo4j.Driver.Internal
             try
             {
                 conn = NewPooledConnection();
-                
+
                 if (conn == null)
                     return null;
 
-                using var wrapper = new CancellationTokenWaitWrapper(cancellationToken);
-                await Task.WhenAny(conn.InitAsync(cancellationToken), wrapper.RunDelayAsync()).ConfigureAwait(false);
+                var initTask = conn.InitAsync(cancellationToken);
+
+                await Task.WhenAny(initTask,
+                    Task.Delay(_connectionAcquisitionTimeout, cancellationToken)).ConfigureAwait(false);
+
+                if (initTask.IsFaulted)
+                {
+                    await initTask.ConfigureAwait(false);
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
 
                 _poolMetricsListener?.ConnectionCreated();
-                cancellationToken.ThrowIfCancellationRequested();
                 return conn;
             }
             catch
@@ -208,7 +218,7 @@ namespace Neo4j.Driver.Internal
         public async Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark)
         {
             _poolMetricsListener?.PoolAcquiring();
-            var cancellationTokenSource = new CancellationTokenSource(_connAcquisitionTimeout);
+            var cancellationTokenSource = new CancellationTokenSource(_connectionAcquisitionTimeout);
             
             try
             {
@@ -260,7 +270,10 @@ namespace Neo4j.Driver.Internal
             catch (OperationCanceledException ex)
             {
                 _poolMetricsListener?.PoolTimedOutToAcquire();
-                throw new ClientException($"Failed to obtain a connection from pool within {_connAcquisitionTimeout}", ex);
+                if (cancellationToken.IsCancellationRequested)
+                    throw new ClientException($"Failed to obtain a connection from pool within {_connectionAcquisitionTimeout}", ex);
+
+                throw new ClientException("Failed to obtain a connection from pool", ex);
             }
         }
 
