@@ -109,7 +109,7 @@ namespace Neo4j.Driver.Tests
                 var exception =
                     await Record.ExceptionAsync(() => pool.AcquireAsync(AccessMode.Read, null, null, Bookmark.Empty));
                 exception.Should().BeOfType<ClientException>().Which.Message.Should()
-                    .Contain("Failed to obtain a connection from pool within");
+                    .Be("Failed to obtain a connection from pool within 00:00:00.2500000");
             }
 
             [Fact]
