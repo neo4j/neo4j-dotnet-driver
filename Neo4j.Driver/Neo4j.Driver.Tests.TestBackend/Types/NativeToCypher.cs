@@ -146,6 +146,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             var cypherNode = new Dictionary<string, object>
             {
                 ["id"] = Convert(node.Id),
+                ["elementId"] = Convert(node.ElementId),
                 ["labels"] = Convert(new List<object>(node.Labels)),
                 ["props"] = Convert(new Dictionary<string, object>(node.Properties))
             };

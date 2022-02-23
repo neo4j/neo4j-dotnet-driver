@@ -16,25 +16,22 @@
 // limitations under the License.
 
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal.MessageHandling;
-using Neo4j.Driver.Internal.MessageHandling.V5_0;
+using Neo4j.Driver.Internal.Types;
 
-namespace Neo4j.Driver.Internal.Protocol
+namespace Neo4j.Driver.Internal.IO.ValueSerializers
 {
-    internal class BoltProtocolV5_0 : BoltProtocolV4_4
+    internal class ElementUnboundRelationshipSerializer : ReadOnlySerializer
     {
-        public override BoltProtocolVersion Version => BoltProtocolVersion.V5_0;
-        protected override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V5_0;
+        public const byte UnboundRelationship = (byte)'r';
+        public override IEnumerable<byte> ReadableStructs => new[] { UnboundRelationship };
 
-        public BoltProtocolV5_0(IDictionary<string, string> routingContext) : base(routingContext)
+        public override object Deserialize(IPackStreamReader reader, byte signature, long size)
         {
-        }
+            var urn = reader.ReadString();
+            var relType = reader.ReadString();
+            var props = reader.ReadMap();
 
-        protected override IResponseHandler GetHelloResponseHandler(IConnection conn)
-        {
-            return new HelloResponseHandler(conn, Version);
+            return new Relationship(urn, "-1", "-1", relType, props);
         }
     }
 }

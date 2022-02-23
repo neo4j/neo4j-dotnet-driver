@@ -14,39 +14,52 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Types
 {
     internal class Relationship : IRelationship
     {
-        public long Id { get; }
+        public long Id => long.Parse(ElementId);
+        public string ElementId { get; }
         public string Type { get; }
-        public long StartNodeId { get; internal set; }
-        public long EndNodeId { get; internal set; }
+        public long StartNodeId => long.Parse(StartNodeElementId);
+        public long EndNodeId => long.Parse(EndNodeElementId);
+
+        public string StartNodeElementId { get; internal set; }
+        public string EndNodeElementId { get; internal set; }
         public IReadOnlyDictionary<string, object> Properties { get; }
         public object this[string key] => Properties[key];
-
+       
         public Relationship(long id, long startId, long endId, string relType,
             IReadOnlyDictionary<string, object> props)
         {
-            Id = id;
-            StartNodeId = startId;
-            EndNodeId = endId;
+            ElementId = id.ToString();
+            StartNodeElementId = startId.ToString();
+            EndNodeElementId = endId.ToString();
+            Type = relType;
+            Properties = props;
+        }
+        
+        public Relationship(string id, string startId, string endId, string relType,
+            IReadOnlyDictionary<string, object> props)
+        {
+            ElementId = id;
+            StartNodeElementId = startId;
+            EndNodeElementId = endId; 
             Type = relType;
             Properties = props;
         }
 
         public bool Equals(IRelationship other)
         {
-            if (other == null) return false;
-            if (ReferenceEquals(this, other)) return true;
-            return Equals(Id, other.Id);
+            if (other == null)
+                return false;
+            
+            if (ReferenceEquals(this, other))
+                return true;
+            
+            return Equals(ElementId, other.ElementId);
         }
 
         public override bool Equals(object obj)
@@ -56,14 +69,13 @@ namespace Neo4j.Driver.Internal.Types
 
         public override int GetHashCode()
         {
-            return Id.GetHashCode();
+            return ElementId.GetHashCode();
         }
 
-        internal void SetStartAndEnd(long start, long end)
+        internal void SetStartAndEnd(string start, string end)
         {
-            StartNodeId = start;
-            EndNodeId = end;
+            StartNodeElementId = start;
+            EndNodeElementId = end;
         }
     }
-
 }

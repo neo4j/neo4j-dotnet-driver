@@ -40,6 +40,12 @@ namespace Neo4j.Driver
         /// <summary>
         /// Get the identity as a <see cref="long"/> number.
         /// </summary>
+        [Obsolete("Replaced with ElementId, will be removed in 6.0")]
         long Id { get; }
+
+        /// <summary>
+        /// Get the identity as a <see cref="string"/>.
+        /// </summary>
+        string ElementId { get; }
     }
 }
