@@ -70,11 +70,11 @@ namespace Neo4j.Driver.Internal.Connector
 
             SetOpened();
             _logger?.Debug($"~~ [CONNECT] {_uri}");
-
+            using var delayTask = Task.Delay(-1, cancellationToken);
             var handShakeTask = DoHandshakeAsync(cancellationToken);
-            var finished = await Task.WhenAny(handShakeTask, Task.Delay(-1, cancellationToken)).ConfigureAwait(false);
+            var finishedTask = await Task.WhenAny(handShakeTask, delayTask).ConfigureAwait(false);
             
-            if (finished != handShakeTask || cancellationToken.IsCancellationRequested)
+            if (finishedTask != handShakeTask)
                 throw new OperationCanceledException();
 
             var version = await handShakeTask.ConfigureAwait(false);

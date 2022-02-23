@@ -131,14 +131,14 @@ namespace Neo4j.Driver.Internal
                 if (conn == null)
                     return null;
 
+                using var delayTask = Task.Delay(-1, cancellationToken);
                 var initTask = conn.InitAsync(cancellationToken);
-                var delayTask = Task.Delay(_connectionAcquisitionTimeout, cancellationToken);
                 var finishedTask = await Task.WhenAny(initTask, delayTask).ConfigureAwait(false);
 
-                if (finishedTask == initTask)
-                    await initTask.ConfigureAwait(false);
-                else
+                if (finishedTask != initTask)
                     throw new OperationCanceledException();
+
+                await initTask.ConfigureAwait(false);
 
                 _poolMetricsListener?.ConnectionCreated();
                 return conn;
