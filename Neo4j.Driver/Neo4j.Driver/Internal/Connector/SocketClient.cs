@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Internal.Connector
 
             SetOpened();
             _logger?.Debug($"~~ [CONNECT] {_uri}");
-            using var delayTask = Task.Delay(-1, cancellationToken);
+            var delayTask = Task.Delay(-1, cancellationToken);
             var handShakeTask = DoHandshakeAsync(cancellationToken);
             var finishedTask = await Task.WhenAny(handShakeTask, delayTask).ConfigureAwait(false);
             

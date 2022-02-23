@@ -131,7 +131,7 @@ namespace Neo4j.Driver.Internal
                 if (conn == null)
                     return null;
 
-                using var delayTask = Task.Delay(-1, cancellationToken);
+                var delayTask = Task.Delay(-1, cancellationToken);
                 var initTask = conn.InitAsync(cancellationToken);
                 var finishedTask = await Task.WhenAny(initTask, delayTask).ConfigureAwait(false);
 
