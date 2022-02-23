@@ -72,9 +72,10 @@ namespace Neo4j.Driver.Internal.Connector
             _logger?.Debug($"~~ [CONNECT] {_uri}");
 
             var handShakeTask = DoHandshakeAsync(cancellationToken);
-            await Task.WhenAny(handShakeTask, Task.Delay(-1, cancellationToken)).ConfigureAwait(false);
+            var finished = await Task.WhenAny(handShakeTask, Task.Delay(-1, cancellationToken)).ConfigureAwait(false);
             
-            cancellationToken.ThrowIfCancellationRequested();
+            if (finished != handShakeTask || cancellationToken.IsCancellationRequested)
+                throw new OperationCanceledException();
 
             var version = await handShakeTask.ConfigureAwait(false);
             return SelectBoltProtocol(version, routingContext);
