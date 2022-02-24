@@ -243,8 +243,9 @@ namespace Neo4j.Driver.Internal
             catch (OperationCanceledException ex)
             {
                 _poolMetricsListener?.PoolTimedOutToAcquire();
-                if (cts.IsCancellationRequested)
-                    throw new ClientException($"Failed to obtain a connection from pool within {_connectionAcquisitionTimeout}", ex);
+                if (cts.Token.IsCancellationRequested)
+                    throw new ClientException(
+                        $"Failed to obtain a connection from pool within {_connectionAcquisitionTimeout}", ex);
 
                 throw new ClientException("Failed to obtain a connection from pool", ex);
             }
