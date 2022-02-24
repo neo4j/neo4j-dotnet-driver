@@ -71,10 +71,10 @@ namespace Neo4j.Driver.Internal
                     .Timeout(timeout, CancellationToken.None)
                     .ConfigureAwait(false);
             }
-            catch (TaskCanceledException taskCanceledException)
+            catch (OperationCanceledException operationCanceledException)
             {
                 stream.Close();
-                throw new ConnectionReadTimeoutException($"Socket/Stream timed out after {timeoutMs}ms, socket closed.", taskCanceledException);
+                throw new ConnectionReadTimeoutException($"Socket/Stream timed out after {timeoutMs}ms, socket closed.", operationCanceledException);
             }
             catch (Exception ex)
 			{

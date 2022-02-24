@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Tests
 																												timeout));
 
 			ex.Should().NotBeNull();
-			ex.Should().BeOfType<OperationCanceledException>();
+			ex.Should().BeOfType<ConnectionReadTimeoutException>();
 		}
 
 		[Theory]
