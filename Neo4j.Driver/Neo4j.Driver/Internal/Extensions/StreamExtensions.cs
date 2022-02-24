@@ -60,7 +60,7 @@ namespace Neo4j.Driver.Internal
 		/// <returns>The number of bytes read</returns>
 		public static async Task<int> ReadWithTimeoutAsync(this Stream stream, byte[] buffer,int offset, int count, int timeoutMs)
 		{
-			var timeout = (timeoutMs <= 0) ? TimeSpan.FromMilliseconds(-1) : TimeSpan.FromMilliseconds(timeoutMs);
+			var timeout = timeoutMs <= 0 ? TimeSpan.FromMilliseconds(-1) : TimeSpan.FromMilliseconds(timeoutMs);
 
             try
             {
@@ -71,10 +71,10 @@ namespace Neo4j.Driver.Internal
                     .Timeout(timeout, CancellationToken.None)
                     .ConfigureAwait(false);
             }
-            catch (TaskCanceledException)
+            catch (TaskCanceledException taskCanceledException)
             {
                 stream.Close();
-                throw new ConnectionReadTimeoutException($"Socket/Stream timed out after {timeoutMs}ms, socket closed.");
+                throw new ConnectionReadTimeoutException($"Socket/Stream timed out after {timeoutMs}ms, socket closed.", taskCanceledException);
             }
             catch (Exception ex)
 			{
