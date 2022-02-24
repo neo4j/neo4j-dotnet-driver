@@ -25,6 +25,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal.Extensions;
 using static System.Security.Authentication.SslProtocols;
 
 namespace Neo4j.Driver.Internal.Connector
@@ -121,34 +122,32 @@ namespace Neo4j.Driver.Internal.Connector
 #else
             var connectTask = _client.ConnectAsync(address, port);
 #endif
-            var finishedTask = await Task.WhenAny(connectTask, Task.Delay(_connectionTimeout, cancellationToken))
-                .ConfigureAwait(false);
-
-            if (connectTask == finishedTask)
-            {
-                await connectTask.ConfigureAwait(false);
-                return;
-            }
-
-            // timed out, clean up and throw
             try
             {
-                // close client immediately when failed to connect within timeout
-                await DisconnectAsync().ConfigureAwait(false);
+                await connectTask.Timeout(_connectionTimeout, cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception e)
+            catch
             {
-                _logger?.Error(e, $"Failed to close connect to the server {address}:{port}" +
-                                  $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms.");
-            }
+                // timed out, clean up and throw
+                try
+                {
+                    // close client immediately when failed to connect within timeout
+                    await DisconnectAsync().ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    _logger?.Error(e, $"Failed to close connect to the server {address}:{port}" +
+                                      $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms.");
+                }
 
-            if (cancellationToken.IsCancellationRequested)
+                if (cancellationToken.IsCancellationRequested)
+                    throw new OperationCanceledException(
+                        $"Failed to connect to server {address}:{port} due to acquisition timeout",
+                        cancellationToken);
+
                 throw new OperationCanceledException(
-                    $"Failed to connect to server {address}:{port} due to acquisition timeout",
-                    cancellationToken);
-
-            throw new OperationCanceledException(
-                $"Failed to connect to server {address}:{port} within {_connectionTimeout.TotalMilliseconds}ms.");
+                    $"Failed to connect to server {address}:{port} within {_connectionTimeout.TotalMilliseconds}ms.");
+            }
         }
 
         public virtual Task DisconnectAsync()
