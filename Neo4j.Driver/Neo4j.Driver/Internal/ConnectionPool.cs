@@ -22,6 +22,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Extensions;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Routing;
@@ -131,15 +132,10 @@ namespace Neo4j.Driver.Internal
                 if (conn == null)
                     return null;
 
-                var delayTask = Task.Delay(-1, cancellationToken);
-                var initTask = conn.InitAsync(cancellationToken);
-                var finishedTask = await Task.WhenAny(initTask, delayTask).ConfigureAwait(false);
-
-                if (finishedTask != initTask)
-                    throw new OperationCanceledException();
-
-                await initTask.ConfigureAwait(false);
-
+                await conn
+                    .InitAsync(cancellationToken)
+                    .ConfigureAwait(false);
+                
                 _poolMetricsListener?.ConnectionCreated();
                 return conn;
             }
@@ -215,13 +211,12 @@ namespace Neo4j.Driver.Internal
         public async Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark)
         {
             _poolMetricsListener?.PoolAcquiring();
-            var cancellationTokenSource = new CancellationTokenSource(_connectionAcquisitionTimeout);
             
             try
             {
                 var connection = await TryExecuteAsync(
                         _logger, 
-                        () => AcquireOrTimeoutAsync(mode, database, cancellationTokenSource.Token),
+                        () => AcquireOrTimeoutAsync(mode, database, _connectionAcquisitionTimeout),
                         "Failed to acquire a connection from connection pool asynchronously.")
                     .ConfigureAwait(false);
                 
@@ -235,42 +230,51 @@ namespace Neo4j.Driver.Internal
             }
         }
 
-        private async Task<IPooledConnection> AcquireOrTimeoutAsync(AccessMode mode, string database, CancellationToken cancellationToken)
+        private async Task<IPooledConnection> AcquireOrTimeoutAsync(AccessMode mode, string database, TimeSpan timeout)
         {
+            using var cts = new CancellationTokenSource(timeout);
+
             try
             {
-                while (true)
-                {
-                    if (IsClosed)
-                        throw GetDriverDisposedException(nameof(ConnectionPool));
-
-                    if (IsInactive)
-                        ThrowServerUnavailableExceptionDueToDeactivated();
-
-                    var connection = await GetPooledOrNewConnectionAsync(cancellationToken).ConfigureAwait(false);
-
-                    if (_connectionValidator.OnRequire(connection))
-                    {
-                        await AddConnectionAsync(connection).ConfigureAwait(false);
-
-                        connection.Mode = mode;
-                        connection.Database = database;
-
-                        return connection;
-                    }
-
-                    await DestroyConnectionAsync(connection).ConfigureAwait(false);
-
-                    cancellationToken.ThrowIfCancellationRequested();
-                }
+                return await AcquireAsync(mode, database, cts.Token)
+                    .Timeout(timeout, cts.Token)
+                    .ConfigureAwait(false);
             }
             catch (OperationCanceledException ex)
             {
                 _poolMetricsListener?.PoolTimedOutToAcquire();
-                if (cancellationToken.IsCancellationRequested)
+                if (cts.IsCancellationRequested)
                     throw new ClientException($"Failed to obtain a connection from pool within {_connectionAcquisitionTimeout}", ex);
 
                 throw new ClientException("Failed to obtain a connection from pool", ex);
+            }
+        }
+
+        private async Task<IPooledConnection> AcquireAsync(AccessMode mode, string database, CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                if (IsClosed)
+                    throw GetDriverDisposedException(nameof(ConnectionPool));
+
+                if (IsInactive)
+                    ThrowServerUnavailableExceptionDueToDeactivated();
+
+                var connection = await GetPooledOrNewConnectionAsync(cancellationToken).ConfigureAwait(false);
+
+                if (_connectionValidator.OnRequire(connection))
+                {
+                    await AddConnectionAsync(connection).ConfigureAwait(false);
+
+                    connection.Mode = mode;
+                    connection.Database = database;
+
+                    return connection;
+                }
+
+                await DestroyConnectionAsync(connection).ConfigureAwait(false);
+
+                cancellationToken.ThrowIfCancellationRequested();
             }
         }
 
@@ -361,17 +365,17 @@ namespace Neo4j.Driver.Internal
                 {
                     await DestroyConnectionAsync(connection).ConfigureAwait(false);
                 }
-            }, $"Failed to release connection '{connection}' asynchronously back to pool.");
+            }, $"Failed to release connection '{connection}' asynchronously back to pool.").ConfigureAwait(false);
         }
 
-        public async Task CloseAsync()
+        public Task CloseAsync()
         {
             if (Interlocked.Exchange(ref _poolStatus, Closed) != Closed)
             {
-                await CloseAllConnectionsAsync();
+                CloseAllConnectionsAsync();
             }
 
-            await Task.CompletedTask;
+            return Task.CompletedTask;
         }
         
         public async Task VerifyConnectivityAsync()

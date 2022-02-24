@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Extensions;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
@@ -70,14 +71,10 @@ namespace Neo4j.Driver.Internal.Connector
 
             SetOpened();
             _logger?.Debug($"~~ [CONNECT] {_uri}");
-            var delayTask = Task.Delay(-1, cancellationToken);
-            var handShakeTask = DoHandshakeAsync(cancellationToken);
-            var finishedTask = await Task.WhenAny(handShakeTask, delayTask).ConfigureAwait(false);
-            
-            if (finishedTask != handShakeTask)
-                throw new OperationCanceledException();
+            var version = 
+                await DoHandshakeAsync(cancellationToken)
+                .ConfigureAwait(false);
 
-            var version = await handShakeTask.ConfigureAwait(false);
             return SelectBoltProtocol(version, routingContext);
         }
 
