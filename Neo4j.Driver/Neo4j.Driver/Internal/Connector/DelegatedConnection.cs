@@ -24,6 +24,7 @@ using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Util;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Neo4j.Driver.Internal.Connector
 {
@@ -71,9 +72,9 @@ namespace Neo4j.Driver.Internal.Connector
             return TaskWithErrorHandling(() => Delegate.ReceiveOneAsync());
         }
 
-        public Task InitAsync()
+        public Task InitAsync(CancellationToken cancellationToken = default)
         {
-            return TaskWithErrorHandling(() => Delegate.InitAsync());
+            return TaskWithErrorHandling(() => Delegate.InitAsync(cancellationToken));
         }
 
         public Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1,

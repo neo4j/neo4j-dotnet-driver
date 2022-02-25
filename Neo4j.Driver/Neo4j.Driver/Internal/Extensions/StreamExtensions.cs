@@ -20,6 +20,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Extensions;
 
 namespace Neo4j.Driver.Internal
 {
@@ -55,45 +56,33 @@ namespace Neo4j.Driver.Internal
 		/// <param name="buffer">Target buffer to write into</param>
 		/// <param name="offset">Offset from which to begin writing data from the stream</param>
 		/// <param name="count">The maximum number of bytes to read</param>
-		/// <param name="timeoutMS">The timeout in milliseconds that the stream will close after if there is no activity. </param>
+		/// <param name="timeoutMs">The timeout in milliseconds that the stream will close after if there is no activity. </param>
 		/// <returns>The number of bytes read</returns>
-		public static async Task<int> ReadWithTimeoutAsync(this Stream stream, byte[] buffer,int offset, int count, int timeoutMS)
+		public static async Task<int> ReadWithTimeoutAsync(this Stream stream, byte[] buffer,int offset, int count, int timeoutMs)
 		{
-			timeoutMS = (timeoutMS <= 0) ? -1 : timeoutMS;
-			var cancellationDelayTask = Task.Delay(timeoutMS);
-			int result;
+			var timeout = timeoutMs <= 0 ? TimeSpan.FromMilliseconds(-1) : TimeSpan.FromMilliseconds(timeoutMs);
 
-			try
-			{
-				// Stream.ReadAsync doesn't honor cancellation token. It only checks it at the beginning. The actual
-				// operation is not guarded. As a result if remote server never responds and connection never closed
-				// it will lead to this operation hanging forever.
-				Task<int> readBytesTask = stream.ReadAsync(buffer, offset, count);
-
-				await Task.WhenAny(readBytesTask, cancellationDelayTask).ConfigureAwait(false);
-
-				result = readBytesTask.Result;
-			}
-			catch(Exception ex)
+            try
+            {
+                // Stream.ReadAsync doesn't honor cancellation token. It only checks it at the beginning. The actual
+                // operation is not guarded. As a result if remote server never responds and connection never closed
+                // it will lead to this operation hanging forever.
+                return await stream.ReadAsync(buffer, offset, count)
+                    .Timeout(timeout, CancellationToken.None)
+                    .ConfigureAwait(false);
+            }
+            catch (OperationCanceledException operationCanceledException)
+            {
+                stream.Close();
+                throw new ConnectionReadTimeoutException($"Socket/Stream timed out after {timeoutMs}ms, socket closed.", operationCanceledException);
+            }
+            catch (Exception ex)
 			{
 				if (ex.InnerException is not null)  //We want to throw the inner exception if anything goes wrong with the stream. If we don't
 					throw ex.InnerException;        //then the Task.WhenAny exception will be propogated
-				else                                
-					throw;
+				                                
+                throw;
 			}
-						
-			// Check whether cancellation task is cancelled (or completed).
-			if (cancellationDelayTask.IsCanceled || cancellationDelayTask.IsCompleted)
-			{
-				stream.Close();
-				throw new ConnectionReadTimeoutException($"Socket/Stream timed out afer {timeoutMS}ms, socket closed.");
-			}
-
-			// Means that main task completed. We use Result directly.
-			// If the main task failed the following line will throw an exception and we'll catch it above.
-			return result;
-			
-			
 		}
 	}
 }

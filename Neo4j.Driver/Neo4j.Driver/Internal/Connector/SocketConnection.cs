@@ -94,12 +94,13 @@ namespace Neo4j.Driver.Internal.Connector
 
         public string Database { get; set; }
 
-        public async Task InitAsync()
+        public async Task InitAsync(CancellationToken cancellationToken = default)
         {
-            _sendLock.Wait();
+            await _sendLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+
             try
             {
-                _boltProtocol = await _client.ConnectAsync(RoutingContext).ConfigureAwait(false);
+                _boltProtocol = await _client.ConnectAsync(RoutingContext, cancellationToken).ConfigureAwait(false);
             }
             finally
             {

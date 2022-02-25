@@ -17,6 +17,7 @@
 
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Connector
@@ -25,7 +26,7 @@ namespace Neo4j.Driver.Internal.Connector
     {
         Stream ReadStream { get; }
         Stream WriteStream { get; }
-        Task ConnectAsync(Uri uri);
+        Task ConnectAsync(Uri uri, CancellationToken cancellationToken = default);
         Task DisconnectAsync();
 	}
 }
