@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Internal
 		/// <param name="count">The maximum number of bytes to read</param>
 		/// <param name="timeoutMs">The timeout in milliseconds that the stream will close after if there is no activity. </param>
 		/// <returns>The number of bytes read</returns>
-		public static async Task<int> ReadWithTimeoutAsync(this Stream stream, byte[] buffer,int offset, int count, int timeoutMs)
+		public static async Task<int> ReadWithTimeoutAsync(this Stream stream, byte[] buffer, int offset, int count, int timeoutMs)
 		{
 			var timeout = timeoutMs <= 0 ? TimeSpan.FromMilliseconds(-1) : TimeSpan.FromMilliseconds(timeoutMs);
 
@@ -71,18 +71,17 @@ namespace Neo4j.Driver.Internal
                     .Timeout(timeout, CancellationToken.None)
                     .ConfigureAwait(false);
             }
-            catch (OperationCanceledException operationCanceledException)
+            catch (TimeoutException timeoutException)
             {
                 stream.Close();
-                throw new ConnectionReadTimeoutException($"Socket/Stream timed out after {timeoutMs}ms, socket closed.", operationCanceledException);
+                throw new ConnectionReadTimeoutException($"Socket/Stream timed out after {timeoutMs}ms, socket closed.",
+                    timeoutException);
             }
-            catch (Exception ex)
-			{
-				if (ex.InnerException is not null)  //We want to throw the inner exception if anything goes wrong with the stream. If we don't
-					throw ex.InnerException;        //then the Task.WhenAny exception will be propogated
-				                                
+            catch (OperationCanceledException)
+            {
+                stream.Close();
                 throw;
-			}
+            }
 		}
 	}
 }

@@ -24,7 +24,6 @@ using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal.Extensions;
 using static System.Security.Authentication.SslProtocols;
 
@@ -131,7 +130,7 @@ namespace Neo4j.Driver.Internal.Connector
                     .Timeout(_connectionTimeout, CancellationToken.None)
                     .ConfigureAwait(false);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex) when (ex is OperationCanceledException or TimeoutException)
             {
                 try
                 {
