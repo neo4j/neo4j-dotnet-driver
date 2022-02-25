@@ -165,7 +165,7 @@ namespace Neo4j.Driver.Internal.IO
             var ex = await Record.ExceptionAsync(() => reader.ReadNextMessagesAsync(new MemoryStream()));
 
             ex.Should().NotBeNull();
-            ex.Should().BeAssignableTo<OperationCanceledException>();
+            ex.Should().BeAssignableTo<ConnectionReadTimeoutException>();
         }
 
         [Fact]
