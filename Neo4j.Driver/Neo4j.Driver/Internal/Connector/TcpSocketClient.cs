@@ -126,19 +126,9 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 await connectTask.Timeout(_connectionTimeout, cancellationToken).ConfigureAwait(false);
             }
-            catch
+            catch (OperationCanceledException)
             {
-                // timed out, clean up and throw
-                try
-                {
-                    // close client immediately when failed to connect within timeout
-                    await DisconnectAsync().ConfigureAwait(false);
-                }
-                catch (Exception e)
-                {
-                    _logger?.Error(e, $"Failed to close connect to the server {address}:{port}" +
-                                      $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms.");
-                }
+                await TryCleanUpAsync(address, port).ConfigureAwait(false);
 
                 if (cancellationToken.IsCancellationRequested)
                     throw new OperationCanceledException(
@@ -147,6 +137,25 @@ namespace Neo4j.Driver.Internal.Connector
 
                 throw new OperationCanceledException(
                     $"Failed to connect to server {address}:{port} within {_connectionTimeout.TotalMilliseconds}ms.");
+            }
+            catch
+            {
+                await TryCleanUpAsync(address, port).ConfigureAwait(false);
+                throw;
+            }
+        }
+
+        private async Task TryCleanUpAsync(IPAddress address, int port)
+        {
+            try
+            {
+                // close client immediately when failed to connect within timeout
+                await DisconnectAsync().ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                _logger?.Error(e, $"Failed to close connect to the server {address}:{port}" +
+                                  $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms.");
             }
         }
 
