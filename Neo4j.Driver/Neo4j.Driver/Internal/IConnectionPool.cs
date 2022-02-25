@@ -16,7 +16,6 @@
 // limitations under the License.
 
 using System.Threading.Tasks;
-using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal
 {

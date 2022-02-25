@@ -18,6 +18,7 @@
 using System.IO;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Threading;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;

@@ -81,16 +81,12 @@ namespace Neo4j.Driver.Internal.Routing
         public async Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark)
         {
             if (IsClosed)
-            {
-                ThrowObjectDisposedException();
-            }
+                throw GetDriverDisposedException(nameof(LoadBalancer));
 
             var conn = await AcquireConnectionAsync(mode, database, impersonatedUser, bookmark).ConfigureAwait(false);
 
             if (IsClosed)
-            {
-                ThrowObjectDisposedException();
-            }
+                throw GetDriverDisposedException(nameof(LoadBalancer));
 
             return conn;
         }
@@ -107,7 +103,7 @@ namespace Neo4j.Driver.Internal.Routing
             _routingTableManager.ForgetWriter(uri, database);
         }
 
-		public Task AddConnectionPoolAsync(IEnumerable<Uri> uris)
+        public Task AddConnectionPoolAsync(IEnumerable<Uri> uris)
         {
             return _clusterConnectionPool.AddAsync(uris);
         }
@@ -180,12 +176,12 @@ namespace Neo4j.Driver.Internal.Routing
                 new AggregateException(exceptions));
         }
 
-		public IRoutingTable GetRoutingTable(string database)
-		{
-			return  _routingTableManager.RoutingTableFor(database);
-		}
+        public IRoutingTable GetRoutingTable(string database)
+        {
+            return _routingTableManager.RoutingTableFor(database);
+        }
 
-		private async Task<IConnection> AcquireConnectionAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark)
+        private async Task<IConnection> AcquireConnectionAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark)
         {
             var routingTable = await _routingTableManager.EnsureRoutingTableForModeAsync(mode, database, impersonatedUser, bookmark)
                 .ConfigureAwait(false);
@@ -214,6 +210,7 @@ namespace Neo4j.Driver.Internal.Routing
 
                 var conn =
                     await CreateClusterConnectionAsync(uri, mode, routingTable.Database, impersonatedUser, bookmark).ConfigureAwait(false);
+
                 if (conn != null)
                 {
                     return conn;
@@ -226,7 +223,7 @@ namespace Neo4j.Driver.Internal.Routing
         }
 
         private async Task<IConnection> CreateClusterConnectionAsync(Uri uri, AccessMode mode, string database, 
-			string impersonatedUser, Bookmark bookmark)
+            string impersonatedUser, Bookmark bookmark)
         {
             try
             {
@@ -247,11 +244,6 @@ namespace Neo4j.Driver.Internal.Routing
             }
 
             return null;
-        }
-
-        private void ThrowObjectDisposedException()
-        {
-            FailedToAcquireConnection(this);
         }
 
         public override string ToString()

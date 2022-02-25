@@ -32,10 +32,7 @@ namespace Neo4j.Driver.Tests
 																												timeout));
 
 			ex.Should().NotBeNull();
-			ex.Should()
-				.BeOfType<ConnectionReadTimeoutException>()
-				.Which.Message.Should()
-				.Be($"Socket/Stream timed out afer {timeout}ms, socket closed.");
+			ex.Should().BeOfType<ConnectionReadTimeoutException>();
 		}
 
 		[Theory]

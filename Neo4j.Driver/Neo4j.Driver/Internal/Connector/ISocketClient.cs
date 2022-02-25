@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
@@ -26,7 +27,7 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal interface ISocketClient
     {
-        Task<IBoltProtocol> ConnectAsync(IDictionary<string, string> routingContext);
+        Task<IBoltProtocol> ConnectAsync(IDictionary<string, string> routingContext, CancellationToken token = default);
         Task SendAsync(IEnumerable<IRequestMessage> messages);
         Task ReceiveAsync(IResponsePipeline responsePipeline);
         Task ReceiveOneAsync(IResponsePipeline responsePipeline);
