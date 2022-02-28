@@ -57,7 +57,7 @@ namespace Neo4j.Driver.Internal.Protocol
                     $"(HTTP defaults to port 7474 whereas BOLT defaults to port {GraphDatabase.DefaultBoltPort})"),
                 //undefined
                 _ => throw new NotSupportedException(
-                    "Protocol error, server suggested unexpected protocol version: " + version.MajorVersion + "." + version.MinorVersion)
+                    $"Protocol error, server suggested unexpected protocol version: {version}")
             };
         }
         
