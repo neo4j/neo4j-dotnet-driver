@@ -40,11 +40,5 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
                 ? new Relationship(relId.Value, urn, -1, -1, "-1", "-1", relType, props)
                 : new Relationship(urn, "-1", "-1", relType, props);
         }
-
-        private static T? ReadNullAndReturnNull<T>(IPackStreamReader reader) where T : struct
-        {
-            reader.ReadNull();
-            return null;
-        }
     }
 }

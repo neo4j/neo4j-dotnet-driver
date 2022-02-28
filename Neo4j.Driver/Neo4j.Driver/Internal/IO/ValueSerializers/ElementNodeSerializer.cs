@@ -52,11 +52,5 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
                 ? new Node(nodeId.Value, stringId, labels, props)
                 : new Node(stringId, labels, props);
         }
-
-        private static T? ReadNullAndReturnNull<T>(IPackStreamReader reader) where T: struct
-        {
-            reader.ReadNull();
-            return null;
-        }
     }
 }
