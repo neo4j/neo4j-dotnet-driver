@@ -32,11 +32,12 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             var relStartId = includingLongs ? reader.ReadLong() : ReadNullAndReturnNull<long>(reader);
             var relEndId = includingLongs ? reader.ReadLong() : ReadNullAndReturnNull<long>(reader);
 
+            var relType = reader.ReadString();
+            var props = reader.ReadMap();
+            
             var urn = reader.ReadString();
             var startUrn = reader.ReadString();
             var endUrn = reader.ReadString();
-            var relType = reader.ReadString();
-            var props = reader.ReadMap();
 
             return includingLongs 
                 ? new Relationship(relId.Value, urn, relStartId.Value, relEndId.Value, startUrn, endUrn, relType, props)
