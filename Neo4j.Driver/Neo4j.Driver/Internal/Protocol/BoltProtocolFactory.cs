@@ -26,17 +26,17 @@ namespace Neo4j.Driver.Internal.Protocol
     internal static class BoltProtocolFactory
     {
         private const int BoltHTTPIdentifier = 1213486160;  //0x‭48 54 54 50 - or HTTP ascii codes...
-
         /// <summary>
         /// lazily evaluate handshake bytes once.
         /// </summary>
         private static readonly Lazy<byte[]> HandshakeBytesLazy = 
             new Lazy<byte[]>(() =>
             {
+                const int goGoBolt = 0x6060B017; //This is a 'magic' handshake identifier to indicate we're using 'BOLT' ('GOGOBOLT')
+
                 var versions = new int[]
                 {
-                    //This is a 'magic' handshake identifier to indicate we're using 'BOLT' ('GOGOBOLT')
-                    0x6060B017,
+                    goGoBolt,
                     // 4 versions max.
                     BoltProtocolVersion.V5_0.PackToInt(),
                     BoltProtocolVersion.V4_4.PackToIntRange(BoltProtocolVersion.V4_2),
