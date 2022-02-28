@@ -31,7 +31,6 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal class SocketClient : ISocketClient
     {
-        private const int NumSupportedVersions = 4;
         private const string MessagePattern = "C: {0}";
         private readonly Uri _uri;
         private readonly BufferSettings _bufferSettings;
