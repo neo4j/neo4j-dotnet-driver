@@ -30,9 +30,9 @@ namespace Neo4j.Driver.Internal.Protocol
 
         private static readonly int[] SupportedVersions = 
         {
+            BoltProtocolVersion.V5_0.PackToInt(),
             BoltProtocolVersion.V4_4.PackToIntRange(BoltProtocolVersion.V4_2),
             BoltProtocolVersion.V4_1.PackToInt(),
-            BoltProtocolVersion.V4_0.PackToInt(),
             BoltProtocolVersion.V3_0.PackToInt()
         };
 
