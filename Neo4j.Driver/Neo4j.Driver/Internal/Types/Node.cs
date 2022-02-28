@@ -22,8 +22,9 @@ namespace Neo4j.Driver.Internal.Types
 {
     internal class Node : INode
     {
-        [Obsolete("Replaced with ElementId")]
-        public long Id => long.Parse(ElementId);
+        [Obsolete("Replaced with ElementId, Will be removed in 6.0")]
+        public long Id { get; } = -1;
+
         public string ElementId { get; }
         public IReadOnlyList<string> Labels { get; }
         public IReadOnlyDictionary<string, object> Properties { get; }
@@ -31,14 +32,23 @@ namespace Neo4j.Driver.Internal.Types
 
         public Node(long id, IReadOnlyList<string> labels, IReadOnlyDictionary<string, object> prop)
         {
+            Id = id;
             ElementId = id.ToString();
             Labels = labels;
             Properties = prop;
         }
 
-        public Node(string id, IReadOnlyList<string> labels, IReadOnlyDictionary<string, object> prop)
+        public Node(string elementId, IReadOnlyList<string> labels, IReadOnlyDictionary<string, object> prop)
         {
-            ElementId = id;
+            ElementId = elementId;
+            Labels = labels;
+            Properties = prop;
+        }
+
+        public Node(long id, string elementId, IReadOnlyList<string> labels, IReadOnlyDictionary<string, object> prop)
+        {
+            Id = id;
+            ElementId = elementId;
             Labels = labels;
             Properties = prop;
         }

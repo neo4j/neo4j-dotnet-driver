@@ -14,18 +14,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using System;
 using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Types
 {
     internal class Relationship : IRelationship
     {
-        public long Id => long.Parse(ElementId);
-        public string ElementId { get; }
-        public string Type { get; }
-        public long StartNodeId => long.Parse(StartNodeElementId);
-        public long EndNodeId => long.Parse(EndNodeElementId);
+        [Obsolete("Replaced by ElementId, Will be removed in 6.0")]
+        public long Id { get; } = -1;
+        [Obsolete("Replaced by StartNodeElementId, Will be removed in 6.0")]
+        public long StartNodeId { get; } = -1;
+        [Obsolete("Replaced by EndNodeElementId, Will be removed in 6.0")]
+        public long EndNodeId { get; } = -1;
 
+        public string Type { get; }
+        
+        public string ElementId { get; }
         public string StartNodeElementId { get; internal set; }
         public string EndNodeElementId { get; internal set; }
         public IReadOnlyDictionary<string, object> Properties { get; }
@@ -34,6 +40,10 @@ namespace Neo4j.Driver.Internal.Types
         public Relationship(long id, long startId, long endId, string relType,
             IReadOnlyDictionary<string, object> props)
         {
+            Id = id;
+            StartNodeId = startId;
+            EndNodeId = endId;
+
             ElementId = id.ToString();
             StartNodeElementId = startId.ToString();
             EndNodeElementId = endId.ToString();
@@ -47,9 +57,27 @@ namespace Neo4j.Driver.Internal.Types
             ElementId = id;
             StartNodeElementId = startId;
             EndNodeElementId = endId; 
+
             Type = relType;
             Properties = props;
         }
+
+        public Relationship(long id, string elementId, long startId, long endId, string startElementId, string endElementId, 
+            string relType,
+            IReadOnlyDictionary<string, object> props)
+        {
+            Id = id;
+            StartNodeId = startId;
+            EndNodeId = endId;
+
+            ElementId = elementId;
+            StartNodeElementId = startElementId;
+            EndNodeElementId = endElementId;
+
+            Type = relType;
+            Properties = props;
+        }
+
 
         public bool Equals(IRelationship other)
         {

@@ -27,11 +27,23 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
 
         public override object Deserialize(IPackStreamReader reader, byte signature, long size)
         {
+            var includingLongs = reader.PeekNextType() == PackStream.PackType.Null;
+
+            var relId = includingLongs ? reader.ReadLong() : ReadNullAndReturnNull<long>(reader);
+
             var urn = reader.ReadString();
             var relType = reader.ReadString();
             var props = reader.ReadMap();
 
-            return new Relationship(urn, "-1", "-1", relType, props);
+            return includingLongs 
+                ? new Relationship(relId.Value, urn, -1, -1, "-1", "-1", relType, props)
+                : new Relationship(urn, "-1", "-1", relType, props);
+        }
+
+        private static T? ReadNullAndReturnNull<T>(IPackStreamReader reader) where T : struct
+        {
+            reader.ReadNull();
+            return null;
         }
     }
 }
