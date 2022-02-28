@@ -25,9 +25,9 @@ namespace Neo4j.Driver.Internal.Types
         [Obsolete("Replaced by ElementId, Will be removed in 6.0")]
         public long Id { get; } = -1;
         [Obsolete("Replaced by StartNodeElementId, Will be removed in 6.0")]
-        public long StartNodeId { get; } = -1;
+        public long StartNodeId { get; internal set; } = -1;
         [Obsolete("Replaced by EndNodeElementId, Will be removed in 6.0")]
-        public long EndNodeId { get; } = -1;
+        public long EndNodeId { get; internal set; } = -1;
 
         public string Type { get; }
         
@@ -100,10 +100,12 @@ namespace Neo4j.Driver.Internal.Types
             return ElementId.GetHashCode();
         }
 
-        internal void SetStartAndEnd(string start, string end)
+        internal void SetStartAndEnd(INode start, INode end)
         {
-            StartNodeElementId = start;
-            EndNodeElementId = end;
+            StartNodeId = start.Id;
+            EndNodeId = end.Id;
+            StartNodeElementId = start.ElementId;
+            EndNodeElementId = end.ElementId;
         }
     }
 }
