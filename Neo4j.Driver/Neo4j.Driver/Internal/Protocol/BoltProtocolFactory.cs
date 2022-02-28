@@ -36,54 +36,29 @@ namespace Neo4j.Driver.Internal.Protocol
             BoltProtocolVersion.V3_0.PackToInt()
         };
 
-
         public static IBoltProtocol ForVersion(BoltProtocolVersion version, IDictionary<string, string> routingContext = null)
         {
-            if (version.Equals(3, 0))
+            return version switch
             {
-                return new BoltProtocolV3();
-            }
-            else if (version.Equals(4, 0))
-            {
-                return new BoltProtocolV4_0();
-            }
-            else if (version.Equals(4, 1) )
-            {
-                return new BoltProtocolV4_1(routingContext);
-            }
-            else if (version.Equals(4, 2))
-			{
-                return new BoltProtocolV4_2(routingContext);
-			}
-            else if (version.Equals(4, 3))
-            {
-                return new BoltProtocolV4_3(routingContext);
-            }
-			else if (version.Equals(4, 4))
-			{
-				return new BoltProtocolV4_4(routingContext);
-			}
-            else if (version.Equals(5, 0))
-            {
-                return new BoltProtocolV5_0(routingContext);
-            }
-            else if(version.Equals(0, 0))
-			{
-                throw new NotSupportedException(
-                        "The Neo4j server does not support any of the protocol versions supported by this client. " +
-                        "Ensure that you are using driver and server versions that are compatible with one another.");
-            }
-            else if (version == new BoltProtocolVersion(BoltHTTPIdentifier)) 
-            {
-                throw new NotSupportedException(
+                {MajorVersion: 3, MinorVersion: 0} => new BoltProtocolV3(),
+                {MajorVersion: 4, MinorVersion: 0} => new BoltProtocolV4_0(),
+                {MajorVersion: 4, MinorVersion: 1} => new BoltProtocolV4_1(routingContext),
+                {MajorVersion: 4, MinorVersion: 2} => new BoltProtocolV4_2(routingContext),
+                {MajorVersion: 4, MinorVersion: 3} => new BoltProtocolV4_3(routingContext),
+                {MajorVersion: 4, MinorVersion: 4} => new BoltProtocolV4_4(routingContext),
+                {MajorVersion: 5, MinorVersion: 0} => new BoltProtocolV5_0(routingContext),
+                // 0.0
+                {MajorVersion: 0, MinorVersion: 0} => throw new NotSupportedException(
+                    "The Neo4j server does not support any of the protocol versions supported by this client. " +
+                    "Ensure that you are using driver and server versions that are compatible with one another."),
+                // bolt
+                _ when version == new BoltProtocolVersion(BoltHTTPIdentifier) => throw new NotSupportedException(
                     "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
-                    $"(HTTP defaults to port 7474 whereas BOLT defaults to port {GraphDatabase.DefaultBoltPort})");
-            }
-            else
-            {
-                throw new NotSupportedException(
-                        "Protocol error, server suggested unexpected protocol version: " + version.MajorVersion + "." + version.MinorVersion);
-            }
+                    $"(HTTP defaults to port 7474 whereas BOLT defaults to port {GraphDatabase.DefaultBoltPort})"),
+                //undefined
+                _ => throw new NotSupportedException(
+                    "Protocol error, server suggested unexpected protocol version: " + version.MajorVersion + "." + version.MinorVersion)
+            };
         }
         
         public static BoltProtocolVersion UnpackAgreedVersion(byte[] data)
