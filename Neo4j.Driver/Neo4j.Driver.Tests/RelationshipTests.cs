@@ -34,9 +34,9 @@ namespace Neo4j.Driver.Tests
             rel1.GetHashCode().Should().Be(rel2.GetHashCode());
 
             var rel3Mock = new Mock<IRelationship>();
-            rel3Mock.Setup(f => f.Id).Returns(123);
-            rel3Mock.Setup(f => f.StartNodeId).Returns(444);
-            rel3Mock.Setup(f => f.EndNodeId).Returns(555);
+            rel3Mock.Setup(f => f.ElementId).Returns("123");
+            rel3Mock.Setup(f => f.StartNodeElementId).Returns("444");
+            rel3Mock.Setup(f => f.EndNodeElementId).Returns("555");
             rel3Mock.Setup(f => f.Type).Returns("same interface, different implementation");
             rel3Mock.Setup(f => f.GetHashCode()).Returns(123);
             var rel3 = rel3Mock.Object;
