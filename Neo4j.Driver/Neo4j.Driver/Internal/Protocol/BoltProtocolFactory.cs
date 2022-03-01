@@ -25,17 +25,21 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     internal static class BoltProtocolFactory
     {
-        private const int BoltHTTPIdentifier = 1213486160;  //0x‭48 54 54 50 - or HTTP ascii codes...
-        /// <summary>
-        /// lazily evaluate handshake bytes once.
-        /// </summary>
+        private const int BoltHttpIdentifier = 1213486160;  //0x‭48 54 54 50 - or HTTP ascii codes...
+        static readonly string HttpErrorMessage = "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
+                                               $"(HTTP defaults to port 7474 whereas BOLT defaults to port {GraphDatabase.DefaultBoltPort})";
+        private static readonly string NoAgreedVersion =
+            "The Neo4j server does not support any of the protocol versions supported by this client. " +
+            "Ensure that you are using driver and server versions that are compatible with one another.";
+
         private static readonly Lazy<byte[]> HandshakeBytesLazy = 
             new Lazy<byte[]>(() =>
             {
-                const int goGoBolt = 0x6060B017; //This is a 'magic' handshake identifier to indicate we're using 'BOLT' ('GOGOBOLT')
+                const int goGoBolt = 0x6060B017; 
 
                 var versions = new int[]
                 {
+                    //This is a 'magic' handshake identifier to indicate we're using 'BOLT' ('GOGOBOLT')
                     goGoBolt,
                     // 4 versions max.
                     BoltProtocolVersion.V5_0.PackToInt(),
@@ -57,15 +61,11 @@ namespace Neo4j.Driver.Internal.Protocol
                 {MajorVersion: 4, MinorVersion: 3} => new BoltProtocolV4_3(routingContext),
                 {MajorVersion: 4, MinorVersion: 4} => new BoltProtocolV4_4(routingContext),
                 {MajorVersion: 5, MinorVersion: 0} => new BoltProtocolV5_0(routingContext),
-                // 0.0
-                {MajorVersion: 0, MinorVersion: 0} => throw new NotSupportedException(
-                    "The Neo4j server does not support any of the protocol versions supported by this client. " +
-                    "Ensure that you are using driver and server versions that are compatible with one another."),
-                // bolt
-                _ when version == new BoltProtocolVersion(BoltHTTPIdentifier) => throw new NotSupportedException(
-                    "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
-                    $"(HTTP defaults to port 7474 whereas BOLT defaults to port {GraphDatabase.DefaultBoltPort})"),
-                //undefined
+                // no matching versions
+                {MajorVersion: 0, MinorVersion: 0} => throw new NotSupportedException(NoAgreedVersion),
+                // http response
+                _ when version == new BoltProtocolVersion(BoltHttpIdentifier) => throw new NotSupportedException(HttpErrorMessage),
+                // undefined
                 _ => throw new NotSupportedException($"Protocol error, server suggested unexpected protocol version: {version}")
             };
         }
