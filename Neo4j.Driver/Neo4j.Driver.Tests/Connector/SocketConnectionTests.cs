@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -61,14 +62,14 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var mockClient = new Mock<ISocketClient>();
                 var mockProtocol = new Mock<IBoltProtocol>();
-                mockClient.Setup(x => x.ConnectAsync(null)).ReturnsAsync(mockProtocol.Object);
+                mockClient.Setup(x => x.ConnectAsync(null, CancellationToken.None)).ReturnsAsync(mockProtocol.Object);
                 var conn = NewSocketConnection(mockClient.Object);
 
                 // When
                 await conn.InitAsync();
 
                 // Then
-                mockClient.Verify(c => c.ConnectAsync(null), Times.Once);
+                mockClient.Verify(c => c.ConnectAsync(null, CancellationToken.None), Times.Once);
                 mockProtocol.Verify(p => p.LoginAsync(conn, It.IsAny<string>(), It.IsAny<IAuthToken>()));
             }
 
@@ -77,7 +78,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mockClient = new Mock<ISocketClient>();
-                mockClient.Setup(x => x.ConnectAsync(null))
+                mockClient.Setup(x => x.ConnectAsync(null, CancellationToken.None))
                     .Throws(new IOException("I will stop socket conn from initialization"));
                 // ReSharper disable once ObjectCreationAsStatement
                 var conn = new SocketConnection(mockClient.Object, AuthToken, UserAgent, Logger, Server);
@@ -199,7 +200,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockClient = new Mock<ISocketClient>();
                 var mockProtocol = new Mock<IBoltProtocol>();
-                mockClient.Setup(x => x.ConnectAsync(null)).ReturnsAsync(mockProtocol.Object);
+                mockClient.Setup(x => x.ConnectAsync(null, CancellationToken.None)).ReturnsAsync(mockProtocol.Object);
 
                 var con = NewSocketConnection(mockClient.Object);
 

@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+﻿// Copyright (c) 2002-2022 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,21 +15,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.Routing;
-
 namespace Neo4j.Driver.Internal
 {
-    internal interface IConnectionProvider
+    internal sealed class ConnectionPoolStatus
     {
-        Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark);
-        Task CloseAsync();
-        Task VerifyConnectivityAsync();
-        Task<bool> SupportsMultiDbAsync();
-		IRoutingTable GetRoutingTable(string database);
+        public static readonly ConnectionPoolStatus Active = new ConnectionPoolStatus(PoolStatus.Open);
+        public static readonly ConnectionPoolStatus Closed = new ConnectionPoolStatus(PoolStatus.Closed);
+        public static readonly ConnectionPoolStatus Inactive = new ConnectionPoolStatus(PoolStatus.Inactive);
 
-        IDictionary<string, string> RoutingContext { get; set; }
+        private readonly PoolStatus _code;
+
+        private ConnectionPoolStatus(PoolStatus code)
+        {
+            _code = code;
+        }
     }
 }
