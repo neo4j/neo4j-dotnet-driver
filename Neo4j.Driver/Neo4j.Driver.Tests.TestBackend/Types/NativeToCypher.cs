@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             { typeof(Point),                            CypherTODO },
 
             { typeof(INode),                             CypherNode },   
-            { typeof(IRelationship),                     CypherTODO },
+            { typeof(IRelationship),                     CypherRelationship },
             { typeof(IPath),                             CypherTODO }
         };
 
@@ -152,6 +152,24 @@ namespace Neo4j.Driver.Tests.TestBackend
             };
 
             return new NativeToCypherObject() { name = "Node",  data = cypherNode };
+        }
+
+        public static NativeToCypherObject CypherRelationship(string cypherType, object obj)
+        {
+            var rel = (IRelationship)obj;
+            var cypherRel = new Dictionary<string, object>
+            {
+                ["id"] = Convert(rel.Id),
+                ["startNodeId"] = Convert(rel.StartNodeId),
+                ["type"] = Convert(rel.Type),
+                ["endNodeId"] = Convert(rel.EndNodeId),
+                ["props"] = Convert(new Dictionary<string, object>(rel.Properties)),
+                ["elementId"] = Convert(rel.ElementId),
+                ["startNodeElementId"] = Convert(rel.StartNodeElementId),
+                ["endNodeElementId"] = Convert(rel.EndNodeElementId),
+            };
+
+            return new NativeToCypherObject() { name = "Relationship", data = cypherRel };
         }
     }
 }
