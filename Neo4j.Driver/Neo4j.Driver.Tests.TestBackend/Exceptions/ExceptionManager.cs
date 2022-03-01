@@ -85,6 +85,13 @@ namespace Neo4j.Driver.Tests.TestBackend
                     msg = exceptionMessage
                 });
             }
+            else if (ex is TestKitClientException)
+            {
+                return new ProtocolResponse("FrontendError", new
+                {
+                    msg = ex.Message
+                });
+            }
 
             Trace.WriteLine($"Exception thrown {outerExceptionMessage}\n     which contained -- {exceptionMessage}\n{ex.StackTrace}");
             return new ProtocolResponse("BackendError", new { msg = exceptionMessage } );
