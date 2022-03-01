@@ -108,6 +108,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 			("stub.tx_lifetime.test_tx_lifetime.TestTxLifetime.test_managed_tx_raises_tx_managed_exec",
 				"Driver (still) allows explicit managing of managed transaction")
+
 		};
 
 		public static bool FindTest(string testName, out string reason)
