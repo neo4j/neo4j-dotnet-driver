@@ -24,7 +24,7 @@ using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver;
+using Neo4j.Driver.Internal.Extensions;
 using static System.Security.Authentication.SslProtocols;
 
 namespace Neo4j.Driver.Internal.Connector
@@ -124,8 +124,13 @@ namespace Neo4j.Driver.Internal.Connector
 #else
             var connectTask = _client.ConnectAsync(address, port);
 #endif
-            var finishedTask = await Task.WhenAny(connectTask, Task.Delay(_connectionTimeout)).ConfigureAwait(false);
-            if (connectTask != finishedTask) // timed out
+            try
+            {
+                await connectTask
+                    .Timeout(_connectionTimeout, CancellationToken.None)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is OperationCanceledException or TimeoutException)
             {
                 try
                 {
@@ -141,8 +146,6 @@ namespace Neo4j.Driver.Internal.Connector
                 throw new OperationCanceledException(
                     $"Failed to connect to server {address}:{port} within {_connectionTimeout.TotalMilliseconds}ms.");
             }
-
-            await connectTask.ConfigureAwait(false);
         }
 
         public virtual Task DisconnectAsync()

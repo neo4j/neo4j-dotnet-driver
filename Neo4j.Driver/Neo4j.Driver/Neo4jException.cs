@@ -544,5 +544,4 @@ namespace Neo4j.Driver
 		{
 		}
 	}
-
 }
