@@ -27,7 +27,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
 
         public override object Deserialize(IPackStreamReader reader, byte signature, long size)
         {
-            var includingLongs = reader.PeekNextType() == PackStream.PackType.Null;
+            var includingLongs = reader.PeekNextType() != PackStream.PackType.Null;
 
             var relId = includingLongs ? reader.ReadLong() : ReadNullAndReturnNull<long>(reader);
 
