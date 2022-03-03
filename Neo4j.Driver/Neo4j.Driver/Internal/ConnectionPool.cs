@@ -240,7 +240,7 @@ namespace Neo4j.Driver.Internal
                     .Timeout(timeout, cts.Token)
                     .ConfigureAwait(false);
             }
-            catch (OperationCanceledException ex)
+            catch (Exception ex) when (ex is OperationCanceledException or TimeoutException)
             {
                 _poolMetricsListener?.PoolTimedOutToAcquire();
                 if (cts.Token.IsCancellationRequested)

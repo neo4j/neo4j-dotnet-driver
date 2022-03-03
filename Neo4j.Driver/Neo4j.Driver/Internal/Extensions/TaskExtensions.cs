@@ -16,15 +16,11 @@ namespace Neo4j.Driver.Internal.Extensions
                 var finished = await Task.WhenAny(task, delay).ConfigureAwait(false);
 
                 if (finished.IsCanceled)
-                {
                     throw new TaskCanceledException(task);
-                }
 
                 if (finished.IsCompleted && finished == delay)
-                {
-                    throw new OperationCanceledException(cancellationToken);
-                }
-                
+                    throw new TimeoutException();
+
                 await task.ConfigureAwait(false);
             }
             finally
@@ -43,14 +39,10 @@ namespace Neo4j.Driver.Internal.Extensions
                 var finished = await Task.WhenAny(task, delay).ConfigureAwait(false);
 
                 if (finished.IsCanceled)
-                {
                     throw new TaskCanceledException(task);
-                }
 
                 if (finished.IsCompleted && finished == delay)
-                {
-                    throw new OperationCanceledException(cancellationToken);
-                }
+                    throw new TimeoutException();
 
                 return await task.ConfigureAwait(false);
             }
