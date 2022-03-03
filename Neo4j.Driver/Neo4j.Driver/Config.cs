@@ -220,8 +220,5 @@ namespace Neo4j.Driver
         /// where x is the major version and y is the minor version.
         /// </summary>
         public string UserAgent { get; set; } = ConnectionSettings.DefaultUserAgent;
-
-        public List<string> TrustedCertificates { get; set; }
-
     }
 }

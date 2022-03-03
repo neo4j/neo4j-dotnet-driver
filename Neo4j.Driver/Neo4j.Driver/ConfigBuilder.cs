@@ -17,13 +17,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
-using Neo4j.Driver.Internal.Connector.Trust;
-using Neo4j.Driver.Internal.Metrics;
 
 namespace Neo4j.Driver
 {
@@ -55,7 +50,6 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="level"><see cref="EncryptionLevel.Encrypted"/> enables TLS for the connection, <see cref="EncryptionLevel.None"/> otherwise. See <see cref="EncryptionLevel"/> for more info</param>.
         /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
-        [Obsolete("Replaced with WithEncrypted, will be removed in 6.0")]
         public ConfigBuilder WithEncryptionLevel(EncryptionLevel level)
         {
             _config.NullableEncryptionLevel = level;
@@ -293,18 +287,6 @@ namespace Neo4j.Driver
 		}
 
         /// <summary>
-        /// Sets whether or not to use an encrypted the connection between client and server.
-        /// </summary>
-        /// <param name="encrypted"></param>
-        /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
-        /// <remarks>Used in conjunction with <see cref="WithCertificateTrustRule"/>. Not to be used when using a non-basic Uri Scheme(+s, +ssc) on <see cref="GraphDatabase"/></remarks>
-        public ConfigBuilder WithEncrypted(bool encrypted)
-        {
-            _config.NullableEncryptionLevel = encrypted ? EncryptionLevel.Encrypted : EncryptionLevel.None;
-            return this;
-        }
-
-        /// <summary>
         /// Sets the rule for which Certificate Authority(CA) certificates to use when building trust with a server certificate.
         /// </summary>
         /// <param name="certificateTrustRule">The rule for validating server certificates when using encryption.</param>
@@ -312,7 +294,7 @@ namespace Neo4j.Driver
         /// Optional list of certificates to use to validate a server certificate.
         /// should only be set when <paramref name="certificateTrustRule"/> is <c>CertificateTrustRule.TrustList</c></param>
         /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
-        /// <remarks>Used in conjunction with <see cref="WithEncrypted"/>. Not to be used when using a non-basic Uri Scheme(+s, +ssc) on <see cref="GraphDatabase"/></remarks>
+        /// <remarks>Used in conjunction with <see cref="WithEncryptionLevel"/>. Not to be used when using a non-basic Uri Scheme(+s, +ssc) on <see cref="GraphDatabase"/></remarks>
         /// <exception cref="ArgumentException">Thrown when mismatch between certificateTrustRule and trustedCaCertificates.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when certificateTrustRule is not an expected enum.</exception>
         public ConfigBuilder WithCertificateTrustRule(CertificateTrustRule certificateTrustRule, IReadOnlyList<X509Certificate2> trustedCaCertificates = null)
@@ -342,7 +324,7 @@ namespace Neo4j.Driver
         /// Optional list of paths to certificates to use to validate a server certificate.
         /// should only be set when using <code>CertificateTrustRule.TrustList</code></param>
         /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
-        /// <remarks>Used in conjunction with <see cref="WithEncrypted"/>. Not to be used when using a non-basic Uri Scheme(+s, +ssc) on <see cref="GraphDatabase"/></remarks>
+        /// <remarks>Used in conjunction with <see cref="WithEncryptionLevel"/>. Not to be used when using a non-basic Uri Scheme(+s, +ssc) on <see cref="GraphDatabase"/></remarks>
         /// <exception cref="ArgumentException">Thrown when mismatch between certificateTrustRule and trustedCaCertificateFileNames.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when certificateTrustRule is not an expected enum.</exception>
         public ConfigBuilder WithCertificateTrustRule(CertificateTrustRule certificateTrustRule, IReadOnlyList<string> trustedCaCertificateFileNames = null)

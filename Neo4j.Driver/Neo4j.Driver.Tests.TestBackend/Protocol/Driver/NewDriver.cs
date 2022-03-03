@@ -118,7 +118,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             }
 
             if (data.encrypted.HasValue)
-                configBuilder.WithEncrypted(data.encrypted.Value);
+                configBuilder.WithEncryptionLevel(data.encrypted.Value ? EncryptionLevel.Encrypted : EncryptionLevel.None);
 
             var logger = new SimpleLogger();
 
