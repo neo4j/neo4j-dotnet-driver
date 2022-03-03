@@ -17,17 +17,15 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Extensions;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Protocol;
-using Neo4j.Driver.Internal.Routing;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.Connector
 {
@@ -52,6 +50,7 @@ namespace Neo4j.Driver.Internal.Connector
             _uri = uri;
             _logger = logger;
             _bufferSettings = bufferSettings;
+
             _tcpSocketClient = socketClient ?? new TcpSocketClient(socketSettings, _logger);
         }
 
@@ -66,14 +65,16 @@ namespace Neo4j.Driver.Internal.Connector
         public bool IsOpen => _closedMarker == 0;
         private bool IsClosed => _closedMarker > 0;
 
-        public async Task<IBoltProtocol> ConnectAsync(IDictionary<string, string> routingContext)
+        public async Task<IBoltProtocol> ConnectAsync(IDictionary<string, string> routingContext, CancellationToken cancellationToken = default)
         {
-            await _tcpSocketClient.ConnectAsync(_uri).ConfigureAwait(false);
+            await _tcpSocketClient.ConnectAsync(_uri, cancellationToken).ConfigureAwait(false);
 
             SetOpened();
             _logger?.Debug($"~~ [CONNECT] {_uri}");
+            var version = 
+                await DoHandshakeAsync(cancellationToken)
+                .ConfigureAwait(false);
 
-            var version = await DoHandshakeAsync().ConfigureAwait(false);
             return SelectBoltProtocol(version, routingContext);
         }
 
@@ -147,15 +148,15 @@ namespace Neo4j.Driver.Internal.Connector
             return Task.CompletedTask;
         }
 
-        private async Task<BoltProtocolVersion> DoHandshakeAsync()
+        private async Task<BoltProtocolVersion> DoHandshakeAsync(CancellationToken cancellationToken = default)
         {
             var data = BoltProtocolFactory.PackSupportedVersions(NumSupportedVersions);
-            await _tcpSocketClient.WriteStream.WriteAsync(data, 0, data.Length).ConfigureAwait(false);
-            await _tcpSocketClient.WriteStream.FlushAsync().ConfigureAwait(false);
+            await _tcpSocketClient.WriteStream.WriteAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(false);
+            await _tcpSocketClient.WriteStream.FlushAsync(cancellationToken).ConfigureAwait(false);
             _logger?.Debug("C: [HANDSHAKE] {0}", data.ToHexString());
 
             data = new byte[4];
-            var read = await _tcpSocketClient.ReadStream.ReadAsync(data, 0, data.Length).ConfigureAwait(false);
+            var read = await _tcpSocketClient.ReadStream.ReadAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(false);
             if (read < data.Length)
             {
                 throw new IOException($"Unexpected end of stream when performing handshake, read returned {read}");
@@ -182,9 +183,9 @@ namespace Neo4j.Driver.Internal.Connector
             }
         }
 
-		public void SetRecvTimeOut(int seconds)
-		{
-			Reader.ReadTimeoutSeconds = seconds;
-		}
-	}
+        public void SetRecvTimeOut(int seconds)
+        {
+            Reader.ReadTimeoutSeconds = seconds;
+        }
+    }
 }

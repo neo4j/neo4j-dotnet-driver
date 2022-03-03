@@ -36,7 +36,7 @@ namespace Neo4j.Driver
     /// <item><see cref="SocketKeepAlive"/>: <c>true</c></item>
     /// <item><see cref="Ipv6Enabled"/>: <c>true</c></item>
     /// <br></br>
-    /// <item><see cref="MaxConnectionPoolSize"/> : <c>500</c> </item>
+    /// <item><see cref="MaxConnectionPoolSize"/> : <c>100</c> </item>
     /// <item><see cref="ConnectionAcquisitionTimeout"/> : <c>1mins</c> </item>
     /// <item><see cref="ConnectionIdleTimeout"/>: <see cref="InfiniteInterval"/></item>
     /// <item><see cref="MaxConnectionLifetime"/>: <c>1h</c></item>

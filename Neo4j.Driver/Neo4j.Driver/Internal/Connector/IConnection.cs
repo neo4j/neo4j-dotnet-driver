@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
@@ -29,7 +30,7 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal interface IConnection
     {
-        Task InitAsync();
+        Task InitAsync(CancellationToken cancellationToken = default);
 
         // send all and receive all
         Task SyncAsync();

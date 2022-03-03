@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			else if(sessionContainer.RetryState == NewSession.SessionState.RetryAbleNegative)
 			{
 				if (string.IsNullOrEmpty(sessionContainer.RetryableErrorId))
-					return ExceptionManager.GenerateExceptionResponse(new ClientException("Error from client in retryable tx")).Encode();
+					return ExceptionManager.GenerateExceptionResponse(new TestKitClientException("Error from client in retryable tx")).Encode();
 				else
 				{
 					var exception = ((ProtocolException)(ObjManager.GetObject(sessionContainer.RetryableErrorId))).ExceptionObj;

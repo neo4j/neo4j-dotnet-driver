@@ -18,12 +18,13 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Extensions;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Metrics;
-using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;
 using static Neo4j.Driver.Internal.ConnectionPoolStatus;
@@ -33,27 +34,6 @@ using static Neo4j.Driver.Internal.Util.ConnectionContext;
 
 namespace Neo4j.Driver.Internal
 {
-    internal sealed class ConnectionPoolStatus
-    {
-        public static readonly ConnectionPoolStatus Active = new ConnectionPoolStatus(PoolStatus.Open);
-        public static readonly ConnectionPoolStatus Closed = new ConnectionPoolStatus(PoolStatus.Closed);
-        public static readonly ConnectionPoolStatus Inactive = new ConnectionPoolStatus(PoolStatus.Inactive);
-
-        private readonly PoolStatus _code;
-
-        private ConnectionPoolStatus(PoolStatus code)
-        {
-            _code = code;
-        }
-    }
-
-    internal enum PoolStatus
-    {
-        Open,
-        Closed,
-        Inactive
-    }
-
     internal class ConnectionPool : IConnectionPool
     {
         private const int SpinningWaitInterval = 500;
@@ -74,7 +54,7 @@ namespace Neo4j.Driver.Internal
         private readonly int _maxIdlePoolSize;
 
         private readonly object _poolSizeSync = new object();
-        private readonly TimeSpan _connAcquisitionTimeout;
+        private readonly TimeSpan _connectionAcquisitionTimeout;
 
         private readonly IConnectionValidator _connectionValidator;
         private readonly IPooledConnectionFactory _connectionFactory;
@@ -106,10 +86,10 @@ namespace Neo4j.Driver.Internal
             _uri = uri;
             _id = $"pool-{_uri.Host}:{_uri.Port}";
             _logger = new PrefixLogger(logger, $"[{_id}]");
-
             _maxPoolSize = connectionPoolSettings.MaxConnectionPoolSize;
             _maxIdlePoolSize = connectionPoolSettings.MaxIdleConnectionPoolSize;
-            _connAcquisitionTimeout = connectionPoolSettings.ConnectionAcquisitionTimeout;
+            _connectionAcquisitionTimeout = connectionPoolSettings.ConnectionAcquisitionTimeout;
+
             _connectionFactory = connectionFactory;
 
             var connIdleTimeout = connectionPoolSettings.ConnectionIdleTimeout;
@@ -141,18 +121,23 @@ namespace Neo4j.Driver.Internal
             }
         }
 
-        private async Task<IPooledConnection> CreateNewPooledConnectionAsync()
+        private async Task<IPooledConnection> CreateNewPooledConnectionAsync(CancellationToken cancellationToken = default)
         {
-            IPooledConnection conn = null;
+            var conn = default(IPooledConnection);
+
             try
             {
                 conn = NewPooledConnection();
-                if (conn != null)
-                {
-                    await conn.InitAsync().ConfigureAwait(false);
-                    _poolMetricsListener?.ConnectionCreated();
-                    return conn;
-                }
+
+                if (conn == null)
+                    return null;
+
+                await conn
+                    .InitAsync(cancellationToken)
+                    .ConfigureAwait(false);
+                
+                _poolMetricsListener?.ConnectionCreated();
+                return conn;
             }
             catch
             {
@@ -162,29 +147,24 @@ namespace Neo4j.Driver.Internal
                 await DestroyConnectionAsync(conn).ConfigureAwait(false);
                 throw;
             }
-
-            return null;
         }
 
         private IPooledConnection NewPooledConnection()
         {
-            if (TryIncrementPoolSize())
-            {
-                _poolMetricsListener?.ConnectionCreating();
+            if (!TryIncrementPoolSize())
+                return null;
 
-                return _connectionFactory.Create(_uri, this, RoutingContext);
-            }
+            _poolMetricsListener?.ConnectionCreating();
 
-            return null;
+            return _connectionFactory.Create(_uri, this, RoutingContext);
         }
 
         private async Task DestroyConnectionAsync(IPooledConnection conn)
         {
             DecrementPoolSize();
+
             if (conn == null)
-            {
                 return;
-            }
 
             _poolMetricsListener?.ConnectionClosing();
             try
@@ -207,24 +187,20 @@ namespace Neo4j.Driver.Internal
             if (_maxPoolSize == Config.Infinite)
             {
                 Interlocked.Increment(ref _poolSize);
-
                 return true;
             }
 
-            if (PoolSize < _maxPoolSize)
+            if (PoolSize >= _maxPoolSize)
+                return false;
+
+            lock (_poolSizeSync)
             {
-                lock (_poolSizeSync)
-                {
-                    if (PoolSize < _maxPoolSize)
-                    {
-                        Interlocked.Increment(ref _poolSize);
+                if (PoolSize >= _maxPoolSize)
+                    return false;
 
-                        return true;
-                    }
-                }
+                Interlocked.Increment(ref _poolSize);
+                return true;
             }
-
-            return false;
         }
 
         private void DecrementPoolSize()
@@ -232,115 +208,118 @@ namespace Neo4j.Driver.Internal
             Interlocked.Decrement(ref _poolSize);
         }
 
-        private void ThrowConnectionAcquisitionTimedOutException(OperationCanceledException ex = null)
-        {
-            _poolMetricsListener?.PoolTimedOutToAcquire();
-            throw new ClientException(
-                $"Failed to obtain a connection from pool within {_connAcquisitionTimeout}", ex);
-        }
-
-        public Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark)
+        public async Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark)
         {
             _poolMetricsListener?.PoolAcquiring();
-            var timeOutTokenSource = new CancellationTokenSource(_connAcquisitionTimeout);
-            var task = AcquireAsync(mode, database, timeOutTokenSource.Token).ContinueWith(t =>
+            
+            try
             {
-                timeOutTokenSource.Dispose();
-                if (t.Status == TaskStatus.RanToCompletion)
-                {
-                    _poolMetricsListener?.PoolAcquired();
-                }
-                else
-                {
-                    _poolMetricsListener?.PoolFailedToAcquire();
-                }
-
-                return t;
-            }, TaskContinuationOptions.ExecuteSynchronously).Unwrap();
-            return task;
+                var connection = await TryExecuteAsync(
+                        _logger, 
+                        () => AcquireOrTimeoutAsync(mode, database, _connectionAcquisitionTimeout),
+                        "Failed to acquire a connection from connection pool asynchronously.")
+                    .ConfigureAwait(false);
+                
+                _poolMetricsListener?.PoolAcquired();
+                return connection;
+            }
+            catch
+            {
+                _poolMetricsListener?.PoolFailedToAcquire();
+                throw;
+            }
         }
 
-        private Task<IConnection> AcquireAsync(AccessMode mode, string database, CancellationToken cancellationToken)
+        private async Task<IPooledConnection> AcquireOrTimeoutAsync(AccessMode mode, string database, TimeSpan timeout)
         {
-            return TryExecuteAsync(_logger, async () =>
+            using var cts = new CancellationTokenSource(timeout);
+
+            try
             {
-                IPooledConnection connection = null;
-                try
+                return await AcquireAsync(mode, database, cts.Token)
+                    .Timeout(timeout, cts.Token)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is OperationCanceledException or TimeoutException)
+            {
+                _poolMetricsListener?.PoolTimedOutToAcquire();
+                if (cts.Token.IsCancellationRequested)
+                    throw new ClientException(
+                        $"Failed to obtain a connection from pool within {_connectionAcquisitionTimeout}", ex);
+
+                throw new ClientException("Failed to obtain a connection from pool", ex);
+            }
+        }
+
+        private async Task<IPooledConnection> AcquireAsync(AccessMode mode, string database, CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                if (IsClosed)
+                    throw GetDriverDisposedException(nameof(ConnectionPool));
+
+                if (IsInactive)
+                    ThrowServerUnavailableExceptionDueToDeactivated();
+
+                var connection = await GetPooledOrNewConnectionAsync(cancellationToken).ConfigureAwait(false);
+
+                if (_connectionValidator.OnRequire(connection))
                 {
-                    while (true)
-                    {
-                        if (IsClosed)
-                        {
-                            ThrowObjectDisposedException();
-                        }
-                        else if (IsInactive)
-                        {
-                            ThrowServerUnavailableExceptionDueToDeactivated();
-                        }
+                    await AddConnectionAsync(connection).ConfigureAwait(false);
 
-                        if (!_idleConnections.TryTake(out connection))
-                        {
-                            do
-                            {
-                                if (!IsConnectionPoolFull())
-                                {
-                                    connection = await CreateNewPooledConnectionAsync().ConfigureAwait(false);
-                                    if (connection != null)
-                                    {
-                                        break;
-                                    }
-                                }
-
-                                await Task.Delay(SpinningWaitInterval, cancellationToken).ConfigureAwait(false);
-
-                                if (_idleConnections.TryTake(out connection))
-                                {
-                                    break;
-                                }
-                            } while (!cancellationToken.IsCancellationRequested);
-
-                            if (connection == null)
-                            {
-                                ThrowConnectionAcquisitionTimedOutException();
-                            }
-                        }
-
-                        if (!_connectionValidator.OnRequire(connection))
-                        {
-                            await DestroyConnectionAsync(connection).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            break;
-                        }
-
-                        cancellationToken.ThrowIfCancellationRequested();
-                    }
-
-                    _inUseConnections.TryAdd(connection);
-                    if (IsClosed)
-                    {
-                        if (_inUseConnections.TryRemove(connection))
-                        {
-                            await DestroyConnectionAsync(connection).ConfigureAwait(false);
-                        }
-
-                        ThrowObjectDisposedException();
-                    }
-                }
-                catch (OperationCanceledException ex)
-                {
-                    ThrowConnectionAcquisitionTimedOutException(ex);
-                }
-
-                if (connection != null)
-                {
                     connection.Mode = mode;
                     connection.Database = database;
+
+                    return connection;
                 }
 
-                return (IConnection) connection;
-            }, "Failed to acquire a connection from connection pool asynchronously.");
+                await DestroyConnectionAsync(connection).ConfigureAwait(false);
+
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+        }
+
+        private async ValueTask AddConnectionAsync(IPooledConnection connection)
+        {
+            _inUseConnections.TryAdd(connection);
+
+            if (!IsClosed)
+                return;
+
+            if (_inUseConnections.TryRemove(connection))
+                await DestroyConnectionAsync(connection).ConfigureAwait(false);
+
+            throw GetDriverDisposedException(nameof(ConnectionPool));
+        }
+
+        private Task<IPooledConnection> GetPooledOrNewConnectionAsync(CancellationToken cancellationToken)
+        {
+            return _idleConnections.TryTake(out var connection) 
+                ? Task.FromResult(connection) 
+                : CreateNewConnectionOrGetIdleAsync(cancellationToken);
+        }
+
+        private async Task<IPooledConnection> CreateNewConnectionOrGetIdleAsync(CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                if (!IsConnectionPoolFull())
+                {
+                    var connection = await CreateNewPooledConnectionAsync(cancellationToken).ConfigureAwait(false);
+
+                    if (connection != null)
+                        return connection;
+                }
+
+                await Task.Delay(SpinningWaitInterval, cancellationToken).ConfigureAwait(false);
+
+                if (_idleConnections.TryTake(out var idle))
+                {
+                    return idle;
+                }
+            }
+
+            throw new OperationCanceledException(cancellationToken);
         }
 
         private bool IsConnectionPoolFull()
@@ -387,19 +366,19 @@ namespace Neo4j.Driver.Internal
                 {
                     await DestroyConnectionAsync(connection).ConfigureAwait(false);
                 }
-            }, $"Failed to release connection '{connection}' asynchronously back to pool.");
+            }, $"Failed to release connection '{connection}' asynchronously back to pool.").ConfigureAwait(false);
         }
 
-        public async Task CloseAsync()
+        public Task CloseAsync()
         {
             if (Interlocked.Exchange(ref _poolStatus, Closed) != Closed)
             {
-				await CloseAllConnectionsAsync();
+                CloseAllConnectionsAsync();
             }
 
-            await Task.CompletedTask;
+            return Task.CompletedTask;
         }
-		
+        
         public async Task VerifyConnectivityAsync()
         {
             // Establish a connection with the server and immediately close it.
@@ -417,10 +396,10 @@ namespace Neo4j.Driver.Internal
             return multiDb;
         }
 
-		public IRoutingTable GetRoutingTable(string database)
-		{
-			throw new NotSupportedException("Should not be getting a routing table on a connection pool when it is the connection provider to the driver. Only Loadbalancer should do that.");
-		}
+        public IRoutingTable GetRoutingTable(string database)
+        {
+            throw new NotSupportedException("Should not be getting a routing table on a connection pool when it is the connection provider to the driver. Only Loadbalancer should do that.");
+        }
 
         public Task DeactivateAsync()
         {
@@ -449,11 +428,6 @@ namespace Neo4j.Driver.Internal
             return allCloseTasks;
         }
 
-        private void ThrowObjectDisposedException()
-        {
-            FailedToAcquireConnectionDueToPoolClosed(this);
-        }
-
         private void ThrowServerUnavailableExceptionDueToDeactivated()
         {
             throw new ServiceUnavailableException(
@@ -473,44 +447,45 @@ namespace Neo4j.Driver.Internal
             return $"{nameof(_id)}: {{{_id}}}, {nameof(_idleConnections)}: {{{_idleConnections.ToContentString()}}}, " +
                    $"{nameof(_inUseConnections)}: {{{_inUseConnections}}}";
         }
-		
-		private Task CloseAllConnectionsAsync()
-		{
-			var allCloseTasks = new List<Task>();
+        
+        private Task CloseAllConnectionsAsync()
+        {
+            var allCloseTasks = new List<Task>();
 
-			foreach (var inUseConnection in _inUseConnections)
-			{
-				_logger?.Info($"Disposing In Use Connection {inUseConnection}");
-				if (_inUseConnections.TryRemove(inUseConnection))
-				{
-					allCloseTasks.Add(DestroyConnectionAsync(inUseConnection));
-				}
-			}
+            foreach (var inUseConnection in _inUseConnections)
+            {
+                _logger?.Info($"Disposing In Use Connection {inUseConnection}");
 
-			allCloseTasks.AddRange(TerminateIdleConnectionsAsync());
+                if (_inUseConnections.TryRemove(inUseConnection))
+                {
+                    allCloseTasks.Add(DestroyConnectionAsync(inUseConnection));
+                }
+            }
 
-			return Task.WhenAll(allCloseTasks);
-		}
+            allCloseTasks.AddRange(TerminateIdleConnectionsAsync());
 
-		/// <summary>
-		/// When a connection is marked as requiring reauthorization then all older connections also need to be marked in such a way.
-		/// This will cause such marked connections to be closed and re-established with new authorization next time they are used.
-		/// </summary>
-		/// <param name="connection"></param>
-		/// <returns></returns>
-		public void MarkConnectionsForReauthorization(IPooledConnection connection)
-		{
-			var connectionAge = connection.LifetimeTimer.ElapsedMilliseconds;
+            return Task.WhenAll(allCloseTasks);
+        }
 
-			connection.ReAuthorizationRequired = true;
+        /// <summary>
+        /// When a connection is marked as requiring reauthorization then all older connections also need to be marked in such a way.
+        /// This will cause such marked connections to be closed and re-established with new authorization next time they are used.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <returns></returns>
+        public void MarkConnectionsForReauthorization(IPooledConnection connection)
+        {
+            var connectionAge = connection.LifetimeTimer.ElapsedMilliseconds;
 
-			foreach (var inUseConn in _inUseConnections)
-			{
-				if (inUseConn.LifetimeTimer.ElapsedMilliseconds >= connectionAge)
-				{
-					inUseConn.ReAuthorizationRequired = true;
-				}
-			}
-		}
-	}
+            connection.ReAuthorizationRequired = true;
+
+            foreach (var inUseConn in _inUseConnections)
+            {
+                if (inUseConn.LifetimeTimer.ElapsedMilliseconds >= connectionAge)
+                {
+                    inUseConn.ReAuthorizationRequired = true;
+                }
+            }
+        }
+    }
 }

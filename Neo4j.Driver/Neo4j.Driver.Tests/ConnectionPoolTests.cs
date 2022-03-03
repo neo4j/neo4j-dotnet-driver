@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Tests
                 await connectionPool.AcquireAsync(AccessMode.Read, null, null, Bookmark.Empty);
 
                 //Then
-                mock.Verify(x => x.InitAsync(), Times.Once);
+                mock.Verify(x => x.InitAsync(It.IsAny<CancellationToken>()), Times.Once);
             }
 
             [Fact]
@@ -98,7 +98,7 @@ namespace Neo4j.Driver.Tests
                     new Config
                     {
                         MaxConnectionPoolSize = 2,
-                        ConnectionAcquisitionTimeout = TimeSpan.FromMilliseconds(0)
+                        ConnectionAcquisitionTimeout = TimeSpan.FromMilliseconds(250)
                     });
                 var pool = NewConnectionPool(poolSettings: connectionPoolSettings);
                 await pool.AcquireAsync(AccessMode.Read, null, null, Bookmark.Empty);
@@ -109,7 +109,7 @@ namespace Neo4j.Driver.Tests
                 var exception =
                     await Record.ExceptionAsync(() => pool.AcquireAsync(AccessMode.Read, null, null, Bookmark.Empty));
                 exception.Should().BeOfType<ClientException>().Which.Message.Should()
-                    .Contain("Failed to obtain a connection from pool within");
+                    .Be("Failed to obtain a connection from pool within 00:00:00.2500000");
             }
 
             [Fact]
@@ -168,7 +168,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldCloseConnectionIfFailedToCreate()
             {
                 var connMock = new Mock<IPooledConnection>();
-                connMock.Setup(x => x.InitAsync()).Throws<NotImplementedException>();
+                connMock.Setup(x => x.InitAsync(It.IsAny<CancellationToken>())).Throws<NotImplementedException>();
 
                 var connFactory = new MockedConnectionFactory(connMock.Object);
                 var pool = new ConnectionPool(connFactory);
