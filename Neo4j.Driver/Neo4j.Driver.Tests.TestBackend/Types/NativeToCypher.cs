@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -40,15 +41,13 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             { typeof(INode),                             CypherNode },   
             { typeof(IRelationship),                     CypherRelationship },
-            { typeof(IPath),                             CypherTODO }
+            { typeof(IPath),                             CypherPath }
         };
 
         public static object Convert(object sourceObject)
         {
             if (sourceObject is null)
-            {
                 return new NativeToCypherObject { name = "CypherNull", data = { } };
-            }
 
             if (sourceObject as List<object> != null)
                 return FunctionMap[typeof(List<object>)]("CypherList", sourceObject);
@@ -170,6 +169,18 @@ namespace Neo4j.Driver.Tests.TestBackend
             };
 
             return new NativeToCypherObject() { name = "Relationship", data = cypherRel };
+        }
+
+        public static NativeToCypherObject CypherPath(string cypherType, object obj)
+        {
+            var path = (IPath)obj;
+            var cypherPath = new Dictionary<string, object>
+            {
+                ["nodes"] = Convert(path.Nodes.OfType<object>().ToList()),
+                ["relationships"] = Convert(path.Relationships.OfType<object>().ToList())
+            };
+
+            return new NativeToCypherObject() { name = "Path", data = cypherPath };
         }
     }
 }
