@@ -58,7 +58,7 @@ namespace Neo4j.Driver
         [Obsolete("Replaced with WithEncrypted, will be removed in 6.0")]
         public ConfigBuilder WithEncryptionLevel(EncryptionLevel level)
         {
-            _config.EncryptionLevel = level;
+            _config.NullableEncryptionLevel = level;
             return this;
         }
 
@@ -300,7 +300,7 @@ namespace Neo4j.Driver
         /// <remarks>Used in conjunction with <see cref="WithCertificateTrustRule"/>. Not to be used when using a non-basic Uri Scheme(+s, +ssc) on <see cref="GraphDatabase"/></remarks>
         public ConfigBuilder WithEncrypted(bool encrypted)
         {
-            _config.Encrypted = encrypted;
+            _config.NullableEncryptionLevel = encrypted ? EncryptionLevel.Encrypted : EncryptionLevel.None;
             return this;
         }
 

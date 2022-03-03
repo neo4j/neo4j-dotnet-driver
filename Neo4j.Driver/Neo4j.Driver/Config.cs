@@ -16,9 +16,11 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Logging;
+using Neo4j.Driver.Internal.Metrics;
 
 namespace Neo4j.Driver
 {
@@ -29,7 +31,6 @@ namespace Neo4j.Driver
     /// The defaults for fields in this class are <br/>
     /// <list type="bullet">
     /// <item><see cref="EncryptionLevel"/> : <c><see cref="EncryptionLevel"/> Encrypted</c> </item>
-    /// <item><see cref="Encrypted"/> : <c><see cref="Encrypted"/> true</c> </item>
     /// <item><see cref="TrustManager"/> : <c><see cref="TrustManager"/>CreateChainTrust()</c> </item>
     /// <item><see cref="ConnectionTimeout"/>: <c>30s</c> </item>
     /// <item><see cref="SocketKeepAlive"/>: <c>true</c></item>
@@ -74,14 +75,13 @@ namespace Neo4j.Driver
         /// <summary>
         /// The use of encryption for all the connections created by the <see cref="IDriver"/>.
         /// </summary>
-        [Obsolete("Replaced with Encrypted, will be removed in 6.0")]
         public EncryptionLevel EncryptionLevel
         {
-            get => NullableEncrypted.GetValueOrDefault(false) ? EncryptionLevel.Encrypted : EncryptionLevel.None;
-            internal set => NullableEncrypted = value == EncryptionLevel.Encrypted;
+            get => NullableEncryptionLevel.GetValueOrDefault(EncryptionLevel.None);
+            internal set => NullableEncryptionLevel = value;
         }
 
-        internal bool? NullableEncrypted { get; set; }
+        internal EncryptionLevel? NullableEncryptionLevel { get; set; }
 
         /// <summary>
         /// Specifies which <see cref="TrustManager"/> implementation should be used while establishing trust via TLS.
@@ -203,7 +203,6 @@ namespace Neo4j.Driver
         public int MaxWriteBufferSize { get; internal set; } = Constants.MaxWriteBufferSize;
 
         private long _fetchSize = Constants.DefaultFetchSize;
-
         /// <summary>
         /// The default fetch size.
         /// Since Bolt v4 (Neo4j 4.0+), the query running result (records) are pulled from server in batches.
@@ -222,13 +221,7 @@ namespace Neo4j.Driver
         /// </summary>
         public string UserAgent { get; set; } = ConnectionSettings.DefaultUserAgent;
 
-        /// <summary>
-        /// The use of encryption for all the connections created by the <see cref="IDriver"/>.
-        /// </summary>
-        public bool Encrypted
-        {
-            get => NullableEncrypted ?? false;
-            internal set => NullableEncrypted = value;
-        }
+        public List<string> TrustedCertificates { get; set; }
+
     }
 }

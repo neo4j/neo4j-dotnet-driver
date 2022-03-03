@@ -33,15 +33,16 @@ namespace Neo4j.Driver.Internal
             TrustManager = trustManager;
         }
 
-        public static EncryptionManager Create(Uri uri, bool? encryptConnection, TrustManager trustManager,
+        public static EncryptionManager Create(Uri uri, EncryptionLevel? level, TrustManager trustManager,
             ILogger logger)
         {
-            var configured = encryptConnection.HasValue || trustManager != null;
-            if (!configured)
-                return CreateFromUriScheme(uri, logger);
-
-            AssertSimpleUriScheme(uri, encryptConnection, trustManager);
-            return CreateFromConfig(encryptConnection, trustManager, logger);
+            var configured = level.HasValue || trustManager != null;
+            if (configured)
+            {
+                AssertSimpleUriScheme(uri, level, trustManager);
+                return CreateFromConfig(level, trustManager, logger);
+            }
+            return CreateFromUriScheme(uri, logger);
 
         }
 
@@ -51,7 +52,7 @@ namespace Neo4j.Driver.Internal
             return uri.ParseUriSchemeToEncryptionManager(logger);
         }
 
-        private static void AssertSimpleUriScheme(Uri uri, bool? encryptionLevel, TrustManager trustManager)
+        private static void AssertSimpleUriScheme(Uri uri, EncryptionLevel? encryptionLevel, TrustManager trustManager)
         {
             if (!uri.IsSimpleUriScheme())
             {
@@ -61,15 +62,29 @@ namespace Neo4j.Driver.Internal
             }
         }
 
-        public static EncryptionManager CreateFromConfig(bool? nullableLevel, TrustManager trustManager,
+        public static EncryptionManager CreateFromConfig(EncryptionLevel? nullableLevel, TrustManager trustManager,
             ILogger logger)
         {
-            var useEncryption = nullableLevel ?? false;
-            if (useEncryption && trustManager == null)
+            var encrypted = ParseEncrypted(nullableLevel);
+            if (encrypted && trustManager == null)
             {
                 return new EncryptionManager(true, CreateSecureTrustManager(logger));
             }
-            return new EncryptionManager(useEncryption, trustManager);
+            return new EncryptionManager(encrypted, trustManager);
+        }
+
+        private static bool ParseEncrypted(EncryptionLevel? nullableLevel)
+        {
+            var level = nullableLevel.GetValueOrDefault(EncryptionLevel.None);
+            switch (level)
+            {
+                case EncryptionLevel.Encrypted:
+                    return true;
+                case EncryptionLevel.None:
+                    return false;
+                default:
+                    throw new NotSupportedException($"Unknown encryption level: {level}");
+            }
         }
 
         public static TrustManager CreateSecureTrustManager(ILogger logger)
