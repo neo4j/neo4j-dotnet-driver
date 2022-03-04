@@ -173,7 +173,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             [RequireServerFact("5.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnUpdateStatisticsWithConstraintCreate_5xX()
             {
-                VerifySummary("CREATE CONSTRAINT FOR (book:Book) REQUIRE book.isbn IS UNIQUE", null,
+                VerifySummary("CREATE CONSTRAINT book_isbn_uniq FOR (book:Book) REQUIRE book.isbn IS UNIQUE", null,
                     MatchesSummary(new { Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, null, null) }));
             }
 
@@ -183,10 +183,10 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 // Ensure that a constraint exists
                 using (var session = Server.Driver.Session())
                 {
-                    session.Run("CREATE CONSTRAINT FOR (book:Book) REQUIRE book.isbn IS UNIQUE").Consume();
+                    session.Run("CREATE CONSTRAINT book_isbn_uniq FOR (book:Book) REQUIRE book.isbn IS UNIQUE").Consume();
                 }
 
-                VerifySummary("DROP CONSTRAINT FOR (book:Book) REQUIRE book.isbn IS UNIQUE", null,
+                VerifySummary("DROP CONSTRAINT book_isbn_uniq IF EXISTS", null,
                     MatchesSummary(new { Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, null, null) }));
             }
 
