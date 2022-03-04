@@ -13,8 +13,11 @@ RUN apt update \
 ENV PYTHON=python3
 ENV DOTNET_DRIVER_USING_LOCAL_SERVER=true
 ENV TEST_NEO4J_USING_TESTKIT=true
+ENV TK_CUSTOM_CA_PATH="/usr/local/share/custom-ca-certificates/"
 
 # Install our own CAs on the image.
 # Assumes Linux Debian based image.
 COPY CAs/* /usr/local/share/ca-certificates/
 RUN update-ca-certificates
+
+COPY CustomCAs/* /usr/local/share/custom-ca-certificates/

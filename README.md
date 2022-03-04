@@ -5,7 +5,7 @@ Resources to get you started:
 * [Nuget](https://www.nuget.org/profiles/Neo4j) for getting the latest driver.
 * [Driver Wiki](https://github.com/neo4j/neo4j-dotnet-driver/wiki) for changelogs, developer manual and API documents of this driver.
 * [Neo4j Docs](https://neo4j.com/docs/) for other important Neo4j documentations.
-* [Movies Example Application](https://github.com/neo4j-examples/movies-dotnet-bolt) a sample small project using the driver.
+* [Movies Example Application](https://github.com/neo4j-examples/movies-dotnetcore-bolt) a sample small project using the driver.
 
 ## For Application Developers
 This section is prepared for application developers who would like to use this driver in application projects for connecting to a Neo4j instance or a Neo4j cluster.

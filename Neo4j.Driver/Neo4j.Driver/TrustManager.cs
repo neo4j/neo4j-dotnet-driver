@@ -23,14 +23,12 @@ using Neo4j.Driver.Internal.Connector.Trust;
 
 namespace Neo4j.Driver
 {
-
     /// <summary>
     /// This is the base class all built-in or custom trust manager implementations should be inheriting from. Trust managers
     /// are the way that one could customise how TLS trust is established.
     /// </summary>
     public abstract class TrustManager
     {
-
         internal ILogger Logger { get; set; }
 
         /// <summary>
@@ -45,32 +43,11 @@ namespace Neo4j.Driver
             SslPolicyErrors sslPolicyErrors);
 
         /// <summary>
-        /// Creates an insecure trust manager that trusts any certificate it is presented, but does hostname verification.
-        /// </summary>
-        /// <returns>An instance of <see cref="TrustManager"/></returns>
-        public static TrustManager CreateInsecure() => CreateInsecure(false);
-
-        /// <summary>
         /// Creates an insecure trust manager that trusts any certificate it is presented with configurable hostname verification.
         /// </summary>
         /// <param name="verifyHostname">Whether to perform hostname verification</param>
         /// <returns>An instance of <see cref="TrustManager"/></returns>
-        public static TrustManager CreateInsecure(bool verifyHostname) => new InsecureTrustManager(verifyHostname);
-
-        /// <summary>
-        /// Creates a trust manager that establishes trust based on system certificate stores.
-        /// </summary>
-        /// <returns>An instance of <see cref="TrustManager"/></returns>
-        public static TrustManager CreateChainTrust() => CreateChainTrust(true);
-
-        /// <summary>
-        /// Creates a trust manager that establishes trust based on system certificate stores with configurable hostname
-        /// verification.
-        /// </summary>
-        /// <param name="verifyHostname">Whether to perform hostname verification</param>
-        /// <returns>An instance of <see cref="TrustManager"/></returns>
-        public static TrustManager CreateChainTrust(bool verifyHostname) => CreateChainTrust(verifyHostname,
-            X509RevocationMode.NoCheck, X509RevocationFlag.ExcludeRoot, false);
+        public static TrustManager CreateInsecure(bool verifyHostname = false) => new InsecureTrustManager(verifyHostname);
 
         /// <summary>
         /// Creates a trust manager that establishes trust based on system certificate stores with configurable hostname
@@ -81,23 +58,13 @@ namespace Neo4j.Driver
         /// <param name="revocationFlag">How should the revocation check should behave</param>
         /// <param name="useMachineContext">Whether to use machine context instead of user's for certificate stores</param>
         /// <returns>An instance of <see cref="TrustManager"/></returns>
-        public static TrustManager CreateChainTrust(bool verifyHostname, X509RevocationMode revocationMode,
-            X509RevocationFlag revocationFlag, bool useMachineContext) =>
-            new ChainTrustManager(useMachineContext, verifyHostname, revocationMode, revocationFlag);
-
-        /// <summary>
-        /// Creates a trust manager that establishes trust based on TrustedPeople system certificate store.
-        /// </summary>
-        /// <returns>An instance of <see cref="TrustManager"/></returns>
-        public static TrustManager CreatePeerTrust() => CreatePeerTrust(true);
-
-        /// <summary>
-        /// Creates a trust manager that establishes trust based on TrustedPeople system certificate store with configurable
-        /// hostname verification.
-        /// </summary>
-        /// <param name="verifyHostname">Whether to perform hostname verification</param>
-        /// <returns>An instance of <see cref="TrustManager"/></returns>
-        public static TrustManager CreatePeerTrust(bool verifyHostname) => CreatePeerTrust(verifyHostname, false);
+        public static TrustManager CreateChainTrust(bool verifyHostname = true,
+            X509RevocationMode revocationMode = X509RevocationMode.NoCheck,
+            X509RevocationFlag revocationFlag = X509RevocationFlag.ExcludeRoot,
+            bool useMachineContext = false)
+        {
+            return new ChainTrustManager(useMachineContext, verifyHostname, revocationMode, revocationFlag);
+        }
 
         /// <summary>
         /// Creates a trust manager that establishes trust based on TrustedPeople system certificate store with configurable
@@ -106,15 +73,10 @@ namespace Neo4j.Driver
         /// <param name="verifyHostname">Whether to perform hostname verification</param>
         /// <param name="useMachineContext">Whether to use machine context instead of user's for certificate stores</param>
         /// <returns>An instance of <see cref="TrustManager"/></returns>
-        public static TrustManager CreatePeerTrust(bool verifyHostname, bool useMachineContext) => new PeerTrustManager(useMachineContext, verifyHostname);
+        public static TrustManager CreatePeerTrust(bool verifyHostname = true, bool useMachineContext = false) =>
+            new PeerTrustManager(useMachineContext, verifyHostname);
 
-        /// <summary>
-        /// Creates a trust manager that establishes trust based on provided list of trusted certificates.
-        /// </summary>
-        /// <param name="trusted">List of trusted certificates</param>
-        /// <returns>An instance of <see cref="TrustManager"/></returns>
-        public static TrustManager CreateCertTrust(IEnumerable<X509Certificate2> trusted) => CreateCertTrust(trusted, true);
-        
+
         /// <summary>
         /// Creates a trust manager that establishes trust based on provided list of trusted certificates with configurable
         /// hostname verification.
@@ -122,8 +84,8 @@ namespace Neo4j.Driver
         /// <param name="trusted">List of trusted certificates</param>
         /// <param name="verifyHostname">Whether to perform hostname verification</param>
         /// <returns>An instance of <see cref="TrustManager"/></returns>
-        public static TrustManager CreateCertTrust(IEnumerable<X509Certificate2> trusted, bool verifyHostname) => new CertificateTrustManager(verifyHostname, trusted);
-
+        public static TrustManager CreateCertTrust(IEnumerable<X509Certificate2> trusted, bool verifyHostname = true) =>
+            new CertificateTrustManager(verifyHostname, trusted);
     }
 
 }

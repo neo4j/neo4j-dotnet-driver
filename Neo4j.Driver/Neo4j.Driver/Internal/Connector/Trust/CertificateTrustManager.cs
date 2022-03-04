@@ -20,7 +20,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
-using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Connector.Trust
 {
@@ -47,7 +46,7 @@ namespace Neo4j.Driver.Internal.Connector.Trust
                 if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch))
                 {
                     Logger?.Error(null,
-                        $"{GetType().Name}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
+                        $"{nameof(CertificateTrustManager)}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
                     return false;
                 }
             }
@@ -55,7 +54,35 @@ namespace Neo4j.Driver.Internal.Connector.Trust
             if (!CertHelper.CheckValidity(certificate, now))
             {
                 Logger?.Error(null,
-                    $"{GetType().Name}: Certificate '{certificate.Subject}' is not valid at the time of validity check '{now}'.");
+                    $"{nameof(CertificateTrustManager)}: Certificate '{certificate.Subject}' is not valid at the time of validity check '{now}'.");
+                return false;
+            }
+
+            return ValidateChain(uri, certificate, IsValidChain(chain) ? chain : CreateChainAgainstStore(certificate));
+        }
+
+        private static bool IsValidChain(X509Chain chain) =>
+            chain.ChainStatus.All(x => x.Status == X509ChainStatusFlags.NoError);
+
+        private X509Chain CreateChainAgainstStore(X509Certificate2 certificate)
+        {
+            Logger?.Info($"{nameof(CertificateTrustManager)}: Building chain against extra store certificate '{certificate.Subject}'.");
+
+            // build chain against certificates passed, as some may not have been used when .net assessed trust.
+            var extraStoreChain = new X509Chain();
+            extraStoreChain.ChainPolicy.ExtraStore.AddRange(_trustedCertificates);
+            extraStoreChain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+            extraStoreChain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+            extraStoreChain.Build(certificate);
+            return extraStoreChain;
+        }
+
+        private bool ValidateChain(Uri uri, X509Certificate2 certificate, X509Chain chain)
+        {
+            if (chain.ChainStatus.Any(ShouldFailChain))
+            {
+                Logger?.Error(null,
+                    $"{nameof(CertificateTrustManager)}: Unable to locate a certificate for {uri} in provided trusted certificates.");
                 return false;
             }
 
@@ -63,14 +90,25 @@ namespace Neo4j.Driver.Internal.Connector.Trust
             {
                 if (CertHelper.FindCertificate(_trustedCertificates, chain.ChainElements[i].Certificate))
                 {
-                    Logger?.Info($"{GetType().Name}: Trusting {uri} with certificate '{certificate.Subject}'.");
+                    Logger?.Info($"{nameof(CertificateTrustManager)}: Trusting {uri} with certificate '{certificate.Subject}'.");
                     return true;
                 }
             }
 
             Logger?.Error(null,
-                $"{GetType().Name}: Unable to locate a certificate for {uri} in provided trusted certificates.");
+                $"{nameof(CertificateTrustManager)}: Unable to locate a certificate for {uri} in provided trusted certificates.");
+
             return false;
+        }
+
+        private bool ShouldFailChain(X509ChainStatus arg)
+        {
+            return arg.Status switch
+            {
+                X509ChainStatusFlags.NoError => false,
+                X509ChainStatusFlags.UntrustedRoot => false,
+                _ => true
+            };
         }
     }
 }
