@@ -232,17 +232,9 @@ namespace Neo4j.Driver
 
             EnsureNoRoutingContextOnBolt(uri, routingContext);
 
-            IConnectionProvider connectionProvider = null;
-            if (parsedUri.IsRoutingUri())
-            {
-                connectionProvider =
-                    new LoadBalancer(connectionFactory, routingSettings, connectionPoolSettings, logger);
-            }
-            else
-            {   
-                connectionProvider =
-                    new ConnectionPool(parsedUri, connectionFactory, connectionPoolSettings, logger, null);
-            }
+            var connectionProvider = parsedUri.IsRoutingUri()
+                ? new LoadBalancer(connectionFactory, routingSettings, connectionPoolSettings, logger)
+                : new ConnectionPool(parsedUri, connectionFactory, connectionPoolSettings, logger, null) as IConnectionProvider;
 
             return new Internal.Driver(parsedUri, 
                 connectionSettings.SocketSettings.EncryptionManager.UseTls,

@@ -98,8 +98,8 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 .SelectMany(r =>
                 {
                     throw new Exception("Got you!");
-					#pragma warning disable CS0162
-					return Observable.Range(0, 10);
+                    #pragma warning disable CS0162
+                    return Observable.Range(0, 10);
                 })
                 .OnErrorResumeNext(session.Close<int>())
                 .WaitForCompletion()

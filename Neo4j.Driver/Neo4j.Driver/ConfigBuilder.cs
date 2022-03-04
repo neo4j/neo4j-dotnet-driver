@@ -16,7 +16,9 @@
 // limitations under the License.
 
 using System;
-using Neo4j.Driver.Internal.Metrics;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Neo4j.Driver
 {
@@ -44,7 +46,7 @@ namespace Neo4j.Driver
         }
 
         /// <summary>
-        /// Sets the <see cref="Config"/> to use TLS if <paramref name="level"/> is <c>true</c>.
+        /// Sets the <see cref="Config"/> to use TLS if <paramref name="level"/> is <c>Encrypted</c>.
         /// </summary>
         /// <param name="level"><see cref="EncryptionLevel.Encrypted"/> enables TLS for the connection, <see cref="EncryptionLevel.None"/> otherwise. See <see cref="EncryptionLevel"/> for more info</param>.
         /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
@@ -61,6 +63,7 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="manager">A <see cref="TrustManager"/> instance.</param>
         /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+        /// <remarks>We recommend using WithCertificateTrustPaths or WithCertificates</remarks>
         public ConfigBuilder WithTrustManager(TrustManager manager)
         {
             _config.TrustManager = manager;
@@ -282,5 +285,52 @@ namespace Neo4j.Driver
             _config.UserAgent = userAgent;
             return this;
 		}
+
+        /// <summary>
+        /// Sets the rule for which Certificate Authority(CA) certificates to use when building trust with a server certificate.
+        /// </summary>
+        /// <param name="certificateTrustRule">The rule for validating server certificates when using encryption.</param>
+        /// <param name="trustedCaCertificates">
+        /// Optional list of certificates to use to validate a server certificate.
+        /// should only be set when <paramref name="certificateTrustRule"/> is <c>CertificateTrustRule.TrustList</c></param>
+        /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+        /// <remarks>Used in conjunction with <see cref="WithEncryptionLevel"/>. Not to be used when using a non-basic Uri Scheme(+s, +ssc) on <see cref="GraphDatabase"/></remarks>
+        /// <exception cref="ArgumentException">Thrown when mismatch between certificateTrustRule and trustedCaCertificates.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when certificateTrustRule is not an expected enum.</exception>
+        public ConfigBuilder WithCertificateTrustRule(CertificateTrustRule certificateTrustRule, IReadOnlyList<X509Certificate2> trustedCaCertificates = null)
+        {
+            _config.TrustManager = certificateTrustRule switch
+            {
+                CertificateTrustRule.TrustSystem when trustedCaCertificates != null =>
+                    throw new ArgumentException($"{nameof(trustedCaCertificates)} is not valid when {nameof(certificateTrustRule)} is {nameof(CertificateTrustRule.TrustSystem)}"),
+                CertificateTrustRule.TrustAny when trustedCaCertificates != null =>
+                    throw new ArgumentException($"{nameof(trustedCaCertificates)} is not valid when {nameof(certificateTrustRule)} is {nameof(CertificateTrustRule.TrustAny)}"),
+                CertificateTrustRule.TrustList when trustedCaCertificates == null || trustedCaCertificates.Count == 0 =>
+                    throw new ArgumentException($"{nameof(trustedCaCertificates)} must not be null or empty when {nameof(certificateTrustRule)} is {nameof(CertificateTrustRule.TrustList)}"),
+                CertificateTrustRule.TrustSystem => TrustManager.CreateChainTrust(),
+                CertificateTrustRule.TrustList => TrustManager.CreateCertTrust(trustedCaCertificates),
+                CertificateTrustRule.TrustAny => TrustManager.CreateInsecure(),
+                _ => throw new ArgumentOutOfRangeException($"{certificateTrustRule} is not implemented in {nameof(ConfigBuilder)}.{nameof(WithCertificateTrustRule)}")
+            };
+            return this;
+        }
+
+
+        /// <summary>
+        /// Sets the rule for which Certificate Authority(CA) certificates to use when building trust with a server certificate.
+        /// </summary>
+        /// <param name="certificateTrustRule">The rule for validating server certificates when using encryption.</param>
+        /// <param name="trustedCaCertificateFileNames">
+        /// Optional list of paths to certificates to use to validate a server certificate.
+        /// should only be set when using <code>CertificateTrustRule.TrustList</code></param>
+        /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+        /// <remarks>Used in conjunction with <see cref="WithEncryptionLevel"/>. Not to be used when using a non-basic Uri Scheme(+s, +ssc) on <see cref="GraphDatabase"/></remarks>
+        /// <exception cref="ArgumentException">Thrown when mismatch between certificateTrustRule and trustedCaCertificateFileNames.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when certificateTrustRule is not an expected enum.</exception>
+        public ConfigBuilder WithCertificateTrustRule(CertificateTrustRule certificateTrustRule, IReadOnlyList<string> trustedCaCertificateFileNames = null)
+        {
+            var certs = trustedCaCertificateFileNames?.Select(x => new X509Certificate2(x)).ToList();
+            return WithCertificateTrustRule(certificateTrustRule, certs);
+        }
     }
 }

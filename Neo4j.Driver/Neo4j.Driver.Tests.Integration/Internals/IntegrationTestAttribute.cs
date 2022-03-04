@@ -79,6 +79,7 @@ namespace Neo4j.Driver.IntegrationTests
         EqualTo,
         GreaterThanOrEqualTo,
         GreaterThan,
+        Between
     }
 
 	public static class RequireServer
@@ -123,7 +124,24 @@ namespace Neo4j.Driver.IntegrationTests
 
 			return satisfy;
 		}
-	}
+
+        public static bool RequiredServerAvailableBetween(string minVersionText, string maxVersionText, StringBuilder skipText)
+        {
+            var minVersion = ServerVersion.From(minVersionText);
+            var maxVersion = ServerVersion.From(maxVersionText);
+            var availableVersion = ServerVersion.From(BoltkitHelper.ServerVersion());
+
+            var satisfy = availableVersion >= minVersion && availableVersion < maxVersion;
+
+            if (!satisfy)
+            {
+                skipText.AppendLine(
+                    $"Test requires available server version {availableVersion} to be between {minVersion} and {maxVersion}.");
+            }
+
+            return satisfy;
+        }
+    }
 
 
     /// <summary>
@@ -145,7 +163,29 @@ namespace Neo4j.Driver.IntegrationTests
 
 			if (skipText.Length > 0)
 				Skip = skipText.ToString();
-		}
+        }
+
+        /// <summary>
+        /// between inclusive, exclusive respectively
+        /// </summary>
+        /// <param name="minVersionText"></param>
+        /// <param name="maxVersionText"></param>
+        public RequireServerFactAttribute(string minVersionText, string maxVersionText,
+            VersionComparison versionComparison)
+        {
+            Assert.Equal(versionComparison, VersionComparison.Between);
+            var skipText = new StringBuilder();
+
+            if (!BoltkitHelper.ServerAvailable())
+            {
+                skipText.AppendLine(BoltkitHelper.TestRequireBoltkit);
+            }
+
+            RequireServer.RequiredServerAvailableBetween(minVersionText, maxVersionText, skipText);
+
+            if (skipText.Length > 0)
+                Skip = skipText.ToString();
+        }
     }
     
     public class RequireEnterpriseEdition : RequireServerFactAttribute
