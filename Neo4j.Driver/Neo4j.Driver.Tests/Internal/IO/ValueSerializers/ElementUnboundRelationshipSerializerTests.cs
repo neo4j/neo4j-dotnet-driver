@@ -32,18 +32,14 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.WriteStructHeader(3, ElementRelationshipSerializer.Relationship);
+            writer.WriteStructHeader(3, UnboundRelationshipSerializer.UnboundRelationship);
             writer.Write(1);
-            writer.Write(2);
-            writer.Write(3);
             writer.Write("RELATES_TO");
             writer.Write(new Dictionary<string, object>
             {
                 {"prop3", true}
             });
             writer.Write("r1");
-            writer.Write("n1");
-            writer.Write("n2");
 
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -51,8 +47,8 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
 
             value.Should().NotBeNull();
             value.Should().BeOfType<Relationship>().Which.Id.Should().Be(1L);
-            value.Should().BeOfType<Relationship>().Which.StartNodeId.Should().Be(2L);
-            value.Should().BeOfType<Relationship>().Which.EndNodeId.Should().Be(3L);
+            value.Should().BeOfType<Relationship>().Which.StartNodeId.Should().Be(-1L);
+            value.Should().BeOfType<Relationship>().Which.EndNodeId.Should().Be(-1L);
             value.Should().BeOfType<Relationship>().Which.Type.Should().Be("RELATES_TO");
             value.Should().BeOfType<Relationship>().Which.Properties.Should()
                 .HaveCount(1).And.Contain(new[]
@@ -60,8 +56,8 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
                     new KeyValuePair<string, object>("prop3", true),
                 });
             value.Should().BeOfType<Relationship>().Which.ElementId.Should().Be("r1");
-            value.Should().BeOfType<Relationship>().Which.StartNodeElementId.Should().Be("n1");
-            value.Should().BeOfType<Relationship>().Which.EndNodeElementId.Should().Be("n2");
+            value.Should().BeOfType<Relationship>().Which.StartNodeElementId.Should().Be("-1");
+            value.Should().BeOfType<Relationship>().Which.EndNodeElementId.Should().Be("-1");
         }
 
         [Fact]
@@ -70,9 +66,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.WriteStructHeader(3, ElementRelationshipSerializer.Relationship);
-            writer.WriteNull();
-            writer.WriteNull();
+            writer.WriteStructHeader(3, UnboundRelationshipSerializer.UnboundRelationship);
             writer.WriteNull();
             writer.Write("RELATES_TO");
             writer.Write(new Dictionary<string, object>
@@ -80,8 +74,6 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
                 {"prop3", true}
             });
             writer.Write("r1");
-            writer.Write("n1");
-            writer.Write("n2");
 
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -98,8 +90,8 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
                     new KeyValuePair<string, object>("prop3", true),
                 });
             value.Should().BeOfType<Relationship>().Which.ElementId.Should().Be("r1");
-            value.Should().BeOfType<Relationship>().Which.StartNodeElementId.Should().Be("n1");
-            value.Should().BeOfType<Relationship>().Which.EndNodeElementId.Should().Be("n2");
+            value.Should().BeOfType<Relationship>().Which.StartNodeElementId.Should().Be("-1");
+            value.Should().BeOfType<Relationship>().Which.EndNodeElementId.Should().Be("-1");
         }
     }
 }
