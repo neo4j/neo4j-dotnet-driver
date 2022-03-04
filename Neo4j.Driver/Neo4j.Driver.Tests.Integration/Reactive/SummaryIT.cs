@@ -153,7 +153,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             [RequireServerFact("5.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnUpdateStatisticsWithIndexCreate_5xX()
             {
-                VerifySummary("CREATE INDEX FOR :Label(prop)", null,
+                VerifySummary("CREATE INDEX label_prop FOR (n:Label) ON (n.prop)", null,
                     MatchesSummary(new { Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, null, null) }));
             }
 
@@ -163,10 +163,10 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 // Ensure that an index exists
                 using (var session = Server.Driver.Session())
                 {
-                    session.Run("CREATE INDEX FOR :Label(prop)").Consume();
+                    session.Run("CREATE INDEX label_prop FOR (n:Label) ON (n.prop)").Consume();
                 }
 
-                VerifySummary("DROP INDEX FOR :Label(prop)", null,
+                VerifySummary("DROP INDEX label_prop", null,
                     MatchesSummary(new { Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, null, null) }));
             }
 
