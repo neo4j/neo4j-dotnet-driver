@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.WriteStructHeader(3, NodeSerializer.Node);
+            writer.WriteStructHeader(3, ElementNodeSerializer.Node);
             writer.Write(1);
             writer.Write(new List<string> { "Label1", "Label2" });
             writer.Write(new Dictionary<string, object>
@@ -64,7 +64,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.WriteStructHeader(3, NodeSerializer.Node);
+            writer.WriteStructHeader(3, ElementNodeSerializer.Node);
             writer.WriteNull();
             writer.Write(new List<string> { "Label1", "Label2" });
             writer.Write(new Dictionary<string, object>
