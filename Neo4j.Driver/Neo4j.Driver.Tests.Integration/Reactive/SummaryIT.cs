@@ -109,14 +109,14 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     MatchesSummary(new {Counters = new Counters(0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, null, null) }));
             }
 
-            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+            [RequireServerFact("4.0.0", "5.0.0", Between)]
             public void ShouldReturnUpdateStatisticsWithIndexCreate()
             {
                 VerifySummary("CREATE INDEX on :Label(prop)", null,
                     MatchesSummary(new {Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, null, null) }));
             }
 
-            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+            [RequireServerFact("4.0.0", "5.0.0", Between)]
             public void ShouldReturnUpdateStatisticsWithIndexRemove()
             {
                 // Ensure that an index exists
@@ -129,14 +129,14 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     MatchesSummary(new {Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, null, null) }));
             }
 
-            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+            [RequireServerFact("4.0.0", "5.0.0", Between)]
             public void ShouldReturnUpdateStatisticsWithConstraintCreate()
             {
                 VerifySummary("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE", null,
                     MatchesSummary(new {Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, null, null) }));
             }
 
-            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+            [RequireServerFact("4.0.0", "5.0.0", Between)]
             public void ShouldReturnUpdateStatisticsWithConstraintRemove()
             {
                 // Ensure that a constraint exists
@@ -147,6 +147,47 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
                 VerifySummary("DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE", null,
                     MatchesSummary(new {Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, null, null) }));
+            }
+
+
+            [RequireServerFact("5.0.0", GreaterThanOrEqualTo)]
+            public void ShouldReturnUpdateStatisticsWithIndexCreate_5xX()
+            {
+                VerifySummary("CREATE INDEX FOR :Label(prop)", null,
+                    MatchesSummary(new { Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, null, null) }));
+            }
+
+            [RequireServerFact("5.0.0", GreaterThanOrEqualTo)]
+            public void ShouldReturnUpdateStatisticsWithIndexRemove_5xX()
+            {
+                // Ensure that an index exists
+                using (var session = Server.Driver.Session())
+                {
+                    session.Run("CREATE INDEX FOR :Label(prop)").Consume();
+                }
+
+                VerifySummary("DROP INDEX FOR :Label(prop)", null,
+                    MatchesSummary(new { Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, null, null) }));
+            }
+
+            [RequireServerFact("5.0.0", GreaterThanOrEqualTo)]
+            public void ShouldReturnUpdateStatisticsWithConstraintCreate_5xX()
+            {
+                VerifySummary("CREATE CONSTRAINT FOR (book:Book) REQUIRE book.isbn IS UNIQUE", null,
+                    MatchesSummary(new { Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, null, null) }));
+            }
+
+            [RequireServerFact("5.0.0", GreaterThanOrEqualTo)]
+            public void ShouldReturnUpdateStatisticsWithConstraintRemove_5xX()
+            {
+                // Ensure that a constraint exists
+                using (var session = Server.Driver.Session())
+                {
+                    session.Run("CREATE CONSTRAINT FOR (book:Book) REQUIRE book.isbn IS UNIQUE").Consume();
+                }
+
+                VerifySummary("DROP CONSTRAINT FOR (book:Book) REQUIRE book.isbn IS UNIQUE", null,
+                    MatchesSummary(new { Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, null, null) }));
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]

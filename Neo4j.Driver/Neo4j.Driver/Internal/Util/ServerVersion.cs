@@ -96,6 +96,15 @@ namespace Neo4j.Driver.Internal.Util
             return Comparer.Compare(v1, v2) <= 0;
         }
 
+        public static bool operator <(ServerVersion v1, ServerVersion v2)
+        {
+            return Comparer.Compare(v1, v2) < 0;
+        }
+
+        public static bool operator >(ServerVersion v1, ServerVersion v2)
+        {
+            return Comparer.Compare(v1, v2) > 0;
+        }
         public static bool operator >=(ServerVersion v1, ServerVersion v2)
         {
             return Comparer.Compare(v1, v2) >= 0;
