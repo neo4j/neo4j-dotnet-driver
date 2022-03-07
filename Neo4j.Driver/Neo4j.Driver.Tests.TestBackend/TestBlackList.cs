@@ -89,7 +89,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 			("test_routing_v3.RoutingV3.test_should_successfully_send_multiple_bookmarks",
 				"Test failing requires investigation"),
 
-
+            ("test_routing_v4x4.RoutingV4x4.test_should_enforce_pool_size_per_cluster_member", 
+                "flakey"),
 
 			("test_should_revert_to_initial_router_if_known_router_throws_protocol_errors",
 				"Test failing requires investigation"),
