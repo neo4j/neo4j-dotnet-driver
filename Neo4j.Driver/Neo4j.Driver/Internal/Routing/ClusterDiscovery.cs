@@ -79,9 +79,8 @@ namespace Neo4j.Driver.Internal.Routing
 			}
 
 			if ((readers == null || readers.Length == 0) || (routers == null || routers.Length == 0))
-			{
-				throw new ProtocolException(
-					$"Invalid discovery result: discovered {routers?.Length ?? 0} routers, {writers?.Length ?? 0} writers and {readers?.Length ?? 0} readers.");
+            {
+                return null;
 			}
 
 			routingTable.TryGetValue("db", out var db);
