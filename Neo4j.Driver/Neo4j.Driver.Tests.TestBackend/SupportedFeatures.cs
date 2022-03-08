@@ -15,6 +15,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 "Detail:ClosedDriverIsEncrypted",
                 "Detail:DefaultSecurityConfigValueEquality",
                 "Feature:API:Driver.IsEncrypted",
+                "Feature:API:GraphTypes.ElementId",
                 //"Feature:API:Liveness.Check",
                 "Feature:API:Result.List",
                 "Feature:API:Result.Peek",
