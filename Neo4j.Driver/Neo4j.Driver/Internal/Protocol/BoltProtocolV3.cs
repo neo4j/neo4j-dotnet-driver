@@ -184,7 +184,7 @@ namespace Neo4j.Driver.Internal.Protocol
             var query = new Query(procedure, parameters);
 
             var result = await RunInAutoCommitTransactionAsync(connection, query, false, bookmarkTracker, resourceHandler, sessionDb, null, null, null).ConfigureAwait(false);
-            var record = await result.SingleAsync();
+            var record = await result.SingleAsync().ConfigureAwait(false);
 
 			//Since 4.4 the Routing information will contain a db. Earlier versions need to populate this here as it's not received in the older route response...
 			var finalDictionary = record.Values.ToDictionary();
