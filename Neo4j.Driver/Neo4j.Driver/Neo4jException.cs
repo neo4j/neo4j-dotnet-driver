@@ -337,10 +337,6 @@ namespace Neo4j.Driver
     [DataContract]
     public class SecurityException : Neo4jException
     {
-        internal static bool IsSecurityException(string code)
-        {
-            return code.StartsWith("Neo.ClientError.Security");
-        }
         /// <summary>
         /// Create a new <see cref="SecurityException"/> with an error message.
         /// </summary>
