@@ -40,6 +40,10 @@ namespace Neo4j.Driver.Internal
 					{
 						error = new AuthorizationException(message);
 					}
+                    else if (SecurityException.IsSecurityException(code))
+                    {
+                        error = new SecurityException(code, message);
+                    }
                     else if (ProtocolException.IsProtocolError(code))
                     {
                         error = new ProtocolException(code, message);

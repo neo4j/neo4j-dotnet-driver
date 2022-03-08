@@ -337,6 +337,10 @@ namespace Neo4j.Driver
     [DataContract]
     public class SecurityException : Neo4jException
     {
+        internal static bool IsSecurityException(string code)
+        {
+            return code.StartsWith("Neo.ClientError.Security");
+        }
         /// <summary>
         /// Create a new <see cref="SecurityException"/> with an error message.
         /// </summary>
@@ -449,11 +453,8 @@ namespace Neo4j.Driver
         /// <param name="message">The error message.</param>
         public InvalidBookmarkException(string message) : base(ErrorCode, message)
         {
-
         }
     }
-        
-
 
     /// <summary>
     /// A value retrieved from the database needs to be truncated for this conversion to work, and will

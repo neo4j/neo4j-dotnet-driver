@@ -248,7 +248,8 @@ namespace Neo4j.Driver.Internal.Routing
                     else
                     {
                         var newRoutingTable =
-                            await _discovery.DiscoverAsync(conn, database, impersonatedUser, bookmark).ConfigureAwait(false);	//TODO: need to pass in a valid impersonated user
+                            await _discovery.DiscoverAsync(conn, database, impersonatedUser, bookmark)
+                                .ConfigureAwait(false); //TODO: need to pass in a valid impersonated user
                         if (!newRoutingTable.IsStale(mode))
                         {
                             return newRoutingTable;
@@ -258,6 +259,10 @@ namespace Neo4j.Driver.Internal.Routing
                             router, database);
                     }
                 }
+                catch (AuthorizationException e)
+                {
+                    _logger?.Warn(e, "Failed to update routing table from server '{0}' for database '{1}'.", router, database);
+                }
                 catch (SecurityException e)
                 {
                     _logger?.Error(e,
@@ -265,31 +270,16 @@ namespace Neo4j.Driver.Internal.Routing
                         router, database);
                     throw;
                 }
-                catch (FatalDiscoveryException e)
+                catch (ClientException e)
                 {
                     _logger?.Error(e,
-                        "Failed to update routing table from server '{0}' for database '{1}' because of a fatal discovery exception.",
-                        router, database);
-                    throw;
-                }
-                catch (InvalidBookmarkException e)
-                {
-                    _logger?.Error(e,
-                        "Failed to update routing table from server '{0}' for database '{1}' because of an invalid bookmark exception.",
-                        router, database);
-                    throw;
-                }
-                catch (Neo4jException e)
-                {
-                    _logger?.Error(e,
-                        "Failed to update routing table from server '{0}' for database '{1}' because of an exception.",
+                        "Failed to update routing table from server '{0}' for database '{1}' because of a client exception.",
                         router, database);
                     throw;
                 }
                 catch (Exception e)
                 {
-                    _logger?.Warn(e, "Failed to update routing table from server '{0}' for database '{1}'.", router,
-                        database);
+                    _logger?.Warn(e, "Failed to update routing table from server '{0}' for database '{1}'.", router, database);
                 }
             }
 
