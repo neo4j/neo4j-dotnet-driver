@@ -18,7 +18,7 @@ namespace Neo4j.Driver.Tests.TestBackend
     }
 
     internal static class NativeToCypher
-    {   
+    {
         //Mapping of object type to a conversion delegate that will return a NativeToCypherObject that can be serialized to JSON.
         private static Dictionary<Type, Func<string, object, NativeToCypherObject>> FunctionMap { get; set; } = new Dictionary<Type, Func<string, object, NativeToCypherObject>>()
         {
@@ -90,7 +90,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             if (sourceObject as Point != null)
                 return FunctionMap[typeof(Point)]("CypherPoint", sourceObject);
-           
+
             if (sourceObject as INode != null)
                 return FunctionMap[typeof(INode)]("CypherNode", sourceObject);
 
@@ -99,7 +99,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             if (sourceObject as IPath != null)
                 return FunctionMap[typeof(IPath)]("CypherPath", sourceObject);
-            
+
 
             throw new IOException($"Attempting to convert an unsuported object type to a CypherType: {sourceObject.GetType()}");
         }
@@ -113,7 +113,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         public static NativeToCypherObject CypherMap(string cypherType, object obj)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
-            
+
             foreach(KeyValuePair<string, object> pair in (Dictionary<string, object>)obj)
             {
                 result[pair.Key] = Convert(pair.Value);
