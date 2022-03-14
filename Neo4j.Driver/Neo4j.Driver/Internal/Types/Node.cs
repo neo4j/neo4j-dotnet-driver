@@ -14,34 +14,54 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Types
 {
     internal class Node : INode
     {
-        public long Id { get; }
+        [Obsolete("Replaced with ElementId, Will be removed in 6.0")]
+        public long Id { get; } = -1;
+
+        public string ElementId { get; }
         public IReadOnlyList<string> Labels { get; }
         public IReadOnlyDictionary<string, object> Properties { get; }
         public object this[string key] => Properties[key];
 
-        public Node(long id, IReadOnlyList<string> lables, IReadOnlyDictionary<string, object> prop)
+        public Node(long id, IReadOnlyList<string> labels, IReadOnlyDictionary<string, object> prop)
         {
             Id = id;
-            Labels = lables;
+            ElementId = id.ToString();
+            Labels = labels;
+            Properties = prop;
+        }
+
+        public Node(string elementId, IReadOnlyList<string> labels, IReadOnlyDictionary<string, object> prop)
+        {
+            ElementId = elementId;
+            Labels = labels;
+            Properties = prop;
+        }
+
+        public Node(long id, string elementId, IReadOnlyList<string> labels, IReadOnlyDictionary<string, object> prop)
+        {
+            Id = id;
+            ElementId = elementId;
+            Labels = labels;
             Properties = prop;
         }
 
         public bool Equals(INode other)
         {
-            if (other == null) return false;
-            if (ReferenceEquals(this, other)) return true;
-            return Equals(Id, other.Id);
+            if (other == null)
+                return false;
+            
+            if (ReferenceEquals(this, other))
+                return true;
+            
+            return Equals(ElementId, other.ElementId);
         }
 
         public override bool Equals(object obj)
@@ -51,7 +71,7 @@ namespace Neo4j.Driver.Internal.Types
 
         public override int GetHashCode()
         {
-            return Id.GetHashCode();
+            return ElementId.GetHashCode();
         }
     }
 }

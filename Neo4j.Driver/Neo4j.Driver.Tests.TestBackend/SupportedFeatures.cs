@@ -30,6 +30,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 "Feature:Bolt:4.2",
                 "Feature:Bolt:4.3",
                 "Feature:Bolt:4.4",
+                "Feature:Bolt:5.0",                
                 "Feature:Impersonation",
                 //"Feature:TLS:1.1",
                 "Feature:TLS:1.2",

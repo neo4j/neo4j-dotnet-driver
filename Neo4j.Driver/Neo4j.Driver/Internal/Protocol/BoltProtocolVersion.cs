@@ -112,8 +112,6 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             return (byte)((MinorVersion << 4) | MajorVersion);
         }
-
-        
         
         public override bool Equals(object obj)
         {
@@ -230,5 +228,4 @@ namespace Neo4j.Driver.Internal.Protocol
 			return $"{MajorVersion}.{MinorVersion}";
 		}
     }
-
 }
