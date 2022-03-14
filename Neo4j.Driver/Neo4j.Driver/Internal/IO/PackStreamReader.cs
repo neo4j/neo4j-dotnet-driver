@@ -17,9 +17,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using Neo4j.Driver;
-using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.Internal.IO
 {

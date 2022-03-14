@@ -18,7 +18,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.IO
 {
@@ -35,5 +34,11 @@ namespace Neo4j.Driver.Internal.IO
         public abstract IEnumerable<byte> ReadableStructs { get; }
 
         public abstract object Deserialize(IPackStreamReader reader, byte signature, long size);
+
+        protected static T? ReadNullAndReturnNull<T>(IPackStreamReader reader) where T : struct
+        {
+            reader.ReadNull();
+            return null;
+        }
     }
 }

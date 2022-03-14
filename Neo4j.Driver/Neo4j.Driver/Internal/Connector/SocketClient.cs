@@ -31,7 +31,6 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal class SocketClient : ISocketClient
     {
-        private const int NumSupportedVersions = 4;
         private const string MessagePattern = "C: {0}";
         private readonly Uri _uri;
         private readonly BufferSettings _bufferSettings;
@@ -150,7 +149,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         private async Task<BoltProtocolVersion> DoHandshakeAsync(CancellationToken cancellationToken = default)
         {
-            var data = BoltProtocolFactory.PackSupportedVersions(NumSupportedVersions);
+            var data = BoltProtocolFactory.PackSupportedVersions();
             await _tcpSocketClient.WriteStream.WriteAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(false);
             await _tcpSocketClient.WriteStream.FlushAsync(cancellationToken).ConfigureAwait(false);
             _logger?.Debug("C: [HANDSHAKE] {0}", data.ToHexString());
