@@ -51,6 +51,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         private string _id;
         private readonly string _idPrefix;
+        private bool _clean = true;
 
         public IDictionary<string, string> RoutingContext { get; set; }
 
@@ -87,7 +88,7 @@ namespace Neo4j.Driver.Internal.Connector
 
             _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
             _logger = new PrefixLogger(logger, FormatPrefix(_id));
-            _responsePipeline = responsePipeline ?? new ResponsePipeline(logger);            
+            _responsePipeline = responsePipeline ?? new ResponsePipeline(logger);
         }
 
         public AccessMode? Mode { get; set; }
@@ -125,10 +126,12 @@ namespace Neo4j.Driver.Internal.Connector
             }
 
             _sendLock.Wait();
+
             try
             {
                 // send
                 await _client.SendAsync(_messages).ConfigureAwait(false);
+                _clean = false;
 
                 _messages.Clear();
             }
@@ -146,12 +149,16 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 if (_responsePipeline.HasNoPendingMessages)
                 {
+                    _clean = true;
                     return;
                 }
 
                 await _client.ReceiveAsync(_responsePipeline).ConfigureAwait(false);
-
+                
                 _responsePipeline.AssertNoFailure();
+
+                if (_responsePipeline.HasNoPendingMessages)
+                    _clean = true;
             }
             finally
             {
@@ -166,12 +173,16 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 if (_responsePipeline.HasNoPendingMessages)
                 {
+                    _clean = true;
                     return;
                 }
 
                 await _client.ReceiveOneAsync(_responsePipeline).ConfigureAwait(false);
-
+                
                 _responsePipeline.AssertNoFailure();
+
+                if (_responsePipeline.HasNoPendingMessages)
+                    _clean = true;
             }
             finally
             {
@@ -181,6 +192,10 @@ namespace Neo4j.Driver.Internal.Connector
 
         public Task ResetAsync()
         {
+            if (_clean)
+                return Task.CompletedTask;
+            
+            _clean = true;
             return _boltProtocol.ResetAsync(this);
         }
 
@@ -258,6 +273,7 @@ namespace Neo4j.Driver.Internal.Connector
 
             try
             {
+                _clean = false;
                 _messages.Enqueue(message1);
                 _responsePipeline.Enqueue(message1, handler1);
 
