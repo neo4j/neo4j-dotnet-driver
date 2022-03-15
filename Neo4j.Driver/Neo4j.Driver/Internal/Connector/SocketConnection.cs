@@ -73,7 +73,7 @@ namespace Neo4j.Driver.Internal.Connector
         // for test only
         internal SocketConnection(ISocketClient socketClient, IAuthToken authToken,
             string userAgent, ILogger logger, IServerInfo server,
-            IResponsePipeline responsePipeline = null)
+            IResponsePipeline responsePipeline = null, bool clean = true)
         {
             Throw.ArgumentNullException.IfNull(socketClient, nameof(socketClient));
             Throw.ArgumentNullException.IfNull(authToken, nameof(authToken));
@@ -85,6 +85,7 @@ namespace Neo4j.Driver.Internal.Connector
             _userAgent = userAgent;
             Server = server;
             RoutingContext = null;
+            _clean = clean;
 
             _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
             _logger = new PrefixLogger(logger, FormatPrefix(_id));

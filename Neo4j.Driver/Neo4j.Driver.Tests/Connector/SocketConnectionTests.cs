@@ -202,7 +202,7 @@ namespace Neo4j.Driver.Tests
                 var mockProtocol = new Mock<IBoltProtocol>();
                 mockClient.Setup(x => x.ConnectAsync(null, CancellationToken.None)).ReturnsAsync(mockProtocol.Object);
 
-                var con = NewSocketConnection(mockClient.Object);
+                var con = new SocketConnection(mockClient.Object, AuthToken, UserAgent, Logger, Server, null, false);
 
                 await con.InitAsync(); // to assign protocol to connection
                 await con.ResetAsync();
