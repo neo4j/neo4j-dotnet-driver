@@ -29,7 +29,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             [JsonIgnore]
             public bool ModifiedTrustedCertificates = false;
 
-            public int? fetchSize;
+            public long? fetchSize;
 
             public string[] trustedCertificates
             {

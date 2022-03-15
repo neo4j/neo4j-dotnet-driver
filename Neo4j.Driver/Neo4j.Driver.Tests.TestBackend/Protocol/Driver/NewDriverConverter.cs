@@ -51,7 +51,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             type.connectionAcquisitionTimeoutMs = jsonObj[nameof(NewDriver.NewDriverType.connectionAcquisitionTimeoutMs)]
                 ?.Value<int?>();
             type.fetchSize = jsonObj[nameof(NewDriver.NewDriverType.fetchSize)]
-                ?.Value<int?>();
+                ?.Value<long?>();
             
             if (jsonObj.TryGetValue(nameof(NewDriver.NewDriverType.trustedCertificates), out var token))
                 type.trustedCertificates = token.ToObject<string[]>();
