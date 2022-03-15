@@ -29,6 +29,8 @@ namespace Neo4j.Driver.Tests.TestBackend
             [JsonIgnore]
             public bool ModifiedTrustedCertificates = false;
 
+            public int? fetchSize;
+
             public string[] trustedCertificates
             {
                 get => _trustedCertificates;
@@ -119,6 +121,9 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             if (data.encrypted.HasValue)
                 configBuilder.WithEncryptionLevel(data.encrypted.Value ? EncryptionLevel.Encrypted : EncryptionLevel.None);
+
+            if (data.fetchSize.HasValue)
+                configBuilder.WithFetchSize(data.fetchSize.Value);
 
             var logger = new SimpleLogger();
 

@@ -41,15 +41,15 @@ namespace Neo4j.Driver.Tests.TestBackend
                 //"Optimization:MinimalResets",
                 //"Optimization:PullPipelining",
                 //"Optimization:ResultListFetchAll",
-                //"Temporary:CypherPathAndRelationship",
-                //"Temporary:DriverFetchSize",
+                "Temporary:CypherPathAndRelationship",
+                "Temporary:DriverFetchSize",
                 "Temporary:DriverMaxConnectionPoolSize",
-                //"Temporary:DriverMaxTxRetryTime",
+                "Temporary:DriverMaxTxRetryTime",
                 //"Temporary:FastFailingDiscovery",
                 "Temporary:FullSummary",
-                //"Temporary:GetConnectionPoolMetrics",
-                //"Temporary:ResultKeys",
-                //"Temporary:TransactionClose"
+                "Temporary:GetConnectionPoolMetrics",
+                "Temporary:ResultKeys",
+                "Temporary:TransactionClose"
             };
         }
     }

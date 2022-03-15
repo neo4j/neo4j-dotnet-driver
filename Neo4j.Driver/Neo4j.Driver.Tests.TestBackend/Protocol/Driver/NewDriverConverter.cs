@@ -40,17 +40,19 @@ namespace Neo4j.Driver.Tests.TestBackend
                 ?.Value<string>();
             type.userAgent = jsonObj[nameof(NewDriver.NewDriverType.userAgent)]
                 ?.Value<string>();
-            type.resolverRegistered =
-                jsonObj[nameof(NewDriver.NewDriverType.resolverRegistered)]?.Value<bool>() ?? false;
-            type.domainNameResolverRegistered =
-                jsonObj[nameof(NewDriver.NewDriverType.domainNameResolverRegistered)]?.Value<bool>() ?? false;
-            type.connectionTimeoutMs = jsonObj[nameof(NewDriver.NewDriverType.connectionTimeoutMs)]?.Value<int?>() ?? -1;
-                type.maxConnectionPoolSize = jsonObj[nameof(NewDriver.NewDriverType.maxConnectionPoolSize)]
-                    ?.Value<int?>();
-                type.connectionAcquisitionTimeoutMs =
-                    jsonObj[nameof(NewDriver.NewDriverType.connectionAcquisitionTimeoutMs)]
-                        ?.Value<int?>();
-
+            type.resolverRegistered = jsonObj[nameof(NewDriver.NewDriverType.resolverRegistered)]
+                ?.Value<bool>() ?? false;
+            type.domainNameResolverRegistered = jsonObj[nameof(NewDriver.NewDriverType.domainNameResolverRegistered)]
+                ?.Value<bool>() ?? false;
+            type.connectionTimeoutMs = jsonObj[nameof(NewDriver.NewDriverType.connectionTimeoutMs)]
+                ?.Value<int?>() ?? -1;
+            type.maxConnectionPoolSize = jsonObj[nameof(NewDriver.NewDriverType.maxConnectionPoolSize)]
+                ?.Value<int?>();
+            type.connectionAcquisitionTimeoutMs = jsonObj[nameof(NewDriver.NewDriverType.connectionAcquisitionTimeoutMs)]
+                ?.Value<int?>();
+            type.fetchSize = jsonObj[nameof(NewDriver.NewDriverType.fetchSize)]
+                ?.Value<int?>();
+            
             if (jsonObj.TryGetValue(nameof(NewDriver.NewDriverType.trustedCertificates), out var token))
                 type.trustedCertificates = token.ToObject<string[]>();
 
