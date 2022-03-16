@@ -72,12 +72,12 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
                 if (relIdx < 0)
                 {
                     rel = uniqRels[(-relIdx) - 1]; // -1 because rel idx are 1-indexed
-                    rel.SetStartAndEnd(nextNode.Id, prevNode.Id);
+                    rel.SetStartAndEnd(nextNode, prevNode);
                 }
                 else
                 {
                     rel = uniqRels[relIdx - 1];
-                    rel.SetStartAndEnd(prevNode.Id, nextNode.Id);
+                    rel.SetStartAndEnd(prevNode, nextNode);
                 }
 
                 nodes[i + 1] = nextNode;

@@ -108,8 +108,9 @@ namespace Neo4j.Driver.Tests.TestBackend
 				"Backend does not yet support serializing paths"),
 
 			("stub.tx_lifetime.test_tx_lifetime.TestTxLifetime.test_managed_tx_raises_tx_managed_exec",
-				"Driver (still) allows explicit managing of managed transaction")
+				"Driver (still) allows explicit managing of managed transaction"),
 
+            ("test_summary.TestSummary.test_protocol_version_information", "Server not responding with 5.0")
 		};
 
 		public static bool FindTest(string testName, out string reason)

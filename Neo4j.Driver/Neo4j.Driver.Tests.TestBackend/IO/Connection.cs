@@ -88,10 +88,10 @@ namespace Neo4j.Driver.Tests.TestBackend
         }
 
         public void Dispose()
-		{
+        {
             Dispose(true);
             GC.SuppressFinalize(this);
-		}
+        }
 
         protected virtual void Dispose(bool disposing)
         {

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -17,7 +18,7 @@ namespace Neo4j.Driver.Tests.TestBackend
     }
 
     internal static class NativeToCypher
-    {   
+    {
         //Mapping of object type to a conversion delegate that will return a NativeToCypherObject that can be serialized to JSON.
         private static Dictionary<Type, Func<string, object, NativeToCypherObject>> FunctionMap { get; set; } = new Dictionary<Type, Func<string, object, NativeToCypherObject>>()
         {
@@ -39,16 +40,14 @@ namespace Neo4j.Driver.Tests.TestBackend
             { typeof(Point),                            CypherTODO },
 
             { typeof(INode),                             CypherNode },   
-            { typeof(IRelationship),                     CypherTODO },
-            { typeof(IPath),                             CypherTODO }
+            { typeof(IRelationship),                     CypherRelationship },
+            { typeof(IPath),                             CypherPath }
         };
 
         public static object Convert(object sourceObject)
         {
             if (sourceObject is null)
-            {
                 return new NativeToCypherObject { name = "CypherNull", data = { } };
-            }
 
             if (sourceObject as List<object> != null)
                 return FunctionMap[typeof(List<object>)]("CypherList", sourceObject);
@@ -91,7 +90,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             if (sourceObject as Point != null)
                 return FunctionMap[typeof(Point)]("CypherPoint", sourceObject);
-           
+
             if (sourceObject as INode != null)
                 return FunctionMap[typeof(INode)]("CypherNode", sourceObject);
 
@@ -100,7 +99,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             if (sourceObject as IPath != null)
                 return FunctionMap[typeof(IPath)]("CypherPath", sourceObject);
-            
+
 
             throw new IOException($"Attempting to convert an unsuported object type to a CypherType: {sourceObject.GetType()}");
         }
@@ -114,7 +113,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         public static NativeToCypherObject CypherMap(string cypherType, object obj)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
-            
+
             foreach(KeyValuePair<string, object> pair in (Dictionary<string, object>)obj)
             {
                 result[pair.Key] = Convert(pair.Value);
@@ -146,11 +145,42 @@ namespace Neo4j.Driver.Tests.TestBackend
             var cypherNode = new Dictionary<string, object>
             {
                 ["id"] = Convert(node.Id),
+                ["elementId"] = Convert(node.ElementId),
                 ["labels"] = Convert(new List<object>(node.Labels)),
                 ["props"] = Convert(new Dictionary<string, object>(node.Properties))
             };
 
             return new NativeToCypherObject() { name = "Node",  data = cypherNode };
+        }
+
+        public static NativeToCypherObject CypherRelationship(string cypherType, object obj)
+        {
+            var rel = (IRelationship)obj;
+            var cypherRel = new Dictionary<string, object>
+            {
+                ["id"] = Convert(rel.Id),
+                ["startNodeId"] = Convert(rel.StartNodeId),
+                ["type"] = Convert(rel.Type),
+                ["endNodeId"] = Convert(rel.EndNodeId),
+                ["props"] = Convert(new Dictionary<string, object>(rel.Properties)),
+                ["elementId"] = Convert(rel.ElementId),
+                ["startNodeElementId"] = Convert(rel.StartNodeElementId),
+                ["endNodeElementId"] = Convert(rel.EndNodeElementId),
+            };
+
+            return new NativeToCypherObject() { name = "Relationship", data = cypherRel };
+        }
+
+        public static NativeToCypherObject CypherPath(string cypherType, object obj)
+        {
+            var path = (IPath)obj;
+            var cypherPath = new Dictionary<string, object>
+            {
+                ["nodes"] = Convert(path.Nodes.OfType<object>().ToList()),
+                ["relationships"] = Convert(path.Relationships.OfType<object>().ToList())
+            };
+
+            return new NativeToCypherObject() { name = "Path", data = cypherPath };
         }
     }
 }

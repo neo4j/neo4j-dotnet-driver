@@ -33,11 +33,23 @@ namespace Neo4j.Driver
         /// <summary>
         /// Gets the id of the start node of the relationship.
         /// </summary>
+        [Obsolete("Replaced with StartNodeElementId, will be removed in 6.0")]
         long StartNodeId { get; }
 
         /// <summary>
         /// Gets the id of the end node of the relationship.
         /// </summary>
+        [Obsolete("Replaced with EndNodeElementId, will be removed in 6.0")]
         long EndNodeId { get; }
+
+        /// <summary>
+        /// Gets the ElementId of the start node of the relationship.
+        /// </summary>
+        string StartNodeElementId { get; }
+
+        /// <summary>
+        /// Gets the ElementId of the end node of the relationship.
+        /// </summary>
+        string EndNodeElementId { get; }
     }
 }
