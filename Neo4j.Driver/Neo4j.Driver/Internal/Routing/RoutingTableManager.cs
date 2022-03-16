@@ -249,7 +249,7 @@ namespace Neo4j.Driver.Internal.Routing
                     {
                         var newRoutingTable =
                             await _discovery.DiscoverAsync(conn, database, impersonatedUser, bookmark)
-                                .ConfigureAwait(false); //TODO: need to pass in a valid impersonated user
+                                .ConfigureAwait(false);
                         if (!newRoutingTable.IsStale(mode))
                         {
                             return newRoutingTable;
