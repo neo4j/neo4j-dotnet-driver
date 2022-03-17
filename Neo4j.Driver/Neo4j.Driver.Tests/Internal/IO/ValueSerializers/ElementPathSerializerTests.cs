@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Types;
@@ -153,16 +154,26 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             var nodes = path.Which.Nodes;
             var relationships = path.Which.Relationships;
 
-            nodes[0].Id.Should().Be(-1L);
+            var nodeZeroException = Record.Exception(() => nodes[0].Id);
+            nodeZeroException.Should().BeOfType<InvalidOperationException>();
+
+            var nodeOneException = Record.Exception(() => nodes[1].Id);
+            nodeOneException.Should().BeOfType<InvalidOperationException>();
+
             nodes[0].ElementId.Should().Be("n1");
-            nodes[1].Id.Should().Be(-1L);
             nodes[1].ElementId.Should().Be("n2");
 
-            relationships[0].Id.Should().Be(-1L);
+            var idException = Record.Exception(() => relationships[0].Id);
+            idException.Should().BeOfType<InvalidOperationException>();
+
+            var startException = Record.Exception(() => relationships[0].StartNodeId);
+            startException.Should().BeOfType<InvalidOperationException>();
+
+            var endException = Record.Exception(() => relationships[0].EndNodeId);
+            endException.Should().BeOfType<InvalidOperationException>();
+
             relationships[0].ElementId.Should().Be("r1");
-            relationships[0].StartNodeId.Should().Be(-1L);
             relationships[0].StartNodeElementId.Should().Be("n1");
-            relationships[0].EndNodeId.Should().Be(-1L);
             relationships[0].EndNodeElementId.Should().Be("n2");
         }
 

@@ -142,13 +142,28 @@ namespace Neo4j.Driver.Tests.TestBackend
         public static NativeToCypherObject CypherNode(string cypherType, object obj)
         {
             var node = (INode)obj;
-            var cypherNode = new Dictionary<string, object>
+
+            Dictionary<string, object> cypherNode;
+            try
             {
-                ["id"] = Convert(node.Id),
-                ["elementId"] = Convert(node.ElementId),
-                ["labels"] = Convert(new List<object>(node.Labels)),
-                ["props"] = Convert(new Dictionary<string, object>(node.Properties))
-            };
+                cypherNode = new Dictionary<string, object>
+                {
+                    ["id"] = Convert(node.Id),
+                    ["elementId"] = Convert(node.ElementId),
+                    ["labels"] = Convert(new List<object>(node.Labels)),
+                    ["props"] = Convert(new Dictionary<string, object>(node.Properties))
+                };
+            }
+            catch (InvalidOperationException)
+            {
+                cypherNode = new Dictionary<string, object>
+                {
+                    ["id"] = Convert(-1L),
+                    ["elementId"] = Convert(node.ElementId),
+                    ["labels"] = Convert(new List<object>(node.Labels)),
+                    ["props"] = Convert(new Dictionary<string, object>(node.Properties))
+                };
+            }
 
             return new NativeToCypherObject() { name = "Node",  data = cypherNode };
         }
@@ -156,17 +171,35 @@ namespace Neo4j.Driver.Tests.TestBackend
         public static NativeToCypherObject CypherRelationship(string cypherType, object obj)
         {
             var rel = (IRelationship)obj;
-            var cypherRel = new Dictionary<string, object>
+            Dictionary<string, object> cypherRel;
+            try
             {
-                ["id"] = Convert(rel.Id),
-                ["startNodeId"] = Convert(rel.StartNodeId),
-                ["type"] = Convert(rel.Type),
-                ["endNodeId"] = Convert(rel.EndNodeId),
-                ["props"] = Convert(new Dictionary<string, object>(rel.Properties)),
-                ["elementId"] = Convert(rel.ElementId),
-                ["startNodeElementId"] = Convert(rel.StartNodeElementId),
-                ["endNodeElementId"] = Convert(rel.EndNodeElementId),
-            };
+                cypherRel = new Dictionary<string, object>
+                {
+                    ["id"] = Convert(rel.Id),
+                    ["startNodeId"] = Convert(rel.StartNodeId),
+                    ["type"] = Convert(rel.Type),
+                    ["endNodeId"] = Convert(rel.EndNodeId),
+                    ["props"] = Convert(new Dictionary<string, object>(rel.Properties)),
+                    ["elementId"] = Convert(rel.ElementId),
+                    ["startNodeElementId"] = Convert(rel.StartNodeElementId),
+                    ["endNodeElementId"] = Convert(rel.EndNodeElementId),
+                };
+            }
+            catch (InvalidOperationException)
+            {
+                cypherRel = new Dictionary<string, object>
+                {
+                    ["id"] = Convert(-1L),
+                    ["startNodeId"] = Convert(-1L),
+                    ["type"] = Convert(rel.Type),
+                    ["endNodeId"] = Convert(-1L),
+                    ["props"] = Convert(new Dictionary<string, object>(rel.Properties)),
+                    ["elementId"] = Convert(rel.ElementId),
+                    ["startNodeElementId"] = Convert(rel.StartNodeElementId),
+                    ["endNodeElementId"] = Convert(rel.EndNodeElementId),
+                };
+            }
 
             return new NativeToCypherObject() { name = "Relationship", data = cypherRel };
         }
