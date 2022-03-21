@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 //"Temporary:DriverFetchSize",
                 "Temporary:DriverMaxConnectionPoolSize",
                 //"Temporary:DriverMaxTxRetryTime",
-                //"Temporary:FastFailingDiscovery",
+                "Temporary:FastFailingDiscovery",
                 "Temporary:FullSummary",
                 //"Temporary:GetConnectionPoolMetrics",
                 //"Temporary:ResultKeys",
