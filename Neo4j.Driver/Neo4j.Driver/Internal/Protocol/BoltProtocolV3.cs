@@ -183,8 +183,8 @@ namespace Neo4j.Driver.Internal.Protocol
             GetProcedureAndParameters(connection, database, out procedure, out parameters);            
             var query = new Query(procedure, parameters);
 
-            var result = await RunInAutoCommitTransactionAsync(connection, query, false, bookmarkTracker, resourceHandler, sessionDb, bookmark, null, null).ConfigureAwait(false);
-            var record = await result.SingleAsync();
+            var result = await RunInAutoCommitTransactionAsync(connection, query, false, bookmarkTracker, resourceHandler, sessionDb, null, null, null).ConfigureAwait(false);
+            var record = await result.SingleAsync().ConfigureAwait(false);
 
 			//Since 4.4 the Routing information will contain a db. Earlier versions need to populate this here as it's not received in the older route response...
 			var finalDictionary = record.Values.ToDictionary();
@@ -198,7 +198,7 @@ namespace Neo4j.Driver.Internal.Protocol
 			if (impersonatedUser is not null) throw new ArgumentException($"Boltprotocol {Version} does not support impersonatedUser, yet has been passed a non null impersonated user string");
 		}
 
-		private class ConnectionResourceHandler : IResultResourceHandler
+        protected class ConnectionResourceHandler : IResultResourceHandler
         {
             IConnection Connection { get; }
             public ConnectionResourceHandler(IConnection conn)
@@ -217,7 +217,7 @@ namespace Neo4j.Driver.Internal.Protocol
             }			
 		}
 
-        private class BookmarkTracker : IBookmarkTracker
+        protected class BookmarkTracker : IBookmarkTracker
         {
             private Bookmark InternalBookmark { get; set; }
 
