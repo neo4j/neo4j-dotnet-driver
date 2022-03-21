@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 "Optimization:EagerTransactionBegin",
                 //"Optimization:ImplicitDefaultArguments",
                 //"Optimization:MinimalResets",
-                //"Optimization:PullPipelining",
+                "Optimization:PullPipelining",
                 //"Optimization:ResultListFetchAll",
                 //"Temporary:CypherPathAndRelationship",
                 //"Temporary:DriverFetchSize",
