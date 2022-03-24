@@ -55,7 +55,9 @@ namespace Neo4j.Driver.Tests.TestBackend
 									typeof(ResolverResolutionCompleted),
 									typeof(StartTest),
 									typeof(GetFeatures),
-									typeof(GetRoutingTable)};
+									typeof(GetRoutingTable),
+                                    typeof(CypherTypeField)
+                };
 
 
 		static Protocol()

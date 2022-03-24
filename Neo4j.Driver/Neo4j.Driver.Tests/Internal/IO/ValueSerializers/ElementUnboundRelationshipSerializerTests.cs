@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Types;
@@ -80,18 +81,27 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             var value = readerMachine.Reader().Read();
 
             value.Should().NotBeNull();
-            value.Should().BeOfType<Relationship>().Which.Id.Should().Be(-1L);
-            value.Should().BeOfType<Relationship>().Which.StartNodeId.Should().Be(-1L);
-            value.Should().BeOfType<Relationship>().Which.EndNodeId.Should().Be(-1L);
-            value.Should().BeOfType<Relationship>().Which.Type.Should().Be("RELATES_TO");
-            value.Should().BeOfType<Relationship>().Which.Properties.Should()
+            value.Should().BeOfType<Relationship>();
+            var relationship = value.As<Relationship>();
+
+            var idException = Record.Exception(() => relationship.Id);
+            idException.Should().BeOfType<InvalidOperationException>();
+
+            var startException = Record.Exception(() => relationship.StartNodeId);
+            startException.Should().BeOfType<InvalidOperationException>();
+
+            var endException = Record.Exception(() => relationship.EndNodeId);
+            endException.Should().BeOfType<InvalidOperationException>();
+
+            relationship.Type.Should().Be("RELATES_TO");
+            relationship.Properties.Should()
                 .HaveCount(1).And.Contain(new[]
                 {
                     new KeyValuePair<string, object>("prop3", true),
                 });
-            value.Should().BeOfType<Relationship>().Which.ElementId.Should().Be("r1");
-            value.Should().BeOfType<Relationship>().Which.StartNodeElementId.Should().Be("-1");
-            value.Should().BeOfType<Relationship>().Which.EndNodeElementId.Should().Be("-1");
+            relationship.ElementId.Should().Be("r1");
+            relationship.StartNodeElementId.Should().Be("-1");
+            relationship.EndNodeElementId.Should().Be("-1");
         }
     }
 }
