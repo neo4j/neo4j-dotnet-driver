@@ -101,6 +101,21 @@ namespace Neo4j.Driver.Internal.Protocol
             return streamBuilder.CreateCursor();
         }
 
+        public virtual async Task<IResultCursor<T>> RunInAutoCommitTransactionAsync<T>(IConnection connection, Query query, bool reactive,
+            IBookmarkTracker bookmarkTracker, IResultResourceHandler resultResourceHandler, string database, Bookmark bookmark,
+            TransactionConfig config, string impersonatedUser, long fetchSize)
+        {
+            AssertNullDatabase(database);
+
+            var summaryBuilder = new SummaryBuilder(query, connection.Server);
+            var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, resultResourceHandler);
+            var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
+            var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
+            await connection.EnqueueAsync(GetRunWithMetaDataMessage(query, bookmark, config, connection.GetEnforcedAccessMode(), null, impersonatedUser), runHandler, PullAll, pullAllHandler).ConfigureAwait(false);
+            await connection.SendAsync().ConfigureAwait(false);
+            return streamBuilder.CreateCursor<T>();
+        }
+
         public virtual async Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark, TransactionConfig config, string impersonatedUser)
         {	
 			await connection.EnqueueAsync(GetBeginMessage(database, 
@@ -123,6 +138,17 @@ namespace Neo4j.Driver.Internal.Protocol
             await connection.EnqueueAsync(GetRunWithMetaDataMessage(query), runHandler, PullAll, pullAllHandler).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
             return streamBuilder.CreateCursor();
+        }
+
+        public virtual async Task<IResultCursor<T>> RunInExplicitTransactionAsync<T>(IConnection connection, Query query, bool reactive, long fetchSize)
+        {
+            var summaryBuilder = new SummaryBuilder(query, connection.Server);
+            var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, null);
+            var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
+            var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, null);
+            await connection.EnqueueAsync(GetRunWithMetaDataMessage(query), runHandler, PullAll, pullAllHandler).ConfigureAwait(false);
+            await connection.SendAsync().ConfigureAwait(false);
+            return streamBuilder.CreateCursor<T>();
         }
 
         public async Task CommitTransactionAsync(IConnection connection, IBookmarkTracker bookmarkTracker)

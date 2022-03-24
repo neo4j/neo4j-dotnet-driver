@@ -27,6 +27,11 @@ namespace Neo4j.Driver.Internal.Result
         public IReadOnlyDictionary<string, object> Values { get; }       
         public IReadOnlyList<string> Keys { get; }
 
+        public T ConvertValues<T>() where T : new()
+        {
+            throw new System.NotImplementedException();
+        }
+
         public Record(string[] keys, object[] values)
         {
             Throw.ProtocolException.IfNotEqual(keys.Length, values.Length, nameof(keys), nameof(values));

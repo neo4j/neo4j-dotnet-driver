@@ -74,4 +74,18 @@ namespace Neo4j.Driver.Internal.Result
             }
         }
     }
+
+    internal class ConsumableResultCursor<T> : ConsumableResultCursor, IInternalResultCursor<T>
+    {
+        public ConsumableResultCursor(IInternalResultCursor<T> cursor) : base(cursor as IInternalResultCursor)
+        {
+        }
+
+        public T Current { get; }
+
+        public Task<T> PeekAsync()
+        {
+            throw new System.NotImplementedException();
+        }
+    }
 }

@@ -135,6 +135,11 @@ namespace Neo4j.Driver.Internal.Result
             return new ConsumableResultCursor(new ResultCursor(this));
         }
 
+        public IInternalResultCursor<T> CreateCursor<T>()
+        {
+            return new ConsumableResultCursor<T>(new ResultCursor<T>(this));
+        }
+
         public async Task<string[]> GetKeysAsync()
         {
             while (CurrentState < State.RunCompleted)

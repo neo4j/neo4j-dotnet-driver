@@ -135,4 +135,17 @@ namespace Neo4j.Driver.Internal.Result
             _resultStream.Cancel();
         }
     }
+
+    internal class ResultCursor<T> : ResultCursor, IInternalResultCursor<T>
+    {
+        public ResultCursor(IResultStream resultStream) : base(resultStream)
+        {
+        }
+
+        public T Current { get; }
+        public Task<T> PeekAsync()
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

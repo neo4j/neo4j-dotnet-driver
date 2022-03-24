@@ -125,6 +125,68 @@ namespace Neo4j.Driver.Internal.Protocol
             return streamBuilder.CreateCursor();
         }
 
+        public override async Task<IResultCursor<T>> RunInAutoCommitTransactionAsync<T>(IConnection connection,
+                                                                                  Query query,
+                                                                                  bool reactive,
+                                                                                  IBookmarkTracker bookmarkTracker,
+                                                                                  IResultResourceHandler resultResourceHandler,
+                                                                                  string database,
+                                                                                  Bookmark bookmark,
+                                                                                  TransactionConfig config,
+                                                                                  string impersonatedUser,
+                                                                                  long fetchSize = Config.Infinite)
+        {
+            var summaryBuilder = new SummaryBuilder(query, connection.Server);
+            var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,
+                RequestMore(connection, summaryBuilder, bookmarkTracker),
+                CancelRequest(connection, summaryBuilder, bookmarkTracker),
+                resultResourceHandler,
+                fetchSize, reactive);
+            var runHandler = new V4.RunResponseHandler(streamBuilder, summaryBuilder);
+
+            var pullMessage = default(PullMessage);
+            var pullHandler = default(V4.PullResponseHandler);
+            if (!reactive)
+            {
+                pullMessage = new PullMessage(fetchSize);
+                pullHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
+            }
+
+            await connection
+                .EnqueueAsync(
+                    GetRunWithMetaDataMessage(query, bookmark, config,
+                        connection.GetEnforcedAccessMode(), database, impersonatedUser), runHandler,
+                    pullMessage, pullHandler)
+                .ConfigureAwait(false);
+            await connection.SendAsync().ConfigureAwait(false);
+            return streamBuilder.CreateCursor<T>();
+        }
+
+        public override async Task<IResultCursor<T>> RunInExplicitTransactionAsync<T>(IConnection connection,
+            Query query, bool reactive, long fetchSize = Config.Infinite)
+        {
+            var summaryBuilder = new SummaryBuilder(query, connection.Server);
+            var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,
+                RequestMore(connection, summaryBuilder, null),
+                CancelRequest(connection, summaryBuilder, null), null,
+                fetchSize, reactive);
+            var runHandler = new V4.RunResponseHandler(streamBuilder, summaryBuilder);
+
+            var pullMessage = default(PullMessage);
+            var pullHandler = default(V4.PullResponseHandler);
+            if (!reactive)
+            {
+                pullMessage = new PullMessage(fetchSize);
+                pullHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, null);
+            }
+
+            await connection.EnqueueAsync(GetRunWithMetaDataMessage(query),
+                    runHandler, pullMessage, pullHandler)
+                .ConfigureAwait(false);
+            await connection.SendAsync().ConfigureAwait(false);
+            return streamBuilder.CreateCursor<T>();
+        }
+
         private static Func<IResultStreamBuilder, long, long, Task> RequestMore(IConnection connection,
             SummaryBuilder summaryBuilder, IBookmarkTracker bookmarkTracker)
         {
