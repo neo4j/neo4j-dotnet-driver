@@ -32,20 +32,32 @@ namespace Neo4j.Driver.Internal.Protocol
 
         Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken);
 
-        Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, 
-                                                            Query query,
-                                                            bool reactive, 
-                                                            IBookmarkTracker bookmarkTracker, 
-                                                            IResultResourceHandler resultResourceHandler,
-                                                            string database, 
-                                                            Bookmark bookmark, 
-                                                            TransactionConfig config,
-															string impersonatedUser,
-															long fetchSize);
+        Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
+            Query query,
+            bool reactive,
+            IBookmarkTracker bookmarkTracker,
+            IResultResourceHandler resultResourceHandler,
+            string database,
+            Bookmark bookmark,
+            TransactionConfig config,
+            string impersonatedUser,
+            long fetchSize);
+
+        Task<IResultCursor<T>> RunInAutoCommitTransactionAsync<T>(IConnection connection,
+            Query query,
+            bool reactive,
+            IBookmarkTracker bookmarkTracker,
+            IResultResourceHandler resultResourceHandler,
+            string database,
+            Bookmark bookmark,
+            TransactionConfig config,
+            string impersonatedUser,
+            long fetchSize);
 
         Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark, TransactionConfig config, string impersonatedUser);
 
         Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection, Query query, bool reactive, long fetchSize);
+        Task<IResultCursor<T>> RunInExplicitTransactionAsync<T>(IConnection connection, Query query, bool reactive, long fetchSize);
 
         Task CommitTransactionAsync(IConnection connection, IBookmarkTracker bookmarkTracker);
 

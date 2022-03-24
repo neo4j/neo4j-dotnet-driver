@@ -81,6 +81,14 @@ namespace Neo4j.Driver.Internal
             return result;
         }
 
+        public override Task<IResultCursor<T>> RunAsync<T>(Query query)
+        {
+            var result = _state.RunAsync<T>(query, _connection, _protocol, _logger, _reactive, _fetchSize, out var nextState);
+            _state = nextState;
+            _results.Add(result.ContinueWith(x => x.Result as IResultCursor));
+            return result;
+        }
+
         public async Task CommitAsync()
         {
             try
@@ -190,6 +198,9 @@ namespace Neo4j.Driver.Internal
             Task<IResultCursor> RunAsync(Query query, IConnection connection, IBoltProtocol protocol,
                 ILogger logger, bool reactive, long fetchSize, out IState nextState);
 
+            Task<IResultCursor<T>> RunAsync<T>(Query query, IConnection connection, IBoltProtocol protocol,
+                ILogger logger, bool reactive, long fetchSize, out IState nextState);
+
             Task CommitAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
                 out IState nextState);
 
@@ -205,6 +216,13 @@ namespace Neo4j.Driver.Internal
             {
                 nextState = Active;
                 return protocol.RunInExplicitTransactionAsync(connection, query, reactive, fetchSize);
+            }
+
+            public Task<IResultCursor<T>> RunAsync<T>(Query query, IConnection connection, IBoltProtocol protocol, ILogger logger, bool reactive,
+                long fetchSize, out IState nextState)
+            {
+                nextState = Active;
+                return protocol.RunInExplicitTransactionAsync<T>(connection, query, reactive, fetchSize);
             }
 
             public Task CommitAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
@@ -233,6 +251,13 @@ namespace Neo4j.Driver.Internal
                     "Cannot run query in this transaction, because it has already been committed.");
             }
 
+            public Task<IResultCursor<T>> RunAsync<T>(Query query, IConnection connection, IBoltProtocol protocol, ILogger logger, bool reactive,
+                long fetchSize, out IState nextState)
+            {
+                throw new ClientException(
+                    "Cannot run query in this transaction, because it has already been committed.");
+            }
+
             public Task CommitAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
                 out IState nextState)
             {
@@ -256,7 +281,12 @@ namespace Neo4j.Driver.Internal
                 throw new ClientException(
                     "Cannot run query in this transaction, because it has already been rolled back.");
             }
-
+            public Task<IResultCursor<T>> RunAsync<T>(Query query, IConnection connection, IBoltProtocol protocol, ILogger logger, bool reactive,
+                long fetchSize, out IState nextState)
+            {
+                throw new ClientException(
+                    "Cannot run query in this transaction, because it has already been rolled back.");
+            }
             public Task CommitAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
                 out IState nextState)
             {
@@ -273,6 +303,14 @@ namespace Neo4j.Driver.Internal
         private class FailedState : IState
         {
             public Task<IResultCursor> RunAsync(Query query, IConnection connection,
+                IBoltProtocol protocol, ILogger logger, bool reactive,
+                long fetchSize,
+                out IState nextState)
+            {
+                throw new ClientException(
+                    "Cannot run query in this transaction, because it has been rolled back either because of an error or explicit termination.");
+            }
+            public Task<IResultCursor<T>> RunAsync<T>(Query query, IConnection connection,
                 IBoltProtocol protocol, ILogger logger, bool reactive,
                 long fetchSize,
                 out IState nextState)

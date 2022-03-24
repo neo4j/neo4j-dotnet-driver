@@ -72,21 +72,6 @@ namespace Neo4j.Driver.Internal
             return RunAsync(query, action, true);
         }
 
-        public Task<IResultCursor<T>> RunAsync<T>(string query, Action<TransactionConfigBuilder> action)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IResultCursor<T>> RunAsync<T>(string query, IDictionary<string, object> parameters, Action<TransactionConfigBuilder> action)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IResultCursor<T>> RunAsync<T>(Query query, Action<TransactionConfigBuilder> action)
-        {
-            throw new NotImplementedException();
-        }
-
         public SessionConfig SessionConfig { internal set; get; }
 
         public Task<IResultCursor> RunAsync(string query, Action<TransactionConfigBuilder> action)
@@ -104,6 +89,27 @@ namespace Neo4j.Driver.Internal
         {
             return RunAsync(query, null);
         }
+
+        public override Task<IResultCursor<T>> RunAsync<T>(Query query)
+        {
+            return RunAsync<T>(query, null);
+        }
+
+        public Task<IResultCursor<T>> RunAsync<T>(string query, Action<TransactionConfigBuilder> action)
+        {
+            return RunAsync<T>(new Query(query), action);
+        }
+
+        public Task<IResultCursor<T>> RunAsync<T>(string query, IDictionary<string, object> parameters, Action<TransactionConfigBuilder> action)
+        {
+            return RunAsync<T>(new Query(query, parameters), action);
+        }
+
+        public Task<IResultCursor<T>> RunAsync<T>(Query query, Action<TransactionConfigBuilder> action)
+        {
+            return RunAsync<T>(query, action, true);
+        }
+
 
         public Task<IAsyncTransaction> BeginTransactionAsync()
         {
@@ -151,6 +157,28 @@ namespace Neo4j.Driver.Internal
             });
 
             _result = result;
+            return result;
+        }
+
+        public Task<IResultCursor<T>> RunAsync<T>(Query query, Action<TransactionConfigBuilder> action,
+            bool disposeUnconsumedSessionResult)
+        {
+            var options = BuildTransactionConfig(action);
+            var result = TryExecuteAsync(_logger, async () =>
+            {
+                await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
+
+                await AcquireConnectionAndDBName(_defaultMode);
+
+                var protocol = _connection.BoltProtocol;
+
+                return await protocol
+                    .RunInAutoCommitTransactionAsync<T>(_connection, query, _reactive, this, this, _database,
+                        _bookmark, options, ImpersonatedUser(), _fetchSize)
+                    .ConfigureAwait(false);
+            });
+
+            _result = result.ContinueWith(x => x.Result as IResultCursor);
             return result;
         }
 

@@ -26,24 +26,22 @@ namespace Neo4j.Driver.Internal
     internal abstract class AsyncQueryRunner : IAsyncQueryRunner
     {
         public abstract Task<IResultCursor> RunAsync(Query query);
+
+        public abstract Task<IResultCursor<T>> RunAsync<T>(Query query);
+
         public Task<IResultCursor<T>> RunAsync<T>(string query)
         {
-            throw new NotImplementedException();
+            return RunAsync<T>(new Query(query));
         }
 
         public Task<IResultCursor<T>> RunAsync<T>(string query, object parameters)
         {
-            throw new NotImplementedException();
+            return RunAsync<T>(new Query(query, parameters.ToDictionary()));
         }
 
         public Task<IResultCursor<T>> RunAsync<T>(string query, IDictionary<string, object> parameters)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task<IResultCursor<T>> RunAsync<T>(Query query)
-        {
-            throw new NotImplementedException();
+            return RunAsync<T>(new Query(query, parameters));
         }
 
         public Task<IResultCursor> RunAsync(string query)
