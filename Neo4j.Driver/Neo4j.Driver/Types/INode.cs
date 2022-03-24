@@ -30,4 +30,12 @@ namespace Neo4j.Driver
         /// </summary>
         IReadOnlyList<string> Labels { get; }
     }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public interface INode<T> : INode, IEntity<T> where T: new()
+    {
+    }
 }

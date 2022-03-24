@@ -52,4 +52,12 @@ namespace Neo4j.Driver
         /// </summary>
         string EndNodeElementId { get; }
     }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public interface IRelationship<T> : IRelationship, IEntity<T> where T:new()
+    {
+    }
 }

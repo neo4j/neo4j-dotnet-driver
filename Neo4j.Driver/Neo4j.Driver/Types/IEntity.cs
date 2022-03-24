@@ -47,5 +47,20 @@ namespace Neo4j.Driver
         /// Get the identity as a <see cref="string"/>.
         /// </summary>
         string ElementId { get; }
+
+        /// <summary>
+        /// Convert Properties to T
+        /// </summary>
+        /// <typeparam name="T">type to convert <see cref="Properties"/> to</typeparam>
+        /// <returns></returns>
+        T ConvertProperties<T>() where T : new();
+    }
+
+    public interface IEntity<T> : IEntity where T: new()
+    {
+        /// <summary>
+        /// Properties 
+        /// </summary>
+        T Data { get; }
     }
 }

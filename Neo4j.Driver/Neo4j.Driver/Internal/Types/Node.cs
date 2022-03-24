@@ -73,5 +73,31 @@ namespace Neo4j.Driver.Internal.Types
         {
             return ElementId.GetHashCode();
         }
+
+        public T ConvertProperties<T>() where T : new()
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    internal class Node<T> : Node, INode<T> where T : new()
+    {
+        public Node(long id, IReadOnlyList<string> labels, IReadOnlyDictionary<string, object> prop) : base(id, labels, prop)
+        {
+        }
+
+        public Node(string elementId, IReadOnlyList<string> labels, IReadOnlyDictionary<string, object> prop) : base(elementId, labels, prop)
+        {
+        }
+
+        public Node(long id, string elementId, IReadOnlyList<string> labels, IReadOnlyDictionary<string, object> prop) : base(id, elementId, labels, prop)
+        {
+        }
+
+        public T Data { get; }
     }
 }

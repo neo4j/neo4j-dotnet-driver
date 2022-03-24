@@ -32,6 +32,12 @@ namespace Neo4j.Driver.Internal.Types
         public string Type { get; }
         
         public string ElementId { get; }
+
+        public T ConvertProperties<T>() where T : new()
+        {
+            throw new NotImplementedException();
+        }
+
         public string StartNodeElementId { get; internal set; }
         public string EndNodeElementId { get; internal set; }
         public IReadOnlyDictionary<string, object> Properties { get; }
@@ -107,5 +113,22 @@ namespace Neo4j.Driver.Internal.Types
             StartNodeElementId = start.ElementId;
             EndNodeElementId = end.ElementId;
         }
+    }
+
+    internal class Relationship<T> : Relationship, IRelationship<T> where T: new()
+    {
+        public Relationship(long id, long startId, long endId, string relType, IReadOnlyDictionary<string, object> props) : base(id, startId, endId, relType, props)
+        {
+        }
+
+        public Relationship(string id, string startId, string endId, string relType, IReadOnlyDictionary<string, object> props) : base(id, startId, endId, relType, props)
+        {
+        }
+
+        public Relationship(long id, string elementId, long startId, long endId, string startElementId, string endElementId, string relType, IReadOnlyDictionary<string, object> props) : base(id, elementId, startId, endId, startElementId, endElementId, relType, props)
+        {
+        }
+
+        public T Data { get; }
     }
 }
