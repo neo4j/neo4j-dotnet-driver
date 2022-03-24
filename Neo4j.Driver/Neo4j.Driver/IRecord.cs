@@ -46,5 +46,12 @@ namespace Neo4j.Driver
         /// Gets the keys in a <see cref="IReadOnlyList{T}"/>.
         /// </summary>
         IReadOnlyList<string> Keys { get; }
+
+        /// <summary>
+        /// Convert Properties to T
+        /// </summary>
+        /// <typeparam name="T">type to convert <see cref="Properties"/> to</typeparam>
+        /// <returns></returns>
+        T ConvertValues<T>() where T : new();
     }
 }

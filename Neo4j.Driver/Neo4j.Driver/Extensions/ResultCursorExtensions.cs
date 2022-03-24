@@ -39,6 +39,27 @@ namespace Neo4j.Driver
             return SingleAsync(result, record => record);
         }
 
+        /// <summary>
+        /// Return the only record in the result stream.
+        /// </summary>
+        /// <param name="result">The result stream</param>
+        /// <returns>The only record in the result stream.</returns>
+        /// <remarks>Throws <exception cref="InvalidOperationException"></exception>
+        /// if the result contains more than one record or the result is empty.</remarks>
+        public static async Task<T> SingleAsync<T>(this IResultCursor<T> result)
+        {
+            Throw.ArgumentNullException.IfNull(result, nameof(result));
+            
+            if (!await result.FetchAsync().ConfigureAwait(false))
+                throw new InvalidOperationException("The result is empty.");
+            
+            var record = result.Current;
+            
+            if (await result.FetchAsync().ConfigureAwait(false))
+                throw new InvalidOperationException("The result contains more than one element.");
+
+            return record;
+        }
 
         /// <summary>
         /// Return the only record in the result stream.
@@ -70,6 +91,7 @@ namespace Neo4j.Driver
             }
         }
 
+
         /// <summary>
         /// Pull all records in the result stream into memory and return in a list.
         /// </summary>
@@ -84,6 +106,22 @@ namespace Neo4j.Driver
                 list.Add(result.Current);
             }
 
+            return list;
+        }
+
+        /// <summary>
+        /// Pull all records in the result stream into memory and return in a list.
+        /// </summary>
+        /// <param name="result"> The result stream.</param>
+        /// <returns>A list with all records in the result stream.</returns>
+        public static async Task<List<T>> ToListAsync<T>(this IResultCursor<T> result)
+        {
+            Throw.ArgumentNullException.IfNull(result, nameof(result));
+            var list = new List<T>();
+            while (await result.FetchAsync().ConfigureAwait(false))
+            {
+                list.Add(result.Current);
+            }
             return list;
         }
 
@@ -107,6 +145,7 @@ namespace Neo4j.Driver
             return list;
         }
 
+
         /// <summary>
         /// Read each record in the result stream and apply the operation on each record.
         /// </summary>
@@ -121,6 +160,45 @@ namespace Neo4j.Driver
             {
                 var record = result.Current;
                 operation(record);
+            }
+
+            return await result.ConsumeAsync().ConfigureAwait(false);
+        }
+
+
+        /// <summary>
+        /// Read each record in the result stream and apply the operation on each record.
+        /// </summary>
+        /// <param name="result">The result stream.</param>
+        /// <param name="operation">The operation is carried out on each record.</param>
+        /// <returns>The result summary after all records have been processed.</returns>
+        public static async Task<IResultSummary> ForEachAsync<T>(this IResultCursor<T> result,
+            Action<T> operation)
+        {
+            Throw.ArgumentNullException.IfNull(result, nameof(result));
+            while (await result.FetchAsync().ConfigureAwait(false))
+            {
+                var record = result.Current;
+                operation(record);
+            }
+
+            return await result.ConsumeAsync().ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Read each record in the result stream and apply the operation on each record.
+        /// </summary>
+        /// <param name="result">The result stream.</param>
+        /// <param name="operation">The operation is carried out on each record.</param>
+        /// <returns>The result summary after all records have been processed.</returns>
+        public static async Task<IResultSummary> ForEachAsync<T>(this IResultCursor<T> result,
+            Func<T, Task> operation)
+        {
+            Throw.ArgumentNullException.IfNull(result, nameof(result));
+            while (await result.FetchAsync().ConfigureAwait(false))
+            {
+                var record = result.Current;
+                await operation(record).ConfigureAwait(false);
             }
 
             return await result.ConsumeAsync().ConfigureAwait(false);

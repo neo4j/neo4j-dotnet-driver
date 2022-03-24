@@ -29,6 +29,7 @@ namespace Neo4j.Driver
 
         public Neo4jConverterAttribute(Type converter)
         {
+
             _converter = converter;
         }
     }
