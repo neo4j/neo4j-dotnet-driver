@@ -72,6 +72,21 @@ namespace Neo4j.Driver.Internal
             return RunAsync(query, action, true);
         }
 
+        public Task<IResultCursor<T>> RunAsync<T>(string query, Action<TransactionConfigBuilder> action)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IResultCursor<T>> RunAsync<T>(string query, IDictionary<string, object> parameters, Action<TransactionConfigBuilder> action)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IResultCursor<T>> RunAsync<T>(Query query, Action<TransactionConfigBuilder> action)
+        {
+            throw new NotImplementedException();
+        }
+
         public SessionConfig SessionConfig { internal set; get; }
 
         public Task<IResultCursor> RunAsync(string query, Action<TransactionConfigBuilder> action)

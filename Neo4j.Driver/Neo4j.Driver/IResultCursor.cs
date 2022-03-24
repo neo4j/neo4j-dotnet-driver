@@ -68,4 +68,19 @@ namespace Neo4j.Driver
         /// if accessed without calling <see cref="FetchAsync"/> or <see cref="PeekAsync"/>.</remarks>
         IRecord Current { get; }
     }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public interface IResultCursor<T> : IResultCursor
+    {
+        new T Current { get; }
+
+        /// <summary>
+        /// Asynchronously investigates the next upcoming record without changing the current position in the result.
+        /// </summary>
+        /// <returns>A task returning next record or null if there is no next record.</returns>
+        new Task<T> PeekAsync();
+    }
 }

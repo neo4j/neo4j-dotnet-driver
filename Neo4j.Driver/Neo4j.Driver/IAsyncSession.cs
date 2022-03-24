@@ -188,6 +188,50 @@ namespace Neo4j.Driver
         /// <returns>A task of a stream of result values and associated metadata.</returns>
         Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action);
 
+
+        /// <summary>
+        /// 
+        /// Asynchronously run a query with the specific <see cref="TransactionConfig"/> and return a task of result stream.
+        ///
+        /// This method accepts a String representing a Cypher query which will be 
+        /// compiled into a query object that can be used to efficiently execute this
+        /// query multiple times. This method optionally accepts a set of parameters
+        /// which will be injected into the query object query by Neo4j. 
+        ///
+        /// </summary>
+        /// <param name="query">A Cypher query.</param>
+        /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.</param>
+        /// <returns>A task of a stream of result values and associated metadata.</returns>
+        Task<IResultCursor<T>> RunAsync<T>(string query, Action<TransactionConfigBuilder> action);
+
+        /// <summary>
+        /// 
+        /// Asynchronously run a query with the customized <see cref="TransactionConfig"/> and return a task of result stream.
+        ///
+        /// This method accepts a String representing a Cypher query which will be 
+        /// compiled into a query object that can be used to efficiently execute this
+        /// query multiple times. This method optionally accepts a set of parameters
+        /// which will be injected into the query object query by Neo4j. 
+        ///
+        /// </summary>
+        /// <param name="query">A Cypher query.</param>
+        /// <param name="parameters">Input parameters for the query.</param>
+        /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.</param>
+        /// <returns>A task of a stream of result values and associated metadata.</returns>
+        Task<IResultCursor<T>> RunAsync<T>(string query, IDictionary<string, object> parameters,
+            Action<TransactionConfigBuilder> action);
+
+        /// <summary>
+        ///
+        /// Asynchronously execute a query with the specific <see cref="TransactionConfig"/> and return a task of result stream.
+        ///
+        /// </summary>
+        /// <param name="query">A Cypher query, <see cref="Query"/>.</param>
+        /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.
+        /// </param>
+        /// <returns>A task of a stream of result values and associated metadata.</returns>
+        Task<IResultCursor<T>> RunAsync<T>(Query query, Action<TransactionConfigBuilder> action);
+
         /// <summary>
         /// Gets the session configurations back
         /// </summary>
