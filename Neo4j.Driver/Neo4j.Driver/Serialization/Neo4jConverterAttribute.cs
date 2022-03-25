@@ -25,12 +25,14 @@ namespace Neo4j.Driver
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
     public class Neo4jConverterAttribute : Attribute
     {
-        private readonly Type _converter;
+        internal readonly Type Converter;
 
         public Neo4jConverterAttribute(Type converter)
         {
+            if (!typeof(Neo4jConverter).IsAssignableFrom(converter))
+                throw new Exception();
 
-            _converter = converter;
+            Converter = converter;
         }
     }
 }

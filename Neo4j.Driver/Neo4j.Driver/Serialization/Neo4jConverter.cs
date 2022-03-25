@@ -15,13 +15,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 
 namespace Neo4j.Driver
 {
-    public abstract class Neo4jConverter<T>
+    public abstract class Neo4jConverter
     {
-        public abstract T Deserialize(Dictionary<string, object> properties);
-        public abstract Dictionary<string, object> Serialize(T properties);
+        public Type Type { get; protected set; }
+        public abstract object Deserialize(IReadOnlyDictionary<string, object> properties, Type type);
+        public abstract IReadOnlyDictionary<string, object> Serialize(object properties, Type type);
+    }
+
+    public abstract class Neo4jConverter<T> : Neo4jConverter
+    {
+        
+        public sealed override object Deserialize(IReadOnlyDictionary<string, object> properties, Type type)
+        {
+            return Deserialize(properties);
+        }
+
+        public sealed override IReadOnlyDictionary<string, object> Serialize(object properties, Type type)
+        {
+            return Serialize((T)properties);
+        }
+
+        public abstract T Deserialize(IReadOnlyDictionary<string, object> properties);
+        public abstract IReadOnlyDictionary<string, object> Serialize(T properties);
     }
 }

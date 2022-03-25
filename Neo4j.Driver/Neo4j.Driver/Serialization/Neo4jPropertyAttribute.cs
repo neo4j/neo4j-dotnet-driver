@@ -18,17 +18,25 @@ using System;
 
 namespace Neo4j.Driver
 {
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    public abstract class BaseNeo4jPropertyAttribute : Attribute
+    {
+
+    }
+
     /// <summary>
     /// 
     /// </summary>
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    public class Neo4jPropertyAttribute : Attribute
+    public class Neo4jPropertyAttribute : BaseNeo4jPropertyAttribute
     {
-        private readonly string _name;
+        public string Name { get; }
+        public bool AllowNull { get; }
 
-        public Neo4jPropertyAttribute(string name)
+        public Neo4jPropertyAttribute(string name, bool allowNull = true)
         {
-            _name = name;
+            AllowNull = allowNull;
+            Name = name;
         }
+
     }
 }

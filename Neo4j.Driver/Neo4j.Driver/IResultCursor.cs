@@ -75,6 +75,13 @@ namespace Neo4j.Driver
     /// <typeparam name="T"></typeparam>
     public interface IResultCursor<T> : IResultCursor
     {
+
+        /// <summary>
+        /// Returns the current record that has already been read via <see cref="FetchAsync"/>.
+        /// </summary>
+        /// <value>A <see cref="T"/> holding the data sent by the server.</value>
+        /// <remarks>Throws <exception cref="InvalidOperationException"></exception>
+        /// if accessed without calling <see cref="FetchAsync"/> or <see cref="PeekAsync"/>.</remarks>
         new T Current { get; }
 
         /// <summary>

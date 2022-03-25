@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.Serialization;
 
 namespace Neo4j.Driver.Internal.Types
 {
@@ -35,7 +36,7 @@ namespace Neo4j.Driver.Internal.Types
 
         public T ConvertProperties<T>() where T : new()
         {
-            throw new NotImplementedException();
+            return Neo4jSerialization.Convert<T>(Properties);
         }
 
         public string StartNodeElementId { get; internal set; }

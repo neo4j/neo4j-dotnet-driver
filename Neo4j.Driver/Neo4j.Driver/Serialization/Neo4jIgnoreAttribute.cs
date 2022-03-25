@@ -14,15 +14,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-using System;
-
 namespace Neo4j.Driver
 {
     /// <summary>
     /// 
     /// </summary>
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    public class Neo4jIgnoreAttribute : Attribute
+    public class Neo4jIgnoreAttribute : BaseNeo4jPropertyAttribute
     {
     }
 }

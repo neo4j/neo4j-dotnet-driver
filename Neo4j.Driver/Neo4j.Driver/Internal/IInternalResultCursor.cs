@@ -22,8 +22,7 @@ namespace Neo4j.Driver.Internal
         void Cancel();
     }
 
-    internal interface IInternalResultCursor<T> : IResultCursor<T>
+    internal interface IInternalResultCursor<T> : IResultCursor<T>, IInternalResultCursor
     {
-        void Cancel();
     }
 }

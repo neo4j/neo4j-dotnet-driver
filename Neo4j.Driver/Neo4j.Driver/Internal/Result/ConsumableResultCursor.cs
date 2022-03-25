@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Internal.Result
             _cursor.Cancel();
         }
 
-        private void AssertNotConsumed()
+        protected void AssertNotConsumed()
         {
             if (_isConsumed)
             {
@@ -77,15 +77,19 @@ namespace Neo4j.Driver.Internal.Result
 
     internal class ConsumableResultCursor<T> : ConsumableResultCursor, IInternalResultCursor<T>
     {
-        public ConsumableResultCursor(IInternalResultCursor<T> cursor) : base(cursor as IInternalResultCursor)
+        private readonly IInternalResultCursor<T> _cursor;
+
+        public ConsumableResultCursor(IInternalResultCursor<T> cursor) : base(cursor)
         {
+            _cursor = cursor;
         }
 
-        public T Current { get; }
-
-        public Task<T> PeekAsync()
+        public new T Current => _cursor.Current;
+        
+        public new Task<T> PeekAsync()
         {
-            throw new System.NotImplementedException();
+            AssertNotConsumed();
+            return _cursor.PeekAsync();
         }
     }
 }
