@@ -46,7 +46,7 @@ internal class PropsAndFieldConverterFactory
     public Action<IReadOnlyDictionary<string, object>, object> GenerateForProperties(PropertyInfo propertyInfo)
     {
         if (!propertyInfo.CanWrite)
-            return null;
+            return null; 
 
         var customAttributes = propertyInfo.GetCustomAttributes(typeof(BaseNeo4jPropertyAttribute), true);
 
@@ -157,6 +157,11 @@ internal class PropsAndFieldConverterFactory
             }
 
             return collection;
+        }
+
+        if (data is string)
+        {
+            return Activator.CreateInstance(type, data);
         }
 
         throw new Exception();

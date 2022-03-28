@@ -37,13 +37,16 @@ namespace Neo4j.Driver.Internal.Serialization
         private List<Action<IReadOnlyDictionary<string, object>, object>> GenerateDeserializers()
         {
             var factory = new PropsAndFieldConverterFactory();
-            var fields = Type.GetFields(BindingFlags.Public);
-            var props = Type.GetProperties(BindingFlags.SetProperty | BindingFlags.Public);
+            var fields = Type.GetFields();
+            var props = Type.GetProperties();
 
             var setters = new List<Action<IReadOnlyDictionary<string, object>, object>>();
 
             foreach (var fieldInfo in fields)
             {
+                if (!fieldInfo.IsPublic)
+                    continue;
+
                 var action = factory.GenerateForField(fieldInfo);
                 if (action == null)
                     continue;
@@ -52,6 +55,7 @@ namespace Neo4j.Driver.Internal.Serialization
 
             foreach (var fieldInfo in props)
             {
+          
                 var action = factory.GenerateForProperties(fieldInfo);
                 if (action == null)
                     continue;
