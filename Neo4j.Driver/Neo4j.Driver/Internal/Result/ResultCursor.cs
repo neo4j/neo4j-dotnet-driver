@@ -21,6 +21,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal.Serialization;
 
 namespace Neo4j.Driver.Internal.Result
 {
@@ -28,7 +29,7 @@ namespace Neo4j.Driver.Internal.Result
     {
         private bool _atEnd;
         private IRecord _peeked;
-        private IRecord _current;
+        protected IRecord _current;
 
         private Task<string[]> _keys;
         private readonly IResultStream _resultStream;
@@ -138,11 +139,13 @@ namespace Neo4j.Driver.Internal.Result
 
     internal class ResultCursor<T> : ResultCursor, IInternalResultCursor<T>
     {
+        
         public ResultCursor(IResultStream resultStream) : base(resultStream)
         {
         }
 
-        public T Current { get; }
+        public T Current => Neo4jSerialization.Convert<T>(_current.Values);
+
         public Task<T> PeekAsync()
         {
             throw new NotImplementedException();
