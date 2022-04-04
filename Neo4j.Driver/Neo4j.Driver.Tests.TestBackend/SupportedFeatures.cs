@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 "Temporary:FastFailingDiscovery",
                 "Temporary:FullSummary",
                 "Temporary:GetConnectionPoolMetrics",
-                "Temporary:ResultKeys",
+                //"Temporary:ResultKeys",
                 "Temporary:TransactionClose"
             };
         }
