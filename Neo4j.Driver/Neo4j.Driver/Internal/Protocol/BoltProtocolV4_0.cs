@@ -154,7 +154,34 @@ namespace Neo4j.Driver.Internal.Protocol
         protected internal override void GetProcedureAndParameters(IConnection connection, string database, out string procedure, out Dictionary<string, object> parameters)
         {
             procedure = GetRoutingTableForDatabaseProcedure;
-            parameters = new Dictionary<string, object> { { "context", connection.RoutingContext }, { "database", string.IsNullOrEmpty(database) ? null : database } };                     
+            parameters = new Dictionary<string, object> { { "context", connection.RoutingContext }, { "database", string.IsNullOrEmpty(database) ? null : database } };
+        }
+
+        public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmark bookmark)
+        {
+            ValidateImpersonatedUserForVersion(impersonatedUser);
+            connection = connection ?? throw new ProtocolException("Attempting to get a routing table on a null connection");
+
+            connection.Mode = AccessMode.Read;
+
+            string procedure;
+            var parameters = new Dictionary<string, object>();
+
+            var bookmarkTracker = new BookmarkTracker(bookmark);
+            var resourceHandler = new ConnectionResourceHandler(connection);
+            var sessionDb = connection.SupportsMultidatabase() ? "system" : null;
+
+            GetProcedureAndParameters(connection, database, out procedure, out parameters);
+            var query = new Query(procedure, parameters);
+
+            var result = await RunInAutoCommitTransactionAsync(connection, query, false, bookmarkTracker, resourceHandler, sessionDb, bookmark, null, null).ConfigureAwait(false);
+            var record = await result.SingleAsync().ConfigureAwait(false);
+
+            //Since 4.4 the Routing information will contain a db. Earlier versions need to populate this here as it's not received in the older route response...
+            var finalDictionary = record.Values.ToDictionary();
+            finalDictionary[RoutingTableDBKey] = database;
+
+            return (IReadOnlyDictionary<string, object>)finalDictionary;
         }
     }
 }

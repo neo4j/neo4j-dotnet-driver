@@ -36,6 +36,5 @@ namespace Neo4j.Driver.Internal.Protocol
 										  GetHelloResponseHandler(connection)).ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
         }
-
     }
 }
