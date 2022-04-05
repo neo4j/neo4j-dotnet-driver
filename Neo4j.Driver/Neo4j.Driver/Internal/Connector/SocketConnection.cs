@@ -130,9 +130,10 @@ namespace Neo4j.Driver.Internal.Connector
 
             try
             {
+                _clean = false;
+
                 // send
                 await _client.SendAsync(_messages).ConfigureAwait(false);
-                _clean = false;
 
                 _messages.Clear();
             }
