@@ -29,6 +29,9 @@ namespace Neo4j.Driver.Tests.TestBackend
             [JsonIgnore]
             public bool ModifiedTrustedCertificates = false;
 
+            public long? fetchSize;
+            public long? maxTxRetryTimeMs;
+
             public string[] trustedCertificates
             {
                 get => _trustedCertificates;
@@ -117,8 +120,17 @@ namespace Neo4j.Driver.Tests.TestBackend
                 configBuilder.WithCertificateTrustRule(certificateTrustStrategy, certificateTrustStrategy == CertificateTrustRule.TrustList ? GetPaths() : null);
             }
 
+            if (data.maxTxRetryTimeMs.HasValue)
+                configBuilder.WithMaxTransactionRetryTime(
+                    TimeSpan.FromMilliseconds(data.maxTxRetryTimeMs.Value));
+
             if (data.encrypted.HasValue)
-                configBuilder.WithEncryptionLevel(data.encrypted.Value ? EncryptionLevel.Encrypted : EncryptionLevel.None);
+                configBuilder.WithEncryptionLevel(data.encrypted.Value 
+                    ? EncryptionLevel.Encrypted 
+                    : EncryptionLevel.None);
+
+            if (data.fetchSize.HasValue)
+                configBuilder.WithFetchSize(data.fetchSize.Value);
 
             var logger = new SimpleLogger();
 

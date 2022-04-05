@@ -28,7 +28,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override string Respond()
         {
-            return new ProtocolResponse("Result", uniqueId).Encode();
+            var keys = ResultCursor.KeysAsync().GetAwaiter().GetResult();
+            return new ProtocolResponse("Result", new { id = uniqueId, keys }).Encode();
         }
 
 		public async Task<IRecord> GetNextRecord()
