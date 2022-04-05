@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Types;
@@ -83,8 +84,9 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             var node = value.As<Node>();
 
             node.ElementId.Should().Be("1");
-            node.Id.Should().Be(-1L);
-            
+            var exception = Record.Exception(() => node.Id);
+            exception.Should().BeOfType<InvalidOperationException>();
+
             node.Labels.Should().Equal(new[] { "Label1", "Label2" });
             node.Properties.Should().HaveCount(3).And.Contain(new[]
             {
