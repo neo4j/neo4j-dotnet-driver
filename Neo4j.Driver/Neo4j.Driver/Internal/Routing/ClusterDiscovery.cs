@@ -105,7 +105,7 @@ namespace Neo4j.Driver.Internal.Routing
         {
             private IConnection _connection;
             public IDictionary<string, string> RoutingContext { get; set; }
-
+            
             public SingleConnectionBasedConnectionProvider(IConnection connection)
             {
                 _connection = connection;
@@ -120,6 +120,11 @@ namespace Neo4j.Driver.Internal.Routing
                 _connection = null;
                 return Task.FromResult(conn);
             }
+            
+            public Task<IServerInfo> VerifyConnectivityAndGetInfoAsync()
+            {
+                throw new NotSupportedException();
+            }
 
             public Task CloseAsync()
             {
@@ -129,11 +134,6 @@ namespace Neo4j.Driver.Internal.Routing
                 }
 
                 return Task.CompletedTask;
-            }
-
-            public Task VerifyConnectivityAsync()
-            {
-                throw new NotSupportedException();
             }
 
             public Task<bool> SupportsMultiDbAsync()

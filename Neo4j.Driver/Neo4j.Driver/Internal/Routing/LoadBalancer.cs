@@ -59,8 +59,6 @@ namespace Neo4j.Driver.Internal.Routing
             _routingTableManager = new RoutingTableManager(routingSettings, this, logger);
             _loadBalancingStrategy = CreateLoadBalancingStrategy(_clusterConnectionPool, _logger);
             _initialServerAddressProvider = routingSettings.InitialServerAddressProvider;
-
-            
         }
 
         // for test only
@@ -128,22 +126,34 @@ namespace Neo4j.Driver.Internal.Routing
 
             return Task.CompletedTask;
         }
-
-        public async Task VerifyConnectivityAsync()
+        
+        public async Task<IServerInfo> VerifyConnectivityAndGetInfoAsync()
         {
-            // As long as there is a fresh routing table, we consider we can route to these servers.
-            try
+            var supportsMultiDb = await SupportsMultiDbAsync().ConfigureAwait(false);
+            var database = supportsMultiDb ? "system" : null;
+            foreach (var uri in _initialServerAddressProvider.Get())
             {
-                var database = await SupportsMultiDbAsync().ConfigureAwait(false) ? "system" : null;
-                await _routingTableManager.EnsureRoutingTableForModeAsync(Simple.Mode, database, null,
-                    Simple.Bookmark).ConfigureAwait(false);
+                try
+                {
+                    var connection = await _clusterConnectionPool
+                        .AcquireAsync(uri, AccessMode.Read, database, null, null)
+                        .ConfigureAwait(false);
+
+                    await connection.ResetAsync().ConfigureAwait(false);
+                    await connection.CloseAsync().ConfigureAwait(false);
+                    return connection.Server;
+                }
+                catch (ServiceUnavailableException e)
+                {
+                    throw new ServiceUnavailableException(
+                        "Unable to connect to database, " +
+                        "ensure the database is running and that there is a working network connection to it.", e);
+                }
             }
-            catch (ServiceUnavailableException e)
-            {
-                throw new ServiceUnavailableException(
-                    "Unable to connect to database, " +
-                    "ensure the database is running and that there is a working network connection to it.", e);
-            }
+
+            throw new ServiceUnavailableException(
+                "Unable to connect to database, " +
+                "ensure the database is running and that there is a working network connection to it.");
         }
 
         public async Task<bool> SupportsMultiDbAsync()

@@ -361,7 +361,7 @@ namespace Neo4j.Driver.Tests
             private IConnection Connection { get; set; }
             private AccessMode Mode { get; set; }
             public IDictionary<string, string> RoutingContext { get; set; }
-
+    
             public TestConnectionProvider(IConnection connection)
             {
                 Connection = connection;
@@ -381,6 +381,11 @@ namespace Neo4j.Driver.Tests
             public Task CloseAsync()
             {
                 return Task.CompletedTask;
+            }
+            
+            public Task<IServerInfo> VerifyConnectivityAndGetInfoAsync()
+            {
+                throw new NotSupportedException();
             }
 
             public Task VerifyConnectivityAsync()
