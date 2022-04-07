@@ -24,6 +24,7 @@ namespace Neo4j.Driver.Internal.Routing
     internal interface IRoutingTableManager
     {
         Task<IRoutingTable> EnsureRoutingTableForModeAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark);
+        Task<IServerInfo> GetServerInfoAsync(Uri uri, string database);
         void Clear();
         void ForgetServer(Uri uri, string database);
         void ForgetWriter(Uri uri, string database);

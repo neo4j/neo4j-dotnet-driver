@@ -99,6 +99,45 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
+        public async Task<IServerInfo> GetServerInfoAsync(Uri uri, string database)
+        {
+            var bufferedExceptions = new List<Exception>();
+            var conn = await _poolManager.CreateClusterConnectionAsync(uri).ConfigureAwait(false);
+            if (conn == null)
+            {
+                throw new ServiceUnavailableException("Could not create connection");
+            }
+            else
+            {
+                var rt = await _discovery.DiscoverAsync(conn, null, null, null)
+                        .ConfigureAwait(false);
+                
+                await conn.CloseAsync().ConfigureAwait(false);
+                await UpdateAsync(rt).ConfigureAwait(false);
+                var info = default(IServerInfo);
+                foreach (var table in rt.Readers)
+                {
+                    try
+                    {
+                        var reportedConnection =
+                            await _poolManager.CreateClusterConnectionAsync(table).ConfigureAwait(false);
+                        info = reportedConnection.Server;
+                        await reportedConnection.CloseAsync().ConfigureAwait(false);
+                    }
+                    catch (Exception ex) when (ex is not AuthenticationException)
+                    {
+                        bufferedExceptions.Add(ex);
+                    }
+                    if (info != null)
+                        return info;
+                }
+         
+            }
+
+            throw new ServiceUnavailableException(
+                $"Failed to find server info for '{uri}' for database '{database}'.", new AggregateException(bufferedExceptions));
+        }
+
         public void Clear()
         {
             _routingTables.Clear();

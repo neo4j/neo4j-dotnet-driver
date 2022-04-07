@@ -135,13 +135,7 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 try
                 {
-                    var connection = await _clusterConnectionPool
-                        .AcquireAsync(uri, AccessMode.Read, database, null, null)
-                        .ConfigureAwait(false);
-
-                    await connection.ResetAsync().ConfigureAwait(false);
-                    await connection.CloseAsync().ConfigureAwait(false);
-                    return connection.Server;
+                    return await _routingTableManager.GetServerInfoAsync(uri, database).ConfigureAwait(false);
                 }
                 catch (ServiceUnavailableException e)
                 {
