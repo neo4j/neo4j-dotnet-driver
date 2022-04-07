@@ -33,31 +33,25 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
             var jsonObj = JObject.Load(reader);
 
-            var type = new NewDriver.NewDriverType();
-            type.authorizationToken = jsonObj[nameof(NewDriver.NewDriverType.authorizationToken)]
-                ?.ToObject<AuthorizationToken>();
-            type.uri = jsonObj[nameof(NewDriver.NewDriverType.uri)]
-                ?.Value<string>();
-            type.userAgent = jsonObj[nameof(NewDriver.NewDriverType.userAgent)]
-                ?.Value<string>();
-            type.resolverRegistered =
-                jsonObj[nameof(NewDriver.NewDriverType.resolverRegistered)]?.Value<bool>() ?? false;
-            type.domainNameResolverRegistered =
-                jsonObj[nameof(NewDriver.NewDriverType.domainNameResolverRegistered)]?.Value<bool>() ?? false;
-            type.connectionTimeoutMs = jsonObj[nameof(NewDriver.NewDriverType.connectionTimeoutMs)]?.Value<int?>() ?? -1;
-                type.maxConnectionPoolSize = jsonObj[nameof(NewDriver.NewDriverType.maxConnectionPoolSize)]
-                    ?.Value<int?>();
-                type.connectionAcquisitionTimeoutMs =
-                    jsonObj[nameof(NewDriver.NewDriverType.connectionAcquisitionTimeoutMs)]
-                        ?.Value<int?>();
+            var newDriverRequest = new NewDriver.NewDriverType();
+            newDriverRequest.authorizationToken = jsonObj["authorizationToken"]?.ToObject<AuthorizationToken>();
+            newDriverRequest.uri = jsonObj["uri"]?.Value<string>();
+            newDriverRequest.userAgent = jsonObj["userAgent"]?.Value<string>();
+            newDriverRequest.resolverRegistered = jsonObj["resolverRegistered"]?.Value<bool>() ?? false;
+            newDriverRequest.domainNameResolverRegistered = jsonObj["domainNameResolverRegistered"]?.Value<bool>() ?? false;
+            newDriverRequest.connectionTimeoutMs = jsonObj["connectionTimeoutMs"]?.Value<int?>() ?? -1;
+            newDriverRequest.maxConnectionPoolSize = jsonObj["maxConnectionPoolSize"]?.Value<int?>();
+            newDriverRequest.connectionAcquisitionTimeoutMs = jsonObj["connectionAcquisitionTimeoutMs"]?.Value<int?>();
+            newDriverRequest.fetchSize = jsonObj["fetchSize"]?.Value<long?>();
+            newDriverRequest.maxTxRetryTimeMs = jsonObj["maxTxRetryTimeMs"]?.Value<long?>();
 
-            if (jsonObj.TryGetValue(nameof(NewDriver.NewDriverType.trustedCertificates), out var token))
-                type.trustedCertificates = token.ToObject<string[]>();
+            if (jsonObj.TryGetValue("trustedCertificates", out var token))
+                newDriverRequest.trustedCertificates = token.ToObject<string[]>();
 
-            if (jsonObj.TryGetValue(nameof(NewDriver.NewDriverType.encrypted), out token))
-                type.encrypted = token.Value<bool?>();
+            if (jsonObj.TryGetValue("encrypted", out token))
+                newDriverRequest.encrypted = token.Value<bool?>();
 
-            return type;
+            return newDriverRequest;
         }
     }
 }

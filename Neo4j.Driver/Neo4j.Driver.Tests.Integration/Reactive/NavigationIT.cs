@@ -358,33 +358,6 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-            public void ShouldFailOnKeysWhenRunFails()
-            {
-                NewRunnable()
-                    .Run("THIS IS NOT A CYPHER")
-                    .Keys()
-                    .WaitForCompletion()
-                    .AssertEqual(
-                        OnError<string[]>(0,
-                            MatchesException<ClientException>(e => e.Code.Equals("Neo.ClientError.Statement.SyntaxError")))						
-                    );
-            }
-
-            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-            public void ShouldFailOnSubsequentKeysWhenRunFails()
-            {
-                var result = NewRunnable().Run("THIS IS NOT A CYPHER");
-
-                var keys1 = result.Keys().WaitForCompletion();
-                var keys2 = result.Keys().WaitForCompletion();
-
-                keys1.AssertEqual(
-                    OnError<string[]>(0, MatchesException<ClientException>(e => e.Code.Equals("Neo.ClientError.Statement.SyntaxError")))
-                );
-                keys1.AssertEqual(keys2);
-            }
-
-            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldFailOnRecordsWhenRunFails()
             {
                 var result = NewRunnable()
