@@ -36,11 +36,6 @@ namespace Neo4j.Driver.Tests.TestBackend
 			//FeaturesList.Add("Feature:API:Result.Single");
 			//FeaturesList.Add("Feature:API:Result.Peek");
 			//FeaturesList.Add("Feature:API:Result.List");
-
-			FeaturesList.Add("Temporary:ConnectionAcquisitionTimeout");
-			//FeaturesList.Add("Temporary:DriverFetchSize");
-			FeaturesList.Add("Temporary:DriverMaxConnectionPoolSize");
-			//FeaturesList.Add("Temporary:TransactionClose");
 		}
 	}
 }
