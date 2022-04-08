@@ -16,7 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver
@@ -49,8 +48,20 @@ namespace Neo4j.Driver
         /// <summary>
         /// Asynchronously releases all resources (connection pools, connections, etc) associated with this IDriver instance.
         /// </summary>
-        /// <returns>The close task.</returns>
+        /// <returns>A task that represents the asynchronous close operation.</returns>
         Task CloseAsync();
+
+        /// <summary>
+        /// Asynchronously verify if the driver can connect to the remote server returning server info.
+        /// If the driver fails to connect to the remote server, an error will be thrown,
+        /// which can be used to further understand the cause of the connectivity issue.
+        /// Note: Even if this method failed with an error, the driver still need to be closed via <see cref="CloseAsync"/> to free up all resources.
+        /// </summary>
+        /// <returns>
+        /// A task that represents the asynchronous operation.
+        /// The task result contains the connected server's info.
+        /// </returns>
+        Task<IServerInfo> GetServerInfoAsync();
 
         /// <summary>
         /// Asynchronously verify if the driver can connect to the remote server by establishing a network connection with the remote.
@@ -58,13 +69,17 @@ namespace Neo4j.Driver
         /// which can be used to further understand the cause of the connectivity issue.
         /// Note: Even if this method failed with an error, the driver still need to be closed via <see cref="CloseAsync"/> to free up all resources.
         /// </summary>
-        /// <returns>The verification task.</returns>
+        /// <returns>A task that represents the asynchronous verification operation.</returns>
+        [Obsolete("Replaced with GetServerInfoAsync, will be removed in 6.0")]
         Task VerifyConnectivityAsync();
 
         /// <summary>
         /// Asynchronously verify if the driver connects to a server and/or cluster that can support multi-database feature.
         /// </summary>
-        /// <returns>True if the remote server and/or cluster support multi-databases, otherwise false.</returns>
+        /// <returns>
+        /// A task that represents the asynchronous operation.
+        /// The task result contains True if the remote server and/or cluster support multi-databases, otherwise false.
+        /// </returns>
         Task<bool> SupportsMultiDbAsync();
 
         /// <summary>

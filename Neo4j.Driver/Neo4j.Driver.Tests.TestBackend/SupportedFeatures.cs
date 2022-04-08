@@ -16,7 +16,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 "Detail:DefaultSecurityConfigValueEquality",
                 "Detail:ThrowOnMissingId",
                 "Feature:API:ConnectionAcquisitionTimeout",
-                //"Feature:API:Driver:GetServerInfo",
+                "Feature:API:Driver:GetServerInfo",
                 "Feature:API:Driver.IsEncrypted",
                 "Feature:API:Driver.VerifyConnectivity",
                 //"Feature:API:Liveness.Check",
