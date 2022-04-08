@@ -58,6 +58,9 @@ namespace Neo4j.Driver.Tests.TestBackend
 			public int connectionTimeoutMs { get; set; } = -1;
 			public int? maxConnectionPoolSize { get; set; }
 			public int? connectionAcquisitionTimeoutMs { get; set; }
+			public int? fetchSize { get; set; }
+			public int? maxTxRetryTimeMs { get; set; }
+			public int? livenessCheckTimeoutMs { get; set; }
 		}
 
 		public override async Task Process(Controller controller)
