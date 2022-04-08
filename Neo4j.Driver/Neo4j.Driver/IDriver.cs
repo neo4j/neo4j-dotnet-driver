@@ -70,7 +70,6 @@ namespace Neo4j.Driver
         /// Note: Even if this method failed with an error, the driver still need to be closed via <see cref="CloseAsync"/> to free up all resources.
         /// </summary>
         /// <returns>A task that represents the asynchronous verification operation.</returns>
-        [Obsolete("Replaced with GetServerInfoAsync, will be removed in 6.0")]
         Task VerifyConnectivityAsync();
 
         /// <summary>

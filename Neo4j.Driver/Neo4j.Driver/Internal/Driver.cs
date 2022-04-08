@@ -125,7 +125,6 @@ namespace Neo4j.Driver.Internal
         public Task<IServerInfo> GetServerInfoAsync() =>
             _connectionProvider.VerifyConnectivityAndGetInfoAsync();
 
-        [Obsolete("Replaced with GetServerInfoAsync")]
         public Task VerifyConnectivityAsync() => GetServerInfoAsync();
 
         public Task<bool> SupportsMultiDbAsync()
