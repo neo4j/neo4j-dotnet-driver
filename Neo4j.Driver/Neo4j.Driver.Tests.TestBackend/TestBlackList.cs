@@ -10,7 +10,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 	{
 		private static readonly (string Name, string Reason)[] BlackListNames = new []
 		{
-			("sessionrun.TestSessionRun.test_iteration_nested",
+			("test_session_run.TestSessionRun.test_iteration_nested",
 			 "Nested results not working in 4.2 and earlier. FIX AND ENABLE in 4.3"),
 
 			("txfuncrun.TestTxFuncRun.test_iteration_nested",
