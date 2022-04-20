@@ -26,12 +26,12 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public class GetServerInfoType
         {
-            public string DriverId { get; set; }
+            public string driverId { get; set; }
         }
 
         public override async Task Process()
         {
-            var driver = ObjManager.GetObject<NewDriver>(Data.DriverId).Driver;
+            var driver = ObjManager.GetObject<NewDriver>(Data.driverId).Driver;
             ServerInfo = await driver.GetServerInfoAsync();
         }
 
@@ -39,9 +39,9 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
             var data = new
             {
-                ServerInfo.Address,
-                ServerInfo.Agent,
-                ServerInfo.ProtocolVersion
+                address = ServerInfo.Address,
+                agent = ServerInfo.Agent,
+                protocolVersion = ServerInfo.ProtocolVersion
             };
             return new ProtocolResponse("ServerInfo", data).Encode();
         }

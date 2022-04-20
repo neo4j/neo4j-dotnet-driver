@@ -8,12 +8,12 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 		public class VerifyConnectivityType
 		{
-			public string DriverId { get; set; }
+			public string driverId { get; set; }
 		}
 
 		public override async Task Process()
 		{
-			var driver = ObjManager.GetObject<NewDriver>(Data.DriverId).Driver;
+			var driver = ObjManager.GetObject<NewDriver>(Data.driverId).Driver;
 			await driver.VerifyConnectivityAsync();			
 		}
 

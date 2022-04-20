@@ -114,22 +114,20 @@ namespace Neo4j.Driver.Internal.Routing
                 
                 await conn.CloseAsync().ConfigureAwait(false);
                 await UpdateAsync(rt).ConfigureAwait(false);
-                var info = default(IServerInfo);
                 foreach (var table in rt.Readers)
                 {
                     try
                     {
                         var reportedConnection =
                             await _poolManager.CreateClusterConnectionAsync(table).ConfigureAwait(false);
-                        info = reportedConnection.Server;
                         await reportedConnection.CloseAsync().ConfigureAwait(false);
+                        return reportedConnection.Server;
                     }
                     catch (Exception ex) when (ex is not AuthenticationException)
                     {
                         bufferedExceptions.Add(ex);
                     }
-                    if (info != null)
-                        return info;
+              
                 }
          
             }

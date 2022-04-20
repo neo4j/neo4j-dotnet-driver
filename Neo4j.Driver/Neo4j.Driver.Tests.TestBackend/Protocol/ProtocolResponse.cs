@@ -1,45 +1,39 @@
 ﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
     internal class ProtocolResponse
     {
-        public string Name { get; }
-        public object Data { get; set; }
-       
+        public string name { get; }
+        public object data { get; set; }
+
         public class ResponseType
         {
-            public string Id { get; set; }
+            public string id { get; set; }
         }
 
         public ProtocolResponse(string newName, string newId)
         {
-            Data = new ResponseType();
-            Name = newName;
-            ((ResponseType)Data).Id = newId;
+            data = new ResponseType();
+            name = newName;
+            ((ResponseType)data).id = newId;
         }
 
         public ProtocolResponse(string newName, object dataType)
         {
-            Name = newName;
-            Data = dataType;
+            name = newName;
+            data = dataType;
         }
 
         public ProtocolResponse(string newName)
         {
-            Name = newName;
-            Data = null;
+            name = newName;
+            data = null;
         }
 
         public string Encode()
         {
-            return JsonConvert.SerializeObject(this, 
-                Formatting.None, 
-                new JsonSerializerSettings
-                {
-                    ContractResolver = new CamelCasePropertyNamesContractResolver()
-                });
+            return JsonConvert.SerializeObject(this);
         }
     }
 }
