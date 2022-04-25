@@ -147,8 +147,6 @@ namespace Neo4j.Driver.Internal.Result
                 await _advanceFunction().ConfigureAwait(false);
             }
 
-            _pendingError?.EnsureThrown();
-
             return _fields ?? new string[0];
         }
 

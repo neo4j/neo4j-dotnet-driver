@@ -14,6 +14,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 "AuthorizationExpiredTreatment",
                 "Detail:ClosedDriverIsEncrypted",
                 "Detail:DefaultSecurityConfigValueEquality",
+                "Detail:ThrowOnMissingId",
                 "Feature:API:ConnectionAcquisitionTimeout",
                 "Feature:API:Driver.IsEncrypted",
                 //"Feature:API:Liveness.Check",
@@ -30,7 +31,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 "Feature:Bolt:4.2",
                 "Feature:Bolt:4.3",
                 "Feature:Bolt:4.4",
-                "Feature:Bolt:5.0",                
+                "Feature:Bolt:5.0",
                 "Feature:Impersonation",
                 //"Feature:TLS:1.1",
                 "Feature:TLS:1.2",
@@ -39,17 +40,8 @@ namespace Neo4j.Driver.Tests.TestBackend
                 "Optimization:EagerTransactionBegin",
                 //"Optimization:ImplicitDefaultArguments",
                 //"Optimization:MinimalResets",
-                "Optimization:PullPipelining",
+                "Optimization:PullPipelining"
                 //"Optimization:ResultListFetchAll",
-                //"Temporary:CypherPathAndRelationship",
-                //"Temporary:DriverFetchSize",
-                "Temporary:DriverMaxConnectionPoolSize",
-                //"Temporary:DriverMaxTxRetryTime",
-                "Temporary:FastFailingDiscovery",
-                "Temporary:FullSummary",
-                //"Temporary:GetConnectionPoolMetrics",
-                //"Temporary:ResultKeys",
-                //"Temporary:TransactionClose"
             };
         }
     }

@@ -23,12 +23,47 @@ namespace Neo4j.Driver.Internal.Types
 {
     internal class Relationship : IRelationship
     {
+        private long _id = -1;
+        private long _startNodeId = -1;
+        private long _endNodeId = -1;
+        private readonly bool _throwOnIdRead = false;
+
+
         [Obsolete("Replaced by ElementId, Will be removed in 6.0")]
-        public long Id { get; } = -1;
+        public long Id
+        {
+            get
+            {
+                if (_throwOnIdRead)
+                    throw new InvalidOperationException("Id is not compatible with server. use ElementId");
+                return _id;
+            }
+            set => _id = value;
+        }
+
         [Obsolete("Replaced by StartNodeElementId, Will be removed in 6.0")]
-        public long StartNodeId { get; internal set; } = -1;
+        public long StartNodeId
+        {
+            get
+            {
+                if (_throwOnIdRead)
+                    throw new InvalidOperationException("StartNodeId is not compatible with server. use StartNodeElementId");
+                return _startNodeId;
+            }
+            internal set => _startNodeId = value;
+        }
+
         [Obsolete("Replaced by EndNodeElementId, Will be removed in 6.0")]
-        public long EndNodeId { get; internal set; } = -1;
+        public long EndNodeId
+        {
+            get
+            {
+                if (_throwOnIdRead)
+                    throw new InvalidOperationException("EndNodeId is not compatible with server. use EndNodeElementId");
+                return _endNodeId;
+            }
+            internal set => _endNodeId = value;
+        }
 
         public string Type { get; }
         
@@ -61,6 +96,8 @@ namespace Neo4j.Driver.Internal.Types
         public Relationship(string id, string startId, string endId, string relType,
             IReadOnlyDictionary<string, object> props)
         {
+            _throwOnIdRead = true;
+
             ElementId = id;
             StartNodeElementId = startId;
             EndNodeElementId = endId; 
@@ -109,8 +146,11 @@ namespace Neo4j.Driver.Internal.Types
 
         internal void SetStartAndEnd(INode start, INode end)
         {
-            StartNodeId = start.Id;
-            EndNodeId = end.Id;
+            if (!_throwOnIdRead)
+            {
+                StartNodeId = start.Id;
+                EndNodeId = end.Id;
+            }
             StartNodeElementId = start.ElementId;
             EndNodeElementId = end.ElementId;
         }

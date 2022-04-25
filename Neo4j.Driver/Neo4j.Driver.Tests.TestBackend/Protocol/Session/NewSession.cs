@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			public string database { get; set; }
 
 			[JsonProperty(Required = Required.AllowNull)]
-			public long fetchSize { get; set; } = 1000;
+			public long? fetchSize { get; set; }
 
 			[JsonProperty(Required = Required.AllowNull)]
 			public string impersonatedUser { get; set; }
@@ -65,7 +65,8 @@ namespace Neo4j.Driver.Tests.TestBackend
             if(!string.IsNullOrEmpty(data.database)) configBuilder.WithDatabase(data.database);            
             if(!string.IsNullOrEmpty(data.accessMode)) configBuilder.WithDefaultAccessMode(GetAccessMode);
             if(data.bookmarks.Count > 0) configBuilder.WithBookmarks(Bookmark.From(data.bookmarks.ToArray()));
-            configBuilder.WithFetchSize(data.fetchSize);
+            if(data.fetchSize.HasValue)
+                configBuilder.WithFetchSize(data.fetchSize.Value);
 			if (!string.IsNullOrEmpty(data.impersonatedUser)) configBuilder.WithImpersonatedUser(data.impersonatedUser);
         }
 
