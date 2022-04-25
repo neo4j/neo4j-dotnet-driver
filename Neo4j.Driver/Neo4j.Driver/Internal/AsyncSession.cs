@@ -45,6 +45,7 @@ namespace Neo4j.Driver.Internal
         private readonly ILogger _logger;
 
         public Bookmark LastBookmark => _bookmark;
+        public Bookmark LastBookmarks => _bookmark;
 
         private string _database;
         private readonly bool _reactive;

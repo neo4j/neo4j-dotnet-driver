@@ -64,5 +64,10 @@ namespace Neo4j.Driver
         }
         
         internal static readonly Bookmark Empty = new InternalBookmark();
+
+        public static Bookmark operator +(Bookmark lh, Bookmark rh)
+        {
+            return new InternalBookmark(lh.Values.Concat(rh.Values).ToArray());
+        }
     }
 }
