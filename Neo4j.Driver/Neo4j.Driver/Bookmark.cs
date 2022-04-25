@@ -109,14 +109,14 @@ namespace Neo4j.Driver
         internal static Bookmarks From(IEnumerable<Bookmarks> bookmarks)
         {
             if (bookmarks == null)
-            {
                 throw new ArgumentNullException(nameof(bookmarks));
-            }
 
-            return new InternalBookmarks(bookmarks
+            var uniqueValues = bookmarks
                 .SelectMany(b => b == null ? Array.Empty<string>() : b.Values)
                 .Distinct()
-                .ToArray());
+                .ToArray();
+
+            return new InternalBookmarks(uniqueValues);
         }
 
         internal new static Bookmarks Empty => new InternalBookmarks();
