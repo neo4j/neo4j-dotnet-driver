@@ -25,7 +25,6 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Tests;
 using Xunit;
-using Xunit.Abstractions;
 using static Microsoft.Reactive.Testing.ReactiveAssert;
 using static Neo4j.Driver.Tests.Assertions;
 
@@ -231,7 +230,7 @@ namespace Neo4j.Driver.Reactive.Internal
             }
         }
 
-        public class LastBookmark
+        public class LastBookmarks
         {
             [Fact]
             public void ShouldDelegateToAsyncSession()
@@ -241,10 +240,22 @@ namespace Neo4j.Driver.Reactive.Internal
 
                 var bookmark = rxSession.LastBookmarks;
 
+                asyncSession.Verify(x => x.LastBookmarks, Times.Once);
+            }
+        }
+        public class LastBookmark
+        {
+            [Fact]
+            public void ShouldDelegateToAsyncSession()
+            {
+                var asyncSession = new Mock<IInternalAsyncSession>();
+                var rxSession = new InternalRxSession(asyncSession.Object, Mock.Of<IRxRetryLogic>());
+
+                var bookmark = rxSession.LastBookmark;
+
                 asyncSession.Verify(x => x.LastBookmark, Times.Once);
             }
         }
-
         public class SessionConfig
         {
             [Fact]

@@ -15,25 +15,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Linq;
-using System.Reactive;
-using System.Reactive.Linq;
-using System.Threading.Tasks;
-using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Reactive;
-using Neo4j.Driver.Tests;
 using Xunit;
-using static Microsoft.Reactive.Testing.ReactiveAssert;
-using static Neo4j.Driver.Tests.Assertions;
 
 namespace Neo4j.Driver.Simple.Internal
 {
     public static class InternalSessionTests
     {
-        public class LastBookmark
+        public class LastBookmarks
         {
             [Fact]
             public void ShouldDelegateToAsyncSession()
@@ -44,10 +34,23 @@ namespace Neo4j.Driver.Simple.Internal
 
                 var bookmark = session.LastBookmarks;
 
+                asyncSession.Verify(x => x.LastBookmarks, Times.Once);
+            }
+        }
+        public class LastBookmark
+        {
+            [Fact]
+            public void ShouldDelegateToAsyncSession()
+            {
+                var asyncSession = new Mock<IInternalAsyncSession>();
+                var session = new InternalSession(asyncSession.Object, Mock.Of<IRetryLogic>(),
+                    Mock.Of<BlockingExecutor>());
+
+                var bookmark = session.LastBookmark;
+
                 asyncSession.Verify(x => x.LastBookmark, Times.Once);
             }
         }
-
         public class SessionConfig
         {
             [Fact]
