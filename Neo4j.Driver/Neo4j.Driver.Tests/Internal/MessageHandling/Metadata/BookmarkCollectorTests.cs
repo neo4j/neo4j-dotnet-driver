@@ -24,12 +24,12 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
     public class BookmarkCollectorTests
     {
-        private const string Key = BookmarkCollector.BookmarkKey;
+        private const string Key = BookmarksCollector.BookmarkKey;
 
         [Fact]
         public void ShouldNotCollectIfMetadataIsNull()
         {
-            var collector = new BookmarkCollector();
+            var collector = new BookmarksCollector();
 
             collector.Collect(null);
 
@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         [Fact]
         public void ShouldNotCollectIfNoValueIsGiven()
         {
-            var collector = new BookmarkCollector();
+            var collector = new BookmarksCollector();
 
             collector.Collect(new Dictionary<string, object>());
 
@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         public void ShouldThrowIfValueIsOfWrongType()
         {
             var metadata = new Dictionary<string, object> {{Key, true}};
-            var collector = new BookmarkCollector();
+            var collector = new BookmarksCollector();
 
             var ex = Record.Exception(() => collector.Collect(metadata));
 
@@ -63,11 +63,11 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         {
             var bookmarkStr = "bookmark-455";
             var metadata = new Dictionary<string, object> {{Key, bookmarkStr}};
-            var collector = new BookmarkCollector();
+            var collector = new BookmarksCollector();
 
             collector.Collect(metadata);
 
-            collector.Collected.Should().BeEquivalentTo(Bookmark.From(bookmarkStr));
+            collector.Collected.Should().BeEquivalentTo(Bookmarks.From(bookmarkStr));
         }
 
         [Fact]
@@ -75,7 +75,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         {
             var bookmarkStr = "bookmark-455";
             var metadata = new Dictionary<string, object> {{Key, bookmarkStr}};
-            var collector = new BookmarkCollector();
+            var collector = new BookmarksCollector();
 
             collector.Collect(metadata);
 
@@ -85,6 +85,6 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         internal static KeyValuePair<string, object> TestMetadata =>
             new KeyValuePair<string, object>(Key, "bookmark-455");
 
-        internal static Bookmark TestMetadataCollected => Bookmark.From((string) TestMetadata.Value);
+        internal static Bookmarks TestMetadataCollected => Bookmarks.From((string) TestMetadata.Value);
     }
 }

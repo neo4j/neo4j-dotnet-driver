@@ -27,16 +27,16 @@ namespace Neo4j.Driver.Internal.MessageHandling.V3
     {
         private readonly IResultStreamBuilder _streamBuilder;
         private readonly SummaryBuilder _summaryBuilder;
-        private readonly IBookmarkTracker _bookmarkTracker;
+        private readonly IBookmarksTracker _bookmarksTracker;
 
         public PullResponseHandler(IResultStreamBuilder streamBuilder, SummaryBuilder summaryBuilder,
-            IBookmarkTracker bookmarkTracker)
+            IBookmarksTracker bookmarksTracker)
         {
             _streamBuilder = streamBuilder ?? throw new ArgumentNullException(nameof(streamBuilder));
             _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
-            _bookmarkTracker = bookmarkTracker;
+            _bookmarksTracker = bookmarksTracker;
 
-            AddMetadata<BookmarkCollector, Bookmark>();
+            AddMetadata<BookmarksCollector, Bookmarks>();
             AddMetadata<TimeToLastCollector, long>();
             AddMetadata<TypeCollector, QueryType>();
             AddMetadata<CountersCollector, ICounters>();
@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V3
         {
             base.OnSuccess(metadata);
 
-            _bookmarkTracker?.UpdateBookmark(GetMetadata<BookmarkCollector, Bookmark>());
+            _bookmarksTracker?.UpdateBookmarks(GetMetadata<BookmarksCollector, Bookmarks>());
 
             _summaryBuilder.ResultConsumedAfter = GetMetadata<TimeToLastCollector, long>();
             _summaryBuilder.Counters = GetMetadata<CountersCollector, ICounters>();

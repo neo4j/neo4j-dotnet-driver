@@ -41,21 +41,22 @@ namespace Neo4j.Driver.Internal
         private bool _isOpen = true;
         private bool _disposed = false;
 
-        private Bookmark _bookmark;
+        private Bookmarks _bookmarks;
+
         private readonly ILogger _logger;
 
-        public Bookmark LastBookmark => _bookmark;
-        public Bookmark LastBookmarks => _bookmark;
+        [Obsolete("Replaced by more sensibly named LastBookmarks. Will be removed in 6.0")]
+        public Bookmark LastBookmark => _bookmarks;
+        public Bookmarks LastBookmarks => _bookmarks;
 
         private string _database;
         private readonly bool _reactive;
         private readonly long _fetchSize;
-        
 
         public AsyncSession(IConnectionProvider provider, ILogger logger, IAsyncRetryLogic retryLogic = null,
             AccessMode defaultMode = AccessMode.Write,
             string database = null,
-            Bookmark bookmark = null, bool reactive = false, long fetchSize = Config.Infinite)
+            Bookmark bookmarks = null, bool reactive = false, long fetchSize = Config.Infinite)
         {
             _connectionProvider = provider;
             _logger = logger;
@@ -65,7 +66,7 @@ namespace Neo4j.Driver.Internal
             _database = database;
             _defaultMode = defaultMode;
             _fetchSize = fetchSize;
-            UpdateBookmark(bookmark);
+            UpdateBookmarks(bookmarks == null ? null : new InternalBookmarks(bookmarks.Values));
         }
 
         public Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action)
@@ -132,7 +133,7 @@ namespace Neo4j.Driver.Internal
 
                 return await protocol
                     .RunInAutoCommitTransactionAsync(_connection, query, _reactive, this, this, _database,
-                        _bookmark, options, ImpersonatedUser(), _fetchSize)
+                        _bookmarks, options, ImpersonatedUser(), _fetchSize)
                     .ConfigureAwait(false);
             });
 
@@ -227,7 +228,7 @@ namespace Neo4j.Driver.Internal
 
             await AcquireConnectionAndDBName(mode);
 
-            var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmark, _reactive, _fetchSize, ImpersonatedUser());
+            var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmarks, _reactive, _fetchSize, ImpersonatedUser());
             await tx.BeginTransactionAsync(config).ConfigureAwait(false);
             _transaction = tx;
             return _transaction;
@@ -235,7 +236,7 @@ namespace Neo4j.Driver.Internal
 
         private async Task AcquireConnectionAndDBName(AccessMode mode)
         {
-            _connection = await _connectionProvider.AcquireAsync(mode, _database, ImpersonatedUser(), _bookmark).ConfigureAwait(false);
+            _connection = await _connectionProvider.AcquireAsync(mode, _database, ImpersonatedUser(), _bookmarks).ConfigureAwait(false);
 
             //Update the database. If a routing request occured it may have returned a differing DB alias name that needs to be used for the 
             //rest of the sessions lifetime.

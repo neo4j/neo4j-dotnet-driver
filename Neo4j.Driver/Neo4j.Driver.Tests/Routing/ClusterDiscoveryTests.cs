@@ -72,7 +72,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var manager = new ClusterDiscovery(routingContext, null);
 
                 // When
-                var table = await manager.DiscoverAsync(mockConn.Object, null, null, Bookmark.Empty);
+                var table = await manager.DiscoverAsync(mockConn.Object, null, null, Bookmarks.Empty);
 
                 // Then
                 table.Readers.Count().Should().Be(readerCount);
@@ -104,12 +104,12 @@ namespace Neo4j.Driver.Tests.Routing
                     {"color", "white"}
                 };
                 var recordFields = CreateGetServersResponseRecordFields(routerCount, writerCount, readerCount);
-                var mockConn = Setup40SocketConnection(routingContext, database, Bookmark.From(bookmarks), recordFields);
+                var mockConn = Setup40SocketConnection(routingContext, database, Bookmarks.From(bookmarks), recordFields);
                 mockConn.Setup(m => m.RoutingContext).Returns(routingContext);
                 var manager = new ClusterDiscovery(routingContext, null);
 
                 // When
-                var table = await manager.DiscoverAsync(mockConn.Object, database, null, Bookmark.From(bookmarks));
+                var table = await manager.DiscoverAsync(mockConn.Object, database, null, Bookmarks.From(bookmarks));
 
                 // Then
                 table.Database.Should().Be(database ?? "");
@@ -142,12 +142,12 @@ namespace Neo4j.Driver.Tests.Routing
                     {"policy", "myp_policy"}
                 };
                 var recordFields = CreateGetServersDictionary(routerCount, writerCount, readerCount);
-                var mockConn = Setup43SocketConnection(routingContext, database, Bookmark.From(bookmarks), recordFields);
+                var mockConn = Setup43SocketConnection(routingContext, database, Bookmarks.From(bookmarks), recordFields);
                 mockConn.Setup(m => m.RoutingContext).Returns(routingContext);
                 var manager = new ClusterDiscovery(routingContext, null);
 
                 // When
-                var table = await manager.DiscoverAsync(mockConn.Object, database, null, Bookmark.From(bookmarks));
+                var table = await manager.DiscoverAsync(mockConn.Object, database, null, Bookmarks.From(bookmarks));
 
                 // Then
                 table.Database.Should().Be(database ?? "");
@@ -175,7 +175,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var manager = new ClusterDiscovery(null, null);
 
                 // When & Then
-                manager.Awaiting(m => m.DiscoverAsync(connMock.Object, null, null, Bookmark.Empty)).Should()
+                manager.Awaiting(m => m.DiscoverAsync(connMock.Object, null, null, Bookmarks.Empty)).Should()
                     .Throw<ClientException>().WithMessage("*not found*");
                 connMock.Verify(x => x.CloseAsync(), Times.Once);
             }
@@ -297,7 +297,7 @@ namespace Neo4j.Driver.Tests.Routing
             return new MockedConnection(AccessMode.Write, pairs, serverInfo).MockConn;
         }
 
-        internal static Mock<IConnection> Setup40SocketConnection(IDictionary<string, string> routingContext, string database, Bookmark bookmark, object[] recordFields)
+        internal static Mock<IConnection> Setup40SocketConnection(IDictionary<string, string> routingContext, string database, Bookmarks bookmark, object[] recordFields)
         {
             var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
             {
@@ -319,7 +319,7 @@ namespace Neo4j.Driver.Tests.Routing
             return new MockedConnection(AccessMode.Read, pairs, serverInfo).MockConn;
         }
 
-        internal static Mock<IConnection> Setup43SocketConnection(IDictionary<string, string> routingContext, string database, Bookmark bookmark, Dictionary<string, object> recordFields)
+        internal static Mock<IConnection> Setup43SocketConnection(IDictionary<string, string> routingContext, string database, Bookmarks bookmark, Dictionary<string, object> recordFields)
         {
             var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
             {

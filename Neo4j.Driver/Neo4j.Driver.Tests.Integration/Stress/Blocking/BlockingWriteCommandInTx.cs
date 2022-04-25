@@ -48,7 +48,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                         txc.Commit();
                     }
 
-                    context.Bookmark = session.LastBookmark;
+                    context.Bookmarks = session.LastBookmarks;
                 }
             }
             catch (Exception exc)

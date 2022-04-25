@@ -44,9 +44,9 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                 var cursor = await session.RunAsync("CREATE ()");
                 summary = await cursor.ConsumeAsync();
 
-                if (session.LastBookmark != null)
+                if (session.LastBookmarks != null)
                 {
-                    context.Bookmark = session.LastBookmark;
+                    context.Bookmarks = session.LastBookmarks;
                 }
             }
             catch (Exception exc)

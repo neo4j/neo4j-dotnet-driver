@@ -24,20 +24,20 @@ namespace Neo4j.Driver.Internal.MessageHandling.V3
 {
     internal class CommitResponseHandler : MetadataCollectingResponseHandler
     {
-        private readonly IBookmarkTracker _tracker;
+        private readonly IBookmarksTracker _tracker;
 
-        public CommitResponseHandler(IBookmarkTracker tracker)
+        public CommitResponseHandler(IBookmarksTracker tracker)
         {
             _tracker = tracker ?? throw new ArgumentNullException(nameof(tracker));
 
-            AddMetadata<BookmarkCollector, Bookmark>();
+            AddMetadata<BookmarksCollector, Bookmarks>();
         }
 
         public override void OnSuccess(IDictionary<string, object> metadata)
         {
             base.OnSuccess(metadata);
 
-            _tracker.UpdateBookmark(GetMetadata<BookmarkCollector, Bookmark>());
+            _tracker.UpdateBookmarks(GetMetadata<BookmarksCollector, Bookmarks>());
         }
     }
 }

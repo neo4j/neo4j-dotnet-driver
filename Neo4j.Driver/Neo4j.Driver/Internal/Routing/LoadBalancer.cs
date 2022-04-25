@@ -78,12 +78,12 @@ namespace Neo4j.Driver.Internal.Routing
 
         private bool IsClosed => _closedMarker > 0;
 
-        public async Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark)
+        public async Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmarks bookmarks)
         {
             if (IsClosed)
                 throw GetDriverDisposedException(nameof(LoadBalancer));
 
-            var conn = await AcquireConnectionAsync(mode, database, impersonatedUser, bookmark).ConfigureAwait(false);
+            var conn = await AcquireConnectionAsync(mode, database, impersonatedUser, bookmarks).ConfigureAwait(false);
 
             if (IsClosed)
                 throw GetDriverDisposedException(nameof(LoadBalancer));
@@ -115,7 +115,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         public Task<IConnection> CreateClusterConnectionAsync(Uri uri)
         {
-            return CreateClusterConnectionAsync(uri, AccessMode.Write, null, null, Bookmark.Empty);
+            return CreateClusterConnectionAsync(uri, AccessMode.Write, null, null, Bookmarks.Empty);
         }
 
         public Task CloseAsync()
@@ -136,7 +136,7 @@ namespace Neo4j.Driver.Internal.Routing
             {
                 var database = await SupportsMultiDbAsync().ConfigureAwait(false) ? "system" : null;
                 await _routingTableManager.EnsureRoutingTableForModeAsync(Simple.Mode, database, null,
-                    Simple.Bookmark).ConfigureAwait(false);
+                    Simple.Bookmarks).ConfigureAwait(false);
             }
             catch (ServiceUnavailableException e)
             {
@@ -156,7 +156,7 @@ namespace Neo4j.Driver.Internal.Routing
                 try
                 {
                     var connection = await CreateClusterConnectionAsync(uri, Simple.Mode, Simple.Database, null,
-                        Simple.Bookmark).ConfigureAwait(false);
+                        Simple.Bookmarks).ConfigureAwait(false);
                     var multiDb = connection.SupportsMultidatabase();
                     await connection.CloseAsync().ConfigureAwait(false);
                     return multiDb;
@@ -181,9 +181,9 @@ namespace Neo4j.Driver.Internal.Routing
             return _routingTableManager.RoutingTableFor(database);
         }
 
-        private async Task<IConnection> AcquireConnectionAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark)
+        private async Task<IConnection> AcquireConnectionAsync(AccessMode mode, string database, string impersonatedUser, Bookmarks bookmarks)
         {
-            var routingTable = await _routingTableManager.EnsureRoutingTableForModeAsync(mode, database, impersonatedUser, bookmark)
+            var routingTable = await _routingTableManager.EnsureRoutingTableForModeAsync(mode, database, impersonatedUser, bookmarks)
                 .ConfigureAwait(false);
 
             while (true)
@@ -209,7 +209,7 @@ namespace Neo4j.Driver.Internal.Routing
                 }
 
                 var conn =
-                    await CreateClusterConnectionAsync(uri, mode, routingTable.Database, impersonatedUser, bookmark).ConfigureAwait(false);
+                    await CreateClusterConnectionAsync(uri, mode, routingTable.Database, impersonatedUser, bookmarks).ConfigureAwait(false);
 
                 if (conn != null)
                 {
@@ -223,11 +223,11 @@ namespace Neo4j.Driver.Internal.Routing
         }
 
         private async Task<IConnection> CreateClusterConnectionAsync(Uri uri, AccessMode mode, string database, 
-            string impersonatedUser, Bookmark bookmark)
+            string impersonatedUser, Bookmarks bookmarks)
         {
             try
             {
-                var conn = await _clusterConnectionPool.AcquireAsync(uri, mode, database, impersonatedUser, bookmark)
+                var conn = await _clusterConnectionPool.AcquireAsync(uri, mode, database, impersonatedUser, bookmarks)
                     .ConfigureAwait(false);
                 if (conn != null)
                 {

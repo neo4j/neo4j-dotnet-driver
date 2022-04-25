@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Simple.Internal
                 var session = new InternalSession(asyncSession.Object, Mock.Of<IRetryLogic>(),
                     Mock.Of<BlockingExecutor>());
 
-                var bookmark = session.LastBookmark;
+                var bookmark = session.LastBookmarks;
 
                 asyncSession.Verify(x => x.LastBookmark, Times.Once);
             }

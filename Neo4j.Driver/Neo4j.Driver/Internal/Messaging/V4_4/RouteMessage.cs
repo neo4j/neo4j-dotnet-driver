@@ -25,15 +25,15 @@ namespace Neo4j.Driver.Internal.Messaging.V4_4
 		private const string ImpersonatedUserKey = "imp_user";
 
 		public IDictionary<string, string> Routing { get; }
-		public Bookmark Bookmark { get; }
+		public Bookmarks Bookmarks { get; }
 
 		public IDictionary<string, string> DatabaseContext { get; }
 
 
-		public RouteMessage(IDictionary<string, string> routingContext, Bookmark bookmark, string databaseName, string impersonatedUser)
+		public RouteMessage(IDictionary<string, string> routingContext, Bookmarks bookmarks, string databaseName, string impersonatedUser)
 		{
 			Routing = routingContext ?? new Dictionary<string, string>();
-			Bookmark = bookmark ?? Bookmark.From(Array.Empty<string>());
+			Bookmarks = bookmarks ?? Bookmarks.From(Array.Empty<string>());
 			DatabaseContext = new Dictionary<string, string>();
 
 			if(!string.IsNullOrEmpty(databaseName)) DatabaseContext.Add(DBNameKey, databaseName);
@@ -51,8 +51,8 @@ namespace Neo4j.Driver.Internal.Messaging.V4_4
 
 			message += " } ";
 
-			message += (Bookmark is not null && Bookmark.Values.Length > 0)
-				? "{ bookmarks, " + Bookmark.Values.ToContentString() + " }"
+			message += (Bookmarks is not null && Bookmarks.Values.Length > 0)
+				? "{ bookmarks, " + Bookmarks.Values.ToContentString() + " }"
 				: Array.Empty<string>().ToContentString();
 
 			message += " {";

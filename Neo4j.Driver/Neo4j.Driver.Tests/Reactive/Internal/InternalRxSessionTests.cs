@@ -239,7 +239,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 var asyncSession = new Mock<IInternalAsyncSession>();
                 var rxSession = new InternalRxSession(asyncSession.Object, Mock.Of<IRxRetryLogic>());
 
-                var bookmark = rxSession.LastBookmark;
+                var bookmark = rxSession.LastBookmarks;
 
                 asyncSession.Verify(x => x.LastBookmark, Times.Once);
             }

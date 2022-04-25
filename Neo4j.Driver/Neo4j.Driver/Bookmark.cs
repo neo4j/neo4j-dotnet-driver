@@ -23,23 +23,24 @@ using Neo4j.Driver.Internal;
 namespace Neo4j.Driver
 {
     /// <summary>
-    ///  Identifies a point in the transactional history of the database.
+    ///  Identifies a point in the transactional history of the database.<br/><br/>
     /// 
     ///  When working with a casual cluster, transactions can be chained to ensure causal consistency. Causal chaining is
-    ///  carried out by passing bookmarks between transactions. When a session is constructed with an initial bookmarks, the
+    ///  carried out by passing bookmarks between transactions.<br/> When a session is constructed with an initial bookmarks, the
     ///  first transaction (either auto-commit or explicit) will be blocked until the server has fast forwarded to catchup
-    ///  with the latest of the provided initial bookmarks.
+    ///  with the latest of the provided initial bookmarks.<br/>
     /// 
     ///  Within a session, bookmark propagation is carried out automatically and does not require any explicit signal or
-    ///  setting from the application. To opt out of this mechanism for unrelated units of work, applications can use
+    ///  setting from the application.<br/> To opt out of this mechanism for unrelated units of work, applications can use
     ///  multiple sessions.
     /// </summary>
+    [Obsolete("Replaced with Bookmarks. Will be removed in 6.0")]
     public abstract class Bookmark
     {
         /// <summary>
         /// Returns a list of bookmark strings that this bookmark instance identifies.
         /// </summary>
-        public abstract string[] Values { get; }
+        public string[] Values { get; protected set; }
 
         /// <summary>
         /// Returns a new bookmark instance constructed from the provided list of bookmark strings.
@@ -48,7 +49,7 @@ namespace Neo4j.Driver
         /// <returns>A new bookmark instance</returns>
         public static Bookmark From(params string[] values)
         {
-            return new InternalBookmark(values);
+            return new InternalBookmarks(values);
         }
 
         internal static Bookmark From(IEnumerable<Bookmark> bookmarks)
@@ -58,16 +59,66 @@ namespace Neo4j.Driver
                 throw new ArgumentNullException(nameof(bookmarks));
             }
 
-            return new InternalBookmark(bookmarks.SelectMany(b => b == null ? Array.Empty<string>() : b.Values)
+            return new InternalBookmarks(bookmarks.SelectMany(b => b == null ? Array.Empty<string>() : b.Values)
                 .Distinct()
                 .ToArray());
         }
         
-        internal static readonly Bookmark Empty = new InternalBookmark();
+        internal static readonly Bookmark Empty = new InternalBookmarks();
 
         public static Bookmark operator +(Bookmark lh, Bookmark rh)
         {
-            return new InternalBookmark(lh.Values.Concat(rh.Values).ToArray());
+            return new InternalBookmarks(lh.Values.Concat(rh.Values).ToArray());
         }
+    }
+
+    /// <summary>
+    ///  Identifies a point in the transactional history of the database.<br/><br/>
+    /// 
+    ///  When working with a casual cluster, transactions can be chained to ensure causal consistency. Causal chaining is
+    ///  carried out by passing bookmarks between transactions.<br/> When a session is constructed with an initial bookmarks, the
+    ///  first transaction (either auto-commit or explicit) will be blocked until the server has fast forwarded to catchup
+    ///  with the latest of the provided initial bookmarks.<br/>
+    /// 
+    ///  Within a session, bookmarks propagation is carried out automatically and does not require any explicit signal or
+    ///  setting from the application.<br/> To opt out of this mechanism for unrelated units of work, applications can use
+    ///  multiple sessions.
+    /// </summary>
+    public abstract class Bookmarks : Bookmark
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="lh"></param>
+        /// <param name="rh"></param>
+        /// <returns></returns>
+        public static Bookmarks operator +(Bookmarks lh, Bookmarks rh)
+        {
+            return new InternalBookmarks(lh.Values.Concat(rh.Values).ToArray());
+        }
+        /// <summary>
+        /// Returns a new bookmark instance constructed from the provided list of bookmark strings.
+        /// </summary>
+        /// <param name="values">The bookmark strings to construct from</param>
+        /// <returns>A new bookmark instance</returns>
+        public static Bookmarks From(params string[] values)
+        {
+            return new InternalBookmarks(values);
+        }
+
+        internal static Bookmarks From(IEnumerable<Bookmarks> bookmarks)
+        {
+            if (bookmarks == null)
+            {
+                throw new ArgumentNullException(nameof(bookmarks));
+            }
+
+            return new InternalBookmarks(bookmarks
+                .SelectMany(b => b == null ? Array.Empty<string>() : b.Values)
+                .Distinct()
+                .ToArray());
+        }
+
+        internal new static Bookmarks Empty => new InternalBookmarks();
     }
 }
