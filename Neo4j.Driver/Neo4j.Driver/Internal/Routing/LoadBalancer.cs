@@ -129,20 +129,20 @@ namespace Neo4j.Driver.Internal.Routing
         
         public async Task<IServerInfo> VerifyConnectivityAndGetInfoAsync()
         {
-            var supportsMultiDb = await SupportsMultiDbAsync().ConfigureAwait(false);
-            var database = supportsMultiDb ? "system" : null;
-            foreach (var uri in _initialServerAddressProvider.Get())
+            try
             {
-                try
+                var supportsMultiDb = await SupportsMultiDbAsync().ConfigureAwait(false);
+                var database = supportsMultiDb ? "system" : null;
+                foreach (var uri in _initialServerAddressProvider.Get())
                 {
                     return await _routingTableManager.GetServerInfoAsync(uri, database).ConfigureAwait(false);
                 }
-                catch (ServiceUnavailableException e)
-                {
-                    throw new ServiceUnavailableException(
-                        "Unable to connect to database, " +
-                        "ensure the database is running and that there is a working network connection to it.", e);
-                }
+            }
+            catch (ServiceUnavailableException e)
+            {
+                throw new ServiceUnavailableException(
+                    "Unable to connect to database, " +
+                    "ensure the database is running and that there is a working network connection to it.", e);
             }
 
             throw new ServiceUnavailableException(
