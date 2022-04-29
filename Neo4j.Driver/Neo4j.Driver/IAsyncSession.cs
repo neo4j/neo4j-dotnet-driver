@@ -65,21 +65,6 @@ namespace Neo4j.Driver
         Task<IAsyncTransaction> BeginTransactionAsync(Action<TransactionConfigBuilder> action);
 
         /// <summary>
-        /// Asynchronously execute given unit of work in a <see cref="AccessMode.Read"/> transaction.
-        /// </summary>
-        /// <typeparam name="T">The return type of the given unit of work.</typeparam>
-        /// <param name="work">The <see cref="Func{ITransactionAsync, T}"/> to be applied to a new read transaction.</param>
-        /// <returns>A task of a result as returned by the given unit of work.</returns>
-        Task<T> ReadTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work);
-
-        /// <summary>
-        /// Asynchronously execute given unit of work in a <see cref="AccessMode.Read"/> transaction.
-        /// </summary>
-        /// <param name="work">The <see cref="Func{ITransactionAsync, Task}"/> to be applied to a new read transaction.</param>
-        /// <returns>A task representing the completion of the transactional read operation enclosing the given unit of work.</returns>
-        Task ReadTransactionAsync(Func<IAsyncTransaction, Task> work);
-
-        /// <summary>
         /// Asynchronously execute given unit of work in a <see cref="AccessMode.Read"/> transaction with a specific <see cref="TransactionConfig"/>.
         /// </summary>
         /// <typeparam name="T">The return type of the given unit of work.</typeparam>
@@ -87,7 +72,9 @@ namespace Neo4j.Driver
         /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.
         /// This configuration overrides server side default transaction configurations. See <see cref="TransactionConfig"/></param>
         /// <returns>A task of a result as returned by the given unit of work.</returns>
-        Task<T> ReadTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work, Action<TransactionConfigBuilder> action);
+        [Obsolete("Deprecated, Use ExecuteAsync. Will be removed in 6.0.")]
+        Task<T> ReadTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work,
+            Action<TransactionConfigBuilder> action = null);
 
         /// <summary>
         /// Asynchronously execute given unit of work in a <see cref="AccessMode.Read"/> transaction with a specific <see cref="TransactionConfig"/>.
@@ -96,22 +83,8 @@ namespace Neo4j.Driver
         /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.
         /// This configuration overrides server side default transaction configurations. See <see cref="TransactionConfig"/></param>
         /// <returns>A task representing the completion of the transactional read operation enclosing the given unit of work.</returns>
-        Task ReadTransactionAsync(Func<IAsyncTransaction, Task> work, Action<TransactionConfigBuilder> action);
-
-        /// <summary>
-        ///  Asynchronously execute given unit of work in a <see cref="AccessMode.Write"/> transaction.
-        /// </summary>
-        /// <typeparam name="T">The return type of the given unit of work.</typeparam>
-        /// <param name="work">The <see cref="Func{ITransactionAsync, T}"/> to be applied to a new write transaction.</param>
-        /// <returns>A task of a result as returned by the given unit of work.</returns>
-        Task<T> WriteTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work);
-
-        /// <summary>
-        ///  Asynchronously execute given unit of work in a <see cref="AccessMode.Write"/> transaction.
-        /// </summary>
-        /// <param name="work">The <see cref="Func{ITransactionAsync, Task}"/> to be applied to a new write transaction.</param>
-        /// <returns>A task representing the completion of the transactional write operation enclosing the given unit of work.</returns>
-        Task WriteTransactionAsync(Func<IAsyncTransaction, Task> work);
+        [Obsolete("Deprecated, Use ExecuteAsync. Will be removed in 6.0.")]
+        Task ReadTransactionAsync(Func<IAsyncTransaction, Task> work, Action<TransactionConfigBuilder> action = null);
 
         /// <summary>
         ///  Asynchronously execute given unit of work in a <see cref="AccessMode.Write"/> transaction with a specific <see cref="TransactionConfig"/>.
@@ -121,7 +94,8 @@ namespace Neo4j.Driver
         /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.
         /// This configuration overrides server side default transaction configurations. See <see cref="TransactionConfig"/></param>
         /// <returns>A task of a result as returned by the given unit of work.</returns>
-        Task<T> WriteTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work, Action<TransactionConfigBuilder> action);
+        [Obsolete("Deprecated, Use ExecuteAsync. Will be removed in 6.0.")]
+        Task<T> WriteTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work, Action<TransactionConfigBuilder> action = null);
 
         /// <summary>
         ///  Asynchronously execute given unit of work in a <see cref="AccessMode.Write"/> transaction with a specific <see cref="TransactionConfig"/>.
@@ -130,7 +104,28 @@ namespace Neo4j.Driver
         /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.
         /// This configuration overrides server side default transaction configurations. See <see cref="TransactionConfig"/></param>
         /// <returns>A task representing the completion of the transactional write operation enclosing the given unit of work.</returns>
-        Task WriteTransactionAsync(Func<IAsyncTransaction, Task> work, Action<TransactionConfigBuilder> action);
+        [Obsolete("Deprecated, Use ExecuteAsync. Will be removed in 6.0.")]
+        Task WriteTransactionAsync(Func<IAsyncTransaction, Task> work, Action<TransactionConfigBuilder> action = null);
+
+        /// <summary>
+        /// Asynchronously execute given unit of work as a transaction with a specific <see cref="TransactionConfig"/>.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="work"></param>
+        /// <param name="mode"></param>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        Task<T> ExecuteAsync<T>(Func<IAsyncQueryRunner, Task<T>> work, AccessMode mode = AccessMode.Read, Action<TransactionConfigBuilder> action = null);
+
+        /// <summary>
+        /// Asynchronously execute given unit of work as a transaction with a specific <see cref="TransactionConfig"/>.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="work"></param>
+        /// <param name="mode"></param>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        Task ExecuteAsync(Func<IAsyncQueryRunner, Task> work, AccessMode mode = AccessMode.Read, Action<TransactionConfigBuilder> action = null);
 
         /// <summary>
         /// Close all resources used in this Session. If any transaction is left open in this session without commit or rollback,
@@ -158,7 +153,7 @@ namespace Neo4j.Driver
         /// <param name="query">A Cypher query.</param>
         /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.</param>
         /// <returns>A task of a stream of result values and associated metadata.</returns>
-        Task<IResultCursor> RunAsync(string query, Action<TransactionConfigBuilder> action);
+        Task<IResultCursor> RunAsync(string query, Action<TransactionConfigBuilder> action = null);
 
         /// <summary>
         /// 
@@ -175,7 +170,7 @@ namespace Neo4j.Driver
         /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.</param>
         /// <returns>A task of a stream of result values and associated metadata.</returns>
         Task<IResultCursor> RunAsync(string query, IDictionary<string, object> parameters,
-            Action<TransactionConfigBuilder> action);
+            Action<TransactionConfigBuilder> action = null);
 
         /// <summary>
         ///
@@ -186,7 +181,7 @@ namespace Neo4j.Driver
         /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new transaction.
         /// </param>
         /// <returns>A task of a stream of result values and associated metadata.</returns>
-        Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action);
+        Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action = null);
 
         /// <summary>
         /// Gets the session configurations back

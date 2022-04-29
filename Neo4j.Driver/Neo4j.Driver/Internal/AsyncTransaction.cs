@@ -229,20 +229,20 @@ namespace Neo4j.Driver.Internal
                 long fetchSize,
                 out IState nextState)
             {
-                throw new ClientException(
+                throw new TransactionClosedException(
                     "Cannot run query in this transaction, because it has already been committed.");
             }
 
             public Task CommitAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
                 out IState nextState)
             {
-                throw new ClientException("Cannot commit this transaction, because it has already been committed.");
+                throw new TransactionClosedException("Cannot commit this transaction, because it has already been committed.");
             }
 
             public Task RollbackAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
                 out IState nextState)
             {
-                throw new ClientException("Cannot rollback this transaction, because it has already been committed.");
+                throw new TransactionClosedException("Cannot rollback this transaction, because it has already been committed.");
             }
         }
 
@@ -253,20 +253,20 @@ namespace Neo4j.Driver.Internal
                 long fetchSize,
                 out IState nextState)
             {
-                throw new ClientException(
+                throw new TransactionClosedException(
                     "Cannot run query in this transaction, because it has already been rolled back.");
             }
 
             public Task CommitAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
                 out IState nextState)
             {
-                throw new ClientException("Cannot commit this transaction, because it has already been rolled back.");
+                throw new TransactionClosedException("Cannot commit this transaction, because it has already been rolled back.");
             }
 
             public Task RollbackAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
                 out IState nextState)
             {
-                throw new ClientException("Cannot rollback this transaction, because it has already been rolled back.");
+                throw new TransactionClosedException("Cannot rollback this transaction, because it has already been rolled back.");
             }
         }
 
@@ -277,14 +277,14 @@ namespace Neo4j.Driver.Internal
                 long fetchSize,
                 out IState nextState)
             {
-                throw new ClientException(
+                throw new TransactionClosedException(
                     "Cannot run query in this transaction, because it has been rolled back either because of an error or explicit termination.");
             }
 
             public Task CommitAsync(IConnection connection, IBoltProtocol protocol, IBookmarkTracker tracker,
                 out IState nextState)
             {
-                throw new ClientException(
+                throw new TransactionClosedException(
                     "Cannot commit this transaction, because it has been rolled back either because of an error or explicit termination.");
             }
 

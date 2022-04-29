@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
 			var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
 
-			if(sessionContainer.RetryState == NewSession.SessionState.RetryAbleNothing)
+			if (sessionContainer.RetryState == NewSession.SessionState.RetryAbleNothing)
 				throw new ArgumentException("Should never hit this code with a RetryAbleNothing");
 
 			else if(sessionContainer.RetryState == NewSession.SessionState.RetryAbleNegative)

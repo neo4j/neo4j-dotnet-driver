@@ -17,6 +17,7 @@
 
 using System;
 using System.Runtime.Serialization;
+using System.Transactions;
 
 namespace Neo4j.Driver
 {
@@ -542,4 +543,11 @@ namespace Neo4j.Driver
         }
     }
 
+    [DataContract]
+    public class TransactionClosedException : ClientException
+    {
+        public TransactionClosedException(string message) : base(message)
+        {
+        }
+    }
 }
