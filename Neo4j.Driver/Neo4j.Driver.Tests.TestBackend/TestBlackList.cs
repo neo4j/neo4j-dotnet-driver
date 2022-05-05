@@ -108,8 +108,9 @@ namespace Neo4j.Driver.Tests.TestBackend
 				"Driver (still) allows explicit managing of managed transaction"),
 
             ("test_summary.TestSummary.test_protocol_version_information", "Server not responding with 5.0"),
-            ("test_iteration_tx_run.TestIterationTxRun.test_nested", "Unpredictable result")
-        };
+
+            ("stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_nested", "Requires further investigation")
+		};
 
 		public static bool FindTest(string testName, out string reason)
 		{

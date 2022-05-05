@@ -18,14 +18,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver;
-using Neo4j.Driver.Internal.Protocol;
-using Neo4j.Driver.Internal.Util;
 using static Neo4j.Driver.Internal.Throw.ObjectDisposedException;
 using static Neo4j.Driver.Internal.Util.ConnectionContext;
 
@@ -34,12 +30,12 @@ namespace Neo4j.Driver.Internal.Routing
     internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnectionPoolManager
     {
         private readonly IRoutingTableManager _routingTableManager;
+        private readonly IInitialServerAddressProvider _initialServerAddressProvider;
         private readonly ILoadBalancingStrategy _loadBalancingStrategy;
         private readonly IClusterConnectionPool _clusterConnectionPool;
         private readonly ILogger _logger;
 
         private int _closedMarker = 0;
-        private IInitialServerAddressProvider _initialServerAddressProvider;
 
         public RoutingSettings RoutingSetting { get; set; }
         public IDictionary<string, string> RoutingContext { get; set; }
@@ -126,7 +122,7 @@ namespace Neo4j.Driver.Internal.Routing
 
             return Task.CompletedTask;
         }
-        
+
         public async Task<IServerInfo> VerifyConnectivityAndGetInfoAsync()
         {
             try
@@ -212,8 +208,8 @@ namespace Neo4j.Driver.Internal.Routing
                     break;
                 }
 
-                var conn =
-                    await CreateClusterConnectionAsync(uri, mode, routingTable.Database, impersonatedUser, bookmark).ConfigureAwait(false);
+                var conn = await CreateClusterConnectionAsync(uri, mode, routingTable.Database, impersonatedUser, bookmark)
+                    .ConfigureAwait(false);
 
                 if (conn != null)
                 {
@@ -261,8 +257,7 @@ namespace Neo4j.Driver.Internal.Routing
                 .ToString();
         }
 
-        private static ILoadBalancingStrategy CreateLoadBalancingStrategy(IClusterConnectionPool pool,
-            ILogger logger)
+        private static ILoadBalancingStrategy CreateLoadBalancingStrategy(IClusterConnectionPool pool, ILogger logger)
         {
             return new LeastConnectedLoadBalancingStrategy(pool, logger);
         }
