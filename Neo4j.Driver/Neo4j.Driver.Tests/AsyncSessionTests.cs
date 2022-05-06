@@ -382,6 +382,11 @@ namespace Neo4j.Driver.Tests
             {
                 return Task.CompletedTask;
             }
+            
+            public Task<IServerInfo> VerifyConnectivityAndGetInfoAsync()
+            {
+                throw new NotSupportedException();
+            }
 
             public Task VerifyConnectivityAsync()
             {

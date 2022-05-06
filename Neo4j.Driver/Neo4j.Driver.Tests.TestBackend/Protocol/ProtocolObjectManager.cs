@@ -31,5 +31,14 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             return ProtocolObjects[id];
         }
+
+
+        public T GetObject<T>(string id) where T: IProtocolObject
+        {
+            if (string.IsNullOrEmpty(id))
+                return null;
+
+            return (T)ProtocolObjects[id];
+        }
     }
 }

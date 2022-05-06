@@ -136,13 +136,28 @@ namespace Neo4j.Driver.Tests
         public async void ShouldVerifyConnection()
         {
             var mock = new Mock<IConnectionProvider>();
-            mock.Setup(x => x.VerifyConnectivityAsync()).Returns(Task.CompletedTask);
+            mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
+                .Returns(Task.FromResult(new Mock<IServerInfo>().Object));
             var driver = new Internal.Driver(new Uri("bolt://localhost"), false, mock.Object, null);
             await driver.VerifyConnectivityAsync();
 
-            mock.Verify(x => x.VerifyConnectivityAsync(), Times.Once);
+            mock.Verify(x => x.VerifyConnectivityAndGetInfoAsync(), Times.Once);
         }
 
+        [Fact]
+        public async void ShouldGetInfoConnection()
+        {
+            var mockServerInfo = new Mock<IServerInfo>().Object;
+            var mock = new Mock<IConnectionProvider>();
+            mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
+                .Returns(Task.FromResult(mockServerInfo));
+            var driver = new Internal.Driver(new Uri("bolt://localhost"), false, mock.Object, null);
+            
+            var info = await driver.GetServerInfoAsync();
+
+            mock.Verify(x => x.VerifyConnectivityAndGetInfoAsync(), Times.Once);
+            info.Should().Be(mockServerInfo);
+        }
         [Fact]
         public async void ShouldTestSupportMultiDb()
         {
