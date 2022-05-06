@@ -69,7 +69,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var recordFields = CreateGetServersResponseRecordFields(routerCount, writerCount, readerCount);
                 var mockConn = Setup32SocketConnection(routingContext, recordFields);
                 mockConn.Setup(m => m.RoutingContext).Returns(routingContext);
-                var manager = new ClusterDiscovery(routingContext, null);
+                var manager = new ClusterDiscovery();
 
                 // When
                 var table = await manager.DiscoverAsync(mockConn.Object, null, null, Bookmarks.Empty);
@@ -106,7 +106,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var recordFields = CreateGetServersResponseRecordFields(routerCount, writerCount, readerCount);
                 var mockConn = Setup40SocketConnection(routingContext, database, Bookmarks.From(bookmarks), recordFields);
                 mockConn.Setup(m => m.RoutingContext).Returns(routingContext);
-                var manager = new ClusterDiscovery(routingContext, null);
+                var manager = new ClusterDiscovery();
 
                 // When
                 var table = await manager.DiscoverAsync(mockConn.Object, database, null, Bookmarks.From(bookmarks));
@@ -144,7 +144,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var recordFields = CreateGetServersDictionary(routerCount, writerCount, readerCount);
                 var mockConn = Setup43SocketConnection(routingContext, database, Bookmarks.From(bookmarks), recordFields);
                 mockConn.Setup(m => m.RoutingContext).Returns(routingContext);
-                var manager = new ClusterDiscovery(routingContext, null);
+                var manager = new ClusterDiscovery();
 
                 // When
                 var table = await manager.DiscoverAsync(mockConn.Object, database, null, Bookmarks.From(bookmarks));
@@ -172,7 +172,7 @@ namespace Neo4j.Driver.Tests.Routing
                 };
 
                 var connMock = new MockedConnection(AccessMode.Write, pairs).MockConn;
-                var manager = new ClusterDiscovery(null, null);
+                var manager = new ClusterDiscovery();
 
                 // When & Then
                 manager.Awaiting(m => m.DiscoverAsync(connMock.Object, null, null, Bookmarks.Empty)).Should()

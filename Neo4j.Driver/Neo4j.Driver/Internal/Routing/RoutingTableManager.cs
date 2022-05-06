@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Internal.Routing
             IClusterConnectionPoolManager poolManager,
             ILogger logger) :
             this(routingSettings.InitialServerAddressProvider,
-                new ClusterDiscovery(routingSettings.RoutingContext, logger), poolManager, logger,
+                new ClusterDiscovery(), poolManager, logger,
                 routingSettings.RoutingTablePurgeDelay)
         {
         }
@@ -97,6 +97,38 @@ namespace Neo4j.Driver.Internal.Routing
                 // no matter whether we succeeded to update or not, we release the lock
                 semaphore.Release();
             }
+        }
+
+        public async Task<IServerInfo> GetServerInfoAsync(Uri uri, string database)
+        {
+            var bufferedExceptions = new List<Exception>();
+            var conn = await _poolManager.CreateClusterConnectionAsync(uri).ConfigureAwait(false);
+            if (conn == null)
+                throw new ServiceUnavailableException("Could not create connection");
+
+            var rt = await _discovery.DiscoverAsync(conn, null, null, null)
+                .ConfigureAwait(false);
+                
+            await conn.CloseAsync().ConfigureAwait(false);
+            await UpdateAsync(rt).ConfigureAwait(false);
+            foreach (var table in rt.Readers)
+            {
+                try
+                {
+                    var reportedConnection =
+                        await _poolManager.CreateClusterConnectionAsync(table).ConfigureAwait(false);
+                    await reportedConnection.CloseAsync().ConfigureAwait(false);
+                    return reportedConnection.Server;
+                }
+                catch (Exception ex) when (ex is not AuthenticationException)
+                {
+                    bufferedExceptions.Add(ex);
+                }
+              
+            }
+
+            throw new ServiceUnavailableException($"Failed to find server info for '{uri}' for database '{database}'.",
+                new AggregateException(bufferedExceptions));
         }
 
         public void Clear()

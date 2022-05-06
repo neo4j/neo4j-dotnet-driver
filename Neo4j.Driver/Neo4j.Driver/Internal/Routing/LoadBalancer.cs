@@ -18,14 +18,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver;
-using Neo4j.Driver.Internal.Protocol;
-using Neo4j.Driver.Internal.Util;
 using static Neo4j.Driver.Internal.Throw.ObjectDisposedException;
 using static Neo4j.Driver.Internal.Util.ConnectionContext;
 
@@ -34,12 +30,12 @@ namespace Neo4j.Driver.Internal.Routing
     internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnectionPoolManager
     {
         private readonly IRoutingTableManager _routingTableManager;
+        private readonly IInitialServerAddressProvider _initialServerAddressProvider;
         private readonly ILoadBalancingStrategy _loadBalancingStrategy;
         private readonly IClusterConnectionPool _clusterConnectionPool;
         private readonly ILogger _logger;
 
         private int _closedMarker = 0;
-        private IInitialServerAddressProvider _initialServerAddressProvider;
 
         public RoutingSettings RoutingSetting { get; set; }
         public IDictionary<string, string> RoutingContext { get; set; }
@@ -59,8 +55,6 @@ namespace Neo4j.Driver.Internal.Routing
             _routingTableManager = new RoutingTableManager(routingSettings, this, logger);
             _loadBalancingStrategy = CreateLoadBalancingStrategy(_clusterConnectionPool, _logger);
             _initialServerAddressProvider = routingSettings.InitialServerAddressProvider;
-
-            
         }
 
         // for test only
@@ -129,14 +123,16 @@ namespace Neo4j.Driver.Internal.Routing
             return Task.CompletedTask;
         }
 
-        public async Task VerifyConnectivityAsync()
+        public async Task<IServerInfo> VerifyConnectivityAndGetInfoAsync()
         {
-            // As long as there is a fresh routing table, we consider we can route to these servers.
             try
             {
-                var database = await SupportsMultiDbAsync().ConfigureAwait(false) ? "system" : null;
-                await _routingTableManager.EnsureRoutingTableForModeAsync(Simple.Mode, database, null,
-                    Simple.Bookmarks).ConfigureAwait(false);
+                var supportsMultiDb = await SupportsMultiDbAsync().ConfigureAwait(false);
+                var database = supportsMultiDb ? "system" : null;
+                foreach (var uri in _initialServerAddressProvider.Get())
+                {
+                    return await _routingTableManager.GetServerInfoAsync(uri, database).ConfigureAwait(false);
+                }
             }
             catch (ServiceUnavailableException e)
             {
@@ -144,6 +140,10 @@ namespace Neo4j.Driver.Internal.Routing
                     "Unable to connect to database, " +
                     "ensure the database is running and that there is a working network connection to it.", e);
             }
+
+            throw new ServiceUnavailableException(
+                "Unable to connect to database, " +
+                "ensure the database is running and that there is a working network connection to it.");
         }
 
         public async Task<bool> SupportsMultiDbAsync()
@@ -208,8 +208,8 @@ namespace Neo4j.Driver.Internal.Routing
                     break;
                 }
 
-                var conn =
-                    await CreateClusterConnectionAsync(uri, mode, routingTable.Database, impersonatedUser, bookmarks).ConfigureAwait(false);
+                var conn = await CreateClusterConnectionAsync(uri, mode, routingTable.Database, impersonatedUser, bookmark)
+                    .ConfigureAwait(false);
 
                 if (conn != null)
                 {
@@ -257,8 +257,7 @@ namespace Neo4j.Driver.Internal.Routing
                 .ToString();
         }
 
-        private static ILoadBalancingStrategy CreateLoadBalancingStrategy(IClusterConnectionPool pool,
-            ILogger logger)
+        private static ILoadBalancingStrategy CreateLoadBalancingStrategy(IClusterConnectionPool pool, ILogger logger)
         {
             return new LeastConnectedLoadBalancingStrategy(pool, logger);
         }
