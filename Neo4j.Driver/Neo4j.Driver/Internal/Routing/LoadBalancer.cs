@@ -208,7 +208,7 @@ namespace Neo4j.Driver.Internal.Routing
                     break;
                 }
 
-                var conn = await CreateClusterConnectionAsync(uri, mode, routingTable.Database, impersonatedUser, bookmark)
+                var conn = await CreateClusterConnectionAsync(uri, mode, routingTable.Database, impersonatedUser, bookmarks)
                     .ConfigureAwait(false);
 
                 if (conn != null)
