@@ -122,10 +122,10 @@ namespace Neo4j.Driver.Internal
             return Task.CompletedTask;
         }
 
-        public Task VerifyConnectivityAsync()
-        {
-            return _connectionProvider.VerifyConnectivityAsync();
-        }
+        public Task<IServerInfo> GetServerInfoAsync() =>
+            _connectionProvider.VerifyConnectivityAndGetInfoAsync();
+
+        public Task VerifyConnectivityAsync() => GetServerInfoAsync();
 
         public Task<bool> SupportsMultiDbAsync()
         {
