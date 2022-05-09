@@ -110,7 +110,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             ("test_summary.TestSummary.test_protocol_version_information", "Server not responding with 5.0"),
 
             ("stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_nested", "Requires further investigation"),
-            ("stub.iteration.test_iteration_tx_run.TestIterationSessionRun.test_nested",
+            ("stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_nested",
 	            "Requires further investigation")
 		};
 
