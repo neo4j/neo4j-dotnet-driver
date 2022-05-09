@@ -48,5 +48,12 @@ namespace Neo4j.Driver
         /// <remarks>This method could be called multiple times.
         /// If all records in the records stream are already consumed, then this method will return the summary directly.</remarks>
         IResultSummary Consume();
+
+        /// <summary>
+        /// Get whether the underlying cursor is open to read records, a cursor will be considered open if <see cref="Consume"/> has not been called.<br/>
+        /// Attempting to read records from a closed cursor will throw <see cref="ResultConsumedException"/>.<br/>
+        /// Cursors can also be closed if its session is disposed or its session runs a query.
+        /// </summary>
+        bool IsOpen { get; }
     }
 }

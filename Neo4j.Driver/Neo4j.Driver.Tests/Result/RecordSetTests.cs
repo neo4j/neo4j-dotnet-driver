@@ -110,6 +110,8 @@ namespace Neo4j.Driver.Tests
 
         public IRecord Current => _record;
 
+        public bool IsOpen => true;
+
         public void Cancel()
         {
         }

@@ -22,7 +22,6 @@ using System.Reactive.Subjects;
 using System.Reactive.Threading.Tasks;
 using System.Threading;
 using System.Threading.Tasks;
-using static Neo4j.Driver.Internal.ErrorExtensions;
 
 namespace Neo4j.Driver.Internal
 {
@@ -72,6 +71,8 @@ namespace Neo4j.Driver.Internal
                 Observable.Create<IResultSummary>(summaryObserver =>
                     StartStreaming(cursor, summaryObserver: summaryObserver)));
         }
+
+        public IObservable<bool> IsOpen => _resultCursor.Select(x => x.IsOpen).FirstAsync();
 
         private IDisposable StartStreaming(IInternalResultCursor cursor,
             IObserver<IRecord> recordObserver = null, IObserver<IResultSummary> summaryObserver = null)

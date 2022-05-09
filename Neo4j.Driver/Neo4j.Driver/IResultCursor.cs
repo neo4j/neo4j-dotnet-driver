@@ -67,5 +67,12 @@ namespace Neo4j.Driver
         /// <remarks>Throws <exception cref="InvalidOperationException"></exception>
         /// if accessed without calling <see cref="FetchAsync"/> or <see cref="PeekAsync"/>.</remarks>
         IRecord Current { get; }
+
+        /// <summary>
+        /// Get whether the cursor is open to read records, a cursor will be considered open if <see cref="ConsumeAsync"/> has not been called.<br/>
+        /// Attempting to read records from a closed cursor will throw <see cref="ResultConsumedException"/>.<br/>
+        /// Cursors can also be closed if its session is disposed or its session runs a query.
+        /// </summary>
+        bool IsOpen { get; }
     }
 }
