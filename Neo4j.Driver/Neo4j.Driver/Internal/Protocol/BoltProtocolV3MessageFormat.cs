@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Internal.Protocol
             AddHandler<ResetMessageSerializer>();
 
             // Response Message Types
-            AddHandler<FailureMessageSerializer>();
+            AddHandler<FailureMessageV1Serializer>();
             AddHandler<IgnoredMessageSerializer>();
             AddHandler<RecordMessageSerializer>();
             AddHandler<SuccessMessageSerializer>();

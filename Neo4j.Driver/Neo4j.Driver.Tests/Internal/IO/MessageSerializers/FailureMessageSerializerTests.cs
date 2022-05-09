@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
 {
     public class FailureMessageSerializerTests : PackStreamSerializerTests
     {
-        internal override IPackStreamSerializer SerializerUnderTest => new FailureMessageSerializer();
+        internal override IPackStreamSerializer SerializerUnderTest => new FailureMessageV1Serializer();
 
         [Fact]
         public void ShouldThrowOnSerialize()

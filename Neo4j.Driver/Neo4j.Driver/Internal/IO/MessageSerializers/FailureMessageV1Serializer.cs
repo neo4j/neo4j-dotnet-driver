@@ -21,10 +21,27 @@ using static Neo4j.Driver.Internal.Protocol.BoltProtocolV3MessageFormat;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers
 {
-    internal class FailureMessageSerializer : ReadOnlySerializer
+    internal class FailureMessageV1Serializer : ReadOnlySerializer
     {
         public override IEnumerable<byte> ReadableStructs => new[] {MsgFailure};
 
+        public override object Deserialize(IPackStreamReader reader, byte signature, long size)
+        {
+            var values = reader.ReadMap();
+            var code = values["code"]?.ToString();
+            var message = values["message"]?.ToString();
+
+            if (code == "Neo.TransientError.Transaction.Terminated")
+                code = "Neo.ClientError.Transaction.Terminated";
+            if (code == "Neo.TransientError.Transaction.LockClientStopped")
+                code = "Neo.ClientError.Transaction.LockClientStopped";
+
+            return new FailureMessage(code, message);
+        }
+    }
+
+    internal class FailureMessageSerializer : FailureMessageV1Serializer
+    {
         public override object Deserialize(IPackStreamReader reader, byte signature, long size)
         {
             var values = reader.ReadMap();
