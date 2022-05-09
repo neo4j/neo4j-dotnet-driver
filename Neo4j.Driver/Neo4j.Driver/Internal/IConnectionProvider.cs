@@ -24,10 +24,10 @@ namespace Neo4j.Driver.Internal
 {
     internal interface IConnectionProvider
     {
-        Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark);
+        Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmarks bookmarks);
         Task CloseAsync();
         Task<bool> SupportsMultiDbAsync();
-		IRoutingTable GetRoutingTable(string database);
+        IRoutingTable GetRoutingTable(string database);
 
         IDictionary<string, string> RoutingContext { get; set; }
         Task<IServerInfo> VerifyConnectivityAndGetInfoAsync();

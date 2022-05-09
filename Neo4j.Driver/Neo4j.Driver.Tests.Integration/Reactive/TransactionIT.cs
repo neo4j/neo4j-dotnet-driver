@@ -54,7 +54,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public void ShouldCommitEmptyTx()
         {
-            var bookmarkBefore = session.LastBookmark;
+            var bookmarkBefore = session.LastBookmarks;
 
             session.BeginTransaction()
                 .SelectMany(tx => tx.Commit<int>())
@@ -62,7 +62,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 .AssertEqual(
                     OnCompleted<int>(0));
 
-            var bookmarkAfter = session.LastBookmark;
+            var bookmarkAfter = session.LastBookmarks;
 
             bookmarkBefore.Should().BeNull();
             bookmarkAfter.Should().NotBe(bookmarkBefore);
@@ -71,7 +71,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public void ShouldRollbackEmptyTx()
         {
-            var bookmarkBefore = session.LastBookmark;
+            var bookmarkBefore = session.LastBookmarks;
 
             session.BeginTransaction()
                 .SelectMany(tx => tx.Rollback<int>())
@@ -79,7 +79,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 .AssertEqual(
                     OnCompleted<int>(0));
 
-            var bookmarkAfter = session.LastBookmark;
+            var bookmarkAfter = session.LastBookmarks;
 
             bookmarkBefore.Should().BeNull();
             bookmarkAfter.Should().Be(bookmarkBefore);
@@ -277,7 +277,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
         {
             Server.Driver
                 .RxSession(
-                    o => o.WithDefaultAccessMode(AccessMode.Read).WithBookmarks(Bookmark.From("InvalidBookmark")))
+                    o => o.WithDefaultAccessMode(AccessMode.Read).WithBookmarks(Bookmarks.From("InvalidBookmark")))
                 .BeginTransaction()
                 .WaitForCompletion()
                 .AssertEqual(
@@ -385,19 +385,19 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public async Task ShouldUpdateBookmark()
         {
-            var bookmark1 = session.LastBookmark;
+            var bookmark1 = session.LastBookmarks;
 
             var txc1 = await session.BeginTransaction().SingleAsync();
             VerifyCanCreateNode(txc1, 20);
             VerifyCanCommit(txc1);
 
-            var bookmark2 = session.LastBookmark;
+            var bookmark2 = session.LastBookmarks;
 
             var txc2 = await session.BeginTransaction().SingleAsync();
             VerifyCanCreateNode(txc2, 20);
             VerifyCanCommit(txc2);
 
-            var bookmark3 = session.LastBookmark;
+            var bookmark3 = session.LastBookmarks;
 
             bookmark1.Should().BeNull();
             bookmark2.Should().NotBe(bookmark1);

@@ -43,9 +43,9 @@ namespace Neo4j.Driver.IntegrationTests.Stress
                 {
                     summary = session.Run("CREATE ()").Consume();
 
-                    if (session.LastBookmark != null)
+                    if (session.LastBookmarks != null)
                     {
-                        context.Bookmark = session.LastBookmark;
+                        context.Bookmarks = session.LastBookmarks;
                     }
                 }
             }

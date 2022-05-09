@@ -92,7 +92,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
 			var exception = await Xunit.Record.ExceptionAsync(async () => await protocol.BeginTransactionAsync(mockConn.Object,
 																											   string.Empty,
-																											   Bookmark.From("123"),
+																											   Bookmarks.From("123"),
 																											   TransactionConfig.Default,
 																											   impUser));
 

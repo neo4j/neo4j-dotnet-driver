@@ -64,7 +64,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
             if(!string.IsNullOrEmpty(data.database)) configBuilder.WithDatabase(data.database);            
             if(!string.IsNullOrEmpty(data.accessMode)) configBuilder.WithDefaultAccessMode(GetAccessMode);
-            if(data.bookmarks.Count > 0) configBuilder.WithBookmarks(Bookmark.From(data.bookmarks.ToArray()));
+            if(data.bookmarks.Count > 0) configBuilder.WithBookmarks(Bookmarks.From(data.bookmarks.ToArray()));
             if(data.fetchSize.HasValue)
                 configBuilder.WithFetchSize(data.fetchSize.Value);
 			if (!string.IsNullOrEmpty(data.impersonatedUser)) configBuilder.WithImpersonatedUser(data.impersonatedUser);

@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Internal.Protocol
             Metadata = new Dictionary<string, object> {{"key1", "value1"}}
         };
 
-        private static readonly Bookmark Bookmark = Bookmark.From("bookmark-123");
+        private static readonly Bookmarks Bookmarks = Bookmarks.From("bookmark-123");
         private static readonly string Database = "my-database";
 
         private static void VerifyMetadata(IDictionary<string, object> metadata)
@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = NewConnectionWithMode();
                 var query = new Query("A cypher query");
-                var bookmarkTracker = new Mock<IBookmarkTracker>();
+                var bookmarkTracker = new Mock<IBookmarksTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
                 var V4 = new BoltProtocolV4_0();
 
@@ -89,7 +89,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = NewConnectionWithMode();
                 var query = new Query("A cypher query");
-                var bookmarkTracker = new Mock<IBookmarkTracker>();
+                var bookmarkTracker = new Mock<IBookmarksTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
                 var V4 = new BoltProtocolV4_0();
 
@@ -113,7 +113,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = NewConnectionWithMode();
                 var query = new Query("A cypher query");
-                var bookmarkTracker = new Mock<IBookmarkTracker>();
+                var bookmarkTracker = new Mock<IBookmarksTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
                 var V4 = new BoltProtocolV4_0();
 
@@ -134,7 +134,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = NewConnectionWithMode();
                 var query = new Query("A cypher query");
-                var bookmarkTracker = new Mock<IBookmarkTracker>();
+                var bookmarkTracker = new Mock<IBookmarksTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
                 var V4 = new BoltProtocolV4_0();
 
@@ -149,7 +149,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         });
 
                 await V4.RunInAutoCommitTransactionAsync(mockConn.Object, query, true, bookmarkTracker.Object,
-                    resourceHandler.Object, Database, Bookmark, TxConfig, null);
+                    resourceHandler.Object, Database, Bookmarks, TxConfig, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V4.RunResponseHandler>(), null,
@@ -260,7 +260,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
 				var ex = await Assert.ThrowsAsync<ArgumentException>(() => protocol.BeginTransactionAsync(mockConn.Object, 
 																						   string.Empty, 
-																						   Bookmark.From("123"), 
+																						   Bookmarks.From("123"), 
 																						   TransactionConfig.Default, 
 																						   "ImpersonatedUser"));
 

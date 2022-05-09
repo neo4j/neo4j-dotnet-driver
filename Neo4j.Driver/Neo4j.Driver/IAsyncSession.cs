@@ -143,8 +143,14 @@ namespace Neo4j.Driver
         /// Gets the bookmark received following the last successfully completed <see cref="IAsyncTransaction"/>.
         /// If no bookmark was received or if this transaction was rolled back, the bookmark value will not be changed.
         /// </summary>
+        [Obsolete("Replaced by LastBookmarks. Will be removed in 6.0")]
         Bookmark LastBookmark { get; }
 
+        /// <summary>
+        /// Gets the bookmark received following the last successfully completed <see cref="IAsyncTransaction"/>.
+        /// If no bookmark was received or if this transaction was rolled back, the bookmark value will not be changed.
+        /// </summary>
+        Bookmarks LastBookmarks { get; }
         /// <summary>
         /// 
         /// Asynchronously run a query with the specific <see cref="TransactionConfig"/> and return a task of result stream.

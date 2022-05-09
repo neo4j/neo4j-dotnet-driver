@@ -17,21 +17,20 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using Neo4j.Driver.Internal.Messaging.V3;
 
 namespace Neo4j.Driver.Internal
 {
-    internal static class BookmarkHelper
+    internal static class BookmarksHelper
     {
         public const string BookmarksKey = "bookmarks";
 
-        public static IDictionary<string, object> AsBeginTransactionParameters(this Bookmark bookmark)
+        public static IDictionary<string, object> AsBeginTransactionParameters(this Bookmarks bookmarks)
         {
-            if (bookmark != null && bookmark.Values.Any())
+            if (bookmarks != null && bookmarks.Values.Any())
             {
                 return new Dictionary<string, object>
                 {
-                    {BookmarksKey, bookmark.Values}
+                    {BookmarksKey, bookmarks.Values}
                 };
             }
 
