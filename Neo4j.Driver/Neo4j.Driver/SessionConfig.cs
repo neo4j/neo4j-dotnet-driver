@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver
@@ -31,7 +32,7 @@ namespace Neo4j.Driver
     {
         internal static readonly SessionConfig Default = new SessionConfig();
         private string _database;
-        private IEnumerable<Bookmark> _bookmarks;
+        private IEnumerable<Bookmarks> _bookmarks;
         private long? _fetchSize;
         private string _impersonatedUser;
 
@@ -92,10 +93,10 @@ namespace Neo4j.Driver
         ///
         /// The first transaction (either auto-commit or explicit) will ensure that the executing server is at least
         /// up to date to the point identified by the latest of the provided initial bookmarks. The bookmarks can be
-        /// obtained from <see cref="IAsyncSession.LastBookmark"/> (and corresponding properties in other types of
+        /// obtained from <see cref="IAsyncSession.LastBookmarks"/> (and corresponding properties in other types of
         /// sessions, i.e. IRxSession or ISession.
         /// </summary>
-        public IEnumerable<Bookmark> Bookmarks
+        public IEnumerable<Bookmarks> Bookmarks
         {
             get => _bookmarks;
             internal set => _bookmarks = value ?? throw new ArgumentNullException();
@@ -178,11 +179,25 @@ namespace Neo4j.Driver
         /// <param name="bookmarks">the initial bookmarks</param>
         /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
         /// <seealso cref="SessionConfig.Bookmarks"/>
-        public SessionConfigBuilder WithBookmarks(params Bookmark[] bookmarks)
+        [Obsolete("Replaced by WithBookmarks. Will be removed in 6.0.")]
+        public SessionConfigBuilder WithBookmarks(params Bookmark[] bookmark)
+        {
+            _config.Bookmarks = bookmark.Select(x => new InternalBookmarks(x.Values));
+            return this;
+        }        
+        
+        /// <summary>
+        /// Sets the initial bookmarks to be used by the constructed session.
+        /// </summary>
+        /// <param name="bookmarks">the initial bookmarks</param>
+        /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
+        /// <seealso cref="SessionConfig.Bookmarks"/>
+        public SessionConfigBuilder WithBookmarks(params Bookmarks[] bookmarks)
         {
             _config.Bookmarks = bookmarks;
             return this;
         }
+
 
         /// <summary>
         /// Sets the default fetch size.

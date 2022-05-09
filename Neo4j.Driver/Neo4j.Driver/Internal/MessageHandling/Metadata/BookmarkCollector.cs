@@ -19,13 +19,13 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
-    internal class BookmarkCollector : IMetadataCollector<Bookmark>
+    internal class BookmarksCollector : IMetadataCollector<Bookmarks>
     {
         internal const string BookmarkKey = "bookmark";
 
         object IMetadataCollector.Collected => Collected;
 
-        public Bookmark Collected { get; private set; }
+        public Bookmarks Collected { get; private set; }
 
         public void Collect(IDictionary<string, object> metadata)
         {
@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
             {
                 if (bookmarkValue is string bookmark)
                 {
-                    Collected = Bookmark.From(bookmark);
+                    Collected = Bookmarks.From(bookmark);
                 }
                 else
                 {

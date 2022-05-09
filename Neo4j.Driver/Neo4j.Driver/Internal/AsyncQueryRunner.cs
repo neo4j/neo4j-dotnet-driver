@@ -89,6 +89,6 @@ namespace Neo4j.Driver.Internal
 
     internal interface ITransactionResourceHandler
     {
-        Task OnTransactionDisposeAsync(Bookmark bookmark);
+        Task OnTransactionDisposeAsync(Bookmarks bookmarks);
     }
 }

@@ -981,7 +981,7 @@ namespace Neo4j.Driver.Examples
             public void AddEmployAndMakeFriends()
             {
                 // To collect the session bookmarks
-                var savedBookmarks = new List<Bookmark>();
+                var savedBookmarks = new List<Bookmarks>();
 
                 // Create the first person and employment relationship.
                 using (var session1 = Driver.Session(o => o.WithDefaultAccessMode(AccessMode.Write)))
@@ -990,7 +990,7 @@ namespace Neo4j.Driver.Examples
                     session1.WriteTransaction(tx => AddPerson(tx, "Alice"));
                     session1.WriteTransaction(tx => Employ(tx, "Alice", "Wayne Enterprises"));
 
-                    savedBookmarks.Add(session1.LastBookmark);
+                    savedBookmarks.Add(session1.LastBookmarks);
                 }
 
                 // Create the second person and employment relationship.
@@ -1000,7 +1000,7 @@ namespace Neo4j.Driver.Examples
                     session2.WriteTransaction(tx => AddPerson(tx, "Bob"));
                     session2.WriteTransaction(tx => Employ(tx, "Bob", "LexCorp"));
 
-                    savedBookmarks.Add(session2.LastBookmark);
+                    savedBookmarks.Add(session2.LastBookmarks);
                 }
 
                 // Create a friendship between the two people created above.

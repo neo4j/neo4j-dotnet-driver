@@ -130,9 +130,9 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             }
         }
 
-        private static async Task<int> CountNodeInTx(IDriver driver, int id, Bookmark bookmark = null)
+        private static async Task<int> CountNodeInTx(IDriver driver, int id, Bookmarks bookmarks = null)
         {
-            var session = driver.AsyncSession(o => o.WithBookmarks(bookmark));
+            var session = driver.AsyncSession(o => o.WithBookmarks(bookmarks));
             try
             {
                 var tx = await session.BeginTransactionAsync();

@@ -113,7 +113,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             {
                 return new StringBuilder()
                     .Append("SingleInstanceContext{")
-                    .AppendFormat("Bookmark={0}, ", Bookmark)
+                    .AppendFormat("Bookmark={0}, ", Bookmarks)
                     .AppendFormat("BookmarkFailures={0}, ", BookmarkFailures)
                     .AppendFormat("NodesCreated={0}, ", CreatedNodesCount)
                     .AppendFormat("NodesRead={0}", ReadNodesCount)

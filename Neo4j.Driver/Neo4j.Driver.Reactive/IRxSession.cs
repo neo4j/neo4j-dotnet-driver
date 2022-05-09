@@ -33,8 +33,16 @@ namespace Neo4j.Driver
         ///
         /// If no bookmark was received or if this transaction was rolled back, the bookmark value will not be changed.
         /// </summary>
+        [Obsolete("Replaced with LastBookmarks. Will be removed in 6.0.")]
         Bookmark LastBookmark { get; }
-
+        /// <summary>
+        /// Returns the bookmark received following the last successfully completed query, which is executed
+        /// either in an <see cref="IRxTransaction"/> obtained from this session instance or directly through one of
+        /// the <strong>Run</strong> overrides of this session instance.
+        ///
+        /// If no bookmark was received or if this transaction was rolled back, the bookmark value will not be changed.
+        /// </summary>
+        Bookmarks LastBookmarks { get; }
         /// <summary>
         /// Begin a new <strong>explicit</strong> <see cref="IRxTransaction"/>.
         ///

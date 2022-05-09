@@ -48,7 +48,7 @@ namespace Neo4j.Driver.Tests
             [Theory, MemberData(nameof(MultipleBookmarks))]
             public void ShouldCreateFromMultipleBookmarks(string[] bookmarks, string[] expectedValues)
             {
-                var bookmark = Bookmark.From(bookmarks);
+                var bookmark = Bookmarks.From(bookmarks);
                 bookmark.Values.Should().BeEquivalentTo(expectedValues);
 
                 var parameters = bookmark.AsBeginTransactionParameters();
@@ -74,8 +74,8 @@ namespace Neo4j.Driver.Tests
                     new[] {"bookmark-3", "bookmark-1", "bookmark-2", null})]
                 public void ShouldBeEqual(string[] values1, string[] values2)
                 {
-                    var bookmark1 = Bookmark.From(values1);
-                    var bookmark2 = Bookmark.From(values2);
+                    var bookmark1 = Bookmarks.From(values1);
+                    var bookmark2 = Bookmarks.From(values2);
 
                     bookmark1.Should().Be(bookmark2);
                 }
@@ -93,11 +93,11 @@ namespace Neo4j.Driver.Tests
                     new[] {"bookmark-1", "bookmark-2", "bookmark-3"})]
                 public void ShouldUnionValues(string[] values1, string[] values2, string[] values3)
                 {
-                    var bookmark1 = Bookmark.From(values1);
-                    var bookmark2 = Bookmark.From(values2);
-                    var bookmark3 = Bookmark.From(values3);
+                    var bookmark1 = Bookmarks.From(values1);
+                    var bookmark2 = Bookmarks.From(values2);
+                    var bookmark3 = Bookmarks.From(values3);
 
-                    Bookmark.From(new[] {bookmark1, bookmark2}).Should().Be(bookmark3);
+                    Bookmarks.From(new[] {bookmark1, bookmark2}).Should().Be(bookmark3);
                 }
             }
         }

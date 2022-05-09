@@ -18,13 +18,12 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 
 namespace Neo4j.Driver.Internal
 {
-    internal partial class AsyncSession : IResultResourceHandler, ITransactionResourceHandler, IBookmarkTracker
+    internal partial class AsyncSession : IResultResourceHandler, ITransactionResourceHandler, IBookmarksTracker
     {
         public Task CloseAsync()
         {
@@ -58,9 +57,9 @@ namespace Neo4j.Driver.Internal
         /// <summary>
         /// Called back when transaction is closed
         /// </summary>
-        public Task OnTransactionDisposeAsync(Bookmark bookmark)
+        public Task OnTransactionDisposeAsync(Bookmarks bookmarks)
         {
-            UpdateBookmark(bookmark);
+            UpdateBookmarks(bookmarks);
             _transaction = null;
 
             return DisposeConnectionAsync();
@@ -69,12 +68,12 @@ namespace Neo4j.Driver.Internal
         /// <summary>
         /// Only set the bookmark to a new value if the new value is not null
         /// </summary>
-        /// <param name="bookmark">The new bookmark</param>
-        public void UpdateBookmark(Bookmark bookmark)
+        /// <param name="bookmarks">The new bookmarks.</param>
+        public void UpdateBookmarks(Bookmarks bookmarks)
         {
-            if (bookmark != null && bookmark.Values.Any())
+            if (bookmarks != null && bookmarks.Values.Any())
             {
-                _bookmark = bookmark;
+                _bookmarks = bookmarks;
             }
         }
 

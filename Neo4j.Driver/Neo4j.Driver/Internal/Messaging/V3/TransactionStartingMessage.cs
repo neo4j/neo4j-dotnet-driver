@@ -24,24 +24,24 @@ namespace Neo4j.Driver.Internal.Messaging.V3
 {
     internal abstract class TransactionStartingMessage : IRequestMessage
     {
-        private const string BookmarksKey = BookmarkHelper.BookmarksKey;
+        private const string BookmarksKey = BookmarksHelper.BookmarksKey;
         private const string TxTimeoutMetadataKey = "tx_timeout";
         private const string TxMetadataMetadataKey = "tx_metadata";
         private const string AccessModeKey = "mode";
         private const string DbKey = "db";
 
-        protected TransactionStartingMessage(string database, Bookmark bookmark, TimeSpan? txTimeout,
+        protected TransactionStartingMessage(string database, Bookmarks bookmarks, TimeSpan? txTimeout,
             IDictionary<string, object> txMetadata, AccessMode mode)
         {
-            Metadata = BuildMetadata(bookmark, txTimeout, txMetadata, mode, database);
+            Metadata = BuildMetadata(bookmarks, txTimeout, txMetadata, mode, database);
         }
 
         public IDictionary<string, object> Metadata { get; }
 
-        private static IDictionary<string, object> BuildMetadata(Bookmark bookmark, TimeSpan? txTimeout,
+        private static IDictionary<string, object> BuildMetadata(Bookmarks bookmarks, TimeSpan? txTimeout,
             IDictionary<string, object> txMetadata, AccessMode mode, string database)
         {
-            var bookmarksPresent = bookmark != null && bookmark.Values.Any();
+            var bookmarksPresent = bookmarks != null && bookmarks.Values.Any();
             var txTimeoutPresent = txTimeout.HasValue;
             var txMetadataPresent = txMetadata != null && txMetadata.Count != 0;
 
@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Internal.Messaging.V3
 
             if (bookmarksPresent)
             {
-                result.Add(BookmarksKey, bookmark.Values);
+                result.Add(BookmarksKey, bookmarks.Values);
             }
 
             if (txTimeoutPresent)

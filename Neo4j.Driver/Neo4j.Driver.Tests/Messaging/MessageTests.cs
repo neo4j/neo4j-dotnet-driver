@@ -45,19 +45,19 @@ namespace Neo4j.Driver.Tests
 
 			public static IEnumerable<object[]> MessageData => new[]
             {
-				new object[] {new V4_4.BeginMessage(Bookmark.From(new []{ "bookmark1", "bookmark2" }), 
+				new object[] {new V4_4.BeginMessage(Bookmarks.From(new []{ "bookmark1", "bookmark2" }), 
 													TransactionConfigGenerator(), 
 													AccessMode.Read, 
 													"Impersonated User"), 
 							  "BEGIN [{bookmarks, [bookmark1, bookmark2]}, {tx_timeout, 1000}, {mode, r}, {imp_user, Impersonated User}]" },
 				new object[] {new V4_4.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "Empty" } }, 
-													Bookmark.From("bookmark-1"), 
+													Bookmarks.From("bookmark-1"), 
 													"myDB", 
 													"Impersonated User"), 
 							  "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'Empty\' } { bookmarks, [bookmark-1] } { \'db\':\'myDB\' \'imp_user\':\'Impersonated User\' }" },
-				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "Empty" } }, Bookmark.From("bookmark-1"), ""), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'Empty\' } { bookmarks, [bookmark-1] } None" },
-				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "Null" } }, Bookmark.From("bookmark-1"), null), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'Null\' } { bookmarks, [bookmark-1] } None" },
-				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "adb" } }, Bookmark.From("bookmark-1"), "adb"), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'adb\' } { bookmarks, [bookmark-1] } \'adb\'" },
+				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "Empty" } }, Bookmarks.From("bookmark-1"), ""), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'Empty\' } { bookmarks, [bookmark-1] } None" },
+				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "Null" } }, Bookmarks.From("bookmark-1"), null), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'Null\' } { bookmarks, [bookmark-1] } None" },
+				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "adb" } }, Bookmarks.From("bookmark-1"), "adb"), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'adb\' } { bookmarks, [bookmark-1] } \'adb\'" },
 				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "adb" } }, null, "adb"), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'adb\' } [] \'adb\'" },
 				new object[] {new FailureMessage("CODE", "MESSAGE"), "FAILURE code=CODE, message=MESSAGE"},
 				new object[] {new V4_4.HelloMessage("mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}]"},
@@ -89,7 +89,7 @@ namespace Neo4j.Driver.Tests
                     {
                         {"key1", 1},
                         {"key2", new[] {2, 4}}
-                    }), "my-database", Bookmark.From("bookmark-1"), TransactionConfig.Default, AccessMode.Read),
+                    }), "my-database", Bookmarks.From("bookmark-1"), TransactionConfig.Default, AccessMode.Read),
                     "RUN `A query`, [{key1, 1}, {key2, [2, 4]}] [{bookmarks, [bookmark-1]}, {mode, r}, {db, my-database}]"
                 },
                 new object[] {new V4.PullMessage(1, 2), "PULL [{n, 2}, {qid, 1}]"},
