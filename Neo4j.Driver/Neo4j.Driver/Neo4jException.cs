@@ -21,6 +21,13 @@ using System.Runtime.Serialization;
 namespace Neo4j.Driver
 {
     /// <summary>
+    /// Marker interface for Neo4j exceptions that can be retried.
+    /// </summary>
+    public interface IRetriableNeo4jException
+    {
+    }
+
+    /// <summary>
     /// The base class for all Neo4j exceptions.
     /// </summary>
     [DataContract]
@@ -139,7 +146,7 @@ namespace Neo4j.Driver
     /// The error code provided can be used to determine further details for the problem.
     /// </summary>
     [DataContract]
-    public class TransientException : Neo4jException
+    public class TransientException : Neo4jException, IRetriableNeo4jException
     {
         /// <summary>
         /// Create a new <see cref="TransientException"/>.
@@ -216,7 +223,7 @@ namespace Neo4j.Driver
     ///  A <see cref="ServiceUnavailableException"/> indicates that the driver cannot communicate with the cluster.
     /// </summary>
     [DataContract]
-    public class ServiceUnavailableException : Neo4jException
+    public class ServiceUnavailableException : Neo4jException, IRetriableNeo4jException
     {
         /// <summary>
         /// Create a new <see cref="ServiceUnavailableException"/> with an error message.
@@ -243,7 +250,7 @@ namespace Neo4j.Driver
     /// A new session needs to be acquired from the driver and all actions taken on the expired session must be replayed.
     /// </summary>
     [DataContract]
-    public class SessionExpiredException : Neo4jException
+    public class SessionExpiredException : Neo4jException, IRetriableNeo4jException
     {
         /// <summary>
         /// Create a new <see cref="SessionExpiredException"/> with an error message.
@@ -267,7 +274,7 @@ namespace Neo4j.Driver
     ///  A <see cref="ConnectionReadTimeoutException"/> indicates that the driver timed out trying to read from the network socket.
     /// </summary>
     [DataContract]
-    public class ConnectionReadTimeoutException : Neo4jException
+    public class ConnectionReadTimeoutException : Neo4jException, IRetriableNeo4jException
     {
         /// <summary>
         /// Create a new <see cref="ConnectionReadTimeoutException"/> with an error message.
@@ -390,7 +397,7 @@ namespace Neo4j.Driver
     /// <summary>
     /// The authorization information maintained on the server has expired. The client should reconnect.
     /// </summary>
-    public class AuthorizationException : SecurityException
+    public class AuthorizationException : SecurityException, IRetriableNeo4jException
     {
         private const string ErrorCode = "Neo.ClientError.Security.AuthorizationExpired";
 
