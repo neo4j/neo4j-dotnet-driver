@@ -39,13 +39,13 @@ namespace Neo4j.Driver.Internal.MessageHandling.V3
         [Fact]
         public void ShouldUpdateBookmark()
         {
-            var tracker = new Mock<IBookmarkTracker>();
+            var tracker = new Mock<IBookmarksTracker>();
             var handler = new CommitResponseHandler(tracker.Object);
 
             handler.OnSuccess(new[] {BookmarkCollectorTests.TestMetadata}.ToDictionary());
 
             tracker.Verify(
-                x => x.UpdateBookmark(BookmarkCollectorTests.TestMetadataCollected),
+                x => x.UpdateBookmarks(BookmarkCollectorTests.TestMetadataCollected),
                 Times.Once);
         }
     }

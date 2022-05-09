@@ -17,14 +17,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Xunit;
 using Moq;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Messaging.V4_3;
 using Neo4j.Driver.Internal.Protocol;
-using System.Collections.Immutable;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
 {
@@ -50,7 +47,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
 		[InlineData(null, new string[] { }, "None")]
 		public void ShouldSerialize(string db, string[] bm, string serializedDb)
 		{
-			var bookmarks = Bookmark.From(bm);
+			var bookmarks = Bookmarks.From(bm);
 			var writerMachine = CreateWriterMachine();
 			var writer = writerMachine.Writer();
 			var routingContext = new Dictionary<string, string> { {"ContextKey1", "ContextValue1"},
@@ -160,7 +157,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
 			var writerMachine = CreateWriterMachine();
 			var writer = writerMachine.Writer();
 
-			writer.Write(new RouteMessage(new Dictionary<string, string>(), Bookmark.From(Array.Empty<string>()), "adb"));
+			writer.Write(new RouteMessage(new Dictionary<string, string>(), Bookmarks.From(Array.Empty<string>()), "adb"));
 
 			var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
 			var reader = readerMachine.Reader();

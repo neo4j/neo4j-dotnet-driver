@@ -87,7 +87,7 @@ namespace Neo4j.Driver.Internal
                                            _retryLogic, 
                                            sessionConfig.DefaultAccessMode,
                                            sessionConfig.Database, 
-                                           Bookmark.From(sessionConfig.Bookmarks ?? Array.Empty<Bookmark>()), 
+                                           Bookmarks.From(sessionConfig.Bookmarks ?? Array.Empty<Bookmarks>()), 
                                            reactive, ParseFetchSize(sessionConfig.FetchSize)) {SessionConfig = sessionConfig};
 
             if (IsClosed)

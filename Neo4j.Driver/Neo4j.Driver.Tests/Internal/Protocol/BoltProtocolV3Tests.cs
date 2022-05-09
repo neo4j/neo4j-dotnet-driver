@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Internal.Protocol
             Metadata = new Dictionary<string, object> {{"key1", "value1"}}
         };
 
-        private static readonly Bookmark Bookmark = Bookmark.From("bookmark-123");
+        private static readonly Bookmarks Bookmarks = Bookmarks.From("bookmark-123");
 
         private static void VerifyMetadata(IDictionary<string, object> metadata, AccessMode mode)
         {
@@ -103,7 +103,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = NewConnectionWithMode();
                 var query = new Query("A cypher query");
-                var bookmarkTracker = new Mock<IBookmarkTracker>();
+                var bookmarkTracker = new Mock<IBookmarksTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
                 var V3 = new BoltProtocolV3();
 
@@ -130,7 +130,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = NewConnectionWithMode();
                 var query = new Query("A cypher query");
-                var bookmarkTracker = new Mock<IBookmarkTracker>();
+                var bookmarkTracker = new Mock<IBookmarksTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
                 var V3 = new BoltProtocolV3();
 
@@ -153,7 +153,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = NewConnectionWithMode(mode);
                 var query = new Query("A cypher query");
-                var bookmarkTracker = new Mock<IBookmarkTracker>();
+                var bookmarkTracker = new Mock<IBookmarksTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
                 var V3 = new BoltProtocolV3();
 
@@ -168,7 +168,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         });
 
                 await V3.RunInAutoCommitTransactionAsync(mockConn.Object, query, true, bookmarkTracker.Object,
-                    resourceHandler.Object, null, Bookmark, TxConfig, null);
+                    resourceHandler.Object, null, Bookmarks, TxConfig, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V3.RunResponseHandler>(),
@@ -184,8 +184,8 @@ namespace Neo4j.Driver.Internal.Protocol
                 var V3 = new BoltProtocolV3();
 
                 V3.Awaiting(p => p.RunInAutoCommitTransactionAsync(Mock.Of<IConnection>(), new Query("text"),
-                        false, Mock.Of<IBookmarkTracker>(), Mock.Of<IResultResourceHandler>(), database,
-                        Bookmark.From("123"),
+                        false, Mock.Of<IBookmarksTracker>(), Mock.Of<IResultResourceHandler>(), database,
+                        Bookmarks.From("123"),
                         TransactionConfig.Default, null))
                     .Should().Throw<ClientException>().WithMessage("*that does not support multiple databases*");
             }
@@ -197,10 +197,10 @@ namespace Neo4j.Driver.Internal.Protocol
             public async Task ShouldSyncIfValidBookmarkGiven()
             {
                 var mockConn = NewConnectionWithMode();
-                var bookmark = Bookmark.From(AsyncSessionTests.FakeABookmark(234));
+                var bookmarks = Bookmarks.From(AsyncSessionTests.FakeABookmark(234));
                 var V3 = new BoltProtocolV3();
 
-                await V3.BeginTransactionAsync(mockConn.Object, null, bookmark, null, null);
+                await V3.BeginTransactionAsync(mockConn.Object, null, bookmarks, null, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V3.BeginResponseHandler>(), null, null),
@@ -226,7 +226,7 @@ namespace Neo4j.Driver.Internal.Protocol
                             VerifyMetadata(msg.Metadata, mode);
                         });
 
-                await V3.BeginTransactionAsync(mockConn.Object, null, Bookmark, TxConfig, null);
+                await V3.BeginTransactionAsync(mockConn.Object, null, Bookmarks, TxConfig, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V3.BeginResponseHandler>(), null, null),
@@ -240,7 +240,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var V3 = new BoltProtocolV3();
 				var mockConn = NewConnectionWithMode(AccessMode.Read);
 
-				V3.Awaiting(p => p.BeginTransactionAsync(mockConn.Object, database, Bookmark.From("123"),
+				V3.Awaiting(p => p.BeginTransactionAsync(mockConn.Object, database, Bookmarks.From("123"),
                         TransactionConfig.Default, null))
                     .Should().Throw<ClientException>().WithMessage("*that does not support multiple databases*");
             }
@@ -253,7 +253,7 @@ namespace Neo4j.Driver.Internal.Protocol
 				
 				var ex = await Assert.ThrowsAsync<ArgumentException>(() => protocol.BeginTransactionAsync(mockConn.Object, 
 																						   string.Empty, 
-																						   Bookmark.From("123"), 
+																						   Bookmarks.From("123"), 
 																						   TransactionConfig.Default, 
 																						   "ImpersonatedUser"));
 
@@ -267,7 +267,7 @@ namespace Neo4j.Driver.Internal.Protocol
             public async Task EnqueueCommitAndSync()
             {
                 var mockConn = NewConnectionWithMode();
-                var bookmarkTracker = new Mock<IBookmarkTracker>();
+                var bookmarkTracker = new Mock<IBookmarksTracker>();
                 var V3 = new BoltProtocolV3();
 
                 await V3.CommitTransactionAsync(mockConn.Object, bookmarkTracker.Object);

@@ -195,8 +195,8 @@ namespace Neo4j.Driver.IntegrationTests.Stub
             {
                 using (BoltStubServer.Start("V4/read_from_aDatabase_with_bookmark", 9005))
                 {
-                    var bookmark1 = Bookmark.From("system:1111");
-                    var bookmark2 = Bookmark.From("aDatabase:5555");
+                    var bookmark1 = Bookmarks.From("system:1111");
+                    var bookmark2 = Bookmarks.From("aDatabase:5555");
 
                     using (var driver =
                         GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, _setupConfig))

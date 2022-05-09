@@ -23,19 +23,19 @@ namespace Neo4j.Driver.Internal.Messaging.V4_4
 {
 	internal class BeginMessage : V3.BeginMessage
 	{
-		public BeginMessage(Bookmark bookmark, TransactionConfig configBuilder, AccessMode mode, string impersonatedUser)
-			: this(null, bookmark, configBuilder, mode, impersonatedUser)
+		public BeginMessage(Bookmarks bookmarks, TransactionConfig configBuilder, AccessMode mode, string impersonatedUser)
+			: this(null, bookmarks, configBuilder, mode, impersonatedUser)
 		{
 		}
 
-		public BeginMessage(string database, Bookmark bookmark, TransactionConfig configBuilder, AccessMode mode, string impersonatedUser)
-			: this(database, bookmark, configBuilder?.Timeout, configBuilder?.Metadata, mode, impersonatedUser)
+		public BeginMessage(string database, Bookmarks bookmarks, TransactionConfig configBuilder, AccessMode mode, string impersonatedUser)
+			: this(database, bookmarks, configBuilder?.Timeout, configBuilder?.Metadata, mode, impersonatedUser)
 		{
 		}
 
-		public BeginMessage(string database, Bookmark bookmark, TimeSpan? txTimeout, IDictionary<string, object> txMetadata,
+		public BeginMessage(string database, Bookmarks bookmarks, TimeSpan? txTimeout, IDictionary<string, object> txMetadata,
 			AccessMode mode, string impersonatedUser)
-			: base(database, bookmark, txTimeout, txMetadata, mode)
+			: base(database, bookmarks, txTimeout, txMetadata, mode)
 		{
 			if(!string.IsNullOrEmpty(impersonatedUser))
 			{
