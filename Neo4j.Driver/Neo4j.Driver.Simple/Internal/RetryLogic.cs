@@ -62,7 +62,7 @@ namespace Neo4j.Driver.Internal
                 {
                     return work();
                 }
-                catch (Exception e) when (e.IsRetriableError())
+                catch (Exception e) when (e.CanBeRetried())
                 {
                     exceptions.Add(e);
 
