@@ -17,6 +17,7 @@
 
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal.IO.MessageSerializers.V3;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
 using Xunit;
@@ -25,7 +26,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
 {
     public class FailureMessageSerializerTests : PackStreamSerializerTests
     {
-        internal override IPackStreamSerializer SerializerUnderTest => new FailureMessageV1Serializer();
+        internal override IPackStreamSerializer SerializerUnderTest => new FailureMessageSerializer();
 
         [Fact]
         public void ShouldThrowOnSerialize()
