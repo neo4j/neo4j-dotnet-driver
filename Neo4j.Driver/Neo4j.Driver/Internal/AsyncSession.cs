@@ -161,14 +161,35 @@ namespace Neo4j.Driver.Internal
             return RunTransactionAsync(AccessMode.Write, work, action);
         }
 
-        public Task ExecuteAsync(Func<IAsyncQueryRunner, Task> work, AccessMode mode = AccessMode.Read, Action<TransactionConfigBuilder> action = null)
+        public Task ExecuteReadAsync(Func<IAsyncQueryRunner, Task> work, Action<TransactionConfigBuilder> action = null)
         {
-            return RunTransactionAsync(mode, work, action);
+            return RunTransactionAsync(AccessMode.Read, work, action);
         }
 
-        public Task<T> ExecuteAsync<T>(Func<IAsyncQueryRunner, Task<T>> work, AccessMode mode = AccessMode.Read, Action<TransactionConfigBuilder> action = null)
+        public Task<T> ExecuteReadAsync<T>(Func<IAsyncQueryRunner, Task<T>> work,  Action<TransactionConfigBuilder> action = null)
         {
-            return RunTransactionAsync(mode, work, action);
+            return RunTransactionAsync(AccessMode.Read, work, action);
+        }
+
+        public Task ExecuteWriteAsync(Func<IAsyncQueryRunner, Task> work, Action<TransactionConfigBuilder> action = null)
+        {
+            return RunTransactionAsync(AccessMode.Write, work, action);
+        }
+
+        public Task<T> ExecuteWriteAsync<T>(Func<IAsyncQueryRunner, Task<T>> work, Action<TransactionConfigBuilder> action = null)
+        {
+            return RunTransactionAsync(AccessMode.Write, work, action);
+        }
+
+        private Task RunTransactionAsync(AccessMode mode, Func<IAsyncQueryRunner, Task> work,
+            Action<TransactionConfigBuilder> action)
+        {
+            return RunTransactionAsync(mode, async tx =>
+            {
+                await work(tx).ConfigureAwait(false);
+                var ignored = 1;
+                return ignored;
+            }, action);
         }
 
         private Task RunTransactionAsync(AccessMode mode, Func<IAsyncTransaction, Task> work,
@@ -185,7 +206,6 @@ namespace Neo4j.Driver.Internal
         private Task<T> RunTransactionAsync<T>(AccessMode mode, Func<IAsyncTransaction, Task<T>> work,
             Action<TransactionConfigBuilder> action)
         {
-
             return _retryLogic.RetryAsync(async () =>
             {
                 var tx = await BeginTransactionWithoutLoggingAsync(mode, action, true).ConfigureAwait(false);
