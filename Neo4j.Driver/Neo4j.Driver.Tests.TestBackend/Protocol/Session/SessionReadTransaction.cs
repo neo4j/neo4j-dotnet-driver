@@ -21,11 +21,11 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
             var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
 
-            await sessionContainer.Session.ReadTransactionAsync(async tx =>
+            await sessionContainer.Session.ExecuteReadAsync(async tx =>
             {
 				sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAbleNothing);
 
-				TransactionId = controller.TransactionManager.AddTransaction(new TransactionWrapper(tx, async cursor =>
+				TransactionId = controller.TransactionManager.AddTransaction(new TransactionWrapper(tx as IAsyncTransaction, async cursor =>
 				{
 					var result = ProtocolObjectFactory.CreateObject<Result>();
 					await result.PopulateRecords(cursor).ConfigureAwait(false);
