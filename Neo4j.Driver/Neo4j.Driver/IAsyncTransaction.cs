@@ -28,14 +28,14 @@ namespace Neo4j.Driver
         /// Asynchronously commit this transaction.
         /// </summary>
         /// <returns>A task of transaction commit.</returns>
-        /// <exception cref="TransactionClosedException">Throw when the transaction has previously been closed with <see cref="CommitAsync"/> or <see cref="RollbackAsync"/></exception>
+        /// <exception cref="TransactionClosedException">Thrown when the transaction has previously been closed.</exception>
         Task CommitAsync();
 
         /// <summary>
         /// Asynchronously roll back this transaction.
         /// </summary>
         /// <returns>A task of transaction rollback.</returns>
-        /// <exception cref="TransactionClosedException">>Throw when the transaction has previously been closed with <see cref="CommitAsync"/> or <see cref="RollbackAsync"/></exception>
+        /// <exception cref="TransactionClosedException">>Thrown when the transaction has previously been closed.</exception>
         Task RollbackAsync();
 
         /// <summary>
