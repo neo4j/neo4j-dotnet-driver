@@ -47,6 +47,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             { typeof(TokenExpiredException),			"TokenExpiredError"  },
             { typeof(ConnectionReadTimeoutException),   "ConnectionReadTimeoutError"},
             { typeof(InvalidBookmarkException),			"InvalidBookmarkError"},
+            { typeof(TransactionClosedException),       "ClientError"},
 
             { typeof(NotSupportedException),            "NotSupportedException" },
 
@@ -58,11 +59,12 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
             string outerExceptionMessage = ex.Message;
             string exceptionMessage = (ex.InnerException != null) ? ex.InnerException.Message : ex.Message;
+
             var type = TypeMap.GetValueOrDefault(ex.GetType());
 
 
             //if (ex is Neo4jException || ex is NotSupportedException)
-            if(type is not null)
+            if (type is not null)
             {
                 ProtocolException newError = ProtocolObjectFactory.CreateObject<ProtocolException>();
                 newError.ExceptionObj = ex;

@@ -99,7 +99,7 @@ namespace Neo4j.Driver.Tests
                 await tx.MarkToClose();
 
                 var error = await ExceptionAsync(() => tx.RunAsync("ttt"));
-                error.Should().BeOfType<ClientException>();
+                error.Should().BeOfType<TransactionClosedException>();
             }
 
             [Fact]
