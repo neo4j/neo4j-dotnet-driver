@@ -264,7 +264,7 @@ namespace Neo4j.Driver.Internal
                 //Dispose managed resources
                 
                 //call it synchronously
-                Task.Run(CloseAsync).GetAwaiter().GetResult();
+                CloseAsync().GetAwaiter().GetResult();
             }
 
             _disposed = true;

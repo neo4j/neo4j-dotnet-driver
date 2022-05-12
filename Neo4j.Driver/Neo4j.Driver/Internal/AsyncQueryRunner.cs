@@ -69,16 +69,16 @@ namespace Neo4j.Driver.Internal
 
 		public async ValueTask DisposeAsync()
 		{
-			await DisposeAsyncCore();
+			await DisposeAsyncCore().ConfigureAwait(false);
 
 			Dispose(disposing: false);
 			GC.SuppressFinalize(this);
 		}
 
-		protected virtual async ValueTask DisposeAsyncCore()
+		protected virtual ValueTask DisposeAsyncCore()
 		{
 			//Nothing to dispose of in this class. Methods required for derived classes and correct dispose pattern
-			await Task.CompletedTask;
+			return new ValueTask(Task.CompletedTask);
 		}
 	}
 
