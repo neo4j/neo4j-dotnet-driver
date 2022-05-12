@@ -206,24 +206,29 @@ namespace Neo4j.Driver.Internal
         private Task<T> RunTransactionAsync<T>(AccessMode mode, Func<IAsyncTransaction, Task<T>> work,
             Action<TransactionConfigBuilder> action)
         {
-            return _retryLogic.RetryAsync(async () =>
+            return TryExecuteAsync(_logger, () => _retryLogic.RetryAsync(async () =>
             {
                 var tx = await BeginTransactionWithoutLoggingAsync(mode, action, true).ConfigureAwait(false);
                 try
                 {
                     var result = await work(tx).ConfigureAwait(false);
                     if (tx.IsOpen)
+                    {
                         await tx.CommitAsync().ConfigureAwait(false);
+                    }
 
                     return result;
                 }
                 catch
                 {
                     if (tx.IsOpen)
+                    {
                         await tx.RollbackAsync().ConfigureAwait(false);
+                    }
+
                     throw;
                 }
-            });
+            }));
         }
 
         private async Task<IInternalAsyncTransaction> BeginTransactionWithoutLoggingAsync(AccessMode mode,
