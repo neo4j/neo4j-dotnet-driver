@@ -127,7 +127,7 @@ namespace Neo4j.Driver.Internal
             {
                 await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
                 
-                await AcquireConnectionAndDBName(_defaultMode);
+                await AcquireConnectionAndDbNameAsync(_defaultMode).ConfigureAwait(false);
 
                 var protocol = _connection.BoltProtocol;
 
@@ -141,44 +141,55 @@ namespace Neo4j.Driver.Internal
             return result;
         }
 
-        public Task<T> ReadTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work)
-        {
-            return ReadTransactionAsync(work, null);
-        }
-
-        public Task ReadTransactionAsync(Func<IAsyncTransaction, Task> work)
-        {
-            return ReadTransactionAsync(work, null);
-        }
-
-        public Task<T> ReadTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work, Action<TransactionConfigBuilder> action)
+        public Task<T> ReadTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work, Action<TransactionConfigBuilder> action = null)
         {
             return RunTransactionAsync(AccessMode.Read, work, action);
         }
 
-        public Task ReadTransactionAsync(Func<IAsyncTransaction, Task> work, Action<TransactionConfigBuilder> action)
+        public Task ReadTransactionAsync(Func<IAsyncTransaction, Task> work, Action<TransactionConfigBuilder> action = null)
         {
             return RunTransactionAsync(AccessMode.Read, work, action);
         }
 
-        public Task<T> WriteTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work)
-        {
-            return WriteTransactionAsync(work, null);
-        }
-
-        public Task WriteTransactionAsync(Func<IAsyncTransaction, Task> work)
-        {
-            return WriteTransactionAsync(work, null);
-        }
-
-        public Task<T> WriteTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work, Action<TransactionConfigBuilder> action)
+        public Task<T> WriteTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work, Action<TransactionConfigBuilder> action = null)
         {
             return RunTransactionAsync(AccessMode.Write, work, action);
         }
 
-        public Task WriteTransactionAsync(Func<IAsyncTransaction, Task> work, Action<TransactionConfigBuilder> action)
+        public Task WriteTransactionAsync(Func<IAsyncTransaction, Task> work, Action<TransactionConfigBuilder> action = null)
         {
             return RunTransactionAsync(AccessMode.Write, work, action);
+        }
+
+        public Task ExecuteReadAsync(Func<IAsyncQueryRunner, Task> work, Action<TransactionConfigBuilder> action = null)
+        {
+            return RunTransactionAsync(AccessMode.Read, work, action);
+        }
+
+        public Task<T> ExecuteReadAsync<T>(Func<IAsyncQueryRunner, Task<T>> work,  Action<TransactionConfigBuilder> action = null)
+        {
+            return RunTransactionAsync(AccessMode.Read, work, action);
+        }
+
+        public Task ExecuteWriteAsync(Func<IAsyncQueryRunner, Task> work, Action<TransactionConfigBuilder> action = null)
+        {
+            return RunTransactionAsync(AccessMode.Write, work, action);
+        }
+
+        public Task<T> ExecuteWriteAsync<T>(Func<IAsyncQueryRunner, Task<T>> work, Action<TransactionConfigBuilder> action = null)
+        {
+            return RunTransactionAsync(AccessMode.Write, work, action);
+        }
+
+        private Task RunTransactionAsync(AccessMode mode, Func<IAsyncQueryRunner, Task> work,
+            Action<TransactionConfigBuilder> action)
+        {
+            return RunTransactionAsync(mode, async tx =>
+            {
+                await work(tx).ConfigureAwait(false);
+                var ignored = 1;
+                return ignored;
+            }, action);
         }
 
         private Task RunTransactionAsync(AccessMode mode, Func<IAsyncTransaction, Task> work,
@@ -195,7 +206,7 @@ namespace Neo4j.Driver.Internal
         private Task<T> RunTransactionAsync<T>(AccessMode mode, Func<IAsyncTransaction, Task<T>> work,
             Action<TransactionConfigBuilder> action)
         {
-            return TryExecuteAsync(_logger, async () => await _retryLogic.RetryAsync(async () =>
+            return TryExecuteAsync(_logger, () => _retryLogic.RetryAsync(async () =>
             {
                 var tx = await BeginTransactionWithoutLoggingAsync(mode, action, true).ConfigureAwait(false);
                 try
@@ -217,7 +228,7 @@ namespace Neo4j.Driver.Internal
 
                     throw;
                 }
-            }).ConfigureAwait(false));
+            }));
         }
 
         private async Task<IInternalAsyncTransaction> BeginTransactionWithoutLoggingAsync(AccessMode mode,
@@ -226,7 +237,7 @@ namespace Neo4j.Driver.Internal
             var config = BuildTransactionConfig(action);
             await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
 
-            await AcquireConnectionAndDBName(mode);
+            await AcquireConnectionAndDbNameAsync(mode).ConfigureAwait(false);
 
             var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmarks, _reactive, _fetchSize, ImpersonatedUser());
             await tx.BeginTransactionAsync(config).ConfigureAwait(false);
@@ -234,11 +245,11 @@ namespace Neo4j.Driver.Internal
             return _transaction;
         }
 
-        private async Task AcquireConnectionAndDBName(AccessMode mode)
+        private async Task AcquireConnectionAndDbNameAsync(AccessMode mode)
         {
             _connection = await _connectionProvider.AcquireAsync(mode, _database, ImpersonatedUser(), _bookmarks).ConfigureAwait(false);
 
-            //Update the database. If a routing request occured it may have returned a differing DB alias name that needs to be used for the 
+            //Update the database. If a routing request occurred it may have returned a differing DB alias name that needs to be used for the 
             //rest of the sessions lifetime.
             _database = _connection.Database;
         }
@@ -253,7 +264,7 @@ namespace Neo4j.Driver.Internal
                 //Dispose managed resources
                 
                 //call it synchronously
-                Task.Run(() => CloseAsync()).GetAwaiter().GetResult();
+                CloseAsync().GetAwaiter().GetResult();
             }
 
             _disposed = true;
@@ -263,7 +274,7 @@ namespace Neo4j.Driver.Internal
         protected override async ValueTask DisposeAsyncCore()
         {
             await CloseAsync().ConfigureAwait(false);
-            await base.DisposeAsyncCore();
+            await base.DisposeAsyncCore().ConfigureAwait(false);
         }
 
         private string ImpersonatedUser()

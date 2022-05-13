@@ -21,11 +21,11 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
             var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
 
-            await sessionContainer.Session.WriteTransactionAsync(async tx =>
+            await sessionContainer.Session.ExecuteWriteAsync(async tx =>
             {
 				sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAbleNothing);
 
-				TransactionId = controller.TransactionManager.AddTransaction(new TransactionWrapper(tx, async cursor =>
+				TransactionId = controller.TransactionManager.AddTransaction(new TransactionWrapper(tx as IAsyncTransaction, async cursor =>
 				{
 					var result = ProtocolObjectFactory.CreateObject<Result>();
 					await result.PopulateRecords(cursor).ConfigureAwait(false);
@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
 			var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
 
-			if(sessionContainer.RetryState == NewSession.SessionState.RetryAbleNothing)
+			if (sessionContainer.RetryState == NewSession.SessionState.RetryAbleNothing)
 				throw new ArgumentException("Should never hit this code with a RetryAbleNothing");
 
 			else if(sessionContainer.RetryState == NewSession.SessionState.RetryAbleNegative)
