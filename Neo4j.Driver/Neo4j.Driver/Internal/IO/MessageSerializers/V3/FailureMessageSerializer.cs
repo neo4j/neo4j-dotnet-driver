@@ -19,7 +19,7 @@ using System.Collections.Generic;
 using Neo4j.Driver.Internal.Messaging;
 using static Neo4j.Driver.Internal.Protocol.BoltProtocolV3MessageFormat;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers
+namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
 {
     internal class FailureMessageSerializer : ReadOnlySerializer
     {
@@ -30,6 +30,11 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
             var values = reader.ReadMap();
             var code = values["code"]?.ToString();
             var message = values["message"]?.ToString();
+
+            if (code == "Neo.TransientError.Transaction.Terminated")
+                code = "Neo.ClientError.Transaction.Terminated";
+            if (code == "Neo.TransientError.Transaction.LockClientStopped")
+                code = "Neo.ClientError.Transaction.LockClientStopped";
 
             return new FailureMessage(code, message);
         }

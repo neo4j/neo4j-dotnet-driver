@@ -26,6 +26,7 @@ namespace Neo4j.Driver
     [DataContract]
     public class Neo4jException : Exception
     {
+        internal virtual bool CanBeRetried => false;
         /// <summary>
         /// Create a new <see cref="Neo4jException"/>
         /// </summary>
@@ -141,6 +142,8 @@ namespace Neo4j.Driver
     [DataContract]
     public class TransientException : Neo4jException
     {
+        internal override bool CanBeRetried => true;
+
         /// <summary>
         /// Create a new <see cref="TransientException"/>.
         /// </summary>
@@ -218,6 +221,8 @@ namespace Neo4j.Driver
     [DataContract]
     public class ServiceUnavailableException : Neo4jException
     {
+        internal override bool CanBeRetried => true;
+
         /// <summary>
         /// Create a new <see cref="ServiceUnavailableException"/> with an error message.
         /// </summary>
@@ -245,6 +250,8 @@ namespace Neo4j.Driver
     [DataContract]
     public class SessionExpiredException : Neo4jException
     {
+        internal override bool CanBeRetried => true;
+
         /// <summary>
         /// Create a new <see cref="SessionExpiredException"/> with an error message.
         /// </summary>
@@ -269,6 +276,8 @@ namespace Neo4j.Driver
     [DataContract]
     public class ConnectionReadTimeoutException : Neo4jException
     {
+        internal override bool CanBeRetried => true;
+
         /// <summary>
         /// Create a new <see cref="ConnectionReadTimeoutException"/> with an error message.
         /// </summary>
@@ -392,6 +401,8 @@ namespace Neo4j.Driver
     /// </summary>
     public class AuthorizationException : SecurityException
     {
+        internal override bool CanBeRetried => true;
+
         private const string ErrorCode = "Neo.ClientError.Security.AuthorizationExpired";
 
         internal static bool IsAuthorizationError(string code)

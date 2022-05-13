@@ -57,7 +57,7 @@ namespace Neo4j.Driver.Internal
 
                 return failedWork.SelectMany(exc =>
                 {
-                    if (!exc.IsRetriableError())
+                    if (!exc.CanBeRetried())
                     {
                         return Observable.Throw<int>(exc);
                     }

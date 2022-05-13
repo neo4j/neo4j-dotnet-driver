@@ -17,6 +17,7 @@
 
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal.IO.MessageSerializers.V3;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
 using Xunit;
