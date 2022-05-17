@@ -50,6 +50,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 									typeof(ProtocolException),
 									typeof(SessionLastBookmarks),
 									typeof(VerifyConnectivity),
+                                    typeof(GetServerInfo),
 									typeof(CheckMultiDBSupport),
                                     typeof(CheckDriverIsEncrypted),
 									typeof(ResolverResolutionCompleted),

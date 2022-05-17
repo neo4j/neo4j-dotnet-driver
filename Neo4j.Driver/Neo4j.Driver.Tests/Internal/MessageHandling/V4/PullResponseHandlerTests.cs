@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
 
             streamBuilder.Verify(x => x.PullCompleted(true, null), Times.Once);
 
-            bookmarkTracker.Verify(x => x.UpdateBookmark(BookmarkCollectorTests.TestMetadataCollected), Times.Once);
+            bookmarkTracker.Verify(x => x.UpdateBookmarks(BookmarkCollectorTests.TestMetadataCollected), Times.Once);
 
             summaryBuilder.VerifySet(
                 x => x.Counters = It.Is<ICounters>(c =>
@@ -116,12 +116,12 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
         }
 
         private static PullResponseHandler CreateHandler(out Mock<IResultStreamBuilder> streamBuilder,
-            out Mock<SummaryBuilder> summaryBuilder, out Mock<IBookmarkTracker> bookmarkTracker)
+            out Mock<SummaryBuilder> summaryBuilder, out Mock<IBookmarksTracker> bookmarkTracker)
         {
             summaryBuilder =
                 new Mock<SummaryBuilder>(new Query("stmt"), new ServerInfo(new Uri("bolt://localhost")));
             streamBuilder = new Mock<IResultStreamBuilder>();
-            bookmarkTracker = new Mock<IBookmarkTracker>();
+            bookmarkTracker = new Mock<IBookmarksTracker>();
 
             return new PullResponseHandler(streamBuilder.Object, summaryBuilder.Object, bookmarkTracker.Object);
         }

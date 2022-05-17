@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Internal.Routing
             IClusterConnectionPoolManager poolManager,
             ILogger logger) :
             this(routingSettings.InitialServerAddressProvider,
-                new ClusterDiscovery(routingSettings.RoutingContext, logger), poolManager, logger,
+                new ClusterDiscovery(), poolManager, logger,
                 routingSettings.RoutingTablePurgeDelay)
         {
         }
@@ -71,7 +71,7 @@ namespace Neo4j.Driver.Internal.Routing
         }
 
         public async Task<IRoutingTable> EnsureRoutingTableForModeAsync(AccessMode mode, string database,
-            string impersonatedUser, Bookmark bookmark)
+            string impersonatedUser, Bookmarks bookmarks)
         {
             database = database ?? string.Empty;
 
@@ -87,7 +87,7 @@ namespace Neo4j.Driver.Internal.Routing
                     return existingTable;
                 }
 
-                var refreshedTable = await UpdateRoutingTableAsync(mode, database, impersonatedUser, bookmark)
+                var refreshedTable = await UpdateRoutingTableAsync(mode, database, impersonatedUser, bookmarks)
                     .ConfigureAwait(false);
                 await UpdateAsync(refreshedTable).ConfigureAwait(false);
                 return refreshedTable;
@@ -97,6 +97,38 @@ namespace Neo4j.Driver.Internal.Routing
                 // no matter whether we succeeded to update or not, we release the lock
                 semaphore.Release();
             }
+        }
+
+        public async Task<IServerInfo> GetServerInfoAsync(Uri uri, string database)
+        {
+            var bufferedExceptions = new List<Exception>();
+            var conn = await _poolManager.CreateClusterConnectionAsync(uri).ConfigureAwait(false);
+            if (conn == null)
+                throw new ServiceUnavailableException("Could not create connection");
+
+            var rt = await _discovery.DiscoverAsync(conn, null, null, null)
+                .ConfigureAwait(false);
+                
+            await conn.CloseAsync().ConfigureAwait(false);
+            await UpdateAsync(rt).ConfigureAwait(false);
+            foreach (var table in rt.Readers)
+            {
+                try
+                {
+                    var reportedConnection =
+                        await _poolManager.CreateClusterConnectionAsync(table).ConfigureAwait(false);
+                    await reportedConnection.CloseAsync().ConfigureAwait(false);
+                    return reportedConnection.Server;
+                }
+                catch (Exception ex) when (ex is not AuthenticationException)
+                {
+                    bufferedExceptions.Add(ex);
+                }
+              
+            }
+
+            throw new ServiceUnavailableException($"Failed to find server info for '{uri}' for database '{database}'.",
+                new AggregateException(bufferedExceptions));
         }
 
         public void Clear()
@@ -172,7 +204,7 @@ namespace Neo4j.Driver.Internal.Routing
         }
 
         internal async Task<IRoutingTable> UpdateRoutingTableAsync(AccessMode mode,
-            string database, string impersonatedUser, Bookmark bookmark)
+            string database, string impersonatedUser, Bookmarks bookmarks)
         {
             if (database == null)
             {
@@ -196,7 +228,7 @@ namespace Neo4j.Driver.Internal.Routing
             }
 
             var triedUris = new HashSet<Uri>();
-            var newRoutingTable = await UpdateRoutingTableAsync(existingTable, mode, database, impersonatedUser, bookmark, triedUris)
+            var newRoutingTable = await UpdateRoutingTableAsync(existingTable, mode, database, impersonatedUser, bookmarks, triedUris)
                 .ConfigureAwait(false);
             if (newRoutingTable != null)
             {
@@ -210,7 +242,7 @@ namespace Neo4j.Driver.Internal.Routing
                 if (uris.Count != 0)
                 {
                     await PrependRoutersAsync(existingTable, uris).ConfigureAwait(false);
-                    newRoutingTable = await UpdateRoutingTableAsync(existingTable, mode, database, impersonatedUser, bookmark)
+                    newRoutingTable = await UpdateRoutingTableAsync(existingTable, mode, database, impersonatedUser, bookmarks)
                         .ConfigureAwait(false);
                     if (newRoutingTable != null)
                     {
@@ -227,7 +259,7 @@ namespace Neo4j.Driver.Internal.Routing
         }
 
         internal async Task<IRoutingTable> UpdateRoutingTableAsync(IRoutingTable routingTable, AccessMode mode,
-            string database, string impersonatedUser, Bookmark bookmark, ISet<Uri> triedUris = null)
+            string database, string impersonatedUser, Bookmarks bookmarks, ISet<Uri> triedUris = null)
         {
             if (database == null)
             {
@@ -248,7 +280,7 @@ namespace Neo4j.Driver.Internal.Routing
                     else
                     {
                         var newRoutingTable =
-                            await _discovery.DiscoverAsync(conn, database, impersonatedUser, bookmark)
+                            await _discovery.DiscoverAsync(conn, database, impersonatedUser, bookmarks)
                                 .ConfigureAwait(false);
                         if (!newRoutingTable.IsStale(mode))
                         {

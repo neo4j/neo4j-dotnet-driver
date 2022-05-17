@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using Neo4j.Driver.Internal.IO.ValueSerializers;
+using FailureMessageSerializer = Neo4j.Driver.Internal.IO.MessageSerializers.V5.FailureMessageSerializer;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
@@ -31,6 +32,10 @@ namespace Neo4j.Driver.Internal.Protocol
 
             RemoveHandler<UnboundRelationshipSerializer>();
             AddHandler<ElementUnboundRelationshipSerializer>();
+
+            RemoveHandler<IO.MessageSerializers.V3.FailureMessageSerializer>();
+            AddHandler<FailureMessageSerializer>();
         }
     }
+
 }

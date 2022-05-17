@@ -131,6 +131,8 @@ namespace Neo4j.Driver.Internal.Result
             }
         }
 
+        public bool IsOpen => _summary == null;
+
         public void Cancel()
         {
             _resultStream.Cancel();

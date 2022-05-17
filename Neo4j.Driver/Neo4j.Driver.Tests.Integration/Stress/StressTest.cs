@@ -283,7 +283,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             await ReadNodesAsync(_driver, bookmark, BigDataTestBatchCount * BigDataTestBatchSize);
         }
 
-        private async Task<Bookmark> CreateNodesAsync(int batchCount, int batchSize, int batchBuffer, IDriver driver)
+        private async Task<Bookmarks> CreateNodesAsync(int batchCount, int batchSize, int batchBuffer, IDriver driver)
         {
             var timer = Stopwatch.StartNew();
 
@@ -308,7 +308,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
             _output.WriteLine("Creating nodes with Async API took: {0}ms", timer.ElapsedMilliseconds);
 
-            return session.LastBookmark;
+            return session.LastBookmarks;
         }
 
         private Query CreateBatchNodesQuery(IEnumerable<int> batch)
@@ -327,11 +327,11 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             });
         }
 
-        private async Task ReadNodesAsync(IDriver driver, Bookmark bookmark, int expectedNodes)
+        private async Task ReadNodesAsync(IDriver driver, Bookmarks bookmarks, int expectedNodes)
         {
             var timer = Stopwatch.StartNew();
 
-            var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read).WithBookmarks(bookmark));
+            var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read).WithBookmarks(bookmarks));
             try
             {
                 await session.ReadTransactionAsync(async txc =>
@@ -386,7 +386,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             ReadNodes(_driver, bookmark, BigDataTestBatchCount * BigDataTestBatchSize);
         }
 
-        private Bookmark CreateNodes(int batchCount, int batchSize, int batchBuffer, IDriver driver)
+        private Bookmarks CreateNodes(int batchCount, int batchSize, int batchBuffer, IDriver driver)
         {
             var timer = Stopwatch.StartNew();
 
@@ -405,15 +405,15 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
                 _output.WriteLine("Creating nodes with Sync API took: {0}ms", timer.ElapsedMilliseconds);
 
-                return session.LastBookmark;
+                return session.LastBookmarks;
             }
         }
 
-        private void ReadNodes(IDriver driver, Bookmark bookmark, int expectedNodes)
+        private void ReadNodes(IDriver driver, Bookmarks bookmarks, int expectedNodes)
         {
             var timer = Stopwatch.StartNew();
 
-            using (var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Read).WithBookmarks(bookmark)))
+            using (var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Read).WithBookmarks(bookmarks)))
             {
                 session.ReadTransaction(txc =>
                 {
@@ -462,7 +462,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 			RunReactiveBigData();            
         }
 
-        protected Bookmark CreateNodesRx(int batchCount, int batchSize, int batchBuffer, IDriver driver)
+        protected Bookmarks CreateNodesRx(int batchCount, int batchSize, int batchBuffer, IDriver driver)
         {
             var timer = Stopwatch.StartNew();
             var session = driver.RxSession();
@@ -479,14 +479,14 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
             _output.WriteLine("Creating nodes with Async API took: {0}ms", timer.ElapsedMilliseconds);
 
-            return session.LastBookmark;
+            return session.LastBookmarks;
         }
 
-        protected void ReadNodesRx(IDriver driver, Bookmark bookmark, int expectedNodes)
+        protected void ReadNodesRx(IDriver driver, Bookmarks bookmarks, int expectedNodes)
         {
             var timer = Stopwatch.StartNew();
 
-            var session = driver.RxSession(o => o.WithDefaultAccessMode(AccessMode.Read).WithBookmarks(bookmark));
+            var session = driver.RxSession(o => o.WithDefaultAccessMode(AccessMode.Read).WithBookmarks(bookmarks));
 
             session.ReadTransaction(txc =>
                     txc.Run("MATCH (n:Node) RETURN n ORDER BY n.index").Records().Select(r => r[0].As<INode>()).Do(n =>

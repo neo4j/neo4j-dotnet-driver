@@ -48,6 +48,8 @@ namespace Neo4j.Driver.Internal
             return _executor.RunSync(() => _cursor.ConsumeAsync());
         }
 
+        public bool IsOpen => _cursor.IsOpen;
+
         public IEnumerator<IRecord> GetEnumerator()
         {
             return _recordSet.Records().GetEnumerator();

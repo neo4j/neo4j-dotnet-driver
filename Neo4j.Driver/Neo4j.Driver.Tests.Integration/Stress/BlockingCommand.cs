@@ -36,7 +36,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         {
             return _driver.Session(o =>
                 o.WithDefaultAccessMode(mode)
-                    .WithBookmarks(_useBookmark ? new[] {context.Bookmark} : Array.Empty<Bookmark>()));
+                    .WithBookmarks(_useBookmark ? new[] {context.Bookmarks } : Array.Empty<Bookmarks>()));
         }
 
         public ITransaction BeginTransaction(ISession session, TContext context)

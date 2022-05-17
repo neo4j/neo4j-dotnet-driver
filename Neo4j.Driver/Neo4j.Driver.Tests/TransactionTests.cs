@@ -48,13 +48,13 @@ namespace Neo4j.Driver.Tests
                 var mockProtocol = new Mock<IBoltProtocol>();
                 mockConn.Setup(x => x.BoltProtocol).Returns(mockProtocol.Object);
 
-                var bookmark = Bookmark.From(FakeABookmark(123));
+                var bookmarks = Bookmarks.From(FakeABookmark(123));
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>(), null, null,
-                    bookmark);
+                    bookmarks);
 
                 await tx.BeginTransactionAsync(null);
                 mockProtocol.Verify(
-                    x => x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), bookmark,
+                    x => x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), bookmarks,
                         It.IsAny<TransactionConfig>(), null),
                     Times.Once);
             }
@@ -71,7 +71,7 @@ namespace Neo4j.Driver.Tests
 
                 await tx.BeginTransactionAsync(TransactionConfig.Default);
                 protocol.Verify(
-                    x => x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmark>(),
+                    x => x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmarks>(),
                         It.IsAny<TransactionConfig>(), null), Times.Once);
             }
         }
@@ -99,7 +99,7 @@ namespace Neo4j.Driver.Tests
                 await tx.MarkToClose();
 
                 var error = await ExceptionAsync(() => tx.RunAsync("ttt"));
-                error.Should().BeOfType<ClientException>();
+                error.Should().BeOfType<TransactionClosedException>();
             }
 
             [Fact]
@@ -132,7 +132,7 @@ namespace Neo4j.Driver.Tests
                 await tx.CommitAsync();
 
                 protocol.Verify(x => x.CommitTransactionAsync(It.IsAny<IConnection>(), tx));
-                mockHandler.Verify(x => x.OnTransactionDisposeAsync(It.IsAny<Bookmark>()), Times.Once);
+                mockHandler.Verify(x => x.OnTransactionDisposeAsync(It.IsAny<Bookmarks>()), Times.Once);
             }
 
             [Fact]
@@ -146,7 +146,7 @@ namespace Neo4j.Driver.Tests
                 mockConn.Invocations.Clear();
                 await tx.RollbackAsync();
                 protocol.Verify(x => x.RollbackTransactionAsync(It.IsAny<IConnection>()));
-                mockHandler.Verify(x => x.OnTransactionDisposeAsync(It.IsAny<Bookmark>()), Times.Once);
+                mockHandler.Verify(x => x.OnTransactionDisposeAsync(It.IsAny<Bookmarks>()), Times.Once);
             }
 
             [Fact]
@@ -159,7 +159,7 @@ namespace Neo4j.Driver.Tests
 
                 mockConn.Invocations.Clear();
                 await tx.CommitAsync();
-                mockHandler.Verify(x => x.OnTransactionDisposeAsync(It.IsAny<Bookmark>()), Times.Once);
+                mockHandler.Verify(x => x.OnTransactionDisposeAsync(It.IsAny<Bookmarks>()), Times.Once);
             }
         }
 

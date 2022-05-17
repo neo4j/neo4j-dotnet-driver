@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,27 +15,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
-using System.Linq;
-using Neo4j.Driver.Internal.Messaging.V3;
-
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal.MessageHandling
 {
-    internal static class BookmarkHelper
+    internal interface IBookmarksTracker
     {
-        public const string BookmarksKey = "bookmarks";
-
-        public static IDictionary<string, object> AsBeginTransactionParameters(this Bookmark bookmark)
-        {
-            if (bookmark != null && bookmark.Values.Any())
-            {
-                return new Dictionary<string, object>
-                {
-                    {BookmarksKey, bookmark.Values}
-                };
-            }
-
-            return null;
-        }
+        void UpdateBookmarks(Bookmarks bookmarks);
     }
 }

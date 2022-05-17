@@ -23,7 +23,7 @@ namespace Neo4j.Driver.Internal.Util
     {
         public AccessMode Mode { get; private set; }
         public String Database { get; private set; }
-        public Bookmark Bookmark { get; private set; }
+        public Bookmarks Bookmarks { get; private set; }
 
         /// <summary>
         /// This describes a read connection with default database.
@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Internal.Util
         {
             Mode = AccessMode.Read,
             Database = null,
-            Bookmark = Bookmark.Empty
+            Bookmarks = Bookmarks.Empty
         };
     }
 }

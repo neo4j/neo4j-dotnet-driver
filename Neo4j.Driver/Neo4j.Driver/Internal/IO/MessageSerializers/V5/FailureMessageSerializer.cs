@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+﻿// Copyright (c) 2002-2022 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,10 +15,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Internal.MessageHandling
+using Neo4j.Driver.Internal.Messaging;
+
+namespace Neo4j.Driver.Internal.IO.MessageSerializers.V5
 {
-    internal interface IBookmarkTracker
+    internal class FailureMessageSerializer : V3.FailureMessageSerializer
     {
-        void UpdateBookmark(Bookmark bookmark);
+        public override object Deserialize(IPackStreamReader reader, byte signature, long size)
+        {
+            var values = reader.ReadMap();
+            var code = values["code"]?.ToString();
+            var message = values["message"]?.ToString();
+
+            return new FailureMessage(code, message);
+        }
     }
 }

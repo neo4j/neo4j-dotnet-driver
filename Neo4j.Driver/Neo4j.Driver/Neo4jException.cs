@@ -17,6 +17,7 @@
 
 using System;
 using System.Runtime.Serialization;
+using System.Transactions;
 
 namespace Neo4j.Driver
 {
@@ -26,6 +27,7 @@ namespace Neo4j.Driver
     [DataContract]
     public class Neo4jException : Exception
     {
+        internal virtual bool CanBeRetried => false;
         /// <summary>
         /// Create a new <see cref="Neo4jException"/>
         /// </summary>
@@ -141,6 +143,8 @@ namespace Neo4j.Driver
     [DataContract]
     public class TransientException : Neo4jException
     {
+        internal override bool CanBeRetried => true;
+
         /// <summary>
         /// Create a new <see cref="TransientException"/>.
         /// </summary>
@@ -218,6 +222,8 @@ namespace Neo4j.Driver
     [DataContract]
     public class ServiceUnavailableException : Neo4jException
     {
+        internal override bool CanBeRetried => true;
+
         /// <summary>
         /// Create a new <see cref="ServiceUnavailableException"/> with an error message.
         /// </summary>
@@ -245,6 +251,8 @@ namespace Neo4j.Driver
     [DataContract]
     public class SessionExpiredException : Neo4jException
     {
+        internal override bool CanBeRetried => true;
+
         /// <summary>
         /// Create a new <see cref="SessionExpiredException"/> with an error message.
         /// </summary>
@@ -269,6 +277,8 @@ namespace Neo4j.Driver
     [DataContract]
     public class ConnectionReadTimeoutException : Neo4jException
     {
+        internal override bool CanBeRetried => true;
+
         /// <summary>
         /// Create a new <see cref="ConnectionReadTimeoutException"/> with an error message.
         /// </summary>
@@ -392,6 +402,8 @@ namespace Neo4j.Driver
     /// </summary>
     public class AuthorizationException : SecurityException
     {
+        internal override bool CanBeRetried => true;
+
         private const string ErrorCode = "Neo.ClientError.Security.AuthorizationExpired";
 
         internal static bool IsAuthorizationError(string code)
@@ -527,14 +539,14 @@ namespace Neo4j.Driver
 
     /// <summary>
     /// An attempt to BeginTransaction has been made before the sessions existing transaction
-    /// has been consumed or rolledback. e.g. An attempt to nest transactions has occured.
+    /// has been consumed or rolled back. e.g. An attempt to nest transactions has occurred.
     /// A session can only have a single transaction at a time.
     /// </summary>
     [DataContract]
     public class TransactionNestingException : ClientException
     { 
         /// <summary>
-        /// Creaet a new <see cref="TransactionNestingException"/> with an error message
+        /// Create a new <see cref="TransactionNestingException"/> with an error message
         /// </summary>
         /// <param name="message">The error message</param>
         public TransactionNestingException(string message) : base(message)		
@@ -542,4 +554,19 @@ namespace Neo4j.Driver
         }
     }
 
+    /// <summary>
+    /// The exception that is thrown when calling <see cref="IAsyncTransaction.CommitAsync"/> or <see cref="IAsyncTransaction.RollbackAsync"/>
+    /// on an <see cref="IAsyncTransaction"/> that has already been closed.
+    /// </summary>
+    [DataContract]
+    public class TransactionClosedException : ClientException
+    {
+        /// <summary>
+        ///  Create a new <see cref="TransactionClosedException"/> with an error message.
+        /// </summary>
+        /// <param name="message">The error message</param>
+        public TransactionClosedException(string message) : base(message)
+        {
+        }
+    }
 }

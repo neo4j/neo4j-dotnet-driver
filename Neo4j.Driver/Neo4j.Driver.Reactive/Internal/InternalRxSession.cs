@@ -36,6 +36,8 @@ namespace Neo4j.Driver.Internal
         }
 
         public Bookmark LastBookmark => _session.LastBookmark;
+        public Bookmarks LastBookmarks => _session.LastBookmarks;
+
         public SessionConfig SessionConfig => _session.SessionConfig;
 
         #region Run Methods

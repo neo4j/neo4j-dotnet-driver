@@ -46,18 +46,18 @@ namespace Neo4j.Driver.Internal.Protocol
 			return new HelloMessage(userAgent, auth);
 		}
 
-		protected override IRequestMessage GetBeginMessage(string database, Bookmark bookmark, TransactionConfig config, AccessMode mode, string impersonatedUser)
+		protected override IRequestMessage GetBeginMessage(string database, Bookmarks bookmarks, TransactionConfig config, AccessMode mode, string impersonatedUser)
 		{
 			ValidateImpersonatedUserForVersion(impersonatedUser);
 
-			return new BeginMessage(database, bookmark, config?.Timeout, config?.Metadata, mode);
+			return new BeginMessage(database, bookmarks, config?.Timeout, config?.Metadata, mode);
 		}
 
-		protected override IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmark bookmark = null, TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null, string impersonatedUser = null)
+		protected override IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmarks bookmarks = null, TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null, string impersonatedUser = null)
 		{
 			ValidateImpersonatedUserForVersion(impersonatedUser);
 
-			return new RunWithMetadataMessage(query, database, bookmark, config, mode);
+			return new RunWithMetadataMessage(query, database, bookmarks, config, mode);
 		}
 
 		protected override IResponseHandler GetHelloResponseHandler(IConnection conn) { return new V3.HelloResponseHandler(conn); }
@@ -66,18 +66,18 @@ namespace Neo4j.Driver.Internal.Protocol
         public override async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
 																				  Query query, 
 																				  bool reactive, 
-																				  IBookmarkTracker bookmarkTracker,
+																				  IBookmarksTracker bookmarksTracker,
 																				  IResultResourceHandler resultResourceHandler,
 																				  string database, 
-																				  Bookmark bookmark, 
+																				  Bookmarks bookmarks, 
 																				  TransactionConfig config,
 																				  string impersonatedUser,
 																				  long fetchSize = Config.Infinite)
         {
             var summaryBuilder = new SummaryBuilder(query, connection.Server);
             var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,
-                RequestMore(connection, summaryBuilder, bookmarkTracker),
-                CancelRequest(connection, summaryBuilder, bookmarkTracker),
+                RequestMore(connection, summaryBuilder, bookmarksTracker),
+                CancelRequest(connection, summaryBuilder, bookmarksTracker),
                 resultResourceHandler,
                 fetchSize, reactive);
             var runHandler = new V4.RunResponseHandler(streamBuilder, summaryBuilder);
@@ -87,12 +87,12 @@ namespace Neo4j.Driver.Internal.Protocol
             if (!reactive)
             {
                 pullMessage = new PullMessage(fetchSize);
-                pullHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
+                pullHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
             }
 
             await connection
                 .EnqueueAsync(
-                    GetRunWithMetaDataMessage(query, bookmark, config,
+                    GetRunWithMetaDataMessage(query, bookmarks, config,
                         connection.GetEnforcedAccessMode(), database, impersonatedUser), runHandler,
                     pullMessage, pullHandler)
                 .ConfigureAwait(false);
@@ -128,18 +128,18 @@ namespace Neo4j.Driver.Internal.Protocol
         public override async Task<IResultCursor<T>> RunInAutoCommitTransactionAsync<T>(IConnection connection,
                                                                                   Query query,
                                                                                   bool reactive,
-                                                                                  IBookmarkTracker bookmarkTracker,
+                                                                                  IBookmarksTracker bookmarksTracker,
                                                                                   IResultResourceHandler resultResourceHandler,
                                                                                   string database,
-                                                                                  Bookmark bookmark,
+                                                                                  Bookmarks bookmarks,
                                                                                   TransactionConfig config,
                                                                                   string impersonatedUser,
                                                                                   long fetchSize = Config.Infinite)
         {
             var summaryBuilder = new SummaryBuilder(query, connection.Server);
             var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,
-                RequestMore(connection, summaryBuilder, bookmarkTracker),
-                CancelRequest(connection, summaryBuilder, bookmarkTracker),
+                RequestMore(connection, summaryBuilder, bookmarksTracker),
+                CancelRequest(connection, summaryBuilder, bookmarksTracker),
                 resultResourceHandler,
                 fetchSize, reactive);
             var runHandler = new V4.RunResponseHandler(streamBuilder, summaryBuilder);
@@ -149,12 +149,12 @@ namespace Neo4j.Driver.Internal.Protocol
             if (!reactive)
             {
                 pullMessage = new PullMessage(fetchSize);
-                pullHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
+                pullHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
             }
 
             await connection
                 .EnqueueAsync(
-                    GetRunWithMetaDataMessage(query, bookmark, config,
+                    GetRunWithMetaDataMessage(query, bookmarks, config,
                         connection.GetEnforcedAccessMode(), database, impersonatedUser), runHandler,
                     pullMessage, pullHandler)
                 .ConfigureAwait(false);
@@ -188,11 +188,11 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         private static Func<IResultStreamBuilder, long, long, Task> RequestMore(IConnection connection,
-            SummaryBuilder summaryBuilder, IBookmarkTracker bookmarkTracker)
+            SummaryBuilder summaryBuilder, IBookmarksTracker bookmarksTracker)
         {
             return async (streamBuilder, id, n) =>
             {
-                var pullAllHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
+                var pullAllHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
                 await connection
                     .EnqueueAsync(new PullMessage(id, n), pullAllHandler)
                     .ConfigureAwait(false);
@@ -201,11 +201,11 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         private static Func<IResultStreamBuilder, long, Task> CancelRequest(IConnection connection,
-            SummaryBuilder summaryBuilder, IBookmarkTracker bookmarkTracker)
+            SummaryBuilder summaryBuilder, IBookmarksTracker bookmarksTracker)
         {
             return async (streamBuilder, id) =>
             {
-                var pullAllHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarkTracker);
+                var pullAllHandler = new V4.PullResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
                 await connection
                     .EnqueueAsync(new DiscardMessage(id, All), pullAllHandler)
                     .ConfigureAwait(false);
@@ -219,7 +219,7 @@ namespace Neo4j.Driver.Internal.Protocol
             parameters = new Dictionary<string, object> { { "context", connection.RoutingContext }, { "database", string.IsNullOrEmpty(database) ? null : database } };
         }
 
-        public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmark bookmark)
+        public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmarks bookmarks)
         {
             ValidateImpersonatedUserForVersion(impersonatedUser);
             connection = connection ?? throw new ProtocolException("Attempting to get a routing table on a null connection");
@@ -229,14 +229,14 @@ namespace Neo4j.Driver.Internal.Protocol
             string procedure;
             var parameters = new Dictionary<string, object>();
 
-            var bookmarkTracker = new BookmarkTracker(bookmark);
+            var bookmarkTracker = new BookmarksTracker(bookmarks);
             var resourceHandler = new ConnectionResourceHandler(connection);
             var sessionDb = connection.SupportsMultidatabase() ? "system" : null;
 
             GetProcedureAndParameters(connection, database, out procedure, out parameters);
             var query = new Query(procedure, parameters);
 
-            var result = await RunInAutoCommitTransactionAsync(connection, query, false, bookmarkTracker, resourceHandler, sessionDb, bookmark, null, null).ConfigureAwait(false);
+            var result = await RunInAutoCommitTransactionAsync(connection, query, false, bookmarkTracker, resourceHandler, sessionDb, bookmarks, null, null).ConfigureAwait(false);
             var record = await result.SingleAsync().ConfigureAwait(false);
 
             //Since 4.4 the Routing information will contain a db. Earlier versions need to populate this here as it's not received in the older route response...

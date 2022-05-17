@@ -208,7 +208,7 @@ namespace Neo4j.Driver.Internal
             Interlocked.Decrement(ref _poolSize);
         }
 
-        public async Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmark bookmark)
+        public async Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmarks bookmarks)
         {
             _poolMetricsListener?.PoolAcquiring();
             
@@ -378,18 +378,28 @@ namespace Neo4j.Driver.Internal
 
             return Task.CompletedTask;
         }
-        
-        public async Task VerifyConnectivityAsync()
+
+        public async Task<IServerInfo> VerifyConnectivityAndGetInfoAsync()
         {
-            // Establish a connection with the server and immediately close it.
-            var connection = await AcquireAsync(Simple.Mode, Simple.Database, null, Simple.Bookmark).ConfigureAwait(false);
-            await connection.CloseAsync().ConfigureAwait(false);
+            var connection = await AcquireAsync(AccessMode.Read, null, null, null)
+                .ConfigureAwait(false) as IPooledConnection;
+
+            try
+            {
+                await connection.ResetAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                await ReleaseAsync(connection).ConfigureAwait(false);
+            }
+
+            return connection.Server;
         }
 
         public async Task<bool> SupportsMultiDbAsync()
         {
             // Establish a connection with the server and immediately close it.
-            var connection = await AcquireAsync(Simple.Mode, Simple.Database, null, Simple.Bookmark).ConfigureAwait(false);
+            var connection = await AcquireAsync(Simple.Mode, Simple.Database, null, Simple.Bookmarks).ConfigureAwait(false);
             var multiDb = connection.SupportsMultidatabase();
             await connection.CloseAsync().ConfigureAwait(false);
 

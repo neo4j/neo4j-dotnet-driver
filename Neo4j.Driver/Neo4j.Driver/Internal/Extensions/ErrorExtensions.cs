@@ -72,20 +72,9 @@ namespace Neo4j.Driver.Internal
             return error;
         }
 
-        public static bool IsRetriableError(this Exception error)
+        public static bool CanBeRetried(this Exception error)
         {
-			return error is SessionExpiredException || error.IsRetriableTransientError() ||
-				   error is ServiceUnavailableException || error.IsAuthorizationError() ||
-				   error is ConnectionReadTimeoutException;
-		}
-
-        public static bool IsRetriableTransientError(this Exception error)
-        {
-            return error is TransientException &&
-                   // These error code only happens if the transaction is terminated by client.
-                   // We should not retry on these errors
-                   !error.HasErrorCode("Neo.TransientError.Transaction.Terminated") &&
-                   !error.HasErrorCode("Neo.TransientError.Transaction.LockClientStopped");
+            return error is Neo4jException neo4JException && neo4JException.CanBeRetried;
         }
 
         public static bool IsRecoverableError(this Exception error)

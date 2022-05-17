@@ -72,13 +72,13 @@ namespace Neo4j.Driver.IntegrationTests.Routing
 		{	
 			string dbname = "foo"; 
 			var session = _driver.AsyncSession(ForDatabase("system"));
-			Bookmark bookmark;
+			Bookmarks bookmarks;
 
 			try
 			{
 				
 				await session.RunAsync(new Query($"CREATE DATABASE { dbname }"));
-				bookmark = session.LastBookmark;
+				bookmarks = session.LastBookmarks;
 			}
 			finally
 			{
@@ -93,7 +93,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
 					o.WithDatabase(dbname);
 				}
 
-				o.WithBookmarks(bookmark ?? Bookmark.Empty);
+				o.WithBookmarks(bookmarks ?? Bookmarks.Empty);
 			});
 
 			try
@@ -123,7 +123,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
                 .WithMessage("*to a server that does not support multiple databases.*");
         }
 
-        private async Task VerifyDatabaseNameOnSummaryTxFunc(string name, string expected, Bookmark bookmark = null)
+        private async Task VerifyDatabaseNameOnSummaryTxFunc(string name, string expected, Bookmarks bookmarks = null)
         {
             var session = _driver.AsyncSession(o =>
             {
@@ -132,7 +132,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
                     o.WithDatabase(name);
                 }
 
-                o.WithBookmarks(bookmark ?? Bookmark.Empty);
+                o.WithBookmarks(bookmarks ?? Bookmarks.Empty);
             });
 
             try
@@ -148,13 +148,13 @@ namespace Neo4j.Driver.IntegrationTests.Routing
             }
         }
 
-        private static async Task<Bookmark> CreateDatabase(IDriver driver, string name)
+        private static async Task<Bookmarks> CreateDatabase(IDriver driver, string name)
         {
             var session = driver.AsyncSession(ForDatabase("system"));
             try
             {
         				await session.WriteTransactionAsync(async txc => await txc.RunAndConsumeAsync($"CREATE DATABASE {name}"));
-				        return session.LastBookmark;
+				        return session.LastBookmarks;
             }
             finally
             {
@@ -162,9 +162,9 @@ namespace Neo4j.Driver.IntegrationTests.Routing
             }
         }
 
-        private static async Task DropDatabase(IDriver driver, string name, Bookmark bookmark)
+        private static async Task DropDatabase(IDriver driver, string name, Bookmarks bookmarks)
         {
-            var session = driver.AsyncSession(o => o.WithDatabase("system").WithBookmarks(bookmark));
+            var session = driver.AsyncSession(o => o.WithDatabase("system").WithBookmarks(bookmarks));
             try
             {
                 await session.WriteTransactionAsync(async txc => await txc.RunAndConsumeAsync($"DROP DATABASE {name}"));

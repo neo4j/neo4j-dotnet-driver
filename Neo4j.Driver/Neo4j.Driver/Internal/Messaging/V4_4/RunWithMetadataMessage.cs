@@ -29,21 +29,21 @@ namespace Neo4j.Driver.Internal.Messaging.V4_4
 		{
 		}
 
-		public RunWithMetadataMessage(Query query, Bookmark bookmark = null, TransactionConfig configBuilder = null,
+		public RunWithMetadataMessage(Query query, Bookmarks bookmarks = null, TransactionConfig configBuilder = null,
 			AccessMode mode = AccessMode.Write, string impersonatedUser = null)
-			: this(query, null, bookmark, configBuilder?.Timeout, configBuilder?.Metadata, mode, impersonatedUser)
+			: this(query, null, bookmarks, configBuilder?.Timeout, configBuilder?.Metadata, mode, impersonatedUser)
 		{
 		}
 
-		public RunWithMetadataMessage(Query query, string database, Bookmark bookmark, TransactionConfig configBuilder,
+		public RunWithMetadataMessage(Query query, string database, Bookmarks bookmarks, TransactionConfig configBuilder,
 			AccessMode mode, string impersonatedUser)
-			: this(query, database, bookmark, configBuilder?.Timeout, configBuilder?.Metadata, mode, impersonatedUser)
+			: this(query, database, bookmarks, configBuilder?.Timeout, configBuilder?.Metadata, mode, impersonatedUser)
 		{
 		}
 		
-		public RunWithMetadataMessage(Query query, string database, Bookmark bookmark, TimeSpan? txTimeout,
+		public RunWithMetadataMessage(Query query, string database, Bookmarks bookmarks, TimeSpan? txTimeout,
 			IDictionary<string, object> txMetadata, AccessMode mode, string impersonatedUser)
-			: base(database, bookmark, txTimeout, txMetadata, mode)
+			: base(database, bookmarks, txTimeout, txMetadata, mode)
 		{
 			Query = query;
 

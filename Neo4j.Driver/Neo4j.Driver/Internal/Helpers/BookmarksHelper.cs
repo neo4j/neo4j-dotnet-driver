@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,13 +15,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Connector;
+using System.Collections.Generic;
+using System.Linq;
 
-namespace Neo4j.Driver.Internal.Routing
+namespace Neo4j.Driver.Internal
 {
-    internal interface IDiscovery
+    internal static class BookmarksHelper
     {
-        Task<IRoutingTable> DiscoverAsync(IConnection connection, string database,  string impersonatedUser, Bookmarks bookmarks);
+        public const string BookmarksKey = "bookmarks";
+
+        public static IDictionary<string, object> AsBeginTransactionParameters(this Bookmarks bookmarks)
+        {
+            if (bookmarks != null && bookmarks.Values.Any())
+            {
+                return new Dictionary<string, object>
+                {
+                    {BookmarksKey, bookmarks.Values}
+                };
+            }
+
+            return null;
+        }
     }
 }

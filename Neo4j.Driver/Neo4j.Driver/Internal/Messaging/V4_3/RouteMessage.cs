@@ -15,10 +15,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Internal.Messaging.V3;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace Neo4j.Driver.Internal.Messaging.V4_3
 {
@@ -26,14 +24,14 @@ namespace Neo4j.Driver.Internal.Messaging.V4_3
 	{
 
 		public IDictionary<string, string> Routing { get;}
-		public Bookmark Bookmark { get; }
+		public Bookmarks Bookmarks { get; }
 		public string DatabaseParam { get; }
 
 
-		public RouteMessage(IDictionary<string, string> routingContext, Bookmark bookmark, string db)
+		public RouteMessage(IDictionary<string, string> routingContext, Bookmarks bookmarks, string db)
 		{
             Routing = routingContext ?? new Dictionary<string,string>();
-			Bookmark = bookmark ?? Bookmark.From(Array.Empty<string>());
+			Bookmarks = bookmarks ?? Bookmarks.From(Array.Empty<string>());
             DatabaseParam = db;            
 		}
 
@@ -48,8 +46,8 @@ namespace Neo4j.Driver.Internal.Messaging.V4_3
 
             message += " } ";
 
-			message += (Bookmark is not null && Bookmark.Values.Length > 0) 
-				? "{ bookmarks, " + Bookmark.Values.ToContentString() + " }" 
+			message += (Bookmarks is not null && Bookmarks.Values.Length > 0) 
+				? "{ bookmarks, " + Bookmarks.Values.ToContentString() + " }" 
 				: Array.Empty<string>().ToContentString();
 			
 			message += (!string.IsNullOrEmpty(DatabaseParam)) ? " \'" + DatabaseParam + "\'" : " None";

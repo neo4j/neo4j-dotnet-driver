@@ -18,7 +18,6 @@
 using System.IO;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.Threading;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -35,10 +34,10 @@ namespace Neo4j.Driver.Internal.Protocol
         Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
             Query query,
             bool reactive,
-            IBookmarkTracker bookmarkTracker,
+            IBookmarksTracker bookmarkTracker,
             IResultResourceHandler resultResourceHandler,
             string database,
-            Bookmark bookmark,
+            Bookmarks bookmark,
             TransactionConfig config,
             string impersonatedUser,
             long fetchSize);
@@ -46,20 +45,20 @@ namespace Neo4j.Driver.Internal.Protocol
         Task<IResultCursor<T>> RunInAutoCommitTransactionAsync<T>(IConnection connection,
             Query query,
             bool reactive,
-            IBookmarkTracker bookmarkTracker,
+            IBookmarksTracker bookmarkTracker,
             IResultResourceHandler resultResourceHandler,
             string database,
-            Bookmark bookmark,
+            Bookmarks bookmark,
             TransactionConfig config,
             string impersonatedUser,
             long fetchSize);
 
-        Task BeginTransactionAsync(IConnection connection, string database, Bookmark bookmark, TransactionConfig config, string impersonatedUser);
+        Task BeginTransactionAsync(IConnection connection, string database, Bookmarks bookmark, TransactionConfig config, string impersonatedUser);
 
         Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection, Query query, bool reactive, long fetchSize);
         Task<IResultCursor<T>> RunInExplicitTransactionAsync<T>(IConnection connection, Query query, bool reactive, long fetchSize);
 
-        Task CommitTransactionAsync(IConnection connection, IBookmarkTracker bookmarkTracker);
+        Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker);
 
         Task RollbackTransactionAsync(IConnection connection);
 
@@ -72,7 +71,7 @@ namespace Neo4j.Driver.Internal.Protocol
         Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection,
 																  string database,
 																  string impersonated_user,
-																  Bookmark bookmark); 
+																  Bookmarks bookmark); 
     }
 
 }

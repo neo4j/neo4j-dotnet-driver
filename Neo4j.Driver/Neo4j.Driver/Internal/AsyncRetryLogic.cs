@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Internal
                 {
                     return await runTxAsyncFunc().ConfigureAwait(false);
                 }
-                catch (Exception e) when (e.IsRetriableError())
+                catch (Exception e) when (e.CanBeRetried())
                 {
                     exceptions.Add(e);
 

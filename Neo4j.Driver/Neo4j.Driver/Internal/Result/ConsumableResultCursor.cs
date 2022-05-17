@@ -61,6 +61,8 @@ namespace Neo4j.Driver.Internal.Result
             }
         }
 
+        public bool IsOpen => !_isConsumed;
+
         public void Cancel()
         {
             _cursor.Cancel();

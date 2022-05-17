@@ -15,22 +15,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace Neo4j.Driver.Internal
 {
-    internal class InternalBookmark : Bookmark
+    internal class InternalBookmarks : Bookmarks
     {
-        internal InternalBookmark(params string[] values)
+        internal InternalBookmarks(params string[] values)
         {
             Values = values.Where(v => !string.IsNullOrEmpty(v)).Distinct().ToArray();
         }
 
-        public override string[] Values { get; }
-
-        private bool Equals(InternalBookmark other)
+        private bool Equals(InternalBookmarks other)
         {
             if (Values.Length != other.Values.Length)
             {
@@ -45,7 +41,7 @@ namespace Neo4j.Driver.Internal
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != this.GetType()) return false;
-            return Equals((InternalBookmark) obj);
+            return Equals((InternalBookmarks) obj);
         }
 
         public override int GetHashCode()
