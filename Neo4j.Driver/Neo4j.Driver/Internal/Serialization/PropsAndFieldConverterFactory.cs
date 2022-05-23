@@ -18,7 +18,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices.ComTypes;
 using System.Runtime.Serialization;
 
 namespace Neo4j.Driver.Internal.Serialization;
@@ -134,36 +136,36 @@ internal class PropsAndFieldConverterFactory
         if (dataType == type)
             return data;
 
-        if (data is double or long)
+        switch (data)
         {
-            var typeCode = Type.GetTypeCode(type);
-            return Convert.ChangeType(data, typeCode);
-        }
-
-        if (data is Dictionary<string, object> dictionary)
-        {
-            return Neo4jSerialization.GetOrGenerateConverter(dataType).Deserialize(dictionary, type);
-        }
-
-        if (data is IList dataCollection)
-        {
-            //TODO: Improve ergonomics for IReadOnlyList etc
-            var collection = Activator.CreateInstance(type, dataCollection.Count) as IList;
-            var innerType = type.GenericTypeArguments[0];
-
-            for (var i = 0; i < dataCollection.Count; i++)
+            case double or long:
             {
-                collection[i] = CoerceType(innerType, dataCollection[i]);
+                var typeCode = Type.GetTypeCode(type);
+                return Convert.ChangeType(data, typeCode);
             }
+            case Dictionary<string, object> dictionary:
+                return Neo4jSerialization.GetOrGenerateConverter(dataType).Deserialize(dictionary, type);
+            case IList dataCollection:
+            {
+                if (type.IsInterface)
+                    throw new Exception($"Could not create instance of {type}.");
 
-            return collection;
+                var collection = Activator.CreateInstance(type, dataCollection.Count) as IList;
+                var innerType = type.GenericTypeArguments[0];
+                    
+                for (var i = 0; i < dataCollection.Count; i++)
+                {
+                    collection[i] = CoerceType(innerType, dataCollection[i]);
+                }
+
+                return collection;
+            }
+            case INode node:
+                break;
+            case IRelationship relationship:
+                break;
+            default:
+                throw new Exception();
         }
-
-        if (data is string)
-        {
-            return Activator.CreateInstance(type, data);
-        }
-
-        throw new Exception();
     }
 }
