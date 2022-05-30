@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections;
+using System.Diagnostics;
 using FluentAssertions;
 using Neo4j.Driver;
 using Xunit;
@@ -41,6 +42,16 @@ namespace Neo4j.Driver.Tests.Types
             var cypherDate = new LocalDate(date);
 
             cypherDate.ToDateTime().Should().Be(date);
+        }
+
+        [Fact]
+        [Conditional("NET6_0_OR_GREATER")]
+        public void ShouldCreateDateWithDateOnly()
+        {
+            var date = new DateOnly(1947, 12, 17);
+            var cypherDate = new LocalDate(date);
+
+            cypherDate.ToDateOnly().Should().Be(date);
         }
 
         [Theory]
@@ -86,6 +97,22 @@ namespace Neo4j.Driver.Tests.Types
         {
             var date = new LocalDate(year, 1, 1);
             var ex = Record.Exception(() => date.ToDateTime());
+
+            ex.Should().NotBeNull().And.BeOfType<ValueOverflowException>();
+        }
+
+
+        [Theory]
+        [InlineData(-9999)]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(10000)]
+        [InlineData(9999999)]
+        [Conditional("NET6_0_OR_GREATER")]
+        public void ShouldThrowOnOverflowDateOnly(int year)
+        {
+            var date = new LocalDate(year, 1, 1);
+            var ex = Record.Exception(() => date.ToDateOnly());
 
             ex.Should().NotBeNull().And.BeOfType<ValueOverflowException>();
         }
