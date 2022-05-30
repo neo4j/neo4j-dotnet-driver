@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\common.props" />
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net5.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net6.0</TargetFrameworks>
 	  <AssemblyName>Neo4j.Driver.Reactive</AssemblyName>
     <PackageId>Neo4j.Driver.Reactive$(PackageIdSuffix)</PackageId>
     <Authors>Neo4j</Authors>
