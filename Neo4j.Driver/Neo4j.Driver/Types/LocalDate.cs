@@ -41,7 +41,17 @@ namespace Neo4j.Driver
         {
 
         }
+#if NET6_0_OR_GREATER
+        /// <summary>
+        /// Initializes a new instance of <see cref="LocalDate"/> from a date value
+        /// </summary>
+        /// <param name="date"></param>
+        public LocalDate(DateOnly date)
+            : this(date.Year, date.Month, date.Day)
+        {
 
+        }
+#endif
         /// <summary>
         /// Initializes a new instance of <see cref="LocalDate"/> from individual date component values
         /// </summary>
@@ -82,11 +92,23 @@ namespace Neo4j.Driver
         /// <returns>A <see cref="DateTime"/> instance.</returns>
         public DateTime ToDateTime()
         {
-            TemporalHelpers.AssertNoOverflow(this, nameof(System.DateTime));
+            TemporalHelpers.AssertNoOverflow(this, nameof(DateTime));
 
             return new DateTime(Year, Month, Day);
         }
 
+#if NET6_0_OR_GREATER
+        /// <summary>
+        /// Converts this date value to a <see cref="DateOnly"/> instance.
+        /// </summary>
+        /// <exception cref="ValueOverflowException">If the value cannot be represented with DateOnly.</exception>
+        /// <returns></returns>
+        public DateOnly ToDateOnly()
+        {
+            TemporalHelpers.AssertValidDateOnly(this);
+            return new DateOnly(Year, Month, Day);
+        }
+#endif
         /// <summary>
         /// Returns a value indicating whether the value of this instance is equal to the 
         /// value of the specified <see cref="LocalDate"/> instance. 

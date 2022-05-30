@@ -64,6 +64,17 @@ namespace Neo4j.Driver
 
         }
 
+#if NET6_0_OR_GREATER
+        /// <summary>
+        /// Initializes a new instance of <see cref="LocalTime"/> from given <see cref="TimeOnly"/> value
+        /// </summary>
+        /// <param name="time"></param>
+        public LocalTime(TimeOnly time)
+            : this(TimeSpan.FromTicks(time.Ticks))
+        {
+        }
+#endif
+
         /// <summary>
         /// Initializes a new instance of <see cref="LocalTime"/> from individual time components
         /// </summary>
@@ -117,6 +128,18 @@ namespace Neo4j.Driver
             return new TimeSpan(0, Hour, Minute, Second).Add(
                 TimeSpan.FromTicks(TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond)));
         }
+
+#if NET6_0_OR_GREATER
+        /// <summary>
+        /// Converts this time value to a <see cref="TimeOnly"/> instance.
+        /// </summary>
+        /// <returns>A <see cref="TimeOnly"/> instance.</returns>
+        public TimeOnly ToTimeOnly()
+        {
+            TemporalHelpers.AssertNoTruncation(this, nameof(TimeOnly));
+            return new TimeOnly(Hour, Minute, Second, TemporalHelpers.NanosecondToMillisecond(Nanosecond));
+        }
+#endif
 
         /// <summary>
         /// Returns a value indicating whether the value of this instance is equal to the 
