@@ -16,10 +16,8 @@
 // limitations under the License.
 
 using System;
-using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Temporal;
 using Neo4j.Driver.Internal.Types;
-using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal
 {
@@ -42,6 +40,7 @@ namespace Neo4j.Driver.Internal
         public const int MinOffset = -64_800;
         public const int MaxOffset = 64_800;
 
+        public const long NanosPerMillisecond = 1_000_000;
         public const long NanosPerSecond = 1_000_000_000;
         public const long NanosPerDay = NanosPerHour * HoursPerDay;
 
@@ -63,6 +62,19 @@ namespace Neo4j.Driver.Internal
                    time.Nanosecond;
         }
 
+#if NET6_0_OR_GREATER
+        public static long ToNanoOfDay(this TimeOnly time)
+        {
+            return (time.Hour * NanosPerHour) + (time.Minute * NanosPerMinute) + (time.Second * NanosPerSecond) +
+                   (time.Millisecond * NanosPerMillisecond);
+        }
+
+        public static long ToEpochDays(this DateOnly date)
+        {
+            return ComputeEpochDays(date.Year, date.Month, date.Day);
+        }
+#endif
+
         public static long ToEpochSeconds(this IHasDateTimeComponents dateTime)
         {
             var epochDays = dateTime.ToEpochDays();
@@ -80,6 +92,7 @@ namespace Neo4j.Driver.Internal
         {
             return ComputeEpochDays(date.Year, date.Month, date.Day);
         }
+
 
         public static long GetDays(this Duration duration)
         {
@@ -220,7 +233,15 @@ namespace Neo4j.Driver.Internal
                 throw new ValueOverflowException($"Year component ({date.Year}) of this instance is not valid for a {target} instance.");
             }
         }
-
+#if NET6_0_OR_GREATER
+        public static void AssertValidDateOnly(IHasDateComponents date)
+        {
+            if (date.Year > DateOnly.MaxValue.Year || date.Year < DateOnly.MinValue.Year)
+            {
+                throw new ValueOverflowException($"Year component ({date.Year}) of this instance is not valid for a DateOnly instance.");
+            }
+        }
+#endif
         public static void AssertNoOverflow(TimeSpan offset, string target)
         {
             if (Math.Abs(offset.TotalHours) > 14)
@@ -332,6 +353,11 @@ namespace Neo4j.Driver.Internal
         private static long FloorMod(long a, long b)
         {
             return ((a % b) + b) % b;
+        }
+
+        public static int NanosecondToMillisecond(int nanosecond)
+        {
+            return (int)(nanosecond / NanosPerMillisecond);
         }
     }
 }

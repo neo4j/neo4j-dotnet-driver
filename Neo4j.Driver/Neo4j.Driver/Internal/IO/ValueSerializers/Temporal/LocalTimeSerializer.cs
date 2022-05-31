@@ -26,8 +26,11 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
         public const int StructSize = 1;
 
         public IEnumerable<byte> ReadableStructs => new[] {StructType};
-
+#if NET6_0_OR_GREATER
+        public IEnumerable<Type> WritableTypes => new[] {typeof(LocalTime), typeof(TimeOnly)};
+#else
         public IEnumerable<Type> WritableTypes => new[] {typeof(LocalTime)};
+#endif
 
         public object Deserialize(IPackStreamReader reader, byte signature, long size)
         {
@@ -40,8 +43,27 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
 
         public void Serialize(IPackStreamWriter writer, object value)
         {
-            var time = value.CastOrThrow<LocalTime>();
+#if NET6_0_OR_GREATER
+            if (value is TimeOnly time)
+            {
+                WriteTimeOnly(writer, time);
+                return;
+            }
+#endif
+            WriteLocalTime(writer, value);
+        }
 
+#if NET6_0_OR_GREATER
+        private void WriteTimeOnly(IPackStreamWriter writer, TimeOnly time)
+        {
+            writer.WriteStructHeader(StructSize, StructType);
+            writer.Write(time.ToNanoOfDay());
+        }
+#endif
+
+        private static void WriteLocalTime(IPackStreamWriter writer, object value)
+        {
+            var time = value.CastOrThrow<LocalTime>();
             writer.WriteStructHeader(StructSize, StructType);
             writer.Write(time.ToNanoOfDay());
         }

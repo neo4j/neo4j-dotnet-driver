@@ -17,8 +17,8 @@
 
 using System;
 using System.Collections;
+using System.Diagnostics;
 using FluentAssertions;
-using Neo4j.Driver;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Types
@@ -41,6 +41,16 @@ namespace Neo4j.Driver.Tests.Types
             var cypherTime = new LocalTime(time);
 
             cypherTime.ToTimeSpan().Should().Be(time);
+        }
+
+        [Fact]
+        [Conditional("NET6_0_OR_GREATER")]
+        public void ShouldCreateTimeWithTimeOnly()
+        {
+            var time = new TimeOnly(13, 59, 59, 255);
+            var cypherTime = new LocalTime(time);
+
+            cypherTime.ToTimeOnly().Should().Be(time);
         }
 
         [Theory]
@@ -96,6 +106,22 @@ namespace Neo4j.Driver.Tests.Types
         {
             var time = new LocalTime(0, 0, 0, nanosecond);
             var ex = Record.Exception(() => time.ToTimeSpan());
+
+            ex.Should().NotBeNull().And.BeOfType<ValueTruncationException>();
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(20)]
+        [InlineData(99)]
+        [InlineData(999000727)]
+        [InlineData(999000750)]
+        [InlineData(999000001)]
+        [Conditional("NET6_0_OR_GREATER")]
+        public void ShouldThrowOnTimeOnlyTruncation(int nanosecond)
+        {
+            var time = new LocalTime(0, 0, 0, nanosecond);
+            var ex = Record.Exception(() => time.ToTimeOnly());
 
             ex.Should().NotBeNull().And.BeOfType<ValueTruncationException>();
         }
