@@ -27,10 +27,9 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
 
         public override object Deserialize(IPackStreamReader reader, byte signature, long size)
         {
-            var includingLongs = reader.PeekNextType() != PackStream.PackType.Null;
-            var relId = includingLongs ? reader.ReadLong() : ReadNullAndReturnNull<long>(reader);
-            var relStartId = includingLongs ? reader.ReadLong() : ReadNullAndReturnNull<long>(reader);
-            var relEndId = includingLongs ? reader.ReadLong() : ReadNullAndReturnNull<long>(reader);
+            var relId = reader.ReadLong();
+            var relStartId = reader.ReadLong();
+            var relEndId = reader.ReadLong();
 
             var relType = reader.ReadString();
             var props = reader.ReadMap();
@@ -39,9 +38,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             var startUrn = reader.ReadString();
             var endUrn = reader.ReadString();
 
-            return includingLongs 
-                ? new Relationship(relId.Value, urn, relStartId.Value, relEndId.Value, startUrn, endUrn, relType, props)
-                : new Relationship(urn, startUrn, endUrn, relType, props);
+            return new Relationship(relId, urn, relStartId, relEndId, startUrn, endUrn, relType, props);
         }
     }
 }

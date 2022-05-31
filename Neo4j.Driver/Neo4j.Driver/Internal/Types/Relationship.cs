@@ -22,48 +22,13 @@ namespace Neo4j.Driver.Internal.Types
 {
     internal class Relationship : IRelationship
     {
-        private long _id = -1;
-        private long _startNodeId = -1;
-        private long _endNodeId = -1;
-        private readonly bool _throwOnIdRead = false;
-
-
         [Obsolete("Replaced by ElementId, Will be removed in 6.0")]
-        public long Id
-        {
-            get
-            {
-                if (_throwOnIdRead)
-                    throw new InvalidOperationException("Id is not compatible with server. use ElementId");
-                return _id;
-            }
-            set => _id = value;
-        }
+        public long Id { get; set; }
 
         [Obsolete("Replaced by StartNodeElementId, Will be removed in 6.0")]
-        public long StartNodeId
-        {
-            get
-            {
-                if (_throwOnIdRead)
-                    throw new InvalidOperationException("StartNodeId is not compatible with server. use StartNodeElementId");
-                return _startNodeId;
-            }
-            internal set => _startNodeId = value;
-        }
-
+        public long StartNodeId { get; set; }
         [Obsolete("Replaced by EndNodeElementId, Will be removed in 6.0")]
-        public long EndNodeId
-        {
-            get
-            {
-                if (_throwOnIdRead)
-                    throw new InvalidOperationException("EndNodeId is not compatible with server. use EndNodeElementId");
-                return _endNodeId;
-            }
-            internal set => _endNodeId = value;
-        }
-
+        public long EndNodeId { get; set; }
         public string Type { get; }
         
         public string ElementId { get; }
@@ -86,19 +51,6 @@ namespace Neo4j.Driver.Internal.Types
             Properties = props;
         }
         
-        public Relationship(string id, string startId, string endId, string relType,
-            IReadOnlyDictionary<string, object> props)
-        {
-            _throwOnIdRead = true;
-
-            ElementId = id;
-            StartNodeElementId = startId;
-            EndNodeElementId = endId; 
-
-            Type = relType;
-            Properties = props;
-        }
-
         public Relationship(long id, string elementId, long startId, long endId, string startElementId, string endElementId, 
             string relType,
             IReadOnlyDictionary<string, object> props)
@@ -139,11 +91,8 @@ namespace Neo4j.Driver.Internal.Types
 
         internal void SetStartAndEnd(INode start, INode end)
         {
-            if (!_throwOnIdRead)
-            {
-                StartNodeId = start.Id;
-                EndNodeId = end.Id;
-            }
+            StartNodeId = start.Id;
+            EndNodeId = end.Id;
             StartNodeElementId = start.ElementId;
             EndNodeElementId = end.ElementId;
         }
