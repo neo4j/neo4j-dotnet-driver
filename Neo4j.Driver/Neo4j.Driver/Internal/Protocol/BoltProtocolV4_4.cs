@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using System.Text;
 using Neo4j.Driver.Internal.Connector;
@@ -16,7 +17,8 @@ namespace Neo4j.Driver.Internal.Protocol
 	{
 		private static int _major = 4;
 		private static int _minor = 4;
-		public static new BoltProtocolVersion Version { get; } = new BoltProtocolVersion(_major, _minor);
+        public const string BoltPatchKey = "patch_bolt";
+        public static new BoltProtocolVersion Version { get; } = new BoltProtocolVersion(_major, _minor);
 		public override BoltProtocolVersion GetVersion() { return Version; }
 		protected override IMessageFormat MessageFormat { get { return BoltProtocolMessageFormat.V4_4; } }
 
@@ -48,7 +50,17 @@ namespace Neo4j.Driver.Internal.Protocol
 
 		}
 
-		public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmark bookmark)
+        public override IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger = null, bool useUtcEncoded = false)
+        {
+            return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize, bufferSettings.MaxWriteBufferSize, logger, useUtcEncoded ? BoltProtocolMessageFormat.V4_4Utc : BoltProtocolMessageFormat.V4_4);
+        }
+
+        public override IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null, bool useUtcEncoded = false)
+        {
+            return new MessageReader(stream, bufferSettings.DefaultReadBufferSize, bufferSettings.MaxReadBufferSize, logger, useUtcEncoded ? BoltProtocolMessageFormat.V4_4Utc : BoltProtocolMessageFormat.V4_4);
+        }
+
+        public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmark bookmark)
 		{
 			connection = connection ?? throw new ProtocolException("Attempting to get a routing table on a null connection");
 

@@ -42,44 +42,44 @@ namespace Neo4j.Driver.Internal.Protocol
         public static new BoltProtocolVersion Version { get; } = new BoltProtocolVersion(_major, _minor);
         public override BoltProtocolVersion GetVersion() { return Version; }
 
-		protected override IMessageFormat MessageFormat { get { return BoltProtocolMessageFormat.V4; } }
-		protected override IRequestMessage GetHelloMessage(string userAgent, IDictionary<string, object> auth)
-		{
-			return new HelloMessage(userAgent, auth);
-		}
+        protected override IMessageFormat MessageFormat { get { return BoltProtocolMessageFormat.V4; } }
+        protected override IRequestMessage GetHelloMessage(string userAgent, IDictionary<string, object> auth)
+        {
+            return new HelloMessage(userAgent, auth);
+        }
 
-		protected override IRequestMessage GetBeginMessage(string database, Bookmark bookmark, TransactionConfig config, AccessMode mode, string impersonatedUser)
-		{
-			ValidateImpersonatedUserForVersion(impersonatedUser);
+        protected override IRequestMessage GetBeginMessage(string database, Bookmark bookmark, TransactionConfig config, AccessMode mode, string impersonatedUser)
+        {
+            ValidateImpersonatedUserForVersion(impersonatedUser);
 
-			return new BeginMessage(database, bookmark, config?.Timeout, config?.Metadata, mode);
-		}
+            return new BeginMessage(database, bookmark, config?.Timeout, config?.Metadata, mode);
+        }
 
-		protected override IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmark bookmark = null, TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null, string impersonatedUser = null)
-		{
-			ValidateImpersonatedUserForVersion(impersonatedUser);
+        protected override IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmark bookmark = null, TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null, string impersonatedUser = null)
+        {
+            ValidateImpersonatedUserForVersion(impersonatedUser);
 
-			return new RunWithMetadataMessage(query, database, bookmark, config, mode);
-		}
+            return new RunWithMetadataMessage(query, database, bookmark, config, mode);
+        }
 
-		protected override IResponseHandler GetHelloResponseHandler(IConnection conn) { return new V3.HelloResponseHandler(conn); }
+        protected override IResponseHandler GetHelloResponseHandler(IConnection conn) { return new V3.HelloResponseHandler(conn); }
 
-		private const string GetRoutingTableForDatabaseProcedure = "CALL dbms.routing.getRoutingTable($context, $database)";
+        private const string GetRoutingTableForDatabaseProcedure = "CALL dbms.routing.getRoutingTable($context, $database)";
 
         public BoltProtocolV4_0()
         {
         }
 
         public override async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-																				  Query query, 
-																				  bool reactive, 
-																				  IBookmarkTracker bookmarkTracker,
-																				  IResultResourceHandler resultResourceHandler,
-																				  string database, 
-																				  Bookmark bookmark, 
-																				  TransactionConfig config,
-																				  string impersonatedUser,
-																				  long fetchSize = Config.Infinite)
+                                                                                  Query query,
+                                                                                  bool reactive,
+                                                                                  IBookmarkTracker bookmarkTracker,
+                                                                                  IResultResourceHandler resultResourceHandler,
+                                                                                  string database,
+                                                                                  Bookmark bookmark,
+                                                                                  TransactionConfig config,
+                                                                                  string impersonatedUser,
+                                                                                  long fetchSize = Config.Infinite)
         {
             var summaryBuilder = new SummaryBuilder(query, connection.Server);
             var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,
@@ -161,7 +161,7 @@ namespace Neo4j.Driver.Internal.Protocol
         protected internal override void GetProcedureAndParameters(IConnection connection, string database, out string procedure, out Dictionary<string, object> parameters)
         {
             procedure = GetRoutingTableForDatabaseProcedure;
-            parameters = new Dictionary<string, object> { { "context", connection.RoutingContext }, { "database", string.IsNullOrEmpty(database) ? null : database } };                     
+            parameters = new Dictionary<string, object> { { "context", connection.RoutingContext }, { "database", string.IsNullOrEmpty(database) ? null : database } };
         }
     }
 }

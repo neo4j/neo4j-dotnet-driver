@@ -8,14 +8,26 @@ namespace Neo4j.Driver.Tests.TestBackend
     internal class CypherToNativeObject
     {
         public string name { get; set; }
-        public DataType data { get; set; }
-
-        public class DataType
-        {
-            public object value { get; set; }
-        }
+        public object data { get; set; }
     }
 
+    internal class SimpleValue
+    {
+        public object value { get; set; }
+    }
+
+    public class DateTimeParameterValue
+    {
+        public int? year { get; set; }
+        public int? month { get; set; }
+        public int? day { get; set; }
+        public int? hour { get; set; }
+        public int? minute { get; set; }
+        public int? second { get; set; }
+        public int? nanosecond { get; set; }
+        public int? utc_offset_s { get; set; }
+        public string timezone_id { get; set; }
+    }
 
     internal class CypherToNative
     {
@@ -59,7 +71,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             { typeof(LocalDate),                        CypherTODO },
             { typeof(OffsetTime),                       CypherTODO },
             { typeof(LocalTime),                        CypherTODO },
-            { typeof(ZonedDateTime),                    CypherTODO },
+            { typeof(ZonedDateTime),                    CypherDateTime },
             { typeof(LocalDateTime),                    CypherTODO },
             { typeof(Duration),                         CypherTODO },
             { typeof(Point),                            CypherTODO },
@@ -68,8 +80,6 @@ namespace Neo4j.Driver.Tests.TestBackend
             { typeof(IRelationship),                     CypherTODO },
             { typeof(IPath), CypherTODO }
         };
-
-
 
         public static object Convert(CypherToNativeObject sourceObject)
         {
@@ -94,7 +104,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public static object CypherSimple(Type objectType, CypherToNativeObject cypherObject)
         {
-            return cypherObject.data.value;
+            return ((SimpleValue)cypherObject.data).value;
         }
         
         public static object CypherTODO(Type objectType, CypherToNativeObject cypherObject)
@@ -102,12 +112,11 @@ namespace Neo4j.Driver.Tests.TestBackend
             throw new NotImplementedException($"CypherToNative : {cypherObject.name} conversion is not implemented yet");
         }
 
-
         public static object CypherList(Type objectType, CypherToNativeObject obj)
         {
             var result = new List<object>();
 
-            foreach(JObject item in (JArray)obj.data.value)
+            foreach(JObject item in (JArray)((SimpleValue)obj.data).value)
             {
                 result.Add(Convert(item.ToObject<CypherToNativeObject>()));
             }
@@ -118,7 +127,8 @@ namespace Neo4j.Driver.Tests.TestBackend
         public static object CypherMap(Type objectType, CypherToNativeObject obj)
         {
             var result = new Dictionary<string, object>();
-            var dictionaryElements = JObject.FromObject(obj.data.value).ToObject<Dictionary<string, CypherToNativeObject>>();
+            var dictionaryElements = JObject.FromObject(((SimpleValue)obj.data).value)
+                .ToObject<Dictionary<string, CypherToNativeObject>>();
 
             foreach(var item in dictionaryElements)
 			{
@@ -127,6 +137,25 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             return result;           
         }
+
+        private static object CypherDateTime(Type objectType, CypherToNativeObject obj)
+        {
+            var dataTimeParam = obj.data as DateTimeParameterValue;
+            return new ZonedDateTime(
+                dataTimeParam.year.Value,
+                dataTimeParam.month.Value,
+                dataTimeParam.day.Value,
+                dataTimeParam.hour.Value,
+                dataTimeParam.minute.Value,
+                dataTimeParam.second.Value,
+                dataTimeParam.nanosecond.Value,
+                dataTimeParam.timezone_id  != null 
+                    ? Zone.Of(dataTimeParam.timezone_id)
+                    : Zone.Of(dataTimeParam.utc_offset_s ?? 0)
+                );
+        }
+
+
         /*
         public static NativeToCypherObject CypherNode(string cypherType, object obj)
         {

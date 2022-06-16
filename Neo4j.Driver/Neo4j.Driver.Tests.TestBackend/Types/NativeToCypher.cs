@@ -1,5 +1,4 @@
-﻿using Microsoft.VisualBasic.CompilerServices;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -33,7 +32,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             { typeof(LocalDate),                        CypherTODO },
             { typeof(OffsetTime),                       CypherTODO },
             { typeof(LocalTime),                        CypherTODO },
-            { typeof(ZonedDateTime),                    CypherTODO },
+            { typeof(ZonedDateTime),                    CypherDateTime },
             { typeof(LocalDateTime),                    CypherTODO },
             { typeof(Duration),                         CypherTODO },
             { typeof(Point),                            CypherTODO },
@@ -151,6 +150,28 @@ namespace Neo4j.Driver.Tests.TestBackend
             };
 
             return new NativeToCypherObject() { name = "Node",  data = cypherNode };
+        }
+
+        private static NativeToCypherObject CypherDateTime(string cypherType, object obj)
+        {
+            var dateTime = (ZonedDateTime)obj;
+
+            return new NativeToCypherObject
+            {
+                name = cypherType,
+                data = new Dictionary<string, object>
+                {
+                    ["year"] = dateTime.Year,
+                    ["month"] = dateTime.Month,
+                    ["day"] = dateTime.Day,
+                    ["hour"] = dateTime.Hour,
+                    ["minute"] = dateTime.Minute,
+                    ["second"] = dateTime.Second,
+                    ["nanosecond"] = dateTime.Nanosecond,
+                    ["utc_offset_s"] = dateTime.OffsetSeconds,
+                    ["timezone_id"] = dateTime.Zone is ZoneId zoneId ? zoneId.Id : null
+                }
+            };
         }
     }
 }

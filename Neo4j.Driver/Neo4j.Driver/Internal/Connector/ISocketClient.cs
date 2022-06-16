@@ -33,5 +33,6 @@ namespace Neo4j.Driver.Internal.Connector
         bool IsOpen { get; }
         Task StopAsync();
 		void SetRecvTimeOut(int seconds);
-	}
+        void SetUseUtcEncodedDateTime(IBoltProtocol protocol);
+    }
 }
