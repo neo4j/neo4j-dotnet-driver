@@ -14,6 +14,7 @@ namespace Neo4j.Driver.Internal.Protocol
 	{
         public override BoltProtocolVersion Version => BoltProtocolVersion.V4_3;
         protected override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V4_3;
+        protected virtual IMessageFormat UtcMessageFormat => BoltProtocolMessageFormat.V4_4Utc;
         public const string BoltPatchKey = "patch_bolt";
 
         public BoltProtocolV4_3(IDictionary<string, string> routingContext) : base(routingContext)
@@ -31,12 +32,12 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public override IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger = null, bool useUtcEncoded = false)
         {
-            return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize, bufferSettings.MaxWriteBufferSize, logger, useUtcEncoded ? BoltProtocolMessageFormat.V4_3Utc : BoltProtocolMessageFormat.V4_3);
+            return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize, bufferSettings.MaxWriteBufferSize, logger, useUtcEncoded ? UtcMessageFormat : MessageFormat);
         }
 
         public override IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null, bool useUtcEncoded = false)
         {
-            return new MessageReader(stream, bufferSettings.DefaultReadBufferSize, bufferSettings.MaxReadBufferSize, logger, useUtcEncoded ? BoltProtocolMessageFormat.V4_3Utc : BoltProtocolMessageFormat.V4_3);
+            return new MessageReader(stream, bufferSettings.DefaultReadBufferSize, bufferSettings.MaxReadBufferSize, logger, useUtcEncoded ? UtcMessageFormat : MessageFormat);
         }
 
         public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmarks bookmarks)

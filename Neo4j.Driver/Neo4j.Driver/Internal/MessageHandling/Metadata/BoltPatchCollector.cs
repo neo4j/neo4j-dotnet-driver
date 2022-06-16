@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.Linq;
 using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.MessageHandling.Metadata
@@ -31,14 +32,14 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
             if (metadata == null || !metadata.TryGetValue(BoltProtocolV4_3.BoltPatchKey, out var value))
                 return;
 
-            if (value is string[] values)
+            if (value is List<object> values)
             {
-                Collected = values;
+                Collected = values.OfType<string>().ToArray();
             }
             else
             {
                 throw new ProtocolException(
-                    $"Expected '{BoltProtocolV4_3.BoltPatchKey}' metadata to be of type 'String[]', but got '{value?.GetType().Name}'.");
+                    $"Expected '{BoltProtocolV4_3.BoltPatchKey}' metadata to be of type 'List<object>', but got '{value?.GetType().Name}'.");
             }
 
         }

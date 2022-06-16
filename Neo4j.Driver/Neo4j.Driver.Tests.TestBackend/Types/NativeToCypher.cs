@@ -34,7 +34,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             { typeof(LocalDate),                        CypherTODO },
             { typeof(OffsetTime),                       CypherTODO },
             { typeof(LocalTime),                        CypherTODO },
-            { typeof(ZonedDateTime),                    CypherTODO },
+            { typeof(ZonedDateTime),                    CypherDateTime },
             { typeof(LocalDateTime),                    CypherTODO },
             { typeof(Duration),                         CypherTODO },
             { typeof(Point),                            CypherTODO },
@@ -100,8 +100,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             if (sourceObject as IPath != null)
                 return FunctionMap[typeof(IPath)]("CypherPath", sourceObject);
 
-
-            throw new IOException($"Attempting to convert an unsuported object type to a CypherType: {sourceObject.GetType()}");
+            throw new IOException($"Attempting to convert an unsupported object type to a CypherType: {sourceObject.GetType()}");
         }
 
 
@@ -214,6 +213,28 @@ namespace Neo4j.Driver.Tests.TestBackend
             };
 
             return new NativeToCypherObject() { name = "Path", data = cypherPath };
+        }
+
+        private static NativeToCypherObject CypherDateTime(string cypherType, object obj)
+        {
+            var dateTime = (ZonedDateTime) obj;
+
+            return new NativeToCypherObject 
+            { 
+                name = cypherType, 
+                data = new Dictionary<string, object>
+                {
+                    ["year"] = dateTime.Year,
+                    ["month"] = dateTime.Month,
+                    ["day"] = dateTime.Day,
+                    ["hour"] = dateTime.Hour,
+                    ["minute"] = dateTime.Minute,
+                    ["second"] = dateTime.Second,
+                    ["nanosecond"] = dateTime.Nanosecond,
+                    ["utc_offset_s"] = dateTime.OffsetSeconds,
+                    ["timezone_id"] = dateTime.Zone is ZoneId zoneId ? zoneId.Id : null
+                }
+            };
         }
     }
 }

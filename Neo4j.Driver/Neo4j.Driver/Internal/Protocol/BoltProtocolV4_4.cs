@@ -15,6 +15,7 @@ namespace Neo4j.Driver.Internal.Protocol
 	{
         public override BoltProtocolVersion Version => BoltProtocolVersion.V4_4;
         protected override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V4_4;
+        protected override IMessageFormat UtcMessageFormat => BoltProtocolMessageFormat.V4_4Utc;
         public const string BoltPatchKey = "patch_bolt";
         public BoltProtocolV4_4(IDictionary<string, string> routingContext)
             : base(routingContext)
@@ -42,17 +43,6 @@ namespace Neo4j.Driver.Internal.Protocol
 
 		protected override IResponseHandler GetHelloResponseHandler(IConnection conn) { return new HelloResponseHandler(conn, Version); }
 
-
-        public override IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger = null, bool useUtcEncoded = false)
-        {
-            return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize, bufferSettings.MaxWriteBufferSize, logger, useUtcEncoded ? BoltProtocolMessageFormat.V4_4Utc : BoltProtocolMessageFormat.V4_4);
-        }
-
-        public override IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null, bool useUtcEncoded = false)
-        {
-            return new MessageReader(stream, bufferSettings.DefaultReadBufferSize, bufferSettings.MaxReadBufferSize, logger, useUtcEncoded ? BoltProtocolMessageFormat.V4_4Utc : BoltProtocolMessageFormat.V4_4);
-        }
-        
 		public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmarks bookmarks)
 		{
 			connection = connection ?? throw new ProtocolException("Attempting to get a routing table on a null connection");
