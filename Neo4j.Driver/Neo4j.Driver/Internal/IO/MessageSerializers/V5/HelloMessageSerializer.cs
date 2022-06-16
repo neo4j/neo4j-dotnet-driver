@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -17,23 +17,21 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using Neo4j.Driver.Internal.MessageHandling;
-using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Messaging.V5_0;
 using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.Connector
+namespace Neo4j.Driver.Internal.IO.MessageSerializers.V5_0
 {
-    internal interface ISocketClient
-    {
-        Task<IBoltProtocol> ConnectAsync(IDictionary<string, string> routingContext, CancellationToken token = default);
-        Task SendAsync(IEnumerable<IRequestMessage> messages);
-        Task ReceiveAsync(IResponsePipeline responsePipeline);
-        Task ReceiveOneAsync(IResponsePipeline responsePipeline);
-        bool IsOpen { get; }
-        Task StopAsync();
-		void SetRecvTimeOut(int seconds);
-        void SetUseUtcEncodedDateTime(IBoltProtocol protocol);
-    }
+	internal class HelloMessageSerializer : WriteOnlySerializer
+	{
+		public override IEnumerable<Type> WritableTypes => new[] { typeof(HelloMessage) };
+
+		public override void Serialize(IPackStreamWriter writer, object value)
+		{
+			var msg = value.CastOrThrow<HelloMessage>();
+
+			writer.WriteStructHeader(1, BoltProtocolV5_0MessageFormat.MsgHello);
+			writer.Write(msg.MetaData);
+		}
+	}
 }
