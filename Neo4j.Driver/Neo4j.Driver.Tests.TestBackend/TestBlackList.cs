@@ -114,7 +114,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 	            "Requires further investigation"),
 
 			("stub.driver_parameters.test_connection_acquisition_timeout_ms.TestConnectionAcquisitionTimeoutMs.test_does_not_encompass_router_handshake",
-				"TODO: ConnectionAcquisitionTimeout cancles handshake with the router")
+				"TODO: ConnectionAcquisitionTimeout cancels handshake with the router")
 		};
 
 		public static bool FindTest(string testName, out string reason)
