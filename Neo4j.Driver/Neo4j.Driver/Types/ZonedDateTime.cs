@@ -226,9 +226,13 @@ namespace Neo4j.Driver
         }
 
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         public long ToUtcEpochSeconds()
         {
-            return new DateTimeOffset(Year, Month, Day, Hour, Minute, Second, Offset).ToUnixTimeSeconds();
+            return new DateTimeOffset(Year, Month, Day, Hour, Minute, Second, Offset).ToUniversalTime().ToUnixTimeSeconds();
         }
 
         /// <summary>

@@ -43,7 +43,9 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
                     $"Unsupported struct signature {signature} passed to {nameof(UtcZonedDateTimeSerializer)}.")
             };
 
-            return new ZonedDateTime(TemporalHelpers.EpochSecondsAndNanoToDateTime(time, nanosOfSecond), zone);
+            var utc = DateTimeOffset.FromUnixTimeSeconds(time);
+            var local = utc.ToOffset(TimeSpan.FromSeconds(zone.OffsetSecondsAt(utc.DateTime)));
+            return new ZonedDateTime(local.Year, local.Month, local.Day, local.Hour, local.Minute, local.Second, nanosOfSecond, zone);
         }
 
         public void Serialize(IPackStreamWriter writer, object value)

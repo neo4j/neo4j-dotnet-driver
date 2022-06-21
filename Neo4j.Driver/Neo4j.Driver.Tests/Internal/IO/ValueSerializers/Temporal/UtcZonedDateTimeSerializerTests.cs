@@ -23,17 +23,57 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
 {
     public class UtcZonedDateTimeSerializerTests : PackStreamSerializerTests
     {
+        public static object[][] IdPairs = new[]
+        {
+            new object[]
+            {
+                new ZonedDateTime(1978, 12, 16, 12, 35, 59, 128000987, Zone.Of("Europe/Istanbul")),
+                (seconds: 282652559L, nanos: 128000987L, zoneId: "Europe/Istanbul")
+            },
+            new object[]
+            {
+                new ZonedDateTime(2022, 6, 14, 15, 21, 18, 183_000_000, Zone.Of("Europe/Berlin")),
+                (seconds: 1655212878L, nanos: 183_000_000L, zoneId: "Europe/Berlin")
+            },
+            new object[]
+            {
+                new ZonedDateTime(2022, 6, 14, 22, 6, 18, 183_000_000, Zone.Of("Australia/Eucla")),
+                (seconds: 1655212878L, nanos: 183_000_000L, zoneId: "Australia/Eucla")
+            },
+            new object[]
+            {
+                new ZonedDateTime(2020, 6, 15, 4, 30, 0, 183_000_000, Zone.Of("Pacific/Honolulu")),
+                (seconds: 1592231400L, nanos: 183_000_000L, zoneId: "Pacific/Honolulu")
+            }
+        };
+        public static object[][] OffsetPairs = new[]
+        {
+            new object[]
+            {
+                new ZonedDateTime(1978, 12, 16, 10, 05, 59, 128000987, new ZoneOffset(-150 * 60)),
+                (seconds: 282659759L, nanos: 128000987L, offset: new ZoneOffset(-150 * 60))
+            },
+            new object[]
+            {
+                new ZonedDateTime(2022, 6, 14, 15, 21, 18, 183_000_000, new ZoneOffset(120 * 60)),
+                (seconds: 1655212878L, nanos: 183_000_000L, offset: new ZoneOffset(120 * 60))
+            },
+            new object[]
+            {
+                new ZonedDateTime(2020, 6, 15, 12, 30, 0, 42, new ZoneOffset(-2 * 60 * 60)),
+                (seconds: 1592231400L, nanos: 42L, offset: new ZoneOffset(-2 * 60 * 60))
+            }
+        };
+
         internal override IPackStreamSerializer SerializerUnderTest => new UtcZonedDateTimeSerializer();
 
-        [Fact]
-        public void ShouldSerializeDateTimeWithOffset()
+        [Theory, MemberData(nameof(OffsetPairs))]
+        public void ShouldSerializeDateTimeWithOffset(ZonedDateTime inDate, (long seconds, long nanos, ZoneOffset offset) expected)
         {
-            var dateTime = new ZonedDateTime(1978, 12, 16, 12, 35, 59, 128000987,
-                Zone.Of((int) TimeSpan.FromMinutes(-150).TotalSeconds));
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.Write(dateTime);
+            writer.Write(inDate);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
@@ -41,44 +81,39 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be((byte) 'I');
-            reader.Read().Should().Be(282668759L);
-            reader.Read().Should().Be(128000987L);
-            reader.Read().Should().Be(-9000L);
+            writer.Write(expected.seconds);
+            writer.Write(expected.nanos);
+            writer.Write(expected.offset.OffsetSeconds);
         }
-        
-        [Fact]
-        public void ShouldDeserializeDateTimeWithOffset()
+
+        [Theory, MemberData(nameof(OffsetPairs))]
+        public void ShouldDeserializeDateTimeWithOffset(ZonedDateTime expected, (long seconds, long nanos, ZoneOffset offset) inDate)
         {
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
             writer.WriteStructHeader(UtcZonedDateTimeSerializer.StructSize, UtcZonedDateTimeSerializer.StructTypeWithOffset);
-            writer.Write(282659759);
-            writer.Write(128000987);
-            writer.Write(-9000);
+            writer.Write(inDate.seconds);
+            writer.Write(inDate.nanos);
+            writer.Write(inDate.offset.OffsetSeconds);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
             var value = reader.Read();
 
-            value.Should().NotBeNull();
-            value.Should().BeOfType<ZonedDateTime>().Which.Year.Should().Be(1978);
-            value.Should().BeOfType<ZonedDateTime>().Which.Month.Should().Be(12);
-            value.Should().BeOfType<ZonedDateTime>().Which.Day.Should().Be(16);
-            value.Should().BeOfType<ZonedDateTime>().Which.Hour.Should().Be(12);
-            value.Should().BeOfType<ZonedDateTime>().Which.Minute.Should().Be(35);
-            value.Should().BeOfType<ZonedDateTime>().Which.Second.Should().Be(59);
-            value.Should().BeOfType<ZonedDateTime>().Which.Nanosecond.Should().Be(128000987);
-            value.Should().BeOfType<ZonedDateTime>().Which.Zone.Should().BeOfType<ZoneOffset>().Which.OffsetSeconds.Should().Be((int)TimeSpan.FromMinutes(-150).TotalSeconds);
+            var dateTime = value.Should().BeOfType<ZonedDateTime>();
+            dateTime.Which.Should().Be(expected);
+
+            dateTime.Which.Zone.Should().BeOfType<ZoneOffset>()
+                .Which.Should().Be(inDate.offset);
         }
 
-        [Fact]
-        public void ShouldSerializeDateTimeWithZoneId()
+        [Theory, MemberData(nameof(IdPairs))]
+        public void ShouldSerializeDateTimeWithZoneId(ZonedDateTime inDate, (long seconds, long nanos, string zoneId) expected)
         {
-            var dateTime = new ZonedDateTime(1978, 12, 16, 12, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
-            writer.Write(dateTime);
+            writer.Write(inDate);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
@@ -86,35 +121,27 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be((byte)'i');
-            reader.Read().Should().Be(282652559L);
-            reader.Read().Should().Be(128000987L);
-            reader.Read().Should().Be("Europe/Istanbul");
+            reader.Read().Should().Be(expected.seconds);
+            reader.Read().Should().Be(expected.nanos);
+            reader.Read().Should().Be(expected.zoneId);
         }
 
-        [Fact]
-        public void ShouldDeserializeDateTimeWithZoneId()
+        [Theory, MemberData(nameof(IdPairs))]
+        public void ShouldDeserializeDateTimeWithZoneId(ZonedDateTime expected, (long seconds, long nanos, string zoneId) inDate)
         {
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
             writer.WriteStructHeader(UtcZonedDateTimeSerializer.StructSize, UtcZonedDateTimeSerializer.StructTypeWithId);
-            writer.Write(282659759);
-            writer.Write(128000987);
-            writer.Write("Europe/Istanbul");
+            writer.Write(inDate.seconds);
+            writer.Write(inDate.nanos);
+            writer.Write(inDate.zoneId);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
             var value = reader.Read();
 
-            value.Should().NotBeNull();
-            value.Should().BeOfType<ZonedDateTime>().Which.Year.Should().Be(1978);
-            value.Should().BeOfType<ZonedDateTime>().Which.Month.Should().Be(12);
-            value.Should().BeOfType<ZonedDateTime>().Which.Day.Should().Be(16);
-            value.Should().BeOfType<ZonedDateTime>().Which.Hour.Should().Be(12);
-            value.Should().BeOfType<ZonedDateTime>().Which.Minute.Should().Be(35);
-            value.Should().BeOfType<ZonedDateTime>().Which.Second.Should().Be(59);
-            value.Should().BeOfType<ZonedDateTime>().Which.Nanosecond.Should().Be(128000987);
-            value.Should().BeOfType<ZonedDateTime>().Which.Zone.Should().BeOfType<ZoneId>().Which.Id.Should().Be("Europe/Istanbul");
+            value.Should().NotBeNull().And.Be(expected);
         }
 
         [Fact]

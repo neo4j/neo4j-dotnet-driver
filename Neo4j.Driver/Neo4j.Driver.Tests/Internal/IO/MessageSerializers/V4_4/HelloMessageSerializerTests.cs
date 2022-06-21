@@ -62,21 +62,25 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_4
 			reader.ReadStructSignature().Should().Be(BoltProtocolV4_4MessageFormat.MsgHello);
 
 			var readMap = reader.ReadMap();
-			readMap.Should().HaveCount(5).And.Contain(
-				new[]
-				{
-					new KeyValuePair<string, object>("user_agent", "Client-Version/1.0"),
-					new KeyValuePair<string, object>("scheme", "basic"),
-					new KeyValuePair<string, object>("principal", "username"),
-					new KeyValuePair<string, object>("credentials", "password")
-				});
+            readMap.Should().HaveCount(6).And.Contain(
+                new[]
+                {
+                    new KeyValuePair<string, object>("user_agent", "Client-Version/1.0"),
+                    new KeyValuePair<string, object>("scheme", "basic"),
+                    new KeyValuePair<string, object>("principal", "username"),
+                    new KeyValuePair<string, object>("credentials", "password")
+                });
 
+            readMap.Should().ContainKey("patch_bolt")
+                .WhichValue.Should().BeOfType<List<object>>()
+                .Which.Should().Contain("utc")
+                .And.HaveCount(1);
 
-			object dic;
-			readMap.ContainsKey("routing").Should().BeTrue();
-			readMap.TryGetValue("routing", out dic);
-			dic.ToDictionary().Should().HaveCount(1).And.Contain(new[] { new KeyValuePair<string, object>("contextKey", "contextValue") });
-		}
+            readMap.Should().ContainKey("routing")
+                .WhichValue.Should().BeOfType<Dictionary<string, object>>()
+                .Which.Should().Contain(new KeyValuePair<string, object>("contextKey", "contextValue"))
+                .And.HaveCount(1);
+        }
 
 		[Fact]
 		public void ShouldSerializeEmptyMapWhenAuthTokenIsNull()
@@ -95,17 +99,22 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_4
 			reader.ReadStructSignature().Should().Be(BoltProtocolV4_4MessageFormat.MsgHello);
 
 			var readMap = reader.ReadMap();
-			readMap.Should().NotBeNull().And.HaveCount(2).And.Contain(
+			readMap.Should().NotBeNull().And.HaveCount(3).And.Contain(
 				new[]
 				{
 					new KeyValuePair<string, object>("user_agent", "Client-Version/1.0"),
 				});
 
-			object dic;
-			readMap.ContainsKey("routing").Should().BeTrue();
-			readMap.TryGetValue("routing", out dic);
-			dic.ToDictionary().Should().HaveCount(1).And.Contain(new[] { new KeyValuePair<string, object>("contextKey", "contextValue") });
-		}
+            readMap.Should().ContainKey("patch_bolt")
+                .WhichValue.Should().BeOfType<List<object>>()
+                .Which.Should().Contain("utc")
+                .And.HaveCount(1);
+
+            readMap.Should().ContainKey("routing")
+                .WhichValue.Should().BeOfType<Dictionary<string, object>>()
+                .Which.Should().Contain(new KeyValuePair<string, object>("contextKey", "contextValue"))
+                .And.HaveCount(1);
+        }
 
 		[Fact]
 		public void ShouldSerializeWithNullRoutingContext()
@@ -122,18 +131,21 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_4
 			reader.ReadStructHeader().Should().Be(1);
 			reader.ReadStructSignature().Should().Be(BoltProtocolV4_4MessageFormat.MsgHello);
 
-			var readMap = reader.ReadMap();
-			readMap.Should().NotBeNull().And.HaveCount(2).And.Contain(
-				new[]
-				{
-					new KeyValuePair<string, object>("user_agent", "Client-Version/1.0"),
-				});
+            var readMap = reader.ReadMap();
+            readMap.Should().NotBeNull().And.HaveCount(3).And.Contain(
+                new[]
+                {
+                    new KeyValuePair<string, object>("user_agent", "Client-Version/1.0"),
+                });
 
-			object dic;
-			readMap.ContainsKey("routing").Should().BeTrue();
-			readMap.TryGetValue("routing", out dic);
-			(dic == null).Should().BeTrue();
-		}
+            readMap.Should().ContainKey("patch_bolt")
+                .WhichValue.Should().BeOfType<List<object>>()
+                .Which.Should().Contain("utc")
+                .And.HaveCount(1);
+
+            readMap.Should().ContainKey("routing")
+                .WhichValue.Should().BeNull();
+        }
 
 		[Fact]
 		public void ShouldSerializeWithEmptyRoutingContext()
@@ -150,17 +162,21 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_4
 			reader.ReadStructHeader().Should().Be(1);
 			reader.ReadStructSignature().Should().Be(BoltProtocolV4_4MessageFormat.MsgHello);
 
-			var readMap = reader.ReadMap();
-			readMap.Should().NotBeNull().And.HaveCount(2).And.Contain(
-				new[]
-				{
-					new KeyValuePair<string, object>("user_agent", "Client-Version/1.0"),
-				});
+            var readMap = reader.ReadMap();
+            readMap.Should().NotBeNull().And.HaveCount(3).And.Contain(
+                new[]
+                {
+                    new KeyValuePair<string, object>("user_agent", "Client-Version/1.0"),
+                });
 
-			object dic;
-			readMap.ContainsKey("routing").Should().BeTrue();
-			readMap.TryGetValue("routing", out dic);
-			dic.ToDictionary().Should().HaveCount(0);
-		}
+            readMap.Should().ContainKey("patch_bolt")
+                .WhichValue.Should().BeOfType<List<object>>()
+                .Which.Should().Contain("utc")
+                .And.HaveCount(1);
+
+            readMap.Should().ContainKey("routing")
+                .WhichValue.Should().BeOfType<Dictionary<string, object>>()
+                .Which.Should().HaveCount(0);
+        }
 	}
 }
