@@ -106,6 +106,9 @@ namespace Neo4j.Driver.Tests.TestBackend
 			("test_should_echo_path",
 				"Backend does not yet support serializing paths"),
 
+			("stub.driver_parameters.test_connection_acquisition_timeout_ms.TestConnectionAcquisitionTimeoutMs.test_does_not_encompass_router_handshake",
+				"TODO: ConnectionAcquisitionTimeout cancels handshake with the router"),
+
 			// Replacing temporary feature flags
 			("test_should_accept_custom_fetch_size_using_driver_configuration",
 				"TMP_DRIVER_FETCH_SIZE"),

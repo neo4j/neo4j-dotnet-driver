@@ -58,6 +58,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 			public int connectionTimeoutMs { get; set; } = -1;
 			public int? maxConnectionPoolSize { get; set; }
 			public int? connectionAcquisitionTimeoutMs { get; set; }
+			public int? sessionConnectionTimeoutMs { get; set; }
+			public int? updateRoutingTableTimeoutMs { get; set; }
 			public int? fetchSize { get; set; }
 			public int? maxTxRetryTimeMs { get; set; }
 			public int? livenessCheckTimeoutMs { get; set; }
@@ -110,6 +112,10 @@ namespace Neo4j.Driver.Tests.TestBackend
 			if (data.maxConnectionPoolSize.HasValue) configBuilder.WithMaxConnectionPoolSize(data.maxConnectionPoolSize.Value);
 
 			if (data.connectionAcquisitionTimeoutMs.HasValue) configBuilder.WithConnectionAcquisitionTimeout(TimeSpan.FromMilliseconds(data.connectionAcquisitionTimeoutMs.Value));
+
+			if (data.sessionConnectionTimeoutMs.HasValue) throw new TestKitProtocolException("Backend does not know how to handle sessionConnectionTimeoutMs.");
+
+			if (data.updateRoutingTableTimeoutMs.HasValue) throw new TestKitProtocolException("Backend does not know how to handle updateRoutingTableTimeoutMs.");
 
 			SimpleLogger logger = new SimpleLogger();
 
