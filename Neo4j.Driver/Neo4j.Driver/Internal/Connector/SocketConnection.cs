@@ -289,5 +289,10 @@ namespace Neo4j.Driver.Internal.Connector
 		{
 			_client.SetRecvTimeOut(seconds);			
 		}
+
+        public void SetUseUtcEncodedDateTime()
+        {
+            _client.SetUseUtcEncodedDateTime(_boltProtocol);
+        }
 	}
 }
