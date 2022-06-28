@@ -127,7 +127,7 @@ namespace Neo4j.Driver.Internal
             {
                 await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
                 
-                await AcquireConnectionAndDBName(_defaultMode);
+                await AcquireConnectionAndDBName(_defaultMode).ConfigureAwait(false);
 
                 var protocol = _connection.BoltProtocol;
 
@@ -226,7 +226,7 @@ namespace Neo4j.Driver.Internal
             var config = BuildTransactionConfig(action);
             await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
 
-            await AcquireConnectionAndDBName(mode);
+            await AcquireConnectionAndDBName(mode).ConfigureAwait(false);
 
             var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmarks, _reactive, _fetchSize, ImpersonatedUser());
             await tx.BeginTransactionAsync(config).ConfigureAwait(false);
@@ -238,7 +238,7 @@ namespace Neo4j.Driver.Internal
         {
             _connection = await _connectionProvider.AcquireAsync(mode, _database, ImpersonatedUser(), _bookmarks).ConfigureAwait(false);
 
-            //Update the database. If a routing request occured it may have returned a differing DB alias name that needs to be used for the 
+            //Update the database. If a routing request occurred it may have returned a differing DB alias name that needs to be used for the 
             //rest of the sessions lifetime.
             _database = _connection.Database;
         }
@@ -253,7 +253,7 @@ namespace Neo4j.Driver.Internal
                 //Dispose managed resources
                 
                 //call it synchronously
-                Task.Run(() => CloseAsync()).GetAwaiter().GetResult();
+                Task.Run(CloseAsync).GetAwaiter().GetResult();
             }
 
             _disposed = true;
@@ -263,7 +263,7 @@ namespace Neo4j.Driver.Internal
         protected override async ValueTask DisposeAsyncCore()
         {
             await CloseAsync().ConfigureAwait(false);
-            await base.DisposeAsyncCore();
+            await base.DisposeAsyncCore().ConfigureAwait(false);
         }
 
         private string ImpersonatedUser()
