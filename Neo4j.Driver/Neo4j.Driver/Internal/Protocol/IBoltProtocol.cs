@@ -39,8 +39,8 @@ namespace Neo4j.Driver.Internal.Protocol
                                                             string database, 
                                                             Bookmarks bookmark, 
                                                             TransactionConfig config,
-															string impersonatedUser,
-															long fetchSize);
+                                                            string impersonatedUser,
+                                                            long fetchSize);
 
         Task BeginTransactionAsync(IConnection connection, string database, Bookmarks bookmark, TransactionConfig config, string impersonatedUser);
 
@@ -57,9 +57,9 @@ namespace Neo4j.Driver.Internal.Protocol
         BoltProtocolVersion Version { get; }
 
         Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection,
-																  string database,
-																  string impersonated_user,
-																  Bookmarks bookmark); 
+                                                                  string database,
+                                                                  string impersonated_user,
+                                                                  Bookmarks bookmark); 
     }
 
 }

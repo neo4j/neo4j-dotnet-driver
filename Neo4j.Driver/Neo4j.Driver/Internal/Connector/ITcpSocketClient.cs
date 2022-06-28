@@ -28,5 +28,5 @@ namespace Neo4j.Driver.Internal.Connector
         Stream WriteStream { get; }
         Task ConnectAsync(Uri uri, CancellationToken cancellationToken = default);
         Task DisconnectAsync();
-	}
+    }
 }

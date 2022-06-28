@@ -40,5 +40,5 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4_3
             RoutingInformation = GetMetadata<RoutingTableCollector, IDictionary<string, object>>();
         }
     }
-	
+    
 }

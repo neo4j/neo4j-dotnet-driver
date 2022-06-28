@@ -35,10 +35,10 @@ namespace Neo4j.Driver.Internal
                     {
                         error = new AuthenticationException(message);
                     }
-					else if(AuthorizationException.IsAuthorizationError(code))
-					{
-						error = new AuthorizationException(message);
-					}
+                    else if(AuthorizationException.IsAuthorizationError(code))
+                    {
+                        error = new AuthorizationException(message);
+                    }
                     else if (ProtocolException.IsProtocolError(code))
                     {
                         error = new ProtocolException(code, message);
@@ -47,14 +47,14 @@ namespace Neo4j.Driver.Internal
                     {
                         error = new FatalDiscoveryException(message);
                     }
-					else if(TokenExpiredException.IsTokenExpiredError(code))
-					{
-						error = new TokenExpiredException(message);
-					}
-					else if(InvalidBookmarkException.IsInvalidBookmarkException(code))
-					{
-						error = new InvalidBookmarkException(message);
-					}
+                    else if(TokenExpiredException.IsTokenExpiredError(code))
+                    {
+                        error = new TokenExpiredException(message);
+                    }
+                    else if(InvalidBookmarkException.IsInvalidBookmarkException(code))
+                    {
+                        error = new InvalidBookmarkException(message);
+                    }
                     else
                     {
                         error = new ClientException(code, message);
@@ -88,10 +88,10 @@ namespace Neo4j.Driver.Internal
                    error.GetBaseException() is IOException || error.GetBaseException() is SocketException;
         }
 
-		public static bool IsAuthorizationError(this Exception error)
-		{
-			return error is AuthorizationException;
-		}
+        public static bool IsAuthorizationError(this Exception error)
+        {
+            return error is AuthorizationException;
+        }
 
         public static bool IsDatabaseUnavailableError(this Exception error)
         {

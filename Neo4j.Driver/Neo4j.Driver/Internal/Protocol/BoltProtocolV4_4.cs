@@ -10,7 +10,7 @@ using Neo4j.Driver.Internal.Messaging;
 namespace Neo4j.Driver.Internal.Protocol
 {
     internal class BoltProtocolV4_4 : BoltProtocolV4_3
-	{
+    {
         public override BoltProtocolVersion Version => BoltProtocolVersion.V4_4;
         protected override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V4_4;
 
@@ -20,45 +20,45 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         protected override IRequestMessage HelloMessage(string userAgent,
-														IDictionary<string, object> auth,
-														IDictionary<string, string> routingContext)
-		{
-			return new HelloMessage(userAgent, auth, routingContext);
-		}
-				
-		protected override IRequestMessage GetBeginMessage(string database, Bookmarks bookmarks, TransactionConfig config, AccessMode mode, string impersonatedUser)
-		{
-			ValidateImpersonatedUserForVersion(impersonatedUser);
-			return new BeginMessage(database, bookmarks, config?.Timeout, config?.Metadata, mode, impersonatedUser);
-		}
+                                                        IDictionary<string, object> auth,
+                                                        IDictionary<string, string> routingContext)
+        {
+            return new HelloMessage(userAgent, auth, routingContext);
+        }
+                
+        protected override IRequestMessage GetBeginMessage(string database, Bookmarks bookmarks, TransactionConfig config, AccessMode mode, string impersonatedUser)
+        {
+            ValidateImpersonatedUserForVersion(impersonatedUser);
+            return new BeginMessage(database, bookmarks, config?.Timeout, config?.Metadata, mode, impersonatedUser);
+        }
 
-		protected override IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmarks bookmarks = null, TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null, string impersonatedUser = null)
-		{
-			ValidateImpersonatedUserForVersion(impersonatedUser);
-			return new RunWithMetadataMessage(query, database, bookmarks, config, mode, impersonatedUser);
-		}
+        protected override IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmarks bookmarks = null, TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null, string impersonatedUser = null)
+        {
+            ValidateImpersonatedUserForVersion(impersonatedUser);
+            return new RunWithMetadataMessage(query, database, bookmarks, config, mode, impersonatedUser);
+        }
 
-		protected override IResponseHandler GetHelloResponseHandler(IConnection conn) { return new HelloResponseHandler(conn, Version); }
+        protected override IResponseHandler GetHelloResponseHandler(IConnection conn) { return new HelloResponseHandler(conn, Version); }
 
 
-		public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmarks bookmarks)
-		{
-			connection = connection ?? throw new ProtocolException("Attempting to get a routing table on a null connection");
+        public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmarks bookmarks)
+        {
+            connection = connection ?? throw new ProtocolException("Attempting to get a routing table on a null connection");
 
-			var responseHandler = new RouteResponseHandler();
+            var responseHandler = new RouteResponseHandler();
 
-			await connection.EnqueueAsync(new RouteMessage(connection.RoutingContext, bookmarks, database, impersonatedUser), responseHandler).ConfigureAwait(false);
+            await connection.EnqueueAsync(new RouteMessage(connection.RoutingContext, bookmarks, database, impersonatedUser), responseHandler).ConfigureAwait(false);
 
-			await connection.SyncAsync().ConfigureAwait(false);
-			await connection.CloseAsync().ConfigureAwait(false);
+            await connection.SyncAsync().ConfigureAwait(false);
+            await connection.CloseAsync().ConfigureAwait(false);
 
-			return (IReadOnlyDictionary<string, object>)responseHandler.RoutingInformation;
-		}
+            return (IReadOnlyDictionary<string, object>)responseHandler.RoutingInformation;
+        }
 
-		protected override void ValidateImpersonatedUserForVersion(string impersonatedUser)
-		{
-			//do nothing as all values of impersonated user string are valid for version 4.4 onwards.
-		}
-	}
+        protected override void ValidateImpersonatedUserForVersion(string impersonatedUser)
+        {
+            //do nothing as all values of impersonated user string are valid for version 4.4 onwards.
+        }
+    }
 }
 

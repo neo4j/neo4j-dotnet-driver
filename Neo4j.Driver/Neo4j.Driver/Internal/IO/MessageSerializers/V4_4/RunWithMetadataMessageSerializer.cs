@@ -22,18 +22,18 @@ using static Neo4j.Driver.Internal.Protocol.BoltProtocolV3MessageFormat;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_4
 {
-	internal class RunWithMetadataMessageSerializer : WriteOnlySerializer
-	{
-		public override IEnumerable<Type> WritableTypes => new[] { typeof(RunWithMetadataMessage) };
+    internal class RunWithMetadataMessageSerializer : WriteOnlySerializer
+    {
+        public override IEnumerable<Type> WritableTypes => new[] { typeof(RunWithMetadataMessage) };
 
-		public override void Serialize(IPackStreamWriter writer, object value)
-		{
-			var msg = value.CastOrThrow<RunWithMetadataMessage>();
+        public override void Serialize(IPackStreamWriter writer, object value)
+        {
+            var msg = value.CastOrThrow<RunWithMetadataMessage>();
 
-			writer.WriteStructHeader(3, MsgRun);
-			writer.Write(msg.Query.Text);
-			writer.Write(msg.Query.Parameters);
-			writer.Write(msg.Metadata);
-		}
-	}
+            writer.WriteStructHeader(3, MsgRun);
+            writer.Write(msg.Query.Text);
+            writer.Write(msg.Query.Parameters);
+            writer.Write(msg.Metadata);
+        }
+    }
 }

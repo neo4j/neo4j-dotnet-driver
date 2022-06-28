@@ -63,13 +63,13 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         public void CheckVersionRange(BoltProtocolVersion minVersion)
-		{
+        {
             if (MajorVersion != minVersion.MajorVersion)
             {
                 throw new NotSupportedException("Versions should be from same major version");
             }
             else if(MinorVersion < minVersion.MinorVersion)
-			{
+            {
                 throw new NotSupportedException("Max version should be newer than minimum version");
             }
         }
@@ -223,9 +223,9 @@ namespace Neo4j.Driver.Internal.Protocol
             return Tuple.Create(MajorVersion, MinorVersion).GetHashCode();
         }
 
-		public override string ToString()
-		{
-			return $"{MajorVersion}.{MinorVersion}";
-		}
+        public override string ToString()
+        {
+            return $"{MajorVersion}.{MinorVersion}";
+        }
     }
 }

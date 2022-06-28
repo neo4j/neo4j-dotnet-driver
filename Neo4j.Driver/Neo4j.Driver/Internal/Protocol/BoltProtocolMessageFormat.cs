@@ -31,7 +31,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public static readonly IMessageFormat V4_3 = new BoltProtocolV4_3MessageFormat();
 
-		public static readonly IMessageFormat V4_4 = new BoltProtocolV4_4MessageFormat();
+        public static readonly IMessageFormat V4_4 = new BoltProtocolV4_4MessageFormat();
 
         public static readonly IMessageFormat V5_0 = new BoltProtocolV5_0MessageFormat();
     }

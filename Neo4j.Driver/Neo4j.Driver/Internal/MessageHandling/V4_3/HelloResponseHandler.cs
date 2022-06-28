@@ -29,15 +29,15 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4_3
         protected override BoltProtocolVersion MinVersion => BoltProtocolVersion.V4_3;
         public HelloResponseHandler(IConnection connection, BoltProtocolVersion version) : base(connection, version)
         {
-			AddMetadata<ConfigurationHintsCollector, HintsType>();
+            AddMetadata<ConfigurationHintsCollector, HintsType>();
         }
 
         public override void OnSuccess(IDictionary<string, object> metadata)
         {
             base.OnSuccess(metadata);
 
-			var timeout = new ConfigHintRecvTimeout(GetMetadata<ConfigurationHintsCollector, HintsType>()).Get;
-			_connection.SetRecvTimeOut(timeout);			
-		}
+            var timeout = new ConfigHintRecvTimeout(GetMetadata<ConfigurationHintsCollector, HintsType>()).Get;
+            _connection.SetRecvTimeOut(timeout);			
+        }
     }
 }

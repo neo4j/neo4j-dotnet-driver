@@ -31,23 +31,23 @@ namespace Neo4j.Driver.Internal.IO
         private readonly MemoryStream _bufferStream;
         private readonly int _defaultBufferSize;
         private readonly int _maxBufferSize;
-		private int _readTimeoutSeconds = -1;
+        private int _readTimeoutSeconds = -1;
 
-		public int ReadTimeoutSeconds 
-		{ 
-			get
-			{
-				return _readTimeoutSeconds;
-			}
-			set
-			{
-				_readTimeoutSeconds = value;
-				if(_chunkReader is not null)
-					_chunkReader.ReadTimeoutSeconds = value;
-			} 
-		}
+        public int ReadTimeoutSeconds 
+        { 
+            get
+            {
+                return _readTimeoutSeconds;
+            }
+            set
+            {
+                _readTimeoutSeconds = value;
+                if(_chunkReader is not null)
+                    _chunkReader.ReadTimeoutSeconds = value;
+            } 
+        }
 
-		private int _shrinkCounter = 0;
+        private int _shrinkCounter = 0;
 
         public MessageReader(Stream stream, IMessageFormat messageFormat)
             : this(stream, Constants.DefaultReadBufferSize, Constants.MaxReadBufferSize, null, messageFormat)

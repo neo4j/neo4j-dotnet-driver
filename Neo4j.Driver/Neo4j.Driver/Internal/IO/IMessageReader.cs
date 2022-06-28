@@ -27,6 +27,6 @@ namespace Neo4j.Driver.Internal.IO
     internal interface IMessageReader
     {
         Task ReadAsync(IResponsePipeline pipeline);
-		int ReadTimeoutSeconds { get; set; }
+        int ReadTimeoutSeconds { get; set; }
     }
 }

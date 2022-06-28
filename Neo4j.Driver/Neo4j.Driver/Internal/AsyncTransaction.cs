@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Internal
         private readonly bool _reactive;
         private readonly ITransactionResourceHandler _resourceHandler;
         private readonly string _database;
-		private readonly string _impersonatedUser = null;
+        private readonly string _impersonatedUser = null;
 
         private Bookmarks _bookmarks;
 
@@ -62,7 +62,7 @@ namespace Neo4j.Driver.Internal
             _reactive = reactive;
             _database = database;
             _fetchSize = fetchSize;
-			_impersonatedUser = impersonatedUser;
+            _impersonatedUser = impersonatedUser;
         }
 
         public bool IsOpen => _state == Active;
@@ -131,15 +131,15 @@ namespace Neo4j.Driver.Internal
             }
         }
 
-		//Needed to implement the DisposeAsync interface correctly. This is called from the parent class that is
-		//implementing the rest of the pattern.
-		protected override async ValueTask DisposeAsyncCore()
-		{
-			if (IsOpen)
-				await RollbackAsync();
-		}
+        //Needed to implement the DisposeAsync interface correctly. This is called from the parent class that is
+        //implementing the rest of the pattern.
+        protected override async ValueTask DisposeAsyncCore()
+        {
+            if (IsOpen)
+                await RollbackAsync();
+        }
 
-		private async Task DiscardUnconsumed()
+        private async Task DiscardUnconsumed()
         {
             foreach (var result in _results)
             {

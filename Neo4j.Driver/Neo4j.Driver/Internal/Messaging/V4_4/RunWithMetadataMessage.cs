@@ -22,42 +22,42 @@ using Neo4j.Driver.Internal.Messaging.V3;
 
 namespace Neo4j.Driver.Internal.Messaging.V4_4
 {
-	internal class RunWithMetadataMessage : TransactionStartingMessage
-	{
-		public RunWithMetadataMessage(Query query, AccessMode mode)
-			: this(query, null, null, mode, null)
-		{
-		}
+    internal class RunWithMetadataMessage : TransactionStartingMessage
+    {
+        public RunWithMetadataMessage(Query query, AccessMode mode)
+            : this(query, null, null, mode, null)
+        {
+        }
 
-		public RunWithMetadataMessage(Query query, Bookmarks bookmarks = null, TransactionConfig configBuilder = null,
-			AccessMode mode = AccessMode.Write, string impersonatedUser = null)
-			: this(query, null, bookmarks, configBuilder?.Timeout, configBuilder?.Metadata, mode, impersonatedUser)
-		{
-		}
+        public RunWithMetadataMessage(Query query, Bookmarks bookmarks = null, TransactionConfig configBuilder = null,
+            AccessMode mode = AccessMode.Write, string impersonatedUser = null)
+            : this(query, null, bookmarks, configBuilder?.Timeout, configBuilder?.Metadata, mode, impersonatedUser)
+        {
+        }
 
-		public RunWithMetadataMessage(Query query, string database, Bookmarks bookmarks, TransactionConfig configBuilder,
-			AccessMode mode, string impersonatedUser)
-			: this(query, database, bookmarks, configBuilder?.Timeout, configBuilder?.Metadata, mode, impersonatedUser)
-		{
-		}
-		
-		public RunWithMetadataMessage(Query query, string database, Bookmarks bookmarks, TimeSpan? txTimeout,
-			IDictionary<string, object> txMetadata, AccessMode mode, string impersonatedUser)
-			: base(database, bookmarks, txTimeout, txMetadata, mode)
-		{
-			Query = query;
+        public RunWithMetadataMessage(Query query, string database, Bookmarks bookmarks, TransactionConfig configBuilder,
+            AccessMode mode, string impersonatedUser)
+            : this(query, database, bookmarks, configBuilder?.Timeout, configBuilder?.Metadata, mode, impersonatedUser)
+        {
+        }
+        
+        public RunWithMetadataMessage(Query query, string database, Bookmarks bookmarks, TimeSpan? txTimeout,
+            IDictionary<string, object> txMetadata, AccessMode mode, string impersonatedUser)
+            : base(database, bookmarks, txTimeout, txMetadata, mode)
+        {
+            Query = query;
 
-			if (!string.IsNullOrEmpty(impersonatedUser))
-			{
-				Metadata.Add("imp_user", impersonatedUser);
-			}
-		}
+            if (!string.IsNullOrEmpty(impersonatedUser))
+            {
+                Metadata.Add("imp_user", impersonatedUser);
+            }
+        }
 
-		public Query Query { get; }
+        public Query Query { get; }
 
-		public override string ToString()
-		{
-			return $"RUN {Query} {Metadata.ToContentString()}";
-		}
-	}
+        public override string ToString()
+        {
+            return $"RUN {Query} {Metadata.ToContentString()}";
+        }
+    }
 }

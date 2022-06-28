@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4_1
         protected override BoltProtocolVersion MinVersion => BoltProtocolVersion.V4_1;
         public HelloResponseHandler(IConnection connection, BoltProtocolVersion version) : base(connection, version)
         {
-			//Add version specific Metadata collectors here...
-		}
-	}
+            //Add version specific Metadata collectors here...
+        }
+    }
 }

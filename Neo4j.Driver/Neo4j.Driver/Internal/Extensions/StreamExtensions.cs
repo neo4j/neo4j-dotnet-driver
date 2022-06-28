@@ -48,19 +48,19 @@ namespace Neo4j.Driver.Internal
             return offset;
         }
 
-		/// <summary>
-		/// The standard ReadAsync in .Net does not honour the CancellationToken even if supplied. This method wraps a call to ReadAsync in a task that
-		/// monitors the token, and when detected calls the streams close method.
-		/// </summary>
-		/// <param name="stream">Stream instance that is being extended</param>
-		/// <param name="buffer">Target buffer to write into</param>
-		/// <param name="offset">Offset from which to begin writing data from the stream</param>
-		/// <param name="count">The maximum number of bytes to read</param>
-		/// <param name="timeoutMs">The timeout in milliseconds that the stream will close after if there is no activity. </param>
-		/// <returns>The number of bytes read</returns>
-		public static async Task<int> ReadWithTimeoutAsync(this Stream stream, byte[] buffer, int offset, int count, int timeoutMs)
-		{
-			var timeout = timeoutMs <= 0 ? TimeSpan.FromMilliseconds(-1) : TimeSpan.FromMilliseconds(timeoutMs);
+        /// <summary>
+        /// The standard ReadAsync in .Net does not honour the CancellationToken even if supplied. This method wraps a call to ReadAsync in a task that
+        /// monitors the token, and when detected calls the streams close method.
+        /// </summary>
+        /// <param name="stream">Stream instance that is being extended</param>
+        /// <param name="buffer">Target buffer to write into</param>
+        /// <param name="offset">Offset from which to begin writing data from the stream</param>
+        /// <param name="count">The maximum number of bytes to read</param>
+        /// <param name="timeoutMs">The timeout in milliseconds that the stream will close after if there is no activity. </param>
+        /// <returns>The number of bytes read</returns>
+        public static async Task<int> ReadWithTimeoutAsync(this Stream stream, byte[] buffer, int offset, int count, int timeoutMs)
+        {
+            var timeout = timeoutMs <= 0 ? TimeSpan.FromMilliseconds(-1) : TimeSpan.FromMilliseconds(timeoutMs);
 
             try
             {
@@ -82,6 +82,6 @@ namespace Neo4j.Driver.Internal
                 stream.Close();
                 throw;
             }
-		}
-	}
+        }
+    }
 }

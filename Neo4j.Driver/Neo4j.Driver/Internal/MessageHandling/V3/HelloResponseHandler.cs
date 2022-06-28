@@ -25,8 +25,8 @@ using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.MessageHandling.V3
 {
-	internal class HelloResponseHandler : MetadataCollectingResponseHandler
-	{
+    internal class HelloResponseHandler : MetadataCollectingResponseHandler
+    {
         protected readonly IConnection _connection;
 
         public HelloResponseHandler(IConnection connection)
@@ -41,18 +41,18 @@ namespace Neo4j.Driver.Internal.MessageHandling.V3
         {
             base.OnSuccess(metadata);
 
-			UpdateVersion();
-			UpdateId();
+            UpdateVersion();
+            UpdateId();
         }
 
-		protected virtual void UpdateVersion()
-		{
-			_connection.UpdateVersion(GetMetadata<ServerVersionCollector, ServerVersion>());
-		}
+        protected virtual void UpdateVersion()
+        {
+            _connection.UpdateVersion(GetMetadata<ServerVersionCollector, ServerVersion>());
+        }
 
-		protected virtual void UpdateId()
-		{
-			_connection.UpdateId(GetMetadata<ConnectionIdCollector, string>());
-		}
-	}
+        protected virtual void UpdateId()
+        {
+            _connection.UpdateId(GetMetadata<ConnectionIdCollector, string>());
+        }
+    }
 }

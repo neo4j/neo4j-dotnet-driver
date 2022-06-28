@@ -206,8 +206,8 @@ namespace Neo4j.Driver.Internal.Connector
         {
             if (Server is ServerInfo info)
             {
-				info.Update(_boltProtocol.Version, newVersion.Agent);				
-			}
+                info.Update(_boltProtocol.Version, newVersion.Agent);				
+            }
             else
             {
                 throw new InvalidOperationException(
@@ -285,9 +285,9 @@ namespace Neo4j.Driver.Internal.Connector
             return $"[{id}]";
         }
 
-		public void SetRecvTimeOut(int seconds)
-		{
-			_client.SetRecvTimeOut(seconds);			
-		}
-	}
+        public void SetRecvTimeOut(int seconds)
+        {
+            _client.SetRecvTimeOut(seconds);			
+        }
+    }
 }

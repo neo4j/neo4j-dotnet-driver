@@ -24,10 +24,10 @@ namespace Neo4j.Driver.Internal.IO
 {
     internal interface IChunkReader
     {
-		double ReadTimeoutSeconds { get; set; }
-		int ReadTimeoutMs { get; set; }
+        double ReadTimeoutSeconds { get; set; }
+        int ReadTimeoutMs { get; set; }
 
-		Task<int> ReadNextMessagesAsync(Stream messageStream);
+        Task<int> ReadNextMessagesAsync(Stream messageStream);
 
     }
 }

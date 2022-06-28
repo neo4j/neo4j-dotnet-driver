@@ -24,21 +24,21 @@ using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.MessageHandling.V4_4
 {
-	class RouteResponseHandler : MetadataCollectingResponseHandler
-	{
-		public IDictionary<string, object> RoutingInformation { get; set; }
+    class RouteResponseHandler : MetadataCollectingResponseHandler
+    {
+        public IDictionary<string, object> RoutingInformation { get; set; }
 
 
-		public RouteResponseHandler()
-		{
-			AddMetadata<RoutingTableCollector, IDictionary<string, object>>();
-		}
+        public RouteResponseHandler()
+        {
+            AddMetadata<RoutingTableCollector, IDictionary<string, object>>();
+        }
 
-		public override void OnSuccess(IDictionary<string, object> metadata)
-		{
-			base.OnSuccess(metadata);
-			RoutingInformation = GetMetadata<RoutingTableCollector, IDictionary<string, object>>();
-		}
-	}
+        public override void OnSuccess(IDictionary<string, object> metadata)
+        {
+            base.OnSuccess(metadata);
+            RoutingInformation = GetMetadata<RoutingTableCollector, IDictionary<string, object>>();
+        }
+    }
 
 }

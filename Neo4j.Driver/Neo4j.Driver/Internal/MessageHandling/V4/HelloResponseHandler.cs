@@ -27,24 +27,24 @@ using Neo4j.Driver.Internal.Util;
 namespace Neo4j.Driver.Internal.MessageHandling.V4
 {
     internal class HelloResponseHandler : V3.HelloResponseHandler
-	{
-		protected virtual BoltProtocolVersion MinVersion => BoltProtocolVersion.V4_0;
-		private BoltProtocolVersion _version;
+    {
+        protected virtual BoltProtocolVersion MinVersion => BoltProtocolVersion.V4_0;
+        private BoltProtocolVersion _version;
 
-		protected BoltProtocolVersion Version
-		{
-			get => _version;
-            set
-			{
-				_version = value ?? throw new ArgumentNullException($"Attempting to create a HelloResponseHandler v{MinVersion} with a null BoltProtocolVersion object");
-				if (Version < MinVersion)
-					throw new ArgumentOutOfRangeException($"Attempting to initialise a v{MinVersion} HelloResponseHandler with a protocol version less than {MinVersion}(v{Version} passed)");
-			}
-		}
-
-		public HelloResponseHandler(IConnection connection, BoltProtocolVersion version) : base(connection)
+        protected BoltProtocolVersion Version
         {
-			Version = version;
-		}
+            get => _version;
+            set
+            {
+                _version = value ?? throw new ArgumentNullException($"Attempting to create a HelloResponseHandler v{MinVersion} with a null BoltProtocolVersion object");
+                if (Version < MinVersion)
+                    throw new ArgumentOutOfRangeException($"Attempting to initialise a v{MinVersion} HelloResponseHandler with a protocol version less than {MinVersion}(v{Version} passed)");
+            }
+        }
+
+        public HelloResponseHandler(IConnection connection, BoltProtocolVersion version) : base(connection)
+        {
+            Version = version;
+        }
     }
 }

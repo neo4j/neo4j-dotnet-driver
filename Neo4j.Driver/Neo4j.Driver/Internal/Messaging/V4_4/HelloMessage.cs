@@ -20,39 +20,39 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Messaging.V4_4
 {
-	internal class HelloMessage : IRequestMessage
-	{
-		public IDictionary<string, object> MetaData { get; }
-		private const string UserAgentMetadataKey = "user_agent";
+    internal class HelloMessage : IRequestMessage
+    {
+        public IDictionary<string, object> MetaData { get; }
+        private const string UserAgentMetadataKey = "user_agent";
 
-		public HelloMessage(string userAgent, IDictionary<string, object> authToken) :
-			this(userAgent, authToken, null)
-		{
+        public HelloMessage(string userAgent, IDictionary<string, object> authToken) :
+            this(userAgent, authToken, null)
+        {
 
-		}
+        }
 
-		public HelloMessage(string userAgent, IDictionary<string, object> authToken, IDictionary<string, string> routingContext)
-		{
-			if (authToken == null || authToken.Count == 0)
-			{
-				MetaData = new Dictionary<string, object> { { UserAgentMetadataKey, userAgent } };
-			}
-			else
-			{
-				MetaData = new Dictionary<string, object>(authToken) { { UserAgentMetadataKey, userAgent } };
-			}
+        public HelloMessage(string userAgent, IDictionary<string, object> authToken, IDictionary<string, string> routingContext)
+        {
+            if (authToken == null || authToken.Count == 0)
+            {
+                MetaData = new Dictionary<string, object> { { UserAgentMetadataKey, userAgent } };
+            }
+            else
+            {
+                MetaData = new Dictionary<string, object>(authToken) { { UserAgentMetadataKey, userAgent } };
+            }
 
-			MetaData.Add("routing", routingContext);
-		}
+            MetaData.Add("routing", routingContext);
+        }
 
-		public override string ToString()
-		{
-			IDictionary<string, object> metadataCopy = new Dictionary<string, object>(MetaData);
-			if (metadataCopy.ContainsKey(AuthToken.CredentialsKey))
-			{
-				metadataCopy[AuthToken.CredentialsKey] = "******";
-			}
-			return "HELLO " + metadataCopy.ToContentString();
-		}
-	}
+        public override string ToString()
+        {
+            IDictionary<string, object> metadataCopy = new Dictionary<string, object>(MetaData);
+            if (metadataCopy.ContainsKey(AuthToken.CredentialsKey))
+            {
+                metadataCopy[AuthToken.CredentialsKey] = "******";
+            }
+            return "HELLO " + metadataCopy.ToContentString();
+        }
+    }
 }

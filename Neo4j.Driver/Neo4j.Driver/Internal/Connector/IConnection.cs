@@ -88,7 +88,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         IDictionary<string, string> RoutingContext { get; set; }
 
-		void SetRecvTimeOut(int seconds);
+        void SetRecvTimeOut(int seconds);
 
-	}
+    }
 }

@@ -6,7 +6,7 @@ using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
 {
-	class RouteMessageSerializer : WriteOnlySerializer
+    class RouteMessageSerializer : WriteOnlySerializer
     {
         public override IEnumerable<Type> WritableTypes => new[] { typeof(RouteMessage) };
 
@@ -16,8 +16,8 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
             
             writer.WriteStructHeader(3, BoltProtocolV4_3MessageFormat.MsgRoute);
             writer.Write(msg.Routing);
-			writer.Write(msg.Bookmarks.Values);
-			writer.Write(string.IsNullOrEmpty(msg.DatabaseParam) ? null : msg.DatabaseParam);			
-		}
+            writer.Write(msg.Bookmarks.Values);
+            writer.Write(string.IsNullOrEmpty(msg.DatabaseParam) ? null : msg.DatabaseParam);			
+        }
     }
 }

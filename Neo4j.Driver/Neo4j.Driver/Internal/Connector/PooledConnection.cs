@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal.Connector
     internal class PooledConnection : DelegatedConnection, IPooledConnection
     {
         private readonly IConnectionReleaseManager _releaseManager;
-		public bool ReAuthorizationRequired { get; set; } = false;
+        public bool ReAuthorizationRequired { get; set; } = false;
 
         public PooledConnection(IConnection conn, IConnectionReleaseManager releaseManager = null)
             : base(conn)
@@ -71,34 +71,34 @@ namespace Neo4j.Driver.Internal.Connector
 
         public override Task OnErrorAsync(Exception error)
         {
-			if (!error.IsRecoverableError())
-			{
-				HasUnrecoverableError = true;
-			}
+            if (!error.IsRecoverableError())
+            {
+                HasUnrecoverableError = true;
+            }
 
-			if (error is Neo4jException)
-			{
-				if (error.IsAuthorizationError())
-				{
-					_releaseManager.MarkConnectionsForReauthorization(this);					
-				}
+            if (error is Neo4jException)
+            {
+                if (error.IsAuthorizationError())
+                {
+                    _releaseManager.MarkConnectionsForReauthorization(this);					
+                }
 
-				throw error;
-			}
+                throw error;
+            }
 
-			if (error.IsConnectionError())
-			{
-				throw new ServiceUnavailableException(
-					$"Connection with the server breaks due to {error.GetType().Name}: {error.Message} " +
-					"Please ensure that your database is listening on the correct host and port " +
-					"and that you have compatible encryption settings both on Neo4j server and driver. " +
-					"Note that the default encryption setting has changed in Neo4j 4.0.", error);
-			}
-			else
-			{
-				throw error;
-			}
-		}
+            if (error.IsConnectionError())
+            {
+                throw new ServiceUnavailableException(
+                    $"Connection with the server breaks due to {error.GetType().Name}: {error.Message} " +
+                    "Please ensure that your database is listening on the correct host and port " +
+                    "and that you have compatible encryption settings both on Neo4j server and driver. " +
+                    "Note that the default encryption setting has changed in Neo4j 4.0.", error);
+            }
+            else
+            {
+                throw error;
+            }
+        }
 
         public ITimer IdleTimer { get; }
         public ITimer LifetimeTimer { get; }
@@ -124,5 +124,5 @@ namespace Neo4j.Driver.Internal.Connector
         {
             _stopwatch.Start();
         }
-	}
+    }
 }

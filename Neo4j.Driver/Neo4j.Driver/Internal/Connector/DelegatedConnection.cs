@@ -144,10 +144,10 @@ namespace Neo4j.Driver.Internal.Connector
             return Delegate.ToString();
         }
 
-		public void SetRecvTimeOut(int seconds)
-		{
-			Delegate.SetRecvTimeOut(seconds);
-		}
+        public void SetRecvTimeOut(int seconds)
+        {
+            Delegate.SetRecvTimeOut(seconds);
+        }
 
-	}
+    }
 }

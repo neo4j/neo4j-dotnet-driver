@@ -281,10 +281,10 @@ namespace Neo4j.Driver
         /// <param name="userAgent">The user agent string</param>
         /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
         public ConfigBuilder WithUserAgent(string userAgent)
-		{
+        {
             _config.UserAgent = userAgent;
             return this;
-		}
+        }
 
         /// <summary>
         /// Sets the rule for which Certificate Authority(CA) certificates to use when building trust with a server certificate.

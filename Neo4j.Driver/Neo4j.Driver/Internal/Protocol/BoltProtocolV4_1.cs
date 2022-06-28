@@ -14,7 +14,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public override BoltProtocolVersion Version => BoltProtocolVersion.V4_1;
         protected override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V4_1;
 
-		protected IDictionary<string, string> RoutingContext { get; set; }
+        protected IDictionary<string, string> RoutingContext { get; set; }
 
         public BoltProtocolV4_1(IDictionary<string, string> routingContext)
         {
@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public override async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
         {
             await connection.EnqueueAsync(HelloMessage(userAgent, authToken.AsDictionary(), RoutingContext),
-										  GetHelloResponseHandler(connection)).ConfigureAwait(false);
+                                          GetHelloResponseHandler(connection)).ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
         }
     }

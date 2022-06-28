@@ -40,39 +40,39 @@ namespace Neo4j.Driver.Internal.Protocol
         private const string GetRoutingTableForDatabaseProcedure = "CALL dbms.routing.getRoutingTable($context, $database)";
         public override BoltProtocolVersion Version => BoltProtocolVersion.V4_0;
         protected override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V4;
-		
+        
         protected override IRequestMessage GetHelloMessage(string userAgent, IDictionary<string, object> auth)
-		{
-			return new HelloMessage(userAgent, auth);
-		}
+        {
+            return new HelloMessage(userAgent, auth);
+        }
 
-		protected override IRequestMessage GetBeginMessage(string database, Bookmarks bookmarks, TransactionConfig config, AccessMode mode, string impersonatedUser)
-		{
-			ValidateImpersonatedUserForVersion(impersonatedUser);
+        protected override IRequestMessage GetBeginMessage(string database, Bookmarks bookmarks, TransactionConfig config, AccessMode mode, string impersonatedUser)
+        {
+            ValidateImpersonatedUserForVersion(impersonatedUser);
 
-			return new BeginMessage(database, bookmarks, config?.Timeout, config?.Metadata, mode);
-		}
+            return new BeginMessage(database, bookmarks, config?.Timeout, config?.Metadata, mode);
+        }
 
-		protected override IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmarks bookmarks = null, TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null, string impersonatedUser = null)
-		{
-			ValidateImpersonatedUserForVersion(impersonatedUser);
+        protected override IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmarks bookmarks = null, TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null, string impersonatedUser = null)
+        {
+            ValidateImpersonatedUserForVersion(impersonatedUser);
 
-			return new RunWithMetadataMessage(query, database, bookmarks, config, mode);
-		}
+            return new RunWithMetadataMessage(query, database, bookmarks, config, mode);
+        }
 
-		protected override IResponseHandler GetHelloResponseHandler(IConnection conn) { return new V3.HelloResponseHandler(conn); }
+        protected override IResponseHandler GetHelloResponseHandler(IConnection conn) { return new V3.HelloResponseHandler(conn); }
 
 
         public override async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-																				  Query query, 
-																				  bool reactive, 
-																				  IBookmarksTracker bookmarksTracker,
-																				  IResultResourceHandler resultResourceHandler,
-																				  string database, 
-																				  Bookmarks bookmarks, 
-																				  TransactionConfig config,
-																				  string impersonatedUser,
-																				  long fetchSize = Config.Infinite)
+                                                                                  Query query, 
+                                                                                  bool reactive, 
+                                                                                  IBookmarksTracker bookmarksTracker,
+                                                                                  IResultResourceHandler resultResourceHandler,
+                                                                                  string database, 
+                                                                                  Bookmarks bookmarks, 
+                                                                                  TransactionConfig config,
+                                                                                  string impersonatedUser,
+                                                                                  long fetchSize = Config.Infinite)
         {
             var summaryBuilder = new SummaryBuilder(query, connection.Server);
             var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,

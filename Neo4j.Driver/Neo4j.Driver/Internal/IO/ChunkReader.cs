@@ -35,32 +35,32 @@ namespace Neo4j.Driver.Internal.IO
         private long ChunkBufferRemaining { get { return ChunkBuffer.Length - ChunkBuffer.Position; } }
 
         private const int ChunkHeaderSize = 2;
-		private int _readTimeoutMs = -1;
+        private int _readTimeoutMs = -1;
 
-		public double ReadTimeoutSeconds 
-		{
-			get
-			{
-				return TimeSpan.FromMilliseconds(_readTimeoutMs).TotalSeconds;
-			} 
-			set
-			{
-				//Convert to milliseconds ensuring that any negative numbers are set to -1 which means no timeout.
-				_readTimeoutMs = (int)Math.Max(TimeSpan.FromSeconds(value).TotalMilliseconds, -1);
-			}
-		} 
+        public double ReadTimeoutSeconds 
+        {
+            get
+            {
+                return TimeSpan.FromMilliseconds(_readTimeoutMs).TotalSeconds;
+            } 
+            set
+            {
+                //Convert to milliseconds ensuring that any negative numbers are set to -1 which means no timeout.
+                _readTimeoutMs = (int)Math.Max(TimeSpan.FromSeconds(value).TotalMilliseconds, -1);
+            }
+        } 
 
-		public int ReadTimeoutMs
-		{
-			get
-			{
-				return _readTimeoutMs;
-			}
-			set
-			{
-				_readTimeoutMs = value;
-			}
-		}
+        public int ReadTimeoutMs
+        {
+            get
+            {
+                return _readTimeoutMs;
+            }
+            set
+            {
+                _readTimeoutMs = value;
+            }
+        }
 
 
         public ChunkReader(Stream downStream)
@@ -78,7 +78,7 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         private void ChunkBufferTrimUsedData()
-		{
+        {
             //Remove 'used' data from memory stream, that is everything before it's current position
             byte[] internalBuffer = ChunkBuffer.GetBuffer();
             Buffer.BlockCopy(internalBuffer, (int)ChunkBuffer.Position, internalBuffer, 0, (int)ChunkBufferRemaining);
@@ -102,9 +102,9 @@ namespace Neo4j.Driver.Internal.IO
             ChunkBuffer.Position = ChunkBuffer.Length;
 
             while ( requiredSize > 0)
-			{
-				numBytesRead = await InputStream.ReadWithTimeoutAsync(data, 0, bufferSize, (int)_readTimeoutMs).ConfigureAwait(false);
-				
+            {
+                numBytesRead = await InputStream.ReadWithTimeoutAsync(data, 0, bufferSize, (int)_readTimeoutMs).ConfigureAwait(false);
+                
                 if (numBytesRead <= 0) break;
 
                 ChunkBuffer.Write(data, 0, numBytesRead);
@@ -120,7 +120,7 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         private async Task<byte[]> ReadDataOfSizeAsync(int requiredSize)
-		{      
+        {      
             await PopulateChunkBufferAsync(requiredSize).ConfigureAwait(false);
 
             var data = new byte[requiredSize];
@@ -130,7 +130,7 @@ namespace Neo4j.Driver.Internal.IO
                 throw new IOException($"Unexpected end of stream, unable to read required data size");
             
             return data;
-		}
+        }
 
         private async Task<bool> ConstructMessageAsync(Stream outputMessageStream)
         {
@@ -146,7 +146,7 @@ namespace Neo4j.Driver.Internal.IO
                     //We have been reading data so this is the end of a message zero chunk
                     //Or there is no data remaining after this NOOP
                     if (dataRead  || ChunkBufferRemaining <= 0)    
-					    break;
+                        break;
 
                     //Its a NOOP so skip it
                     continue;                    

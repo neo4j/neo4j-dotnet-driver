@@ -19,11 +19,11 @@ using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.MessageHandling.V4_4
 {
-	internal class HelloResponseHandler : V4_3.HelloResponseHandler
-	{
+    internal class HelloResponseHandler : V4_3.HelloResponseHandler
+    {
         protected override BoltProtocolVersion MinVersion => BoltProtocolVersion.V4_4;
         public HelloResponseHandler(IConnection connection, BoltProtocolVersion version) : base(connection, version)
-		{
-		}
-	}
+        {
+        }
+    }
 }

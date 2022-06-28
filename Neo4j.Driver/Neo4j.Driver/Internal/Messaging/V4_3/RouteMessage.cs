@@ -20,39 +20,39 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Messaging.V4_3
 {
-	internal class RouteMessage : IRequestMessage
-	{
+    internal class RouteMessage : IRequestMessage
+    {
 
-		public IDictionary<string, string> Routing { get;}
-		public Bookmarks Bookmarks { get; }
-		public string DatabaseParam { get; }
+        public IDictionary<string, string> Routing { get;}
+        public Bookmarks Bookmarks { get; }
+        public string DatabaseParam { get; }
 
 
-		public RouteMessage(IDictionary<string, string> routingContext, Bookmarks bookmarks, string db)
-		{
+        public RouteMessage(IDictionary<string, string> routingContext, Bookmarks bookmarks, string db)
+        {
             Routing = routingContext ?? new Dictionary<string,string>();
-			Bookmarks = bookmarks ?? Bookmarks.From(Array.Empty<string>());
+            Bookmarks = bookmarks ?? Bookmarks.From(Array.Empty<string>());
             DatabaseParam = db;            
-		}
+        }
 
-		public override string ToString()   
-		{
-			string message = "ROUTE {";
+        public override string ToString()   
+        {
+            string message = "ROUTE {";
 
-			foreach(var data in Routing)
-			{
+            foreach(var data in Routing)
+            {
                 message += $" \'{data.Key}\':\'{data.Value}\'";
-			}
+            }
 
             message += " } ";
 
-			message += (Bookmarks is not null && Bookmarks.Values.Length > 0) 
-				? "{ bookmarks, " + Bookmarks.Values.ToContentString() + " }" 
-				: Array.Empty<string>().ToContentString();
-			
-			message += (!string.IsNullOrEmpty(DatabaseParam)) ? " \'" + DatabaseParam + "\'" : " None";
+            message += (Bookmarks is not null && Bookmarks.Values.Length > 0) 
+                ? "{ bookmarks, " + Bookmarks.Values.ToContentString() + " }" 
+                : Array.Empty<string>().ToContentString();
+            
+            message += (!string.IsNullOrEmpty(DatabaseParam)) ? " \'" + DatabaseParam + "\'" : " None";
 
             return message;
         }
-	}
+    }
 }

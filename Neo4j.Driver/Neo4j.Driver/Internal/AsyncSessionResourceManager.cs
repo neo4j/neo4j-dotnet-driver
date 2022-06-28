@@ -87,14 +87,14 @@ namespace Neo4j.Driver.Internal
             // When there is a open transaction, this method will also try to close the tx
             if (_transaction != null)
             {	
-				try
+                try
                 {
                     await _transaction.RollbackAsync().ConfigureAwait(false);
                 }
-				catch (Exception e)
+                catch (Exception e)
                 {	
-					throw new ClientException((e as Neo4jException)?.Code, $"Error when disposing unclosed transaction in session: {e.Message}", e);
-				}
+                    throw new ClientException((e as Neo4jException)?.Code, $"Error when disposing unclosed transaction in session: {e.Message}", e);
+                }
             }
         }
 
@@ -163,9 +163,9 @@ namespace Neo4j.Driver.Internal
         {
             if (_transaction != null)
             {
-				throw new TransactionNestingException("Attempting to nest transactions. A session can only have a single " +
-					"transaction open at a time. Ensure to commit or rollback the previous transaction before opening the next.");
-			}
+                throw new TransactionNestingException("Attempting to nest transactions. A session can only have a single " +
+                    "transaction open at a time. Ensure to commit or rollback the previous transaction before opening the next.");
+            }
         }
 
         private void EnsureSessionIsOpen()

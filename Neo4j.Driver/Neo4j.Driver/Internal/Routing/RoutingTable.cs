@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly ConcurrentOrderedSet<Uri> _readers = new ConcurrentOrderedSet<Uri>();
         private readonly ConcurrentOrderedSet<Uri> _writers = new ConcurrentOrderedSet<Uri>();
         private readonly string _database;
-		DateTime _expirationTimeStamp;
+        DateTime _expirationTimeStamp;
 
         public string Database => _database;
         public IList<Uri> Routers => _routers.Snapshot;
@@ -56,16 +56,16 @@ namespace Neo4j.Driver.Internal.Routing
             _readers.Add(readers ?? Enumerable.Empty<Uri>());
             _writers.Add(writers ?? Enumerable.Empty<Uri>());
 
-			ExpireAfterSeconds = expireAfterSeconds;
-			try
-			{
-				_expirationTimeStamp = DateTime.Now.AddSeconds(Convert.ToDouble(expireAfterSeconds));
-			}
-			catch
-			{
-				throw new ArgumentOutOfRangeException("Trying to set a TTL value for the routing table that is too large");
-			}
-			
+            ExpireAfterSeconds = expireAfterSeconds;
+            try
+            {
+                _expirationTimeStamp = DateTime.Now.AddSeconds(Convert.ToDouble(expireAfterSeconds));
+            }
+            catch
+            {
+                throw new ArgumentOutOfRangeException("Trying to set a TTL value for the routing table that is too large");
+            }
+            
         }
 
         public bool IsStale(AccessMode mode)
@@ -77,8 +77,8 @@ namespace Neo4j.Driver.Internal.Routing
         }
 
         public bool IsExpiredFor(TimeSpan duration)
-		{ 
-			return  (DateTime.Now - _expirationTimeStamp).TotalMilliseconds >= duration.TotalMilliseconds;
+        { 
+            return  (DateTime.Now - _expirationTimeStamp).TotalMilliseconds >= duration.TotalMilliseconds;
         }
 
         public bool IsReadingInAbsenceOfWriter(AccessMode mode)

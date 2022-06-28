@@ -41,46 +41,46 @@ namespace Neo4j.Driver.Internal
         }
 
 
-		private bool _disposed = false;
+        private bool _disposed = false;
 
-		~AsyncQueryRunner() => Dispose(false);
+        ~AsyncQueryRunner() => Dispose(false);
 
-		public void Dispose()
-		{
-			Dispose(true);
-			GC.SuppressFinalize(this);
-		}
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
-		protected virtual void Dispose(bool disposing)
-		{
-			if (_disposed)
-				return;
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
 
-			//No resources to clean up
-			if(disposing)
-			{
-				//Dispose of resources here				
-			}
+            //No resources to clean up
+            if(disposing)
+            {
+                //Dispose of resources here				
+            }
 
-			//Set disposed resources to null
+            //Set disposed resources to null
 
-			_disposed = true;
-		}
+            _disposed = true;
+        }
 
-		public async ValueTask DisposeAsync()
-		{
-			await DisposeAsyncCore().ConfigureAwait(false);
+        public async ValueTask DisposeAsync()
+        {
+            await DisposeAsyncCore().ConfigureAwait(false);
 
-			Dispose(disposing: false);
-			GC.SuppressFinalize(this);
-		}
+            Dispose(disposing: false);
+            GC.SuppressFinalize(this);
+        }
 
-		protected virtual ValueTask DisposeAsyncCore()
-		{
-			//Nothing to dispose of in this class. Methods required for derived classes and correct dispose pattern
-			return new ValueTask(Task.CompletedTask);
-		}
-	}
+        protected virtual ValueTask DisposeAsyncCore()
+        {
+            //Nothing to dispose of in this class. Methods required for derived classes and correct dispose pattern
+            return new ValueTask(Task.CompletedTask);
+        }
+    }
 
     internal interface IResultResourceHandler
     {
