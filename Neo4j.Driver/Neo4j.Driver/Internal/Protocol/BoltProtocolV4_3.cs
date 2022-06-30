@@ -14,7 +14,7 @@ namespace Neo4j.Driver.Internal.Protocol
 	{
         public override BoltProtocolVersion Version => BoltProtocolVersion.V4_3;
         protected override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V4_3;
-        protected virtual IMessageFormat UtcMessageFormat => BoltProtocolMessageFormat.V4_4Utc;
+        protected virtual IMessageFormat UtcMessageFormat => BoltProtocolMessageFormat.V4_3Utc;
         public const string BoltPatchKey = "patch_bolt";
 
         public BoltProtocolV4_3(IDictionary<string, string> routingContext) : base(routingContext)
