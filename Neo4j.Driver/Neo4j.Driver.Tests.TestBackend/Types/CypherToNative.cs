@@ -2,30 +2,16 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using Newtonsoft.Json.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {    
     internal class CypherToNativeObject
     {
-        protected object _data { get; set; }
         public string name { get; set; }
+        public object data { get; set; }
+    }
 
-        public object data
-        {
-            get { return _data; }
-            set { _data = value; }
-        }
-    }
-    internal class CypherToNativeObject<T> : CypherToNativeObject
-    {
-        public T data
-        {
-            get { return (T) _data; }
-            set { _data = value; }
-        }
-    }
     internal class SimpleValue
     {
         public object? value { get; set; }
