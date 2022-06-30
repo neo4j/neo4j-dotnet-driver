@@ -31,12 +31,12 @@ namespace Neo4j.Driver.Tests.TestBackend
             { typeof(string),                           CypherSimple },
             { typeof(byte[]),                           CypherSimple },
 
-            { typeof(LocalDate),                        CypherTODO },
-            { typeof(OffsetTime),                       CypherTODO },
-            { typeof(LocalTime),                        CypherTODO },
+            { typeof(LocalDate),                        CypherDateTime },
+            { typeof(OffsetTime),                       CypherDateTime },
+            { typeof(LocalTime),                        CypherDateTime },
             { typeof(ZonedDateTime),                    CypherDateTime },
-            { typeof(LocalDateTime),                    CypherTODO },
-            { typeof(Duration),                         CypherTODO },
+            { typeof(LocalDateTime),                    CypherDateTime },
+            { typeof(Duration),                         CypherDuration },
             { typeof(Point),                            CypherTODO },
 
             { typeof(INode),                             CypherNode },   
@@ -77,13 +77,13 @@ namespace Neo4j.Driver.Tests.TestBackend
                 return FunctionMap[typeof(OffsetTime)]("CypherTime", sourceObject);
 
             if (sourceObject as LocalTime != null)
-                return FunctionMap[typeof(LocalTime)]("CypherLocalTime", sourceObject);
+                return FunctionMap[typeof(LocalTime)]("CypherTime", sourceObject);
 
             if (sourceObject as ZonedDateTime != null)
                 return FunctionMap[typeof(ZonedDateTime)]("CypherDateTime", sourceObject);
 
             if (sourceObject as LocalDateTime != null)
-                return FunctionMap[typeof(LocalDateTime)]("CypherLocalDataTime", sourceObject);
+                return FunctionMap[typeof(LocalDateTime)]("CypherDateTime", sourceObject);
 
             if (sourceObject as Duration != null)
                 return FunctionMap[typeof(Duration)]("CypherDuration", sourceObject);
@@ -217,23 +217,91 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         private static NativeToCypherObject CypherDateTime(string cypherType, object obj)
         {
-            var dateTime = (ZonedDateTime) obj;
-
-            return new NativeToCypherObject 
-            { 
-                name = cypherType, 
-                data = new Dictionary<string, object>
+            return obj switch
+            {
+                ZonedDateTime zonedDateTime => new NativeToCypherObject
                 {
-                    ["year"] = dateTime.Year,
-                    ["month"] = dateTime.Month,
-                    ["day"] = dateTime.Day,
-                    ["hour"] = dateTime.Hour,
-                    ["minute"] = dateTime.Minute,
-                    ["second"] = dateTime.Second,
-                    ["nanosecond"] = dateTime.Nanosecond,
-                    ["utc_offset_s"] = dateTime.OffsetSeconds,
-                    ["timezone_id"] = dateTime.Zone is ZoneId zoneId ? zoneId.Id : null
-                }
+                    name = cypherType,
+                    data = new Dictionary<string, object>
+                    {
+                        ["year"] = zonedDateTime.Year,
+                        ["month"] = zonedDateTime.Month,
+                        ["day"] = zonedDateTime.Day,
+                        ["hour"] = zonedDateTime.Hour,
+                        ["minute"] = zonedDateTime.Minute,
+                        ["second"] = zonedDateTime.Second,
+                        ["nanosecond"] = zonedDateTime.Nanosecond,
+                        ["utc_offset_s"] = zonedDateTime.OffsetSeconds,
+                        ["timezone_id"] = zonedDateTime.Zone is ZoneId zoneId ? zoneId.Id : null
+                    }
+                },
+                LocalDateTime localDateTime => new NativeToCypherObject
+                {
+                    name = cypherType,
+                    data = new Dictionary<string, object>
+                    {
+                        ["year"] = localDateTime.Year,
+                        ["month"] = localDateTime.Month,
+                        ["day"] = localDateTime.Day,
+                        ["hour"] = localDateTime.Hour,
+                        ["minute"] = localDateTime.Minute,
+                        ["second"] = localDateTime.Second,
+                        ["nanosecond"] = localDateTime.Nanosecond,
+                    }
+                },
+                LocalDate localDate => new NativeToCypherObject
+                {
+                    name = cypherType,
+                    data = new Dictionary<string, object>
+                    {
+                        ["year"] = localDate.Year,
+                        ["month"] = localDate.Month,
+                        ["day"] = localDate.Day,
+                    }
+                },
+                OffsetTime offsetTime => new NativeToCypherObject
+                {
+                    name = cypherType,
+                    data = new Dictionary<string, object>
+                    {
+                        ["hour"] = offsetTime.Hour,
+                        ["minute"] = offsetTime.Minute,
+                        ["second"] = offsetTime.Second,
+                        ["nanosecond"] = offsetTime.Nanosecond,
+                        ["utc_offset_s"] = offsetTime.OffsetSeconds,
+                    }
+                },
+                LocalTime localTime => new NativeToCypherObject
+                {
+                    name = cypherType,
+                    data = new Dictionary<string, object>
+                    {
+                        ["hour"] = localTime.Hour,
+                        ["minute"] = localTime.Minute,
+                        ["second"] = localTime.Second,
+                        ["nanosecond"] = localTime.Nanosecond,
+                    }
+                },
+                _ => throw new ArgumentOutOfRangeException()
+            };
+        }
+
+        private static NativeToCypherObject CypherDuration(string cypherType, object obj)
+        {
+            return obj switch
+            {
+                Duration duration => new NativeToCypherObject
+                {
+                    name = cypherType,
+                    data = new Dictionary<string, object>
+                    {
+                        ["months"] = duration.Months,
+                        ["days"] = duration.Days,
+                        ["seconds"] = duration.Seconds,
+                        ["nanoseconds"] = duration.Nanos,
+                    },
+                },
+                _ => throw new ArgumentOutOfRangeException()
             };
         }
     }

@@ -29,7 +29,6 @@ namespace Neo4j.Driver
         internal ZoneId(string id)
         {
             Throw.ArgumentNullException.If(() => string.IsNullOrWhiteSpace(id), nameof(id));
-
             Id = id;
         }
 
@@ -38,7 +37,14 @@ namespace Neo4j.Driver
 
         internal override int OffsetSecondsAt(DateTime dateTime)
         {
-            return (int) TemporalHelpers.GetTimeZoneInfo(Id).GetUtcOffset(dateTime).TotalSeconds;
+            try
+            {
+                return (int)TemporalHelpers.GetTimeZoneInfo(Id).GetUtcOffset(dateTime).TotalSeconds;
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                return 0;
+            }
         }
 
         /// <summary>

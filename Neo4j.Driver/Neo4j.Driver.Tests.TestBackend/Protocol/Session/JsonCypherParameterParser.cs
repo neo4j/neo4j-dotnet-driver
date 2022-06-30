@@ -31,32 +31,47 @@ internal class JsonCypherParameterParser
         ["CypherDateTime"] = typeof(DateTimeParameterValue),
         ["CypherLocalDateTime"] = typeof(DateTimeParameterValue)
     };
+
     public static Dictionary<string, CypherToNativeObject> ParseParameters(JToken token)
     {
         if (!(token is JObject parameters))
             return null;
+
         var result = new Dictionary<string, CypherToNativeObject>();
 
         foreach (var parameter in parameters.Properties())
         {
-            if (dateTimeTypes.ContainsKey(parameter.Value["name"].Value<string>()))
-            {
-                result[parameter.Name] = new CypherToNativeObject
-                {
-                    name = parameter.Value["name"].Value<string>(),
-                    data = parameter.Value["data"].ToObject<DateTimeParameterValue>()
-                };
-            }
-            else
-            {
-                result[parameter.Name] = new CypherToNativeObject
-                {
-                    name = parameter.Value["name"].Value<string>(),
-                    data = parameter.Value["data"].ToObject<SimpleValue>()
-                };
-            }
+            result[parameter.Name] = ExtractParameterFromProperty(parameter.Value as JObject);
         }
 
         return result;
+    }
+
+    public static CypherToNativeObject ExtractParameterFromProperty(JObject parameter)
+    {
+        if (dateTimeTypes.ContainsKey(parameter["name"].Value<string>()))
+        {
+            return new CypherToNativeObject
+            {
+                name = parameter["name"].Value<string>(),
+                data = parameter["data"].ToObject<DateTimeParameterValue>()
+            };
+        }
+        else if (parameter["name"].Value<string>() == "CypherDuration")
+        {
+            return new CypherToNativeObject
+            {
+                name = parameter["name"].Value<string>(),
+                data = parameter["data"].ToObject<DurationParameterValue>()
+            };
+        }
+        else
+        {
+            return new CypherToNativeObject
+            {
+                name = parameter["name"].Value<string>(),
+                data = parameter["data"].ToObject<SimpleValue>()
+            };
+        }
     }
 }
