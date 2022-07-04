@@ -114,8 +114,13 @@ namespace Neo4j.Driver.Tests.TestBackend
 	            "Requires further investigation"),
 
 			("stub.driver_parameters.test_connection_acquisition_timeout_ms.TestConnectionAcquisitionTimeoutMs.test_does_not_encompass_router_handshake",
-				"TODO: ConnectionAcquisitionTimeout cancels handshake with the router")
-		};
+				"TODO: ConnectionAcquisitionTimeout cancels handshake with the router"),
+
+            ("test_temporal_types.TestDataTypes.test_date_time_cypher_created_tz_id",
+                "No Antarctica/Troll mapping available."),
+            ("tests.neo4j.datatypes.test_temporal_types.TestDataTypes.test_should_echo_all_timezone_ids",
+                "EST/HST/MST not supported.")
+        };
 
 		public static bool FindTest(string testName, out string reason)
 		{

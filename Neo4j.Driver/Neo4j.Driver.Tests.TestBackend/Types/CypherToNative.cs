@@ -205,8 +205,6 @@ namespace Neo4j.Driver.Tests.TestBackend
                 dataTimeParam.second.Value,
                 dataTimeParam.nanosecond.Value
             );
-
-            throw new ArgumentOutOfRangeException();
         }
 
         private static object CypherDuration(Type objectType, CypherToNativeObject obj)

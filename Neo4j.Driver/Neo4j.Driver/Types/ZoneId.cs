@@ -37,14 +37,7 @@ namespace Neo4j.Driver
 
         internal override int OffsetSecondsAt(DateTime dateTime)
         {
-            try
-            {
-                return (int)TemporalHelpers.GetTimeZoneInfo(Id).GetUtcOffset(dateTime).TotalSeconds;
-            }
-            catch (TimeZoneNotFoundException)
-            {
-                return 0;
-            }
+            return (int)TemporalHelpers.GetTimeZoneInfo(Id).GetUtcOffset(dateTime).TotalSeconds;
         }
 
         /// <summary>
