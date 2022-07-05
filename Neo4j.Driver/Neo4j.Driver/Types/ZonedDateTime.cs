@@ -225,16 +225,6 @@ namespace Neo4j.Driver
             return new DateTimeOffset(dateTime, offset);
         }
 
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        public long ToUtcEpochSeconds()
-        {
-            return new DateTimeOffset(Year, Month, Day, Hour, Minute, Second, Offset).ToUniversalTime().ToUnixTimeSeconds();
-        }
-
         /// <summary>
         /// Returns a value indicating whether the value of this instance is equal to the 
         /// value of the specified <see cref="ZonedDateTime"/> instance. 

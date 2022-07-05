@@ -359,5 +359,10 @@ namespace Neo4j.Driver.Internal
         {
             return (int)(nanosecond / NanosPerMillisecond);
         }
+
+        public static long UtcEpochSeconds(ZonedDateTime zonedDateTime)
+        {
+            return zonedDateTime.ToEpochSeconds() - zonedDateTime.OffsetSeconds;
+        }
     }
 }
