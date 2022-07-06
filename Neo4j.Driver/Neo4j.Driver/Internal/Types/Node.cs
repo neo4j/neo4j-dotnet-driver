@@ -22,20 +22,8 @@ namespace Neo4j.Driver.Internal.Types
 {
     internal class Node : INode
     {
-        private readonly bool _throwOnIdRead = false;
-        private long _id;
-
         [Obsolete("Replaced with ElementId, Will be removed in 6.0")]
-        public long Id
-        {
-            get
-            {
-                if (_throwOnIdRead)
-                    throw new InvalidOperationException("Id is not compatible with server. use ElementId");
-                return _id;
-            }
-            private set =>_id = value;
-        }
+        public long Id { get; set; }
 
         public string ElementId { get; }
         public IReadOnlyList<string> Labels { get; }
@@ -46,14 +34,6 @@ namespace Neo4j.Driver.Internal.Types
         {
             Id = id;
             ElementId = id.ToString();
-            Labels = labels;
-            Properties = prop;
-        }
-
-        public Node(string elementId, IReadOnlyList<string> labels, IReadOnlyDictionary<string, object> prop)
-        {
-            _throwOnIdRead = true;
-            ElementId = elementId;
             Labels = labels;
             Properties = prop;
         }
