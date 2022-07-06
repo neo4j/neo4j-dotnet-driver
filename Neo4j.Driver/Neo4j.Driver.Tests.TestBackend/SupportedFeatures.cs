@@ -14,7 +14,6 @@ namespace Neo4j.Driver.Tests.TestBackend
                 "AuthorizationExpiredTreatment",
                 "Detail:ClosedDriverIsEncrypted",
                 "Detail:DefaultSecurityConfigValueEquality",
-                "Detail:ThrowOnMissingId",
                 "Feature:API:ConnectionAcquisitionTimeout",
                 "Feature:API:Driver:GetServerInfo",
                 "Feature:API:Driver.IsEncrypted",
