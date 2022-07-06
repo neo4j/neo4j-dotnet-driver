@@ -58,42 +58,5 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             });
             value.Should().BeOfType<Node>().Which.ElementId.Should().Be("1");
         }
-
-        [Fact]
-        public void ShouldDeserializeWithNulls()
-        {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
-
-            writer.WriteStructHeader(3, ElementNodeSerializer.Node);
-            writer.WriteNull();
-            writer.Write(new List<string> { "Label1", "Label2" });
-            writer.Write(new Dictionary<string, object>
-            {
-                {"prop1", "something"},
-                {"prop2", 15},
-                {"prop3", true}
-            });
-            writer.Write("1");
-
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var value = readerMachine.Reader().Read();
-
-            value.Should().NotBeNull();
-            value.Should().BeOfType<Node>();
-            var node = value.As<Node>();
-
-            node.ElementId.Should().Be("1");
-            var exception = Record.Exception(() => node.Id);
-            exception.Should().BeOfType<InvalidOperationException>();
-
-            node.Labels.Should().Equal(new[] { "Label1", "Label2" });
-            node.Properties.Should().HaveCount(3).And.Contain(new[]
-            {
-                new KeyValuePair<string, object>("prop1", "something"),
-                new KeyValuePair<string, object>("prop2", 15L),
-                new KeyValuePair<string, object>("prop3", true),
-            });
-        }
     }
 }
