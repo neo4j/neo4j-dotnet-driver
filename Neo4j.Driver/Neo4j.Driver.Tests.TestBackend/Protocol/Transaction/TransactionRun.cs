@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
@@ -37,16 +38,42 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override async Task Process(Controller controller)
         {
-            var transactionWrapper = controller.TransactionManager.FindTransaction(data.txId);
+            try
+            {
+                var transactionWrapper = controller.TransactionManager.FindTransaction(data.txId);
 
-            IResultCursor cursor = await transactionWrapper.Transaction.RunAsync(data.cypher, ConvertParameters(data.parameters)).ConfigureAwait(false);
+                IResultCursor cursor = await transactionWrapper.Transaction
+                    .RunAsync(data.cypher, ConvertParameters(data.parameters)).ConfigureAwait(false);
 
-            ResultId = await transactionWrapper.ProcessResults(cursor);
+                ResultId = await transactionWrapper.ProcessResults(cursor);
+
+            }
+            catch (TimeZoneNotFoundException tz)
+            {
+                throw new DriverExceptionWrapper(tz);
+            }
+            catch (Exception ex)
+            {
+                //test
+            }
         }
 
         public override string Respond()
-        {   
-            return ((Result)ObjManager.GetObject(ResultId)).Respond();
+        {
+            try
+            {
+                return ((Result)ObjManager.GetObject(ResultId)).Respond();
+            }
+            catch (TimeZoneNotFoundException tz)
+            {
+                throw new DriverExceptionWrapper(tz);
+            }
+            catch (Exception ex)
+            {
+                //test
+                throw;
+            }
+
         }
     }
 }

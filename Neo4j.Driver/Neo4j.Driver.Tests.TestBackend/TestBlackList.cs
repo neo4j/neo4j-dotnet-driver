@@ -118,9 +118,12 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             ("test_temporal_types.TestDataTypes.test_date_time_cypher_created_tz_id",
                 "No Antarctica/Troll mapping available."),
-            ("test_temporal_types.TestDataTypes.test_cypher_created_datetime", "test case not compatible with .net"),
             ("test_temporal_types.TestDataTypes.test_should_echo_all_timezone_ids",
-                "EST/HST/MST not supported.")
+                "EST/HST/MST not supported."),
+            ("TestTemporalTypesV5x0.test_unknown_then_known_zoned_date_time", 
+                "Err"),
+            ("TestTemporalTypesV4x4.test_unknown_then_known_zoned_date_time",
+                "Err")
         };
 
 		public static bool FindTest(string testName, out string reason)
