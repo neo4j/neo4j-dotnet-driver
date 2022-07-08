@@ -27,10 +27,30 @@ namespace Neo4j.Driver
     /// </summary>
     public sealed class ZonedDateTime : TemporalValue, IEquatable<ZonedDateTime>, IComparable, IComparable<ZonedDateTime>, IHasDateTimeComponents
     {
+        private long? _utcSeconds;
+        /// <summary>
+        /// Used to lazily evaluate zones offset.
+        /// </summary>
+        /// <param name="utcSeconds"></param>
+        /// <param name="nanos"></param>
+        /// <param name="zone"></param>
+        internal ZonedDateTime(long utcSeconds, int nanos, Zone zone)
+        {
+            _utcSeconds = utcSeconds;
+            Nanosecond = nanos;
+            Zone = zone;
+        }
         /// <summary>
         /// Default comparer for <see cref="ZonedDateTime"/> values.
         /// </summary>
         public static readonly IComparer<ZonedDateTime> Comparer = new TemporalValueComparer<ZonedDateTime>();
+
+        private int _year;
+        private int _month;
+        private int _day;
+        private int _hour;
+        private int _minute;
+        private int _second;
 
         /// <summary>
         /// Initializes a new instance of <see cref="ZonedDateTime"/> from given <see cref="DateTimeOffset"/> value.
@@ -123,12 +143,13 @@ namespace Neo4j.Driver
                 TemporalHelpers.MaxNanosecond, nameof(nanosecond));
             Throw.ArgumentNullException.IfNull(zone, nameof(zone));
 
-            Year = year;
-            Month = month;
-            Day = day;
-            Hour = hour;
-            Minute = minute;
-            Second = second;
+            _year = year;
+            _month = month;
+            _day = day;
+            _hour = hour;
+            _minute = minute;
+            _second = second;
+
             Nanosecond = nanosecond;
             Zone = zone;
         }
@@ -143,32 +164,74 @@ namespace Neo4j.Driver
         /// <summary>
         /// Gets the year component of this instance.
         /// </summary>
-        public int Year { get; }
+        public int Year
+        {
+            get
+            {
+                EvaluateUtcValue();
+                return _year;
+            }
+        }
 
         /// <summary>
         /// Gets the month component of this instance.
         /// </summary>
-        public int Month { get; }
+        public int Month
+        {
+            get
+            {
+                EvaluateUtcValue();
+                return _month;
+            }
+        }
 
         /// <summary>
         /// Gets the day of month component of this instance.
         /// </summary>
-        public int Day { get; }
+        public int Day
+        {
+            get
+            {
+                EvaluateUtcValue();
+                return _day;
+            }
+        }
 
         /// <summary>
         /// Gets the hour component of this instance.
         /// </summary>
-        public int Hour { get; }
+        public int Hour
+        {
+            get
+            {
+                EvaluateUtcValue();
+                return _hour;
+            }
+        }
 
         /// <summary>
         /// Gets the minute component of this instance.
         /// </summary>
-        public int Minute { get; }
+        public int Minute
+        {
+            get
+            {
+                EvaluateUtcValue();
+                return _minute;
+            }
+        }
 
         /// <summary>
         /// Gets the second component of this instance.
         /// </summary>
-        public int Second { get; }
+        public int Second
+        {
+            get
+            {
+                EvaluateUtcValue();
+                return _second;
+            }
+        }
 
         /// <summary>
         /// Gets the nanosecond component of this instance.
@@ -179,6 +242,22 @@ namespace Neo4j.Driver
         /// The time zone that this instance represents.
         /// </summary>
         public Zone Zone { get; }
+
+        private void EvaluateUtcValue()
+        {
+            if (!_utcSeconds.HasValue) 
+                return;
+
+            var utc = DateTimeOffset.FromUnixTimeSeconds(_utcSeconds.Value);
+            var local = utc.ToOffset(TimeSpan.FromSeconds(Zone.OffsetSecondsAt(utc.DateTime)));
+            _year = local.Year;
+            _month = local.Month;
+            _day = local.Day;
+            _hour = local.Hour;
+            _minute = local.Minute;
+            _second = local.Second;
+            _utcSeconds = null;
+        }
 
         /// <summary>
         /// Gets a <see cref="DateTime"/> value that represents the date and time of this instance.
@@ -277,6 +356,10 @@ namespace Neo4j.Driver
         /// <returns>String representation of this Point.</returns>
         public override string ToString()
         {
+            if (_utcSeconds.HasValue)
+            {
+                return $"Lazy-ZonedDateTime{{EpochSeconds:{_utcSeconds.Value} Nanos:{Nanosecond} Zone:{Zone}}}";
+            }
             return
                 $"{TemporalHelpers.ToIsoDateString(Year, Month, Day)}T{TemporalHelpers.ToIsoTimeString(Hour, Minute, Second, Nanosecond)}{Zone}";
         }
