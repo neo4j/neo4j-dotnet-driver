@@ -248,15 +248,24 @@ namespace Neo4j.Driver
             if (!_utcSeconds.HasValue) 
                 return;
 
-            var utc = DateTimeOffset.FromUnixTimeSeconds(_utcSeconds.Value);
-            var local = utc.ToOffset(TimeSpan.FromSeconds(Zone.OffsetSecondsAt(utc.DateTime)));
+            var local = default(DateTimeOffset);
+
+            lock (Zone)
+            {
+                if (!_utcSeconds.HasValue)
+                    return;
+
+                var utc = DateTimeOffset.FromUnixTimeSeconds(_utcSeconds.Value);
+                _utcSeconds = null;
+                local = utc.ToOffset(TimeSpan.FromSeconds(Zone.OffsetSecondsAt(utc.DateTime)));
+            }
+
             _year = local.Year;
             _month = local.Month;
             _day = local.Day;
             _hour = local.Hour;
             _minute = local.Minute;
             _second = local.Second;
-            _utcSeconds = null;
         }
 
         /// <summary>
