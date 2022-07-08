@@ -52,10 +52,6 @@ namespace Neo4j.Driver.Tests.TestBackend
             {
                 throw new DriverExceptionWrapper(tz);
             }
-            catch (Exception ex)
-            {
-                //test
-            }
         }
 
         public override string Respond()
@@ -68,12 +64,6 @@ namespace Neo4j.Driver.Tests.TestBackend
             {
                 throw new DriverExceptionWrapper(tz);
             }
-            catch (Exception ex)
-            {
-                //test
-                throw;
-            }
-
         }
     }
 }
