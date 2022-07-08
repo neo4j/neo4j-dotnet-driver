@@ -27,6 +27,7 @@ namespace Neo4j.Driver
     /// </summary>
     public sealed class ZonedDateTime : TemporalValue, IEquatable<ZonedDateTime>, IComparable, IComparable<ZonedDateTime>, IHasDateTimeComponents
     {
+        private object _lazyLock;
         private long? _utcSeconds;
         /// <summary>
         /// Used to lazily evaluate zones offset.
@@ -36,6 +37,7 @@ namespace Neo4j.Driver
         /// <param name="zone"></param>
         internal ZonedDateTime(long utcSeconds, int nanos, Zone zone)
         {
+            _lazyLock = new object();
             _utcSeconds = utcSeconds;
             Nanosecond = nanos;
             Zone = zone;
@@ -250,7 +252,7 @@ namespace Neo4j.Driver
 
             var local = default(DateTimeOffset);
 
-            lock (Zone)
+            lock (_lazyLock)
             {
                 if (!_utcSeconds.HasValue)
                     return;
