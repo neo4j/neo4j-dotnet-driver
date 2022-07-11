@@ -203,6 +203,19 @@ namespace Neo4j.Driver.IntegrationTests
                 }
             }
         }
+
+        public RequireEnterpriseEdition(string minVersionText, string maxVersionText,
+            VersionComparison versionComparison): base(minVersionText, maxVersionText, versionComparison)
+        {
+            if (string.IsNullOrEmpty(Skip))
+            {
+
+                if (!BoltkitHelper.IsEnterprise())
+                {
+                    Skip = "Test requires Neo4j enterprise edition.";
+                }
+            }
+        }
     }
 
     public class RequireServerWithIPv6FactAttribute : RequireServerFactAttribute
