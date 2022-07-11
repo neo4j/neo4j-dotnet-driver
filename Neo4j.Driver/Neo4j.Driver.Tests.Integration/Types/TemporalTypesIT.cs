@@ -87,7 +87,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 new LocalDateTime(1859, 5, 31, 23, 49, 59, 999999999));
         }
 
-        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.4.0", "4.3.0", Between)]
         public async Task ShouldReceiveDateTimeWithOffset()
         {
             await TestReceiveData(
@@ -96,7 +96,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
                     Zone.Of((int) TimeSpan.FromMinutes(150).TotalSeconds)));
         }
 
-        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.4.0", "4.3.0", Between)]
         public async Task ShouldReceiveDateTimeWithZoneId()
         {
             await TestReceiveData(
@@ -209,7 +209,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 });
         }
 
-        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.4.0", "4.3.0", Between)]
         public async Task ShouldSendAndReceiveDateTimeWithOffset()
         {
             var data = new ZonedDateTime(1976, 6, 13, 12, 34, 56, 789012587,
@@ -234,7 +234,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 });
         }
 
-        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.4.0", "4.3.0", Between)]
         public async Task ShouldSendAndReceiveDateTimeWithZoneId()
         {
             var data = new ZonedDateTime(1959, 5, 31, 23, 49, 59, 999999999, Zone.Of("US/Pacific"));
@@ -357,14 +357,14 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 .Select(i => RandomOffsetTime()));
         }
 
-        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.4.0", "4.3.0", Between)]
         public async Task ShouldSendAndReceiveArrayOfOffsetDateTime()
         {
             await TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
                 .Select(i => RandomOffsetDateTime()));
         }
 
-        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.4.0", "4.3.0", Between)]
         public async Task ShouldSendAndReceiveArrayOfZonedDateTime()
         {
             await TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
@@ -430,7 +430,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 new TimeSpan(0, 23, 49, 59, 0).Add(TimeSpan.FromTicks(9999999)));
         }
 
-        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.4.0", "4.3.0", Between)]
         public async Task ShouldReceiveDateTimeAsDateTimeOffsetMilliseconds()
         {
             await TestReceiveDataWithType(
@@ -438,7 +438,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
                 new DateTimeOffset(new DateTime(1859, 5, 31, 23, 49, 59, 999), TimeSpan.FromMinutes(90)));
         }
 
-        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.4.0", "4.3.0", Between)]
         public async Task ShouldReceiveDateTimeAsDateTimeOffsetTicks()
         {
             await TestReceiveDataWithType(
@@ -467,7 +467,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
             await TestSendAndReceiveWithType(data, new LocalDateTime(data));
         }
 
-        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.4.0", "4.3.0", Between)]
         public async Task ShouldSendAndReceiveSystemDateTimeOffsetMilliseconds()
         {
             var data = new DateTimeOffset(new DateTime(1979, 2, 15, 7, 5, 25, 748), TimeSpan.FromMinutes(90));
@@ -475,7 +475,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
             await TestSendAndReceiveWithType(data, new ZonedDateTime(data));
         }
 
-        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.4.0", "4.3.0", Between)]
         public async Task ShouldSendAndReceiveSystemDateTimeOffsetNanoseconds()
         {
             var data = new DateTimeOffset(new DateTime(1979, 2, 15, 7, 5, 25).AddTicks(748999900),
@@ -514,7 +514,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
             await TestSendAndReceiveArrayWithType(array, actual);
         }
 
-        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.4.0", "4.3.0", Between)]
         public async Task ShouldSendAndReceiveArrayOfSystemDateTimeOffset()
         {
             var array = Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
