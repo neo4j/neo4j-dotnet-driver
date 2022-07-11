@@ -46,7 +46,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             await VerifyDatabaseNameOnSummary("neo4j", "neo4j");
         }
 
-        [RequireEnterpriseEdition("4.0.0", GreaterThanOrEqualTo)]
+        [RequireEnterpriseEdition("4.0.0", "5.0.0", Between)]
         public async Task ShouldReturnDatabaseInfoForDatabase()
         {
             await CreateDatabase(Server.Driver, "foo");
@@ -57,6 +57,20 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             finally
             {
                 await DropDatabase(Server.Driver, "foo");
+            }
+        }
+
+        [RequireEnterpriseEdition("5.0.0", GreaterThanOrEqualTo)]
+        public async Task ShouldReturnDatabaseInfoForDatabaseAsync()
+        {
+            await CreateDatabase(Server.Driver, "foo", true);
+            try
+            {
+                await VerifyDatabaseNameOnSummary("foo", "foo");
+            }
+            finally
+            {
+                await DropDatabase(Server.Driver, "foo", true);
             }
         }
 
@@ -72,7 +86,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             await VerifyDatabaseNameOnSummaryTx("neo4j", "neo4j");
         }
 
-        [RequireEnterpriseEdition("4.0.0", GreaterThanOrEqualTo)]
+        [RequireEnterpriseEdition("4.0.0", "5.0.0", Between)]
         public async Task ShouldReturnDatabaseInfoForDatabaseInTx()
         {
             await CreateDatabase(Server.Driver, "foo");
@@ -85,6 +99,21 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 await DropDatabase(Server.Driver, "foo");
             }
         }
+
+        [RequireEnterpriseEdition("5.0.0", GreaterThanOrEqualTo)]
+        public async Task ShouldReturnDatabaseInfoForDatabaseInTxAsync()
+        {
+            await CreateDatabase(Server.Driver, "foo", true);
+            try
+            {
+                await VerifyDatabaseNameOnSummaryTx("foo", "foo");
+            }
+            finally
+            {
+                await DropDatabase(Server.Driver, "foo", true);
+            }
+        }
+
 
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public async Task ShouldReturnDatabaseInfoForDefaultDatabaseInTxFunc()
@@ -99,7 +128,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             await VerifyDatabaseNameOnSummaryTxFunc("neo4j", "neo4j");
         }
 
-        [RequireEnterpriseEdition("4.0.0", GreaterThanOrEqualTo)]
+        [RequireEnterpriseEdition("4.0.0", "5.0.0", Between)]
         public async Task ShouldReturnDatabaseInfoForDatabaseInTxFunc()
         {
             await CreateDatabase(Server.Driver, "foo");
@@ -110,6 +139,19 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             finally
             {
                 await DropDatabase(Server.Driver, "foo");
+            }
+        }
+        [RequireEnterpriseEdition("5.0.0", GreaterThanOrEqualTo)]
+        public async Task ShouldReturnDatabaseInfoForDatabaseInTxFuncAsync()
+        {
+            await CreateDatabase(Server.Driver, "foo", true);
+            try
+            {
+                await VerifyDatabaseNameOnSummaryTxFunc("foo", "foo");
+            }
+            finally
+            {
+                await DropDatabase(Server.Driver, "foo", true);
             }
         }
 
