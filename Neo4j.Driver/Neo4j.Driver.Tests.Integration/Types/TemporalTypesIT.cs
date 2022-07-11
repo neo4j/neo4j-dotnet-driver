@@ -302,7 +302,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
                     .Select(TestSendAndReceive));
         }
 
-        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.4.0", "4.3.0", Between)]
         public async Task ShouldSendAndReceiveRandomOffsetDateTime()
         {
             await Task.WhenAll(
@@ -310,7 +310,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
                     .Select(TestSendAndReceive));
         }
 
-        [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("3.4.0", "4.3.0", Between)]
         public async Task ShouldSendAndReceiveRandomZonedDateTime()
         {
             await Task.WhenAll(

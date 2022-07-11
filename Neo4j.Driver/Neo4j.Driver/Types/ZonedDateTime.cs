@@ -289,8 +289,9 @@ namespace Neo4j.Driver
 
         /// <summary>
         /// Returns the offset from UTC of this instance at the time it represents.
+        /// if year is more than 9999, offset will be taken from year 9999.
         /// </summary>
-        public int OffsetSeconds => Zone.OffsetSecondsAt(new DateTime(Year, Month, Day, Hour, Minute, Second));
+        public int OffsetSeconds => Zone.OffsetSecondsAt(new DateTime(Year > 9999 ? 9999 : Year, Month, Day, Hour, Minute, Second));
 
         /// <summary>
         /// Gets a <see cref="TimeSpan"/> value that represents the offset of this instance.
