@@ -27,8 +27,11 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
 
         public IEnumerable<byte> ReadableStructs => new[] {StructType};
 
+#if NET6_0_OR_GREATER
+        public IEnumerable<Type> WritableTypes => new[] {typeof(LocalDate), typeof(DateOnly)};
+#else
         public IEnumerable<Type> WritableTypes => new[] {typeof(LocalDate)};
-
+#endif
         public object Deserialize(IPackStreamReader reader, byte signature, long size)
         {
             PackStream.EnsureStructSize("Date", StructSize, size);
@@ -40,10 +43,29 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
 
         public void Serialize(IPackStreamWriter writer, object value)
         {
-            var date = value.CastOrThrow<LocalDate>();
+#if NET6_0_OR_GREATER
+            if (value is DateOnly date)
+            {
+                WriteDateOnly(writer, date);
+                return;
+            }
+#endif
+            WriteLocalDate(writer, value);
+        }
 
+        private static void WriteLocalDate(IPackStreamWriter writer, object value)
+        {
+            var date = value.CastOrThrow<LocalDate>();
             writer.WriteStructHeader(StructSize, StructType);
             writer.Write(date.ToEpochDays());
         }
+
+#if NET6_0_OR_GREATER
+        private static void WriteDateOnly(IPackStreamWriter writer, DateOnly date)
+        {
+            writer.WriteStructHeader(StructSize, StructType);
+            writer.Write(date.ToEpochDays());
+        }
+#endif
     }
 }

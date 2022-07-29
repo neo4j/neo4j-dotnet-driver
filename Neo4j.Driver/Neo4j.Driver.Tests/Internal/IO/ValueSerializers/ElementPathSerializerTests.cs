@@ -122,61 +122,6 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             relationships[0].EndNodeElementId.Should().Be("n2");
         }
 
-        [Fact]
-        public void ShouldDeserializeWithOnlyElementIds()
-        {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
-
-            SerializeElementPath(writer,
-                new List<Node>
-                {
-                    new Node(-1, "n1", new List<string>{"a"}, new Dictionary<string, object>()),
-                    new Node(-1, "n2",new List<string>{"a"}, new Dictionary<string, object>()),
-                },
-                new List<Relationship>
-                {
-                    new Relationship(-1, "r1", -1, -1, "-1", "-1", "LIKES", new Dictionary<string, object>())
-                },
-                new List<int>
-                {
-                    1, 1
-                });
-
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var value = readerMachine.Reader().Read();
-
-            var path = value.Should().BeOfType<Path>();
-
-            path.Which.Nodes.Should().AllBeOfType<Node>();
-            path.Which.Relationships.Should().AllBeOfType<Relationship>();
-
-            var nodes = path.Which.Nodes;
-            var relationships = path.Which.Relationships;
-
-            var nodeZeroException = Record.Exception(() => nodes[0].Id);
-            nodeZeroException.Should().BeOfType<InvalidOperationException>();
-
-            var nodeOneException = Record.Exception(() => nodes[1].Id);
-            nodeOneException.Should().BeOfType<InvalidOperationException>();
-
-            nodes[0].ElementId.Should().Be("n1");
-            nodes[1].ElementId.Should().Be("n2");
-
-            var idException = Record.Exception(() => relationships[0].Id);
-            idException.Should().BeOfType<InvalidOperationException>();
-
-            var startException = Record.Exception(() => relationships[0].StartNodeId);
-            startException.Should().BeOfType<InvalidOperationException>();
-
-            var endException = Record.Exception(() => relationships[0].EndNodeId);
-            endException.Should().BeOfType<InvalidOperationException>();
-
-            relationships[0].ElementId.Should().Be("r1");
-            relationships[0].StartNodeElementId.Should().Be("n1");
-            relationships[0].EndNodeElementId.Should().Be("n2");
-        }
-
         private static void SerializeElementPath(IPackStreamWriter writer, List<Node> nodes, List<Relationship> rels,
             List<int> indicies)
         {

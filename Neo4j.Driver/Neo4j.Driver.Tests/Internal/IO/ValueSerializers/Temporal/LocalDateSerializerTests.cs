@@ -15,6 +15,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.Diagnostics;
 using FluentAssertions;
 using Xunit;
 
@@ -60,6 +62,23 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             value.Should().BeOfType<LocalDate>().Which.Month.Should().Be(8);
             value.Should().BeOfType<LocalDate>().Which.Day.Should().Be(31);
         }
-        
+
+        [Fact]
+        [Conditional("NET6_0_OR_GREATER")]
+        public void ShouldSerializeDateOnly()
+        {
+            var date = new DateOnly(1950, 8, 31);
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer();
+
+            writer.Write(date);
+
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var reader = readerMachine.Reader();
+            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.ReadStructHeader().Should().Be(1);
+            reader.ReadStructSignature().Should().Be((byte)'D');
+            reader.Read().Should().Be(-7063L);
+        }
     }
 }

@@ -60,48 +60,5 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             value.Should().BeOfType<Relationship>().Which.StartNodeElementId.Should().Be("-1");
             value.Should().BeOfType<Relationship>().Which.EndNodeElementId.Should().Be("-1");
         }
-
-        [Fact]
-        public void ShouldDeserializeWithNulls()
-        {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
-
-            writer.WriteStructHeader(3, UnboundRelationshipSerializer.UnboundRelationship);
-            writer.WriteNull();
-            writer.Write("RELATES_TO");
-            writer.Write(new Dictionary<string, object>
-            {
-                {"prop3", true}
-            });
-            writer.Write("r1");
-
-
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var value = readerMachine.Reader().Read();
-
-            value.Should().NotBeNull();
-            value.Should().BeOfType<Relationship>();
-            var relationship = value.As<Relationship>();
-
-            var idException = Record.Exception(() => relationship.Id);
-            idException.Should().BeOfType<InvalidOperationException>();
-
-            var startException = Record.Exception(() => relationship.StartNodeId);
-            startException.Should().BeOfType<InvalidOperationException>();
-
-            var endException = Record.Exception(() => relationship.EndNodeId);
-            endException.Should().BeOfType<InvalidOperationException>();
-
-            relationship.Type.Should().Be("RELATES_TO");
-            relationship.Properties.Should()
-                .HaveCount(1).And.Contain(new[]
-                {
-                    new KeyValuePair<string, object>("prop3", true),
-                });
-            relationship.ElementId.Should().Be("r1");
-            relationship.StartNodeElementId.Should().Be("-1");
-            relationship.EndNodeElementId.Should().Be("-1");
-        }
     }
 }

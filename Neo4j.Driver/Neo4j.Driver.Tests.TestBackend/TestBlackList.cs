@@ -111,7 +111,10 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             ("stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_nested", "Requires further investigation"),
             ("stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_nested",
-	            "Requires further investigation")
+	            "Requires further investigation"),
+
+			("stub.driver_parameters.test_connection_acquisition_timeout_ms.TestConnectionAcquisitionTimeoutMs.test_does_not_encompass_router_handshake",
+				"TODO: ConnectionAcquisitionTimeout cancels handshake with the router")
 		};
 
 		public static bool FindTest(string testName, out string reason)

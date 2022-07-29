@@ -6,15 +6,15 @@ namespace Neo4j.Driver.Tests.TestBackend
     {
         public void Debug(string message, params Object[] args)
         {
-            Console.WriteLine("[DRIVER-DEBUG]" + message, args);
+            Console.WriteLine($"[DRIVER-DEBUG][{Now}]{message}", args);
         }
         public void Error(System.Exception error, string message, params Object[] args)
         {
-            Console.WriteLine("[DRIVER-ERROR]" + message, args);
+            Console.WriteLine($"[DRIVER-ERROR][{Now}]{message}", args);
         }
         public void Info(string message, params Object[] args)
         {
-            Console.WriteLine("[DRIVER-INFO]" + message, args);
+            Console.WriteLine($"[DRIVER-INFO] [{Now}]{message}", args);
         }
         public bool IsDebugEnabled()
         {
@@ -26,11 +26,12 @@ namespace Neo4j.Driver.Tests.TestBackend
         }
         public void Trace(string message, params Object[] args)
         {
-            Console.WriteLine("[DRIVER-TRACE]" + message, args);
+            Console.WriteLine($"[DRIVER-TRACE][{Now}]{message}", args);
         }
         public void Warn(System.Exception error, string message, params Object[] args)
         {
-            Console.WriteLine("[DRIVER-WARN]" + message, args);
+            Console.WriteLine($"[DRIVER-WARN] [{Now}]{message}", args);
         }
+        private string Now => DateTime.UtcNow.ToString("O");
     }
 }
