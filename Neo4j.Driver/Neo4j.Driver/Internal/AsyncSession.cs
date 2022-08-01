@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
@@ -52,11 +53,15 @@ namespace Neo4j.Driver.Internal
         private string _database;
         private readonly bool _reactive;
         private readonly long _fetchSize;
+        private readonly IBookmarkManager _bookmarkManager;
 
         public AsyncSession(IConnectionProvider provider, ILogger logger, IAsyncRetryLogic retryLogic = null,
             AccessMode defaultMode = AccessMode.Write,
             string database = null,
-            Bookmarks bookmarks = null, bool reactive = false, long fetchSize = Config.Infinite)
+            Bookmarks bookmarks = null, 
+            bool reactive = false, 
+            long fetchSize = Config.Infinite,
+            IBookmarkManager bookmarkManager = null)
         {
             _connectionProvider = provider;
             _logger = logger;
@@ -66,7 +71,13 @@ namespace Neo4j.Driver.Internal
             _database = database;
             _defaultMode = defaultMode;
             _fetchSize = fetchSize;
-            UpdateBookmarks(bookmarks);
+
+            if (bookmarks != null && bookmarks.Values.Any())
+            {
+                _bookmarks = bookmarks;
+            }
+
+            _bookmarkManager = bookmarkManager;
         }
 
         public Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action)
@@ -131,9 +142,11 @@ namespace Neo4j.Driver.Internal
 
                 var protocol = _connection.BoltProtocol;
 
+                var bookmarks = _bookmarks ?? _bookmarkManager.GetBookmarks(_database);
+
                 return await protocol
                     .RunInAutoCommitTransactionAsync(_connection, query, _reactive, this, this, _database,
-                        _bookmarks, options, ImpersonatedUser(), _fetchSize)
+                        bookmarks, options, ImpersonatedUser(), _fetchSize)
                     .ConfigureAwait(false);
             });
 

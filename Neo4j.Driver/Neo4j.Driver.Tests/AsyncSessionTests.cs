@@ -403,5 +403,25 @@ namespace Neo4j.Driver.Tests
 				throw new NotSupportedException();
 			}
         }
+
+        public class BookmarksManager
+        {
+            [Fact]
+            public void ShouldSyncBookmarksOnUpdateBookmarks()
+            {
+                var bookmarkManager = new Mock<IBookmarkManager>();
+
+                using (var session = new AsyncSession(null, null, database: "test", bookmarkManager: bookmarkManager.Object))
+                {
+                    session.UpdateBookmarks(new InternalBookmarks("a"));
+                    bookmarkManager.Verify(x => x.UpdateBookmarks("test", Array.Empty<string>(), new[] { "a" }), Times.Once);
+                    session.UpdateBookmarks(new InternalBookmarks("b"));
+                    bookmarkManager.Verify(x => x.UpdateBookmarks("test", new[] { "a" }, new[] { "b" }), Times.Once);
+                }   
+
+                bookmarkManager.Verify(x => x.UpdateBookmarks("test", It.IsAny<string[]>(), It.IsAny<string[]>()), Times.Exactly(2));
+                bookmarkManager.Verify(x => x.UpdateBookmarks("test", new[] { "a" }, new[] { "b" }), Times.Once);
+            }
+        }
     }
 }

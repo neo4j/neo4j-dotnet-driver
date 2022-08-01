@@ -71,10 +71,13 @@ namespace Neo4j.Driver.Internal
         /// <param name="bookmarks">The new bookmarks.</param>
         public void UpdateBookmarks(Bookmarks bookmarks)
         {
-            if (bookmarks != null && bookmarks.Values.Any())
-            {
-                _bookmarks = bookmarks;
-            }
+            if (bookmarks == null || !bookmarks.Values.Any())
+                return;
+
+            var previousBookmarks = _bookmarks;
+            _bookmarks = bookmarks;
+
+            _bookmarkManager?.UpdateBookmarks(_database, previousBookmarks?.Values ?? Array.Empty<string>(), bookmarks.Values);
         }
 
         /// <summary>

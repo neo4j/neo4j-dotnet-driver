@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver
 {
@@ -331,6 +332,12 @@ namespace Neo4j.Driver
         {
             var certs = trustedCaCertificateFileNames?.Select(x => new X509Certificate2(x)).ToList();
             return WithCertificateTrustRule(certificateTrustRule, certs);
+        }
+     
+        public ConfigBuilder WithBookmarkManager(IBookmarkManager bookmarkManager)
+        {
+            _config.BookmarkManager = bookmarkManager;
+            return this;
         }
     }
 }

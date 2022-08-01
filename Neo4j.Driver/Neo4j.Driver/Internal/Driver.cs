@@ -88,7 +88,11 @@ namespace Neo4j.Driver.Internal
                                            sessionConfig.DefaultAccessMode,
                                            sessionConfig.Database, 
                                            Bookmarks.From(sessionConfig.Bookmarks ?? Array.Empty<Bookmarks>()), 
-                                           reactive, ParseFetchSize(sessionConfig.FetchSize)) {SessionConfig = sessionConfig};
+                                           reactive, 
+                                           ParseFetchSize(sessionConfig.FetchSize), 
+                                           sessionConfig.Bookmarks == null 
+                                               ? _config.BookmarkManager
+                                               : null) {SessionConfig = sessionConfig};
 
             if (IsClosed)
             {
