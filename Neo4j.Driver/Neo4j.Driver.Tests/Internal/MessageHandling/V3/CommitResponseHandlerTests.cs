@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V3
             handler.OnSuccess(new[] {BookmarkCollectorTests.TestMetadata}.ToDictionary());
 
             tracker.Verify(
-                x => x.UpdateBookmarks(BookmarkCollectorTests.TestMetadataCollected),
+                x => x.UpdateBookmarks(BookmarkCollectorTests.TestMetadataCollected, null),
                 Times.Once);
         }
     }

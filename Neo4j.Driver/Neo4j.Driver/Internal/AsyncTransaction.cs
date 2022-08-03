@@ -38,7 +38,6 @@ namespace Neo4j.Driver.Internal
         private readonly IBoltProtocol _protocol;
         private readonly bool _reactive;
         private readonly ITransactionResourceHandler _resourceHandler;
-        private readonly string _database;
 		private readonly string _impersonatedUser = null;
 
         private Bookmarks _bookmarks;
@@ -60,17 +59,18 @@ namespace Neo4j.Driver.Internal
             _bookmarks = bookmark;
             _logger = logger;
             _reactive = reactive;
-            _database = database;
+            Database = database;
             _fetchSize = fetchSize;
 			_impersonatedUser = impersonatedUser;
         }
 
         public bool IsOpen => _state == Active;
+        internal string Database { get; private set; }
 
         public Task BeginTransactionAsync(TransactionConfig config)
         {
             TransactionConfig = config;
-            return _protocol.BeginTransactionAsync(_connection, _database, _bookmarks, config, _impersonatedUser);
+            return _protocol.BeginTransactionAsync(_connection, Database, _bookmarks, config, _impersonatedUser);
         }
 
         public override Task<IResultCursor> RunAsync(Query query)
@@ -117,8 +117,10 @@ namespace Neo4j.Driver.Internal
             await DisposeTransaction().ConfigureAwait(false);
         }
 
-        public void UpdateBookmarks(Bookmarks bookmarks)
+        public void UpdateBookmarks(Bookmarks bookmarks, IDatabaseInfo dbInfo = null)
         {
+            if (dbInfo != null && dbInfo.Name != Database)
+                Database = dbInfo.Name;
             _bookmarks = bookmarks;
         }
 
@@ -126,7 +128,7 @@ namespace Neo4j.Driver.Internal
         {
             if (!Volatile.Read(ref _disposed))
             {
-                await _resourceHandler.OnTransactionDisposeAsync(_bookmarks).ConfigureAwait(false);
+                await _resourceHandler.OnTransactionDisposeAsync(_bookmarks, Database).ConfigureAwait(false);
                 Volatile.Write(ref _disposed, true);
             }
         }

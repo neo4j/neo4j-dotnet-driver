@@ -19,6 +19,6 @@ namespace Neo4j.Driver.Internal.MessageHandling
 {
     internal interface IBookmarksTracker
     {
-        void UpdateBookmarks(Bookmarks bookmarks);
+        void UpdateBookmarks(Bookmarks bookmarks, IDatabaseInfo dbInfo = null);
     }
 }

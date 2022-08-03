@@ -16,8 +16,11 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
+using Neo4j.Driver.Internal;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -50,6 +53,20 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             if (jsonObj.TryGetValue("encrypted", out token))
                 newDriverRequest.encrypted = token.Value<bool?>();
+
+            if (jsonObj.TryGetValue("bookmarkManager", out token))
+            {
+                var jsonConfig = token as JObject;
+                var initialBookmarks = jsonConfig["initialBookmarks"];
+                var initial = initialBookmarks.HasValues
+                    ? initialBookmarks.ToObject<Dictionary<string, string[]>>()
+                        .ToDictionary(x => x.Key, x => x.Value as IEnumerable<string>)
+                    : new Dictionary<string, IEnumerable<string>>();
+                newDriverRequest.bookmarkManagerConfig = new BookmarkManagerConfig(
+                        initial,
+                        s => Array.Empty<string>(),
+                        (s, strings) => { });
+            }
 
             return newDriverRequest;
         }

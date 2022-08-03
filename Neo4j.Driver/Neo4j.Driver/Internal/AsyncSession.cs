@@ -76,7 +76,6 @@ namespace Neo4j.Driver.Internal
             {
                 _bookmarks = bookmarks;
             }
-
             _bookmarkManager = bookmarkManager;
         }
 
@@ -142,11 +141,12 @@ namespace Neo4j.Driver.Internal
 
                 var protocol = _connection.BoltProtocol;
 
-                var bookmarks = _bookmarks ?? _bookmarkManager.GetBookmarks(_database);
+                if (_bookmarkManager != null)
+                    _bookmarks = Bookmarks.From(_bookmarkManager.GetAllBookmarks(_database));
 
                 return await protocol
                     .RunInAutoCommitTransactionAsync(_connection, query, _reactive, this, this, _database,
-                        bookmarks, options, ImpersonatedUser(), _fetchSize)
+                        _bookmarks, options, ImpersonatedUser(), _fetchSize)
                     .ConfigureAwait(false);
             });
 
@@ -251,7 +251,8 @@ namespace Neo4j.Driver.Internal
             await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
 
             await AcquireConnectionAndDbNameAsync(mode).ConfigureAwait(false);
-
+            if (_bookmarkManager != null)
+                _bookmarks = Bookmarks.From(_bookmarkManager.GetAllBookmarks(_database));
             var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmarks, _reactive, _fetchSize, ImpersonatedUser());
             await tx.BeginTransactionAsync(config).ConfigureAwait(false);
             _transaction = tx;
@@ -260,6 +261,8 @@ namespace Neo4j.Driver.Internal
 
         private async Task AcquireConnectionAndDbNameAsync(AccessMode mode)
         {
+            if (_bookmarkManager != null)
+                _bookmarks = Bookmarks.From(_bookmarkManager.GetAllBookmarks());
             _connection = await _connectionProvider.AcquireAsync(mode, _database, ImpersonatedUser(), _bookmarks).ConfigureAwait(false);
 
             //Update the database. If a routing request occurred it may have returned a differing DB alias name that needs to be used for the 

@@ -57,9 +57,9 @@ namespace Neo4j.Driver.Internal
         /// <summary>
         /// Called back when transaction is closed
         /// </summary>
-        public Task OnTransactionDisposeAsync(Bookmarks bookmarks)
+        public Task OnTransactionDisposeAsync(Bookmarks bookmarks, string database)
         {
-            UpdateBookmarks(bookmarks);
+            UpdateBookmarks(bookmarks, new DatabaseInfo(database));
             _transaction = null;
 
             return DisposeConnectionAsync();
@@ -69,15 +69,16 @@ namespace Neo4j.Driver.Internal
         /// Only set the bookmark to a new value if the new value is not null
         /// </summary>
         /// <param name="bookmarks">The new bookmarks.</param>
-        public void UpdateBookmarks(Bookmarks bookmarks)
+        public void UpdateBookmarks(Bookmarks bookmarks, IDatabaseInfo dbInfo = null)
         {
             if (bookmarks == null || !bookmarks.Values.Any())
                 return;
 
-            var previousBookmarks = _bookmarks;
+            var previousBookmarks = _bookmarks?.Values ?? Array.Empty<string>();
             _bookmarks = bookmarks;
 
-            _bookmarkManager?.UpdateBookmarks(_database, previousBookmarks?.Values ?? Array.Empty<string>(), bookmarks.Values);
+            var db = dbInfo?.Name ?? _database;
+            _bookmarkManager?.UpdateBookmarks(db, previousBookmarks, bookmarks.Values);
         }
 
         /// <summary>
