@@ -35,9 +35,10 @@ namespace Neo4j.Driver.Internal.Protocol
 			return new BeginMessage(database, bookmark, config?.Timeout, config?.Metadata, mode, impersonatedUser);
 		}
 
-		protected override IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmark bookmark = null, TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null, string impersonatedUser = null)
+		protected override IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmark bookmark = null, TransactionConfig config = null,
+            AccessMode mode = AccessMode.Write, string database = null, string impersonatedUser = null)
 		{
-			ValidateImpersonatedUserForVersion(impersonatedUser);
+			ValidateImpersonatedUserForVersion(impersonatedUser); 
 			return new RunWithMetadataMessage(query, database, bookmark, config, mode, impersonatedUser);
 		}
 
@@ -52,12 +53,14 @@ namespace Neo4j.Driver.Internal.Protocol
 
         public override IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger = null, bool useUtcEncoded = false)
         {
-            return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize, bufferSettings.MaxWriteBufferSize, logger, useUtcEncoded ? BoltProtocolMessageFormat.V4_4Utc : BoltProtocolMessageFormat.V4_4);
+            return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize, bufferSettings.MaxWriteBufferSize, logger, 
+                useUtcEncoded ? BoltProtocolMessageFormat.V4_4Utc : BoltProtocolMessageFormat.V4_4);
         }
 
         public override IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null, bool useUtcEncoded = false)
         {
-            return new MessageReader(stream, bufferSettings.DefaultReadBufferSize, bufferSettings.MaxReadBufferSize, logger, useUtcEncoded ? BoltProtocolMessageFormat.V4_4Utc : BoltProtocolMessageFormat.V4_4);
+            return new MessageReader(stream, bufferSettings.DefaultReadBufferSize, bufferSettings.MaxReadBufferSize, logger, 
+                useUtcEncoded ? BoltProtocolMessageFormat.V4_4Utc : BoltProtocolMessageFormat.V4_4);
         }
 
         public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmark bookmark)

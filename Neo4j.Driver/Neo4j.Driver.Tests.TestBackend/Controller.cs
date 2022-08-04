@@ -130,8 +130,14 @@ namespace Neo4j.Driver.Tests.TestBackend
 					await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
 					storedException = ex;
 					restartConnection = true;
-				}					
-				catch (IOException ex)
+                }
+                catch (DriverExceptionWrapper ex)
+                {
+                    storedException = ex;
+                    await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+                    restartConnection = false;
+                }
+                catch (IOException ex)
                 {
                     Trace.WriteLine($"Socket exception detected: {ex.Message}");    //Handled outside of the exception manager because there is no connection to reply on.
 					storedException = ex;

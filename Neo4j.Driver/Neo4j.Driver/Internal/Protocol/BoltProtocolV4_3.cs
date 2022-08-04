@@ -23,19 +23,27 @@ namespace Neo4j.Driver.Internal.Protocol
 
 		protected override IResponseHandler GetHelloResponseHandler(IConnection conn) { return new HelloResponseHandler(conn, Version); }
 
+        protected override IRequestMessage HelloMessage(string userAgent,
+            IDictionary<string, object> auth,
+            IDictionary<string, string> routingContext)
+        {
+            return new HelloMessage(userAgent, auth, routingContext);
+        }
 
-		public BoltProtocolV4_3(IDictionary<string, string> routingContext) : base(routingContext)
+        public BoltProtocolV4_3(IDictionary<string, string> routingContext) : base(routingContext)
 		{
 		}
 
         public override IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger = null, bool useUtcEncoded = false)
         {
-            return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize, bufferSettings.MaxWriteBufferSize, logger, useUtcEncoded ? BoltProtocolMessageFormat.V4_3Utc : BoltProtocolMessageFormat.V4_3);
+            return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize, bufferSettings.MaxWriteBufferSize, logger, 
+                useUtcEncoded ? BoltProtocolMessageFormat.V4_3Utc : BoltProtocolMessageFormat.V4_3);
         }
 
         public override IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null, bool useUtcEncoded = false)
         {
-            return new MessageReader(stream, bufferSettings.DefaultReadBufferSize, bufferSettings.MaxReadBufferSize, logger, useUtcEncoded ? BoltProtocolMessageFormat.V4_3Utc : BoltProtocolMessageFormat.V4_3);
+            return new MessageReader(stream, bufferSettings.DefaultReadBufferSize, bufferSettings.MaxReadBufferSize, logger,
+                useUtcEncoded ? BoltProtocolMessageFormat.V4_3Utc : BoltProtocolMessageFormat.V4_3);
         }
 
         public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmark bookmark)

@@ -19,45 +19,59 @@ using System;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 
-namespace Neo4j.Driver.Tests.TestBackend
+namespace Neo4j.Driver.Tests.TestBackend;
+
+internal class JsonCypherParameterParser
 {
-    internal class JsonCypherParameterParser
+    private static readonly Dictionary<string, Type> dateTimeTypes = new Dictionary<string, Type>
     {
-        private static readonly Dictionary<string, Type> dateTimeTypes = new Dictionary<string, Type>
-        {
-            ["CypherDate"] = typeof(DateTimeParameterValue),
-            ["CypherTime"] = typeof(DateTimeParameterValue),
-            ["CypherLocalTime"] = typeof(DateTimeParameterValue),
-            ["CypherDateTime"] = typeof(DateTimeParameterValue),
-            ["CypherLocalDateTime"] = typeof(DateTimeParameterValue)
-        };
-        public static Dictionary<string, CypherToNativeObject> ParseParameters(JToken token)
-        {
-            if (!(token is JObject parameters))
-                return null;
-            var result = new Dictionary<string, CypherToNativeObject>();
+        ["CypherDate"] = typeof(DateTimeParameterValue),
+        ["CypherTime"] = typeof(DateTimeParameterValue),
+        ["CypherLocalTime"] = typeof(DateTimeParameterValue),
+        ["CypherDateTime"] = typeof(DateTimeParameterValue),
+        ["CypherLocalDateTime"] = typeof(DateTimeParameterValue)
+    };
 
-            foreach (var parameter in parameters.Properties())
+    public static Dictionary<string, CypherToNativeObject> ParseParameters(JToken token)
+    {
+        if (!(token is JObject parameters))
+            return null;
+
+        var result = new Dictionary<string, CypherToNativeObject>();
+
+        foreach (var parameter in parameters.Properties())
+        {
+            result[parameter.Name] = ExtractParameterFromProperty(parameter.Value as JObject);
+        }
+
+        return result;
+    }
+
+    public static CypherToNativeObject ExtractParameterFromProperty(JObject parameter)
+    {
+        if (dateTimeTypes.ContainsKey(parameter["name"].Value<string>()))
+        {
+            return new CypherToNativeObject
             {
-                if (dateTimeTypes.ContainsKey(parameter.Value["name"].Value<string>()))
-                {
-                    result[parameter.Name] = new CypherToNativeObject
-                    {
-                        name = parameter.Value["name"].Value<string>(),
-                        data = parameter.Value["data"].ToObject<DateTimeParameterValue>()
-                    };
-                }
-                else
-                {
-                    result[parameter.Name] = new CypherToNativeObject
-                    {
-                        name = parameter.Value["name"].Value<string>(),
-                        data = parameter.Value["data"].ToObject<SimpleValue>()
-                    };
-                }
-            }
-
-            return result;
+                name = parameter["name"].Value<string>(),
+                data = parameter["data"].ToObject<DateTimeParameterValue>()
+            };
+        }
+        else if (parameter["name"].Value<string>() == "CypherDuration")
+        {
+            return new CypherToNativeObject
+            {
+                name = parameter["name"].Value<string>(),
+                data = parameter["data"].ToObject<DurationParameterValue>()
+            };
+        }
+        else
+        {
+            return new CypherToNativeObject
+            {
+                name = parameter["name"].Value<string>(),
+                data = parameter["data"].ToObject<SimpleValue>()
+            };
         }
     }
 }
