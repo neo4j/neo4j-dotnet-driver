@@ -54,9 +54,8 @@ namespace Neo4j.Driver.Tests.TestBackend
             if (jsonObj.TryGetValue("encrypted", out token))
                 newDriverRequest.encrypted = token.Value<bool?>();
 
-            if (jsonObj.TryGetValue("bookmarkManager", out token))
+            if (jsonObj.TryGetValue("bookmarkManager", out token) && token is JObject jsonConfig)
             {
-                var jsonConfig = token as JObject;
                 var initialBookmarks = jsonConfig["initialBookmarks"];
                 var initial = initialBookmarks.HasValues
                     ? initialBookmarks.ToObject<Dictionary<string, string[]>>()
