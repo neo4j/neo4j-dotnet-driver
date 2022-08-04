@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V3
 
             streamBuilder.Verify(x => x.PullCompleted(false, null), Times.Once);
 
-            bookmarkTracker.Verify(x => x.UpdateBookmarks(BookmarkCollectorTests.TestMetadataCollected, null), Times.Once);
+            bookmarkTracker.Verify(x => x.UpdateBookmarks(BookmarkCollectorTests.TestMetadataCollected, It.IsAny<IDatabaseInfo>()), Times.Once);
 
             summaryBuilder.VerifySet(
                 x => x.Counters = It.Is<ICounters>(c =>
