@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json;
-using Neo4j.Driver;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
@@ -20,6 +18,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string cypher { get; set; }
 
             [JsonProperty("params")]
+            [JsonConverter(typeof(QueryParameterConverter))]
             public Dictionary<string, CypherToNativeObject> parameters { get; set; } = new Dictionary<string, CypherToNativeObject>();
 
             [JsonProperty(Required = Required.AllowNull)]

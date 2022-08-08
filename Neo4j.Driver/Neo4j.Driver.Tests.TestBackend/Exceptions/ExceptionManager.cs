@@ -60,8 +60,6 @@ namespace Neo4j.Driver.Tests.TestBackend
             string exceptionMessage = (ex.InnerException != null) ? ex.InnerException.Message : ex.Message;
 			var type = TypeMap.GetValueOrDefault(ex.GetType());
 
-
-			//if (ex is Neo4jException || ex is NotSupportedException) 
 			if(type is not null)
 			{
                 ProtocolException newError = ProtocolObjectFactory.CreateObject<ProtocolException>();
@@ -75,9 +73,19 @@ namespace Neo4j.Driver.Tests.TestBackend
 					code = errorCode
 				});
             }
+            else if (ex is DriverExceptionWrapper)
+            {
+                ProtocolException newError = ProtocolObjectFactory.CreateObject<ProtocolException>();
+                return new ProtocolResponse("DriverError", new
+                {
+                    id = newError.uniqueId,
+                    errorType = ex.InnerException.GetType().Name,
+                    msg = exceptionMessage
+                });
+            }
 
             Trace.WriteLine($"Exception thrown {outerExceptionMessage}\n     which contained -- {exceptionMessage}\n{ex.StackTrace}");
             return new ProtocolResponse("BackendError", new { msg = exceptionMessage } );
         }
-    }    
+    }
 }

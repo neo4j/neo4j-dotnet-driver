@@ -186,5 +186,11 @@ namespace Neo4j.Driver.Internal.Connector
 		{
 			Reader.ReadTimeoutSeconds = seconds;
 		}
-	}
+
+        public void SetUseUtcEncodedDateTime(IBoltProtocol protocol)
+        {
+            Reader = protocol.NewReader(_tcpSocketClient.ReadStream, _bufferSettings, _logger, true);
+            Writer = protocol.NewWriter(_tcpSocketClient.WriteStream, _bufferSettings, _logger, true);
+        }
+    }
 }

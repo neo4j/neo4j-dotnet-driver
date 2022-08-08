@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling.Metadata;
@@ -36,13 +37,16 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4_3
         {
 			//Add version specific Metadata collectors here...
 			AddMetadata<ConfigurationHintsCollector, HintsType>();
+            AddMetadata<BoltPatchCollector, string[]>();
         }
 
         public override void OnSuccess(IDictionary<string, object> metadata)
         {
             base.OnSuccess(metadata);
 
-			//Version specific handling goes here...
+            if(GetMetadata<BoltPatchCollector, string[]>()?.Contains("utc") ?? false)
+                _connection.SetUseUtcEncodedDateTime();
+			
 			var timeout = new ConfigHintRecvTimeout(GetMetadata<ConfigurationHintsCollector, HintsType>()).Get;
 			_connection.SetRecvTimeOut(timeout);			
 		}

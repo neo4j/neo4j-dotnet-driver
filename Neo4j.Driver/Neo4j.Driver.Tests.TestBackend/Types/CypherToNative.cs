@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend
@@ -8,14 +9,34 @@ namespace Neo4j.Driver.Tests.TestBackend
     internal class CypherToNativeObject
     {
         public string name { get; set; }
-        public DataType data { get; set; }
-
-        public class DataType
-        {
-            public object value { get; set; }
-        }
+        public object data { get; set; }
     }
 
+    internal class SimpleValue
+    {
+        public object value { get; set; }
+    }
+
+    public class DateTimeParameterValue
+    {
+        public int? year { get; set; }
+        public int? month { get; set; }
+        public int? day { get; set; }
+        public int? hour { get; set; }
+        public int? minute { get; set; }
+        public int? second { get; set; }
+        public int? nanosecond { get; set; }
+        public int? utc_offset_s { get; set; }
+        public string timezone_id { get; set; }
+    }
+
+    public class DurationParameterValue
+    {
+        public long? months { get; set; }
+        public long? days { get; set; }
+        public long? seconds { get; set; }
+        public int? nanoseconds { get; set; }
+    }
 
     internal class CypherToNative
     {
@@ -56,20 +77,19 @@ namespace Neo4j.Driver.Tests.TestBackend
             { typeof(string),                           CypherSimple },
             { typeof(byte[]),                           CypherSimple },
 
-            { typeof(LocalDate),                        CypherTODO },
-            { typeof(OffsetTime),                       CypherTODO },
-            { typeof(LocalTime),                        CypherTODO },
-            { typeof(ZonedDateTime),                    CypherTODO },
-            { typeof(LocalDateTime),                    CypherTODO },
-            { typeof(Duration),                         CypherTODO },
+            { typeof(LocalDate),                        CypherDateTime },
+            { typeof(OffsetTime),                       CypherDateTime },
+            { typeof(LocalTime),                        CypherDateTime },
+            { typeof(ZonedDateTime),                    CypherDateTime },
+            { typeof(LocalDateTime),                    CypherDateTime },
+            { typeof(Duration),                         CypherDuration },
+
             { typeof(Point),                            CypherTODO },
 
             { typeof(INode),                             CypherTODO },
             { typeof(IRelationship),                     CypherTODO },
             { typeof(IPath), CypherTODO }
         };
-
-
 
         public static object Convert(CypherToNativeObject sourceObject)
         {
@@ -90,26 +110,24 @@ namespace Neo4j.Driver.Tests.TestBackend
                 throw new IOException($"Attempting to convert an unsuported object type to a CypherType: {sourceObject.GetType()}");
             }
         }
-        
 
         public static object CypherSimple(Type objectType, CypherToNativeObject cypherObject)
         {
-            return cypherObject.data.value;
+            return ((SimpleValue)cypherObject.data).value;
         }
-        
+
         public static object CypherTODO(Type objectType, CypherToNativeObject cypherObject)
         {
             throw new NotImplementedException($"CypherToNative : {cypherObject.name} conversion is not implemented yet");
         }
 
-
         public static object CypherList(Type objectType, CypherToNativeObject obj)
         {
             var result = new List<object>();
 
-            foreach(JObject item in (JArray)obj.data.value)
+            foreach (JObject item in (JArray)((SimpleValue)obj.data).value)
             {
-                result.Add(Convert(item.ToObject<CypherToNativeObject>()));
+                result.Add(Convert(JsonCypherParameterParser.ExtractParameterFromProperty(item)));
             }
 
             return result;
@@ -117,16 +135,86 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public static object CypherMap(Type objectType, CypherToNativeObject obj)
         {
-            var result = new Dictionary<string, object>();
-            var dictionaryElements = JObject.FromObject(obj.data.value).ToObject<Dictionary<string, CypherToNativeObject>>();
-
-            foreach(var item in dictionaryElements)
-			{
-                result.Add(item.Key, Convert(item.Value));
-			}
-
-            return result;           
+            return JObject.FromObject(((SimpleValue)obj.data).value).Properties().ToDictionary(x => x.Name, x =>
+                Convert(JsonCypherParameterParser.ExtractParameterFromProperty(x.Value as JObject)));
         }
+
+
+        private static object CypherDateTime(Type objectType, CypherToNativeObject obj)
+        {
+            var dataTimeParam = obj.data as DateTimeParameterValue;
+
+            //date & time
+            if (dataTimeParam.year.HasValue && dataTimeParam.hour.HasValue)
+            {
+                //zoned date time
+                if (dataTimeParam.utc_offset_s.HasValue || dataTimeParam.timezone_id != null)
+                {
+                    return new ZonedDateTime(
+                        dataTimeParam.year.Value,
+                        dataTimeParam.month.Value,
+                        dataTimeParam.day.Value,
+                        dataTimeParam.hour.Value,
+                        dataTimeParam.minute.Value,
+                        dataTimeParam.second.Value,
+                        dataTimeParam.nanosecond.Value,
+                        dataTimeParam.timezone_id != null
+                            ? Zone.Of(dataTimeParam.timezone_id)
+                            : Zone.Of(dataTimeParam.utc_offset_s ?? 0)
+                    );
+                }
+
+                // local
+                return new LocalDateTime(
+                    dataTimeParam.year.Value,
+                    dataTimeParam.month.Value,
+                    dataTimeParam.day.Value,
+                    dataTimeParam.hour.Value,
+                    dataTimeParam.minute.Value,
+                    dataTimeParam.second.Value,
+                    dataTimeParam.nanosecond.Value
+                );
+            }
+
+            if (dataTimeParam.year.HasValue)
+            {
+                //date local
+                return new LocalDate(
+                    dataTimeParam.year.Value,
+                    dataTimeParam.month.Value,
+                    dataTimeParam.day.Value
+                );
+            }
+
+            // time offset
+            if (dataTimeParam.utc_offset_s.HasValue)
+            {
+                return new OffsetTime(
+                    dataTimeParam.hour.Value,
+                    dataTimeParam.minute.Value,
+                    dataTimeParam.second.Value,
+                    dataTimeParam.nanosecond.Value,
+                    dataTimeParam.utc_offset_s ?? 0
+                );
+            }
+
+            //time
+            return new LocalTime(
+                dataTimeParam.hour.Value,
+                dataTimeParam.minute.Value,
+                dataTimeParam.second.Value,
+                dataTimeParam.nanosecond.Value
+            );
+        }
+
+        private static object CypherDuration(Type objectType, CypherToNativeObject obj)
+        {
+            var duration = obj.data as DurationParameterValue;
+
+            return new Duration(duration.months.Value, duration.days.Value,
+                duration.seconds.Value, duration.nanoseconds.Value);
+        }
+
         /*
         public static NativeToCypherObject CypherNode(string cypherType, object obj)
         {
