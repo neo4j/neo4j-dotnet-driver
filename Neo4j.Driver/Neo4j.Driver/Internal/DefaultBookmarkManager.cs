@@ -19,7 +19,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal;
 
@@ -34,7 +33,7 @@ internal class DefaultBookmarkManager : IBookmarkManager
     {
         _bookmarkSets = config.InitialBookmarks.ToDictionary(x => x.Key, x => new HashSet<string>(x.Value));
         _bookmarkSupplier = config.BookmarkSupplier ?? (_ => Array.Empty<string>());
-        _onBookmarks = config.NotifyBookmarks ?? ((_,_) => new ValueTask(Task.CompletedTask));
+        _onBookmarks = config.NotifyBookmarks ?? ((_,_) => {});
         _lock = new SemaphoreSlim(1, 1);
     }
 
@@ -68,14 +67,7 @@ internal class DefaultBookmarkManager : IBookmarkManager
         _lock.Wait();
         try
         {
-            if (!_bookmarkSets.TryGetValue(database, out var set))
-                set = new HashSet<string>();
-
-            if (_bookmarkSupplier == null)
-                return Bookmarks.From(set.ToArray());
-
-            var supplied = _bookmarkSupplier(database);
-            return Bookmarks.From(set.Union(supplied).ToArray());
+            return Bookmarks.From(BookmarksFor(database));
         }
         finally
         {
@@ -83,28 +75,52 @@ internal class DefaultBookmarkManager : IBookmarkManager
         }
     }
 
+    private string[] BookmarksFor(string database)
+    {
+        if (!_bookmarkSets.TryGetValue(database, out var set))
+            set = new HashSet<string>();
+
+        if (_bookmarkSupplier == null)
+            return set.ToArray();
+
+        var supplied = _bookmarkSupplier(database);
+        return set.Union(supplied).ToArray();
+    }
+
     public string[] GetAllBookmarks(params string[] databases)
     {
         _lock.Wait();
-        string[] keys;
-
         try
         {
-            keys = _bookmarkSets.Keys.Union(databases).ToArray();
+            var keys = _bookmarkSets.Keys.Union(databases).ToArray();
+
+            var set = new HashSet<string>();
+
+            foreach (var key in keys)
+            {
+                var bookmarks = BookmarksFor(key);
+                set.UnionWith(bookmarks);
+            }
+
+            return set.ToArray();
         }
         finally
         {
             _lock.Release();
         }
+    }
 
-        var set = new HashSet<string>();
-
-        foreach (var key in keys)
+    public void Forget(params string[] databases)
+    {
+        _lock.Wait();
+        try
         {
-            var bookmarks = GetBookmarks(key);
-            set.UnionWith(bookmarks.Values);
+            foreach (var database in databases)
+                _bookmarkSets.Remove(database);
         }
-
-        return set.ToArray();
+        finally
+        {
+            _lock.Release();
+        }
     }
 }

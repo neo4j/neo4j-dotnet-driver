@@ -28,4 +28,10 @@ public interface IBookmarkManager
     /// <param name="databases">Databases the result must include.</param>
     /// <returns>Last known bookmarks for all databases.</returns>
     string[] GetAllBookmarks(params string[] databases);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="databases"></param>
+    void Forget(params string[] databases);
 }
