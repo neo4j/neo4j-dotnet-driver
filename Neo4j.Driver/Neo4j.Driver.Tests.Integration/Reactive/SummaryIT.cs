@@ -272,19 +272,40 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                 {
                     using (var session = Server.Driver.Session())
                     {
-                        foreach (var drop in session.Run("CALL db.constraints()").ToList())
+                        if (RequireServer.RequiredServerAvailable("5.0.0", GreaterThanOrEqualTo))
                         {
-                            if (drop.Values.TryGetValue("name", out var name))
+                            foreach (var drop in session.Run("SHOW CONSTRAINTS").ToList())
                             {
-                                session.Run($"DROP CONSTRAINT {name}").Consume();
+                                if (drop.Values.TryGetValue("name", out var name))
+                                {
+                                    session.Run($"DROP CONSTRAINT {name}").Consume();
+                                }
+                            }
+
+                            foreach (var drop in session.Run("SHOW INDEXES").ToList())
+                            {
+                                if (drop.Values.TryGetValue("name", out var name))
+                                {
+                                    session.Run($"DROP INDEX {name}").Consume();
+                                }
                             }
                         }
-
-                        foreach (var drop in session.Run("CALL db.indexes()").ToList())
+                        else
                         {
-                            if (drop.Values.TryGetValue("name", out var name))
+                            foreach (var drop in session.Run("CALL db.constraints()").ToList())
                             {
-                                session.Run($"DROP INDEX {name}").Consume();
+                                if (drop.Values.TryGetValue("name", out var name))
+                                {
+                                    session.Run($"DROP CONSTRAINT {name}").Consume();
+                                }
+                            }
+
+                            foreach (var drop in session.Run("CALL db.indexes()").ToList())
+                            {
+                                if (drop.Values.TryGetValue("name", out var name))
+                                {
+                                    session.Run($"DROP INDEX {name}").Consume();
+                                }
                             }
                         }
                     }

@@ -61,13 +61,14 @@ namespace Neo4j.Driver.Internal.Protocol
 
         protected virtual IResponseHandler GetHelloResponseHandler(IConnection conn) => new HelloResponseHandler(conn);
 
-        public virtual IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger = null)
+        public virtual IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
+            ILogger logger = null, bool _ = false)
         {
             return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize, bufferSettings.MaxWriteBufferSize, logger, MessageFormat);
         }
 
         public virtual IMessageReader NewReader(Stream stream, BufferSettings bufferSettings,
-            ILogger logger = null)
+            ILogger logger = null, bool _ = false)
         {
             return new MessageReader(stream, bufferSettings.DefaultReadBufferSize, bufferSettings.MaxReadBufferSize, logger, MessageFormat);
         }

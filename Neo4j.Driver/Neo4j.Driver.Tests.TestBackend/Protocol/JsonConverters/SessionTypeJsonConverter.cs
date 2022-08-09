@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -17,11 +16,10 @@ namespace Neo4j.Driver.Tests.TestBackend
 			var sessionType = new SessionRun.SessionRunType
 			{
 				cypher = json["cypher"]?.Value<string>(),
-				parameters = json["params"]?.ToObject<Dictionary<string, CypherToNativeObject>>() 
-								?? new Dictionary<string, CypherToNativeObject>(),
-			};
+                parameters = JsonCypherParameterParser.ParseParameters(json["params"])
+            };
             SetBaseValues(json, sessionType);
             return sessionType;
         }
-	}
+    }
 }

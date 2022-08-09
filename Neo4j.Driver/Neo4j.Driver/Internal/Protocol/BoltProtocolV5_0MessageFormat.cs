@@ -17,12 +17,14 @@
 
 using Neo4j.Driver.Internal.IO.ValueSerializers;
 using FailureMessageSerializer = Neo4j.Driver.Internal.IO.MessageSerializers.V5.FailureMessageSerializer;
+using V4_4 = Neo4j.Driver.Internal.IO.MessageSerializers.V4_4;
+using V5_0 = Neo4j.Driver.Internal.IO.MessageSerializers.V5_0;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
     class BoltProtocolV5_0MessageFormat : BoltProtocolV4_4MessageFormat
     {
-        public BoltProtocolV5_0MessageFormat()
+        public BoltProtocolV5_0MessageFormat() : base(true)
         {
             RemoveHandler<NodeSerializer>();
             AddHandler<ElementNodeSerializer>();
@@ -35,6 +37,9 @@ namespace Neo4j.Driver.Internal.Protocol
 
             RemoveHandler<IO.MessageSerializers.V3.FailureMessageSerializer>();
             AddHandler<FailureMessageSerializer>();
+
+            RemoveHandler<V4_4.HelloMessageSerializer>();
+            AddHandler<V5_0.HelloMessageSerializer>();
         }
     }
 

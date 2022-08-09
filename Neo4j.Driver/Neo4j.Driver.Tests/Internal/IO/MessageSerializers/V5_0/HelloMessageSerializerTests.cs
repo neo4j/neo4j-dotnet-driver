@@ -16,15 +16,14 @@
 // limitations under the License.
 
 using System.Collections.Generic;
-using System.Linq;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Internal.Messaging.V4_3;
+using Neo4j.Driver.Internal.Messaging.V5_0;
 using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
+namespace Neo4j.Driver.Internal.IO.MessageSerializers.V5_0
 {
     public class HelloMessageSerializerTests : PackStreamSerializerTests
     {
@@ -36,7 +35,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
             var handler = SerializerUnderTest;
 
             var ex = Record.Exception(() =>
-                handler.Deserialize(Mock.Of<IPackStreamReader>(), BoltProtocolV4_3MessageFormat.MsgBegin, 2));
+                handler.Deserialize(Mock.Of<IPackStreamReader>(), BoltProtocolV5_0MessageFormat.MsgBegin, 2));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ProtocolException>();
@@ -60,10 +59,10 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(1);
-            reader.ReadStructSignature().Should().Be(BoltProtocolV4_3MessageFormat.MsgHello);
+            reader.ReadStructSignature().Should().Be(BoltProtocolV5_0MessageFormat.MsgHello);
 
             var readMap = reader.ReadMap();
-            readMap.Should().HaveCount(6).And.Contain(
+            readMap.Should().HaveCount(5).And.Contain(
                 new[]
                 {
                     new KeyValuePair<string, object>("user_agent", "Client-Version/1.0"),
@@ -72,15 +71,11 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
                     new KeyValuePair<string, object>("credentials", "password")
                 });
 
-            readMap.Should().ContainKey("patch_bolt")
-                .WhichValue.Should().BeOfType<List<object>>()
-                .Which.Should().Contain("utc")
-                .And.HaveCount(1);
 
-            readMap.Should().ContainKey("routing")
-                .WhichValue.Should().BeOfType<Dictionary<string, object>>()
-                .Which.Should().Contain(new KeyValuePair<string,object>("contextKey", "contextValue"))
-                .And.HaveCount(1);
+            object dic;
+            readMap.ContainsKey("routing").Should().BeTrue();
+            readMap.TryGetValue("routing", out dic);
+            dic.ToDictionary().Should().HaveCount(1).And.Contain(new[] { new KeyValuePair<string, object>("contextKey", "contextValue") });
         }
 
         [Fact]
@@ -97,24 +92,19 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(1);
-            reader.ReadStructSignature().Should().Be(BoltProtocolV4_3MessageFormat.MsgHello);
+            reader.ReadStructSignature().Should().Be(BoltProtocolV5_0MessageFormat.MsgHello);
 
             var readMap = reader.ReadMap();
-            readMap.Should().NotBeNull().And.HaveCount(3).And.Contain(
+            readMap.Should().NotBeNull().And.HaveCount(2).And.Contain(
                 new[]
                 {
                     new KeyValuePair<string, object>("user_agent", "Client-Version/1.0"),
                 });
 
-            readMap.Should().ContainKey("patch_bolt")
-                .WhichValue.Should().BeOfType<List<object>>()
-                .Which.Should().Contain("utc")
-                .And.HaveCount(1);
-
-            readMap.Should().ContainKey("routing")
-                .WhichValue.Should().BeOfType<Dictionary<string, object>>()
-                .Which.Should().Contain(new KeyValuePair<string, object>("contextKey", "contextValue"))
-                .And.HaveCount(1);
+            object dic;
+            readMap.ContainsKey("routing").Should().BeTrue();
+            readMap.TryGetValue("routing", out dic);
+            dic.ToDictionary().Should().HaveCount(1).And.Contain(new[] { new KeyValuePair<string, object>("contextKey", "contextValue") });
         }
 
         [Fact]
@@ -130,22 +120,19 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(1);
-            reader.ReadStructSignature().Should().Be(BoltProtocolV4_3MessageFormat.MsgHello);
+            reader.ReadStructSignature().Should().Be(BoltProtocolV5_0MessageFormat.MsgHello);
 
             var readMap = reader.ReadMap();
-            readMap.Should().NotBeNull().And.HaveCount(3).And.Contain(
+            readMap.Should().NotBeNull().And.HaveCount(2).And.Contain(
                 new[]
                 {
                     new KeyValuePair<string, object>("user_agent", "Client-Version/1.0"),
                 });
 
-            readMap.Should().ContainKey("patch_bolt")
-                .WhichValue.Should().BeOfType<List<object>>()
-                .Which.Should().Contain("utc")
-                .And.HaveCount(1);
-
-            readMap.Should().ContainKey("routing")
-                .WhichValue.Should().BeNull();
+            object dic;
+            readMap.ContainsKey("routing").Should().BeTrue();
+            readMap.TryGetValue("routing", out dic);
+            (dic == null).Should().BeTrue();
         }
 
         [Fact]
@@ -161,23 +148,19 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(1);
-            reader.ReadStructSignature().Should().Be(BoltProtocolV4_3MessageFormat.MsgHello);
+            reader.ReadStructSignature().Should().Be(BoltProtocolV5_0MessageFormat.MsgHello);
 
             var readMap = reader.ReadMap();
-            readMap.Should().NotBeNull().And.HaveCount(3).And.Contain(
+            readMap.Should().NotBeNull().And.HaveCount(2).And.Contain(
                 new[]
                 {
                     new KeyValuePair<string, object>("user_agent", "Client-Version/1.0"),
                 });
 
-            readMap.Should().ContainKey("patch_bolt")
-                .WhichValue.Should().BeOfType<List<object>>()
-                .Which.Should().Contain("utc")
-                .And.HaveCount(1);
-
-            readMap.Should().ContainKey("routing")
-                .WhichValue.Should().BeOfType<Dictionary<string, object>>()
-                .Which.Should().HaveCount(0);
+            object dic;
+            readMap.ContainsKey("routing").Should().BeTrue();
+            readMap.TryGetValue("routing", out dic);
+            dic.ToDictionary().Should().HaveCount(0);
         }
     }
 }

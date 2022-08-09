@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.Linq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling.Metadata;
 using Neo4j.Driver.Internal.Protocol;
@@ -30,12 +31,16 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4_3
         public HelloResponseHandler(IConnection connection, BoltProtocolVersion version) : base(connection, version)
         {
 			AddMetadata<ConfigurationHintsCollector, HintsType>();
+            AddMetadata<BoltPatchCollector, string[]>();
         }
 
         public override void OnSuccess(IDictionary<string, object> metadata)
         {
             base.OnSuccess(metadata);
 
+            if(GetMetadata<BoltPatchCollector, string[]>()?.Contains("utc") ?? false)
+                _connection.SetUseUtcEncodedDateTime();
+			
 			var timeout = new ConfigHintRecvTimeout(GetMetadata<ConfigurationHintsCollector, HintsType>()).Get;
 			_connection.SetRecvTimeOut(timeout);			
 		}

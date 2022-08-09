@@ -836,7 +836,7 @@ namespace Neo4j.Driver.Examples
             {
             }
 
-            [RequireEnterpriseEdition("4.0.0", VersionComparison.GreaterThanOrEqualTo)]
+            [RequireEnterpriseEdition("4.0.0", "5.0.0", VersionComparison.Between)]
             public async void TestUseAnotherDatabaseExample()
             {
                 try
@@ -856,6 +856,32 @@ namespace Neo4j.Driver.Examples
                     // When
                     example.UseAnotherDatabaseExample();
                     
+                    // Then
+                    var greetingCount = ReadInt("examples", "MATCH (a:Greeting) RETURN count(a)");
+                    greetingCount.Should().Be(1);
+                }
+            }
+
+            [RequireEnterpriseEdition("5.0.0", VersionComparison.GreaterThanOrEqualTo)]
+            public async void TestUseAnotherDatabaseExampleAsync()
+            {
+                try
+                {
+                    await DropDatabase(Driver, "examples", true);
+                }
+                catch (FatalDiscoveryException)
+                {
+                    // Its a new server instance, the database didn't exist yet
+                }
+
+                await CreateDatabase(Driver, "examples", true);
+
+                // Given
+                using (var example = new DatabaseSelectionExample(Uri, User, Password))
+                {
+                    // When
+                    example.UseAnotherDatabaseExample();
+
                     // Then
                     var greetingCount = ReadInt("examples", "MATCH (a:Greeting) RETURN count(a)");
                     greetingCount.Should().Be(1);

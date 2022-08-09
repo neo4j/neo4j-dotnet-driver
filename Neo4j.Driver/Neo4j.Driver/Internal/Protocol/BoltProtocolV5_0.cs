@@ -20,6 +20,8 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.MessageHandling.V5_0;
+using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Messaging.V5_0;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
@@ -27,9 +29,17 @@ namespace Neo4j.Driver.Internal.Protocol
     {
         public override BoltProtocolVersion Version => BoltProtocolVersion.V5_0;
         protected override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V5_0;
+        protected override IMessageFormat UtcMessageFormat => BoltProtocolMessageFormat.V5_0;
 
         public BoltProtocolV5_0(IDictionary<string, string> routingContext) : base(routingContext)
         {
+        }
+
+        protected override IRequestMessage HelloMessage(string userAgent,
+            IDictionary<string, object> auth,
+            IDictionary<string, string> routingContext)
+        {
+            return new HelloMessage(userAgent, auth, routingContext);
         }
 
         protected override IResponseHandler GetHelloResponseHandler(IConnection conn)

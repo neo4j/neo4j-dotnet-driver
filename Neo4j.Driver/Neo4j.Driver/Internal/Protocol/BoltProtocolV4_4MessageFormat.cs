@@ -13,7 +13,8 @@ namespace Neo4j.Driver.Internal.Protocol
 
 		#endregion
 
-		internal BoltProtocolV4_4MessageFormat()
+		internal BoltProtocolV4_4MessageFormat(bool useUtcEncoder):
+            base(useUtcEncoder)
 		{
 			RemoveHandler<V4_3.HelloMessageSerializer>();
 			AddHandler<V4_4.HelloMessageSerializer>();

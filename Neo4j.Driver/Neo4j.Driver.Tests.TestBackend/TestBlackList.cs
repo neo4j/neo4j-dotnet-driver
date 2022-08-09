@@ -112,7 +112,12 @@ namespace Neo4j.Driver.Tests.TestBackend
             ("stub.iteration.test_iteration_tx_run.TestIterationTxRun.test_nested", "Requires further investigation"),
             ("stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_nested",
 	            "Requires further investigation"),
-		};
+
+            ("test_temporal_types.TestDataTypes.test_date_time_cypher_created_tz_id",
+                "No Antarctica/Troll mapping available."),
+            ("test_temporal_types.TestDataTypes.test_should_echo_all_timezone_ids",
+                "EST/HST/MST not supported.")
+        };
 
 		public static bool FindTest(string testName, out string reason)
 		{
