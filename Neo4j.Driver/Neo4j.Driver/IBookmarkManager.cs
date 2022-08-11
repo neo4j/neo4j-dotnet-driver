@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-
+﻿
 namespace Neo4j.Driver;
 
 /// <summary>
@@ -20,7 +19,7 @@ public interface IBookmarkManager
     /// </summary>
     /// <param name="database">Database to get latest known bookmarks for.</param>
     /// <returns>Last known bookmarks for database.</returns>
-    Bookmarks GetBookmarks(string database);
+    string[] GetBookmarks(string database);
 
     /// <summary>
     /// Retrieves all bookmarks.

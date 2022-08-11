@@ -26,7 +26,7 @@ internal class NoOpBookmarkManager : IBookmarkManager
     {
     }
 
-    public Bookmarks GetBookmarks(string database) => Bookmarks.Empty;
+    public string[] GetBookmarks(string database) => Array.Empty<string>();
 
     public string[] GetAllBookmarks() => Array.Empty<string>();
 

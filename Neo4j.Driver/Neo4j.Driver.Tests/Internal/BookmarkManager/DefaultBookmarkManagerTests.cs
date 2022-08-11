@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Xunit;
@@ -42,7 +41,7 @@ public class DefaultBookmarkManagerTests
 
         var bookmarks = bookmarkManager.GetBookmarks("example");
 
-        bookmarks.Should().Be(Bookmarks.From("eg1", "eg2"));
+        bookmarks.Should().BeEquivalentTo("eg1", "eg2");
     }
 
     [Fact]
@@ -63,7 +62,7 @@ public class DefaultBookmarkManagerTests
 
         var bookmarks = bookmarkManager.GetBookmarks("example");
 
-        bookmarks.Should().Be(Bookmarks.From("eg3", "eg4"));
+        bookmarks.Should().BeEquivalentTo("eg3", "eg4");
     }
 
     [Fact]
@@ -84,7 +83,7 @@ public class DefaultBookmarkManagerTests
 
         var bookmarks = bookmarkManager.GetBookmarks("example");
 
-        bookmarks.Should().Be(Bookmarks.From("eg2", "eg3", "eg4"));
+        bookmarks.Should().BeEquivalentTo("eg2", "eg3", "eg4");
     }
 
     [Fact]
@@ -120,7 +119,7 @@ public class DefaultBookmarkManagerTests
         var bookmarkManager = new DefaultBookmarkManager(config);
 
         var exists = bookmarkManager.GetBookmarks("example");
-        exists.Should().Be(Bookmarks.Empty);
+        exists.Should().BeEquivalentTo(Array.Empty<string>());
     }
 
     [Fact]
@@ -138,16 +137,16 @@ public class DefaultBookmarkManagerTests
         var bookmarkManager = new DefaultBookmarkManager(config);
 
         var exists = bookmarkManager.GetBookmarks("example");
-        exists.Should().Be(Bookmarks.Empty);
+        exists.Should().BeEquivalentTo(Array.Empty<string>());
 
         bookmarkManager.UpdateBookmarks("example", new []{"eg1", "eg2"}, new[] {"eg3"});
 
         var updated = bookmarkManager.GetBookmarks("example");
-        updated.Should().Be(Bookmarks.From("eg3"));
+        updated.Should().BeEquivalentTo("eg3");
 
         // assert only correct db's bookmarks updated.
         var unaffected = bookmarkManager.GetBookmarks("notReturned");
-        unaffected.Should().Be(Bookmarks.From("eg1", "eg2"));
+        unaffected.Should().BeEquivalentTo("eg1", "eg2");
     }
 
     [Fact]
@@ -166,7 +165,7 @@ public class DefaultBookmarkManagerTests
         var bookmarkManager = new DefaultBookmarkManager(config);
 
         var exists = bookmarkManager.GetBookmarks("example");
-        exists.Should().Be(Bookmarks.From("eg1", "eg2"));
+        exists.Should().BeEquivalentTo("eg1", "eg2");
     }
 
     [Fact]
@@ -180,7 +179,7 @@ public class DefaultBookmarkManagerTests
         var bookmarkManager = new DefaultBookmarkManager(config);
 
         var exists = bookmarkManager.GetBookmarks("example");
-        exists.Should().Be(Bookmarks.From("eg1"));
+        exists.Should().BeEquivalentTo("eg1");
     }
 
     [Fact]
@@ -199,7 +198,7 @@ public class DefaultBookmarkManagerTests
         var bookmarkManager = new DefaultBookmarkManager(config);
 
         var exists = bookmarkManager.GetBookmarks("example");
-        exists.Should().Be(Bookmarks.From("eg1"));
+        exists.Should().BeEquivalentTo("eg1");
     }
 
     [Fact]
@@ -228,6 +227,58 @@ public class DefaultBookmarkManagerTests
         var bookmarkManager = new DefaultBookmarkManager(config);
 
         var exists = bookmarkManager.GetAllBookmarks();
-        exists.Should().BeEquivalentTo(new [] {"eg1", "provider1", "eg2"});
+        exists.Should().BeEquivalentTo("eg1", "provider1", "eg2");
+    }
+
+    [Fact]
+    public void ShouldForgetAllDatabases()
+    {
+        var initial = new Dictionary<string, IEnumerable<string>>
+        {
+            ["a"] = new[] {"eg1"},
+            ["b"] = new[] {"eg2"}
+        };
+
+        var bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig(initial, null, null));
+
+        bookmarkManager.Forget();
+
+        var exists = bookmarkManager.GetAllBookmarks();
+        exists.Should().BeEquivalentTo(Array.Empty<string>());
+    }
+
+    [Fact]
+    public void ShouldForgetSpecifiedDatabase()
+    {
+        var initial = new Dictionary<string, IEnumerable<string>>
+        {
+            ["a"] = new[] { "eg1" },
+            ["b"] = new[] { "eg2" }
+        };
+
+        var bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig(initial, null, null));
+
+        bookmarkManager.Forget("a");
+
+        var exists = bookmarkManager.GetAllBookmarks();
+        exists.Should().BeEquivalentTo("eg2");
+    }
+
+    [Fact]
+    public void ShouldForgetSpecifiedDatabases()
+    {
+        var initial = new Dictionary<string, IEnumerable<string>>
+        {
+            ["a"] = new[] { "eg1" },
+            ["b"] = new[] { "eg2" },
+            ["c"] = new[] { "eg3" }
+        };
+
+        var bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig(initial, null, null));
+
+        bookmarkManager.Forget("a", "b");
+
+        var exists = bookmarkManager.GetAllBookmarks();
+        exists.Should().BeEquivalentTo("eg3");
     }
 }
