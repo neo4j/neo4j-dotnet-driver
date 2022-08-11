@@ -142,7 +142,7 @@ namespace Neo4j.Driver.Internal
                 var protocol = _connection.BoltProtocol;
 
                 if (_bookmarkManager != null)
-                    _bookmarks = Bookmarks.From(_bookmarkManager.GetAllBookmarks(_database));
+                    _bookmarks = Bookmarks.From(_bookmarkManager.GetAllBookmarks());
 
                 return await protocol
                     .RunInAutoCommitTransactionAsync(_connection, query, _reactive, this, this, _database,
@@ -252,7 +252,7 @@ namespace Neo4j.Driver.Internal
 
             await AcquireConnectionAndDbNameAsync(mode).ConfigureAwait(false);
             if (_bookmarkManager != null)
-                _bookmarks = Bookmarks.From(_bookmarkManager.GetAllBookmarks(_database));
+                _bookmarks = Bookmarks.From(_bookmarkManager.GetAllBookmarks());
             var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmarks, _reactive, _fetchSize, ImpersonatedUser());
             await tx.BeginTransactionAsync(config).ConfigureAwait(false);
             _transaction = tx;

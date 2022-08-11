@@ -230,31 +230,4 @@ public class DefaultBookmarkManagerTests
         var exists = bookmarkManager.GetAllBookmarks();
         exists.Should().BeEquivalentTo(new [] {"eg1", "provider1", "eg2"});
     }
-
-    [Fact]
-    public void ShouldReturnDistinctUnionOfAllBookmarksAndRunGetForSpecifiedDbs()
-    {
-        var initialBookmarks = new Dictionary<string, IEnumerable<string>>()
-        {
-            ["example"] = new[] { "eg1" },
-            ["example2"] = new[] { "eg2" }
-        };
-
-        string[] Provider(string db)
-        {
-            if (db == "example3")
-                return new[] { "eg2", "provider3" };
-            return Array.Empty<string>();
-        }
-
-        var config = new BookmarkManagerConfig(
-            initialBookmarks,
-            Provider,
-            (_, _) => { });
-
-        var bookmarkManager = new DefaultBookmarkManager(config);
-
-        var exists = bookmarkManager.GetAllBookmarks("example3");
-        exists.Should().BeEquivalentTo("eg1", "eg2", "provider3");
-    }
 }

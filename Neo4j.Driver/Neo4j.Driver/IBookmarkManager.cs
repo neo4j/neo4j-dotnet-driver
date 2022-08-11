@@ -25,9 +25,8 @@ public interface IBookmarkManager
     /// <summary>
     /// Retrieves all bookmarks.
     /// </summary>
-    /// <param name="databases">Databases the result must include.</param>
     /// <returns>Last known bookmarks for all databases.</returns>
-    string[] GetAllBookmarks(params string[] databases);
+    string[] GetAllBookmarks();
 
     /// <summary>
     /// 

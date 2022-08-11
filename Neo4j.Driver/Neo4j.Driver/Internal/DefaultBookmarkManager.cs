@@ -87,20 +87,15 @@ internal class DefaultBookmarkManager : IBookmarkManager
         return set.Union(supplied).ToArray();
     }
 
-    public string[] GetAllBookmarks(params string[] databases)
+    public string[] GetAllBookmarks()
     {
         _lock.Wait();
         try
         {
-            var keys = _bookmarkSets.Keys.Union(databases).ToArray();
-
             var set = new HashSet<string>();
 
-            foreach (var key in keys)
-            {
-                var bookmarks = BookmarksFor(key);
-                set.UnionWith(bookmarks);
-            }
+            foreach (var key in _bookmarkSets.Keys.ToList())
+                set.UnionWith(BookmarksFor(key));
 
             return set.ToArray();
         }
