@@ -26,8 +26,8 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     internal interface IBoltProtocol
     {
-        IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null);
-        IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger = null);
+        IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null, bool useUtcEncodedDateTimes = false);
+        IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger = null, bool useUtcEncodedDateTimes = false);
 
         Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken);
 

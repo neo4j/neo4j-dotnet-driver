@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System;
+using System.IO;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
@@ -13,7 +15,8 @@ namespace Neo4j.Driver.Internal.Protocol
 	{
         public override BoltProtocolVersion Version => BoltProtocolVersion.V4_4;
         protected override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V4_4;
-
+        protected override IMessageFormat UtcMessageFormat => BoltProtocolMessageFormat.V4_4Utc;
+        public const string BoltPatchKey = "patch_bolt";
         public BoltProtocolV4_4(IDictionary<string, string> routingContext)
             : base(routingContext)
         {
@@ -39,7 +42,6 @@ namespace Neo4j.Driver.Internal.Protocol
 		}
 
 		protected override IResponseHandler GetHelloResponseHandler(IConnection conn) { return new HelloResponseHandler(conn, Version); }
-
 
 		public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmarks bookmarks)
 		{

@@ -149,5 +149,9 @@ namespace Neo4j.Driver.Internal.Connector
 			Delegate.SetRecvTimeOut(seconds);
 		}
 
-	}
+        public void SetUseUtcEncodedDateTime()
+        {
+            Delegate.SetUseUtcEncodedDateTime();
+        }
+    }
 }

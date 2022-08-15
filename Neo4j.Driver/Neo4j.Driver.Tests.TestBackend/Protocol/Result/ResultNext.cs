@@ -20,21 +20,33 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override async Task Process()
         {
-            var result = (Result)ObjManager.GetObject(data.resultId);
-            Records = await result.GetNextRecord();
+            try
+            {
+                var result = (Result)ObjManager.GetObject(data.resultId);
+                Records = await result.GetNextRecord();
+            }
+            catch (TimeZoneNotFoundException tz)
+            {
+                throw new DriverExceptionWrapper(tz);
+            }
         }
 
         public override string Respond()
         {
-            if (!(Records is null))
+            if (Records is null)
             {
-                //Generate list of ordered records
-                var valuesList = Records.Keys.Select(v => NativeToCypher.Convert(Records[v]));
-                return new ProtocolResponse("Record", new { values = valuesList }).Encode();
+                return new ProtocolResponse("NullRecord", (object) null).Encode();
             }
-            else
+
+            //Generate list of ordered records
+            var valuesList = Records.Keys.Select(v => NativeToCypher.Convert(Records[v]));
+            try
             {
-                return new ProtocolResponse("NullRecord", (object)null).Encode();
+                return new ProtocolResponse("Record", new {values = valuesList}).Encode();
+            }
+            catch (TimeZoneNotFoundException tz)
+            {
+                throw new DriverExceptionWrapper(tz);
             }
         }
     }

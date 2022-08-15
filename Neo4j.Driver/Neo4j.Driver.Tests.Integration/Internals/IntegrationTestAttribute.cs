@@ -123,7 +123,41 @@ namespace Neo4j.Driver.IntegrationTests
 			}
 
 			return satisfy;
-		}
+        }
+
+        public static bool RequiredServerAvailable(string versionText, VersionComparison versionCompare)
+        {
+            var satisfy = true;
+
+            if (!string.IsNullOrWhiteSpace(versionText))
+            {
+                var version = ServerVersion.From(versionText);
+                var availableVersion = ServerVersion.From(BoltkitHelper.ServerVersion());
+
+                switch (versionCompare)
+                {
+                    case VersionComparison.LessThan:
+                        satisfy = availableVersion.CompareTo(version) < 0;
+                        break;
+                    case VersionComparison.LessThanOrEqualTo:
+                        satisfy = availableVersion.CompareTo(version) <= 0;
+                        break;
+                    case VersionComparison.EqualTo:
+                        satisfy = availableVersion.CompareTo(version) == 0;
+                        break;
+                    case VersionComparison.GreaterThanOrEqualTo:
+                        satisfy = availableVersion.CompareTo(version) >= 0;
+                        break;
+                    case VersionComparison.GreaterThan:
+                        satisfy = availableVersion.CompareTo(version) > 0;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(versionCompare));
+                }
+            }
+
+            return satisfy;
+        }
 
         public static bool RequiredServerAvailableBetween(string minVersionText, string maxVersionText, StringBuilder skipText)
         {

@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.Messaging.V4_4
 {
@@ -43,7 +44,9 @@ namespace Neo4j.Driver.Internal.Messaging.V4_4
 			}
 
 			MetaData.Add("routing", routingContext);
-		}
+
+            MetaData.Add(BoltProtocolV4_4.BoltPatchKey, new[] { "utc" });
+        }
 
 		public override string ToString()
 		{

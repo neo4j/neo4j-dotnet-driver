@@ -19,7 +19,7 @@ using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.Messaging.V4_3
+namespace Neo4j.Driver.Internal.Messaging.V5_0
 {
     internal class HelloMessage : IRequestMessage
     {
@@ -44,7 +44,6 @@ namespace Neo4j.Driver.Internal.Messaging.V4_3
             }
 
             MetaData.Add("routing", routingContext);
-            MetaData.Add(BoltProtocolV4_3.BoltPatchKey, new []{ "utc" });
         }
 
         public override string ToString()
