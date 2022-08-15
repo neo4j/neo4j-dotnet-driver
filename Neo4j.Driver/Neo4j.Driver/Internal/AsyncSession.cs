@@ -66,6 +66,7 @@ namespace Neo4j.Driver.Internal
             bool reactive
         )
         {
+            SessionConfig = config;
             _connectionProvider = provider;
             _logger = logger;
             _retryLogic = retryLogic;
@@ -88,7 +89,7 @@ namespace Neo4j.Driver.Internal
             return RunAsync(query, action, true);
         }
 
-        public SessionConfig SessionConfig { internal set; get; }
+        public SessionConfig SessionConfig { get; }
 
         public Task<IResultCursor> RunAsync(string query, Action<TransactionConfigBuilder> action)
         {
