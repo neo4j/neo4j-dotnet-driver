@@ -48,35 +48,39 @@ namespace Neo4j.Driver.Internal
 
         [Obsolete("Replaced by more sensibly named LastBookmarks. Will be removed in 6.0")]
         public Bookmark LastBookmark => _bookmarks;
+
         public Bookmarks LastBookmarks => _bookmarks;
 
         private string _database;
         private readonly bool _reactive;
         private readonly long _fetchSize;
         private readonly IBookmarkManager _bookmarkManager;
+        private readonly bool _useBookmarkManager;
 
-        public AsyncSession(IConnectionProvider provider, ILogger logger, IAsyncRetryLogic retryLogic = null,
-            AccessMode defaultMode = AccessMode.Write,
-            string database = null,
-            Bookmarks bookmarks = null, 
-            bool reactive = false, 
-            long fetchSize = Config.Infinite,
-            IBookmarkManager bookmarkManager = null)
+        public AsyncSession(IConnectionProvider provider,
+            ILogger logger,
+            IAsyncRetryLogic retryLogic,
+            long defaultFetchSize,
+            IBookmarkManager bookmarkManager,
+            SessionConfig config,
+            bool reactive
+        )
         {
             _connectionProvider = provider;
             _logger = logger;
             _retryLogic = retryLogic;
             _reactive = reactive;
 
-            _database = database;
-            _defaultMode = defaultMode;
-            _fetchSize = fetchSize;
+            _database = config.Database;
+            _defaultMode = config.DefaultAccessMode;
+            _fetchSize = config.FetchSize ?? defaultFetchSize;
+            _useBookmarkManager = !config.IgnoreBookmarkManager && bookmarkManager != null;
 
-            if (bookmarks != null && bookmarks.Values.Any())
-            {
-                _bookmarks = bookmarks;
-            }
-            _bookmarkManager = bookmarkManager;
+            if (_useBookmarkManager)
+                _bookmarkManager = bookmarkManager;
+
+            if (config.Bookmarks != null)
+                _bookmarks = Bookmarks.From(config.Bookmarks);
         }
 
         public Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action)
@@ -124,7 +128,8 @@ namespace Neo4j.Driver.Internal
         public async Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode,
             Action<TransactionConfigBuilder> action, bool disposeUnconsumedSessionResult)
         {
-            var tx = await TryExecuteAsync(_logger, () => BeginTransactionWithoutLoggingAsync(mode, action, disposeUnconsumedSessionResult))
+            var tx = await TryExecuteAsync(_logger,
+                    () => BeginTransactionWithoutLoggingAsync(mode, action, disposeUnconsumedSessionResult))
                 .ConfigureAwait(false);
             return tx;
         }
@@ -136,13 +141,15 @@ namespace Neo4j.Driver.Internal
             var result = TryExecuteAsync(_logger, async () =>
             {
                 await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
-                
+
                 await AcquireConnectionAndDbNameAsync(_defaultMode).ConfigureAwait(false);
 
                 var protocol = _connection.BoltProtocol;
 
-                if (_bookmarkManager != null)
-                    _bookmarks = Bookmarks.From(_bookmarkManager.GetAllBookmarks());
+                if (_useBookmarkManager)
+                    _bookmarks = _bookmarks == null
+                        ? Bookmarks.From(_bookmarkManager.GetAllBookmarks())
+                        : Bookmarks.From(_bookmarkManager.GetAllBookmarks().Concat(_bookmarks?.Values));
 
                 return await protocol
                     .RunInAutoCommitTransactionAsync(_connection, query, _reactive, this, this, _database,
@@ -154,22 +161,26 @@ namespace Neo4j.Driver.Internal
             return result;
         }
 
-        public Task<T> ReadTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work, Action<TransactionConfigBuilder> action = null)
+        public Task<T> ReadTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work,
+            Action<TransactionConfigBuilder> action = null)
         {
             return RunTransactionAsync(AccessMode.Read, work, action);
         }
 
-        public Task ReadTransactionAsync(Func<IAsyncTransaction, Task> work, Action<TransactionConfigBuilder> action = null)
+        public Task ReadTransactionAsync(Func<IAsyncTransaction, Task> work,
+            Action<TransactionConfigBuilder> action = null)
         {
             return RunTransactionAsync(AccessMode.Read, work, action);
         }
 
-        public Task<T> WriteTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work, Action<TransactionConfigBuilder> action = null)
+        public Task<T> WriteTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work,
+            Action<TransactionConfigBuilder> action = null)
         {
             return RunTransactionAsync(AccessMode.Write, work, action);
         }
 
-        public Task WriteTransactionAsync(Func<IAsyncTransaction, Task> work, Action<TransactionConfigBuilder> action = null)
+        public Task WriteTransactionAsync(Func<IAsyncTransaction, Task> work,
+            Action<TransactionConfigBuilder> action = null)
         {
             return RunTransactionAsync(AccessMode.Write, work, action);
         }
@@ -179,17 +190,20 @@ namespace Neo4j.Driver.Internal
             return RunTransactionAsync(AccessMode.Read, work, action);
         }
 
-        public Task<T> ExecuteReadAsync<T>(Func<IAsyncQueryRunner, Task<T>> work,  Action<TransactionConfigBuilder> action = null)
+        public Task<T> ExecuteReadAsync<T>(Func<IAsyncQueryRunner, Task<T>> work,
+            Action<TransactionConfigBuilder> action = null)
         {
             return RunTransactionAsync(AccessMode.Read, work, action);
         }
 
-        public Task ExecuteWriteAsync(Func<IAsyncQueryRunner, Task> work, Action<TransactionConfigBuilder> action = null)
+        public Task ExecuteWriteAsync(Func<IAsyncQueryRunner, Task> work,
+            Action<TransactionConfigBuilder> action = null)
         {
             return RunTransactionAsync(AccessMode.Write, work, action);
         }
 
-        public Task<T> ExecuteWriteAsync<T>(Func<IAsyncQueryRunner, Task<T>> work, Action<TransactionConfigBuilder> action = null)
+        public Task<T> ExecuteWriteAsync<T>(Func<IAsyncQueryRunner, Task<T>> work,
+            Action<TransactionConfigBuilder> action = null)
         {
             return RunTransactionAsync(AccessMode.Write, work, action);
         }
@@ -251,9 +265,12 @@ namespace Neo4j.Driver.Internal
             await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
 
             await AcquireConnectionAndDbNameAsync(mode).ConfigureAwait(false);
-            if (_bookmarkManager != null)
-                _bookmarks = Bookmarks.From(_bookmarkManager.GetAllBookmarks());
-            var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmarks, _reactive, _fetchSize, ImpersonatedUser());
+            if (_useBookmarkManager)
+                _bookmarks = _bookmarks == null
+                    ? Bookmarks.From(_bookmarkManager.GetAllBookmarks())
+                    : Bookmarks.From(_bookmarkManager.GetAllBookmarks().Concat(_bookmarks?.Values));
+            var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmarks, _reactive, _fetchSize,
+                ImpersonatedUser());
             await tx.BeginTransactionAsync(config).ConfigureAwait(false);
             _transaction = tx;
             return _transaction;
@@ -261,9 +278,13 @@ namespace Neo4j.Driver.Internal
 
         private async Task AcquireConnectionAndDbNameAsync(AccessMode mode)
         {
-            if (_bookmarkManager != null)
-                _bookmarks = Bookmarks.From(_bookmarkManager.GetAllBookmarks());
-            _connection = await _connectionProvider.AcquireAsync(mode, _database, ImpersonatedUser(), _bookmarks).ConfigureAwait(false);
+            if (_useBookmarkManager)
+                _bookmarks = _bookmarks == null
+                    ? Bookmarks.From(_bookmarkManager.GetAllBookmarks())
+                    : Bookmarks.From(_bookmarkManager.GetAllBookmarks().Concat(_bookmarks?.Values));
+
+            _connection = await _connectionProvider.AcquireAsync(mode, _database, ImpersonatedUser(), _bookmarks)
+                .ConfigureAwait(false);
 
             //Update the database. If a routing request occurred it may have returned a differing DB alias name that needs to be used for the 
             //rest of the sessions lifetime.
@@ -275,10 +296,10 @@ namespace Neo4j.Driver.Internal
             if (_disposed)
                 return;
 
-            if(disposing)
+            if (disposing)
             {
                 //Dispose managed resources
-                
+
                 //call it synchronously
                 CloseAsync().GetAwaiter().GetResult();
             }

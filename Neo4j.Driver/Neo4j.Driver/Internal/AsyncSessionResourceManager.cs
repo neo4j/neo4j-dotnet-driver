@@ -78,7 +78,8 @@ namespace Neo4j.Driver.Internal
             _bookmarks = bookmarks;
 
             var db = dbInfo?.Name ?? _database;
-            _bookmarkManager?.UpdateBookmarks(db, previousBookmarks, bookmarks.Values);
+            if (_useBookmarkManager)
+                _bookmarkManager.UpdateBookmarks(db, previousBookmarks, bookmarks.Values);
         }
 
         /// <summary>

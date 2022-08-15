@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Tests
     {
         internal static AsyncSession NewSession(IConnection connection, ILogger logger = null)
         {
-            return new AsyncSession(new TestConnectionProvider(connection), logger);
+            return new AsyncSession(new TestConnectionProvider(connection), logger, null, 0, null, null, false);
         }
 
         internal static AsyncSession NewSession(IBoltProtocol protocol, bool reactive = false)
@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Tests
             var mockConn = new Mock<IConnection>();
             mockConn.Setup(x => x.IsOpen).Returns(true);
             mockConn.Setup(x => x.BoltProtocol).Returns(protocol);
-            return new AsyncSession(new TestConnectionProvider(mockConn.Object), null, reactive: reactive);
+            return new AsyncSession(new TestConnectionProvider(mockConn.Object), null, null, 0, null, null, false);
         }
 
         internal static Mock<IConnection> NewMockedConnection(IBoltProtocol boltProtocol = null)
@@ -411,7 +411,9 @@ namespace Neo4j.Driver.Tests
             {
                 var bookmarkManager = new Mock<IBookmarkManager>();
 
-                using (var session = new AsyncSession(null, null, database: "test", bookmarkManager: bookmarkManager.Object))
+                var cfg = new SessionConfigBuilder(new Driver.SessionConfig()).WithDatabase("test").Build();
+
+                using (var session = new AsyncSession(null, null, null, 0, bookmarkManager.Object, cfg, false))
                 {
                     session.UpdateBookmarks(new InternalBookmarks("a"));
                     bookmarkManager.Verify(x => x.UpdateBookmarks("test", Array.Empty<string>(), new[] { "a" }), Times.Once);
