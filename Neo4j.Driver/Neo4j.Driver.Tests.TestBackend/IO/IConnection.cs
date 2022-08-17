@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2002-2022 "Neo4j,"
+// Copyright (c) 2002-2022 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,28 +15,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Net.Sockets;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class GetFeatures : ProtocolObject
+internal interface IConnection
 {
-    public GetFeaturesType data { get; set; } = new();
-
-    public override async Task ProcessAsync()
-    {
-        await Task.CompletedTask;
-    }
-
-    public override string Respond()
-    {
-        return new ProtocolResponse("FeatureList", new
-        {
-            features = SupportedFeatures.FeaturesList
-        }).Encode();
-    }
-
-    public class GetFeaturesType
-    {
-    }
+    bool Connected { get; }
+    NetworkStream ConnectionStream { get; }
+    int TimeOut { get; }
+    Task Open();
+    void Close();
 }

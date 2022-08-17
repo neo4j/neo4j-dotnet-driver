@@ -21,9 +21,9 @@ using Newtonsoft.Json.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class JsonCypherParameterParser 
+internal class JsonCypherParameterParser
 {
-    private static readonly Dictionary<string, Type> dateTimeTypes = new Dictionary<string, Type>
+    private static readonly Dictionary<string, Type> dateTimeTypes = new()
     {
         ["CypherDate"] = typeof(DateTimeParameterValue),
         ["CypherTime"] = typeof(DateTimeParameterValue),
@@ -40,9 +40,7 @@ internal class JsonCypherParameterParser
         var result = new Dictionary<string, CypherToNativeObject>();
 
         foreach (var parameter in parameters.Properties())
-        {
             result[parameter.Name] = ExtractParameterFromProperty(parameter.Value as JObject);
-        }
 
         return result;
     }
@@ -50,28 +48,21 @@ internal class JsonCypherParameterParser
     public static CypherToNativeObject ExtractParameterFromProperty(JObject parameter)
     {
         if (dateTimeTypes.ContainsKey(parameter["name"].Value<string>()))
-        {
             return new CypherToNativeObject
             {
                 name = parameter["name"].Value<string>(),
                 data = parameter["data"].ToObject<DateTimeParameterValue>()
             };
-        }
-        else if (parameter["name"].Value<string>() == "CypherDuration")
-        {
+        if (parameter["name"].Value<string>() == "CypherDuration")
             return new CypherToNativeObject
             {
                 name = parameter["name"].Value<string>(),
                 data = parameter["data"].ToObject<DurationParameterValue>()
             };
-        }
-        else
+        return new CypherToNativeObject
         {
-            return new CypherToNativeObject
-            {
-                name = parameter["name"].Value<string>(),
-                data = parameter["data"].ToObject<SimpleValue>()
-            };
-        }
+            name = parameter["name"].Value<string>(),
+            data = parameter["data"].ToObject<SimpleValue>()
+        };
     }
 }

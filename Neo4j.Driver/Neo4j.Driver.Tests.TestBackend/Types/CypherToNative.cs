@@ -1,4 +1,21 @@
-﻿using System;
+﻿// Copyright (c) 2002-2022 "Neo4j,"
+// Neo4j Sweden AB [http://neo4j.com]
+// 
+// This file is part of Neo4j.
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,7 +26,7 @@ namespace Neo4j.Driver.Tests.TestBackend;
 internal class CypherToNative
 {
     //Mapping of object type to a cypher type name string that will be used in the JSON.
-    private static Dictionary<string, (Type, Func<Type, CypherToNativeObject, object>)> TypeMap { get; set; } =
+    private static Dictionary<string, (Type, Func<Type, CypherToNativeObject, object>)> _typeMap =
         new()
         {
             {"CypherList", (typeof(List<object>), CypherList)},
@@ -36,7 +53,7 @@ internal class CypherToNative
         if (sourceObject.name == "CypherNull")
             return null;
 
-        if (TypeMap.TryGetValue(sourceObject.name, out var mapper))
+        if (_typeMap.TryGetValue(sourceObject.name, out var mapper))
             return mapper.Item2(mapper.Item1, sourceObject);
 
         throw new IOException(
@@ -58,18 +75,19 @@ internal class CypherToNative
     {
         var result = new List<object>();
 
-        foreach (JObject item in (JArray) ((SimpleValue) obj.data).value)
-        {
+        foreach (var item in (JArray) ((SimpleValue) obj.data).value)
             result.Add(Convert(JsonCypherParameterParser.ExtractParameterFromProperty(item)));
-        }
 
         return result;
     }
 
     public static object CypherMap(Type objectType, CypherToNativeObject obj)
     {
-        return JObject.FromObject(((SimpleValue) obj.data).value).Properties().ToDictionary(x => x.Name, x =>
-            Convert(JsonCypherParameterParser.ExtractParameterFromProperty(x.Value as JObject)));
+        return JObject.FromObject(((SimpleValue) obj.data).value)
+            .Properties()
+            .ToDictionary(
+                x => x.Name, 
+                x => Convert(JsonCypherParameterParser.ExtractParameterFromProperty(x.Value as JObject)));
     }
 
     private static object CypherDateTime(Type objectType, CypherToNativeObject obj)
@@ -81,7 +99,6 @@ internal class CypherToNative
         {
             //zoned date time
             if (dataTimeParam.utc_offset_s.HasValue || dataTimeParam.timezone_id != null)
-            {
                 return new ZonedDateTime(
                     dataTimeParam.year.Value,
                     dataTimeParam.month.Value,
@@ -94,7 +111,6 @@ internal class CypherToNative
                         ? Zone.Of(dataTimeParam.timezone_id)
                         : Zone.Of(dataTimeParam.utc_offset_s ?? 0)
                 );
-            }
 
             // local
             return new LocalDateTime(
@@ -109,18 +125,15 @@ internal class CypherToNative
         }
 
         if (dataTimeParam.year.HasValue)
-        {
             //date local
             return new LocalDate(
                 dataTimeParam.year.Value,
                 dataTimeParam.month.Value,
                 dataTimeParam.day.Value
             );
-        }
 
         // time offset
         if (dataTimeParam.utc_offset_s.HasValue)
-        {
             return new OffsetTime(
                 dataTimeParam.hour.Value,
                 dataTimeParam.minute.Value,
@@ -128,7 +141,6 @@ internal class CypherToNative
                 dataTimeParam.nanosecond.Value,
                 dataTimeParam.utc_offset_s ?? 0
             );
-        }
 
         //time
         return new LocalTime(

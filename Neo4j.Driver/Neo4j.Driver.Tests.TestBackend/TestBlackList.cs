@@ -1,10 +1,27 @@
-﻿using System;
+﻿// Copyright (c) 2002-2022 "Neo4j,"
+// Neo4j Sweden AB [http://neo4j.com]
+// 
+// This file is part of Neo4j.
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using System;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-static class TestBlackList
+internal static class TestBlackList
 {
-    private static readonly (string Name, string Reason)[] BlackListNames = new []
+    private static readonly (string Name, string Reason)[] BlackListNames =
     {
         ("test_session_run.TestSessionRun.test_iteration_nested",
             "Nested results not working in 4.2 and earlier. FIX AND ENABLE in 4.3"),
@@ -23,7 +40,6 @@ static class TestBlackList
 
         ("retry.TestRetry.test_retry_ForbiddenOnReadOnlyDatabase_ChangingWriter",
             "Behaves strange"),
-
 
         ("routing.test_routing_v4x3.RoutingV4x3.test_should_retry_write_until_success_with_leader_shutdown_during_tx_using_tx_function",
             "requires investigation"),
@@ -90,7 +106,6 @@ static class TestBlackList
             "Test failing requires investigation"),
         ("test_should_retry_write_until_success_with_leader_shutdown_during_tx_using_tx_function",
             "Test failing requires investigation"),
-
 
         ("test_should_echo_relationship",
             "Backend does not yet support serializing relationships"),

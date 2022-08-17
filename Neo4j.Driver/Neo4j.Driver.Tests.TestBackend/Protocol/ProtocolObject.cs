@@ -23,20 +23,16 @@ namespace Neo4j.Driver.Tests.TestBackend;
 
 internal abstract class ProtocolObject
 {
+    public Action ProtocolEvent;
     public string name { get; set; }
 
-    [JsonProperty("id")] 
-    public string IdHolder => UniqueId;
+    [JsonProperty("id")] public string IdHolder => UniqueId;
 
     //Only exposes the get option so that the serializer will output it.
     //Don't want to read in on deserialization.
-    [JsonIgnore]
-    public string UniqueId { get; internal set; }
+    [JsonIgnore] public string UniqueId { get; internal set; }
 
-    [JsonIgnore] 
-    protected ProtocolObjectManager ObjManager { get; set; }
-
-    public Action ProtocolEvent;
+    [JsonIgnore] protected ProtocolObjectManager ObjManager { get; set; }
 
     public void SetObjectManager(ProtocolObjectManager objManager)
     {
@@ -45,18 +41,40 @@ internal abstract class ProtocolObject
 
     //Default is to not use the controller object.
     //But option to override this method and use it if necessary.
-    public virtual Task ProcessAsync(Controller controller) => ProcessAsync();
-    public virtual Task ProcessAsync() => Task.CompletedTask;
+    public virtual Task ProcessAsync(Controller controller)
+    {
+        return ProcessAsync();
+    }
+
+    public virtual Task ProcessAsync()
+    {
+        return Task.CompletedTask;
+    }
 
     //Default is to not use the controller object.
     //But option to override this method and use it if necessary.
-    public virtual Task ReactiveProcessAsync(Controller controller) => ReactiveProcessAsync();
-    public virtual Task ReactiveProcessAsync() => Task.CompletedTask;
+    public virtual Task ReactiveProcessAsync(Controller controller)
+    {
+        return ReactiveProcessAsync();
+    }
 
+    public virtual Task ReactiveProcessAsync()
+    {
+        return Task.CompletedTask;
+    }
 
-    public string Encode() => JsonConvert.SerializeObject(this, Formatting.Indented);
+    public string Encode()
+    {
+        return JsonConvert.SerializeObject(this, Formatting.Indented);
+    }
 
-    public virtual string Respond() => Encode();
+    public virtual string Respond()
+    {
+        return Encode();
+    }
 
-    protected void TriggerEvent() => ProtocolEvent();
+    protected void TriggerEvent()
+    {
+        ProtocolEvent();
+    }
 }

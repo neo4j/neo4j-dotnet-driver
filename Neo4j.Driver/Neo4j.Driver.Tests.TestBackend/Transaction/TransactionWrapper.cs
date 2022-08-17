@@ -22,18 +22,18 @@ namespace Neo4j.Driver.Tests.TestBackend;
 
 internal class TransactionWrapper
 {
-    public IAsyncTransaction Transaction { get; private set; }
-    private Func<IResultCursor, Task<string>> ResultHandler;
+    private readonly Func<IResultCursor, Task<string>> _resultHandler;
 
-    public TransactionWrapper(IAsyncTransaction transaction, Func<IResultCursor, Task<string>>resultHandler)
+    public TransactionWrapper(IAsyncTransaction transaction, Func<IResultCursor, Task<string>> resultHandler)
     {
         Transaction = transaction;
-        ResultHandler = resultHandler;
+        _resultHandler = resultHandler;
     }
 
-    public async Task<string> ProcessResults(IResultCursor cursor)
+    public IAsyncTransaction Transaction { get; }
+
+    public Task<string> ProcessResults(IResultCursor cursor)
     {
-        return await ResultHandler(cursor);
+        return _resultHandler(cursor);
     }
-
 }

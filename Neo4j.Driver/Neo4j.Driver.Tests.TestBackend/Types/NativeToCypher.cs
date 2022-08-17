@@ -1,4 +1,21 @@
-﻿using System;
+﻿// Copyright (c) 2002-2022 "Neo4j,"
+// Neo4j Sweden AB [http://neo4j.com]
+// 
+// This file is part of Neo4j.
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,70 +27,63 @@ internal static class NativeToCypher
     //Mapping of object type to a conversion delegate that will return a NativeToCypherObject that can be serialized to JSON.
     private static readonly Dictionary<Type, (string, Func<string, object, NativeToCypherObject>)> _functionMap = new()
     {
-        { typeof(List<object>),                     ("CypherList", CypherList) },
-        { typeof(Dictionary<string, object>),       ("CypherMap", CypherMap) },
-        { typeof(bool),                             ("CypherBool", CypherSimple) },
-        { typeof(long),                             ("CypherInt", CypherSimple) },
-        { typeof(double),                           ("CypherFloat", CypherSimple) },
-        { typeof(string),                           ("CypherString", CypherSimple) },
-        { typeof(byte[]),                           ("CypherByteArray", CypherSimple) },
-        { typeof(LocalDate),                        ("CypherDate", CypherDateTime) },
-        { typeof(OffsetTime),                       ("CypherTime", CypherDateTime) },
-        { typeof(LocalTime),                        ("CypherTime", CypherDateTime) },
-        { typeof(ZonedDateTime),                    ("CypherDateTime", CypherDateTime) },
-        { typeof(LocalDateTime),                    ("CypherDateTime", CypherDateTime) },
-        { typeof(Duration),                         ("CypherDuration", CypherDuration) },
-        { typeof(Point),                            ("CypherPoint", CypherTODO) },
-        { typeof(INode),                            ("CypherNode", CypherNode) },   
-        { typeof(IRelationship),                    ("CypherRelationship", CypherRelationship) },
-        { typeof(IPath),                            ("CypherPath", CypherPath) }
+        {typeof(List<object>), ("CypherList", CypherList)},
+        {typeof(Dictionary<string, object>), ("CypherMap", CypherMap)},
+        {typeof(bool), ("CypherBool", CypherSimple)},
+        {typeof(long), ("CypherInt", CypherSimple)},
+        {typeof(double), ("CypherFloat", CypherSimple)},
+        {typeof(string), ("CypherString", CypherSimple)},
+        {typeof(byte[]), ("CypherByteArray", CypherSimple)},
+        {typeof(LocalDate), ("CypherDate", CypherDateTime)},
+        {typeof(OffsetTime), ("CypherTime", CypherDateTime)},
+        {typeof(LocalTime), ("CypherTime", CypherDateTime)},
+        {typeof(ZonedDateTime), ("CypherDateTime", CypherDateTime)},
+        {typeof(LocalDateTime), ("CypherDateTime", CypherDateTime)},
+        {typeof(Duration), ("CypherDuration", CypherDuration)},
+        {typeof(Point), ("CypherPoint", CypherTODO)},
+        {typeof(INode), ("CypherNode", CypherNode)},
+        {typeof(IRelationship), ("CypherRelationship", CypherRelationship)},
+        {typeof(IPath), ("CypherPath", CypherPath)}
     };
 
     public static object Convert(object sourceObject)
     {
         if (sourceObject == null)
-            return new NativeToCypherObject {name = "CypherNull", data = { }};
+            return new NativeToCypherObject {name = "CypherNull"};
 
         if (_functionMap.TryGetValue(sourceObject.GetType(), out var mapper))
-            return mapper.Item2(mapper.Item1, sourceObject);  
+            return mapper.Item2(mapper.Item1, sourceObject);
 
         throw new IOException(
             $"Attempting to convert an unsupported object type to a CypherType: {sourceObject.GetType()}");
     }
 
-
     public static NativeToCypherObject CypherSimple(string cypherType, object obj)
     {
-        return new NativeToCypherObject { name = cypherType, data = new NativeToCypherObject.DataType { value = obj } };
+        return new NativeToCypherObject {name = cypherType, data = new NativeToCypherObject.DataType {value = obj}};
     }
 
     public static NativeToCypherObject CypherMap(string cypherType, object obj)
     {
         var result = new Dictionary<string, object>();
 
-        foreach(KeyValuePair<string, object> pair in (Dictionary<string, object>)obj)
-        {
-            result[pair.Key] = Convert(pair.Value);
-        }
+        foreach (var pair in (Dictionary<string, object>) obj) result[pair.Key] = Convert(pair.Value);
 
-        return new NativeToCypherObject { name = cypherType, data = new NativeToCypherObject.DataType{ value = result } };
+        return new NativeToCypherObject {name = cypherType, data = new NativeToCypherObject.DataType {value = result}};
     }
 
     public static NativeToCypherObject CypherList(string cypherType, object obj)
     {
         var result = new List<object>();
 
-        foreach (object item in (List<object>)obj)
-        {
-            result.Add(Convert(item));
-        }
+        foreach (var item in (List<object>) obj) result.Add(Convert(item));
 
-        return new NativeToCypherObject { name = cypherType, data = new NativeToCypherObject.DataType { value = result } };
+        return new NativeToCypherObject {name = cypherType, data = new NativeToCypherObject.DataType {value = result}};
     }
 
     public static NativeToCypherObject CypherNode(string cypherType, object obj)
     {
-        var node = (INode)obj;
+        var node = (INode) obj;
 
         Dictionary<string, object> cypherNode;
         try
@@ -97,12 +107,12 @@ internal static class NativeToCypher
             };
         }
 
-        return new NativeToCypherObject() { name = "Node",  data = cypherNode };
+        return new NativeToCypherObject {name = "Node", data = cypherNode};
     }
 
     public static NativeToCypherObject CypherRelationship(string cypherType, object obj)
     {
-        var rel = (IRelationship)obj;
+        var rel = (IRelationship) obj;
         Dictionary<string, object> cypherRel;
         try
         {
@@ -115,7 +125,7 @@ internal static class NativeToCypher
                 ["props"] = Convert(new Dictionary<string, object>(rel.Properties)),
                 ["elementId"] = Convert(rel.ElementId),
                 ["startNodeElementId"] = Convert(rel.StartNodeElementId),
-                ["endNodeElementId"] = Convert(rel.EndNodeElementId),
+                ["endNodeElementId"] = Convert(rel.EndNodeElementId)
             };
         }
         catch (InvalidOperationException)
@@ -129,23 +139,23 @@ internal static class NativeToCypher
                 ["props"] = Convert(new Dictionary<string, object>(rel.Properties)),
                 ["elementId"] = Convert(rel.ElementId),
                 ["startNodeElementId"] = Convert(rel.StartNodeElementId),
-                ["endNodeElementId"] = Convert(rel.EndNodeElementId),
+                ["endNodeElementId"] = Convert(rel.EndNodeElementId)
             };
         }
 
-        return new NativeToCypherObject() { name = "Relationship", data = cypherRel };
+        return new NativeToCypherObject {name = "Relationship", data = cypherRel};
     }
 
     public static NativeToCypherObject CypherPath(string cypherType, object obj)
     {
-        var path = (IPath)obj;
+        var path = (IPath) obj;
         var cypherPath = new Dictionary<string, object>
         {
             ["nodes"] = Convert(path.Nodes.OfType<object>().ToList()),
             ["relationships"] = Convert(path.Relationships.OfType<object>().ToList())
         };
 
-        return new NativeToCypherObject() { name = "Path", data = cypherPath };
+        return new NativeToCypherObject {name = "Path", data = cypherPath};
     }
 
     private static NativeToCypherObject CypherDateTime(string cypherType, object obj)
@@ -179,7 +189,7 @@ internal static class NativeToCypher
                     ["hour"] = localDateTime.Hour,
                     ["minute"] = localDateTime.Minute,
                     ["second"] = localDateTime.Second,
-                    ["nanosecond"] = localDateTime.Nanosecond,
+                    ["nanosecond"] = localDateTime.Nanosecond
                 }
             },
             LocalDate localDate => new NativeToCypherObject
@@ -189,7 +199,7 @@ internal static class NativeToCypher
                 {
                     ["year"] = localDate.Year,
                     ["month"] = localDate.Month,
-                    ["day"] = localDate.Day,
+                    ["day"] = localDate.Day
                 }
             },
             OffsetTime offsetTime => new NativeToCypherObject
@@ -201,7 +211,7 @@ internal static class NativeToCypher
                     ["minute"] = offsetTime.Minute,
                     ["second"] = offsetTime.Second,
                     ["nanosecond"] = offsetTime.Nanosecond,
-                    ["utc_offset_s"] = offsetTime.OffsetSeconds,
+                    ["utc_offset_s"] = offsetTime.OffsetSeconds
                 }
             },
             LocalTime localTime => new NativeToCypherObject
@@ -212,7 +222,7 @@ internal static class NativeToCypher
                     ["hour"] = localTime.Hour,
                     ["minute"] = localTime.Minute,
                     ["second"] = localTime.Second,
-                    ["nanosecond"] = localTime.Nanosecond,
+                    ["nanosecond"] = localTime.Nanosecond
                 }
             },
             _ => throw new ArgumentOutOfRangeException()
@@ -231,8 +241,8 @@ internal static class NativeToCypher
                     ["months"] = duration.Months,
                     ["days"] = duration.Days,
                     ["seconds"] = duration.Seconds,
-                    ["nanoseconds"] = duration.Nanos,
-                },
+                    ["nanoseconds"] = duration.Nanos
+                }
             },
             _ => throw new ArgumentOutOfRangeException()
         };
