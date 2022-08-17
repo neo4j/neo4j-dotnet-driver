@@ -23,7 +23,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class CypherTypeField : IProtocolObject
+    internal class CypherTypeField : ProtocolObject
     {
         [JsonProperty("data")]
         public CypherTypeFieldRequest RequestData { get; set; } = new CypherTypeFieldRequest();
@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string Type { get; set; }
         }
 
-        public override async Task Process()
+        public override async Task ProcessAsync()
         {
             var result = (Result)ObjManager.GetObject(RequestData.ResultId);
             var record = await result.GetNextRecord();

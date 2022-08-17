@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-	class CheckMultiDBSupport : IProtocolObject
+	class CheckMultiDBSupport : ProtocolObject
 	{
 		public CheckMultiDBSupportType data { get; set; } = new CheckMultiDBSupportType();
 
@@ -19,7 +19,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			public string driverId { get; set; }
 		}
 
-		public override async Task Process()
+		public override async Task ProcessAsync()
 		{
 			var driver = ((NewDriver)ObjManager.GetObject(data.driverId)).Driver;
 			MutlitDBSupportAvailable = await driver.SupportsMultiDbAsync();
@@ -27,7 +27,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 		public override string Respond()
 		{
-			return new ProtocolResponse("MultiDBSupport", new { id = uniqueId, available = MutlitDBSupportAvailable }).Encode();
+			return new ProtocolResponse("MultiDBSupport", new { id = UniqueId, available = MutlitDBSupportAvailable }).Encode();
 		}
 	}
 }

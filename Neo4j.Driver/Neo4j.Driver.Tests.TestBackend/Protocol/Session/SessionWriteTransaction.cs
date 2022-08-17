@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-	internal class SessionWriteTransaction : IProtocolObject
+	internal class SessionWriteTransaction : ProtocolObject
 	{
 		public SessionWriteTransactionType data { get; set; } = new SessionWriteTransactionType();
 		[JsonIgnore]
@@ -17,7 +17,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
 		}
 
-        public override async Task Process(Controller controller)
+        public override async Task ProcessAsync(Controller controller)
         {
             var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
 
@@ -29,14 +29,14 @@ namespace Neo4j.Driver.Tests.TestBackend
 				{
 					var result = ProtocolObjectFactory.CreateObject<Result>();
 					await result.PopulateRecords(cursor).ConfigureAwait(false);
-					return result.uniqueId;
+					return result.UniqueId;
 				}));
 
 				sessionContainer.SessionTransactions.Add(TransactionId);
 
-				await controller.SendResponse(new ProtocolResponse("RetryableTry", TransactionId).Encode()).ConfigureAwait(false);
+				await controller.SendResponseAsync(new ProtocolResponse("RetryableTry", TransactionId).Encode()).ConfigureAwait(false);
 
-				await controller.Process(false, e =>
+				await controller.ProcessAsync(false, e =>
 				{
 					switch (sessionContainer.RetryState)
 					{

@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class AuthorizationToken : IProtocolObject
+    internal class AuthorizationToken : ProtocolObject
     {
         public AuthorizationTokenType data { get; set; } = new AuthorizationTokenType();
 
@@ -16,7 +16,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public Dictionary<string, object> parameters { get; set; }
         }
 
-        public override Task Process()
+        public override Task ProcessAsync()
         {
             return Task.CompletedTask;
         }

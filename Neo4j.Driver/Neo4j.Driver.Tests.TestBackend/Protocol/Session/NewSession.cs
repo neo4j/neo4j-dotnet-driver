@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-	internal class NewSession : IProtocolObject
+	internal class NewSession : ProtocolObject
 	{
 		public enum SessionState
 		{
@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			if (!string.IsNullOrEmpty(data.impersonatedUser)) configBuilder.WithImpersonatedUser(data.impersonatedUser);
         }
 
-        public override async Task Process()
+        public override async Task ProcessAsync()
         {   
             IDriver driver = ((NewDriver)ObjManager.GetObject(data.driverId)).Driver;
 
@@ -81,7 +81,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override string Respond()
         {  
-            return new ProtocolResponse("Session", uniqueId).Encode();
+            return new ProtocolResponse("Session", UniqueId).Encode();
         }
 
 		public void SetupRetryAbleState(SessionState state, string retryableErrorId = "")

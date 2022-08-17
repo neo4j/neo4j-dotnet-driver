@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class SessionReadTransaction : IProtocolObject
+    internal class SessionReadTransaction : ProtocolObject
     {
         public SessionReadTransactionType data { get; set; } = new SessionReadTransactionType();
         [JsonIgnore]
@@ -17,7 +17,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         {
         }
 
-        public override async Task Process(Controller controller)
+        public override async Task ProcessAsync(Controller controller)
         {
             var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
 
@@ -29,16 +29,16 @@ namespace Neo4j.Driver.Tests.TestBackend
 				{
 					var result = ProtocolObjectFactory.CreateObject<Result>();
 					await result.PopulateRecords(cursor).ConfigureAwait(false);
-					return result.uniqueId;
+					return result.UniqueId;
 				}));
 
 				sessionContainer.SessionTransactions.Add(TransactionId);
 
-				await controller.SendResponse(new ProtocolResponse("RetryableTry", TransactionId).Encode()).ConfigureAwait(false);
+				await controller.SendResponseAsync(new ProtocolResponse("RetryableTry", TransactionId).Encode()).ConfigureAwait(false);
 
 				Exception storedException = new TestKitClientException("Error from client");
 
-				await controller.Process(false, e =>
+				await controller.ProcessAsync(false, e =>
 				{
 					switch (sessionContainer.RetryState)
 					{

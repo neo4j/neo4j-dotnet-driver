@@ -2,7 +2,7 @@
 
 namespace Neo4j.Driver.Tests.TestBackend
 { 
-    internal class DriverClose : IProtocolObject
+    internal class DriverClose : ProtocolObject
     {
         public DriverCloseType data { get; set; } = new DriverCloseType();
         
@@ -11,7 +11,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string driverId { get; set; }
         }
 
-        public override async Task Process()
+        public override async Task ProcessAsync()
         {
             IDriver driver = ((NewDriver)ObjManager.GetObject(data.driverId)).Driver;
             await driver.CloseAsync();                            
@@ -19,7 +19,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override string Respond()
         {   
-            return new ProtocolResponse("Driver", uniqueId).Encode();
+            return new ProtocolResponse("Driver", UniqueId).Encode();
         }
     }
 }

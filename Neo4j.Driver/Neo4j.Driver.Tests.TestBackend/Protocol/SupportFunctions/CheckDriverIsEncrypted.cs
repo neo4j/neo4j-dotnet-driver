@@ -19,7 +19,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    class CheckDriverIsEncrypted : IProtocolObject
+    class CheckDriverIsEncrypted : ProtocolObject
     {
         public DriverIsEncryptedType data { get; set; } = new DriverIsEncryptedType();
 
@@ -31,7 +31,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string driverId { get; set; }
         }
 
-        public override Task Process()
+        public override Task ProcessAsync()
         {
             var driver = ((NewDriver)ObjManager.GetObject(data.driverId)).Driver;
             Encrypted = driver.Encrypted;

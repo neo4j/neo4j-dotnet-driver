@@ -4,7 +4,7 @@ using Neo4j.Driver;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class SessionClose : IProtocolObject
+    internal class SessionClose : ProtocolObject
     {
         public SessionCloseType data { get; set; } = new SessionCloseType();
        
@@ -13,7 +13,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string sessionId { get; set; }
         }
 
-        public override async Task Process()
+        public override async Task ProcessAsync()
         {   
             IAsyncSession session = ((NewSession)ObjManager.GetObject(data.sessionId)).Session;
             await session.CloseAsync();
@@ -21,7 +21,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override string Respond()
         {  
-            return new ProtocolResponse("Session", uniqueId).Encode();
+            return new ProtocolResponse("Session", UniqueId).Encode();
         }
     }
 }

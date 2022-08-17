@@ -17,7 +17,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             WriterTarget = writer;
         }
 
-        public async Task<string> WriteResponseAsync(IProtocolObject protocolObject)
+        public async Task<string> WriteResponseAsync(ProtocolObject protocolObject)
         {
             return await WriteResponseAsync(protocolObject.Respond());
         }

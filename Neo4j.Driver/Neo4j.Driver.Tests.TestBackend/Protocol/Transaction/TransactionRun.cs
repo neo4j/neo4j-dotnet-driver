@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class TransactionRun : IProtocolObject
+    internal class TransactionRun : ProtocolObject
     {
         public TransactionRunType data { get; set; } = new TransactionRunType();
         [JsonIgnore]
@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             return newParams;
         }
 
-        public override async Task Process(Controller controller)
+        public override async Task ProcessAsync(Controller controller)
         {
             try
             {

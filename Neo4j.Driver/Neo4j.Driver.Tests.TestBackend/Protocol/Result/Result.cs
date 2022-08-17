@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-	internal class Result : IProtocolObject
+	internal class Result : ProtocolObject
 	{
 		[JsonIgnore]
 		public IResultCursor ResultCursor { get; set; }
@@ -20,7 +20,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string id { get; set; }
         }
 
-        public override async Task Process()
+        public override async Task ProcessAsync()
         {
             //Currently does nothing
             await Task.CompletedTask;
@@ -29,7 +29,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         public override string Respond()
         {
             var keys = ResultCursor.KeysAsync().GetAwaiter().GetResult();
-            return new ProtocolResponse("Result", new { id = uniqueId, keys }).Encode();
+            return new ProtocolResponse("Result", new { id = UniqueId, keys }).Encode();
         }
 
 		public async Task<IRecord> GetNextRecord()

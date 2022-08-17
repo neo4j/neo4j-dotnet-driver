@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class NewDriver : IProtocolObject
+    internal class NewDriver : ProtocolObject
     {
         public NewDriverType data { get; set; } = new NewDriverType();
         [JsonIgnore]
@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public bool? encrypted { get; set; }
         }
 
-        public override async Task Process(Controller controller)
+        public override async Task ProcessAsync(Controller controller)
         {
             Control = controller;
             var authTokenData = data.authorizationToken.data;
@@ -78,7 +78,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override string Respond()
         {
-            return new ProtocolResponse("Driver", uniqueId).Encode();
+            return new ProtocolResponse("Driver", UniqueId).Encode();
         }
 
         private void DriverConfig(ConfigBuilder configBuilder)

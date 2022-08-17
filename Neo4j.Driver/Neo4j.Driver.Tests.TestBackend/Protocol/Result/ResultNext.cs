@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class ResultNext : IProtocolObject
+    internal class ResultNext : ProtocolObject
     {
         public ResultNextType data { get; set; } = new ResultNextType();
         [JsonIgnore]
@@ -18,7 +18,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string resultId { get; set; }
         }
 
-        public override async Task Process()
+        public override async Task ProcessAsync()
         {
             try
             {

@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    class TransactionRollback : IProtocolObject
+    class TransactionRollback : ProtocolObject
     {
         public TransactionRollbackType data { get; set; } = new TransactionRollbackType();
 
@@ -12,7 +12,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string txId { get; set; }
         }
 
-        public override async Task Process(Controller controller)
+        public override async Task ProcessAsync(Controller controller)
         {
             var transactionWrapper = controller.TransactionManager.FindTransaction(data.txId);
             await transactionWrapper.Transaction.RollbackAsync();
@@ -20,7 +20,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public override string Respond()
         {
-            return new ProtocolResponse("Transaction", uniqueId).Encode();
+            return new ProtocolResponse("Transaction", UniqueId).Encode();
         }
     }
 }

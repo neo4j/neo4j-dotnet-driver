@@ -3,65 +3,104 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
     internal class Controller
     {
+        private readonly bool _reactive;
         private IConnection Connection { get; }
         private ProtocolObjectManager ObjManager { get; set; } = new ProtocolObjectManager();
-        private bool BreakProcessLoop { get; set; } = false;
         private RequestReader RequestReader { get; set; }
         private ResponseWriter ResponseWriter { get; set; }
         public TransactionManager TransactionManager { get; set; } = new TransactionManager();
+        public CancellationTokenSource CancellationTokenSource = new CancellationTokenSource();
 
-
-        public Controller(IConnection conn)
+        public Controller(IConnection conn, bool reactive)
         {
-            Trace.WriteLine("Controller initialising");
             Connection = conn;
+            _reactive = reactive;
+            Trace.WriteLine("Controller initialising");
             ProtocolObjectFactory.ObjManager = ObjManager;
         }
 
         public async Task ProcessStreamObjects()
         {
-            BreakProcessLoop = false;
-
-            while (!BreakProcessLoop && await RequestReader.ParseNextRequest().ConfigureAwait(false))
+            while (!CancellationTokenSource.IsCancellationRequested 
+                   && await RequestReader.ParseNextRequest().ConfigureAwait(false))
             {
                 var protocolObject = RequestReader.CreateObjectFromData();
-                protocolObject.ProtocolEvent += BreakLoopEvent;
+                protocolObject.ProtocolEvent = CancellationTokenSource.Cancel;
 
-                await protocolObject.Process(this).ConfigureAwait(false);
-                await SendResponse(protocolObject).ConfigureAwait(false);
+                if (_reactive)
+                    await protocolObject.ReactiveProcessAsync(this).ConfigureAwait(false);
+                else
+                    await protocolObject.ProcessAsync(this).ConfigureAwait(false);
+
+                await SendResponseAsync(protocolObject).ConfigureAwait(false);
                 Trace.Flush();
             }
-
-            BreakProcessLoop = false;   //Ensure that any process loops that this one is running within still continue.
         }
 
-        public async Task<IProtocolObject> TryConsumeStreamObjectOfType(Type type)
+        public async Task ProcessAsync(bool restartInitialState, Func<Exception, bool> loopConditional)
         {
-            //Read the next incoming request message
+            var restartConnection = restartInitialState;
+
+            Trace.WriteLine("Starting Controller.Process");
+
+            Exception storedException = new TestKitClientException("Error from client");
+
+            while (loopConditional(storedException))
+            {
+                if (restartConnection)
+                    await InitialiseCommunicationLayerAsync();
+
+                try
+                {
+                    await ProcessStreamObjects().ConfigureAwait(false);
+                }
+                catch (Exception ex) when (NoResetException(ex))
+                {
+                    restartConnection = false;
+                    storedException = ex;
+
+                    await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+                }
+                catch (Exception ex)
+                {
+                    restartConnection = true;
+                    storedException = ex;
+
+                    Trace.WriteLine(TraceExceptionMessage(ex));
+
+                    if (ex is TestKitProtocolException)
+                        await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
+                }
+                finally
+                {
+                    if (restartConnection)
+                    {
+                        Trace.WriteLine("Closing Connection");
+                        Connection.Close();
+                    }
+                }
+                Trace.Flush();
+            }
+        }
+
+        public async Task<T> TryConsumeStreamObjectAsync<T>() where T : ProtocolObject
+        {
             await RequestReader.ParseNextRequest().ConfigureAwait(false);
 
-            //Is it of the correct type
-            if (RequestReader.GetObjectType() != type)
+            if (RequestReader.GetObjectType() != typeof(T))
                 return null;
 
-            //Create and return an object from the request message
-            return ProtocolObjectFactory.CreateObject(RequestReader.CurrentObjectData);
+            return (T)ProtocolObjectFactory.CreateObject(RequestReader.CurrentObjectData);
         }
 
-
-        public async Task<T> TryConsumeStreamObjectOfType<T>() where T : IProtocolObject
-        {
-            var result = await TryConsumeStreamObjectOfType(typeof(T)).ConfigureAwait(false);
-            return (T)result;
-        }
-
-        private async Task InitialiseCommunicationLayer()
+        private async Task InitialiseCommunicationLayerAsync()
         {
             await Connection.Open();
 
@@ -77,103 +116,25 @@ namespace Neo4j.Driver.Tests.TestBackend
             Trace.WriteLine("Starting to listen for requests");
         }
 
-        public async Task Process(bool restartInitialState, Func<Exception, bool> loopConditional)
+        private static string TraceExceptionMessage(Exception ex)
         {
-            bool restartConnection = restartInitialState;
-
-            Trace.WriteLine("Starting Controller.Process");
-
-            Exception storedException = new TestKitClientException("Error from client");
-
-            while (loopConditional(storedException))
+            return ex switch
             {
-                if (restartConnection) await InitialiseCommunicationLayer();
-
-                try
-                {
-                    await ProcessStreamObjects().ConfigureAwait(false);
-                }
-                catch (Neo4jException ex)		//TODO: sort this catch list out...reduce it down using where clauses?
-                {
-                    // Generate "driver" exception something happened within the driver
-                    await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-                    storedException = ex;
-                    restartConnection = false;
-                }
-                catch (TestKitClientException ex)
-                {
-                    await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-                    storedException = ex;
-                    restartConnection = false;
-                }
-                catch (ArgumentException ex)
-                {
-                    await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-                    storedException = ex;
-                    restartConnection = false;
-                }
-                catch (NotSupportedException ex)
-                {
-                    await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-                    storedException = ex;
-                    restartConnection = false;
-                }
-                catch (JsonSerializationException ex)
-                {
-                    await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-                    storedException = ex;
-                    restartConnection = false;
-                }
-                catch (TestKitProtocolException ex)
-                {
-                    Trace.WriteLine($"TestKit protocol exception detected: {ex.Message}");
-                    await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-                    storedException = ex;
-                    restartConnection = true;
-                }
-                catch (DriverExceptionWrapper ex)
-                {
-                    storedException = ex;
-                    await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
-                    restartConnection = false;
-                }
-                catch (IOException ex)
-                {
-                    Trace.WriteLine($"Socket exception detected: {ex.Message}");    //Handled outside of the exception manager because there is no connection to reply on.
-                    storedException = ex;
-                    restartConnection = true;
-                }
-                catch(Exception ex)
-                {
-                    Trace.WriteLine($"General exception detected, restarting connection: {ex.Message}");
-                    storedException = ex;
-                    restartConnection = true;
-                }
-                finally
-                {
-                    if (restartConnection)
-                    {
-                        Trace.WriteLine("Closing Connection");
-                        Connection.Close();
-                    }
-                }
-                Trace.Flush();
-            }
+                IOException => $"Socket exception detected: {ex.Message}",
+                TestKitProtocolException => $"TestKit protocol exception detected: {ex.Message}",
+                _ => $"General exception detected, restarting connection: {ex.Message}"
+            };
         }
 
-        private void BreakLoopEvent(object sender, EventArgs e)
+        private bool NoResetException(Exception ex)
         {
-            BreakProcessLoop = true;
+            return ex is Neo4jException or TestKitClientException or ArgumentException
+                or NotSupportedException or JsonSerializationException or DriverExceptionWrapper;
         }
 
-        public async Task SendResponse(IProtocolObject protocolObject)
-        {
-            await ResponseWriter.WriteResponseAsync(protocolObject).ConfigureAwait(false);
-        }
+        public Task SendResponseAsync(ProtocolObject protocolObject) => ResponseWriter.WriteResponseAsync(protocolObject);
 
-        public async Task SendResponse(string response)
-        {
-            await ResponseWriter.WriteResponseAsync(response);
-        }
+        public Task SendResponseAsync(string response) => ResponseWriter.WriteResponseAsync(response);
+        
     }
 }

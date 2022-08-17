@@ -71,7 +71,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 string errorCode = (ex is Neo4jException) ? ((Neo4jException)ex).Code : type;
                 return new ProtocolResponse("DriverError", new
                 {
-                    id = newError.uniqueId,
+                    id = newError.UniqueId,
                     errorType = type,
                     msg = exceptionMessage,
                     code = errorCode
@@ -82,7 +82,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 ProtocolException newError = ProtocolObjectFactory.CreateObject<ProtocolException>();
                 return new ProtocolResponse("DriverError", new
                 {
-                    id = newError.uniqueId,
+                    id = newError.UniqueId,
                     errorType = ex.InnerException.GetType().Name,
                     msg = exceptionMessage
                 });

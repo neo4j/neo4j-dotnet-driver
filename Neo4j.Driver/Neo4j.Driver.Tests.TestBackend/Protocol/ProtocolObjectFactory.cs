@@ -9,24 +9,24 @@ namespace Neo4j.Driver.Tests.TestBackend
         
         public static ProtocolObjectManager ObjManager { get; set; }
 
-		public static IProtocolObject CreateObject(string jsonString)
+		public static ProtocolObject CreateObject(string jsonString)
 		{
 			Type type = GetObjectType(jsonString);
 			Protocol.ValidateType(type);
 			return CreateObject(type, jsonString);
 		}
 
-		public static T CreateObject<T>() where T : IProtocolObject
+		public static T CreateObject<T>() where T : ProtocolObject
 		{
 			Protocol.ValidateType(typeof(T));
 			return (T)CreateObject(typeof(T));
 		}
 
-		private static IProtocolObject CreateObject(Type type, string jsonString = null)
+		private static ProtocolObject CreateObject(Type type, string jsonString = null)
 		{
 			try
 			{
-				var newObject = (IProtocolObject)CreateNewObjectOfType(type, jsonString, new JsonSerializerSettings
+				var newObject = (ProtocolObject)CreateNewObjectOfType(type, jsonString, new JsonSerializerSettings
 				{
 					NullValueHandling = NullValueHandling.Ignore,
 					MissingMemberHandling = MissingMemberHandling.Error
@@ -55,7 +55,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 		}
 
 
-		public static T CreateObject<T>(string jsonString = null) where T : IProtocolObject, new()
+		public static T CreateObject<T>(string jsonString = null) where T : ProtocolObject, new()
 		{
 			return (T)CreateObject(jsonString);			
 		}
@@ -73,7 +73,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             return string.IsNullOrEmpty(jsonString) ? new T() : JsonConvert.DeserializeObject<T>(jsonString, settings);
 		}
 
-		private static void ProcessNewObject(IProtocolObject newObject)
+		private static void ProcessNewObject(ProtocolObject newObject)
 		{
 			newObject.SetObjectManager(ObjManager);
 			ObjManager.AddProtocolObject(newObject);

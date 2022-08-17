@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class ResultSingle : IProtocolObject
+    internal class ResultSingle : ProtocolObject
     {
         public ResultSingleType data { get; set; } = new ResultSingleType();
 
@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string resultId { get; set; }
         }
 
-        public override async Task Process()
+        public override async Task ProcessAsync()
         {
             var result = (Result)ObjManager.GetObject(data.resultId);
             try

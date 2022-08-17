@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-	class GetRoutingTable : IProtocolObject
+	class GetRoutingTable : ProtocolObject
 	{
 		public GetRoutingTableDataType data { get; set; } = new GetRoutingTableDataType();
 
@@ -19,7 +19,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			public string database { get; set; }
 		}
 
-		public override async Task Process(Controller controller)
+		public override async Task ProcessAsync(Controller controller)
 		{
 			var protocolDriver = (NewDriver)ObjManager.GetObject(data.driverId);
 			var driver = (Neo4j.Driver.Internal.Driver)protocolDriver.Driver;

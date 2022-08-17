@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class SessionLastBookmarks : IProtocolObject
+    internal class SessionLastBookmarks : ProtocolObject
     {
         string[] Bookmarks { get; set; }
         public SessionLastBookmarksType data { get; set; } = new SessionLastBookmarksType();
@@ -13,7 +13,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string sessionId { get; set; }
         }
 
-        public override async Task Process()
+        public override async Task ProcessAsync()
         {
             IAsyncSession session = ((NewSession)ObjManager.GetObject(data.sessionId)).Session;
             Bookmarks = session.LastBookmarks is null ? Array.Empty<string>() : session.LastBookmarks.Values;

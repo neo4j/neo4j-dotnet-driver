@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class RetryablePositive : IProtocolObject
+    internal class RetryablePositive : ProtocolObject
     {
         public RetryablePositiveType data { get; set; } = new RetryablePositiveType();
 
@@ -15,7 +15,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string sessionId { get; set; }
         }
 
-        public override async Task Process()
+        public override async Task ProcessAsync()
         {
 			var sessionContainer = ((NewSession)ObjManager.GetObject(data.sessionId));
 			sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAblePositive);

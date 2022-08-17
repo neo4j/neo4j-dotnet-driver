@@ -83,7 +83,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             return false;
         }
 
-        public IProtocolObject CreateObjectFromData()
+        public ProtocolObject CreateObjectFromData()
         {
             return ProtocolObjectFactory.CreateObject(CurrentObjectData);
         }

@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class SessionBeginTransaction : IProtocolObject
+    internal class SessionBeginTransaction : ProtocolObject
     {
         public SessionBeginTransactionType data { get; set; } = new SessionBeginTransactionType();
         [JsonIgnore]
@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             if (data.txMeta.Count > 0) configBuilder.WithMetadata(data.txMeta);
         }
 
-		public override async Task Process(Controller controller)
+		public override async Task ProcessAsync(Controller controller)
 		{
 			var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
 			var transaction = await sessionContainer.Session.BeginTransactionAsync(TransactionConfig);
@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 				var result = ProtocolObjectFactory.CreateObject<Result>();
 				result.ResultCursor = cursor;
 
-				return await Task.FromResult<string>(result.uniqueId);
+				return await Task.FromResult<string>(result.UniqueId);
 			}));
         }
 

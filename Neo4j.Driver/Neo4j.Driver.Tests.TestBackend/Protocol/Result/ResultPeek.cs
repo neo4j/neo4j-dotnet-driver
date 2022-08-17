@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class ResultPeek : IProtocolObject
+    internal class ResultPeek : ProtocolObject
     {
         public ResultPeekType data { get; set; } = new ResultPeekType();
 
@@ -15,7 +15,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string resultId { get; set; }
         }
 
-        public override async Task Process()
+        public override async Task ProcessAsync()
         {
             var result = (Result)ObjManager.GetObject(data.resultId);
             Records = await result.PeekRecord();

@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-	internal class SessionRun : IProtocolObject
+	internal class SessionRun : ProtocolObject
     {
         public SessionRunType data { get; set; } = new SessionRunType();
 
@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 configBuilder.WithMetadata(data.txMeta);
         }
 
-        public override async Task Process()
+        public override async Task ProcessAsync()
         {
             var newSession = (NewSession)ObjManager.GetObject(data.sessionId);
             IResultCursor cursor = await newSession.Session.RunAsync(data.cypher, ConvertParameters(data.parameters), TransactionConfig).ConfigureAwait(false);
@@ -67,7 +67,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             var result = ProtocolObjectFactory.CreateObject<Result>();
             result.ResultCursor = cursor;
 
-            ResultId = result.uniqueId;
+            ResultId = result.UniqueId;
         }
 
         public override string Respond()

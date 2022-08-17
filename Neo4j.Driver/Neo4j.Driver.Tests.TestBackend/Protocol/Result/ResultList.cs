@@ -22,7 +22,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class ResultList : IProtocolObject
+    internal class ResultList : ProtocolObject
     {
         public ResultListType data { get; set; } = new ResultListType();
 
@@ -34,7 +34,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string resultId { get; set; }
         }
 
-        public override async Task Process()
+        public override async Task ProcessAsync()
         {
             var result = (Result)ObjManager.GetObject(data.resultId);
             Records = await result.ToListAsync();

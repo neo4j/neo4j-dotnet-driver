@@ -2,89 +2,78 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net;
-using System.Reflection;
 using System.Threading.Tasks;
 
+namespace Neo4j.Driver.Tests.TestBackend;
 
-
-namespace Neo4j.Driver.Tests.TestBackend
+public class Program
 {
-    public class Program
+    private static IPAddress _address;
+    private static uint _port;
+    private static bool _reactive;
+
+    static async Task Main(string[] args)
     {
-        private static IPAddress Address = null;
-        private static uint Port = 0;
-        
-        static void Main(string[] args)
+        var consoleTraceListener = new TextWriterTraceListener(Console.Out);
+        Trace.Listeners.Add(consoleTraceListener);
+
+        try
         {
-            var consoleTraceListener = new TextWriterTraceListener(Console.Out);
-            Trace.Listeners.Add(consoleTraceListener);
+            ArgumentsValidation(args);
 
-            try
-            {
-
-                ArgumentsValidation(args);
-
-				using (var connection = new Connection(Address.ToString(), Port))
-				{
-					Controller controller = new Controller(connection);
-
-					try
-					{
-						controller.Process(true, e => { return true; }).Wait();
-					}
-					catch (Exception ex)
-					{
-						Trace.WriteLine($"It looks like the ExceptionExtensions system has failed in an unexpected way. \n{ex}");
-					}
-					finally
-					{
-						connection.StopServer();
-					}
-
-				}
-            }
-            catch(System.Exception ex)
-            {
-                Trace.WriteLine(ex.Message);
-                Trace.WriteLine($"Exception Details: \n {ex.StackTrace}");
-            }
-            finally
-            {
-                Trace.Flush();
-                Trace.Listeners.Remove(consoleTraceListener);
-                consoleTraceListener.Close();
-                Trace.Close();
-            }
+            await RunAsync();
         }
-
-        private static void ArgumentsValidation(string[] args)
+        catch (Exception ex)
         {
-            if (args.Length < 2)
-            {
-                throw new IOException($"Incorrect number of arguments passed in. Expecting Address Port, but got {args.Length} arguments");
-            }
-            
-            if(!uint.TryParse(args[1], out Port))
-            {
-                throw new IOException($"Invalid port passed in parameter 2.  Should be unsigned integer but was: {args[1]}.");
-            }
-
-            if(!IPAddress.TryParse(args[0], out Address))
-            {
-                throw new IOException($"Invalid IPAddress passed in parameter 1. {args[0]}");
-            }
-
-            if (args.Length > 2) {
-                Trace.Listeners.Add(new TextWriterTraceListener(args[2]));
-                Trace.WriteLine("Logging to file: " + args[2]);
-            }
-
-            Trace.WriteLine($"Starting TestBackend on {Address}:{Port}");
+            Trace.WriteLine(ex.Message);
+            Trace.WriteLine($"Exception Details: \n {ex.StackTrace}");
+        }
+        finally
+        {
+            Trace.Flush();
+            Trace.Listeners.Remove(consoleTraceListener);
+            consoleTraceListener.Close();
+            Trace.Close();
         }
     }
+
+    private static void ArgumentsValidation(string[] args)
+    {
+        if (args.Length < 3)
+            throw new IOException($"Incorrect number of arguments passed in. Expecting Address Port, but got {args.Length} arguments");
+
+        if (!IPAddress.TryParse(args[0], out _address))
+            throw new IOException($"Invalid IPAddress passed in parameter 1. {args[0]}");
+
+        if (!uint.TryParse(args[1], out _port))
+            throw new IOException($"Invalid port passed in parameter 2.  Should be unsigned integer but was: {args[1]}.");
+
+        if (!bool.TryParse(args[2], out _reactive))
+            throw new IOException($"Invalid Reactive parameter passed in parameter 3. {args[2]}");
+
+        if (args.Length > 3)
+        {
+            Trace.Listeners.Add(new TextWriterTraceListener(args[3]));
+            Trace.WriteLine("Logging to file: " + args[3]);
+        }
+
+        var mode = _reactive ? "Reactive" : "Async";
+        Trace.WriteLine($"Starting TestBackend on {_address}:{_port} in {mode} Mode.");
+    }
+
+    private static async Task RunAsync()
+    {
+        using var connection = new Connection(_address.ToString(), _port);
+        var controller = new Controller(connection, _reactive);
+
+        try
+        {
+            await controller.ProcessAsync(true, _ => true);
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine($"It looks like the ExceptionExtensions system has failed in an unexpected way. \n{ex}");
+        }
+    }
+
 }
-
-
-
-
-

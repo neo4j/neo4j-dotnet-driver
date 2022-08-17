@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class RetryableNegative : IProtocolObject
+    internal class RetryableNegative : ProtocolObject
     {
         public RetryableNegativeType data { get; set; } = new RetryableNegativeType();
 
@@ -17,7 +17,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string errorId { get; set; }
         }
 
-        public override async Task Process(Controller controller)
+        public override async Task ProcessAsync(Controller controller)
         {
 			var sessionContainer = ((NewSession)ObjManager.GetObject(data.sessionId));
 			sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAbleNegative, data.errorId);

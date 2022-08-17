@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-	class StartTest : IProtocolObject
+	class StartTest : ProtocolObject
 	{
 		public StartTestType data { get; set; } = new StartTestType();
 		
@@ -13,7 +13,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			public string testName { get; set; }
 		}
 
-		public override async Task Process()
+		public override async Task ProcessAsync()
 		{	
 			await Task.CompletedTask;
 		}

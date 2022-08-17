@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {   
-    class ProtocolException  : IProtocolObject
+    class ProtocolException  : ProtocolObject
     {
         public ProtocolExceptionType data { get; set; } = new ProtocolExceptionType();
         [JsonIgnore]
@@ -17,7 +17,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string msg { get; set; }
         }
 
-        public override async Task Process()
+        public override async Task ProcessAsync()
         {
             await Task.CompletedTask;
         }

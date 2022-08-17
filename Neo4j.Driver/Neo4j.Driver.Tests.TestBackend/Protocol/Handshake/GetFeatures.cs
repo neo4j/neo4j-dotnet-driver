@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-	internal class GetFeatures : IProtocolObject
+	internal class GetFeatures : ProtocolObject
 	{
 		public GetFeaturesType data { get; set; } = new GetFeaturesType();
 
@@ -15,7 +15,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 		}
 
-		public override async Task Process()
+		public override async Task ProcessAsync()
 		{
 			await Task.CompletedTask;
 		}

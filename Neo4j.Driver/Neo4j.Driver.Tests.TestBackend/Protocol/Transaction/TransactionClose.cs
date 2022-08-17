@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-	class TransactionClose : IProtocolObject
+	class TransactionClose : ProtocolObject
 	{
 		public TransactionCloseDataType data { get; set; } = new TransactionCloseDataType();
 
@@ -13,7 +13,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			public string txId { get; set; }
 		}
 
-		public override async Task Process(Controller controller)
+		public override async Task ProcessAsync(Controller controller)
 		{
 			var transactionWrapper = controller.TransactionManager.FindTransaction(data.txId);
 			await transactionWrapper.Transaction.DisposeAsync();
@@ -21,7 +21,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 		public override string Respond()
 		{
-			return new ProtocolResponse("Transaction", uniqueId).Encode();
+			return new ProtocolResponse("Transaction", UniqueId).Encode();
 		}
 	}
 }

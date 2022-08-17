@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class GetServerInfo : IProtocolObject
+    internal class GetServerInfo : ProtocolObject
     {
         public GetServerInfoType Data { get; set; } = new GetServerInfoType();
         public IServerInfo ServerInfo { get; set; }
@@ -29,7 +29,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string driverId { get; set; }
         }
 
-        public override async Task Process()
+        public override async Task ProcessAsync()
         {
             var driver = ObjManager.GetObject<NewDriver>(Data.driverId).Driver;
             ServerInfo = await driver.GetServerInfoAsync();

@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-	class ResolverResolutionCompleted : IProtocolObject
+	class ResolverResolutionCompleted : ProtocolObject
 	{
 		public ResolverResolutionCompletedType data { get; set; } = new ResolverResolutionCompletedType();
 		[JsonIgnore]
@@ -17,7 +17,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			public List<string> addresses { get; set; } = new List<string>();
 		}
 
-		public override async Task Process()
+		public override async Task ProcessAsync()
 		{	
 			await Task.CompletedTask;
 		}
