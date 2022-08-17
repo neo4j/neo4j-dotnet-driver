@@ -64,6 +64,7 @@ public class Program
     private static async Task RunAsync()
     {
         using var connection = new Connection(_address.ToString(), _port);
+        ProtocolObjectFactory.ObjManager = new ProtocolObjectManager();
         var controller = new Controller(connection, _reactive);
 
         try

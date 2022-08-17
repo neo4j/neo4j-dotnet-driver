@@ -1,50 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 
-namespace Neo4j.Driver.Tests.TestBackend
+namespace Neo4j.Driver.Tests.TestBackend;
+
+internal class TransactionManager
 {
-    internal class TransactionWrapper
+    private readonly Dictionary<string, TransactionWrapper> _transactions = new();
+
+    public string AddTransaction(TransactionWrapper transaction)
     {
-        public IAsyncTransaction Transaction { get; private set; }
-        private Func<IResultCursor, Task<string>> ResultHandler;
-
-        public TransactionWrapper(IAsyncTransaction transaction, Func<IResultCursor, Task<string>>resultHandler)
-        {
-            Transaction = transaction;
-            ResultHandler = resultHandler;
-        }
-
-        public async Task<string> ProcessResults(IResultCursor cursor)
-        {
-            return await ResultHandler(cursor);
-        }
-
+        var key = ProtocolObjectManager.GenerateUniqueIdString();
+        _transactions.Add(key, transaction);
+        return key;
     }
 
-
-    internal class TransactionManager
-    {
-        private Dictionary<string, TransactionWrapper> Transactions { get; set; } = new Dictionary<string, TransactionWrapper>();
-
-        public string AddTransaction(TransactionWrapper transation)
-        {
-            var key = ProtocolObjectManager.GenerateUniqueIdString();
-            Transactions.Add(key, transation);
-            return key;
-        }
-
-        public void RemoveTransaction(string key)
-        {
-            Transactions.Remove(key);
-        }
-
-        public TransactionWrapper FindTransaction(string key)
-        {
-            return Transactions[key];
-        }
-
-    }
+    public TransactionWrapper FindTransaction(string key) => _transactions[key];
 }
