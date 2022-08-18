@@ -334,9 +334,25 @@ namespace Neo4j.Driver
             return WithCertificateTrustRule(certificateTrustRule, certs);
         }
      
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="bookmarkManager"></param>
+        /// <returns></returns>
         public ConfigBuilder WithBookmarkManager(IBookmarkManager bookmarkManager)
         {
             _config.BookmarkManager = bookmarkManager;
+            return this;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="bookmarkManager"></param>
+        /// <returns></returns>
+        public ConfigBuilder WithDefaultBookmarkManager(BookmarkManagerConfig config)
+        {
+            _config.BookmarkManager = new DefaultBookmarkManager(config);
             return this;
         }
     }
