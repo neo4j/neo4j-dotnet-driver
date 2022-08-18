@@ -48,7 +48,7 @@ internal class Connection : IConnection, IDisposable
         {
             Trace.WriteLine("Starting to listen for Connections");
 
-            _clientConnection = await _server.AcceptTcpClientAsync().ConfigureAwait(false);
+            _clientConnection = await _server.AcceptTcpClientAsync();
             _clientConnection.LingerState.Enabled = false;
             _clientConnection.LingerState.LingerTime = 0;
             _clientConnection.ReceiveTimeout = TimeOut;

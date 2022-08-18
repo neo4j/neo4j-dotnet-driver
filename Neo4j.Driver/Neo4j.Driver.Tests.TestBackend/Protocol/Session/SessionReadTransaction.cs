@@ -38,14 +38,14 @@ internal class SessionReadTransaction : ProtocolObject
                 async cursor =>
                 {
                     var result = ProtocolObjectFactory.CreateObject<Result>();
-                    await result.PopulateRecords(cursor).ConfigureAwait(false);
+                    await result.PopulateRecords(cursor);
                     return result.UniqueId;
                 }));
 
             sessionContainer.SessionTransactions.Add(TransactionId);
 
             await controller.SendResponseAsync(new ProtocolResponse("RetryableTry", TransactionId).Encode())
-                .ConfigureAwait(false);
+                ;
 
             Exception storedException = new TestKitClientException("Error from client");
 

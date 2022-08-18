@@ -46,7 +46,7 @@ internal class TransactionRun : ProtocolObject
             var transactionWrapper = controller.TransactionManager.FindTransaction(data.txId);
 
             var cursor = await transactionWrapper.Transaction
-                .RunAsync(data.cypher, ConvertParameters(data.parameters)).ConfigureAwait(false);
+                .RunAsync(data.cypher, ConvertParameters(data.parameters));
 
             ResultId = await transactionWrapper.ProcessResults(cursor);
         }

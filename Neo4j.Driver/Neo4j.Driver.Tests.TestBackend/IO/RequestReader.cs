@@ -43,7 +43,7 @@ internal class RequestReader
 
         var stringBuilder = new StringBuilder();
 
-        while (await ParseObjectData(stringBuilder).ConfigureAwait(false))
+        while (await ParseObjectData(stringBuilder))
         {
         }
 

@@ -65,7 +65,7 @@ internal class SessionRun : ProtocolObject
     {
         var newSession = (NewSession) ObjManager.GetObject(data.sessionId);
         var cursor = await newSession.Session
-            .RunAsync(data.cypher, ConvertParameters(data.parameters), TransactionConfig).ConfigureAwait(false);
+            .RunAsync(data.cypher, ConvertParameters(data.parameters), TransactionConfig);
 
         var result = ProtocolObjectFactory.CreateObject<Result>();
         result.ResultCursor = cursor;

@@ -50,17 +50,17 @@ internal class Controller
         BreakProcessLoop = false;
 
         while (!BreakProcessLoop
-               && await _requestReader.ParseNextRequest().ConfigureAwait(false))
+               && await _requestReader.ParseNextRequest())
         {
             var protocolObject = _requestReader.CreateObjectFromData();
             protocolObject.ProtocolEvent = () => BreakProcessLoop = true;
 
             if (_reactive)
-                await protocolObject.ReactiveProcessAsync(this).ConfigureAwait(false);
+                await protocolObject.ReactiveProcessAsync(this);
             else
-                await protocolObject.ProcessAsync(this).ConfigureAwait(false);
+                await protocolObject.ProcessAsync(this);
 
-            await SendResponseAsync(protocolObject).ConfigureAwait(false);
+            await SendResponseAsync(protocolObject);
             Trace.Flush();
         }
 
@@ -82,7 +82,7 @@ internal class Controller
 
             try
             {
-                await ProcessStreamObjects().ConfigureAwait(false);
+                await ProcessStreamObjects();
             }
             catch (Exception ex) when (NoResetException(ex))
             {
@@ -116,7 +116,7 @@ internal class Controller
 
     public async Task<T> TryConsumeStreamObjectAsync<T>() where T : ProtocolObject
     {
-        await _requestReader.ParseNextRequest().ConfigureAwait(false);
+        await _requestReader.ParseNextRequest();
 
         if (_requestReader.GetObjectType() != typeof(T))
             return null;
