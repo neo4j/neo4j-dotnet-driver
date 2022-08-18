@@ -16,6 +16,8 @@
 // limitations under the License.
 
 using System;
+using System.Reactive.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
@@ -48,15 +50,33 @@ internal class SessionBeginTransaction : ProtocolObject
 
     public override async Task ProcessAsync(Controller controller)
     {
-        var sessionContainer = (NewSession) ObjManager.GetObject(data.sessionId);
+        var sessionContainer = ObjManager.GetObject<NewSession>(data.sessionId);
         var transaction = await sessionContainer.Session.BeginTransactionAsync(TransactionConfig);
-        TransactionId = controller.TransactionManager.AddTransaction(new TransactionWrapper(transaction, async cursor =>
-        {
-            var result = ProtocolObjectFactory.CreateObject<Result>();
-            result.ResultCursor = cursor;
+        TransactionId = controller.TransactionManager.AddTransaction(
+            new TransactionWrapper<IAsyncTransaction>(transaction, 
+            cursor =>
+            {
+                var result = ProtocolObjectFactory.CreateObject<Result>();
+                result.ResultCursor = cursor;
 
-            return await Task.FromResult(result.UniqueId);
-        }));
+                return Task.FromResult(result.UniqueId);
+            }));
+    }
+
+    public override async Task ReactiveProcessAsync(Controller controller)
+    {
+        var sessionContainer = ObjManager.GetObject<NewSession>(data.sessionId);
+        var transaction = await sessionContainer.RxSession.BeginTransaction(TransactionConfig).RunAsync(CancellationToken.None);
+
+        TransactionId = controller.ReactiveTransactionManager.AddTransaction(
+            new TransactionWrapper<IRxTransaction>(transaction, 
+            cursor =>
+            {
+                var result = ProtocolObjectFactory.CreateObject<Result>();
+                result.ResultCursor = cursor;
+
+                return Task.FromResult(result.UniqueId);
+            }));
     }
 
     public override string Respond()

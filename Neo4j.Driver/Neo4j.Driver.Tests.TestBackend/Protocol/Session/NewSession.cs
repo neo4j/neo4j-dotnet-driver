@@ -35,6 +35,7 @@ internal class NewSession : ProtocolObject
 
     public NewSessionType data { get; set; } = new();
     [JsonIgnore] public IAsyncSession Session { get; set; }
+    [JsonIgnore] public IRxSession RxSession { get; set; }
 
     [JsonIgnore]
     public AccessMode GetAccessMode
@@ -59,13 +60,22 @@ internal class NewSession : ProtocolObject
         if (!string.IsNullOrEmpty(data.impersonatedUser)) configBuilder.WithImpersonatedUser(data.impersonatedUser);
     }
 
-    public override async Task ProcessAsync()
+    public override Task ProcessAsync()
     {
-        var driver = ((NewDriver) ObjManager.GetObject(data.driverId)).Driver;
+        var driver = ObjManager.GetObject<NewDriver>(data.driverId).Driver;
 
         Session = driver.AsyncSession(SessionConfig);
 
-        await Task.CompletedTask;
+        return Task.CompletedTask;
+    }
+
+    public override Task ReactiveProcessAsync(Controller controller)
+    {
+        var driver = ObjManager.GetObject<NewDriver>(data.driverId).Driver;
+
+        RxSession = driver.RxSession(SessionConfig);
+
+        return Task.CompletedTask;
     }
 
     public override string Respond()

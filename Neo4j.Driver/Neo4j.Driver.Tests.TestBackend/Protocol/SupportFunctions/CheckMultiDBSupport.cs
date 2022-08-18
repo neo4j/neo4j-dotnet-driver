@@ -28,7 +28,7 @@ internal class CheckMultiDBSupport : ProtocolObject
 
     public override async Task ProcessAsync()
     {
-        var driver = ((NewDriver) ObjManager.GetObject(data.driverId)).Driver;
+        var driver = ObjManager.GetObject<NewDriver>(data.driverId).Driver;
         MutlitDBSupportAvailable = await driver.SupportsMultiDbAsync();
     }
 

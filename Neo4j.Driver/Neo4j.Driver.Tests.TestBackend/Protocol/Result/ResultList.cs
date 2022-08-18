@@ -30,7 +30,7 @@ internal class ResultList : ProtocolObject
 
     public override async Task ProcessAsync()
     {
-        var result = (Result) ObjManager.GetObject(data.resultId);
+        var result = ObjManager.GetObject<Result>(data.resultId);
         Records = await result.ToListAsync();
     }
 

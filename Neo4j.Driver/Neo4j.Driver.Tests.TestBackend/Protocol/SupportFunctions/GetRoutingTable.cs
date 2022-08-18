@@ -28,13 +28,12 @@ internal class GetRoutingTable : ProtocolObject
 
     [JsonIgnore] public IRoutingTable RoutingTable { get; set; }
 
-    public override async Task ProcessAsync(Controller controller)
+    public override Task ProcessAsync(Controller controller)
     {
-        var protocolDriver = (NewDriver) ObjManager.GetObject(data.driverId);
-        var driver = (Internal.Driver) protocolDriver.Driver;
+        var driver = (Internal.Driver)ObjManager.GetObject<NewDriver>(data.driverId).Driver;
         RoutingTable = driver.GetRoutingTable(data.database);
 
-        await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     public override string Respond()

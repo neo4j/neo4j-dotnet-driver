@@ -63,7 +63,7 @@ internal class SessionRun : ProtocolObject
 
     public override async Task ProcessAsync()
     {
-        var newSession = (NewSession) ObjManager.GetObject(data.sessionId);
+        var newSession = ObjManager.GetObject<NewSession>(data.sessionId);
         var cursor = await newSession.Session
             .RunAsync(data.cypher, ConvertParameters(data.parameters), TransactionConfig);
 
@@ -75,7 +75,7 @@ internal class SessionRun : ProtocolObject
 
     public override string Respond()
     {
-        return ((Result) ObjManager.GetObject(ResultId)).Respond();
+        return ObjManager.GetObject<Result>(ResultId).Respond();
     }
 
     [JsonConverter(typeof(SessionTypeJsonConverter))]

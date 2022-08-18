@@ -28,18 +28,19 @@ internal class SessionWriteTransaction : ProtocolObject
 
     public override async Task ProcessAsync(Controller controller)
     {
-        var sessionContainer = (NewSession) ObjManager.GetObject(data.sessionId);
+        var sessionContainer = ObjManager.GetObject<NewSession>(data.sessionId);
 
         await sessionContainer.Session.ExecuteWriteAsync(async tx =>
         {
             sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAbleNothing);
 
-            TransactionId = controller.TransactionManager.AddTransaction(new TransactionWrapper(tx as IAsyncTransaction,
-                async cursor =>
+            TransactionId = controller.TransactionManager.AddTransaction(
+                new TransactionWrapper<IAsyncTransaction>(tx as IAsyncTransaction,
+                cursor =>
                 {
                     var result = ProtocolObjectFactory.CreateObject<Result>();
-                    await result.PopulateRecords(cursor);
-                    return result.UniqueId;
+                    result.ResultCursor = cursor;
+                    return Task.FromResult(result.UniqueId);
                 }));
 
             sessionContainer.SessionTransactions.Add(TransactionId);
@@ -79,7 +80,7 @@ internal class SessionWriteTransaction : ProtocolObject
                     .GenerateExceptionResponse(new TestKitClientException("Error from client in retryable tx"))
                     .Encode();
 
-            var exception = ((ProtocolException) ObjManager.GetObject(sessionContainer.RetryableErrorId))
+            var exception = ObjManager.GetObject<ProtocolExceptionWrapper>(sessionContainer.RetryableErrorId)
                 .ExceptionObj;
             return ExceptionManager.GenerateExceptionResponse(exception).Encode();
         }

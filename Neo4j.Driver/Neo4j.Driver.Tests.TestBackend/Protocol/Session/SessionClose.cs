@@ -23,10 +23,10 @@ internal class SessionClose : ProtocolObject
 {
     public SessionCloseType data { get; set; } = new();
 
-    public override async Task ProcessAsync()
+    public override Task ProcessAsync()
     {
-        var session = ((NewSession) ObjManager.GetObject(data.sessionId)).Session;
-        await session.CloseAsync();
+        var session = ObjManager.GetObject<NewSession>(data.sessionId).Session;
+        return session.CloseAsync();
     }
 
     public override string Respond()

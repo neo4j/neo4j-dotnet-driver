@@ -25,11 +25,11 @@ internal class SessionLastBookmarks : ProtocolObject
     private string[] Bookmarks { get; set; }
     public SessionLastBookmarksType data { get; set; } = new();
 
-    public override async Task ProcessAsync()
+    public override Task ProcessAsync()
     {
-        var session = ((NewSession) ObjManager.GetObject(data.sessionId)).Session;
+        var session =  ObjManager.GetObject<NewSession>(data.sessionId).Session;
         Bookmarks = session.LastBookmarks is null ? Array.Empty<string>() : session.LastBookmarks.Values;
-        await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     public override string Respond()

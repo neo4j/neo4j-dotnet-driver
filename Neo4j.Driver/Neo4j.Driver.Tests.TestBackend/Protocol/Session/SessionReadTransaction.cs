@@ -26,28 +26,26 @@ internal class SessionReadTransaction : ProtocolObject
     public SessionReadTransactionType data { get; set; } = new();
     [JsonIgnore] private string TransactionId { get; set; }
 
-    public override async Task ProcessAsync(Controller controller)
+    public override Task ProcessAsync(Controller controller)
     {
-        var sessionContainer = (NewSession) ObjManager.GetObject(data.sessionId);
+        var sessionContainer = ObjManager.GetObject<NewSession>(data.sessionId);
 
-        await sessionContainer.Session.ExecuteReadAsync(async tx =>
+        return sessionContainer.Session.ExecuteReadAsync(async tx =>
         {
             sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAbleNothing);
 
-            TransactionId = controller.TransactionManager.AddTransaction(new TransactionWrapper(tx as IAsyncTransaction,
-                async cursor =>
+            TransactionId = controller.TransactionManager.AddTransaction(
+                new TransactionWrapper<IAsyncTransaction>(tx as IAsyncTransaction, 
+                 cursor =>
                 {
                     var result = ProtocolObjectFactory.CreateObject<Result>();
-                    await result.PopulateRecords(cursor);
-                    return result.UniqueId;
+                    result.ResultCursor = cursor;
+                    return Task.FromResult(result.UniqueId);
                 }));
 
             sessionContainer.SessionTransactions.Add(TransactionId);
 
-            await controller.SendResponseAsync(new ProtocolResponse("RetryableTry", TransactionId).Encode())
-                ;
-
-            Exception storedException = new TestKitClientException("Error from client");
+            await controller.SendResponseAsync(new ProtocolResponse("RetryableTry", TransactionId).Encode());
 
             await controller.ProcessAsync(false, e =>
             {
@@ -69,7 +67,7 @@ internal class SessionReadTransaction : ProtocolObject
 
     public override string Respond()
     {
-        var sessionContainer = (NewSession) ObjManager.GetObject(data.sessionId);
+        var sessionContainer = ObjManager.GetObject<NewSession>(data.sessionId);
 
         if (sessionContainer.RetryState == NewSession.SessionState.RetryAbleNothing)
             throw new ArgumentException("Should never hit this code with a RetryAbleNothing");
@@ -81,7 +79,7 @@ internal class SessionReadTransaction : ProtocolObject
                     .GenerateExceptionResponse(new TestKitClientException("Error from client in retryable tx"))
                     .Encode();
 
-            var exception = ((ProtocolException) ObjManager.GetObject(sessionContainer.RetryableErrorId))
+            var exception = ObjManager.GetObject<ProtocolExceptionWrapper>(sessionContainer.RetryableErrorId)
                 .ExceptionObj;
             return ExceptionManager.GenerateExceptionResponse(exception).Encode();
         }

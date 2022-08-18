@@ -30,7 +30,7 @@ internal class ResultConsume : ProtocolObject
 
     public override async Task ProcessAsync()
     {
-        Summary = await ((Result) ObjManager.GetObject(data.resultId)).ConsumeResults();
+        Summary = await ObjManager.GetObject<Result>(data.resultId).ConsumeAsync();
     }
 
     public override string Respond()

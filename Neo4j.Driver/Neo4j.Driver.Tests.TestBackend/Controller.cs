@@ -19,7 +19,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
@@ -38,12 +37,14 @@ internal class Controller
         _connection = conn;
         _reactive = reactive;
 
-        TransactionManager = new TransactionManager();
+        TransactionManager = new TransactionManager<IAsyncTransaction>();
+        ReactiveTransactionManager = new TransactionManager<IRxTransaction>();
 
         Trace.WriteLine("Controller initializing");
     }
 
-    public TransactionManager TransactionManager { get; }
+    public TransactionManager<IAsyncTransaction> TransactionManager { get; }
+    public TransactionManager<IRxTransaction> ReactiveTransactionManager { get; set; }
 
     public async Task ProcessStreamObjects()
     {

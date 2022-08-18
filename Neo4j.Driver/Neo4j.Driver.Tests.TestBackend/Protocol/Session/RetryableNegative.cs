@@ -23,14 +23,14 @@ internal class RetryableNegative : ProtocolObject
 {
     public RetryableNegativeType data { get; set; } = new();
 
-    public override async Task ProcessAsync(Controller controller)
+    public override Task ProcessAsync(Controller controller)
     {
-        var sessionContainer = (NewSession) ObjManager.GetObject(data.sessionId);
+        var sessionContainer = ObjManager.GetObject<NewSession>(data.sessionId);
         sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAbleNegative, data.errorId);
 
         TriggerEvent();
 
-        await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     public override string Respond()

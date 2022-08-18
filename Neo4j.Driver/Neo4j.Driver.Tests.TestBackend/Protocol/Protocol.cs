@@ -60,7 +60,7 @@ public static class Protocol
             typeof(ResultConsume),
             typeof(RetryablePositive),
             typeof(RetryableNegative),
-            typeof(ProtocolException),
+            typeof(ProtocolExceptionWrapper),
             typeof(SessionLastBookmarks),
             typeof(VerifyConnectivity),
             typeof(GetServerInfo),

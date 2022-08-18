@@ -31,8 +31,8 @@ internal class ResultNext : ProtocolObject
     {
         try
         {
-            var result = (Result) ObjManager.GetObject(data.resultId);
-            Records = await result.GetNextRecord();
+            var result = ObjManager.GetObject<Result>(data.resultId);
+            Records = await result.GetNextRecordAsync();
         }
         catch (TimeZoneNotFoundException tz)
         {

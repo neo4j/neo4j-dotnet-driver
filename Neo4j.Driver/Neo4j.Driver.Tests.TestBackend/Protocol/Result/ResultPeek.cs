@@ -28,8 +28,8 @@ internal class ResultPeek : ProtocolObject
 
     public override async Task ProcessAsync()
     {
-        var result = (Result) ObjManager.GetObject(data.resultId);
-        Records = await result.PeekRecord();
+        var result = ObjManager.GetObject<Result>(data.resultId);
+        Records = await result.PeekRecordAsync();
     }
 
     public override string Respond()

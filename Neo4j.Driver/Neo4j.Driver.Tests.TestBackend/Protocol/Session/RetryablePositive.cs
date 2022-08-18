@@ -23,9 +23,9 @@ internal class RetryablePositive : ProtocolObject
 {
     public RetryablePositiveType data { get; set; } = new();
 
-    public override async Task ProcessAsync()
+    public override Task ProcessAsync()
     {
-        var sessionContainer = (NewSession) ObjManager.GetObject(data.sessionId);
+        var sessionContainer =  ObjManager.GetObject<NewSession>(data.sessionId);
         sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAblePositive);
 
         //Client succeded and wants to commit. 
@@ -33,7 +33,7 @@ internal class RetryablePositive : ProtocolObject
 
         TriggerEvent();
 
-        await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     public override string Respond()

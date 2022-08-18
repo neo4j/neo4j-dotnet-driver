@@ -28,7 +28,7 @@ internal class CheckDriverIsEncrypted : ProtocolObject
 
     public override Task ProcessAsync()
     {
-        var driver = ((NewDriver) ObjManager.GetObject(data.driverId)).Driver;
+        var driver = ObjManager.GetObject<NewDriver>(data.driverId).Driver;
         Encrypted = driver.Encrypted;
         return Task.CompletedTask;
     }

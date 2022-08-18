@@ -41,14 +41,6 @@ internal class ProtocolObjectManager
         ProtocolObjects[obj.UniqueId] = obj;
     }
 
-    public ProtocolObject GetObject(string id)
-    {
-        if (string.IsNullOrEmpty(id))
-            return null;
-
-        return ProtocolObjects[id];
-    }
-
     public T GetObject<T>(string id) where T : ProtocolObject
     {
         if (string.IsNullOrEmpty(id))

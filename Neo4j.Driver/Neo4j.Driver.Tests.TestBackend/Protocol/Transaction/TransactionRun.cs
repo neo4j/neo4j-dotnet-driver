@@ -34,7 +34,8 @@ internal class TransactionRun : ProtocolObject
 
         var newParams = new Dictionary<string, object>();
 
-        foreach (var element in source) newParams.Add(element.Key, CypherToNative.Convert(element.Value));
+        foreach (var element in source) 
+            newParams.Add(element.Key, CypherToNative.Convert(element.Value));
 
         return newParams;
     }
@@ -60,7 +61,7 @@ internal class TransactionRun : ProtocolObject
     {
         try
         {
-            return ((Result) ObjManager.GetObject(ResultId)).Respond();
+            return ObjManager.GetObject<Result>(ResultId).Respond();
         }
         catch (TimeZoneNotFoundException tz)
         {

@@ -78,7 +78,7 @@ internal static class ExceptionManager
 
         if (type is not null)
         {
-            var newError = ProtocolObjectFactory.CreateObject<ProtocolException>();
+            var newError = ProtocolObjectFactory.CreateObject<ProtocolExceptionWrapper>();
             newError.ExceptionObj = ex;
             var errorCode = ex is Neo4jException ? ((Neo4jException) ex).Code : type;
             return new ProtocolResponse("DriverError", new
@@ -92,7 +92,7 @@ internal static class ExceptionManager
 
         if (ex is DriverExceptionWrapper)
         {
-            var newError = ProtocolObjectFactory.CreateObject<ProtocolException>();
+            var newError = ProtocolObjectFactory.CreateObject<ProtocolExceptionWrapper>();
             return new ProtocolResponse("DriverError", new
             {
                 id = newError.UniqueId,

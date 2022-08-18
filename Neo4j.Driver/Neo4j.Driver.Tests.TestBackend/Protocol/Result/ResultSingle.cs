@@ -29,7 +29,7 @@ internal class ResultSingle : ProtocolObject
 
     public override async Task ProcessAsync()
     {
-        var result = (Result) ObjManager.GetObject(data.resultId);
+        var result = ObjManager.GetObject<Result>(data.resultId);
         try
         {
             Records = await result.SingleAsync();

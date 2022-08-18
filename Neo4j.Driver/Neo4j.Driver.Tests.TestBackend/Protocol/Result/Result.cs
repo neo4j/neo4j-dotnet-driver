@@ -33,7 +33,7 @@ internal class Result : ProtocolObject
         return new ProtocolResponse("Result", new {id = UniqueId, keys}).Encode();
     }
 
-    public async Task<IRecord> GetNextRecord()
+    public async Task<IRecord> GetNextRecordAsync()
     {
         if (await ResultCursor.FetchAsync())
             return ResultCursor.Current;
@@ -41,7 +41,7 @@ internal class Result : ProtocolObject
         return null;
     }
 
-    public Task<IRecord> PeekRecord()
+    public Task<IRecord> PeekRecordAsync()
     {
         return ResultCursor.PeekAsync();
     }
@@ -51,7 +51,7 @@ internal class Result : ProtocolObject
         return ResultCursor.SingleAsync();
     }
 
-    public Task<IResultSummary> ConsumeResults()
+    public Task<IResultSummary> ConsumeAsync()
     {
         return ResultCursor.ConsumeAsync();
     }
@@ -59,12 +59,6 @@ internal class Result : ProtocolObject
     public Task<List<IRecord>> ToListAsync()
     {
         return ResultCursor.ToListAsync();
-    }
-
-    public Task PopulateRecords(IResultCursor cursor)
-    {
-        ResultCursor = cursor;
-        return Task.CompletedTask;
     }
 
     public class ResultType

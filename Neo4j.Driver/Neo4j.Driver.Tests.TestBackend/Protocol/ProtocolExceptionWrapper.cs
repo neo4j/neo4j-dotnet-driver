@@ -21,7 +21,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class ProtocolException : ProtocolObject
+internal class ProtocolExceptionWrapper : ProtocolObject
 {
     public ProtocolExceptionType data { get; set; } = new();
     [JsonIgnore] public Exception ExceptionObj { get; set; }

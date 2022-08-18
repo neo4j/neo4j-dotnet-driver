@@ -33,7 +33,7 @@ internal class CypherTypeField : ProtocolObject
     public override async Task ProcessAsync()
     {
         var result = ObjManager.GetObject<Result>(RequestData.ResultId);
-        var record = await result.GetNextRecord();
+        var record = await result.GetNextRecordAsync();
         var data = record[RequestData.RecordKey];
 
         Field = data switch
@@ -47,8 +47,7 @@ internal class CypherTypeField : ProtocolObject
 
     public override string Respond()
     {
-        return new ProtocolResponse("Field", new {value = NativeToCypher.Convert(Field)})
-            .Encode();
+        return new ProtocolResponse("Field", new {value = NativeToCypher.Convert(Field)}).Encode();
     }
 
     private object ReadPath(Path path, string field)
