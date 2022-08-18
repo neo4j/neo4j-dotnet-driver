@@ -27,6 +27,7 @@ namespace Neo4j.Driver.Tests.TestBackend;
 
 internal class Controller
 {
+    private bool BreakProcessLoop;
     private readonly IConnection _connection;
     private readonly bool _reactive;
     private RequestReader _requestReader;
@@ -44,7 +45,6 @@ internal class Controller
 
     public TransactionManager TransactionManager { get; }
 
-    private bool BreakProcessLoop;
     public async Task ProcessStreamObjects()
     {
         BreakProcessLoop = false;
