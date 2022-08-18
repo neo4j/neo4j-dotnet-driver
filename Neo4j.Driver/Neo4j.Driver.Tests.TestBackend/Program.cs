@@ -56,7 +56,7 @@ public class Program
 
     private static void ArgumentsValidation(string[] args)
     {
-        if (args.Length < 3)
+        if (args.Length < 2)
             throw new IOException(
                 $"Incorrect number of arguments passed in. Expecting Address Port, but got {args.Length} arguments");
 
@@ -67,15 +67,15 @@ public class Program
             throw new IOException(
                 $"Invalid port passed in parameter 2.  Should be unsigned integer but was: {args[1]}.");
 
-        if (!bool.TryParse(args[2], out _reactive))
-            throw new IOException($"Invalid Reactive parameter passed in parameter 3. {args[2]}");
-
-        if (args.Length > 3)
+        if (args.Length > 2)
         {
-            Trace.Listeners.Add(new TextWriterTraceListener(args[3]));
-            Trace.WriteLine("Logging to file: " + args[3]);
+            Trace.Listeners.Add(new TextWriterTraceListener(args[2]));
+            Trace.WriteLine("Logging to file: " + args[2]);
         }
 
+        var backendServer = Environment.GetEnvironmentVariable("TEST_BACKEND_SERVER");
+
+        _reactive = backendServer != null && bool.TryParse(backendServer, out var reactive) && reactive;
         var mode = _reactive ? "Reactive" : "Async";
         Trace.WriteLine($"Starting TestBackend on {_address}:{_port} in {mode} Mode.");
     }

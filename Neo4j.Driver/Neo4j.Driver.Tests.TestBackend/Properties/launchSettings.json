@@ -2,7 +2,10 @@
   "profiles": {
     "NutKitDotNet": {
       "commandName": "Project",
-      "commandLineArgs": "0.0.0.0 9876 true"
+      "commandLineArgs": "0.0.0.0 9876",
+      "environmentVariables": {
+        "TEST_BACKEND_SERVER": "true"
+      }
     }
   }
 }

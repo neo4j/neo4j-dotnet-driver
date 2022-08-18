@@ -12,6 +12,7 @@ RUN apt update \
 
 ENV PYTHON=python3
 ENV DOTNET_DRIVER_USING_LOCAL_SERVER=true
+ENV TEST_BACKEND_SERVER=true
 ENV TEST_NEO4J_USING_TESTKIT=true
 ENV TK_CUSTOM_CA_PATH="/usr/local/share/custom-ca-certificates/"
 
