@@ -27,7 +27,6 @@ namespace Neo4j.Driver.Tests.TestBackend;
 
 internal class Controller
 {
-    private readonly CancellationTokenSource _cancellationTokenSource;
     private readonly IConnection _connection;
     private readonly bool _reactive;
     private RequestReader _requestReader;
@@ -39,20 +38,22 @@ internal class Controller
         _reactive = reactive;
 
         TransactionManager = new TransactionManager();
-        _cancellationTokenSource = new CancellationTokenSource();
 
         Trace.WriteLine("Controller initializing");
     }
 
     public TransactionManager TransactionManager { get; }
 
+    private bool BreakProcessLoop;
     public async Task ProcessStreamObjects()
     {
-        while (!_cancellationTokenSource.IsCancellationRequested
+        BreakProcessLoop = false;
+
+        while (!BreakProcessLoop
                && await _requestReader.ParseNextRequest().ConfigureAwait(false))
         {
             var protocolObject = _requestReader.CreateObjectFromData();
-            protocolObject.ProtocolEvent = _cancellationTokenSource.Cancel;
+            protocolObject.ProtocolEvent = () => BreakProcessLoop = true;
 
             if (_reactive)
                 await protocolObject.ReactiveProcessAsync(this).ConfigureAwait(false);
@@ -62,6 +63,8 @@ internal class Controller
             await SendResponseAsync(protocolObject).ConfigureAwait(false);
             Trace.Flush();
         }
+
+        BreakProcessLoop = false;
     }
 
     public async Task ProcessAsync(bool restartInitialState, Func<Exception, bool> loopConditional)

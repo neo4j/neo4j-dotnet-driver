@@ -54,6 +54,13 @@ internal static class NativeToCypher
         if (_functionMap.TryGetValue(sourceObject.GetType(), out var mapper))
             return mapper.Item2(mapper.Item1, sourceObject);
 
+        var matches = _functionMap.Keys.Where(x => sourceObject.GetType().IsAssignableTo(x)).ToArray();
+        if (matches.Length == 1)
+        {
+            mapper = _functionMap[matches.First()];
+            return mapper.Item2(mapper.Item1, sourceObject);
+        }
+
         throw new IOException(
             $"Attempting to convert an unsupported object type to a CypherType: {sourceObject.GetType()}");
     }

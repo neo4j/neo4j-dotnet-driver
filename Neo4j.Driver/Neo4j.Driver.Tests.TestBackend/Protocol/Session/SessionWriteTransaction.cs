@@ -67,7 +67,7 @@ internal class SessionWriteTransaction : ProtocolObject
 
     public override string Respond()
     {
-        var sessionContainer = (NewSession) ObjManager.GetObject(data.sessionId);
+        var sessionContainer = ObjManager.GetObject<NewSession>(data.sessionId);
 
         if (sessionContainer.RetryState == NewSession.SessionState.RetryAbleNothing)
             throw new ArgumentException("Should never hit this code with a RetryAbleNothing");

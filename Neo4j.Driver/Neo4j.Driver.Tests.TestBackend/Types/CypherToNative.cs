@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Tests.TestBackend;
 internal class CypherToNative
 {
     //Mapping of object type to a cypher type name string that will be used in the JSON.
-    private static Dictionary<string, (Type, Func<Type, CypherToNativeObject, object>)> _typeMap =
+    private static readonly Dictionary<string, (Type, Func<Type, CypherToNativeObject, object>)> _typeMap =
         new()
         {
             {"CypherList", (typeof(List<object>), CypherList)},
@@ -74,8 +74,8 @@ internal class CypherToNative
     public static object CypherList(Type objectType, CypherToNativeObject obj)
     {
         var result = new List<object>();
-
-        foreach (var item in (JArray) ((SimpleValue) obj.data).value)
+        var values = ((JArray)((SimpleValue) obj.data).value).OfType<JObject>();
+        foreach (var item in values)
             result.Add(Convert(JsonCypherParameterParser.ExtractParameterFromProperty(item)));
 
         return result;

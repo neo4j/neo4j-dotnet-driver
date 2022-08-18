@@ -55,7 +55,7 @@ internal abstract class ProtocolObject
     //But option to override this method and use it if necessary.
     public virtual Task ReactiveProcessAsync(Controller controller)
     {
-        return ReactiveProcessAsync();
+        return ProcessAsync(controller);
     }
 
     public virtual Task ReactiveProcessAsync()
