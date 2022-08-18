@@ -15,6 +15,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend;
@@ -23,16 +25,26 @@ internal class GetFeatures : ProtocolObject
 {
     public GetFeaturesType data { get; set; } = new();
 
-    public override async Task ProcessAsync()
+    [JsonIgnore]
+    private IReadOnlyList<string> _supportedFeatures;
+
+    public override Task ProcessAsync(Controller controller)
     {
-        await Task.CompletedTask;
+        _supportedFeatures = SupportedFeatures.FeaturesList;
+        return Task.CompletedTask;
+    }
+
+    public override Task ReactiveProcessAsync(Controller controller)
+    {
+        _supportedFeatures = SupportedFeatures.ReactiveFeatureList;
+        return Task.CompletedTask;
     }
 
     public override string Respond()
     {
         return new ProtocolResponse("FeatureList", new
         {
-            features = SupportedFeatures.FeaturesList
+            features = _supportedFeatures
         }).Encode();
     }
 

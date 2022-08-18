@@ -15,37 +15,41 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
+
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class SessionLastBookmarks : ProtocolObject
+internal class StartTest : ProtocolObject
 {
-    private string[] Bookmarks { get; set; }
-    public SessionLastBookmarksType data { get; set; } = new();
+    public StartTestType data { get; set; } = new();
+
+    [JsonIgnore] private string _reason = null;
 
     public override Task ProcessAsync()
     {
-        var session =  ObjManager.GetObject<NewSession>(data.sessionId).Session;
-        Bookmarks = session.LastBookmarks is null ? Array.Empty<string>() : session.LastBookmarks.Values;
+        if (TestBlackList.FindTest(data.testName, out var reason))
+            _reason = reason;
         return Task.CompletedTask;
     }
 
     public override Task ReactiveProcessAsync()
     {
-        var session = ObjManager.GetObject<NewSession>(data.sessionId).RxSession;
-        Bookmarks = session.LastBookmarks is null ? Array.Empty<string>() : session.LastBookmarks.Values;
+        if (TestBlackList.RxFindTest(data.testName, out var reason))
+            _reason = reason;
         return Task.CompletedTask;
     }
 
     public override string Respond()
     {
-        return new ProtocolResponse("Bookmarks", new {bookmarks = Bookmarks}).Encode();
+        return _reason != null
+            ? new ProtocolResponse("SkipTest", new { _reason }).Encode()
+            : new ProtocolResponse("RunTest").Encode();
     }
 
-    public class SessionLastBookmarksType
+    public class StartTestType
     {
-        public string sessionId { get; set; }
+        public string testName { get; set; }
     }
 }

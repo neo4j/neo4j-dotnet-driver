@@ -52,7 +52,7 @@ internal class ListAddressResolver : IServerAddressResolver
         if (result is null)
             throw new NotSupportedException(errorMessage);
 
-        //Return a IServerAddressResolver instance thats Resolve method uses the addresses in the ResolverResolutionoCompleted request.
+        //Return a IServerAddressResolver instance that's Resolve method uses the addresses in the ResolverResolutionCompleted request.
         return new HashSet<ServerAddress>(
             result.data.addresses.Select(x =>
             {

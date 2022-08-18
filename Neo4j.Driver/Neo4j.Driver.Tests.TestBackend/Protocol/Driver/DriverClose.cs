@@ -23,10 +23,10 @@ internal class DriverClose : ProtocolObject
 {
     public DriverCloseType data { get; set; } = new();
 
-    public override async Task ProcessAsync()
+    public override Task ProcessAsync()
     {
         var driver = ObjManager.GetObject<NewDriver>(data.driverId).Driver;
-        await driver.CloseAsync();
+        return driver.CloseAsync();
     }
 
     public override string Respond()

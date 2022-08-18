@@ -16,6 +16,8 @@
 // limitations under the License.
 
 using System;
+using System.Reactive;
+using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
@@ -64,6 +66,48 @@ internal class SessionWriteTransaction : ProtocolObject
                 }
             });
         }, TransactionConfig);
+    }
+
+    public override Task ReactiveProcessAsync(Controller controller)
+    {
+        var sessionContainer = ObjManager.GetObject<NewSession>(data.sessionId);
+
+        return sessionContainer.RxSession.ExecuteWrite(tx =>
+        {
+            sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAbleNothing);
+
+            TransactionId = controller.ReactiveTransactionManager.AddTransaction(
+                new TransactionWrapper<IRxTransaction>(tx as IRxTransaction,
+                    cursor =>
+                    {
+                        var result = ProtocolObjectFactory.CreateObject<Result>();
+                        result.ResultCursor = cursor;
+                        return Task.FromResult(result.UniqueId);
+                    }));
+
+            sessionContainer.SessionTransactions.Add(TransactionId);
+
+            controller
+                .SendResponseAsync(new ProtocolResponse("RetryableTry", TransactionId).Encode())
+                .GetAwaiter().GetResult();
+
+            controller.ProcessAsync(false, e =>
+            {
+                switch (sessionContainer.RetryState)
+                {
+                    case NewSession.SessionState.RetryAbleNothing:
+                        return true;
+                    case NewSession.SessionState.RetryAblePositive:
+                        return false;
+                    case NewSession.SessionState.RetryAbleNegative:
+                        throw e;
+
+                    default:
+                        return true;
+                }
+            }).GetAwaiter().GetResult();
+            return new ListObservable<Unit>(null);
+        }, TransactionConfig).ToTask();
     }
 
     public override string Respond()

@@ -47,6 +47,11 @@ internal class NewDriver : ProtocolObject
         await Task.CompletedTask;
     }
 
+    public override Task ReactiveProcessAsync(Controller controller)
+    {
+        return ProcessAsync(controller);
+    }
+
     public override string Respond()
     {
         return new ProtocolResponse("Driver", UniqueId).Encode();

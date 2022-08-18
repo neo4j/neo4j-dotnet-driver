@@ -15,21 +15,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class StartTest : ProtocolObject
+public class TestKitClientException : Exception
 {
-    public StartTestType data { get; set; } = new();
-
-    public override string Respond()
+    public TestKitClientException(string message) : base(message)
     {
-        return TestBlackList.FindTest(data.testName, out var reason)
-            ? new ProtocolResponse("SkipTest", new {reason}).Encode()
-            : new ProtocolResponse("RunTest").Encode();
-    }
-
-    public class StartTestType
-    {
-        public string testName { get; set; }
     }
 }

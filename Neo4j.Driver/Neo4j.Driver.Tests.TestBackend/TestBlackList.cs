@@ -140,4 +140,19 @@ internal static class TestBlackList
         reason = string.Empty;
         return false;
     }
+
+
+    public static bool RxFindTest(string testName, out string reason)
+    {
+        var item = Array.Find(BlackListNames, x => testName.Contains(x.Name));
+
+        if (item != default)
+        {
+            reason = item.Reason;
+            return true;
+        }
+
+        reason = string.Empty;
+        return false;
+    }
 }

@@ -28,13 +28,13 @@ internal static class ProtocolObjectFactory
     public static ProtocolObject CreateObject(string jsonString)
     {
         var type = GetObjectType(jsonString);
-        Protocol.ValidateType(type);
+        ProtocolTypes.ValidateType(type);
         return CreateObject(type, jsonString);
     }
 
     public static T CreateObject<T>() where T : ProtocolObject
     {
-        Protocol.ValidateType(typeof(T));
+        ProtocolTypes.ValidateType(typeof(T));
         return (T) CreateObject(typeof(T));
     }
 
@@ -60,7 +60,7 @@ internal static class ProtocolObjectFactory
     public static Type GetObjectType(string jsonString)
     {
         var objectTypeName = GetObjectTypeName(jsonString);
-        Protocol.ValidateType(objectTypeName);
+        ProtocolTypes.ValidateType(objectTypeName);
         return Type.GetType(typeof(ProtocolObjectFactory).Namespace + "." + objectTypeName, true);
     }
 

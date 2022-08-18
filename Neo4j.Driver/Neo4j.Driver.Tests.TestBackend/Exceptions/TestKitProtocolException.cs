@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+﻿// Copyright (c) 2002-2022 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -17,19 +17,11 @@
 
 using System;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Tests.TestBackend;
+
+public class TestKitProtocolException : Exception
 {
-    internal static class TypeExtensions
+    public TestKitProtocolException(string message) : base(message)
     {
-        public static T CastOrThrow<T>(this object value)
-        {
-            if (!(value is T castedValue))
-            {
-                throw new ArgumentOutOfRangeException($"Encountered {value?.GetType().Name} where {typeof(T).Name} was expected");
-            }
-
-            return castedValue;
-        }
-
     }
 }

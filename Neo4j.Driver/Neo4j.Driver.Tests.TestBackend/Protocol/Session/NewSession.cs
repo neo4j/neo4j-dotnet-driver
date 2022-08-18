@@ -69,7 +69,7 @@ internal class NewSession : ProtocolObject
         return Task.CompletedTask;
     }
 
-    public override Task ReactiveProcessAsync(Controller controller)
+    public override Task ReactiveProcessAsync()
     {
         var driver = ObjManager.GetObject<NewDriver>(data.driverId).Driver;
 

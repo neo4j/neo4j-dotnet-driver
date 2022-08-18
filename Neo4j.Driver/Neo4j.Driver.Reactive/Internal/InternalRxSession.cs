@@ -16,10 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Reactive;
 using System.Reactive.Linq;
 
 namespace Neo4j.Driver.Internal
@@ -122,6 +118,26 @@ namespace Neo4j.Driver.Internal
             return RunTransaction(AccessMode.Write, work, action);
         }
 
+        public IObservable<T> ExecuteRead<T>(Func<IRxRunnable, IObservable<T>> work)
+        {
+            return ReadTransaction(work, null);
+        }
+
+        public IObservable<T> ExecuteRead<T>(Func<IRxRunnable, IObservable<T>> work, Action<TransactionConfigBuilder> action)
+        {
+            return RunTransaction(AccessMode.Read, work, action);
+        }
+
+        public IObservable<T> ExecuteWrite<T>(Func<IRxRunnable, IObservable<T>> work)
+        {
+            return WriteTransaction(work, null);
+        }
+
+        public IObservable<T> ExecuteWrite<T>(Func<IRxRunnable, IObservable<T>> work, Action<TransactionConfigBuilder> action)
+        {
+            return RunTransaction(AccessMode.Write, work, action);
+        }
+
         internal IObservable<T> RunTransaction<T>(AccessMode mode,
             Func<IRxTransaction, IObservable<T>> work,
             Action<TransactionConfigBuilder> action)
@@ -151,9 +167,7 @@ namespace Neo4j.Driver.Internal
 
         public IObservable<T> Close<T>()
         {
-            return Observable.FromAsync(
-                () =>
-                    _session.CloseAsync()).SelectMany(x => Observable.Empty<T>());
+            return Observable.FromAsync(_session.CloseAsync).SelectMany(_ => Observable.Empty<T>());
         }
 
         #endregion

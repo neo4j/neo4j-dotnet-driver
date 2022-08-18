@@ -20,23 +20,9 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-public class TestKitProtocolException : Exception
+public static class ProtocolTypes
 {
-    public TestKitProtocolException(string message) : base(message)
-    {
-    }
-}
-
-public class TestKitClientException : Exception
-{
-    public TestKitClientException(string message) : base(message)
-    {
-    }
-}
-
-public static class Protocol
-{
-    public static readonly HashSet<Type> ProtocolTypes =
+    private static readonly HashSet<Type> types =
         new()
         {
             typeof(NewDriver),
@@ -73,15 +59,11 @@ public static class Protocol
             typeof(CypherTypeField)
         };
 
-    static Protocol()
-    {
-    }
-
     public static void ValidateType(string typeName)
     {
         try
         {
-            var objectType = Type.GetType(typeof(Protocol).Namespace + "." + typeName, true);
+            var objectType = Type.GetType(typeof(ProtocolTypes).Namespace + "." + typeName, true);
             ValidateType(objectType);
         }
         catch
@@ -92,7 +74,7 @@ public static class Protocol
 
     public static void ValidateType(Type objectType)
     {
-        if (!ProtocolTypes.Contains(objectType))
+        if (!types.Contains(objectType))
             throw new TestKitProtocolException($"Attempting to use an unrecognized protocol type: {objectType}");
     }
 }

@@ -50,17 +50,17 @@ internal abstract class ProtocolObject
     {
         return Task.CompletedTask;
     }
-
+    
     //Default is to not use the controller object.
     //But option to override this method and use it if necessary.
     public virtual Task ReactiveProcessAsync(Controller controller)
     {
-        return ProcessAsync(controller);
+        return ReactiveProcessAsync();
     }
 
     public virtual Task ReactiveProcessAsync()
     {
-        return Task.CompletedTask;
+        return ProcessAsync();
     }
 
     public string Encode()

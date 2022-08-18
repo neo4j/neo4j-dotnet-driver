@@ -73,6 +73,19 @@ internal class SessionRun : ProtocolObject
         ResultId = result.UniqueId;
     }
 
+    public override Task ReactiveProcessAsync()
+    {
+        var newSession = ObjManager.GetObject<NewSession>(data.sessionId);
+        var cursor = newSession.RxSession
+            .Run(data.cypher, ConvertParameters(data.parameters), TransactionConfig);
+        
+        var result = ProtocolObjectFactory.CreateObject<Result>();
+        result.ResultCursor = new RxCursorWrapper(cursor);
+
+        ResultId = result.UniqueId;
+        return Task.CompletedTask;
+    }
+
     public override string Respond()
     {
         return ObjManager.GetObject<Result>(ResultId).Respond();

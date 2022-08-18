@@ -15,6 +15,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Reactive;
+using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend;
@@ -27,6 +31,14 @@ internal class SessionClose : ProtocolObject
     {
         var session = ObjManager.GetObject<NewSession>(data.sessionId).Session;
         return session.CloseAsync();
+    }
+
+    public override Task ReactiveProcessAsync()
+    {
+        var session = ObjManager.GetObject<NewSession>(data.sessionId).RxSession;
+
+        //isEmpty because you can't ToTask empty observables.
+        return session.Close<Unit>().IsEmpty().ToTask();
     }
 
     public override string Respond()
