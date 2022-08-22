@@ -64,8 +64,8 @@ internal class SessionRun : ProtocolObject
     public override async Task ProcessAsync()
     {
         var newSession = ObjManager.GetObject<NewSession>(data.sessionId);
-        var cursor = await newSession.Session
-            .RunAsync(data.cypher, ConvertParameters(data.parameters), TransactionConfig);
+        var cursor = await newSession.Session.RunAsync(data.cypher, 
+            ConvertParameters(data.parameters), TransactionConfig);
 
         var result = ProtocolObjectFactory.CreateObject<Result>();
         result.ResultCursor = cursor;
@@ -76,13 +76,14 @@ internal class SessionRun : ProtocolObject
     public override Task ReactiveProcessAsync()
     {
         var newSession = ObjManager.GetObject<NewSession>(data.sessionId);
-        var cursor = newSession.RxSession
-            .Run(data.cypher, ConvertParameters(data.parameters), TransactionConfig);
+        var cursor = newSession.RxSession.Run(data.cypher, 
+            ConvertParameters(data.parameters), TransactionConfig);
         
         var result = ProtocolObjectFactory.CreateObject<Result>();
         result.ResultCursor = new RxCursorWrapper(cursor);
 
         ResultId = result.UniqueId;
+
         return Task.CompletedTask;
     }
 

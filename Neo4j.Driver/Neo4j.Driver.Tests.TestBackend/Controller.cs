@@ -62,6 +62,7 @@ internal class Controller
                 await protocolObject.ProcessAsync(this);
 
             await SendResponseAsync(protocolObject);
+
             Trace.Flush();
         }
 

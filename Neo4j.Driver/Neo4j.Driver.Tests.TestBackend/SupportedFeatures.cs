@@ -95,7 +95,7 @@ internal static class SupportedFeatures
         "Optimization:EagerTransactionBegin",
         //"Optimization:ImplicitDefaultArguments",
         //"Optimization:MinimalResets",
-        "Optimization:PullPipelining"
+        //"Optimization:PullPipelining"
         //"Optimization:ResultListFetchAll",
     };
 }

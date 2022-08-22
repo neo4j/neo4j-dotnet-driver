@@ -70,7 +70,7 @@ internal class RxCursorWrapper : IResultCursor
             read = true;
             try
             {
-                records = _cursor.Records().Next().GetEnumerator();
+                records = _cursor.Records().GetEnumerator();
             }
             catch (Exception ex)
             {

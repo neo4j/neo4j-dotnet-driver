@@ -66,7 +66,7 @@ internal class SessionBeginTransaction : ProtocolObject
     public override async Task ReactiveProcessAsync(Controller controller)
     {
         var sessionContainer = ObjManager.GetObject<NewSession>(data.sessionId);
-        var transaction = await sessionContainer.RxSession.BeginTransaction(TransactionConfig).RunAsync(CancellationToken.None);
+        var transaction = await sessionContainer.RxSession.BeginTransaction(TransactionConfig);
 
         TransactionId = controller.ReactiveTransactionManager.AddTransaction(
             new TransactionWrapper<IRxTransaction>(transaction, 

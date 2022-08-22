@@ -16,18 +16,12 @@
 // limitations under the License.
 
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
 internal class AuthorizationToken : ProtocolObject
 {
     public AuthorizationTokenType data { get; set; } = new();
-
-    public override Task ProcessAsync()
-    {
-        return Task.CompletedTask;
-    }
 
     public class AuthorizationTokenType
     {

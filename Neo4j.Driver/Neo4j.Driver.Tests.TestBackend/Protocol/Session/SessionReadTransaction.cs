@@ -18,7 +18,6 @@
 using System;
 using System.Reactive;
 using System.Reactive.Linq;
-using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
@@ -107,7 +106,7 @@ internal class SessionReadTransaction : ProtocolObject
             }).GetAwaiter().GetResult();
 
             return Observable.Empty<Unit>();
-        }, TransactionConfig).IsEmpty().ToTask();
+        }, TransactionConfig).IsEmpty();
     }
 
     public override string Respond()

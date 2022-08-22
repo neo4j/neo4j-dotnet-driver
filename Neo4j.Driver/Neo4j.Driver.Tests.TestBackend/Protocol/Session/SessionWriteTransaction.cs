@@ -69,11 +69,11 @@ internal class SessionWriteTransaction : ProtocolObject
         }, TransactionConfig);
     }
 
-    public override Task ReactiveProcessAsync(Controller controller)
+    public override async Task ReactiveProcessAsync(Controller controller)
     {
         var sessionContainer = ObjManager.GetObject<NewSession>(data.sessionId);
 
-        return sessionContainer.RxSession.ExecuteWrite(tx =>
+        await sessionContainer.RxSession.ExecuteWrite(tx =>
         {
             sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAbleNothing);
 
@@ -108,7 +108,7 @@ internal class SessionWriteTransaction : ProtocolObject
                 }
             }).GetAwaiter().GetResult();
             return Observable.Empty<Unit>();
-        }, TransactionConfig).ToTask();
+        }, TransactionConfig).IsEmpty();
     }
 
     public override string Respond()

@@ -45,7 +45,7 @@ internal class ListAddressResolver : IServerAddressResolver
             .Encode();
 
         //Send the ResolverResolutionRequired response
-        _control.SendResponseAsync(response);
+        _control.SendResponseAsync(response).GetAwaiter().GetResult();
 
         //Read the ResolverResolutionCompleted request, throw if another type of request has come in
         var result = _control.TryConsumeStreamObjectAsync<ResolverResolutionCompleted>().GetAwaiter().GetResult();

@@ -38,15 +38,7 @@ internal class NewSession : ProtocolObject
     [JsonIgnore] public IRxSession RxSession { get; set; }
 
     [JsonIgnore]
-    public AccessMode GetAccessMode
-    {
-        get
-        {
-            if (data.accessMode == "r")
-                return AccessMode.Read;
-            return AccessMode.Write;
-        }
-    }
+    public AccessMode GetAccessMode => data.accessMode == "r" ? AccessMode.Read : AccessMode.Write;
 
     [JsonIgnore] public List<string> SessionTransactions { get; } = new();
 
