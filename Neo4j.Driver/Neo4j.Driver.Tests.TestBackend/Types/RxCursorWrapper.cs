@@ -37,7 +37,6 @@ internal class RxCursorWrapper : IResultCursor
         _cursor = cursor;
         position = -1;
         read = false;
-
     }
 
     public Task<string[]> KeysAsync()

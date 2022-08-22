@@ -36,6 +36,11 @@ internal class GetRoutingTable : ProtocolObject
         return Task.CompletedTask;
     }
 
+    public override Task ReactiveProcessAsync(Controller controller)
+    {
+        return ProcessAsync(controller);
+    }
+
     public override string Respond()
     {
         return new ProtocolResponse("RoutingTable", new

@@ -17,6 +17,7 @@
 
 using System;
 using System.Reactive;
+using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -106,7 +107,7 @@ internal class SessionWriteTransaction : ProtocolObject
                         return true;
                 }
             }).GetAwaiter().GetResult();
-            return new ListObservable<Unit>(null);
+            return Observable.Empty<Unit>();
         }, TransactionConfig).ToTask();
     }
 

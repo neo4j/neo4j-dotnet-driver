@@ -17,6 +17,7 @@
 
 using System;
 using System.Reactive;
+using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -67,11 +68,11 @@ internal class SessionReadTransaction : ProtocolObject
         }, TransactionConfig);
     }
 
-    public override Task ReactiveProcessAsync(Controller controller)
+    public override async Task ReactiveProcessAsync(Controller controller)
     {
         var sessionContainer = ObjManager.GetObject<NewSession>(data.sessionId);
 
-        return sessionContainer.RxSession.ExecuteRead(tx =>
+        await sessionContainer.RxSession.ExecuteRead(tx =>
         {
             sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAbleNothing);
 
@@ -86,7 +87,8 @@ internal class SessionReadTransaction : ProtocolObject
 
             sessionContainer.SessionTransactions.Add(TransactionId);
 
-            controller.SendResponseAsync(new ProtocolResponse("RetryableTry", TransactionId).Encode()).GetAwaiter().GetResult();
+            controller.SendResponseAsync(new ProtocolResponse("RetryableTry", TransactionId).Encode())
+                .GetAwaiter().GetResult();
 
             controller.ProcessAsync(false, e =>
             {
@@ -104,8 +106,8 @@ internal class SessionReadTransaction : ProtocolObject
                 }
             }).GetAwaiter().GetResult();
 
-            return new ListObservable<Unit>(null);
-        }, TransactionConfig).ToTask();
+            return Observable.Empty<Unit>();
+        }, TransactionConfig).IsEmpty().ToTask();
     }
 
     public override string Respond()

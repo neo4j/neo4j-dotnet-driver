@@ -15,6 +15,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Reactive;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend;
@@ -27,6 +29,12 @@ internal class TransactionRollback : ProtocolObject
     {
         var transactionWrapper = controller.TransactionManager.FindTransaction(data.txId);
         await transactionWrapper.Transaction.RollbackAsync();
+    }
+
+    public override async Task ReactiveProcessAsync(Controller controller)
+    {
+        var transactionWrapper = controller.ReactiveTransactionManager.FindTransaction(data.txId);
+        await transactionWrapper.Transaction.Rollback<Unit>().IsEmpty();
     }
 
     public override string Respond()

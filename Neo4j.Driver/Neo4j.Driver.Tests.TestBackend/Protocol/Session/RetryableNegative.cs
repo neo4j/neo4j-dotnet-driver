@@ -33,6 +33,11 @@ internal class RetryableNegative : ProtocolObject
         return Task.CompletedTask;
     }
 
+    public override Task ReactiveProcessAsync(Controller controller)
+    {
+        return ProcessAsync(controller);
+    }
+
     public override string Respond()
     {
         return string.Empty;

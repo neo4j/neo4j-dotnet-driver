@@ -57,6 +57,23 @@ internal class TransactionRun : ProtocolObject
         }
     }
 
+    public override async Task ReactiveProcessAsync(Controller controller)
+    {
+        try
+        {
+            var transactionWrapper = controller.ReactiveTransactionManager.FindTransaction(data.txId);
+
+            var cursor = transactionWrapper.Transaction
+                .Run(data.cypher, ConvertParameters(data.parameters));
+
+            ResultId = await transactionWrapper.ProcessResults(new RxCursorWrapper(cursor));
+        }
+        catch (TimeZoneNotFoundException tz)
+        {
+            throw new DriverExceptionWrapper(tz);
+        }
+    }
+
     public override string Respond()
     {
         try
