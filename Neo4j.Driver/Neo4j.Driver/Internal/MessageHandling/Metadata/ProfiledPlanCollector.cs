@@ -60,8 +60,8 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                 profileDictionary.GetMandatoryValue<string>("operatorType", m => new ProtocolException(m));
             var args = profileDictionary.GetValue("args", new Dictionary<string, object>());
             var identifiers = profileDictionary.GetValue("identifiers", new List<object>()).Cast<string>();
-            var dbHits = profileDictionary.GetMandatoryValue<long>("dbHits", m => new ProtocolException(m));
-            var rows = profileDictionary.GetMandatoryValue<long>("rows", m => new ProtocolException(m));
+            var dbHits = profileDictionary.GetValue<long>("dbHits", 0);
+            var rows = profileDictionary.GetValue<long>("rows", 0);
             var pageCacheHits = profileDictionary.GetValue<long>("pageCacheHits", 0);
             var pageCacheMisses = profileDictionary.GetValue<long>("pageCacheMisses", 0);
             var pageCacheHitRatio = profileDictionary.GetValue<double>("pageCacheHitRatio", 0);
