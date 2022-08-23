@@ -63,5 +63,11 @@ namespace Neo4j.Driver.Internal
         {
             return Observable.FromAsync(() => _transaction.RollbackAsync()).SelectMany(x => Observable.Empty<T>());
         }
+
+        public IObservable<T> Close<T>()
+        {
+            return Observable.FromAsync(() => _transaction.DisposeAsync().AsTask())
+                .SelectMany(x => Observable.Empty<T>());
+        }
     }
 }

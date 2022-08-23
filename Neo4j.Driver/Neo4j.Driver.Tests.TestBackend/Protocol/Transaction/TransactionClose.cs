@@ -34,7 +34,7 @@ internal class TransactionClose : ProtocolObject
     public override async Task ReactiveProcessAsync(Controller controller)
     {
         var transactionWrapper = controller.ReactiveTransactionManager.FindTransaction(data.txId);
-        await transactionWrapper.Transaction.Rollback<Unit>().IsEmpty();
+        await transactionWrapper.Transaction.Close<Unit>().IsEmpty();
     }
 
     public override string Respond()

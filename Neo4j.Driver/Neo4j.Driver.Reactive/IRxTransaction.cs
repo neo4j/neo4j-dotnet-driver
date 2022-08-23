@@ -16,7 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Reactive;
 
 namespace Neo4j.Driver
 {
@@ -48,5 +47,7 @@ namespace Neo4j.Driver
         /// Gets the transaction configuration.
         /// </summary>
         TransactionConfig TransactionConfig { get; }
+
+        IObservable<T> Close<T>();
     }
 }

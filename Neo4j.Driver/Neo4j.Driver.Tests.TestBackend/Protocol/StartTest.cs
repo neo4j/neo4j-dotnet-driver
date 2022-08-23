@@ -25,7 +25,7 @@ internal class StartTest : ProtocolObject
 {
     public StartTestType data { get; set; } = new();
 
-    [JsonIgnore] private string _reason = null;
+    [JsonIgnore] private string _reason;
 
     public override Task ProcessAsync()
     {
@@ -44,7 +44,7 @@ internal class StartTest : ProtocolObject
     public override string Respond()
     {
         return _reason != null
-            ? new ProtocolResponse("SkipTest", new { _reason }).Encode()
+            ? new ProtocolResponse("SkipTest", new { reason = _reason }).Encode()
             : new ProtocolResponse("RunTest").Encode();
     }
 
