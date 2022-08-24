@@ -103,7 +103,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         }
 
         [Fact]
-        public void ShouldThrowIfDbHitsIsMissing()
+        public void ShouldNotThrowIfDbHitsIsMissing()
         {
             var metadata = new Dictionary<string, object>
             {
@@ -116,15 +116,11 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
             };
             var collector = new ProfiledPlanCollector();
 
-            var ex = Record.Exception(() => collector.Collect(metadata));
-
-            ex.Should().BeOfType<ProtocolException>().Which
-                .Message.Should()
-                .Be("Expected key 'dbHits' to be present in the dictionary, but could not find.");
+            collector.Collect(metadata);
         }
 
         [Fact]
-        public void ShouldThrowIfRowsIsMissing()
+        public void ShouldNotThrowIfRowsIsMissing()
         {
             var metadata = new Dictionary<string, object>
             {
@@ -138,11 +134,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
             };
             var collector = new ProfiledPlanCollector();
 
-            var ex = Record.Exception(() => collector.Collect(metadata));
-
-            ex.Should().BeOfType<ProtocolException>().Which
-                .Message.Should()
-                .Be("Expected key 'rows' to be present in the dictionary, but could not find.");
+            collector.Collect(metadata);
         }
 
         [Fact]
