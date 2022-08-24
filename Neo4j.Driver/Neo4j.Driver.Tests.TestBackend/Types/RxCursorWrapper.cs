@@ -26,16 +26,12 @@ namespace Neo4j.Driver.Tests.TestBackend;
 internal class RxCursorWrapper : IResultCursor
 {
     private readonly IRxResult _cursor;
-    private IList<IRecord> values;
-    private int position;
-    private Exception caught;
     private bool hasRead;
     private IEnumerator<IRecord> records;
 
     public RxCursorWrapper(IRxResult cursor)
     {
         _cursor = cursor;
-        position = -1;
     }
 
     public Task<string[]> KeysAsync()
@@ -61,11 +57,10 @@ internal class RxCursorWrapper : IResultCursor
 
     private void Read()
     {
-        if (!hasRead)
-        {
-            hasRead = true;
-            records = _cursor.Records().GetEnumerator();
-        }
+        if (hasRead)
+            return;
+        hasRead = true;
+        records = _cursor.Records().GetEnumerator();
     }
 
     public IRecord Current => records.Current;
