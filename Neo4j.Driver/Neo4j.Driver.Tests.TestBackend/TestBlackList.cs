@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
@@ -127,9 +128,15 @@ internal static class TestBlackList
             "EST/HST/MST not supported.")
     };
 
+    private static readonly (string Name, string Reason)[] RxBlacklist = {
+        //TODO: Investigate or replace test. Divergent behaviour to Java.
+        ("stub.iteration.test_iteration_session_run.TestIterationSessionRun.test_discards_on_session_close",
+            "Rx result consumes cursor after eagerly pulling records")
+    };
+
     public static bool FindTest(string testName, out string reason)
     {
-        var item = Array.Find(BlackListNames, x => testName.Contains(x.Name));
+        var item = BlackListNames.FirstOrDefault(x => testName.Contains(x.Name));
 
         if (item != default)
         {
@@ -144,11 +151,19 @@ internal static class TestBlackList
 
     public static bool RxFindTest(string testName, out string reason)
     {
-        var item = Array.Find(BlackListNames, x => testName.Contains(x.Name));
+        var item = BlackListNames.FirstOrDefault(x => testName.Contains(x.Name));
 
         if (item != default)
         {
             reason = item.Reason;
+            return true;
+        }
+
+        var rxItem = RxBlacklist.FirstOrDefault(x => testName.Contains(x.Name));
+
+        if (rxItem != default)
+        {
+            reason = rxItem.Reason;
             return true;
         }
 

@@ -29,14 +29,13 @@ internal class RxCursorWrapper : IResultCursor
     private IList<IRecord> values;
     private int position;
     private Exception caught;
-    private bool read;
+    private bool hasRead;
     private IEnumerator<IRecord> records;
 
     public RxCursorWrapper(IRxResult cursor)
     {
         _cursor = cursor;
         position = -1;
-        read = false;
     }
 
     public Task<string[]> KeysAsync()
@@ -51,9 +50,6 @@ internal class RxCursorWrapper : IResultCursor
 
     public Task<IRecord> PeekAsync()
     {
-        //Read();
-        //records.
-        //return Task.FromResult(position + 1 == values.Count ? null : values[position + 1]);
         throw new NotImplementedException();
     }
 
@@ -65,21 +61,11 @@ internal class RxCursorWrapper : IResultCursor
 
     private void Read()
     {
-        if (!read)
+        if (!hasRead)
         {
-            read = true;
-            try
-            {
-                records = _cursor.Records().GetEnumerator();
-            }
-            catch (Exception ex)
-            {
-                caught = ex;
-            }
+            hasRead = true;
+            records = _cursor.Records().GetEnumerator();
         }
-
-        if (caught != null)
-            throw caught;
     }
 
     public IRecord Current => records.Current;
