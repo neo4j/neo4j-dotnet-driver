@@ -87,7 +87,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                 if (data.TimeoutSet)
                 {
                     var timeout = data.timeout.HasValue
-                    ? TimeSpan.FromMilliseconds(data.timeout.Value)
+                        ? TimeSpan.FromMilliseconds(data.timeout.Value)
                         : default(TimeSpan?);
                     configBuilder.WithTimeout(timeout);
                 }

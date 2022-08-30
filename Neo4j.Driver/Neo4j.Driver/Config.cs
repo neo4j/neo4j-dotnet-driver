@@ -220,10 +220,5 @@ namespace Neo4j.Driver
         /// where x is the major version and y is the minor version.
         /// </summary>
         public string UserAgent { get; internal set; } = ConnectionSettings.DefaultUserAgent;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public IBookmarkManager BookmarkManager { get; internal set; }
     }
 }

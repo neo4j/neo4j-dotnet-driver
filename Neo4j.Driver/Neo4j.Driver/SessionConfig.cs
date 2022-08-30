@@ -126,12 +126,7 @@ namespace Neo4j.Driver
             internal set => _impersonatedUser = (!string.IsNullOrEmpty(value)) ? value : throw new ArgumentNullException();
         }
 
-        /// <summary>
-        /// Whether the session will be use the bookmark manager.<br/>
-        /// When ignoring the bookmark manager only bookmarks passed in <see cref="Bookmarks"/> and subsequent query's bookmarks will be used for maintaining causality in the session. <br/>
-        /// Furthermore when closing the session the bookmarks will not be passed to the bookmark manager.
-        /// </summary>
-        public bool IgnoreBookmarkManager { get; internal set; }
+        public IBookmarkManager BookmarkManager { get; set; }
     }
 
     /// <summary>
@@ -233,19 +228,15 @@ namespace Neo4j.Driver
             return this;
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="ignoreBookmarkManager"></param>
-        public void WithIgnoreBookmarkManager(bool ignoreBookmarkManager)
-        {
-            _config.IgnoreBookmarkManager = ignoreBookmarkManager;
-        }
-
         internal SessionConfig Build()
         {
             return _config;
         }
 
+        public SessionConfigBuilder WithBookmarkManager(IBookmarkManager bookmarkManager)
+        {
+            _config.BookmarkManager = bookmarkManager;
+            return this;
+        }
     }
 }

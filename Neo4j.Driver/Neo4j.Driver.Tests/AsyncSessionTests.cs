@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Tests
     {
         internal static AsyncSession NewSession(IConnection connection, ILogger logger = null)
         {
-            return new AsyncSession(new TestConnectionProvider(connection), logger, null, 0, null, new Driver.SessionConfig(), false);
+            return new AsyncSession(new TestConnectionProvider(connection), logger, null, 0,  new Driver.SessionConfig(), false);
         }
 
         internal static AsyncSession NewSession(IBoltProtocol protocol, bool reactive = false)
@@ -46,7 +46,7 @@ namespace Neo4j.Driver.Tests
             mockConn.Setup(x => x.IsOpen).Returns(true);
             mockConn.Setup(x => x.BoltProtocol).Returns(protocol);
             
-            return new AsyncSession(new TestConnectionProvider(mockConn.Object), null, null, 0, null, new Driver.SessionConfig(), reactive);
+            return new AsyncSession(new TestConnectionProvider(mockConn.Object), null, null, 0,  new Driver.SessionConfig(), reactive);
         }
 
         internal static Mock<IConnection> NewMockedConnection(IBoltProtocol boltProtocol = null)

@@ -57,7 +57,13 @@ namespace Neo4j.Driver.Tests.TestBackend
 									typeof(StartTest),
 									typeof(GetFeatures),
 									typeof(GetRoutingTable),
-                                    typeof(CypherTypeField)
+                                    typeof(CypherTypeField),
+                                    typeof(NewBookmarkManager),
+                                    typeof(BookmarkManagerClose),
+                                    typeof(BookmarkManagerConsumerRequest),
+                                    typeof(BookmarkManagerSupplierRequest),
+                                    typeof(BookmarksConsumerCompleted),
+                                    typeof(BookmarksSupplierCompleted),
                 };
 
 

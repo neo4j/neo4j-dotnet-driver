@@ -61,7 +61,6 @@ namespace Neo4j.Driver.Internal
             ILogger logger,
             IAsyncRetryLogic retryLogic,
             long defaultFetchSize,
-            IBookmarkManager bookmarkManager,
             SessionConfig config,
             bool reactive
         )
@@ -75,10 +74,10 @@ namespace Neo4j.Driver.Internal
             _database = config.Database;
             _defaultMode = config.DefaultAccessMode;
             _fetchSize = config.FetchSize ?? defaultFetchSize;
-            _useBookmarkManager = !config.IgnoreBookmarkManager && bookmarkManager != null;
+            _useBookmarkManager = config.BookmarkManager != null;
 
             if (_useBookmarkManager)
-                _bookmarkManager = bookmarkManager;
+                _bookmarkManager = config.BookmarkManager;
 
             if (config.Bookmarks != null)
                 _bookmarks = Bookmarks.From(config.Bookmarks);

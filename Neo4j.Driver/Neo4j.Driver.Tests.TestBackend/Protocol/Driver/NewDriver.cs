@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal;
 using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
@@ -32,7 +31,6 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             public long? fetchSize;
             public long? maxTxRetryTimeMs;
-            public BookmarkManagerConfig bookmarkManagerConfig;
 
             public string[] trustedCertificates
             {
@@ -134,9 +132,6 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             if (data.fetchSize.HasValue)
                 configBuilder.WithFetchSize(data.fetchSize.Value);
-
-            if (data.bookmarkManagerConfig != null)
-                configBuilder.WithBookmarkManager(new DefaultBookmarkManager(data.bookmarkManagerConfig));
 
             var logger = new SimpleLogger();
 

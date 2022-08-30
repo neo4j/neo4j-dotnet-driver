@@ -41,7 +41,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             [JsonProperty(Required = Required.AllowNull)]
             public string impersonatedUser { get; set; }
 
-            public bool? ignoreBookmarkManager { get; set; }
+            public string bookmarkManagerId { get; set; }
         }
 
         [JsonIgnore]
@@ -71,8 +71,9 @@ namespace Neo4j.Driver.Tests.TestBackend
             if (!string.IsNullOrEmpty(data.impersonatedUser))
                 configBuilder.WithImpersonatedUser(data.impersonatedUser);
 
-            if (data.ignoreBookmarkManager.HasValue)
-                configBuilder.WithIgnoreBookmarkManager(data.ignoreBookmarkManager.Value);
+            if (data.bookmarkManagerId != null)
+                configBuilder.WithBookmarkManager(ObjManager.GetObject<NewBookmarkManager>(data.bookmarkManagerId)
+                    .BookmarkManager);
         }
 
         public override async Task Process()
