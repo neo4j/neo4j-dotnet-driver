@@ -410,9 +410,12 @@ namespace Neo4j.Driver.Tests
             {
                 var bookmarkManager = new Mock<IBookmarkManager>();
 
-                var cfg = new SessionConfigBuilder(new Driver.SessionConfig()).WithDatabase("test").Build();
+                var cfg = new SessionConfigBuilder(new Driver.SessionConfig())
+                    .WithDatabase("test")
+                    .WithBookmarkManager(bookmarkManager.Object)
+                    .Build();
 
-                using (var session = new AsyncSession(null, null, null, 0, bookmarkManager.Object, cfg, false))
+                using (var session = new AsyncSession(null, null, null, 0, cfg, false))
                 {
                     session.UpdateBookmarks(new InternalBookmarks("a"));
                     bookmarkManager.Verify(x => x.UpdateBookmarks("test", Array.Empty<string>(), new[] { "a" }), Times.Once);

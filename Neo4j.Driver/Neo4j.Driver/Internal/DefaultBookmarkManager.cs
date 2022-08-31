@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal;
 internal class DefaultBookmarkManager : IBookmarkManager
 {
     private Dictionary<string, HashSet<string>> _bookmarkSets;
-    private readonly Func<string, string[]> _bookmarkSupplier;
+    private readonly Func<string?, string[]> _bookmarkSupplier;
     private readonly Action<string, string[]> _onBookmarks;
     private readonly SemaphoreSlim _lock;
 
@@ -107,8 +107,7 @@ internal class DefaultBookmarkManager : IBookmarkManager
         if (_bookmarkSupplier == null)
             return set.ToArray();
 
-        foreach (var key in keys)
-            set.UnionWith(_bookmarkSupplier(key));
+        set.UnionWith(_bookmarkSupplier(null));
 
         return set.ToArray();
     }

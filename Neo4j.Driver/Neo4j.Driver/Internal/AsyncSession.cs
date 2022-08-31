@@ -280,8 +280,9 @@ namespace Neo4j.Driver.Internal
         {
             if (_useBookmarkManager)
                 _bookmarks = _bookmarks == null
-                    ? Bookmarks.From(_bookmarkManager.GetAllBookmarks())
+                    ? Bookmarks.From(_bookmarkManager.GetBookmarks("system"))
                     : Bookmarks.From(_bookmarkManager.GetAllBookmarks().Concat(_bookmarks?.Values));
+
 
             _connection = await _connectionProvider.AcquireAsync(mode, _database, ImpersonatedUser(), _bookmarks)
                 .ConfigureAwait(false);
