@@ -108,6 +108,12 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             using (var session = _driver.Session())
             {
                 var records = session.Run("CALL dbms.cluster.overview()").ToList();
+
+                if (UsingBoltMoreThan5_0())
+                {
+                    return CreateAutonomousClusterAddresses(records);
+                }
+
                 foreach (var record in records)
                 {
                     var address = record["addresses"].As<IList<object>>().First().As<string>().Replace("bolt://", "");
@@ -144,6 +150,42 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             }
 
             return new ClusterAddresses(followers, readReplicas);
+        }
+
+        private bool UsingBoltMoreThan5_0()
+        {
+            return _driver.GetServerInfoAsync().GetAwaiter().GetResult().ProtocolVersion
+                .Split('.').Take(1).Select(int.Parse).First() >= 5;
+        }
+
+        private static ClusterAddresses CreateAutonomousClusterAddresses(List<IRecord> records)
+        {
+            var neoDbs = records.Select(x =>
+                {
+                    object role = null;
+                    var exists = x.Values.TryGetValue("databases", out var y) && 
+                                 y.As<IDictionary<string, object>>().TryGetValue("neo4j", out role);
+
+                    if (!exists)
+                        return (address: null, role: null);
+
+                    var address = x.Values["addresses"].As<IList<object>>()
+                        .FirstOrDefault()?.As<string>().Replace("bolt://", "");
+
+                    return (address, role: role.As<string>());
+                })
+                .Where(x => x.role != null)
+                .ToList();
+
+            if(neoDbs.Count == 1 && neoDbs[0].role.Equals("standalone", StringComparison.OrdinalIgnoreCase))
+                return new ClusterAddresses(Array.Empty<string>(), Array.Empty<string>());
+
+            if (neoDbs.Count > 1)
+                return new ClusterAddresses(neoDbs
+                    .Where(x => x.role.Equals("follower", StringComparison.OrdinalIgnoreCase))
+                    .Select(x => x.address).ToList(), Array.Empty<string>());
+
+            throw new Exception("Invalid cluster");
         }
 
         private static void VerifyServedReadQueries(Context context, ClusterAddresses clusterAddresses)
