@@ -30,6 +30,12 @@ namespace Neo4j.Driver
     /// </summary>
     public static class GraphDatabase
     {
+        /// <summary>
+        /// Gets a new bookmark manager factory, which can construct a default implementation of <see cref="IBookmarkManager"/>.<br/>
+        /// <see cref="IBookmarkManager"/> instances can be passed to <see cref="SessionConfigBuilder"/> when opening a new session.
+        /// </summary>
+        public static IBookmarkManagerFactory BookmarkManagerFactory => new BookmarkManagerFactory();
+
         internal const int DefaultBoltPort = 7687;
 
         /// <summary>

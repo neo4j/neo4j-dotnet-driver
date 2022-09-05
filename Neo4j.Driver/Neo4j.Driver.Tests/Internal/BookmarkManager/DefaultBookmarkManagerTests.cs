@@ -202,7 +202,7 @@ public class DefaultBookmarkManagerTests
     }
 
     [Fact]
-    public void ShouldReturnDistinctUnionOfAllBookmarksForKnownDatabases()
+    public void ShouldReturnDistinctUnionOfAllBookmarksForKnownDatabasesNoSpecifiedDb()
     {
         var initialBookmarks = new Dictionary<string, IEnumerable<string>>()
         {
@@ -210,24 +210,46 @@ public class DefaultBookmarkManagerTests
             ["example2"] = new[] { "eg2" }
         };
 
-        string[] Provider(string db)
-        {
-            if (db == "example3")
-                return new[] {"provider3"};
-            if (db == "example")
-                return new[] {"eg1", "provider1"};
-            return Array.Empty<string>();
-        }
+        var mock = new Mock<Func<string, string[]>>();
+        mock.Setup(x => x.Invoke(It.IsNotNull<string>())).Throws(new Exception());
+        mock.Setup(x => x.Invoke(null)).Returns(new[] { "eg1", "provider2" });
 
         var config = new BookmarkManagerConfig(
             initialBookmarks,
-            Provider,
+            mock.Object,
             (_, _) => { });
 
         var bookmarkManager = new DefaultBookmarkManager(config);
 
         var exists = bookmarkManager.GetAllBookmarks();
-        exists.Should().BeEquivalentTo("eg1", "provider1", "eg2");
+
+        mock.Verify(x => x.Invoke(null), Times.Once);
+        
+        exists.Should().BeEquivalentTo("eg1", "provider2", "eg2");
+    }
+
+    [Fact]
+    public void ShouldReturnDistinctUnionOfAllBookmarksForKnownDatabasesWithSpecifiedDb()
+    {
+        var initialBookmarks = new Dictionary<string, IEnumerable<string>>()
+        {
+            ["INC"] = new[] { "eg1" },
+            ["EXC"] = new[] { "eg2" }
+        };
+
+        var mock = new Mock<Func<string, string[]>>();
+        mock.Setup(x => x.Invoke(null)).Throws(new Exception());
+        mock.Setup(x => x.Invoke("INC")).Returns(new[] { "eg1", "provider3" });
+
+        var config = new BookmarkManagerConfig(
+            initialBookmarks,
+            mock.Object,
+            (_, _) => { });
+
+        var bookmarkManager = new DefaultBookmarkManager(config);
+
+        var exists = bookmarkManager.GetBookmarks("INC");
+        exists.Should().BeEquivalentTo("eg1", "provider3");
     }
 
     [Fact]

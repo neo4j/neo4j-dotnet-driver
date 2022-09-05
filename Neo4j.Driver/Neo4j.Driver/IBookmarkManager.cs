@@ -18,12 +18,13 @@
 namespace Neo4j.Driver;
 
 /// <summary>
-/// 
+/// Manager of Neo4j's causal-consistency mechanism, bookmarks.<br/>
+/// The manager maintains and provides collections of bookmarks for databases, exposing to both driver and user-code.<br/>
 /// </summary>
 public interface IBookmarkManager
 {
     /// <summary>
-    /// Updates the bookmark manager's last known bookmarks.
+    /// Updates the bookmark manager's last known bookmarks for a database.
     /// </summary>
     /// <param name="database">Database which the bookmarks belong to.</param>
     /// <param name="previousBookmarks">The bookmarks used at the start of bookmark.</param>
@@ -44,8 +45,8 @@ public interface IBookmarkManager
     string[] GetAllBookmarks();
 
     /// <summary>
-    /// 
+    /// Removes all or specified databases from the bookmark manager's internal cache.
     /// </summary>
-    /// <param name="databases"></param>
+    /// <param name="databases">databases to remove, or if empty: all.</param>
     void Forget(params string[] databases);
 }
