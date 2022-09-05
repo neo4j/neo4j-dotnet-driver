@@ -32,8 +32,8 @@ namespace Neo4j.Driver.Tests.TestBackend
                     return Array.Empty<string>();
 
                 var request = new BookmarkManagerSupplierRequest(ObjManager);
-                controller.SendResponse(new ProtocolResponse("BookmarksSupplierRequest",
-                        new {database, bookmarkManagerId = uniqueId, id = request.uniqueId}).Encode())
+                
+                controller.SendResponse(GetSupplyRequest(database, request))
                     .GetAwaiter()
                     .GetResult();
                 var result = controller.TryConsumeStreamObjectOfType<BookmarksSupplierCompleted>()
@@ -50,8 +50,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
                 var request = new BookmarkManagerConsumerRequest(ObjManager);
 
-                controller.SendResponse(new ProtocolResponse("BookmarksConsumerRequest",
-                        new {database, bookmarks, bookmarkManagerId = uniqueId, id = request.uniqueId}).Encode())
+                controller.SendResponse(GetConsumeRequest(database, bookmarks, request))
                     .GetAwaiter()
                     .GetResult();
                 controller.TryConsumeStreamObjectOfType<BookmarksConsumerCompleted>()
@@ -60,10 +59,22 @@ namespace Neo4j.Driver.Tests.TestBackend
             }
 
             BookmarkManager =
-                new DefaultBookmarkManager(new BookmarkManagerConfig(initialBookmarks, BookmarkSupplier,
-                    NotifyBookmarks));
+                GraphDatabase.BookmarkManagerFactory.NewBookmarkManager(
+                    new BookmarkManagerConfig(initialBookmarks, BookmarkSupplier, NotifyBookmarks));
 
             return Task.CompletedTask;
+        }
+
+        private string GetConsumeRequest(string database, string[] bookmarks, BookmarkManagerConsumerRequest request)
+        {
+            return new ProtocolResponse("BookmarksConsumerRequest",
+                new {database, bookmarks, bookmarkManagerId = uniqueId, id = request.uniqueId}).Encode();
+        }
+
+        private string GetSupplyRequest(string database, BookmarkManagerSupplierRequest request)
+        {
+            return new ProtocolResponse("BookmarksSupplierRequest",
+                new {database, bookmarkManagerId = uniqueId, id = request.uniqueId}).Encode();
         }
 
         public override string Respond()
