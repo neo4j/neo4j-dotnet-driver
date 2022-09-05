@@ -128,6 +128,11 @@ namespace Neo4j.Driver.IntegrationTests.Internals
                                     record["addresses"].As<List<object>>().First().As<string>().Replace("bolt://", ""));
                             }
 
+                            
+                            var cluster = session.Run("CALL dbms.cluster.overview()").ToList();
+                            if (!Neo4jDbAvailable(cluster))
+                                continue;
+
                             onlineMembers = addresses;
                         }
                     }
@@ -161,6 +166,13 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
             throw new TimeoutException(
                 $"Timed out waiting for the cluster to become available. Seen errors: {errors}");
+        }
+
+        private static bool Neo4jDbAvailable(List<IRecord> cluster)
+        {
+            return cluster.Any(x => x.Values.TryGetValue("databases", out var y)
+                                     && y.As<IDictionary<string, object>>()
+                                         .TryGetValue("neo4j", out _));
         }
 
         public void Dispose()

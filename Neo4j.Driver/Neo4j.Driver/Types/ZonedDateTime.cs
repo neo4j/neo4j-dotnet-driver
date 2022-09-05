@@ -250,16 +250,22 @@ namespace Neo4j.Driver
             if (!_utcSeconds.HasValue) 
                 return;
 
-            var local = default(DateTimeOffset);
+            LocalDateTime local;
 
             lock (_lazyLock)
             {
                 if (!_utcSeconds.HasValue)
                     return;
 
-                var utc = DateTimeOffset.FromUnixTimeSeconds(_utcSeconds.Value);
+                local = TemporalHelpers.EpochSecondsAndNanoToDateTime(_utcSeconds.Value, Nanosecond);
+
+                var time = new DateTime(local.Year > 9999 ? 9999 : local.Year, local.Month, local.Day, local.Hour, local.Minute, local.Second);
+                
+                _offset = Zone is ZoneOffset zo ? zo.OffsetSeconds : Zone.OffsetSecondsAt(time);
+
+                local = TemporalHelpers.EpochSecondsAndNanoToDateTime(_utcSeconds.Value + _offset.Value, Nanosecond);
+
                 _utcSeconds = null;
-                local = utc.ToOffset(TimeSpan.FromSeconds(Zone.OffsetSecondsAt(utc.DateTime)));
             }
 
             _year = local.Year;
@@ -287,11 +293,12 @@ namespace Neo4j.Driver
             }
         }
 
+        private int? _offset;
         /// <summary>
         /// Returns the offset from UTC of this instance at the time it represents.
         /// if year is more than 9999, offset will be taken from year 9999.
         /// </summary>
-        public int OffsetSeconds => Zone.OffsetSecondsAt(new DateTime(Year > 9999 ? 9999 : Year, Month, Day, Hour, Minute, Second));
+        public int OffsetSeconds => _offset ?? Zone.OffsetSecondsAt(new DateTime(Year > 9999 ? 9999 : Year, Month, Day, Hour, Minute, Second));
 
         /// <summary>
         /// Gets a <see cref="TimeSpan"/> value that represents the offset of this instance.
