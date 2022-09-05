@@ -43,7 +43,6 @@ namespace Neo4j.Driver.Tests.TestBackend
             }
 
             public bool? encrypted { get; set; }
-
         }
 
         public override async Task Process(Controller controller)
