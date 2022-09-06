@@ -51,7 +51,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             }
 
             BookmarkManager =
-                GraphDatabase.BookmarkManagerFactory.NewBookmarkManager(
+                Experimental.GraphDatabase.BookmarkManagerFactory.NewBookmarkManager(
                     new BookmarkManagerConfig(initialBookmarks, BookmarkSupplier, NotifyBookmarks));
 
             return Task.CompletedTask;

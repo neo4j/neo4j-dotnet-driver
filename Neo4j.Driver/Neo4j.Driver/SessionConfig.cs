@@ -220,7 +220,7 @@ namespace Neo4j.Driver
         /// Allows the specification of a username that the user wants to impersonate for the duration of the
         /// session. Once set this cannot be changed for the duration of the sessions liftime. 
         /// </summary>
-        /// <param name="impersonatedUser">username that the user wants to impersonat</param>
+        /// <param name="impersonatedUser">username that the user wants to impersonate</param>
         /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
         public SessionConfigBuilder WithImpersonatedUser(string impersonatedUser)
         {
@@ -232,8 +232,11 @@ namespace Neo4j.Driver
         {
             return _config;
         }
-
-        public SessionConfigBuilder WithBookmarkManager(IBookmarkManager bookmarkManager)
+            
+        /// <summary>
+        /// marked as internal until API is solidified.
+        /// </summary>
+        internal SessionConfigBuilder WithBookmarkManager(IBookmarkManager bookmarkManager)
         {
             _config.BookmarkManager = bookmarkManager;
             return this;
