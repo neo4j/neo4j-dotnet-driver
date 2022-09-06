@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
@@ -25,36 +26,28 @@ namespace Neo4j.Driver.Tests.TestBackend
                 data.initialBookmarks?.ToDictionary(x => x.Key, x => x.Value as IEnumerable<string>)
                 ?? new Dictionary<string, IEnumerable<string>>();
 
-            string[] BookmarkSupplier(string database)
+            async Task<string[]> BookmarkSupplier(string database, CancellationToken _)
             {
                 if (!data.bookmarksSupplierRegistered)
                     return Array.Empty<string>();
 
                 var request = new BookmarkManagerSupplierRequest(ObjManager);
                 
-                controller.SendResponse(GetSupplyRequest(database, request))
-                    .GetAwaiter()
-                    .GetResult();
-                var result = controller.TryConsumeStreamObjectOfType<BookmarksSupplierCompleted>()
-                    .GetAwaiter()
-                    .GetResult();
+                await controller.SendResponse(GetSupplyRequest(database, request));
+                var result = await controller.TryConsumeStreamObjectOfType<BookmarksSupplierCompleted>();
 
                 return result.data.bookmarks;
             }
 
-            void NotifyBookmarks(string database, string[] bookmarks)
+            async Task NotifyBookmarks(string database, string[] bookmarks, CancellationToken _)
             {
                 if (!data.bookmarksConsumerRegistered)
                     return;
 
                 var request = new BookmarkManagerConsumerRequest(ObjManager);
 
-                controller.SendResponse(GetConsumeRequest(database, bookmarks, request))
-                    .GetAwaiter()
-                    .GetResult();
-                controller.TryConsumeStreamObjectOfType<BookmarksConsumerCompleted>()
-                    .GetAwaiter()
-                    .GetResult();
+                await controller.SendResponse(GetConsumeRequest(database, bookmarks, request));
+                await controller.TryConsumeStreamObjectOfType<BookmarksConsumerCompleted>();
             }
 
             BookmarkManager =

@@ -16,21 +16,18 @@
 // limitations under the License.
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal;
 
 internal class NoOpBookmarkManager : IBookmarkManager
 {
-    public void UpdateBookmarks(string database, string[] previousBookmarks,
-        string[] newBookmarks)
-    {
-    }
+    public Task UpdateBookmarksAsync(string _, string[] __, string[] ___, CancellationToken ____ = default) => Task.CompletedTask;
 
-    public string[] GetBookmarks(string database) => Array.Empty<string>();
+    public Task<string[]> GetBookmarksAsync(string _, CancellationToken __ = default) => Task.FromResult(Array.Empty<string>());
 
-    public string[] GetAllBookmarks() => Array.Empty<string>();
+    public Task<string[]> GetAllBookmarksAsync(CancellationToken _ = default) => Task.FromResult(Array.Empty<string>());
 
-    public void Forget(params string[] databases)
-    {
-    }
+    public Task ForgetAsync(string[] _, CancellationToken __ = default) => Task.CompletedTask;
 }

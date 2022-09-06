@@ -14,8 +14,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         public override Task Process()
         {
             var bookmarkManager = ObjManager.GetObject<NewBookmarkManager>(data.id).BookmarkManager;
-            bookmarkManager.Forget();
-            return Task.CompletedTask;
+            return bookmarkManager.ForgetAsync();
         }
 
         public override string Respond()

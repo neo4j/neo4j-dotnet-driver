@@ -19,27 +19,29 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal;
 
 internal class DefaultBookmarkManager : IBookmarkManager
 {
     private Dictionary<string, HashSet<string>> _bookmarkSets;
-    private readonly Func<string?, string[]> _bookmarkSupplier;
-    private readonly Action<string, string[]> _onBookmarks;
+    private readonly Func<string, CancellationToken, Task<string[]>> _bookmarkSupplier;
+    private readonly Func<string, string[], CancellationToken, Task> _onBookmarks;
     private readonly SemaphoreSlim _lock;
 
     public DefaultBookmarkManager(BookmarkManagerConfig config)
     {
-        _bookmarkSets = config.InitialBookmarks.ToDictionary(x => x.Key, x => new HashSet<string>(x.Value));
-        _bookmarkSupplier = config.BookmarkSupplier ?? (_ => Array.Empty<string>());
-        _onBookmarks = config.NotifyBookmarks ?? ((_,_) => {});
+        _bookmarkSets = config.InitialBookmarks?.ToDictionary(x => x.Key, x => new HashSet<string>(x.Value)) 
+                        ?? new Dictionary<string, HashSet<string>>();
+        _bookmarkSupplier = config.BookmarkSupplierAsync;
+        _onBookmarks = config.NotifyBookmarksAsync;
         _lock = new SemaphoreSlim(1, 1);
     }
 
-    public void UpdateBookmarks(string database, string[] previousBookmarks, string[] newBookmarks)
+    public async Task UpdateBookmarksAsync(string database, string[] previousBookmarks, string[] newBookmarks, CancellationToken cancellationToken = default)
     {
-        _lock.Wait();
+        await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             if (_bookmarkSets.TryGetValue(database, out var set))
@@ -58,28 +60,31 @@ internal class DefaultBookmarkManager : IBookmarkManager
         {
             _lock.Release();
         }
-
-        _onBookmarks?.Invoke(database, newBookmarks);
+        
+        if(_onBookmarks != null) 
+            await _onBookmarks.Invoke(database, newBookmarks, cancellationToken).ConfigureAwait(false);
     }
 
-    public string[] GetBookmarks(string database)
+    public async Task<string[]> GetBookmarksAsync(string database, CancellationToken cancellationToken = default)
     {
-        _lock.Wait();
+        await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        HashSet<string> set;
+
         try
         {
-            var set = BookmarksFor(database);
+            set = BookmarksFor(database);
 
             if (_bookmarkSupplier == null)
                 return set.ToArray();
-
-            var supplied = _bookmarkSupplier(database);
-            
-            return set.Union(supplied).ToArray();
         }
         finally
         {
             _lock.Release();
         }
+
+        var supplied = await _bookmarkSupplier(database, cancellationToken).ConfigureAwait(false);
+
+        return set.Union(supplied).ToArray();
     }
 
     private HashSet<string> BookmarksFor(string database) =>
@@ -87,14 +92,15 @@ internal class DefaultBookmarkManager : IBookmarkManager
             ? dbBookmarks
             : new HashSet<string>();
 
-    public string[] GetAllBookmarks()
+    public async Task<string[]> GetAllBookmarksAsync(CancellationToken cancellationToken = default)
     {
-        _lock.Wait();
+        await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
+
         var set = new HashSet<string>();
-        string[] keys;
+
         try
         {
-            keys = _bookmarkSets.Keys.ToArray();
+            var keys = _bookmarkSets.Keys.ToArray();
 
             foreach (var key in keys)
                 set.UnionWith(BookmarksFor(key));
@@ -107,17 +113,18 @@ internal class DefaultBookmarkManager : IBookmarkManager
         if (_bookmarkSupplier == null)
             return set.ToArray();
 
-        set.UnionWith(_bookmarkSupplier(null));
+        set.UnionWith(await _bookmarkSupplier(null, cancellationToken).ConfigureAwait(false));
 
         return set.ToArray();
     }
 
-    public void Forget(params string[] databases)
+    public async Task ForgetAsync(string[] databases = null, CancellationToken cancellationToken = default)
     {
-        _lock.Wait();
+        await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
+
         try
         {
-            if (databases.Any())
+            if (databases != null && databases.Any())
             {
                 foreach (var database in databases)
                     _bookmarkSets.Remove(database);

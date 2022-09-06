@@ -15,9 +15,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace Neo4j.Driver;
 
 /// <summary>
+/// Experimental: Subject to change.
 /// Manager of Neo4j's causal-consistency mechanism, bookmarks.<br/>
 /// The manager maintains and provides collections of bookmarks for databases, exposing to both driver and user-code.<br/>
 /// </summary>
@@ -29,24 +33,31 @@ public interface IBookmarkManager
     /// <param name="database">Database which the bookmarks belong to.</param>
     /// <param name="previousBookmarks">The bookmarks used at the start of bookmark.</param>
     /// <param name="newBookmarks">The bookmarks to replace previousBookmarks with.</param>
-    void UpdateBookmarks(string database, string[] previousBookmarks, string[] newBookmarks);
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task UpdateBookmarksAsync(string database, string[] previousBookmarks, string[] newBookmarks, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves last known bookmarks for a database.
     /// </summary>
     /// <param name="database">Database to get latest known bookmarks for.</param>
+    /// <param name="cancellationToken"></param>
     /// <returns>Last known bookmarks for database.</returns>
-    string[] GetBookmarks(string database);
+    Task<string[]> GetBookmarksAsync(string database, CancellationToken cancellationToken = default);
+
 
     /// <summary>
     /// Retrieves all bookmarks.
     /// </summary>
+    /// <param name="cancellationToken"></param>
     /// <returns>Last known bookmarks for all databases.</returns>
-    string[] GetAllBookmarks();
+    Task<string[]> GetAllBookmarksAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Removes all or specified databases from the bookmark manager's internal cache.
     /// </summary>
     /// <param name="databases">databases to remove, or if empty: all.</param>
-    void Forget(params string[] databases);
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task ForgetAsync(string[] databases = null, CancellationToken cancellationToken = default);
 }

@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Xunit;
 using FluentAssertions;
 
@@ -31,8 +32,8 @@ public class BookmarkManagerFactoryTests
 
         var config = new BookmarkManagerConfig(
             new Dictionary<string, IEnumerable<string>>(),
-            _ => Array.Empty<string>(),
-            (_, _) => {});
+            (_, _) => Task.FromResult(Array.Empty<string>()),
+            (_, _, _) => Task.CompletedTask);
 
         var bookmarkManager = factory.NewBookmarkManager(config);
 

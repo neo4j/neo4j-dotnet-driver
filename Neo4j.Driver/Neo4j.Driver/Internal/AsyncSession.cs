@@ -147,9 +147,7 @@ namespace Neo4j.Driver.Internal
                 var protocol = _connection.BoltProtocol;
 
                 if (_useBookmarkManager)
-                    _bookmarks = _bookmarks == null
-                        ? Bookmarks.From(_bookmarkManager.GetAllBookmarks())
-                        : Bookmarks.From(_bookmarkManager.GetAllBookmarks().Concat(_bookmarks?.Values));
+                    _bookmarks = await GetBookmarksAsync().ConfigureAwait(false);
 
                 return await protocol
                     .RunInAutoCommitTransactionAsync(_connection, query, _reactive, this, this, _database,
@@ -159,6 +157,21 @@ namespace Neo4j.Driver.Internal
 
             _result = result;
             return result;
+        }
+
+        private async Task<Bookmarks> GetBookmarksAsync()
+        {
+            return _bookmarks == null
+                ? Bookmarks.From(await _bookmarkManager.GetAllBookmarksAsync().ConfigureAwait(false))
+                : Bookmarks.From((await _bookmarkManager.GetAllBookmarksAsync().ConfigureAwait(false)).Concat(_bookmarks.Values));
+        }
+
+
+        private async Task<Bookmarks> GetBookmarksAsync(string database)
+        {
+            return _bookmarks == null
+                ? Bookmarks.From(await _bookmarkManager.GetBookmarksAsync(database).ConfigureAwait(false))
+                : Bookmarks.From((await _bookmarkManager.GetBookmarksAsync(database).ConfigureAwait(false)).Concat(_bookmarks.Values));
         }
 
         public Task<T> ReadTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work,
@@ -266,9 +279,8 @@ namespace Neo4j.Driver.Internal
 
             await AcquireConnectionAndDbNameAsync(mode).ConfigureAwait(false);
             if (_useBookmarkManager)
-                _bookmarks = _bookmarks == null
-                    ? Bookmarks.From(_bookmarkManager.GetAllBookmarks())
-                    : Bookmarks.From(_bookmarkManager.GetAllBookmarks().Concat(_bookmarks?.Values));
+                _bookmarks = await GetBookmarksAsync().ConfigureAwait(false);
+
             var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmarks, _reactive, _fetchSize,
                 ImpersonatedUser());
             await tx.BeginTransactionAsync(config).ConfigureAwait(false);
@@ -279,9 +291,7 @@ namespace Neo4j.Driver.Internal
         private async Task AcquireConnectionAndDbNameAsync(AccessMode mode)
         {
             if (_useBookmarkManager)
-                _bookmarks = _bookmarks == null
-                    ? Bookmarks.From(_bookmarkManager.GetBookmarks("system"))
-                    : Bookmarks.From(_bookmarkManager.GetAllBookmarks().Concat(_bookmarks?.Values));
+                _bookmarks = await GetBookmarksAsync("system").ConfigureAwait(false);
 
 
             _connection = await _connectionProvider.AcquireAsync(mode, _database, ImpersonatedUser(), _bookmarks)

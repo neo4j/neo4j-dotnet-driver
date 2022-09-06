@@ -15,8 +15,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#nullable enable
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Neo4j.Driver;
 
@@ -25,11 +28,11 @@ namespace Neo4j.Driver;
 /// the default <see cref="IBookmarkManagerFactory"/> can be accessed from <see cref="GraphDatabase.BookmarkManagerFactory"/>.
 /// </summary>
 /// <param name="InitialBookmarks">Nullable collection of initial bookmarks to provide the bookmark manager, the keys should be database names.</param>
-/// <param name="BookmarkSupplier">Nullable delegate to provide externally sourced bookmarks to the driver.<br/>
+/// <param name="BookmarkSupplierAsync">Nullable delegate to provide externally sourced bookmarks to the driver.<br/>
 /// Invoked when updating a cluster routing table, beginning transaction, or running a query from a session.<br/>
-/// the argument will be either a database name when driver calls <see cref="IBookmarkManager.GetBookmarks"/> or null when the driver calls <see cref="IBookmarkManager.GetAllBookmarks"/>.</param>
-/// <param name="NotifyBookmarks">Nullable delegate to notify application of new bookmarks received by the driver from the server for a database.</param>
+/// the argument will be either a database name when driver calls <see cref="IBookmarkManager.GetBookmarksAsync"/> or null when the driver calls <see cref="IBookmarkManager.GetAllBookmarksAsync"/>.</param>
+/// <param name="NotifyBookmarksAsync">Nullable delegate to notify application of new bookmarks received by the driver from the server for a database.</param>
 public record BookmarkManagerConfig(
-    Dictionary<string, IEnumerable<string>> InitialBookmarks,
-    Func<string, string[]> BookmarkSupplier,
-    Action<string, string[]> NotifyBookmarks);
+    Dictionary<string, IEnumerable<string>>? InitialBookmarks,
+    Func<string?, CancellationToken, Task<string[]>>? BookmarkSupplierAsync,
+    Func<string, string[], CancellationToken, Task>? NotifyBookmarksAsync);
