@@ -2,7 +2,7 @@
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class BookmarkManagerClose : IProtocolObject
+    internal class BookmarkManagerClose : ProtocolObject
     {
         public BookmarkManagerCloseDto data;
 
@@ -11,7 +11,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string id { get; set; }
         }
 
-        public override Task Process()
+        public override Task ProcessAsync()
         {
             var bookmarkManager = ObjManager.GetObject<NewBookmarkManager>(data.id).BookmarkManager;
             return bookmarkManager.ForgetAsync();

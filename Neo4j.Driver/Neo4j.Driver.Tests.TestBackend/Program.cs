@@ -73,7 +73,7 @@ public class Program
             Trace.WriteLine("Logging to file: " + args[2]);
         }
 
-        var backendServer = Environment.GetEnvironmentVariable("TEST_BACKEND_SERVER");
+        var backendServer = Environment.GetEnvironmentVariable("REACTIVE_BACKEND_SERVER");
 
         _reactive = backendServer != null && bool.TryParse(backendServer, out var reactive) && reactive;
         var mode = _reactive ? "Reactive" : "Async";

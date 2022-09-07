@@ -50,7 +50,7 @@ internal static class ExceptionManager
         {typeof(DatabaseException), "DatabaseError"},
         {typeof(ServiceUnavailableException), "ServiceUnavailableError"},
         {typeof(SessionExpiredException), "SessionExpiredError"},
-        {typeof(Driver.ProtocolException), "ProtocolError"},
+        {typeof(ProtocolException), "ProtocolError"},
         {typeof(SecurityException), "SecurityError"},
         {typeof(AuthenticationException), "AuthenticationError"},
         {typeof(AuthorizationException), "AuthorizationExpired"},

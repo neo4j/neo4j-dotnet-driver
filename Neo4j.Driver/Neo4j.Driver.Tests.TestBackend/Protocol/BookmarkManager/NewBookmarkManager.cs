@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class NewBookmarkManager : IProtocolObject
+    internal class NewBookmarkManager : ProtocolObject
     {
         public NewBookmarkManagerDto data { get; set; } = new NewBookmarkManagerDto();
 
@@ -20,7 +20,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             public bool bookmarksConsumerRegistered { get; set; }
         }
 
-        public override Task Process(Controller controller)
+        public override Task ProcessAsync(Controller controller)
         {
             var initialBookmarks =
                 data.initialBookmarks?.ToDictionary(x => x.Key, x => x.Value as IEnumerable<string>)
@@ -33,8 +33,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 
                 var request = new BookmarkManagerSupplierRequest(ObjManager);
                 
-                await controller.SendResponse(GetSupplyRequest(database, request));
-                var result = await controller.TryConsumeStreamObjectOfType<BookmarksSupplierCompleted>();
+                await controller.SendResponseAsync(GetSupplyRequest(database, request));
+                var result = await controller.TryConsumeStreamObjectAsync<BookmarksSupplierCompleted>();
 
                 return result.data.bookmarks;
             }
@@ -46,8 +46,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 
                 var request = new BookmarkManagerConsumerRequest(ObjManager);
 
-                await controller.SendResponse(GetConsumeRequest(database, bookmarks, request));
-                await controller.TryConsumeStreamObjectOfType<BookmarksConsumerCompleted>();
+                await controller.SendResponseAsync(GetConsumeRequest(database, bookmarks, request));
+                await controller.TryConsumeStreamObjectAsync<BookmarksConsumerCompleted>();
             }
 
             BookmarkManager =
@@ -57,21 +57,26 @@ namespace Neo4j.Driver.Tests.TestBackend
             return Task.CompletedTask;
         }
 
+        public override Task ReactiveProcessAsync(Controller controller)
+        {
+            return ProcessAsync(controller);
+        }
+
         private string GetConsumeRequest(string database, string[] bookmarks, BookmarkManagerConsumerRequest request)
         {
             return new ProtocolResponse("BookmarksConsumerRequest",
-                new {database, bookmarks, bookmarkManagerId = uniqueId, id = request.uniqueId}).Encode();
+                new {database, bookmarks, bookmarkManagerId = UniqueId, id = request.UniqueId}).Encode();
         }
 
         private string GetSupplyRequest(string database, BookmarkManagerSupplierRequest request)
         {
             return new ProtocolResponse("BookmarksSupplierRequest",
-                new {database, bookmarkManagerId = uniqueId, id = request.uniqueId}).Encode();
+                new {database, bookmarkManagerId = UniqueId, id = request.UniqueId}).Encode();
         }
 
         public override string Respond()
         {
-            return new ProtocolResponse("BookmarkManager", new {id = uniqueId}).Encode();
+            return new ProtocolResponse("BookmarkManager", new {id = UniqueId}).Encode();
         }
     }
 }

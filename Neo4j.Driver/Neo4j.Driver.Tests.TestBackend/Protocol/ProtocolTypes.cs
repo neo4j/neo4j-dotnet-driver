@@ -56,7 +56,13 @@ public static class ProtocolTypes
             typeof(StartTest),
             typeof(GetFeatures),
             typeof(GetRoutingTable),
-            typeof(CypherTypeField)
+            typeof(CypherTypeField),
+            typeof(NewBookmarkManager),
+            typeof(BookmarkManagerClose),
+            typeof(BookmarkManagerConsumerRequest),
+            typeof(BookmarksConsumerCompleted),
+            typeof(BookmarkManagerSupplierRequest),
+            typeof(BookmarksSupplierCompleted),
         };
 
     public static void ValidateType(string typeName)
