@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -37,7 +38,7 @@ namespace Neo4j.Driver.Tests
     {
         internal static AsyncSession NewSession(IConnection connection, ILogger logger = null)
         {
-            return new AsyncSession(new TestConnectionProvider(connection), logger);
+            return new AsyncSession(new TestConnectionProvider(connection), logger, null, 0,  new Driver.SessionConfig(), false);
         }
 
         internal static AsyncSession NewSession(IBoltProtocol protocol, bool reactive = false)
@@ -45,7 +46,8 @@ namespace Neo4j.Driver.Tests
             var mockConn = new Mock<IConnection>();
             mockConn.Setup(x => x.IsOpen).Returns(true);
             mockConn.Setup(x => x.BoltProtocol).Returns(protocol);
-            return new AsyncSession(new TestConnectionProvider(mockConn.Object), null, reactive: reactive);
+            
+            return new AsyncSession(new TestConnectionProvider(mockConn.Object), null, null, 0,  new Driver.SessionConfig(), reactive);
         }
 
         internal static Mock<IConnection> NewMockedConnection(IBoltProtocol boltProtocol = null)
@@ -302,21 +304,19 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnSessionConfigAsItIs()
             {
                 var driver = NewDriver();
-                {
-                    var session = driver.AsyncSession(b =>
-                        b.WithDatabase("molly").WithDefaultAccessMode(AccessMode.Read).WithFetchSize(17)
-                            .WithBookmarks(Bookmarks.From("bookmark1")));
-                    var config = session.SessionConfig;
+                var session = driver.AsyncSession(b =>
+                    b.WithDatabase("molly").WithDefaultAccessMode(AccessMode.Read).WithFetchSize(17)
+                        .WithBookmarks(Bookmarks.From("bookmark1")));
+                var config = session.SessionConfig;
 
-                    config.Database.Should().Be("molly");
-                    config.FetchSize.Should().Be(17L);
-                    config.DefaultAccessMode.Should().Be(AccessMode.Read);
+                config.Database.Should().Be("molly");
+                config.FetchSize.Should().Be(17L);
+                config.DefaultAccessMode.Should().Be(AccessMode.Read);
 
-                    var bookmarks = config.Bookmarks.ToList();
-                    bookmarks.Count.Should().Be(1);
-                    bookmarks[0].Values.Length.Should().Be(1);
-                    bookmarks[0].Values[0].Should().Be("bookmark1");
-                }
+                var bookmarks = config.Bookmarks.ToList();
+                bookmarks.Count.Should().Be(1);
+                bookmarks[0].Values.Length.Should().Be(1);
+                bookmarks[0].Values[0].Should().Be("bookmark1");
             }
 
             private static Internal.Driver NewDriver()
@@ -402,6 +402,31 @@ namespace Neo4j.Driver.Tests
 			{
 				throw new NotSupportedException();
 			}
+        }
+
+        public class BookmarksManager
+        {
+            [Fact]
+            public void ShouldSyncBookmarksOnUpdateBookmarks()
+            {
+                var bookmarkManager = new Mock<IBookmarkManager>();
+
+                var cfg = new SessionConfigBuilder(new Driver.SessionConfig())
+                    .WithDatabase("test")
+                    .WithBookmarkManager(bookmarkManager.Object)
+                    .Build();
+
+                using (var session = new AsyncSession(null, null, null, 0, cfg, false))
+                {
+                    session.UpdateBookmarks(new InternalBookmarks("a"));
+                    bookmarkManager.Verify(x => x.UpdateBookmarksAsync("test", Array.Empty<string>(), new[] { "a" }, It.IsAny<CancellationToken>()), Times.Once);
+                    session.UpdateBookmarks(new InternalBookmarks("b"));
+                    bookmarkManager.Verify(x => x.UpdateBookmarksAsync("test", new[] { "a" }, new[] { "b" }, It.IsAny<CancellationToken>()), Times.Once);
+                }   
+
+                bookmarkManager.Verify(x => x.UpdateBookmarksAsync("test", It.IsAny<string[]>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                bookmarkManager.Verify(x => x.UpdateBookmarksAsync("test", new[] { "a" }, new[] { "b" }, It.IsAny<CancellationToken>()), Times.Once);
+            }
         }
     }
 }
