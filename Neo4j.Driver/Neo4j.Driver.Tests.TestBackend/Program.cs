@@ -75,7 +75,7 @@ public class Program
 
         var backendServer = Environment.GetEnvironmentVariable("REACTIVE_BACKEND_SERVER");
 
-        _reactive = backendServer != null && bool.TryParse(backendServer, out var reactive) && reactive;
+        _reactive = backendServer != null && bool.TryParse(backendServer.ToLowerInvariant(), out var reactive) && reactive;
         var mode = _reactive ? "Reactive" : "Async";
         Trace.WriteLine($"Starting TestBackend on {_address}:{_port} in {mode} Mode.");
     }
