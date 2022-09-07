@@ -224,7 +224,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 InternalBookmarks = bookmarks;
             }
 
-            public void UpdateBookmarks(Bookmarks bookmarks)
+            public void UpdateBookmarks(Bookmarks bookmarks, IDatabaseInfo dbInfo = null)
             {
                 if (InternalBookmarks != null && InternalBookmarks.Values.Any())
                 {

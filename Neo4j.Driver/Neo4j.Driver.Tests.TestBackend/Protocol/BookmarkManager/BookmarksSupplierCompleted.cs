@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+﻿// Copyright (c) 2002-2022 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,10 +15,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Internal.MessageHandling
+namespace Neo4j.Driver.Tests.TestBackend;
+
+internal class BookmarksSupplierCompleted : IProtocolObject
 {
-    internal interface IBookmarksTracker
+    public BookmarksSupplierCompletedDto data;
+
+    public class BookmarksSupplierCompletedDto
     {
-        void UpdateBookmarks(Bookmarks bookmarks, IDatabaseInfo dbInfo = null);
+        public string requestId { get; set; }
+        public string[] bookmarks { get; set; }
     }
 }

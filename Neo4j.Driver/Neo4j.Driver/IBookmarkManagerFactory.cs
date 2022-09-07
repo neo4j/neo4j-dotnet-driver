@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+﻿// Copyright (c) 2002-2022 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,10 +15,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Internal.MessageHandling
+namespace Neo4j.Driver;
+
+/// <summary>
+/// Factory for <see cref="IBookmarkManager"/>.
+/// </summary>
+public interface IBookmarkManagerFactory
 {
-    internal interface IBookmarksTracker
-    {
-        void UpdateBookmarks(Bookmarks bookmarks, IDatabaseInfo dbInfo = null);
-    }
+    /// <summary>
+    /// Create an <see cref="IBookmarkManager"/> with specified configuration.
+    /// </summary>
+    /// <param name="config">Configuration object.</param>
+    /// <returns>New configured instance of <see cref="IBookmarkManager"/>.</returns>
+    IBookmarkManager NewBookmarkManager(BookmarkManagerConfig config);
 }

@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Neo4j.Driver.Internal
@@ -25,7 +26,10 @@ namespace Neo4j.Driver.Internal
         {
             Values = values.Where(v => !string.IsNullOrEmpty(v)).Distinct().ToArray();
         }
-
+        internal InternalBookmarks(IEnumerable<string> values)
+        {
+            Values = values.Where(v => !string.IsNullOrEmpty(v)).Distinct().ToArray();
+        }
         private bool Equals(InternalBookmarks other)
         {
             if (Values.Length != other.Values.Length)

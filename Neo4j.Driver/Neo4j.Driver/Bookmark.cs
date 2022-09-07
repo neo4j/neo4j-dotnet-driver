@@ -105,6 +105,15 @@ namespace Neo4j.Driver
         {
             return new InternalBookmarks(values);
         }
+        /// <summary>
+        /// Returns a new bookmark instance constructed from the provided list of bookmark strings.
+        /// </summary>
+        /// <param name="values">The bookmark strings to construct from</param>
+        /// <returns>A new bookmark instance</returns>
+        public static Bookmarks From(IEnumerable<string> values)
+        {
+            return new InternalBookmarks(values);
+        }
 
         internal static Bookmarks From(IEnumerable<Bookmarks> bookmarks)
         {

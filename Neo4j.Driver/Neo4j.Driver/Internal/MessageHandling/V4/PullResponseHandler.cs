@@ -51,7 +51,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4
         {
             base.OnSuccess(metadata);
 
-            _bookmarksTracker?.UpdateBookmarks(GetMetadata<BookmarksCollector, Bookmarks>());
+            _bookmarksTracker?.UpdateBookmarks(GetMetadata<BookmarksCollector, Bookmarks>(), GetMetadata<DatabaseInfoCollector, IDatabaseInfo>());
 
             _summaryBuilder.ResultConsumedAfter = GetMetadata<TimeToLastCollector, long>();
             _summaryBuilder.Counters = GetMetadata<CountersCollector, ICounters>();

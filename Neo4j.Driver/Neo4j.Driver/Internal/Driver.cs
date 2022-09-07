@@ -83,12 +83,11 @@ namespace Neo4j.Driver.Internal
             var sessionConfig = ConfigBuilders.BuildSessionConfig(action);
 
             var session = new AsyncSession(_connectionProvider, 
-                                           _logger, 
-                                           _retryLogic, 
-                                           sessionConfig.DefaultAccessMode,
-                                           sessionConfig.Database, 
-                                           Bookmarks.From(sessionConfig.Bookmarks ?? Array.Empty<Bookmarks>()), 
-                                           reactive, ParseFetchSize(sessionConfig.FetchSize)) {SessionConfig = sessionConfig};
+                                           _logger,
+                                           _retryLogic,
+                                           _config.FetchSize,
+                                           sessionConfig,
+                                           reactive);
 
             if (IsClosed)
             {
@@ -96,11 +95,6 @@ namespace Neo4j.Driver.Internal
             }
 
             return session;
-        }
-
-        private long ParseFetchSize(long? fetchSize)
-        {
-            return fetchSize.GetValueOrDefault(_config.FetchSize);
         }
 
         private void Close()
