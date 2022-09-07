@@ -106,6 +106,27 @@ namespace Neo4j.Driver.Internal
             return RunTransaction(AccessMode.Write, work, action);
         }
 
+        public T ExecuteRead<T>(Func<IQueryRunner, T> work)
+        {
+            return ReadTransaction(work, null);
+        }
+
+        public T ExecuteRead<T>(Func<IQueryRunner, T> work, Action<TransactionConfigBuilder> action)
+        {
+            return RunTransaction(AccessMode.Read, work, action);
+        }
+
+        public T ExecuteWrite<T>(Func<IQueryRunner, T> work)
+        {
+            return WriteTransaction(work, null);
+        }
+
+        public T ExecuteWrite<T>(Func<IQueryRunner, T> work, Action<TransactionConfigBuilder> action)
+        {
+            return RunTransaction(AccessMode.Write, work, action);
+        }
+
+
         internal T RunTransaction<T>(AccessMode mode, Func<ITransaction, T> work, Action<TransactionConfigBuilder> action)
         {
             return _retryLogic.Retry(() =>

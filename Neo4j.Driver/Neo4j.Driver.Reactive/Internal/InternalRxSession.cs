@@ -122,6 +122,26 @@ namespace Neo4j.Driver.Internal
             return RunTransaction(AccessMode.Write, work, action);
         }
 
+        public IObservable<T> ExecuteRead<T>(Func<IRxRunnable, IObservable<T>> work)
+        {
+            return ReadTransaction(work, null);
+        }
+
+        public IObservable<T> ExecuteRead<T>(Func<IRxRunnable, IObservable<T>> work, Action<TransactionConfigBuilder> action)
+        {
+            return RunTransaction(AccessMode.Read, work, action);
+        }
+
+        public IObservable<T> ExecuteWrite<T>(Func<IRxRunnable, IObservable<T>> work)
+        {
+            return WriteTransaction(work, null);
+        }
+
+        public IObservable<T> ExecuteWrite<T>(Func<IRxRunnable, IObservable<T>> work, Action<TransactionConfigBuilder> action)
+        {
+            return RunTransaction(AccessMode.Write, work, action);
+        }
+
         internal IObservable<T> RunTransaction<T>(AccessMode mode,
             Func<IRxTransaction, IObservable<T>> work,
             Action<TransactionConfigBuilder> action)
