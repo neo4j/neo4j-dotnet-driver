@@ -117,6 +117,7 @@ namespace Neo4j.Driver
         /// <param name="work">a unit of work to be executed</param>
         /// <typeparam name="T">the return type of the unit of work</typeparam>
         /// <returns>the reactive stream returned by the unit of work</returns>
+        [Obsolete("Deprecated, Replaced by ExecuteRead, will be removed in 6.0")]
         IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work);
 
         /// <summary>
@@ -129,6 +130,7 @@ namespace Neo4j.Driver
         /// defines how to create the configuration for the created transaction</param>
         /// <typeparam name="T">the return type of the unit of work</typeparam>
         /// <returns>the reactive stream returned by the unit of work</returns>
+        [Obsolete("Deprecated, Replaced by ExecuteRead, will be removed in 6.0")]
         IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work,
             Action<TransactionConfigBuilder> action);
 
@@ -139,6 +141,7 @@ namespace Neo4j.Driver
         /// <param name="work">a unit of work to be executed</param>
         /// <typeparam name="T">the return type of the unit of work</typeparam>
         /// <returns>the reactive stream returned by the unit of work</returns>
+        [Obsolete("Deprecated, Replaced by ExecuteWrite, will be removed in 6.0")]
         IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work);
 
         /// <summary>
@@ -151,7 +154,48 @@ namespace Neo4j.Driver
         /// defines how to create the configuration for the created transaction</param>
         /// <typeparam name="T">the return type of the unit of work</typeparam>
         /// <returns>the reactive stream returned by the unit of work</returns>
+        [Obsolete("Deprecated, Replaced by ExecuteWrite, will be removed in 6.0")]
         IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work,
+            Action<TransactionConfigBuilder> action);
+
+        /// <summary>
+        /// Execute the provided unit of work in a <see cref="AccessMode.Read"/> managed reactive transaction.
+        /// </summary>
+        /// <param name="work">a unit of work to be executed</param>
+        /// <typeparam name="T">the return type of the unit of work</typeparam>
+        /// <returns>the reactive stream returned by the unit of work</returns>
+        IObservable<T> ExecuteRead<T>(Func<IRxRunnable, IObservable<T>> work);
+
+        /// <summary>
+        /// Execute the provided unit of work in a <see cref="AccessMode.Read"/> managed reactive transaction which is created with the provided
+        /// <see cref="TransactionConfig"/>.
+        /// </summary>
+        /// <param name="work">a unit of work to be executed</param>
+        /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>,
+        /// defines how to create the configuration for the created transaction</param>
+        /// <typeparam name="T">the return type of the unit of work</typeparam>
+        /// <returns>the reactive stream returned by the unit of work</returns>
+        IObservable<T> ExecuteRead<T>(Func<IRxRunnable, IObservable<T>> work,
+            Action<TransactionConfigBuilder> action);
+
+        /// <summary>
+        /// Execute the provided unit of work in a <see cref="AccessMode.Write"/> managed reactive transaction.
+        /// </summary>
+        /// <param name="work">a unit of work to be executed</param>
+        /// <typeparam name="T">the return type of the unit of work</typeparam>
+        /// <returns>the reactive stream returned by the unit of work</returns>
+        IObservable<T> ExecuteWrite<T>(Func<IRxRunnable, IObservable<T>> work);
+
+        /// <summary>
+        /// Execute the provided unit of work in a <see cref="AccessMode.Write"/> managed reactive transaction which is created with the provided
+        /// <see cref="TransactionConfig"/>.
+        /// </summary>
+        /// <param name="work">a unit of work to be executed</param>
+        /// <param name="action">Given a <see cref="TransactionConfigBuilder"/>,
+        /// defines how to create the configuration for the created transaction</param>
+        /// <typeparam name="T">the return type of the unit of work</typeparam>
+        /// <returns>the reactive stream returned by the unit of work</returns>
+        IObservable<T> ExecuteWrite<T>(Func<IRxRunnable, IObservable<T>> work,
             Action<TransactionConfigBuilder> action);
 
         /// <summary>
