@@ -16,25 +16,14 @@
 // limitations under the License.
 
 using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;
 
 namespace Neo4j.Driver.Internal.Protocol;
 
 internal interface IBoltProtocol
 {
-    BoltProtocolVersion Version { get; }
-    IMessageFormat MessageFormat { get; }
-
-    IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null,
-        bool useUtcEncodedDateTimes = false);
-
-    IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger = null,
-        bool useUtcEncodedDateTimes = false);
-
     Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken);
 
     Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,

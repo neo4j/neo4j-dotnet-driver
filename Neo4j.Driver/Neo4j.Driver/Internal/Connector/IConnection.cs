@@ -15,14 +15,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
-using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Util;
 
@@ -30,6 +27,8 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal interface IConnection
     {
+        BoltProtocolVersion Version { get; }
+
         Task InitAsync(CancellationToken cancellationToken = default);
 
         // send all and receive all
@@ -88,7 +87,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         IDictionary<string, string> RoutingContext { get; set; }
 
-		void SetRecvTimeOut(int seconds);
+		void SetReadTimeoutInSeconds(int seconds);
 
         void SetUseUtcEncodedDateTime();
     }

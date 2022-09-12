@@ -17,19 +17,19 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
     internal class BoltPatchCollector : IMetadataCollector<string[]>
     {
         object IMetadataCollector.Collected => Collected;
+        public const string BoltPatchKey = "patch_bolt";
 
         public string[] Collected { get; private set; }
 
         public void Collect(IDictionary<string, object> metadata)
         {
-            if (metadata == null || !metadata.TryGetValue(BoltProtocolV4_3.BoltPatchKey, out var value))
+            if (metadata == null || !metadata.TryGetValue(BoltPatchKey, out var value))
                 return;
 
             if (value is List<object> values)
@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
             else
             {
                 throw new ProtocolException(
-                    $"Expected '{BoltProtocolV4_3.BoltPatchKey}' metadata to be of type 'List<object>', but got '{value?.GetType().Name}'.");
+                    $"Expected '{BoltPatchKey}' metadata to be of type 'List<object>', but got '{value?.GetType().Name}'.");
             }
 
         }

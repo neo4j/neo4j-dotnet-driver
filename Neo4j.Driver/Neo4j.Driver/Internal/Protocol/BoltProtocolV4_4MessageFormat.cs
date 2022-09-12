@@ -16,12 +16,6 @@ namespace Neo4j.Driver.Internal.Protocol
 		internal BoltProtocolV4_4MessageFormat(bool useUtcEncoder):
             base(useUtcEncoder)
 		{
-			RemoveHandler<V4_3.HelloMessageSerializer>();
-			AddHandler<V4_4.HelloMessageSerializer>();
-
-			RemoveHandler<V3.BeginMessageSerializer>();
-			AddHandler<V4_4.BeginMessageSerializer>();
-
 			RemoveHandler<V4_3.RouteMessageSerializer>();
 			AddHandler<V4_4.RouteMessageSerializer>();
 

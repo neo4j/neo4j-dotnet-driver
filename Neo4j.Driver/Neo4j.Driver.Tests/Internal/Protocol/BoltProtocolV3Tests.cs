@@ -73,7 +73,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 await V3.LoginAsync(mockConn.Object, "user-zhen", AuthTokens.None);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<Messaging.V3.HelloMessage>(), It.IsAny<V3.HelloResponseHandler>(), null, null),
+                    x => x.EnqueueAsync(It.IsAny<Messaging.V3.HelloMessage>(), It.IsAny<MessageHandling.HelloResponseHandler>(), null, null),
 					Times.Once);
                 mockConn.Verify(x => x.SyncAsync());
             }

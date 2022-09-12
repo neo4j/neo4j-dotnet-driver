@@ -19,13 +19,13 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.IO;
 
 namespace Neo4j.Driver.Internal.Connector
 {
-    internal interface ITcpSocketClient : IDataEndpoint
+    internal interface ITcpSocketClient : IDataEndpoint, IAsyncDisposable
     {
         Task ConnectAsync(Uri uri, CancellationToken cancellationToken = default);
-        Task DisconnectAsync();
 	}
 
     public interface IDataEndpoint

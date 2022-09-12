@@ -33,17 +33,6 @@ namespace Neo4j.Driver.Internal.IO
         private readonly byte[] _intBuffer = new byte[4];
         private readonly byte[] _longBuffer = new byte[8];
 
-        private readonly Stream _stream;
-
-        public PackStreamReader(Stream stream, IDictionary<byte, IPackStreamSerializer> structHandlers)
-        {
-            Throw.ArgumentNullException.IfNull(stream, nameof(stream));
-            Throw.ArgumentOutOfRangeException.IfFalse(stream.CanRead, nameof(stream));
-
-            _stream = stream;
-            _structHandlers = structHandlers ?? NoHandlers;
-        }
-
         public object Read()
         {
             var type = PeekNextType();

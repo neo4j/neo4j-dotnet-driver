@@ -50,17 +50,16 @@ namespace Neo4j.Driver.Internal.Protocol
                 return versions.SelectMany(PackStreamBitConverter.GetBytes).ToArray();
             }, LazyThreadSafetyMode.PublicationOnly);
 
-        public static IBoltProtocol ForVersion(BoltProtocolVersion version, IDictionary<string, string> routingContext = null)
+        public static IBoltProtocol ForVersion(BoltProtocolVersion version)
         {
             return version switch
             {
                 {MajorVersion: 3, MinorVersion: 0} => new BoltProtocolV3(),
-                {MajorVersion: 4, MinorVersion: 0} => new BoltProtocolV4_0(),
-                {MajorVersion: 4, MinorVersion: 1} => new BoltProtocolV4_1(routingContext),
-                {MajorVersion: 4, MinorVersion: 2} => new BoltProtocolV4_2(routingContext),
-                {MajorVersion: 4, MinorVersion: 3} => new BoltProtocolV4_3(routingContext),
-                {MajorVersion: 4, MinorVersion: 4} => new BoltProtocolV4_4(routingContext),
-                {MajorVersion: 5, MinorVersion: 0} => new BoltProtocolV5_0(routingContext),
+                {MajorVersion: 4, MinorVersion: 1} => new BoltProtocolV4_1(),
+                {MajorVersion: 4, MinorVersion: 2} => new BoltProtocolV4_2(),
+                {MajorVersion: 4, MinorVersion: 3} => new BoltProtocolV4_3(),
+                {MajorVersion: 4, MinorVersion: 4} => new BoltProtocolV4_4(),
+                {MajorVersion: 5, MinorVersion: 0} => new BoltProtocolV5_0(),
                 // no matching versions
                 {MajorVersion: 0, MinorVersion: 0} => throw new NotSupportedException(NoAgreedVersion),
                 // http response

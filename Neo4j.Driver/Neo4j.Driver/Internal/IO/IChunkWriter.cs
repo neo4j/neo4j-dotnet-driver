@@ -14,26 +14,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-using System;
-using System.Collections.Generic;
+
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.IO
+namespace Neo4j.Driver.Internal.IO;
+
+internal interface IChunkWriter
 {
-    internal interface IChunkWriter
-    {
-
-        Stream ChunkerStream { get; }
-
-        void OpenChunk();
-
-        void CloseChunk();
-
-        void Send();
-
-        Task SendAsync();
-
-    }
+    Stream ChunkerStream { get; }
+    void OpenChunk();
+    void CloseChunk();
+    void Send();
+    Task SendAsync();
 }

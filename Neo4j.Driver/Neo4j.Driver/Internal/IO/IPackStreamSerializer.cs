@@ -17,8 +17,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal.IO
 {
@@ -28,8 +27,8 @@ namespace Neo4j.Driver.Internal.IO
 
         IEnumerable<Type> WritableTypes { get; }
 
-        object Deserialize(IPackStreamReader reader, byte signature, long size);
+        object Deserialize(IConnection connection, IPackStreamReader reader, byte signature, long size);
 
-        void Serialize(IPackStreamWriter writer, object value);
+        void Serialize(IConnection connection, IPackStreamWriter writer, object value);
     }
 }

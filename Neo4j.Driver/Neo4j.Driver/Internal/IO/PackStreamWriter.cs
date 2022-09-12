@@ -19,9 +19,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Text;
-using Neo4j.Driver;
 using static Neo4j.Driver.Internal.IO.PackStream;
 
 namespace Neo4j.Driver.Internal.IO
@@ -31,16 +28,6 @@ namespace Neo4j.Driver.Internal.IO
         private static readonly IDictionary<Type, IPackStreamSerializer> NoHandlers = new Dictionary<Type, IPackStreamSerializer>();
 
         private readonly IDictionary<Type, IPackStreamSerializer> _structHandlers;
-        private readonly Stream _stream;
-
-        public PackStreamWriter(Stream stream, IDictionary<Type, IPackStreamSerializer> structHandlers)
-        {
-            Throw.ArgumentNullException.IfNull(stream, nameof(stream));
-            Throw.ArgumentOutOfRangeException.IfFalse(stream.CanWrite, nameof(stream));
-
-            _stream = stream;
-            _structHandlers = structHandlers ?? NoHandlers;
-        }
 
         public void Write(object value)
         {

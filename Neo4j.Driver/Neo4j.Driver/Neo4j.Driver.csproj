@@ -54,4 +54,9 @@
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="5.0.0" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Internal\Messaging\V4_1\" />
+    <Folder Include="Internal\Messaging\V4_2\" />
+    <Folder Include="Internal\Messaging\V5_0\" />
+  </ItemGroup>
 </Project>

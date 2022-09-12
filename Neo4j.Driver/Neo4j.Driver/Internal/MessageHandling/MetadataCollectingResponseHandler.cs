@@ -17,61 +17,50 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.MessageHandling
+namespace Neo4j.Driver.Internal.MessageHandling;
+
+internal abstract class MetadataCollectingResponseHandler : NoOpResponseHandler
 {
-    internal abstract class MetadataCollectingResponseHandler : NoOpResponseHandler
+    private readonly IDictionary<Type, IMetadataCollector> _metadataCollectors;
+
+    protected MetadataCollectingResponseHandler()
     {
-        private readonly IDictionary<Type, IMetadataCollector> _metadataCollectors;
+        _metadataCollectors = new Dictionary<Type, IMetadataCollector>();
+    }
 
-        protected MetadataCollectingResponseHandler()
+    protected void AddMetadata<TCollector, TMetadata>()
+        where TCollector : class, IMetadataCollector<TMetadata>, new()
+    {
+        AddMetadata<TCollector, TMetadata>(new TCollector());
+    }
+
+    protected void AddMetadata<TCollector, TMetadata>(TCollector collector)
+        where TCollector : class, IMetadataCollector<TMetadata>
+    {
+        var collectorType = typeof(TCollector);
+        if (_metadataCollectors.ContainsKey(collectorType))
         {
-            _metadataCollectors = new Dictionary<Type, IMetadataCollector>();
+            throw new InvalidOperationException(
+                $"A metadata collector of type {typeof(TCollector).Name} is already registered.");
         }
 
-        protected void AddMetadata<TCollector, TMetadata>()
-            where TCollector : class, IMetadataCollector<TMetadata>, new()
-        {
-            AddMetadata<TCollector, TMetadata>(new TCollector());
-        }
+        _metadataCollectors.Add(collectorType, collector ?? throw new ArgumentNullException(nameof(collector)));
+    }
 
-        protected void AddMetadata<TCollector, TMetadata>(TCollector collector)
-            where TCollector : class, IMetadataCollector<TMetadata>
-        {
-            var collectorType = typeof(TCollector);
-            if (_metadataCollectors.ContainsKey(collectorType))
-            {
-                throw new InvalidOperationException(
-                    $"A metadata collector of type {typeof(TCollector).Name} is already registered.");
-            }
+    protected TMetadata GetMetadata<TCollector, TMetadata>()
+        where TCollector : class, IMetadataCollector<TMetadata>
+    {
+        return _metadataCollectors.TryGetValue(typeof(TCollector), out var collector)
+            ? ((IMetadataCollector<TMetadata>) collector).Collected
+            : default(TMetadata);
+    }
 
-            _metadataCollectors.Add(collectorType, collector ?? throw new ArgumentNullException(nameof(collector)));
-        }
-
-        protected TCollector RemoveMetadata<TCollector, TMetadata>()
-            where TCollector : class, IMetadataCollector<TMetadata>
+    public override void OnSuccess(IDictionary<string, object> metadata)
+    {
+        foreach (var collector in _metadataCollectors.Values)
         {
-            var collectorType = typeof(TCollector);
-            if (!_metadataCollectors.TryGetValue(collectorType, out var collector)) return null;
-            _metadataCollectors.Remove(collectorType);
-            return (TCollector) collector;
-        }
-
-        protected TMetadata GetMetadata<TCollector, TMetadata>()
-            where TCollector : class, IMetadataCollector<TMetadata>
-        {
-            return _metadataCollectors.TryGetValue(typeof(TCollector), out var collector)
-                ? ((IMetadataCollector<TMetadata>) collector).Collected
-                : default(TMetadata);
-        }
-
-        public override void OnSuccess(IDictionary<string, object> metadata)
-        {
-            foreach (var collector in _metadataCollectors.Values)
-            {
-                collector.Collect(metadata);
-            }
+            collector.Collect(metadata);
         }
     }
 }

@@ -15,19 +15,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Internal.Messaging.V3
+namespace Neo4j.Driver.Internal.Messaging.V3;
+
+internal class RollbackMessage : IRequestMessage
 {
-    internal class RollbackMessage : IRequestMessage
+    public static readonly RollbackMessage Rollback = new();
+
+    private RollbackMessage()
     {
-        public static readonly RollbackMessage Rollback = new RollbackMessage();
-
-        private RollbackMessage()
-        {
-        }
-
-        public override string ToString()
-        {
-            return "ROLLBACK";
-        }
     }
+
+    public override string ToString() => "ROLLBACK";
 }

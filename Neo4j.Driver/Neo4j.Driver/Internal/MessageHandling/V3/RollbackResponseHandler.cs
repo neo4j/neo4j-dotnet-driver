@@ -15,10 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using Neo4j.Driver.Internal.MessageHandling.Metadata;
-
 namespace Neo4j.Driver.Internal.MessageHandling.V3
 {
     internal class RollbackResponseHandler : NoOpResponseHandler

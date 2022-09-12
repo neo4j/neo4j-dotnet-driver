@@ -54,7 +54,8 @@ namespace Neo4j.Driver.Internal.Connector
 
         public IDictionary<string, string> RoutingContext { get; set; }
 
-        public SocketConnection(Uri uri, ConnectionSettings connectionSettings, BufferSettings bufferSettings, IDictionary<string, string> routingContext, ILogger logger = null)
+        public SocketConnection(Uri uri, ConnectionSettings connectionSettings, 
+            BufferSettings bufferSettings, IDictionary<string, string> routingContext, ILogger logger = null)
         {
             _idPrefix = $"conn-{uri.Host}:{uri.Port}-";
             _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
@@ -94,6 +95,8 @@ namespace Neo4j.Driver.Internal.Connector
 
         public string Database { get; set; }
 
+        public BoltProtocolVersion Version => _client.Version;
+
         public async Task InitAsync(CancellationToken cancellationToken = default)
         {
             await _sendLock.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -124,7 +127,7 @@ namespace Neo4j.Driver.Internal.Connector
                 return;
             }
 
-            _sendLock.Wait();
+            await _sendLock.WaitAsync().ConfigureAwait(false);
             try
             {
                 // send
@@ -140,7 +143,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         private async Task ReceiveAsync()
         {
-            _recvLock.Wait();
+            await _recvLock.WaitAsync().ConfigureAwait(false);
 
             try
             {
@@ -161,7 +164,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public async Task ReceiveOneAsync()
         {
-            _recvLock.Wait();
+            await _recvLock.WaitAsync().ConfigureAwait(false);
             try
             {
                 if (_responsePipeline.HasNoPendingMessages)
@@ -206,7 +209,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             if (Server is ServerInfo info)
             {
-				info.Update(_boltProtocol.Version, newVersion.Agent);				
+				info.Update(_client.Version, newVersion.Agent);				
 			}
             else
             {
@@ -259,12 +262,12 @@ namespace Neo4j.Driver.Internal.Connector
             try
             {
                 _messages.Enqueue(message1);
-                _responsePipeline.Enqueue(message1, handler1);
+                _responsePipeline.Enqueue(handler1);
 
                 if (message2 != null)
                 {
                     _messages.Enqueue(message2);
-                    _responsePipeline.Enqueue(message2, handler2);
+                    _responsePipeline.Enqueue(handler2);
                 }
             }
             finally
@@ -285,14 +288,25 @@ namespace Neo4j.Driver.Internal.Connector
             return $"[{id}]";
         }
 
-		public void SetRecvTimeOut(int seconds)
+		public void SetReadTimeoutInSeconds(int seconds)
 		{
 			_client.SetRecvTimeOut(seconds);			
 		}
 
         public void SetUseUtcEncodedDateTime()
         {
-            _client.SetUseUtcEncodedDateTime(_boltProtocol);
+
         }
-	}
+
+        public void Write(IRequestMessage message)
+        {
+            _chunkWriter.OpenChunk();
+            _packstreamWriter.Write(message);
+            _chunkWriter.CloseChunk();
+
+            // add message boundary
+            _chunkWriter.OpenChunk();
+            _chunkWriter.CloseChunk();
+        }
+    }
 }

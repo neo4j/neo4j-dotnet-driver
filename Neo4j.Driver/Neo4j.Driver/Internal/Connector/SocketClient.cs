@@ -45,7 +45,6 @@ namespace Neo4j.Driver.Internal.Connector
             _uri = uri;
             _logger = logger;
             _bufferSettings = bufferSettings;
-
             _tcpSocketClient = socketClient ?? new TcpSocketClient(socketSettings, _logger);
         }
 
@@ -66,11 +65,13 @@ namespace Neo4j.Driver.Internal.Connector
             _logger?.Debug($"~~ [CONNECT] {_uri}");
             Version = await DoHandshakeAsync(cancellationToken).ConfigureAwait(false);
             RoutingContext = routingContext;
+            ChunkReader = new ChunkReader(_tcpSocketClient.ReaderStream, _bufferSettings, _logger);
+            ChunkWriter = new ChunkWriter(_tcpSocketClient.WriterStream, _bufferSettings, _logger);
             SetOpened();
         }
 
         public IDictionary<string,string> RoutingContext { get; set; }
-        public BoltProtocolVersion Version { get; set; }
+        public BoltProtocolVersion Version { get; private set; }
 
         public async Task SendAsync(IEnumerable<IRequestMessage> messages)
         {
@@ -78,8 +79,7 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 foreach (var message in messages)
                 {
-                    var writer = new MessageWriter(_tcpSocketClient.WriterStream,
-                        _bufferSettings, _logger, Version, RoutingContext);
+                    var writer = new MessageWriter();
                     writer.Write(message);
                     _logger?.Debug(MessagePattern, message);
                 }
@@ -106,8 +106,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             try
             {
-                var reader = new MessageReader(_tcpSocketClient.ReaderStream,
-                    _bufferSettings, _logger, Version, RoutingContext);
+                var reader = new MessageReader();
                 await reader.ReadAsync(responsePipeline).ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -140,7 +139,7 @@ namespace Neo4j.Driver.Internal.Connector
         {
             if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
             {
-                return _tcpSocketClient.DisconnectAsync();
+                return _tcpSocketClient.DisposeAsync().AsTask();
             }
 
             return Task.CompletedTask;
@@ -169,5 +168,8 @@ namespace Neo4j.Driver.Internal.Connector
         {
             _tcpSocketClient.ReaderStream.ReadTimeout = seconds * 1000;
         }
+
+        public IChunkReader ChunkReader { get; private set; }
+        public IChunkWriter ChunkWriter { get; private set; }
     }
 }

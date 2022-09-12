@@ -15,24 +15,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.Connector
+namespace Neo4j.Driver.Internal.Connector;
+
+internal interface ISocketClient
 {
-    internal interface ISocketClient
-    {
-        Task ConnectAsync(IDictionary<string, string> routingContext, CancellationToken token = default);
-        Task SendAsync(IEnumerable<IRequestMessage> messages);
-        Task ReceiveAsync(IResponsePipeline responsePipeline);
-        Task ReceiveOneAsync(IResponsePipeline responsePipeline);
-        bool IsOpen { get; }
-        Task StopAsync();
-		void SetRecvTimeOut(int seconds);
-    }
+    BoltProtocolVersion Version { get; }
+    Task ConnectAsync(IDictionary<string, string> routingContext, CancellationToken token = default);
+    Task SendAsync(IEnumerable<IRequestMessage> messages);
+    Task ReceiveAsync(IResponsePipeline responsePipeline);
+    Task ReceiveOneAsync(IResponsePipeline responsePipeline);
+    bool IsOpen { get; }
+    Task StopAsync();
+    void SetRecvTimeOut(int seconds);
+
+    IChunkReader ChunkReader { get; }
+    IChunkWriter ChunkWriter { get; }
 }

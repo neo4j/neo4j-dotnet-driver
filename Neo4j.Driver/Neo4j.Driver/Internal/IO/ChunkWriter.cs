@@ -69,7 +69,6 @@ namespace Neo4j.Driver.Internal.IO
         public ChunkWriter(Stream downStream, ILogger logger, int chunkSize)
             : this(downStream, Constants.DefaultWriteBufferSize, Constants.MaxWriteBufferSize, logger, chunkSize)
         {
-
         }
 
         public ChunkWriter(Stream downStream, int defaultBufferSize, int maxBufferSize, ILogger logger, int chunkSize)

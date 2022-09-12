@@ -51,41 +51,7 @@ namespace Neo4j.Driver.Internal.IO
 		}
 
 		private int _shrinkCounter = 0;
-        public MessageReader(Stream stream, BufferSettings bufferSettings, ILogger logger, BoltProtocolVersion messageFormat, IDictionary<string, string> routingContext)
-        {
-            _logger = logger;
-            _chunkReader = new ChunkReader(stream, logger);
-            _defaultBufferSize = bufferSettings.DefaultReadBufferSize;
-            _maxBufferSize = bufferSettings.MaxReadBufferSize;
-            _bufferStream = new MemoryStream(_defaultBufferSize);
-            _packStreamReader = BoltProtocolFactory.ForVersion(messageFormat, routingContext).MessageFormat
-                .CreateReader(_bufferStream);
-        }
-        public MessageReader(Stream stream, IMessageFormat messageFormat)
-            : this(stream, Constants.DefaultReadBufferSize, Constants.MaxReadBufferSize, null, messageFormat)
-        {
-        }
-
-        public MessageReader(Stream stream, int defaultBufferSize, int maxBufferSize, ILogger logger,
-            IMessageFormat messageFormat)
-            : this(new ChunkReader(stream, logger), defaultBufferSize, maxBufferSize, logger, messageFormat)
-        {
-        }
-
-        public MessageReader(IChunkReader chunkReader, int defaultBufferSize, int maxBufferSize, ILogger logger,
-            IMessageFormat messageFormat)
-        {
-            Throw.ArgumentNullException.IfNull(chunkReader, nameof(chunkReader));
-            Throw.ArgumentNullException.IfNull(messageFormat, nameof(messageFormat));
-
-            _logger = logger;
-            _chunkReader = chunkReader;
-            _defaultBufferSize = defaultBufferSize;
-            _maxBufferSize = maxBufferSize;
-            _bufferStream = new MemoryStream(_defaultBufferSize);
-            _packStreamReader = messageFormat.CreateReader(_bufferStream);
-        }
-
+    
         public async Task ReadAsync(IResponsePipeline pipeline)
         {
             var messageCount = await _chunkReader.ReadNextMessagesAsync(_bufferStream).ConfigureAwait(false);

@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
@@ -39,24 +38,12 @@ internal class BoltProtocolV3 : IBoltProtocol
     public virtual IMessageFormat MessageFormat => BoltProtocolMessageFormat.V3;
     public virtual BoltProtocolVersion Version => BoltProtocolVersion.V3_0;
 
-    public virtual IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,
-        ILogger logger = null, bool _ = false)
+    public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
     {
-        return new MessageWriter(writeStream, bufferSettings.DefaultWriteBufferSize, bufferSettings.MaxWriteBufferSize,
-            logger, MessageFormat);
-    }
-
-    public virtual IMessageReader NewReader(Stream stream, BufferSettings bufferSettings,
-        ILogger logger = null, bool _ = false)
-    {
-        return new MessageReader(stream, bufferSettings.DefaultReadBufferSize, bufferSettings.MaxReadBufferSize, logger,
-            MessageFormat);
-    }
-
-    public virtual async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
-    {
-        await connection.EnqueueAsync(GetHelloMessage(userAgent, authToken.AsDictionary()),
-            GetHelloResponseHandler(connection)).ConfigureAwait(false);
+        await connection.EnqueueAsync(
+            new HelloMessage(connection.Version, userAgent, authToken.AsDictionary(), connection.RoutingContext), 
+            new HelloResponseHandler(connection))
+            .ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);
     }
 
@@ -89,6 +76,7 @@ internal class BoltProtocolV3 : IBoltProtocol
     public virtual async Task BeginTransactionAsync(IConnection connection, string database, Bookmarks bookmarks,
         TransactionConfig config, string impersonatedUser)
     {
+        ValidateImpersonatedUserForVersion(connection, impersonatedUser);
         await connection.EnqueueAsync(GetBeginMessage(database,
                     bookmarks,
                     config,
@@ -122,26 +110,26 @@ internal class BoltProtocolV3 : IBoltProtocol
 
     public async Task RollbackTransactionAsync(IConnection connection)
     {
-        await connection.EnqueueAsync(RollbackMessage.Rollback, new RollbackResponseHandler())
+        await connection.EnqueueAsync(RollbackMessage.Rollback, NoOpResponseHandler.Instance)
             .ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);
     }
 
     public Task ResetAsync(IConnection connection)
     {
-        return connection.EnqueueAsync(ResetMessage.Reset, new ResetResponseHandler());
+        return connection.EnqueueAsync(ResetMessage.Reset, NoOpResponseHandler.Instance);
     }
 
     public async Task LogoutAsync(IConnection connection)
     {
-        await connection.EnqueueAsync(GoodbyeMessage.Goodbye, new NoOpResponseHandler()).ConfigureAwait(false);
+        await connection.EnqueueAsync(GoodbyeMessage.Goodbye, NoOpResponseHandler.Instance).ConfigureAwait(false);
         await connection.SendAsync().ConfigureAwait(false);
     }
 
     public virtual async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection,
         string database, string impersonatedUser, Bookmarks bookmarks)
     {
-        ValidateImpersonatedUserForVersion(impersonatedUser);
+        ValidateImpersonatedUserForVersion(connection, impersonatedUser);
         connection = connection ??
                      throw new ProtocolException("Attempting to get a routing table on a null connection");
 
@@ -165,16 +153,14 @@ internal class BoltProtocolV3 : IBoltProtocol
         return (IReadOnlyDictionary<string, object>) finalDictionary;
     }
 
-    protected virtual IRequestMessage GetHelloMessage(string userAgent,
-        IDictionary<string, object> auth)
+    private static IRequestMessage GetHelloMessage(IConnection connection, string userAgent, IDictionary<string, object> auth)
     {
-        return new HelloMessage(userAgent, auth);
+        return new HelloMessage(connection.Version, userAgent, auth, connection.RoutingContext);
     }
 
     protected virtual IRequestMessage GetBeginMessage(string database, Bookmarks bookmarks, TransactionConfig config,
         AccessMode mode, string impersonatedUser)
     {
-        ValidateImpersonatedUserForVersion(impersonatedUser);
         AssertNullDatabase(database);
 
         return new BeginMessage(bookmarks, config, mode);
@@ -184,13 +170,7 @@ internal class BoltProtocolV3 : IBoltProtocol
         TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null,
         string impersonatedUser = null)
     {
-        ValidateImpersonatedUserForVersion(impersonatedUser);
         return new RunWithMetadataMessage(query, bookmarks, config, mode);
-    }
-
-    protected virtual IResponseHandler GetHelloResponseHandler(IConnection conn)
-    {
-        return new HelloResponseHandler(conn);
     }
 
     private void AssertNullDatabase(string database)
@@ -208,11 +188,13 @@ internal class BoltProtocolV3 : IBoltProtocol
         parameters = new Dictionary<string, object> {{"context", connection.RoutingContext}};
     }
 
-    protected virtual void ValidateImpersonatedUserForVersion(string impersonatedUser)
+    protected virtual void ValidateImpersonatedUserForVersion(IConnection connection, string impersonatedUser)
     {
+        if (connection.Version >= BoltProtocolVersion.V4_4)
+            return;
+
         if (impersonatedUser is not null)
-            throw new ArgumentException(
-                $"Boltprotocol {Version} does not support impersonatedUser, yet has been passed a non null impersonated user string");
+            throw new ArgumentException($"Bolt Protocol {connection.Version} does not support impersonatedUser, yet has been passed a non null impersonated user string");
     }
 
     protected class ConnectionResourceHandler : IResultResourceHandler
@@ -248,5 +230,12 @@ internal class BoltProtocolV3 : IBoltProtocol
         {
             if (InternalBookmarks != null && InternalBookmarks.Values.Any()) InternalBookmarks = bookmarks;
         }
+    }
+
+    protected static string RoutingTableProcedureName(IConnection connection)
+    {
+        return connection.Version.MajorVersion == 3
+            ? "CALL dbms.cluster.routing.getRoutingTable($context)"
+            : "CALL dbms.routing.getRoutingTable($context, $database)";
     }
 }

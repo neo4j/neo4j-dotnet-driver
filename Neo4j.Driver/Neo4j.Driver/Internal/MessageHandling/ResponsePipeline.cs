@@ -18,9 +18,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.MessageHandling
@@ -43,13 +40,8 @@ namespace Neo4j.Driver.Internal.MessageHandling
 
         public bool HasNoPendingMessages => _handlers.IsEmpty;
 
-        public void Enqueue(IRequestMessage message, IResponseHandler handler)
+        public void Enqueue(IResponseHandler handler)
         {
-            if (message == null)
-            {
-                throw new ArgumentNullException(nameof(message));
-            }
-
             _handlers.Enqueue(handler ?? throw new ArgumentNullException(nameof(handler)));
         }
 

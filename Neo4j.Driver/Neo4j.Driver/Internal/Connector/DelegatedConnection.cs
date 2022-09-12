@@ -72,6 +72,8 @@ namespace Neo4j.Driver.Internal.Connector
             return TaskWithErrorHandling(() => Delegate.ReceiveOneAsync());
         }
 
+        public BoltProtocolVersion Version => Delegate.Version;
+
         public Task InitAsync(CancellationToken cancellationToken = default)
         {
             return TaskWithErrorHandling(() => Delegate.InitAsync(cancellationToken));
@@ -144,9 +146,9 @@ namespace Neo4j.Driver.Internal.Connector
             return Delegate.ToString();
         }
 
-		public void SetRecvTimeOut(int seconds)
+		public void SetReadTimeoutInSeconds(int seconds)
 		{
-			Delegate.SetRecvTimeOut(seconds);
+			Delegate.SetReadTimeoutInSeconds(seconds);
 		}
 
         public void SetUseUtcEncodedDateTime()
