@@ -27,6 +27,7 @@ namespace Neo4j.Driver.Internal.Protocol;
 internal interface IBoltProtocol
 {
     BoltProtocolVersion Version { get; }
+    IMessageFormat MessageFormat { get; }
 
     IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null,
         bool useUtcEncodedDateTimes = false);

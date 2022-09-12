@@ -22,11 +22,15 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Connector
 {
-    internal interface ITcpSocketClient
+    internal interface ITcpSocketClient : IDataEndpoint
     {
-        Stream ReadStream { get; }
-        Stream WriteStream { get; }
         Task ConnectAsync(Uri uri, CancellationToken cancellationToken = default);
         Task DisconnectAsync();
 	}
+
+    public interface IDataEndpoint
+    {
+        Stream ReaderStream { get; }
+        Stream WriterStream { get; }
+    }
 }

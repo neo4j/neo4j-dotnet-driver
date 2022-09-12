@@ -100,13 +100,13 @@ namespace Neo4j.Driver.Internal.Connector
 
             try
             {
-                _boltProtocol = await _client.ConnectAsync(RoutingContext, cancellationToken).ConfigureAwait(false);
+                await _client.ConnectAsync(RoutingContext, cancellationToken).ConfigureAwait(false);
             }
             finally
             {
                 _sendLock.Release();
             }
-
+            
             await _boltProtocol.LoginAsync(this, _userAgent, _authToken).ConfigureAwait(false);
         }
 

@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal.Protocol
     internal class BoltProtocolV5_0 : BoltProtocolV4_4
     {
         public override BoltProtocolVersion Version => BoltProtocolVersion.V5_0;
-        protected override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V5_0;
+        public  override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V5_0;
         protected override IMessageFormat UtcMessageFormat => BoltProtocolMessageFormat.V5_0;
 
         public BoltProtocolV5_0(IDictionary<string, string> routingContext) : base(routingContext)

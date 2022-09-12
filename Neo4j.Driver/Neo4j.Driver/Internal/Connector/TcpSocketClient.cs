@@ -41,8 +41,8 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly bool _socketKeepAliveEnabled;
         private readonly ILogger _logger;
 
-        public Stream ReadStream => _stream;
-        public Stream WriteStream => _stream;
+        public Stream ReaderStream => _stream;
+        public Stream WriterStream => _stream;
 
         public TcpSocketClient(SocketSettings socketSettings, ILogger logger = null)
         {
@@ -116,14 +116,11 @@ namespace Neo4j.Driver.Internal.Connector
         {
             InitClient();
 
-#if NET46
-            var connectTask = Task.Factory.FromAsync(_client.BeginConnect, _client.EndConnect, address, port, null);
-#else
-            var connectTask = _client.ConnectAsync(address, port);
-#endif
             try
             {
-                await connectTask.Timeout(_connectionTimeout, cancellationToken).ConfigureAwait(false);
+                await _client.ConnectAsync(address, port)
+                    .Timeout(_connectionTimeout, cancellationToken)
+                    .ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is OperationCanceledException or TimeoutException)
             {

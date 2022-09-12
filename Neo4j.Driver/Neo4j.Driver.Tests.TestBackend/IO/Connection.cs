@@ -22,11 +22,11 @@ namespace Neo4j.Driver.Tests.TestBackend
     {
         private TcpListener Server { get; }
         private TcpClient ClientConnection { get; set; }
-        private bool Disposed { get; set; } = false;
+        private bool Disposed { get; set; }
         private string Uri { get; set; }
         private int port { get; set; }
-        public bool Connected { get { return ClientConnection.Connected; } }
-        public int TimeOut { get { return 1000; } }
+        public bool Connected => ClientConnection.Connected;
+        public int TimeOut => 1000;
 
         public NetworkStream ConnectionStream { get; set; }
 

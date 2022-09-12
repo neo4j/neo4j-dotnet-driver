@@ -20,12 +20,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Extensions;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.MessageHandling;
-using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.Connector
 {
@@ -35,8 +33,6 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly Uri _uri;
         private readonly BufferSettings _bufferSettings;
 
-        public IMessageReader Reader { get; private set; }
-        public IMessageWriter Writer { get; private set; }
         private readonly ITcpSocketClient _tcpSocketClient;
 
         private int _closedMarker = -1;
@@ -56,26 +52,25 @@ namespace Neo4j.Driver.Internal.Connector
         // For testing only
         internal SocketClient(IMessageReader reader, IMessageWriter writer, ITcpSocketClient socketClient = null)
         {
-            Reader = reader;
-            Writer = writer;
-            _tcpSocketClient = socketClient;
+            // Reader = reader;
+            // Writer = writer;
+            // _tcpSocketClient = socketClient;
         }
 
         public bool IsOpen => _closedMarker == 0;
-        private bool IsClosed => _closedMarker > 0;
 
-        public async Task<IBoltProtocol> ConnectAsync(IDictionary<string, string> routingContext, CancellationToken cancellationToken = default)
+        public async Task ConnectAsync(IDictionary<string, string> routingContext, CancellationToken cancellationToken = default)
         {
             await _tcpSocketClient.ConnectAsync(_uri, cancellationToken).ConfigureAwait(false);
 
-            SetOpened();
             _logger?.Debug($"~~ [CONNECT] {_uri}");
-            var version = 
-                await DoHandshakeAsync(cancellationToken)
-                .ConfigureAwait(false);
-
-            return SelectBoltProtocol(version, routingContext);
+            Version = await DoHandshakeAsync(cancellationToken).ConfigureAwait(false);
+            RoutingContext = routingContext;
+            SetOpened();
         }
+
+        public IDictionary<string,string> RoutingContext { get; set; }
+        public BoltProtocolVersion Version { get; set; }
 
         public async Task SendAsync(IEnumerable<IRequestMessage> messages)
         {
@@ -83,11 +78,13 @@ namespace Neo4j.Driver.Internal.Connector
             {
                 foreach (var message in messages)
                 {
-                    Writer.Write(message);
-                    LogDebug(MessagePattern, message);
+                    var writer = new MessageWriter(_tcpSocketClient.WriterStream,
+                        _bufferSettings, _logger, Version, RoutingContext);
+                    writer.Write(message);
+                    _logger?.Debug(MessagePattern, message);
                 }
 
-                await Writer.FlushAsync().ConfigureAwait(false);
+                await _tcpSocketClient.WriterStream.FlushAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -109,7 +106,9 @@ namespace Neo4j.Driver.Internal.Connector
         {
             try
             {
-                await Reader.ReadAsync(responsePipeline).ConfigureAwait(false);
+                var reader = new MessageReader(_tcpSocketClient.ReaderStream,
+                    _bufferSettings, _logger, Version, RoutingContext);
+                await reader.ReadAsync(responsePipeline).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -150,12 +149,12 @@ namespace Neo4j.Driver.Internal.Connector
         private async Task<BoltProtocolVersion> DoHandshakeAsync(CancellationToken cancellationToken = default)
         {
             var data = BoltProtocolFactory.PackSupportedVersions();
-            await _tcpSocketClient.WriteStream.WriteAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(false);
-            await _tcpSocketClient.WriteStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            await _tcpSocketClient.WriterStream.WriteAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(false);
+            await _tcpSocketClient.WriterStream.FlushAsync(cancellationToken).ConfigureAwait(false);
             _logger?.Debug("C: [HANDSHAKE] {0}", data.ToHexString());
 
             data = new byte[4];
-            var read = await _tcpSocketClient.ReadStream.ReadAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(false);
+            var read = await _tcpSocketClient.ReaderStream.ReadAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(false);
             if (read < data.Length)
             {
                 throw new IOException($"Unexpected end of stream when performing handshake, read returned {read}");
@@ -166,31 +165,9 @@ namespace Neo4j.Driver.Internal.Connector
             return agreedVersion;
         }
 
-        private IBoltProtocol SelectBoltProtocol(BoltProtocolVersion version, IDictionary<string, string> routingContext)
-        {
-            var boltProtocol = BoltProtocolFactory.ForVersion(version, routingContext);
-            Reader = boltProtocol.NewReader(_tcpSocketClient.ReadStream, _bufferSettings, _logger);
-            Writer = boltProtocol.NewWriter(_tcpSocketClient.WriteStream, _bufferSettings, _logger);
-            return boltProtocol;
-        }
-
-        private void LogDebug(string message, params object[] args)
-        {
-            if (_logger != null && _logger.IsDebugEnabled())
-            {
-                _logger?.Debug(message, args);
-            }
-        }
-
         public void SetRecvTimeOut(int seconds)
         {
-            Reader.ReadTimeoutSeconds = seconds;
-		}
-
-        public void SetUseUtcEncodedDateTime(IBoltProtocol protocol)
-        {
-            Reader = protocol.NewReader(_tcpSocketClient.ReadStream, _bufferSettings, _logger, true);
-            Writer = protocol.NewWriter(_tcpSocketClient.WriteStream, _bufferSettings, _logger, true);
+            _tcpSocketClient.ReaderStream.ReadTimeout = seconds * 1000;
         }
     }
 }

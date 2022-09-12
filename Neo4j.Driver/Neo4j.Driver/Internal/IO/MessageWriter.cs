@@ -21,6 +21,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal.Protocol;
 using static Neo4j.Driver.Internal.IO.PackStream;
 
 namespace Neo4j.Driver.Internal.IO
@@ -40,6 +41,15 @@ namespace Neo4j.Driver.Internal.IO
             : this(stream, defaultBufferSize, maxBufferSize, null, messageFormat)
         {
 
+        }
+        
+        public MessageWriter(Stream stream, BufferSettings bufferSettings, ILogger logger, BoltProtocolVersion version, IDictionary<string, string> routingContext)
+        {
+            _chunkWriter = new ChunkWriter(stream, bufferSettings.DefaultWriteBufferSize, bufferSettings.MaxWriteBufferSize, logger);
+            _packStreamWriter = BoltProtocolFactory
+                .ForVersion(version, routingContext)
+                .MessageFormat
+                .CreateWriter(_chunkWriter.ChunkerStream);
         }
 
         public MessageWriter(Stream stream, int defaultBufferSize, int maxBufferSize, ILogger logger, IMessageFormat messageFormat)

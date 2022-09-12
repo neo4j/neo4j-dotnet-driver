@@ -14,9 +14,10 @@ namespace Neo4j.Driver.Internal.Protocol
     internal class BoltProtocolV4_4 : BoltProtocolV4_3
 	{
         public override BoltProtocolVersion Version => BoltProtocolVersion.V4_4;
-        protected override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V4_4;
+        public override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V4_4;
         protected override IMessageFormat UtcMessageFormat => BoltProtocolMessageFormat.V4_4Utc;
         public const string BoltPatchKey = "patch_bolt";
+
         public BoltProtocolV4_4(IDictionary<string, string> routingContext)
             : base(routingContext)
         {
@@ -28,7 +29,7 @@ namespace Neo4j.Driver.Internal.Protocol
 		{
 			return new HelloMessage(userAgent, auth, routingContext);
 		}
-				
+
 		protected override IRequestMessage GetBeginMessage(string database, Bookmarks bookmarks, TransactionConfig config, AccessMode mode, string impersonatedUser)
 		{
 			ValidateImpersonatedUserForVersion(impersonatedUser);

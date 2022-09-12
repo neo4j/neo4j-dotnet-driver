@@ -36,7 +36,7 @@ internal class BoltProtocolV3 : IBoltProtocol
     private const string GetRoutingTableProcedure = "CALL dbms.cluster.routing.getRoutingTable($context)";
     protected const string RoutingTableDBKey = "db";
 
-    protected virtual IMessageFormat MessageFormat => BoltProtocolMessageFormat.V3;
+    public virtual IMessageFormat MessageFormat => BoltProtocolMessageFormat.V3;
     public virtual BoltProtocolVersion Version => BoltProtocolVersion.V3_0;
 
     public virtual IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings,

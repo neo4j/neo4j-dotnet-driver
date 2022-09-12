@@ -15,11 +15,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO
 {
@@ -48,7 +51,16 @@ namespace Neo4j.Driver.Internal.IO
 		}
 
 		private int _shrinkCounter = 0;
-
+        public MessageReader(Stream stream, BufferSettings bufferSettings, ILogger logger, BoltProtocolVersion messageFormat, IDictionary<string, string> routingContext)
+        {
+            _logger = logger;
+            _chunkReader = new ChunkReader(stream, logger);
+            _defaultBufferSize = bufferSettings.DefaultReadBufferSize;
+            _maxBufferSize = bufferSettings.MaxReadBufferSize;
+            _bufferStream = new MemoryStream(_defaultBufferSize);
+            _packStreamReader = BoltProtocolFactory.ForVersion(messageFormat, routingContext).MessageFormat
+                .CreateReader(_bufferStream);
+        }
         public MessageReader(Stream stream, IMessageFormat messageFormat)
             : this(stream, Constants.DefaultReadBufferSize, Constants.MaxReadBufferSize, null, messageFormat)
         {

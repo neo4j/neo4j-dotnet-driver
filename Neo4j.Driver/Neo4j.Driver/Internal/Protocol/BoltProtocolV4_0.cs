@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Internal.Protocol
     {
         private const string GetRoutingTableForDatabaseProcedure = "CALL dbms.routing.getRoutingTable($context, $database)";
         public override BoltProtocolVersion Version => BoltProtocolVersion.V4_0;
-        protected override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V4;
+        public override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V4;
 		
         protected override IRequestMessage GetHelloMessage(string userAgent, IDictionary<string, object> auth)
 		{
