@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-    internal class NewDriver : IProtocolObject
+	internal class NewDriver : IProtocolObject
 	{
 		public NewDriverType data { get; set; } = new NewDriverType();
 		[JsonIgnore]
@@ -31,7 +31,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 			public int? fetchSize { get; set; }
 			public int? maxTxRetryTimeMs { get; set; }
 			public int? livenessCheckTimeoutMs { get; set; }
-        }
+		}
 
 		public override async Task Process(Controller controller)
 		{
@@ -51,10 +51,10 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 				default:
 					authToken = AuthTokens.Custom(authTokenData.principal,
-												  authTokenData.credentials,
-												  authTokenData.realm,
-												  authTokenData.scheme,
-												  authTokenData.parameters);
+					                              authTokenData.credentials,
+					                              authTokenData.realm,
+					                              authTokenData.scheme,
+					                              authTokenData.parameters);
 					break;
 
 			}
