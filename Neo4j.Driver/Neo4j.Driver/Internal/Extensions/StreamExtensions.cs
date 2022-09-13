@@ -61,23 +61,24 @@ namespace Neo4j.Driver.Internal
 		public static async Task<int> ReadWithTimeoutAsync(this Stream stream, byte[] buffer, int offset, int count, int timeoutMs)
 		{
 			var timeout = timeoutMs <= 0 ? TimeSpan.FromMilliseconds(-1) : TimeSpan.FromMilliseconds(timeoutMs);
+            var cancellationToken = new CancellationTokenSource(timeout);
+            using var _ = cancellationToken.Token.Register(stream.Close);
 
             try
             {
-                // Stream.ReadAsync doesn't honor cancellation token. It only checks it at the beginning. The actual
-                // operation is not guarded. As a result if remote server never responds and connection never closed
-                // it will lead to this operation hanging forever.
-                return await stream.ReadAsync(buffer, offset, count)
-                    .Timeout(timeout, CancellationToken.None)
-                    .ConfigureAwait(false);
+#if NET6_0_OR_GREATER
+                return await stream.ReadAsync(buffer.AsMemory(offset, count), cancellationToken.Token).ConfigureAwait(false);
+#else
+                return await stream.ReadAsync(buffer, offset, count, cancellationToken.Token).ConfigureAwait(false);
+#endif
             }
-            catch (TimeoutException timeoutException)
+            catch (Exception ex) when (cancellationToken.IsCancellationRequested)
             {
                 stream.Close();
-                throw new ConnectionReadTimeoutException($"Socket/Stream timed out after {timeoutMs}ms, socket closed.",
-                    timeoutException);
+                throw new ConnectionReadTimeoutException(
+                    $"Socket/Stream timed out after {timeoutMs}ms, socket closed.", ex);
             }
-            catch (OperationCanceledException)
+            catch
             {
                 stream.Close();
                 throw;

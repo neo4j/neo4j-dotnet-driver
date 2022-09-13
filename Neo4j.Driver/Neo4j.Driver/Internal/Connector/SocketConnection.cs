@@ -17,18 +17,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
-using Neo4j.Driver.Internal.Messaging.V4;
 using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.Connector
@@ -296,17 +292,6 @@ namespace Neo4j.Driver.Internal.Connector
         public void SetUseUtcEncodedDateTime()
         {
 
-        }
-
-        public void Write(IRequestMessage message)
-        {
-            _chunkWriter.OpenChunk();
-            _packstreamWriter.Write(message);
-            _chunkWriter.CloseChunk();
-
-            // add message boundary
-            _chunkWriter.OpenChunk();
-            _chunkWriter.CloseChunk();
         }
     }
 }

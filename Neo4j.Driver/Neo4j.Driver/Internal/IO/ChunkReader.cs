@@ -32,41 +32,10 @@ namespace Neo4j.Driver.Internal.IO
         private Stream InputStream { get; set; }
         private MemoryStream ChunkBuffer { get; set; }
         private ILogger Logger { get; set; }
-        private long ChunkBufferRemaining { get { return ChunkBuffer.Length - ChunkBuffer.Position; } }
+        private long ChunkBufferRemaining => ChunkBuffer.Length - ChunkBuffer.Position;
 
         private const int ChunkHeaderSize = 2;
 		private int _readTimeoutMs = -1;
-
-		public double ReadTimeoutSeconds 
-		{
-			get
-			{
-				return TimeSpan.FromMilliseconds(_readTimeoutMs).TotalSeconds;
-			} 
-			set
-			{
-				//Convert to milliseconds ensuring that any negative numbers are set to -1 which means no timeout.
-				_readTimeoutMs = (int)Math.Max(TimeSpan.FromSeconds(value).TotalMilliseconds, -1);
-			}
-		} 
-
-		public int ReadTimeoutMs
-		{
-			get
-			{
-				return _readTimeoutMs;
-			}
-			set
-			{
-				_readTimeoutMs = value;
-			}
-		}
-
-
-        public ChunkReader(Stream downStream)
-            : this(downStream, null)
-        {   
-        }
 
         internal ChunkReader(Stream downStream, ILogger logger)
         {
@@ -93,25 +62,25 @@ namespace Neo4j.Driver.Internal.IO
 
             ChunkBufferTrimUsedData();
 
-            long storedPosition = ChunkBuffer.Position;
-            int numBytesRead = 0;
-            requiredSize = requiredSize - (int)ChunkBufferRemaining;
-            int bufferSize = Math.Max(Constants.ChunkBufferSize, requiredSize);
-            byte[] data = new byte[bufferSize];
+            var storedPosition = ChunkBuffer.Position;
+            requiredSize -= (int)ChunkBufferRemaining;
+            var bufferSize = Math.Max(Constants.ChunkBufferSize, requiredSize);
+            var data = new byte[bufferSize];
 
             ChunkBuffer.Position = ChunkBuffer.Length;
 
-            while ( requiredSize > 0)
+            while (requiredSize > 0)
 			{
-				numBytesRead = await InputStream.ReadWithTimeoutAsync(data, 0, bufferSize, (int)_readTimeoutMs).ConfigureAwait(false);
+				var numBytesRead = await InputStream.ReadWithTimeoutAsync(data, 0, bufferSize, _readTimeoutMs).ConfigureAwait(false);
 				
-                if (numBytesRead <= 0) break;
+                if (numBytesRead <= 0)
+                    break;
 
                 ChunkBuffer.Write(data, 0, numBytesRead);
                 requiredSize -= numBytesRead;
             }
 
-            ChunkBuffer.Position = storedPosition;  //Restore the chunkbuffer state so that any reads can continue
+            ChunkBuffer.Position = storedPosition;  //Restore the chunk buffer state so that any reads can continue
 
             if (ChunkBuffer.Length == 0)  //No data so stop
             {

@@ -15,43 +15,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
-using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO
 {
     internal class MessageReader : IMessageReader
     {
-        private readonly IChunkReader _chunkReader;
         private readonly IPackStreamReader _packStreamReader;
         private readonly ILogger _logger;
         private readonly MemoryStream _bufferStream;
-        private readonly int _defaultBufferSize;
-        private readonly int _maxBufferSize;
-		private int _readTimeoutSeconds = -1;
-
-		public int ReadTimeoutSeconds 
-		{ 
-			get
-			{
-				return _readTimeoutSeconds;
-			}
-			set
-			{
-				_readTimeoutSeconds = value;
-				if(_chunkReader is not null)
-					_chunkReader.ReadTimeoutSeconds = value;
-			} 
-		}
 
 		private int _shrinkCounter = 0;
-    
+
         public async Task ReadAsync(IResponsePipeline pipeline)
         {
             var messageCount = await _chunkReader.ReadNextMessagesAsync(_bufferStream).ConfigureAwait(false);
@@ -70,26 +48,26 @@ namespace Neo4j.Driver.Internal.IO
             }
 
             // Check whether we have incomplete message in the buffers
-            if (_bufferStream.Length == _bufferStream.Position)
-            {
-                _bufferStream.SetLength(0);
+            if (_bufferStream.Length != _bufferStream.Position)
+                return;
+            
+            _bufferStream.SetLength(0);
 
-                if (_bufferStream.Capacity > _maxBufferSize)
-                {
-                    _logger?.Info(
-                        $@"Shrinking read buffers to the default read buffer size {
-                                _defaultBufferSize
-                            } since its size reached {
-                                _bufferStream.Capacity
-                            } which is larger than the maximum read buffer size {
-                                _maxBufferSize
-                            }. This has already occurred {_shrinkCounter} times for this connection.");
+            if (_bufferStream.Capacity <= _maxBufferSize)
+                return;
+            
+            _logger?.Info(
+                $@"Shrinking read buffers to the default read buffer size {
+                    _defaultBufferSize
+                } since its size reached {
+                    _bufferStream.Capacity
+                } which is larger than the maximum read buffer size {
+                    _maxBufferSize
+                }. This has already occurred {_shrinkCounter} times for this connection.");
 
-                    _shrinkCounter += 1;
+            _shrinkCounter += 1;
 
-                    _bufferStream.Capacity = _defaultBufferSize;
-                }
-            }
+            _bufferStream.Capacity = _defaultBufferSize;
         }
 
         private void ProcessMessage(IResponsePipeline pipeline)

@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal.IO
     {
         private static readonly IDictionary<byte, IPackStreamSerializer> NoHandlers = new Dictionary<byte, IPackStreamSerializer>();
         private static readonly Dictionary<string, object> EmptyStringValueMap = new Dictionary<string, object>();
-        private static readonly byte[] EmptyByteArray = new byte[0];
+        private static readonly byte[] EmptyByteArray = Array.Empty<byte>();
 
         private readonly IDictionary<byte, IPackStreamSerializer> _structHandlers;
 
@@ -424,9 +424,12 @@ namespace Neo4j.Driver.Internal.IO
 
         internal sbyte NextSByte()
         {
-            _stream.Read(_byteBuffer);
+            var memoryStream = new MemoryStream(100);
+            Span<byte> bytebuffer = stackalloc byte[1];
+            memoryStream.Read(bytebuffer);
+            //_stream.Read(_byteBuffer);
 
-            return (sbyte)_byteBuffer[0];
+            return (sbyte)bytebuffer[0];
         }
 
         public byte NextByte()
