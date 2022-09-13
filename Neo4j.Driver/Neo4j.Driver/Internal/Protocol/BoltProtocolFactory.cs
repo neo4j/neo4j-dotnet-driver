@@ -16,7 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Neo4j.Driver.Internal.IO;
@@ -25,7 +24,7 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     internal static class BoltProtocolFactory
     {
-        private const int BoltHttpIdentifier = 1213486160;  //0x‭48 54 54 50 - or HTTP ascii codes...
+        private const int BoltHttpIdentifier = 1213486160;  // 0x‭48 54 54 50 - or HTTP ascii codes...
         static readonly string HttpErrorMessage = "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
                                                $"(HTTP defaults to port 7474 whereas BOLT defaults to port {GraphDatabase.DefaultBoltPort})";
         private static readonly string NoAgreedVersion =
@@ -33,7 +32,7 @@ namespace Neo4j.Driver.Internal.Protocol
             "Ensure that you are using driver and server versions that are compatible with one another.";
 
         private static readonly Lazy<byte[]> HandshakeBytesLazy = 
-            new Lazy<byte[]>(() =>
+            new(() =>
             {
                 const int goGoBolt = 0x6060B017; 
 

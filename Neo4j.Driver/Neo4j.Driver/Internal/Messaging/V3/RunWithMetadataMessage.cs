@@ -15,43 +15,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using Neo4j.Driver;
+using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.Messaging.V3
+namespace Neo4j.Driver.Internal.Messaging.V3;
+
+internal class RunWithMetadataMessage : TransactionStartingMessage
 {
-    internal class RunWithMetadataMessage : TransactionStartingMessage
+    public RunWithMetadataMessage(
+        IConnection connection,
+        Query query,
+        Bookmarks bookmarks = null,
+        TransactionConfig config = null,
+        AccessMode mode = AccessMode.Write,
+        string database = null,
+        string impersonatedUser = null)
+        : base(database, bookmarks, config?.Timeout, config?.Metadata, mode)
     {
-        public RunWithMetadataMessage(Query query, AccessMode mode)
-            : this(query, null, null, mode)
-        {
-        }
+        Query = query;
 
-        public RunWithMetadataMessage(Query query, Bookmarks bookmarks = null, TransactionConfig configBuilder = null,
-            AccessMode mode = AccessMode.Write)
-            : this(query, null, bookmarks, configBuilder?.Timeout, configBuilder?.Metadata, mode)
-        {
-        }
+        if (connection.Version >= BoltProtocolVersion.V4_4 &&
+            !string.IsNullOrEmpty(impersonatedUser))
+            Metadata.Add("imp_user", impersonatedUser);
+    }
 
-        public RunWithMetadataMessage(Query query, string database, Bookmarks bookmarks, TransactionConfig configBuilder,
-            AccessMode mode)
-            : this(query, database, bookmarks, configBuilder?.Timeout, configBuilder?.Metadata, mode)
-        {
-        }
+    public Query Query { get; }
 
-        public RunWithMetadataMessage(Query query, string database, Bookmarks bookmarks, TimeSpan? txTimeout,
-            IDictionary<string, object> txMetadata, AccessMode mode)
-            : base(database, bookmarks, txTimeout, txMetadata, mode)
-        {
-            Query = query;
-        }
-
-        public Query Query { get; }
-
-        public override string ToString()
-        {
-            return $"RUN {Query} {Metadata.ToContentString()}";
-        }
+    public override string ToString()
+    {
+        return $"RUN {Query} {Metadata.ToContentString()}";
     }
 }

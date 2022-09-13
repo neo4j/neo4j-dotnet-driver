@@ -45,6 +45,17 @@
     <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Remove="Internal\Messaging\V4_1\**" />
+    <Compile Remove="Internal\Messaging\V4_2\**" />
+    <Compile Remove="Internal\Messaging\V5_0\**" />
+    <EmbeddedResource Remove="Internal\Messaging\V4_1\**" />
+    <EmbeddedResource Remove="Internal\Messaging\V4_2\**" />
+    <EmbeddedResource Remove="Internal\Messaging\V5_0\**" />
+    <None Remove="Internal\Messaging\V4_1\**" />
+    <None Remove="Internal\Messaging\V4_2\**" />
+    <None Remove="Internal\Messaging\V5_0\**" />
+  </ItemGroup>
+  <ItemGroup>
     <None Remove="Internal\Temporal\windowsZones.xml" />
   </ItemGroup>
   <ItemGroup>
@@ -55,8 +66,6 @@
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Internal\Messaging\V4_1\" />
-    <Folder Include="Internal\Messaging\V4_2\" />
-    <Folder Include="Internal\Messaging\V5_0\" />
+    <Folder Include="Internal\MessageHandling\V4_4\" />
   </ItemGroup>
 </Project>

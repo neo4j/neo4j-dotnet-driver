@@ -18,7 +18,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Messaging.V3
 {
@@ -41,40 +40,22 @@ namespace Neo4j.Driver.Internal.Messaging.V3
         private static IDictionary<string, object> BuildMetadata(Bookmarks bookmarks, TimeSpan? txTimeout,
             IDictionary<string, object> txMetadata, AccessMode mode, string database)
         {
-            var bookmarksPresent = bookmarks != null && bookmarks.Values.Any();
-            var txTimeoutPresent = txTimeout.HasValue;
-            var txMetadataPresent = txMetadata != null && txMetadata.Count != 0;
+            var result = new Dictionary<string, object>();
 
-            IDictionary<string, object> result = new Dictionary<string, object>();
-
-            if (bookmarksPresent)
-            {
+            if (bookmarks != null && bookmarks.Values.Any())
                 result.Add(BookmarksKey, bookmarks.Values);
-            }
 
-            if (txTimeoutPresent)
-            {
-                var txTimeoutInMs = Math.Max(0L, (long) txTimeout.Value.TotalMilliseconds);
-                result.Add(TxTimeoutMetadataKey, txTimeoutInMs);
-            }
+            if (txTimeout.HasValue)
+                result.Add(TxTimeoutMetadataKey, Math.Max(0L, (long)txTimeout.Value.TotalMilliseconds));
 
-            if (txMetadataPresent)
-            {
+            if (txMetadata != null && txMetadata.Count != 0)
                 result.Add(TxMetadataMetadataKey, txMetadata);
-            }
 
-            switch (mode)
-            {
-                // We don't add a key for Write, treating it as a default
-                case AccessMode.Read:
-                    result.Add(AccessModeKey, "r");
-					          break;
-            }
+            if (mode == AccessMode.Read) // We don't add a key for Write, treating it as a default
+                result.Add(AccessModeKey, "r");
 
             if (!string.IsNullOrEmpty(database))
-            {
                 result.Add(DbKey, database);
-            }
 
             return result;
         }

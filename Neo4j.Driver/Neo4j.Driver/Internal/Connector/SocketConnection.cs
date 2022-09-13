@@ -31,8 +31,8 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal class SocketConnection : IConnection
     {
-        private readonly SemaphoreSlim _sendLock = new SemaphoreSlim(1, 1);
-        private readonly SemaphoreSlim _recvLock = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _sendLock = new(1, 1);
+        private readonly SemaphoreSlim _recvLock = new(1, 1);
 
         private readonly ISocketClient _client;
         private IBoltProtocol _boltProtocol;
@@ -40,7 +40,7 @@ namespace Neo4j.Driver.Internal.Connector
         private readonly string _userAgent;
         private readonly IResponsePipeline _responsePipeline;
 
-        private readonly Queue<IRequestMessage> _messages = new Queue<IRequestMessage>();
+        private readonly Queue<IRequestMessage> _messages = new();
         internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
 
         private readonly PrefixLogger _logger;
@@ -192,6 +192,8 @@ namespace Neo4j.Driver.Internal.Connector
             set => _boltProtocol = value;
         }
 
+        public bool UtcEncodedDateTime { get; private set; }
+
         public void UpdateId(string newConnId)
         {
             _logger.Debug(
@@ -291,7 +293,7 @@ namespace Neo4j.Driver.Internal.Connector
 
         public void SetUseUtcEncodedDateTime()
         {
-
+            UtcEncodedDateTime = true;
         }
     }
 }

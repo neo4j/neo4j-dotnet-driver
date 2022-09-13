@@ -19,8 +19,6 @@ using System;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
-using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Util;
 using System.Collections.Generic;
@@ -108,6 +106,8 @@ namespace Neo4j.Driver.Internal.Connector
 
         public IServerInfo Server => Delegate.Server;
         public IBoltProtocol BoltProtocol => Delegate.BoltProtocol;
+
+        public bool UtcEncodedDateTime => Delegate.UtcEncodedDateTime;
 
         public void UpdateId(string newConnId)
         {

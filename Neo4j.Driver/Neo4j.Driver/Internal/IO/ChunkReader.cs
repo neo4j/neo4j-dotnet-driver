@@ -16,12 +16,7 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.ComponentModel.Design;
 using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
 
 
@@ -29,13 +24,13 @@ namespace Neo4j.Driver.Internal.IO
 {
     internal class ChunkReader : IChunkReader
     {
-        private Stream InputStream { get; set; }
+        private Stream InputStream { get; }
         private MemoryStream ChunkBuffer { get; set; }
-        private ILogger Logger { get; set; }
+        private ILogger _logger;
         private long ChunkBufferRemaining => ChunkBuffer.Length - ChunkBuffer.Position;
 
         private const int ChunkHeaderSize = 2;
-		private int _readTimeoutMs = -1;
+		private readonly int _readTimeoutMs = -1;
 
         internal ChunkReader(Stream downStream, ILogger logger)
         {
@@ -43,13 +38,13 @@ namespace Neo4j.Driver.Internal.IO
             Throw.ArgumentOutOfRangeException.IfFalse(downStream.CanRead, nameof(downStream));
 
             InputStream = downStream;
-            Logger = logger;
+            _logger = logger;
         }
 
         private void ChunkBufferTrimUsedData()
 		{
             //Remove 'used' data from memory stream, that is everything before it's current position
-            byte[] internalBuffer = ChunkBuffer.GetBuffer();
+            var internalBuffer = ChunkBuffer.GetBuffer();
             Buffer.BlockCopy(internalBuffer, (int)ChunkBuffer.Position, internalBuffer, 0, (int)ChunkBufferRemaining);
             ChunkBuffer.SetLength((int)ChunkBufferRemaining);
             ChunkBuffer.Position = 0;
@@ -84,7 +79,7 @@ namespace Neo4j.Driver.Internal.IO
 
             if (ChunkBuffer.Length == 0)  //No data so stop
             {
-                throw new IOException($"Unexpected end of stream, unable to read expected data from the network connection");
+                throw new IOException("Unexpected end of stream, unable to read expected data from the network connection");
             }
         }
 
@@ -93,17 +88,17 @@ namespace Neo4j.Driver.Internal.IO
             await PopulateChunkBufferAsync(requiredSize).ConfigureAwait(false);
 
             var data = new byte[requiredSize];
-            int readSize = ChunkBuffer.Read(data, 0, requiredSize);
+            var readSize = ChunkBuffer.Read(data, 0, requiredSize);
 
             if (readSize != requiredSize)
-                throw new IOException($"Unexpected end of stream, unable to read required data size");
+                throw new IOException("Unexpected end of stream, unable to read required data size");
             
             return data;
 		}
 
         private async Task<bool> ConstructMessageAsync(Stream outputMessageStream)
         {
-            bool dataRead = false;
+            var dataRead = false;
             
             while(true) 
             {
@@ -123,7 +118,7 @@ namespace Neo4j.Driver.Internal.IO
 
                 var rawChunkData = await ReadDataOfSizeAsync(chunkSize).ConfigureAwait(false);
                 dataRead = true;
-                outputMessageStream.Write(rawChunkData, 0, chunkSize);    //Put the raw chunk data into the outputstream
+                await outputMessageStream.WriteAsync(rawChunkData, 0, chunkSize).ConfigureAwait(false);    //Put the raw chunk data into the outputstream
             }
 
             return dataRead;    //Return if a message was constructed
@@ -132,16 +127,18 @@ namespace Neo4j.Driver.Internal.IO
 
         public async Task<int> ReadNextMessagesAsync(Stream outputMessageStream)
         {
-            int messageCount = 0;
+            var messageCount = 0;
             //store output streams state, and ensure we add to the end of it.
             var previousStreamPosition = outputMessageStream.Position;
             outputMessageStream.Position = outputMessageStream.Length;
 
             using (ChunkBuffer = new MemoryStream())
             {
-                long chunkBufferPosition = -1;   //Use this as we need an initial state < ChunkBuffer.Length
+                //Use this as we need an initial state < ChunkBuffer.Length
+                var chunkBufferPosition = -1L;
 
-                while (chunkBufferPosition < ChunkBuffer.Length)   //We have not finished parsing the chunkbuffer, so further messages to dechunk
+                //We have not finished parsing the chunkbuffer, so further messages to dechunk
+                while (chunkBufferPosition < ChunkBuffer.Length)
                 {
                     if (await ConstructMessageAsync(outputMessageStream).ConfigureAwait(false))
                     {

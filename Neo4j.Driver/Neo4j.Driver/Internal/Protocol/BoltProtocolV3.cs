@@ -20,7 +20,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.MessageHandling.V3;
 using Neo4j.Driver.Internal.Messaging;
@@ -32,55 +31,49 @@ namespace Neo4j.Driver.Internal.Protocol;
 
 internal class BoltProtocolV3 : IBoltProtocol
 {
-    private const string GetRoutingTableProcedure = "CALL dbms.cluster.routing.getRoutingTable($context)";
-    protected const string RoutingTableDBKey = "db";
-
-    public virtual IMessageFormat MessageFormat => BoltProtocolMessageFormat.V3;
-    public virtual BoltProtocolVersion Version => BoltProtocolVersion.V3_0;
+    protected const string RoutingTableDbKey = "db";
 
     public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
     {
         await connection.EnqueueAsync(
-            new HelloMessage(connection.Version, userAgent, authToken.AsDictionary(), connection.RoutingContext), 
-            new HelloResponseHandler(connection))
+                new HelloMessage(connection.Version, userAgent, authToken.AsDictionary(), connection.RoutingContext),
+                new HelloResponseHandler(connection))
             .ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);
     }
 
     public virtual async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-        Query query,
-        bool reactive,
-        IBookmarksTracker bookmarksTracker,
-        IResultResourceHandler resultResourceHandler,
-        string database,
-        Bookmarks bookmarks,
-        TransactionConfig config,
-        string impersonatedUser,
+        Query query, bool reactive, IBookmarksTracker bookmarksTracker, IResultResourceHandler resultResourceHandler,
+        string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser,
         long fetchSize = Config.Infinite)
     {
-        AssertNullDatabase(database);
+        ValidateImpersonatedUserForVersion(connection, impersonatedUser);
+        ValidateDatabase(connection, database);
 
         var summaryBuilder = new SummaryBuilder(query, connection.Server);
         var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null,
             resultResourceHandler);
+
         var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
         var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
+
         await connection
             .EnqueueAsync(
-                GetRunWithMetaDataMessage(query, bookmarks, config, connection.GetEnforcedAccessMode(), null,
+                new RunWithMetadataMessage(connection, query, bookmarks, config, connection.GetEnforcedAccessMode(),
+                    null,
                     impersonatedUser), runHandler, PullAll, pullAllHandler).ConfigureAwait(false);
         await connection.SendAsync().ConfigureAwait(false);
         return streamBuilder.CreateCursor();
     }
 
-    public virtual async Task BeginTransactionAsync(IConnection connection, string database, Bookmarks bookmarks,
+    public async Task BeginTransactionAsync(IConnection connection, string database, Bookmarks bookmarks,
         TransactionConfig config, string impersonatedUser)
     {
         ValidateImpersonatedUserForVersion(connection, impersonatedUser);
-        await connection.EnqueueAsync(GetBeginMessage(database,
-                    bookmarks,
-                    config,
-                    connection.GetEnforcedAccessMode(),
+        ValidateDatabase(connection, database);
+
+        await connection.EnqueueAsync(
+                new BeginMessage(connection, database, bookmarks, config, connection.GetEnforcedAccessMode(),
                     impersonatedUser),
                 new BeginResponseHandler())
             .ConfigureAwait(false);
@@ -95,7 +88,9 @@ internal class BoltProtocolV3 : IBoltProtocol
         var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, null);
         var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
         var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, null);
-        await connection.EnqueueAsync(GetRunWithMetaDataMessage(query), runHandler, PullAll, pullAllHandler)
+
+        await connection.EnqueueAsync(new RunWithMetadataMessage(connection, query),
+                runHandler, PullAll, pullAllHandler)
             .ConfigureAwait(false);
         await connection.SendAsync().ConfigureAwait(false);
         return streamBuilder.CreateCursor();
@@ -135,6 +130,13 @@ internal class BoltProtocolV3 : IBoltProtocol
 
         connection.Mode = AccessMode.Read;
 
+        //TODO: Proper message
+        bookmarks = connection.Version.MajorVersion > 3
+            ? bookmarks
+            : bookmarks == null
+                ? null
+                : throw new Exception("Server does not support bookmarks");
+
         var bookmarkTracker = new BookmarksTracker(bookmarks);
         var resourceHandler = new ConnectionResourceHandler(connection);
         var sessionDb = connection.SupportsMultidatabase() ? "system" : null;
@@ -143,58 +145,52 @@ internal class BoltProtocolV3 : IBoltProtocol
         var query = new Query(procedure, parameters);
 
         var result = await RunInAutoCommitTransactionAsync(connection, query, false, bookmarkTracker, resourceHandler,
-            sessionDb, null, null, null).ConfigureAwait(false);
+            sessionDb, bookmarks, null, null).ConfigureAwait(false);
         var record = await result.SingleAsync().ConfigureAwait(false);
 
-        //Since 4.4 the Routing information will contain a db. Earlier versions need to populate this here as it's not received in the older route response...
+        //Since 4.4 the Routing information will contain a db.
+        //Earlier versions need to populate this here as it's not received in the older route response...
         var finalDictionary = record.Values.ToDictionary();
-        finalDictionary[RoutingTableDBKey] = database;
+        finalDictionary[RoutingTableDbKey] = database;
 
         return (IReadOnlyDictionary<string, object>) finalDictionary;
     }
 
-    private static IRequestMessage GetHelloMessage(IConnection connection, string userAgent, IDictionary<string, object> auth)
+    private static void ValidateDatabase(IConnection connection, string database)
     {
-        return new HelloMessage(connection.Version, userAgent, auth, connection.RoutingContext);
-    }
-
-    protected virtual IRequestMessage GetBeginMessage(string database, Bookmarks bookmarks, TransactionConfig config,
-        AccessMode mode, string impersonatedUser)
-    {
-        AssertNullDatabase(database);
-
-        return new BeginMessage(bookmarks, config, mode);
-    }
-
-    protected virtual IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmarks bookmarks = null,
-        TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null,
-        string impersonatedUser = null)
-    {
-        return new RunWithMetadataMessage(query, bookmarks, config, mode);
-    }
-
-    private void AssertNullDatabase(string database)
-    {
-        if (!string.IsNullOrEmpty(database))
+        if (connection.Version.MajorVersion == 3 && !string.IsNullOrEmpty(database))
             throw new ClientException(
-                "Driver is connected to a server that does not support multiple databases. " +
-                "Please upgrade to neo4j 4.0.0 or later in order to use this functionality");
+                "Driver is connected to a server that does not support multiple databases. Please upgrade to neo4j 4.0.0 or later in order to use this functionality");
     }
 
-    protected internal virtual void GetProcedureAndParameters(IConnection connection, string database,
+    private static void GetProcedureAndParameters(IConnection connection, string database,
         out string procedure, out Dictionary<string, object> parameters)
     {
-        procedure = GetRoutingTableProcedure;
-        parameters = new Dictionary<string, object> {{"context", connection.RoutingContext}};
+        procedure = RoutingTableProcedureName(connection);
+        parameters = new Dictionary<string, object>
+        {
+            ["context"] = connection.RoutingContext
+        };
+
+        if (connection.Version.MajorVersion > 3)
+            parameters.Add(database, string.IsNullOrWhiteSpace(database) ? null : database);
     }
 
-    protected virtual void ValidateImpersonatedUserForVersion(IConnection connection, string impersonatedUser)
+    protected static void ValidateImpersonatedUserForVersion(IConnection connection, string impersonatedUser)
     {
         if (connection.Version >= BoltProtocolVersion.V4_4)
             return;
 
         if (impersonatedUser is not null)
-            throw new ArgumentException($"Bolt Protocol {connection.Version} does not support impersonatedUser, yet has been passed a non null impersonated user string");
+            throw new ArgumentException(
+                $"Bolt Protocol {connection.Version} does not support impersonatedUser, yet has been passed a non null impersonated user string");
+    }
+
+    protected static string RoutingTableProcedureName(IConnection connection)
+    {
+        return connection.Version.MajorVersion == 3
+            ? "CALL dbms.cluster.routing.getRoutingTable($context)"
+            : "CALL dbms.routing.getRoutingTable($context, $database)";
     }
 
     protected class ConnectionResourceHandler : IResultResourceHandler
@@ -211,9 +207,9 @@ internal class BoltProtocolV3 : IBoltProtocol
             return CloseConnection();
         }
 
-        private async Task CloseConnection()
+        private Task CloseConnection()
         {
-            await Connection.CloseAsync().ConfigureAwait(false);
+            return Connection.CloseAsync();
         }
     }
 
@@ -228,14 +224,8 @@ internal class BoltProtocolV3 : IBoltProtocol
 
         public void UpdateBookmarks(Bookmarks bookmarks, IDatabaseInfo dbInfo = null)
         {
-            if (InternalBookmarks != null && InternalBookmarks.Values.Any()) InternalBookmarks = bookmarks;
+            if (InternalBookmarks != null && InternalBookmarks.Values.Any())
+                InternalBookmarks = bookmarks;
         }
-    }
-
-    protected static string RoutingTableProcedureName(IConnection connection)
-    {
-        return connection.Version.MajorVersion == 3
-            ? "CALL dbms.cluster.routing.getRoutingTable($context)"
-            : "CALL dbms.routing.getRoutingTable($context, $database)";
     }
 }

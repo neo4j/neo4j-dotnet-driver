@@ -22,11 +22,9 @@ namespace Neo4j.Driver.Internal.Messaging.V4_3
 {
 	internal class RouteMessage : IRequestMessage
 	{
-
 		public IDictionary<string, string> Routing { get;}
 		public Bookmarks Bookmarks { get; }
 		public string DatabaseParam { get; }
-
 
 		public RouteMessage(IDictionary<string, string> routingContext, Bookmarks bookmarks, string db)
 		{

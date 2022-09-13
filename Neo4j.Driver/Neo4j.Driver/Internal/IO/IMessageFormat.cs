@@ -22,7 +22,6 @@ namespace Neo4j.Driver.Internal.IO
     internal interface IMessageFormat
     {
         IPackStreamReader CreateReader(Stream stream);
-
         IPackStreamWriter CreateWriter(Stream stream);
     }
 }

@@ -18,15 +18,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using static Neo4j.Driver.Internal.IO.PackStream;
 
 namespace Neo4j.Driver.Internal.IO
 {
     internal class PackStreamWriter: IPackStreamWriter
     {
-        private static readonly IDictionary<Type, IPackStreamSerializer> NoHandlers = new Dictionary<Type, IPackStreamSerializer>();
-
         private readonly IDictionary<Type, IPackStreamSerializer> _structHandlers;
 
         public void Write(object value)

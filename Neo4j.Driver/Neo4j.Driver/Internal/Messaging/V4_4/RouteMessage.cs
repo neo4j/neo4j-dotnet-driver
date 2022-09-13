@@ -12,10 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Internal.Messaging.V3;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace Neo4j.Driver.Internal.Messaging.V4_4
 {
@@ -26,18 +24,21 @@ namespace Neo4j.Driver.Internal.Messaging.V4_4
 
 		public IDictionary<string, string> Routing { get; }
 		public Bookmarks Bookmarks { get; }
-
 		public IDictionary<string, string> DatabaseContext { get; }
 
 
-		public RouteMessage(IDictionary<string, string> routingContext, Bookmarks bookmarks, string databaseName, string impersonatedUser)
+		public RouteMessage(IDictionary<string, string> routingContext, Bookmarks bookmarks, 
+            string databaseName, string impersonatedUser)
 		{
 			Routing = routingContext ?? new Dictionary<string, string>();
 			Bookmarks = bookmarks ?? Bookmarks.From(Array.Empty<string>());
 			DatabaseContext = new Dictionary<string, string>();
 
-			if(!string.IsNullOrEmpty(databaseName)) DatabaseContext.Add(DBNameKey, databaseName);
-			if (!string.IsNullOrEmpty(impersonatedUser)) DatabaseContext.Add(ImpersonatedUserKey, impersonatedUser);
+			if(!string.IsNullOrEmpty(databaseName))
+                DatabaseContext.Add(DBNameKey, databaseName);
+
+			if (!string.IsNullOrEmpty(impersonatedUser))
+                DatabaseContext.Add(ImpersonatedUserKey, impersonatedUser);
 		}
 
 		public override string ToString()

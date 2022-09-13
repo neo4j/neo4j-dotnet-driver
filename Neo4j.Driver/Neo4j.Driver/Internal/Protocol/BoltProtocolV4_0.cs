@@ -16,13 +16,10 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.MessageHandling.V4;
-using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Internal.Messaging.V4;
 using Neo4j.Driver.Internal.Result;
@@ -32,39 +29,19 @@ namespace Neo4j.Driver.Internal.Protocol;
 
 internal class BoltProtocolV4_0 : BoltProtocolV3
 {
-    public override BoltProtocolVersion Version => BoltProtocolVersion.V4_0;
-    public override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V4;
-
-    protected override IRequestMessage GetBeginMessage(string database, Bookmarks bookmarks, TransactionConfig config,
-        AccessMode mode, string impersonatedUser)
-    {
-        return new BeginMessage(database, bookmarks, config?.Timeout, config?.Metadata, mode);
-    }
-
-    protected override IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmarks bookmarks = null,
-        TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null,
-        string impersonatedUser = null)
-    {
-        return new RunWithMetadataMessage(query, database, bookmarks, config, mode);
-    }
-
     public override async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-        Query query,
-        bool reactive,
-        IBookmarksTracker bookmarksTracker,
-        IResultResourceHandler resultResourceHandler,
-        string database,
-        Bookmarks bookmarks,
-        TransactionConfig config,
-        string impersonatedUser,
-        long fetchSize = Config.Infinite)
+        Query query, bool reactive, IBookmarksTracker bookmarksTracker, IResultResourceHandler resultResourceHandler,
+        string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser, long fetchSize = Config.Infinite)
     {
         var summaryBuilder = new SummaryBuilder(query, connection.Server);
-        var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,
+        var streamBuilder = new ResultCursorBuilder(
+            summaryBuilder, 
+            connection.ReceiveOneAsync,
             RequestMore(connection, summaryBuilder, bookmarksTracker),
             CancelRequest(connection, summaryBuilder, bookmarksTracker),
             resultResourceHandler,
             fetchSize, reactive);
+        
         var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
 
         var pullMessage = default(PullMessage);
@@ -75,13 +52,13 @@ internal class BoltProtocolV4_0 : BoltProtocolV3
             pullHandler = new PullResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
         }
 
-        await connection
-            .EnqueueAsync(
-                GetRunWithMetaDataMessage(query, bookmarks, config,
-                    connection.GetEnforcedAccessMode(), database, impersonatedUser), runHandler,
-                pullMessage, pullHandler)
+        var message = new RunWithMetadataMessage(connection, query, bookmarks, config,
+            connection.GetEnforcedAccessMode(), database, impersonatedUser);
+
+        await connection.EnqueueAsync(message, runHandler, pullMessage, pullHandler)
             .ConfigureAwait(false);
         await connection.SendAsync().ConfigureAwait(false);
+
         return streamBuilder.CreateCursor();
     }
 
@@ -103,7 +80,7 @@ internal class BoltProtocolV4_0 : BoltProtocolV3
             pullHandler = new PullResponseHandler(streamBuilder, summaryBuilder, null);
         }
 
-        await connection.EnqueueAsync(GetRunWithMetaDataMessage(query),
+        await connection.EnqueueAsync(new RunWithMetadataMessage(connection, query),
                 runHandler, pullMessage, pullHandler)
             .ConfigureAwait(false);
         await connection.SendAsync().ConfigureAwait(false);
@@ -134,43 +111,5 @@ internal class BoltProtocolV4_0 : BoltProtocolV3
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
         };
-    }
-
-    protected internal override void GetProcedureAndParameters(IConnection connection, string database,
-        out string procedure, out Dictionary<string, object> parameters)
-    {
-        procedure = GetRoutingTableForDatabaseProcedure;
-        parameters = new Dictionary<string, object>
-            {{"context", connection.RoutingContext}, {"database", string.IsNullOrEmpty(database) ? null : database}};
-    }
-
-    public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection,
-        string database, string impersonatedUser, Bookmarks bookmarks)
-    {
-        ValidateImpersonatedUserForVersion(connection, impersonatedUser);
-        connection = connection ??
-                     throw new ProtocolException("Attempting to get a routing table on a null connection");
-
-        connection.Mode = AccessMode.Read;
-
-        string procedure;
-        var parameters = new Dictionary<string, object>();
-
-        var bookmarkTracker = new BookmarksTracker(bookmarks);
-        var resourceHandler = new ConnectionResourceHandler(connection);
-        var sessionDb = connection.SupportsMultidatabase() ? "system" : null;
-
-        GetProcedureAndParameters(connection, database, out procedure, out parameters);
-        var query = new Query(procedure, parameters);
-
-        var result = await RunInAutoCommitTransactionAsync(connection, query, false, bookmarkTracker, resourceHandler,
-            sessionDb, bookmarks, null, null).ConfigureAwait(false);
-        var record = await result.SingleAsync().ConfigureAwait(false);
-
-        //Since 4.4 the Routing information will contain a db. Earlier versions need to populate this here as it's not received in the older route response...
-        var finalDictionary = record.Values.ToDictionary();
-        finalDictionary[RoutingTableDBKey] = database;
-
-        return (IReadOnlyDictionary<string, object>) finalDictionary;
     }
 }

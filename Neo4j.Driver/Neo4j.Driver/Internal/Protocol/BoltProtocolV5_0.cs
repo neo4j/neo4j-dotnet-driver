@@ -15,22 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal.MessageHandling;
-using Neo4j.Driver.Internal.MessageHandling.V5_0;
-
 namespace Neo4j.Driver.Internal.Protocol
 {
     internal class BoltProtocolV5_0 : BoltProtocolV4_4
     {
-        public override BoltProtocolVersion Version => BoltProtocolVersion.V5_0;
-        public override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V5_0;
-        protected override IMessageFormat UtcMessageFormat => BoltProtocolMessageFormat.V5_0;
-
-        protected override IResponseHandler GetHelloResponseHandler(IConnection conn)
-        {
-            return new HelloResponseHandler(conn, Version);
-        }
     }
 }

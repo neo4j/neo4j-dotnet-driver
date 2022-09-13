@@ -17,10 +17,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Neo4j.Driver.Internal.MessageHandling.Metadata;
 using Neo4j.Driver.Internal.Result;
-using static Neo4j.Driver.Internal.Messaging.V4.PullMessage;
 using static Neo4j.Driver.Internal.Messaging.V4.ResultHandleMessage;
 
 namespace Neo4j.Driver.Internal.MessageHandling.V4

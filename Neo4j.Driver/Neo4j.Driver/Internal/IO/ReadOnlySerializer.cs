@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal.IO
 {
@@ -25,13 +26,18 @@ namespace Neo4j.Driver.Internal.IO
     {
         public IEnumerable<Type> WritableTypes => Enumerable.Empty<Type>();
 
-        public void Serialize(IPackStreamWriter writer, object value)
+        public void Serialize(IConnection connection, IPackStreamWriter writer, object value)
         {
             throw new ProtocolException(
                 $"{GetType().Name}: It is not allowed to send a value of type {value?.GetType().Name} to the server.");
         }
 
         public abstract IEnumerable<byte> ReadableStructs { get; }
+
+        public object Deserialize(IConnection connection, IPackStreamReader reader, byte sig, long size)
+        {
+            return Deserialize(reader, sig, size);
+        }
 
         public abstract object Deserialize(IPackStreamReader reader, byte signature, long size);
     }

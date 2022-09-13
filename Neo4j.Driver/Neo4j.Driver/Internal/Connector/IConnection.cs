@@ -81,6 +81,8 @@ namespace Neo4j.Driver.Internal.Connector
         /// </summary>
         string Database { get; set; }
 
+        bool UtcEncodedDateTime { get; }
+
         void UpdateId(string newConnId);
 
         void UpdateVersion(ServerVersion newVersion);
