@@ -31,8 +31,6 @@ namespace Neo4j.Driver.Tests.TestBackend
 			public int? fetchSize { get; set; }
 			public int? maxTxRetryTimeMs { get; set; }
 			public int? livenessCheckTimeoutMs { get; set; }
-            public int? sessionConnectionTimeoutMs { get; set; }
-            public int? updateRoutingTableTimeoutMs { get; set; }
         }
 
 		public override async Task Process(Controller controller)
