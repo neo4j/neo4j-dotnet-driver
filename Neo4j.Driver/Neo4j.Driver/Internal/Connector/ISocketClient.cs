@@ -37,6 +37,6 @@ internal interface ISocketClient
     void SetReadTimeoutInSeconds(int seconds);
 
     IChunkReader ChunkReader { get; }
-    IChunkWriter ChunkWriter { get; }
+    ChunkWriter ChunkWriter { get; }
     void UseUtcEncoded();
 }

@@ -70,7 +70,7 @@ internal sealed class SocketClient : ISocketClient
     public MessageFormat Format { get; set; }
 
     public IDictionary<string,string> RoutingContext { get; set; }
-    public BoltProtocolVersion Version { get; private set; }
+    public BoltProtocolVersion Version { get; private set; }    
 
     public async Task SendAsync(IEnumerable<IRequestMessage> messages)
     {
@@ -83,7 +83,7 @@ internal sealed class SocketClient : ISocketClient
                 _logger?.Debug(MessagePattern, message);
             }
 
-            await _tcpSocketClient.WriterStream.FlushAsync().ConfigureAwait(false);
+            await ChunkWriter.SendAsync().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -105,7 +105,7 @@ internal sealed class SocketClient : ISocketClient
     {
         try
         {
-            var reader = new MessageReader(new PackStreamReader(_owner, _tcpSocketClient.ReaderStream, Format), ChunkReader, _bufferSettings, _logger);
+            var reader = new MessageReader(_owner, Format, ChunkReader, _bufferSettings, _logger);
             await reader.ReadAsync(responsePipeline).ConfigureAwait(false);
         }
         catch (Exception ex)
@@ -165,7 +165,7 @@ internal sealed class SocketClient : ISocketClient
     }
 
     public IChunkReader ChunkReader { get; private set; }
-    public IChunkWriter ChunkWriter { get; private set; }
+    public ChunkWriter ChunkWriter { get; private set; }
 
     public void UseUtcEncoded()
     {

@@ -66,6 +66,10 @@ internal class HelloResponseHandler : MetadataCollectingResponseHandler
             return;
 
         var configMetadata = GetMetadata<ConfigurationHintsCollector, Dictionary<string, object>>();
+        
+        if (configMetadata == null)
+            return;
+
         if (!configMetadata.TryGetValue("connection.recv_timeout_seconds", out var timeout))
             return;
 

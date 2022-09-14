@@ -23,10 +23,12 @@ namespace Neo4j.Driver.Internal.IO;
 
 internal class MessageWriter : IMessageWriter
 {
-    public MessageWriter(IConnection connection, IChunkWriter chunkWriter, IMessageFormat format)
+    public MessageWriter(IConnection connection, ChunkWriter chunkWriter, IMessageFormat format)
     {
         _chunkWriter = chunkWriter;
-        _packStreamWriter = new PackStreamWriter(connection, chunkWriter.ChunkerStream, format.WriteStructHandlers);
+        _packStreamWriter = new PackStreamWriter(connection, 
+            chunkWriter.ChunkerStream, 
+            format.WriteStructHandlers);
     }
 
     private readonly IChunkWriter _chunkWriter;

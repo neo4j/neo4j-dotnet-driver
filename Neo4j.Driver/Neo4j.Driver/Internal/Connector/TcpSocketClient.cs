@@ -54,16 +54,17 @@ internal class TcpSocketClient : ITcpSocketClient
         _connectionTimeout = socketSettings.ConnectionTimeout;
         _socketKeepAliveEnabled = socketSettings.SocketKeepAliveEnabled;
     }
+    private Stream _stream;
 
-    public Stream ReaderStream { get; private set; }
+    public Stream ReaderStream => _stream;
 
-    public Stream WriterStream => ReaderStream;
+    public Stream WriterStream => _stream;
 
     public async Task ConnectAsync(Uri uri, CancellationToken cancellationToken = default)
     {
         await ConnectSocketAsync(uri, cancellationToken).ConfigureAwait(false);
 
-        ReaderStream = new NetworkStream(_client);
+        _stream = new NetworkStream(_client);
         if (_encryptionManager.UseTls)
             try
             {
@@ -72,7 +73,7 @@ internal class TcpSocketClient : ITcpSocketClient
                 await sslStream
                     .AuthenticateAsClientAsync(uri.Host, null, Tls12, false).ConfigureAwait(false);
 
-                ReaderStream = sslStream;
+                _stream = sslStream;
             }
             catch (Exception e)
             {
@@ -90,7 +91,7 @@ internal class TcpSocketClient : ITcpSocketClient
             _client.Dispose();
 
             _client = null;
-            ReaderStream = null;
+            _stream = null;
         }
 
 #if NET6_0_OR_GREATER

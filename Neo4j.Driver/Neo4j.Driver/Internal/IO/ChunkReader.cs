@@ -42,7 +42,7 @@ internal class ChunkReader : IChunkReader
     private void ChunkBufferTrimUsedData()
     {
         //Remove 'used' data from memory stream, that is everything before it's current position
-        var internalBuffer = ChunkBuffer.GetBuffer();
+        byte[] internalBuffer = ChunkBuffer.GetBuffer();
         Buffer.BlockCopy(internalBuffer, (int)ChunkBuffer.Position, internalBuffer, 0, (int)ChunkBufferRemaining);
         ChunkBuffer.SetLength((int)ChunkBufferRemaining);
         ChunkBuffer.Position = 0;
@@ -55,52 +55,50 @@ internal class ChunkReader : IChunkReader
 
         ChunkBufferTrimUsedData();
 
-        var storedPosition = ChunkBuffer.Position;
-        requiredSize -= (int)ChunkBufferRemaining;
-        var bufferSize = Math.Max(Constants.ChunkBufferSize, requiredSize);
-        var data = new byte[bufferSize];
+        long storedPosition = ChunkBuffer.Position;
+        int numBytesRead = 0;
+        requiredSize = requiredSize - (int)ChunkBufferRemaining;
+        int bufferSize = Math.Max(Constants.ChunkBufferSize, requiredSize);
+        byte[] data = new byte[bufferSize];
 
         ChunkBuffer.Position = ChunkBuffer.Length;
 
         while (requiredSize > 0)
         {
-            var numBytesRead = await InputStream.ReadWithTimeoutAsync(data, 0, bufferSize, _readTimeoutMs)
-                .ConfigureAwait(false);
+            numBytesRead = await InputStream.ReadWithTimeoutAsync(data, 0, bufferSize, (int)_readTimeoutMs).ConfigureAwait(false);
 
-            if (numBytesRead <= 0)
-                break;
+            if (numBytesRead <= 0) break;
 
             ChunkBuffer.Write(data, 0, numBytesRead);
-
             requiredSize -= numBytesRead;
         }
 
-        ChunkBuffer.Position = storedPosition;  //Restore the chunk buffer state so that any reads can continue
+        ChunkBuffer.Position = storedPosition;  //Restore the chunkbuffer state so that any reads can continue
 
         if (ChunkBuffer.Length == 0)  //No data so stop
         {
-            throw new IOException("Unexpected end of stream, unable to read expected data from the network connection");
+            throw new IOException($"Unexpected end of stream, unable to read expected data from the network connection");
         }
     }
 
     private async Task<byte[]> ReadDataOfSizeAsync(int requiredSize)
-    {      
+    {
         await PopulateChunkBufferAsync(requiredSize).ConfigureAwait(false);
 
         var data = new byte[requiredSize];
-        var readSize = ChunkBuffer.Read(data, 0, requiredSize);
+        int readSize = ChunkBuffer.Read(data, 0, requiredSize);
 
         if (readSize != requiredSize)
-            throw new IOException("Unexpected end of stream, unable to read required data size");
-            
+            throw new IOException($"Unexpected end of stream, unable to read required data size");
+
         return data;
     }
 
     private async Task<bool> ConstructMessageAsync(Stream outputMessageStream)
     {
-        var dataRead = false;
-            
-        while(true) 
+        bool dataRead = false;
+
+        while (true)
         {
             var chunkHeader = await ReadDataOfSizeAsync(ChunkHeaderSize).ConfigureAwait(false);
             var chunkSize = PackStreamBitConverter.ToUInt16(chunkHeader);
@@ -109,36 +107,34 @@ internal class ChunkReader : IChunkReader
             {
                 //We have been reading data so this is the end of a message zero chunk
                 //Or there is no data remaining after this NOOP
-                if (dataRead  || ChunkBufferRemaining <= 0)    
+                if (dataRead || ChunkBufferRemaining <= 0)
                     break;
 
                 //Its a NOOP so skip it
-                continue;                    
+                continue;
             }
 
             var rawChunkData = await ReadDataOfSizeAsync(chunkSize).ConfigureAwait(false);
             dataRead = true;
-            await outputMessageStream.WriteAsync(rawChunkData, 0, chunkSize).ConfigureAwait(false);    //Put the raw chunk data into the outputstream
+            outputMessageStream.Write(rawChunkData, 0, chunkSize);    //Put the raw chunk data into the outputstream
         }
 
         return dataRead;    //Return if a message was constructed
-                
+
     }
 
     public async Task<int> ReadNextMessagesAsync(Stream outputMessageStream)
     {
-        var messageCount = 0;
+        int messageCount = 0;
         //store output streams state, and ensure we add to the end of it.
         var previousStreamPosition = outputMessageStream.Position;
         outputMessageStream.Position = outputMessageStream.Length;
 
         using (ChunkBuffer = new MemoryStream())
         {
-            //Use this as we need an initial state < ChunkBuffer.Length
-            var chunkBufferPosition = -1L;
+            long chunkBufferPosition = -1;   //Use this as we need an initial state < ChunkBuffer.Length
 
-            //We have not finished parsing the chunkbuffer, so further messages to dechunk
-            while (chunkBufferPosition < ChunkBuffer.Length)
+            while (chunkBufferPosition < ChunkBuffer.Length)   //We have not finished parsing the chunkbuffer, so further messages to dechunk
             {
                 if (await ConstructMessageAsync(outputMessageStream).ConfigureAwait(false))
                 {
@@ -148,7 +144,7 @@ internal class ChunkReader : IChunkReader
                 chunkBufferPosition = ChunkBuffer.Position;
             }
         }
-            
+
         //restore output streams state.
         outputMessageStream.Position = previousStreamPosition;
         return messageCount;

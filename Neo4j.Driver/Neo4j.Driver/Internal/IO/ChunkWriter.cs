@@ -38,8 +38,6 @@ internal class ChunkWriter: Stream, IChunkWriter
     private long _dataPos = -1;
 
     //TODO: ArrayPool avoid creating a new array for each chunk writer
-    private readonly byte[] _buffer = new byte[8 * 1024];
-
     public ChunkWriter(Stream downStream, int defaultBufferSize, int maxBufferSize, ILogger logger, int chunkSize = Constants.MaxChunkSize)
     {
         Throw.ArgumentNullException.IfNull(downStream, nameof(downStream));
@@ -52,10 +50,10 @@ internal class ChunkWriter: Stream, IChunkWriter
         _downStream = downStream;
         _defaultBufferSize = defaultBufferSize;
         _maxBufferSize = maxBufferSize;
-        _chunkStream = new MemoryStream(_buffer);
+        _chunkStream = new MemoryStream(defaultBufferSize);
     }
 
-    public Stream ChunkerStream => _downStream;
+    public Stream ChunkerStream => this;
 
     public void OpenChunk()
     {
@@ -140,7 +138,9 @@ internal class ChunkWriter: Stream, IChunkWriter
         LogStream(_chunkStream);
 
         _chunkStream.Position = 0;
-
+        _chunkStream.CopyTo(_downStream);
+        Cleanup();
+        return Task.CompletedTask;
         return
             _chunkStream.CopyToAsync(_downStream)
                 .ContinueWith(t =>

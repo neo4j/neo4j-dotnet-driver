@@ -19,6 +19,8 @@ using System.IO;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO
 {
@@ -40,6 +42,14 @@ namespace Neo4j.Driver.Internal.IO
             _packStreamReader = reader;
             _chunkReader = chunkReader;
             _logger = logger;
+        }
+
+        public MessageReader(IConnection owner, MessageFormat format, IChunkReader chunkReader, BufferSettings bufferSettings, ILogger logger)
+        {
+            _bufferStream = new MemoryStream(bufferSettings.DefaultReadBufferSize);
+            _defaultBufferSize = bufferSettings.DefaultReadBufferSize;
+            _packStreamReader = new PackStreamReader(owner, _bufferStream, format);
+            _chunkReader = chunkReader;
         }
 
         public async Task ReadAsync(IResponsePipeline pipeline)
