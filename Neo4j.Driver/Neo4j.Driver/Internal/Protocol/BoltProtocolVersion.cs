@@ -26,6 +26,7 @@ internal class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
 
         MajorVersion = majorVersion;
         MinorVersion = minorVersion;
+        _compValue = MajorVersion * 1000000 + MinorVersion;
     }
 
     public BoltProtocolVersion(int largeVersion)
@@ -33,6 +34,7 @@ internal class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
         //This version of the constructor is only to be used to handle error codes that come in that are not strictly containing packed values. 
         MajorVersion = UnpackMajor(largeVersion);
         MinorVersion = UnpackMinor(largeVersion);
+        _compValue = MajorVersion * 1000000 + MinorVersion;
 
         if (MajorVersion is < MaxMajorVersion and >= 0 && MinorVersion is < MaxMinorVersion and >= 0)
             throw new NotSupportedException(
@@ -43,6 +45,7 @@ internal class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
 
     public int MajorVersion { get; }
     public int MinorVersion { get; }
+    private readonly int _compValue;
 
     public bool Equals(BoltProtocolVersion rhs)
     {
@@ -53,7 +56,7 @@ internal class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
         if (GetType() != rhs.GetType()) return false;
 
         //Return if the fields match
-        return MajorVersion == rhs.MajorVersion && MinorVersion == rhs.MinorVersion;
+        return _compValue == rhs._compValue;
     }
 
     private static int UnpackMajor(int rawVersion)
@@ -103,45 +106,34 @@ internal class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
         return Equals(tempVersion);
     }
 
-
     public static bool operator ==(BoltProtocolVersion lhs, BoltProtocolVersion rhs)
     {
-        return lhs?.Equals(rhs) ?? ReferenceEquals(rhs, null);
+        return lhs._compValue == rhs._compValue;
     }
 
     public static bool operator !=(BoltProtocolVersion lhs, BoltProtocolVersion rhs)
     {
-        return !(lhs == rhs);
+        return lhs._compValue != rhs._compValue;
     }
 
     public static bool operator >=(BoltProtocolVersion lhs, BoltProtocolVersion rhs)
     {
-        return lhs == rhs || lhs > rhs;
+        return lhs._compValue >= rhs._compValue;
     }
 
     public static bool operator <=(BoltProtocolVersion lhs, BoltProtocolVersion rhs)
     {
-        return lhs == rhs || lhs < rhs;
+        return lhs._compValue <= rhs._compValue;
     }
 
     public static bool operator >(BoltProtocolVersion lhs, BoltProtocolVersion rhs)
     {
-        if (lhs == rhs)
-            return false;
-
-        if (lhs.MajorVersion < rhs.MajorVersion) return false;
-
-        return !(lhs.MinorVersion < rhs.MinorVersion);
+        return lhs._compValue > rhs._compValue;
     }
 
     public static bool operator <(BoltProtocolVersion lhs, BoltProtocolVersion rhs)
     {
-        if (lhs == rhs)
-            return false;
-
-        if (lhs.MajorVersion > rhs.MajorVersion) return false;
-
-        return !(lhs.MinorVersion > rhs.MinorVersion);
+        return lhs._compValue < rhs._compValue;
     }
 
     public override int GetHashCode()
@@ -149,7 +141,7 @@ internal class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
         //Using a Tuple object rather than XOR'ing the values so that MajorVersion.MinorVersion does not return the same hashcode as MinorVersion.MajorVersion.
         //e.g. We dont want 4.1 == 1.4
         //Be aware of perfomance of Tuple instantiation if using a lot of BoltProtocolVersion in containers.
-        return Tuple.Create(MajorVersion, MinorVersion).GetHashCode();
+        return _compValue;
     }
 
     public override string ToString()

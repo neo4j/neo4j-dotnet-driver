@@ -17,27 +17,30 @@
 
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.MessageHandling
+namespace Neo4j.Driver.Internal.MessageHandling;
+
+internal sealed class NoOpResponseHandler : IResponseHandler
 {
-    internal class NoOpResponseHandler : IResponseHandler
+    public static readonly NoOpResponseHandler Instance = new();
+
+    private NoOpResponseHandler()
     {
-        public static readonly NoOpResponseHandler Instance = new();
+    }
 
-        public virtual void OnSuccess(IDictionary<string, object> metadata)
-        {
-        }
+    public void OnSuccess(IDictionary<string, object> metadata)
+    {
+    }
 
-        public virtual void OnRecord(object[] fieldValues)
-        {
-            throw new ProtocolException($"{nameof(OnRecord)} is not expected at this time.");
-        }
+    public void OnRecord(object[] fieldValues)
+    {
+        throw new ProtocolException($"{nameof(OnRecord)} is not expected at this time.");
+    }
 
-        public virtual void OnFailure(IResponsePipelineError error)
-        {
-        }
+    public void OnFailure(IResponsePipelineError error)
+    {
+    }
 
-        public virtual void OnIgnored()
-        {
-        }
+    public void OnIgnored()
+    {
     }
 }

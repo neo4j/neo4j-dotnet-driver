@@ -28,7 +28,7 @@ using MessageFormat = Neo4j.Driver.Internal.Protocol.MessageFormat;
 
 namespace Neo4j.Driver.Internal.Connector;
 
-internal class SocketClient : ISocketClient
+internal sealed class SocketClient : ISocketClient
 {
     private const string MessagePattern = "C: {0}";
     private readonly IConnection _owner;
@@ -63,10 +63,7 @@ internal class SocketClient : ISocketClient
         Format = new MessageFormat(Version);
 
         ChunkReader = new ChunkReader(_tcpSocketClient.ReaderStream);
-        ChunkWriter = new ChunkWriter(_tcpSocketClient.WriterStream, 
-            _bufferSettings.DefaultWriteBufferSize, 
-            _bufferSettings.MaxWriteBufferSize, 
-            _logger);
+        ChunkWriter = new ChunkWriter(_tcpSocketClient.WriterStream, _bufferSettings.DefaultWriteBufferSize, _bufferSettings.MaxWriteBufferSize, _logger);
         SetOpened();
     }
 
@@ -108,8 +105,7 @@ internal class SocketClient : ISocketClient
     {
         try
         {
-            var reader = new MessageReader(new PackStreamReader(_owner, _tcpSocketClient.ReaderStream, Format),
-                ChunkReader, _bufferSettings, _logger);
+            var reader = new MessageReader(new PackStreamReader(_owner, _tcpSocketClient.ReaderStream, Format), ChunkReader, _bufferSettings, _logger);
             await reader.ReadAsync(responsePipeline).ConfigureAwait(false);
         }
         catch (Exception ex)
@@ -170,6 +166,7 @@ internal class SocketClient : ISocketClient
 
     public IChunkReader ChunkReader { get; private set; }
     public IChunkWriter ChunkWriter { get; private set; }
+
     public void UseUtcEncoded()
     {
         Format.UseUtcEncoder();

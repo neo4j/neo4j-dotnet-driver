@@ -18,20 +18,19 @@
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Messaging;
-using static Neo4j.Driver.Internal.Protocol.MessageFormat;
+using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
+namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3;
+
+internal sealed class HelloMessageSerializer: WriteOnlySerializer
 {
-    internal class HelloMessageSerializer: WriteOnlySerializer
+    private static readonly Type[] Types = { typeof(HelloMessage) };
+    public override IEnumerable<Type> WritableTypes => Types;
+
+    public override void Serialize(IPackStreamWriter writer, object value)
     {
-        public override IEnumerable<Type> WritableTypes => new[] {typeof(HelloMessage)};
-
-        public override void Serialize(IPackStreamWriter writer, object value)
-        {
-            var msg = value.CastOrThrow<HelloMessage>();
-
-            writer.WriteStructHeader(1, MsgHello);
-            writer.Write(msg.MetaData);
-        }
+        var msg = value.CastOrThrow<HelloMessage>();
+        writer.WriteStructHeader(1, MessageFormat.MsgHello);
+        writer.Write(msg.MetaData);
     }
 }

@@ -74,8 +74,7 @@ internal class BoltProtocolV3 : IBoltProtocol
 
         await connection.EnqueueAsync(
                 new BeginMessage(connection, database, bookmarks, config, connection.GetEnforcedAccessMode(),
-                    impersonatedUser),
-                new BeginResponseHandler())
+                    impersonatedUser), NoOpResponseHandler.Instance)
             .ConfigureAwait(false);
 
         await connection.SyncAsync().ConfigureAwait(false);
@@ -163,7 +162,7 @@ internal class BoltProtocolV3 : IBoltProtocol
                 "Driver is connected to a server that does not support multiple databases. Please upgrade to neo4j 4.0.0 or later in order to use this functionality");
     }
 
-    private static void GetProcedureAndParameters(IConnection connection, string database,
+    public static void GetProcedureAndParameters(IConnection connection, string database,
         out string procedure, out Dictionary<string, object> parameters)
     {
         procedure = RoutingTableProcedureName(connection);

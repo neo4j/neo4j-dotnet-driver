@@ -20,7 +20,7 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.MessageHandling;
 
-internal abstract class MetadataCollectingResponseHandler : NoOpResponseHandler
+internal abstract class MetadataCollectingResponseHandler : IResponseHandler
 {
     private readonly IDictionary<Type, IMetadataCollector> _metadataCollectors;
 
@@ -53,14 +53,27 @@ internal abstract class MetadataCollectingResponseHandler : NoOpResponseHandler
     {
         return _metadataCollectors.TryGetValue(typeof(TCollector), out var collector)
             ? ((IMetadataCollector<TMetadata>) collector).Collected
-            : default(TMetadata);
+            : default;
     }
 
-    public override void OnSuccess(IDictionary<string, object> metadata)
+    public virtual void OnSuccess(IDictionary<string, object> metadata)
     {
         foreach (var collector in _metadataCollectors.Values)
         {
             collector.Collect(metadata);
         }
+    }
+
+    public virtual void OnRecord(object[] fieldValues)
+    {
+        throw new ProtocolException($"{nameof(OnRecord)} is not expected at this time.");
+    }
+
+    public virtual void OnFailure(IResponsePipelineError error)
+    {
+    }
+
+    public virtual void OnIgnored()
+    {
     }
 }

@@ -29,7 +29,7 @@ using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.Connector;
 
-internal class SocketConnection : IConnection
+internal sealed class SocketConnection : IConnection
 {
     private readonly IAuthToken _authToken;
 

@@ -16,7 +16,6 @@
 // limitations under the License.
 using System;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -41,37 +40,7 @@ internal class ChunkWriter: Stream, IChunkWriter
     //TODO: ArrayPool avoid creating a new array for each chunk writer
     private readonly byte[] _buffer = new byte[8 * 1024];
 
-    public ChunkWriter(Stream downStream)
-        : this(downStream, null)
-    {
-            
-    }
-
-    public ChunkWriter(Stream downStream, int chunkSize)
-        : this(downStream, null, chunkSize)
-    {
-
-    }
-
-    public ChunkWriter(Stream downStream, ILogger logger)
-        : this(downStream, logger, Constants.MaxChunkSize)
-    {
-
-    }
-
-    public ChunkWriter(Stream downStream, int defaultBufferSize, int maxBufferSize, ILogger logger)
-        : this(downStream, defaultBufferSize, maxBufferSize, logger, Constants.MaxChunkSize)
-    {
-
-    }
-
-
-    public ChunkWriter(Stream downStream, ILogger logger, int chunkSize)
-        : this(downStream, Constants.DefaultWriteBufferSize, Constants.MaxWriteBufferSize, logger, chunkSize)
-    {
-    }
-
-    public ChunkWriter(Stream downStream, int defaultBufferSize, int maxBufferSize, ILogger logger, int chunkSize)
+    public ChunkWriter(Stream downStream, int defaultBufferSize, int maxBufferSize, ILogger logger, int chunkSize = Constants.MaxChunkSize)
     {
         Throw.ArgumentNullException.IfNull(downStream, nameof(downStream));
         Throw.ArgumentOutOfRangeException.IfFalse(downStream.CanWrite, nameof(downStream));
@@ -83,10 +52,10 @@ internal class ChunkWriter: Stream, IChunkWriter
         _downStream = downStream;
         _defaultBufferSize = defaultBufferSize;
         _maxBufferSize = maxBufferSize;
-        _chunkStream = new MemoryStream(_defaultBufferSize);
+        _chunkStream = new MemoryStream(_buffer);
     }
 
-    public Stream ChunkerStream => this;
+    public Stream ChunkerStream => _downStream;
 
     public void OpenChunk()
     {
@@ -104,34 +73,32 @@ internal class ChunkWriter: Stream, IChunkWriter
         var nextLength = currentLength + count;
 
         // Is the data exceeding our maximum chunk size?
-        if (nextLength > _chunkSize)
-        {
-            var leftToChunk = count;
-            var thisChunkIndex = offset;
-
-            while (leftToChunk > 0)
-            {
-                var thisChunkSize = (int)Math.Min(leftToChunk, _chunkSize - currentLength);
-
-                _chunkStream.Write(buffer, thisChunkIndex, thisChunkSize);
-
-                thisChunkIndex += thisChunkSize;
-                leftToChunk -= thisChunkSize;
-
-                currentLength = 0;
-
-                // If there's still more data, then close existing chunk and open a new one.
-                if (leftToChunk > 0)
-                {
-                    CloseChunk();
-
-                    OpenChunk();
-                }
-            }
-        }
-        else
+        if (nextLength <= _chunkSize)
         {
             _chunkStream.Write(buffer, offset, count);
+            return;
+        }
+
+        var leftToChunk = count;
+        var thisChunkIndex = offset;
+
+        while (leftToChunk > 0)
+        {
+            var thisChunkSize = (int) Math.Min(leftToChunk, _chunkSize - currentLength);
+
+            _chunkStream.Write(buffer, thisChunkIndex, thisChunkSize);
+
+            thisChunkIndex += thisChunkSize;
+            leftToChunk -= thisChunkSize;
+
+            currentLength = 0;
+
+            if (leftToChunk <= 0)
+                continue;
+
+            // If there's still more data, then close existing chunk and open a new one.
+            CloseChunk();
+            OpenChunk();
         }
     }
 
@@ -140,22 +107,21 @@ internal class ChunkWriter: Stream, IChunkWriter
         // Fill size buffers with the actual length of the chunk.
         var count = _chunkStream.Position - _dataPos;
 
-        if (count > 0)
+        if (count <= 0)
+            return;
+
+        var chunkSize = PackStreamBitConverter.GetBytes((ushort)count);
+
+        var previousPos = _chunkStream.Position;
+        try
         {
-            var chunkSize =
-                PackStreamBitConverter.GetBytes((ushort)count);
+            _chunkStream.Position = _startPos;
 
-            var previousPos = _chunkStream.Position;
-            try
-            {
-                _chunkStream.Position = _startPos;
-
-                _chunkStream.Write(chunkSize, 0, chunkSize.Length);
-            }
-            finally
-            {
-                _chunkStream.Position = previousPos;
-            }
+            _chunkStream.Write(chunkSize, 0, chunkSize.Length);
+        }
+        finally
+        {
+            _chunkStream.Position = previousPos;
         }
     }
         

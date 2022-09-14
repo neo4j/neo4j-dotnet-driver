@@ -16,11 +16,9 @@
 // limitations under the License.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
-using FluentAssertions.Collections;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -73,7 +71,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 await V3.LoginAsync(mockConn.Object, "user-zhen", AuthTokens.None);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<Messaging.V3.HelloMessage>(), It.IsAny<MessageHandling.HelloResponseHandler>(), null, null),
+                    x => x.EnqueueAsync(It.IsAny<HelloMessage>(), It.IsAny<MessageHandling.HelloResponseHandler>(), null, null),
 					Times.Once);
                 mockConn.Verify(x => x.SyncAsync());
             }
@@ -203,7 +201,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 await V3.BeginTransactionAsync(mockConn.Object, null, bookmarks, null, null);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V3.BeginResponseHandler>(), null, null),
+                    x => x.EnqueueAsync(It.IsAny<BeginMessage>(), NoOpResponseHandler.Instance, null, null),
                     Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
             }
@@ -229,7 +227,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 await V3.BeginTransactionAsync(mockConn.Object, null, Bookmarks, TxConfig, null);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V3.BeginResponseHandler>(), null, null),
+                    x => x.EnqueueAsync(It.IsAny<BeginMessage>(), NoOpResponseHandler.Instance, null, null),
                     Times.Once);
             }
 
@@ -273,7 +271,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 await V3.CommitTransactionAsync(mockConn.Object, bookmarkTracker.Object);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(CommitMessage.Commit, It.IsAny<V3.CommitResponseHandler>(), null, null),
+                    x => x.EnqueueAsync(CommitMessage.Commit, NoOpResponseHandler.Instance, null, null),
                     Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
             }
@@ -290,7 +288,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 await V3.RollbackTransactionAsync(mockConn.Object);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(RollbackMessage.Rollback, It.IsAny<V3.RollbackResponseHandler>(), null, null),
+                    x => x.EnqueueAsync(RollbackMessage.Rollback, NoOpResponseHandler.Instance, null, null),
                     Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
             }
@@ -336,8 +334,6 @@ namespace Neo4j.Driver.Internal.Protocol
             [InlineData("3.2.1")]
             public void ShouldUseGetRoutingTableProcedure(string version)
             {
-                var V3 = new BoltProtocolV3();
-
                 // Given
                 var context = new Dictionary<string, string> { { "context", string.Empty } };
                 var mockConnection = new Mock<IConnection>();
@@ -345,13 +341,13 @@ namespace Neo4j.Driver.Internal.Protocol
                 
                 serverInfoMock.Setup(m => m.Agent).Returns(version);
                 mockConnection.Setup(m => m.Server).Returns(serverInfoMock.Object);
-                mockConnection.Setup(m => m.BoltProtocol).Returns(V3);
+                mockConnection.Setup(m => m.BoltProtocol).Returns(new BoltProtocolV3());
                 mockConnection.Setup(m => m.RoutingContext).Returns(context);
 
                 // When
                 string procedure;
                 var parameters = new Dictionary<string, object>();
-                V3.GetProcedureAndParameters(mockConnection.Object, "database", out procedure, out parameters);
+                GetProcedureAndParameters(mockConnection.Object, "database", out procedure, out parameters);
 
                 // Then
                 procedure.Should().Be("CALL dbms.cluster.routing.getRoutingTable($context)");

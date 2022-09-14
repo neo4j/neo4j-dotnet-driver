@@ -26,18 +26,11 @@ internal interface IBoltProtocol
 {
     Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken);
 
-    Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-        Query query,
-        bool reactive,
-        IBookmarksTracker bookmarksTracker,
-        IResultResourceHandler resultResourceHandler,
-        string database,
-        Bookmarks bookmark,
-        TransactionConfig config,
-        string impersonatedUser,
-        long fetchSize);
+    Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, Query query, bool reactive,
+        IBookmarksTracker bookmarksTracker, IResultResourceHandler resultResourceHandler, string database,
+        Bookmarks bookmark, TransactionConfig config, string impersonatedUser, long fetchSize);
 
-    Task BeginTransactionAsync(IConnection connection, string database, Bookmarks bookmark, TransactionConfig config,
+    Task BeginTransactionAsync(IConnection connection, string database, Bookmarks bookmarks, TransactionConfig config,
         string impersonatedUser);
 
     Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection, Query query, bool reactive,
@@ -51,8 +44,6 @@ internal interface IBoltProtocol
 
     Task LogoutAsync(IConnection connection);
 
-    Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection,
-        string database,
-        string impersonated_user,
-        Bookmarks bookmark);
+    Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database,
+        string impersonatedUser, Bookmarks bookmarks);
 }

@@ -20,7 +20,7 @@ using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.Messaging;
 
-internal class HelloMessage : IRequestMessage
+internal sealed class HelloMessage : IRequestMessage
 {
     public IDictionary<string, object> MetaData { get; }
     private const string UserAgentMetadataKey = "user_agent";
@@ -39,6 +39,9 @@ internal class HelloMessage : IRequestMessage
         // Routing added in 4.1, subsequent hellos should include it.
         if (version >= BoltProtocolVersion.V4_1)
             MetaData.Add("routing", routingContext);
+
+        if (version >= BoltProtocolVersion.V4_3 && version < BoltProtocolVersion.V5_0)
+            MetaData.Add("patch_bolt", new[] { "utc" });
     }
 
     public override string ToString()

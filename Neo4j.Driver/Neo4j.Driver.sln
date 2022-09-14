@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30204.135
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32901.215
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver", "Neo4j.Driver\Neo4j.Driver.csproj", "{F5E54582-C024-4B99-AFEB-CA9638617BA0}"
 EndProject
@@ -23,6 +23,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Simple", "Neo4j.Driver.Simple\Neo4j.Driver.Simple.csproj", "{E8F84B5A-79EE-4B9F-B423-BF363F6CB923}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neo4j.Driver.Tests.TestBackend", "Neo4j.Driver.Tests.TestBackend\Neo4j.Driver.Tests.TestBackend.csproj", "{D68071A7-6012-43BD-9C65-146D1D22B931}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sandbox", "Sandbox\Sandbox.csproj", "{0CB5B788-6B01-4C66-9B6E-149D6F9AE930}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -80,6 +82,14 @@ Global
 		{D68071A7-6012-43BD-9C65-146D1D22B931}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D68071A7-6012-43BD-9C65-146D1D22B931}.ReleaseSigned|Any CPU.ActiveCfg = ReleaseSigned|Any CPU
 		{D68071A7-6012-43BD-9C65-146D1D22B931}.ReleaseSigned|Any CPU.Build.0 = ReleaseSigned|Any CPU
+		{0CB5B788-6B01-4C66-9B6E-149D6F9AE930}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0CB5B788-6B01-4C66-9B6E-149D6F9AE930}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0CB5B788-6B01-4C66-9B6E-149D6F9AE930}.DebugDelaySigned|Any CPU.ActiveCfg = Debug|Any CPU
+		{0CB5B788-6B01-4C66-9B6E-149D6F9AE930}.DebugDelaySigned|Any CPU.Build.0 = Debug|Any CPU
+		{0CB5B788-6B01-4C66-9B6E-149D6F9AE930}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0CB5B788-6B01-4C66-9B6E-149D6F9AE930}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0CB5B788-6B01-4C66-9B6E-149D6F9AE930}.ReleaseSigned|Any CPU.ActiveCfg = Release|Any CPU
+		{0CB5B788-6B01-4C66-9B6E-149D6F9AE930}.ReleaseSigned|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
