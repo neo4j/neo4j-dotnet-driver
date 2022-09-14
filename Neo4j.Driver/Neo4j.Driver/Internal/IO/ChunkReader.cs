@@ -27,6 +27,7 @@ internal class ChunkReader : IChunkReader
     private Stream InputStream { get; }
     private MemoryStream ChunkBuffer { get; set; }
     private long ChunkBufferRemaining => ChunkBuffer.Length - ChunkBuffer.Position;
+    public int ReadTimeoutSeconds { get; set; }
 
     private const int ChunkHeaderSize = 2;
     private readonly int _readTimeoutMs = -1;
@@ -152,4 +153,5 @@ internal class ChunkReader : IChunkReader
         outputMessageStream.Position = previousStreamPosition;
         return messageCount;
     }
+
 }

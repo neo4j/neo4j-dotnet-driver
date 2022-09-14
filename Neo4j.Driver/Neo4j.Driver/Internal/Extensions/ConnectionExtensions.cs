@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Internal
 
         public static bool SupportsMultidatabase(this IConnection connection)
         {
-            return connection.BoltProtocol.Version >= BoltProtocolVersion.V4_0;
+            return connection.Version >= BoltProtocolVersion.V4_0;
         }
     }
 }

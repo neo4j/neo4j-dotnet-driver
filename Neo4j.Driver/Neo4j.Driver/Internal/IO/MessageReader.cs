@@ -19,27 +19,27 @@ using System.IO;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.MessageHandling;
-using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO
 {
     internal class MessageReader : IMessageReader
     {
+        private readonly IChunkReader _chunkReader;
         private readonly IPackStreamReader _packStreamReader;
         private readonly ILogger _logger;
         private readonly MemoryStream _bufferStream;
+        private readonly int _defaultBufferSize;
+        private readonly int _maxBufferSize;
+        private int _shrinkCounter = 0;
 
-		private int _shrinkCounter = 0;
-        private IConnection owner;
-        private IChunkReader chunkReader;
-        private MessageFormat format;
-
-        public MessageReader(IConnection owner, IChunkReader chunkReader, MessageFormat format)
+        public MessageReader(IPackStreamReader reader, IChunkReader chunkReader, BufferSettings bufferSettings, ILogger logger)
         {
-            this.owner = owner;
-            this.chunkReader = chunkReader;
-            this.format = format;
+            _bufferStream = new MemoryStream(bufferSettings.DefaultReadBufferSize);
+            _defaultBufferSize = bufferSettings.DefaultReadBufferSize;
+            _maxBufferSize = bufferSettings.MaxReadBufferSize; 
+            _packStreamReader = reader;
+            _chunkReader = chunkReader;
+            _logger = logger;
         }
 
         public async Task ReadAsync(IResponsePipeline pipeline)

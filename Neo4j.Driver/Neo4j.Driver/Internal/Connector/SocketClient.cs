@@ -108,7 +108,8 @@ internal class SocketClient : ISocketClient
     {
         try
         {
-            var reader = new MessageReader(_owner, ChunkReader, Format);
+            var reader = new MessageReader(new PackStreamReader(_owner, _tcpSocketClient.ReaderStream, Format),
+                ChunkReader, _bufferSettings, _logger);
             await reader.ReadAsync(responsePipeline).ConfigureAwait(false);
         }
         catch (Exception ex)
@@ -139,12 +140,9 @@ internal class SocketClient : ISocketClient
 
     public Task StopAsync()
     {
-        if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
-        {
-            return _tcpSocketClient.DisposeAsync().AsTask();
-        }
-
-        return Task.CompletedTask;
+        return Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0 
+            ? _tcpSocketClient.DisposeAsync().AsTask() 
+            : Task.CompletedTask;
     }
 
     private async Task<BoltProtocolVersion> DoHandshakeAsync(CancellationToken cancellationToken = default)
@@ -155,11 +153,10 @@ internal class SocketClient : ISocketClient
         _logger?.Debug("C: [HANDSHAKE] {0}", data.ToHexString());
 
         data = new byte[4];
-        var read = await _tcpSocketClient.ReaderStream.ReadAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(false);
+        var read = await _tcpSocketClient.ReaderStream.ReadAsync(data, 0, data.Length, cancellationToken)
+            .ConfigureAwait(false);
         if (read < data.Length)
-        {
             throw new IOException($"Unexpected end of stream when performing handshake, read returned {read}");
-        }
 
         var agreedVersion = BoltProtocolFactory.UnpackAgreedVersion(data);
         _logger?.Debug("S: [HANDSHAKE] {0}.{1}", agreedVersion.MajorVersion, agreedVersion.MinorVersion);

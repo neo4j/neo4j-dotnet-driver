@@ -17,21 +17,31 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal.IO
 {
     internal class PackStreamReader: IPackStreamReader
     {
-        private static readonly IDictionary<byte, IPackStreamSerializer> NoHandlers = new Dictionary<byte, IPackStreamSerializer>();
-        private static readonly Dictionary<string, object> EmptyStringValueMap = new Dictionary<string, object>();
+        private readonly IConnection _connection;
+
+        public PackStreamReader(IConnection connection, Stream stream, 
+            IMessageFormat format)
+        {
+            _connection = connection;
+            _stream = stream;
+            _structHandlers = format.ReaderStructHandlers;
+        }
+
         private static readonly byte[] EmptyByteArray = Array.Empty<byte>();
 
-        private readonly IDictionary<byte, IPackStreamSerializer> _structHandlers;
+        private readonly IReadOnlyDictionary<byte, IPackStreamSerializer> _structHandlers;
 
         private readonly byte[] _byteBuffer = new byte[1];
         private readonly byte[] _shortBuffer = new byte[2];
         private readonly byte[] _intBuffer = new byte[4];
         private readonly byte[] _longBuffer = new byte[8];
+        private readonly Stream _stream;
 
         public object Read()
         {
@@ -45,7 +55,7 @@ namespace Neo4j.Driver.Internal.IO
             var size = (int)ReadMapHeader();
             if (size == 0)
             {
-                return EmptyStringValueMap;
+                return new Dictionary<string, object>(0);
             }
             var map = new Dictionary<string, object>(size);
             for (var i = 0; i < size; i++)
@@ -101,7 +111,7 @@ namespace Neo4j.Driver.Internal.IO
 
             if (_structHandlers.TryGetValue(signature, out var handler))
             {
-                return handler.Deserialize(this, signature, size);
+                return handler.Deserialize(_connection, this, signature, size);
             }
 
             throw new ProtocolException("Unknown structure type: " + signature);
@@ -424,12 +434,8 @@ namespace Neo4j.Driver.Internal.IO
 
         internal sbyte NextSByte()
         {
-            var memoryStream = new MemoryStream(100);
-            Span<byte> bytebuffer = stackalloc byte[1];
-            memoryStream.Read(bytebuffer);
-            //_stream.Read(_byteBuffer);
-
-            return (sbyte)bytebuffer[0];
+            _stream.Read(_byteBuffer);
+            return (sbyte)_byteBuffer[0];
         }
 
         public byte NextByte()
