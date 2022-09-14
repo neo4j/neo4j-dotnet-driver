@@ -34,7 +34,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
             var handler = SerializerUnderTest;
 
             var ex = Record.Exception(() =>
-                handler.Deserialize(Mock.Of<IPackStreamReader>(), BoltProtocolV3MessageFormat.MsgBegin, 2));
+                handler.Deserialize(Mock.Of<IPackStreamReader>(), Protocol.MessageFormat.MsgBegin, 2));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ProtocolException>();
@@ -58,7 +58,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(1);
-            reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
+            reader.ReadStructSignature().Should().Be(Protocol.MessageFormat.MsgHello);
             reader.ReadMap().Should().HaveCount(4).And.Contain(
                 new[]
                 {
@@ -82,7 +82,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
 
             reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
             reader.ReadStructHeader().Should().Be(1);
-            reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
+            reader.ReadStructSignature().Should().Be(Protocol.MessageFormat.MsgHello);
             reader.ReadMap().Should().NotBeNull().And.HaveCount(1).And.Contain(
                 new[]
                 {

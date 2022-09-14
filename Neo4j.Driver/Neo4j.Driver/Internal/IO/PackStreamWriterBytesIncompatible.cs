@@ -17,18 +17,15 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using Neo4j.Driver;
+using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal.IO
 {
     internal class PackStreamWriterBytesIncompatible: PackStreamWriter
     {
-
-        public PackStreamWriterBytesIncompatible(Stream stream, IDictionary<Type, IPackStreamSerializer> structHandler)
-            : base(stream, structHandler)
+        public PackStreamWriterBytesIncompatible(IConnection connection, Stream stream, IReadOnlyDictionary<Type, IPackStreamSerializer> structHandler)
+            : base(connection, stream, structHandler)
         {
-            
         }
 
         public override void Write(byte[] values)

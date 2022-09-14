@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var connMock = new Mock<ITcpSocketClient>();
                 TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
                 TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V3_0);
+                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V30);
                 boltProtocol.Should().BeOfType<BoltProtocolV3>();
             }
 
@@ -55,7 +55,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var connMock = new Mock<ITcpSocketClient>();
                 TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
                 TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V4_1, new Dictionary<string, string>());
+                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V4_1);
                 boltProtocol.Should().BeOfType<BoltProtocolV4_1>();
             }
 
@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var connMock = new Mock<ITcpSocketClient>();
                 TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
                 TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V4_2, new Dictionary<string, string>());
+                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V4_2);
                 boltProtocol.Should().BeOfType<BoltProtocolV4_2>();
             }
 
@@ -75,7 +75,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var connMock = new Mock<ITcpSocketClient>();
                 TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
                 TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V4_3, new Dictionary<string, string>());
+                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V4_3);
                 boltProtocol.Should().BeOfType<BoltProtocolV4_3>();
             }
 
@@ -85,7 +85,7 @@ namespace Neo4j.Driver.Internal.Protocol
 				var connMock = new Mock<ITcpSocketClient>();
 				TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
 				TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-				var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V4_4, new Dictionary<string, string>());
+				var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V4_4);
 				boltProtocol.Should().BeOfType<BoltProtocolV4_4>();
 			}
 

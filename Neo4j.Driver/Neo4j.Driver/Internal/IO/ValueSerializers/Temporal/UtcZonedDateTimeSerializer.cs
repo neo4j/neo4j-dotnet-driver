@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.Internal.Connector;
 using System;
 using System.Collections.Generic;
 
@@ -28,7 +29,10 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
 
         public IEnumerable<byte> ReadableStructs => new[] {StructTypeWithId, StructTypeWithOffset};
         public IEnumerable<Type> WritableTypes => new[] {typeof(ZonedDateTime)};
-        public object Deserialize(IPackStreamReader reader, byte signature, long size)
+
+        //TODO: Support Non-utc
+
+        public object Deserialize(IConnection conn, IPackStreamReader reader, byte signature, long size)
         {
             PackStream.EnsureStructSize($"ZonedDateTime[{(char)signature}]", StructSize, size);
 
@@ -46,7 +50,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             return new ZonedDateTime(time, nanosOfSecond, zone);
         }
 
-        public void Serialize(IPackStreamWriter writer, object value)
+        public void Serialize(IConnection conn, IPackStreamWriter writer, object value)
         {
             var dateTime = value.CastOrThrow<ZonedDateTime>();
 

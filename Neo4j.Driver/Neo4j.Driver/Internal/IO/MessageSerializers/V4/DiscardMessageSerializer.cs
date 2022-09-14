@@ -18,7 +18,6 @@
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Messaging.V4;
-using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
 {
@@ -30,7 +29,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
         {
             var discardN = value.CastOrThrow<DiscardMessage>();
 
-            writer.WriteStructHeader(1, BoltProtocolV4_0MessageFormat.MsgDiscardN);
+            writer.WriteStructHeader(1, Protocol.MessageFormat.MsgDiscard);
             writer.Write(discardN.Metadata);
         }
     }

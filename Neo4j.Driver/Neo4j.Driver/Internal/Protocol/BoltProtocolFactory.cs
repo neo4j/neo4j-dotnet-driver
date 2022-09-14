@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Internal.Protocol
                     BoltProtocolVersion.V5_0.PackToInt(),
                     BoltProtocolVersion.V4_4.PackToIntRange(BoltProtocolVersion.V4_2),
                     BoltProtocolVersion.V4_1.PackToInt(),
-                    BoltProtocolVersion.V3_0.PackToInt()
+                    BoltProtocolVersion.V30.PackToInt()
                 };
                 return versions.SelectMany(PackStreamBitConverter.GetBytes).ToArray();
             }, LazyThreadSafetyMode.PublicationOnly);
@@ -54,11 +54,11 @@ namespace Neo4j.Driver.Internal.Protocol
             return version switch
             {
                 {MajorVersion: 3, MinorVersion: 0} => new BoltProtocolV3(),
-                {MajorVersion: 4, MinorVersion: 1} => new BoltProtocolV4_1(),
-                {MajorVersion: 4, MinorVersion: 2} => new BoltProtocolV4_2(),
+                {MajorVersion: 4, MinorVersion: 1} => new BoltProtocolV4_0(),
+                {MajorVersion: 4, MinorVersion: 2} => new BoltProtocolV4_0(),
                 {MajorVersion: 4, MinorVersion: 3} => new BoltProtocolV4_3(),
                 {MajorVersion: 4, MinorVersion: 4} => new BoltProtocolV4_4(),
-                {MajorVersion: 5, MinorVersion: 0} => new BoltProtocolV5_0(),
+                {MajorVersion: 5, MinorVersion: 0} => new BoltProtocolV4_4(),
                 // no matching versions
                 {MajorVersion: 0, MinorVersion: 0} => throw new NotSupportedException(NoAgreedVersion),
                 // http response

@@ -19,7 +19,7 @@ using System;
 using System.Text;
 
 namespace Neo4j.Driver.Internal.IO;
-
+//TODO: .NET6 Span/Memory optimisation.
 internal static class PackStreamBitConverter
 {
     /// <summary>

@@ -18,13 +18,25 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
+using Neo4j.Driver.Internal.Connector;
 using static Neo4j.Driver.Internal.IO.PackStream;
 
 namespace Neo4j.Driver.Internal.IO
 {
     internal class PackStreamWriter: IPackStreamWriter
     {
-        private readonly IDictionary<Type, IPackStreamSerializer> _structHandlers;
+        public IReadOnlyDictionary<Type, IPackStreamSerializer> StructHandlers { get; }
+
+        public PackStreamWriter(IConnection connection, Stream stream, IReadOnlyDictionary<Type, IPackStreamSerializer> structHandlers)
+        {
+            StructHandlers = structHandlers;
+            _connection = connection;
+            _stream = stream;
+        }
+
+        private readonly IConnection _connection;
+        private readonly Stream _stream;
 
         public void Write(object value)
         {
@@ -67,9 +79,9 @@ namespace Neo4j.Driver.Internal.IO
                     Write((IEnumerable) value);
                     break;
                 default:
-                    if (_structHandlers.TryGetValue(value.GetType(), out var structHandler))
+                    if (StructHandlers.TryGetValue(value.GetType(), out var structHandler))
                     {
-                        structHandler.Serialize(this, value);
+                        structHandler.Serialize(_connection, this, value);
                     }
                     else
                     {

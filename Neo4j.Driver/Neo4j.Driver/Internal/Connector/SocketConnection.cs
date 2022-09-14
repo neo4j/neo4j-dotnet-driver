@@ -57,7 +57,7 @@ namespace Neo4j.Driver.Internal.Connector
             _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
             _logger = new PrefixLogger(logger, FormatPrefix(_id));
 
-            _client = new SocketClient(uri, connectionSettings.SocketSettings, bufferSettings, _logger);
+            _client = new SocketClient(this, uri, connectionSettings.SocketSettings, bufferSettings, _logger);
             _authToken = connectionSettings.AuthToken;
             _userAgent = connectionSettings.UserAgent;
             Server = new ServerInfo(uri);
@@ -288,12 +288,13 @@ namespace Neo4j.Driver.Internal.Connector
 
 		public void SetReadTimeoutInSeconds(int seconds)
 		{
-			_client.SetRecvTimeOut(seconds);			
+			_client.SetReadTimeoutInSeconds(seconds);			
 		}
 
         public void SetUseUtcEncodedDateTime()
         {
             UtcEncodedDateTime = true;
+            _client.UseUtcEncoded();
         }
     }
 }

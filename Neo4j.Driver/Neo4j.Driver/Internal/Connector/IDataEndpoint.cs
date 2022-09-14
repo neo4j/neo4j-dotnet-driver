@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2002-2022 "Neo4j,"
+// Copyright (c) 2002-2022 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,9 +15,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Internal.Protocol
+using System.IO;
+
+namespace Neo4j.Driver.Internal.Connector;
+
+/// <summary>
+/// 
+/// </summary>
+public interface IDataEndpoint
 {
-    internal class BoltProtocolV5_0 : BoltProtocolV4_4
-    {
-    }
+    /// <summary>
+    /// 
+    /// </summary>
+    Stream ReaderStream { get; }
+    /// <summary>
+    /// 
+    /// </summary>
+    Stream WriterStream { get; }
 }

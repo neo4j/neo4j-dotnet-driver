@@ -14,28 +14,3 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-using Neo4j.Driver.Internal.IO;
-
-namespace Neo4j.Driver.Internal.Protocol
-{
-    internal static class BoltProtocolMessageFormat
-    {
-        public static readonly IMessageFormat V3 = new BoltProtocolV3MessageFormat();
-
-        public static readonly IMessageFormat V4 = new BoltProtocolV4_0MessageFormat();
-
-        public static readonly IMessageFormat V4_1 = new BoltProtocolV4_1MessageFormat();
-
-        public static readonly IMessageFormat V4_2 = new BoltProtocolV4_2MessageFormat();
-
-        public static readonly IMessageFormat V4_3 = new BoltProtocolV4_3MessageFormat(false);
-
-        public static readonly IMessageFormat V4_3Utc = new BoltProtocolV4_3MessageFormat(true);
-
-		public static readonly IMessageFormat V4_4 = new BoltProtocolV4_4MessageFormat(false);
-        public static readonly IMessageFormat V4_4Utc = new BoltProtocolV4_4MessageFormat(true);
-
-        public static readonly IMessageFormat V5_0 = new BoltProtocolV5_0MessageFormat();
-    }
-}

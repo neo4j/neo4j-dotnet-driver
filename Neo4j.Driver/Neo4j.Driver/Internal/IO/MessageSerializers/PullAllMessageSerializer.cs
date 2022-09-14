@@ -18,7 +18,7 @@
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Messaging;
-using static Neo4j.Driver.Internal.Protocol.BoltProtocolV3MessageFormat;
+using static Neo4j.Driver.Internal.Protocol.MessageFormat;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers
 {
@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
 
         public override void Serialize(IPackStreamWriter writer, object value)
         {
-            writer.WriteStructHeader(0, MsgPullAll);
+            writer.WriteStructHeader(0, MsgPull);
         }
     }
 }

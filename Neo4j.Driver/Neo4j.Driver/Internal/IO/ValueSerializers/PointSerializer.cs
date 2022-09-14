@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver;
+using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers
 {
@@ -32,7 +33,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
 
         public IEnumerable<Type> WritableTypes => new[] {typeof(Point)};
 
-        public object Deserialize(IPackStreamReader reader, byte signature, long size)
+        public object Deserialize(IConnection conn, IPackStreamReader reader, byte signature, long size)
         {
             switch (signature)
             {
@@ -61,7 +62,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             }
         }
 
-        public void Serialize(IPackStreamWriter writer, object value)
+        public void Serialize(IConnection conn, IPackStreamWriter writer, object value)
         {
             var point = value.CastOrThrow<Point>();
 

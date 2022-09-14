@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
 {
@@ -29,7 +30,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
 
         public IEnumerable<Type> WritableTypes => new[] {typeof(LocalDateTime)};
 
-        public object Deserialize(IPackStreamReader reader, byte signature, long size)
+        public object Deserialize(IConnection conn, IPackStreamReader reader, byte signature, long size)
         {
             PackStream.EnsureStructSize("LocalDateTime", StructSize, size);
 
@@ -39,7 +40,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             return TemporalHelpers.EpochSecondsAndNanoToDateTime(epochSeconds, nanosOfSecond);
         }
 
-        public void Serialize(IPackStreamWriter writer, object value)
+        public void Serialize(IConnection conn, IPackStreamWriter writer, object value)
         {
             var dateTime = value.CastOrThrow<LocalDateTime>();
 

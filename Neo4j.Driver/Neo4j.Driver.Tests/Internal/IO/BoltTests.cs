@@ -199,7 +199,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             return new Dictionary<byte, IPackStreamSerializer>
             {
-                {BoltProtocolV3MessageFormat.MsgSuccess, new SuccessMessageSerializer()},
+                {Protocol.MessageFormat.MsgSuccess, new SuccessMessageSerializer()},
                 {NodeSerializer.Node, new NodeSerializer()}
             };
         }
@@ -216,7 +216,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             var stream = new MemoryStream();
             var writer = new PackStreamWriter(stream, null);
-            writer.WriteStructHeader(1, BoltProtocolV3MessageFormat.MsgSuccess);
+            writer.WriteStructHeader(1, Protocol.MessageFormat.MsgSuccess);
             writer.WriteMapHeader(1);
             writer.Write("x");
             writer.Write(1);

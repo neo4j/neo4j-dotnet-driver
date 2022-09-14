@@ -18,7 +18,6 @@
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Messaging.V4;
-using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
 {
@@ -30,7 +29,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
         {
             var pullN = value.CastOrThrow<PullMessage>();
 
-            writer.WriteStructHeader(1, BoltProtocolV4_0MessageFormat.MsgPullN);
+            writer.WriteStructHeader(1, Protocol.MessageFormat.MsgPull);
             writer.Write(pullN.Metadata);
         }
     }

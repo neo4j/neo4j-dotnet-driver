@@ -46,7 +46,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer();
 
-            writer.WriteStructHeader(1, BoltProtocolV3MessageFormat.MsgFailure);
+            writer.WriteStructHeader(1, Protocol.MessageFormat.MsgFailure);
             writer.WriteMapHeader(2);
             writer.Write("code");
             writer.Write("Neo.ClientError.Statement.SyntaxError");

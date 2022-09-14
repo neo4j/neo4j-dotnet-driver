@@ -18,22 +18,26 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Neo4j.Driver;
+using Neo4j.Driver.Internal.Connector;
 
-namespace Neo4j.Driver.Internal.IO
+namespace Neo4j.Driver.Internal.IO;
+
+internal abstract class WriteOnlySerializer : IPackStreamSerializer
 {
-    internal abstract class WriteOnlySerializer : IPackStreamSerializer
+    public IEnumerable<byte> ReadableStructs => Enumerable.Empty<byte>();
+
+    public object Deserialize(IConnection _, IPackStreamReader reader, byte signature, long size)
     {
-        public IEnumerable<byte> ReadableStructs => Enumerable.Empty<byte>();
-
-        public object Deserialize(IPackStreamReader reader, byte signature, long size)
-        {
-            throw new ProtocolException(
-                $"{GetType().Name}: It is not expected to receive a struct of signature {signature:X2} from the server.");
-        }
-
-        public abstract IEnumerable<Type> WritableTypes { get; }
-
-        public abstract void Serialize(IPackStreamWriter writer, object value);
+        throw new ProtocolException(
+            $"{GetType().Name}: It is not expected to receive a struct of signature {signature:X2} from the server.");
     }
+
+    public abstract IEnumerable<Type> WritableTypes { get; }
+
+    public void Serialize(IConnection _, IPackStreamWriter writer, object value)
+    {
+        Serialize(writer, value);
+    }
+
+    public abstract void Serialize(IPackStreamWriter writer, object value);
 }

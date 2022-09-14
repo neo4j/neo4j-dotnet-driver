@@ -24,152 +24,157 @@ using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.MessageHandling;
+using MessageFormat = Neo4j.Driver.Internal.Protocol.MessageFormat;
 
-namespace Neo4j.Driver.Internal.Connector
+namespace Neo4j.Driver.Internal.Connector;
+
+internal class SocketClient : ISocketClient
 {
-    internal class SocketClient : ISocketClient
+    private const string MessagePattern = "C: {0}";
+    private readonly IConnection _owner;
+    private readonly Uri _uri;
+    private readonly BufferSettings _bufferSettings;
+
+    private readonly ITcpSocketClient _tcpSocketClient;
+
+    private int _closedMarker = -1;
+
+    private readonly ILogger _logger;
+
+    public SocketClient(IConnection owner, Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings, ILogger logger = null,
+        ITcpSocketClient socketClient = null)
     {
-        private const string MessagePattern = "C: {0}";
-        private readonly Uri _uri;
-        private readonly BufferSettings _bufferSettings;
+        _owner = owner;
+        _uri = uri;
+        _logger = logger;
+        _bufferSettings = bufferSettings;
+        _tcpSocketClient = socketClient ?? new TcpSocketClient(socketSettings, _logger);
+    }
 
-        private readonly ITcpSocketClient _tcpSocketClient;
+    public bool IsOpen => _closedMarker == 0;
 
-        private int _closedMarker = -1;
+    public async Task ConnectAsync(IDictionary<string, string> routingContext, CancellationToken cancellationToken = default)
+    {
+        await _tcpSocketClient.ConnectAsync(_uri, cancellationToken).ConfigureAwait(false);
 
-        private readonly ILogger _logger;
+        _logger?.Debug($"~~ [CONNECT] {_uri}");
+        Version = await DoHandshakeAsync(cancellationToken).ConfigureAwait(false);
+        RoutingContext = routingContext;
+        Format = new MessageFormat(Version);
 
-        public SocketClient(Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings, ILogger logger = null,
-            ITcpSocketClient socketClient = null)
+        ChunkReader = new ChunkReader(_tcpSocketClient.ReaderStream);
+        ChunkWriter = new ChunkWriter(_tcpSocketClient.WriterStream, 
+            _bufferSettings.DefaultWriteBufferSize, 
+            _bufferSettings.MaxWriteBufferSize, 
+            _logger);
+        SetOpened();
+    }
+
+    public MessageFormat Format { get; set; }
+
+    public IDictionary<string,string> RoutingContext { get; set; }
+    public BoltProtocolVersion Version { get; private set; }
+
+    public async Task SendAsync(IEnumerable<IRequestMessage> messages)
+    {
+        try
         {
-            _uri = uri;
-            _logger = logger;
-            _bufferSettings = bufferSettings;
-            _tcpSocketClient = socketClient ?? new TcpSocketClient(socketSettings, _logger);
-        }
-
-        // For testing only
-        internal SocketClient(IMessageReader reader, IMessageWriter writer, ITcpSocketClient socketClient = null)
-        {
-            // Reader = reader;
-            // Writer = writer;
-            // _tcpSocketClient = socketClient;
-        }
-
-        public bool IsOpen => _closedMarker == 0;
-
-        public async Task ConnectAsync(IDictionary<string, string> routingContext, CancellationToken cancellationToken = default)
-        {
-            await _tcpSocketClient.ConnectAsync(_uri, cancellationToken).ConfigureAwait(false);
-
-            _logger?.Debug($"~~ [CONNECT] {_uri}");
-            Version = await DoHandshakeAsync(cancellationToken).ConfigureAwait(false);
-            RoutingContext = routingContext;
-            ChunkReader = new ChunkReader(_tcpSocketClient.ReaderStream, _bufferSettings, _logger);
-            ChunkWriter = new ChunkWriter(_tcpSocketClient.WriterStream, _bufferSettings, _logger);
-            SetOpened();
-        }
-
-        public IDictionary<string,string> RoutingContext { get; set; }
-        public BoltProtocolVersion Version { get; private set; }
-
-        public async Task SendAsync(IEnumerable<IRequestMessage> messages)
-        {
-            try
+            foreach (var message in messages)
             {
-                foreach (var message in messages)
-                {
-                    var writer = new MessageWriter();
-                    writer.Write(message);
-                    _logger?.Debug(MessagePattern, message);
-                }
-
-                await _tcpSocketClient.WriterStream.FlushAsync().ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Warn(ex, $"Unable to send message to server {_uri}, connection will be terminated.");
-                await StopAsync().ConfigureAwait(false);
-                throw;
-            }
-        }
-
-        public async Task ReceiveAsync(IResponsePipeline responsePipeline)
-        {
-            while (!responsePipeline.HasNoPendingMessages)
-            {
-                await ReceiveOneAsync(responsePipeline).ConfigureAwait(false);
-            }
-        }
-
-        public async Task ReceiveOneAsync(IResponsePipeline responsePipeline)
-        {
-            try
-            {
-                var reader = new MessageReader();
-                await reader.ReadAsync(responsePipeline).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, $"Unable to read message from server {_uri}, connection will be terminated.");
-                await StopAsync().ConfigureAwait(false);
-                throw;
+                var writer = new MessageWriter(_owner, ChunkWriter, Format);
+                writer.Write(message);
+                _logger?.Debug(MessagePattern, message);
             }
 
-            // We force ProtocolException's to be thrown here to shortcut the communication with the server
-            try
-            {
-                responsePipeline.AssertNoProtocolViolation();
-            }
-            catch (ProtocolException exc)
-            {
-                _logger?.Warn(exc, "A bolt protocol error has occurred with server {0}, connection will be terminated.",
-                    _uri.ToString());
-                await StopAsync().ConfigureAwait(false);
-                throw;
-            }
+            await _tcpSocketClient.WriterStream.FlushAsync().ConfigureAwait(false);
         }
-
-        internal void SetOpened()
+        catch (Exception ex)
         {
-            Interlocked.CompareExchange(ref _closedMarker, 0, -1);
+            _logger?.Warn(ex, $"Unable to send message to server {_uri}, connection will be terminated.");
+            await StopAsync().ConfigureAwait(false);
+            throw;
         }
+    }
 
-        public Task StopAsync()
+    public async Task ReceiveAsync(IResponsePipeline responsePipeline)
+    {
+        while (!responsePipeline.HasNoPendingMessages)
         {
-            if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
-            {
-                return _tcpSocketClient.DisposeAsync().AsTask();
-            }
-
-            return Task.CompletedTask;
+            await ReceiveOneAsync(responsePipeline).ConfigureAwait(false);
         }
+    }
 
-        private async Task<BoltProtocolVersion> DoHandshakeAsync(CancellationToken cancellationToken = default)
+    public async Task ReceiveOneAsync(IResponsePipeline responsePipeline)
+    {
+        try
         {
-            var data = BoltProtocolFactory.PackSupportedVersions();
-            await _tcpSocketClient.WriterStream.WriteAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(false);
-            await _tcpSocketClient.WriterStream.FlushAsync(cancellationToken).ConfigureAwait(false);
-            _logger?.Debug("C: [HANDSHAKE] {0}", data.ToHexString());
-
-            data = new byte[4];
-            var read = await _tcpSocketClient.ReaderStream.ReadAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(false);
-            if (read < data.Length)
-            {
-                throw new IOException($"Unexpected end of stream when performing handshake, read returned {read}");
-            }
-
-            var agreedVersion = BoltProtocolFactory.UnpackAgreedVersion(data);
-            _logger?.Debug("S: [HANDSHAKE] {0}.{1}", agreedVersion.MajorVersion, agreedVersion.MinorVersion);
-            return agreedVersion;
+            var reader = new MessageReader(_owner, ChunkReader, Format);
+            await reader.ReadAsync(responsePipeline).ConfigureAwait(false);
         }
-
-        public void SetRecvTimeOut(int seconds)
+        catch (Exception ex)
         {
-            _tcpSocketClient.ReaderStream.ReadTimeout = seconds * 1000;
+            _logger?.Error(ex, $"Unable to read message from server {_uri}, connection will be terminated.");
+            await StopAsync().ConfigureAwait(false);
+            throw;
         }
 
-        public IChunkReader ChunkReader { get; private set; }
-        public IChunkWriter ChunkWriter { get; private set; }
+        // We force ProtocolException's to be thrown here to shortcut the communication with the server
+        try
+        {
+            responsePipeline.AssertNoProtocolViolation();
+        }
+        catch (ProtocolException exc)
+        {
+            _logger?.Warn(exc, "A bolt protocol error has occurred with server {0}, connection will be terminated.",
+                _uri.ToString());
+            await StopAsync().ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    internal void SetOpened()
+    {
+        Interlocked.CompareExchange(ref _closedMarker, 0, -1);
+    }
+
+    public Task StopAsync()
+    {
+        if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
+        {
+            return _tcpSocketClient.DisposeAsync().AsTask();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private async Task<BoltProtocolVersion> DoHandshakeAsync(CancellationToken cancellationToken = default)
+    {
+        var data = BoltProtocolFactory.PackSupportedVersions();
+        await _tcpSocketClient.WriterStream.WriteAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(false);
+        await _tcpSocketClient.WriterStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+        _logger?.Debug("C: [HANDSHAKE] {0}", data.ToHexString());
+
+        data = new byte[4];
+        var read = await _tcpSocketClient.ReaderStream.ReadAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(false);
+        if (read < data.Length)
+        {
+            throw new IOException($"Unexpected end of stream when performing handshake, read returned {read}");
+        }
+
+        var agreedVersion = BoltProtocolFactory.UnpackAgreedVersion(data);
+        _logger?.Debug("S: [HANDSHAKE] {0}.{1}", agreedVersion.MajorVersion, agreedVersion.MinorVersion);
+        return agreedVersion;
+    }
+
+    public void SetReadTimeoutInSeconds(int seconds)
+    {
+        _tcpSocketClient.ReaderStream.ReadTimeout = seconds * 1000;
+    }
+
+    public IChunkReader ChunkReader { get; private set; }
+    public IChunkWriter ChunkWriter { get; private set; }
+    public void UseUtcEncoded()
+    {
+        Format.UseUtcEncoder();
     }
 }

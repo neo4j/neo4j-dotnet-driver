@@ -34,8 +34,9 @@ internal interface ISocketClient
     Task ReceiveOneAsync(IResponsePipeline responsePipeline);
     bool IsOpen { get; }
     Task StopAsync();
-    void SetRecvTimeOut(int seconds);
+    void SetReadTimeoutInSeconds(int seconds);
 
     IChunkReader ChunkReader { get; }
     IChunkWriter ChunkWriter { get; }
+    void UseUtcEncoded();
 }

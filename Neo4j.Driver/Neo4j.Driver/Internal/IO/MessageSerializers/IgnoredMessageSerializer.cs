@@ -17,7 +17,7 @@
 
 using System.Collections.Generic;
 using static Neo4j.Driver.Internal.Messaging.IgnoredMessage;
-using static Neo4j.Driver.Internal.Protocol.BoltProtocolV3MessageFormat;
+using static Neo4j.Driver.Internal.Protocol.MessageFormat;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers
 {

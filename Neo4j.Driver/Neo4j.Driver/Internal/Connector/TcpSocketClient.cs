@@ -82,18 +82,22 @@ internal class TcpSocketClient : ITcpSocketClient
 
     public ValueTask DisposeAsync()
     {
-        if (_client == null)
-            return ValueTask.CompletedTask;
+        if (_client != null)
+        {
+            if (_client.Connected)
+                _client.Shutdown(SocketShutdown.Both);
 
-        if (_client.Connected) 
-            _client.Shutdown(SocketShutdown.Both);
+            _client.Dispose();
 
-        _client.Dispose();
+            _client = null;
+            ReaderStream = null;
+        }
 
-        _client = null;
-        ReaderStream = null;
-
+#if NET6_0_OR_GREATER
         return ValueTask.CompletedTask;
+#else
+        return new ValueTask(Task.CompletedTask);
+#endif
     }
 
     private async Task ConnectSocketAsync(Uri uri, CancellationToken cancellationToken = default)
@@ -127,12 +131,21 @@ internal class TcpSocketClient : ITcpSocketClient
         CancellationToken cancellationToken = default)
     {
         InitClient();
+        var source = CancellationTokenSource.CreateLinkedTokenSource(
+            new CancellationTokenSource(_connectionTimeout).Token, 
+            cancellationToken);
+        using var _ = source.Token.Register(() => _client.Close());
 
         try
         {
-            await _client.ConnectAsync(address, port)
-                .Timeout(_connectionTimeout, cancellationToken)
+#if NET6_0_OR_GREATER
+            await _client.ConnectAsync(new IPEndPoint(address, port), source.Token)
                 .ConfigureAwait(false);
+#else
+            await _client.ConnectAsync(new IPEndPoint(address, port))
+                .Timeout(_connectionTimeout, source.Token)
+                .ConfigureAwait(false);
+#endif
         }
         catch (Exception ex) when (ex is OperationCanceledException or TimeoutException)
         {

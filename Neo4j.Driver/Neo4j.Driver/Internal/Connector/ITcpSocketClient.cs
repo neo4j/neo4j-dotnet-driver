@@ -16,21 +16,12 @@
 // limitations under the License.
 
 using System;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.IO;
 
-namespace Neo4j.Driver.Internal.Connector
+namespace Neo4j.Driver.Internal.Connector;
+
+internal interface ITcpSocketClient : IDataEndpoint, IAsyncDisposable
 {
-    internal interface ITcpSocketClient : IDataEndpoint, IAsyncDisposable
-    {
-        Task ConnectAsync(Uri uri, CancellationToken cancellationToken = default);
-	}
-
-    public interface IDataEndpoint
-    {
-        Stream ReaderStream { get; }
-        Stream WriterStream { get; }
-    }
+    Task ConnectAsync(Uri uri, CancellationToken cancellationToken = default);
 }

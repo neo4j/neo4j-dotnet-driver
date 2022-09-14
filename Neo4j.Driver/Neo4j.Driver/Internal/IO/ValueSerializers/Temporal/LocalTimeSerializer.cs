@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.Internal.Connector;
 using System;
 using System.Collections.Generic;
 
@@ -32,7 +33,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
         public IEnumerable<Type> WritableTypes => new[] {typeof(LocalTime)};
 #endif
 
-        public object Deserialize(IPackStreamReader reader, byte signature, long size)
+        public object Deserialize(IConnection conn, IPackStreamReader reader, byte signature, long size)
         {
             PackStream.EnsureStructSize("LocalTime", StructSize, size);
 
@@ -41,7 +42,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             return TemporalHelpers.NanoOfDayToTime(nanosOfDay);
         }
 
-        public void Serialize(IPackStreamWriter writer, object value)
+        public void Serialize(IConnection conn, IPackStreamWriter writer, object value)
         {
 #if NET6_0_OR_GREATER
             if (value is TimeOnly time)

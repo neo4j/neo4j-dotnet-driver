@@ -6,7 +6,7 @@ using Neo4j.Driver.Internal.Messaging.V4_3;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
-    internal class BoltProtocolV4_3 : BoltProtocolV4_2
+    internal class BoltProtocolV4_3 : BoltProtocolV4_0
 	{
         public override async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmarks bookmarks)
 		{

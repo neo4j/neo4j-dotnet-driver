@@ -23,6 +23,7 @@
     <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
     <LangVersion>latest</LangVersion>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Neo4j.Driver.xml</DocumentationFile>
+    <AllowUnsafeBlocks>False</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net6.0|AnyCPU'">
     <WarningLevel>2</WarningLevel>

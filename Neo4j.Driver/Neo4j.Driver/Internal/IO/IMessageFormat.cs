@@ -15,13 +15,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.IO;
+using System;
+using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.IO
+namespace Neo4j.Driver.Internal.IO;
+
+internal interface IMessageFormat
 {
-    internal interface IMessageFormat
-    {
-        IPackStreamReader CreateReader(Stream stream);
-        IPackStreamWriter CreateWriter(Stream stream);
-    }
+    IReadOnlyDictionary<byte, IPackStreamSerializer> ReaderStructHandlers { get; }
+    IReadOnlyDictionary<Type, IPackStreamSerializer> WriteStructHandlers { get; }
 }

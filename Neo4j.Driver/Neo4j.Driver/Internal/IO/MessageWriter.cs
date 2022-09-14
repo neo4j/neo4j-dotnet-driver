@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+﻿// Copyright (c) 2002-2022 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -14,34 +14,37 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-using System.Collections.Generic;
-using System.IO;
+
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.IO
+namespace Neo4j.Driver.Internal.IO;
+
+internal class MessageWriter : IMessageWriter
 {
-    internal class MessageWriter: IMessageWriter
+    public MessageWriter(IConnection connection, IChunkWriter chunkWriter, IMessageFormat format)
     {
-        private readonly IChunkWriter _chunkWriter;
-        private readonly IPackStreamWriter _packStreamWriter;
+        _chunkWriter = chunkWriter;
+        _packStreamWriter = new PackStreamWriter(connection, chunkWriter.ChunkerStream, format.WriteStructHandlers);
+    }
 
-        public void Write(IRequestMessage message)
-        {
-            _chunkWriter.OpenChunk();
-            _packStreamWriter.Write(message);
-            _chunkWriter.CloseChunk();
+    private readonly IChunkWriter _chunkWriter;
+    private readonly IPackStreamWriter _packStreamWriter;
 
-            // add message boundary
-            _chunkWriter.OpenChunk();
-            _chunkWriter.CloseChunk();
-        }
+    public void Write(IRequestMessage message)
+    {
+        _chunkWriter.OpenChunk();
+        _packStreamWriter.Write(message);
+        _chunkWriter.CloseChunk();
 
-        public Task FlushAsync()
-        {
-            return _chunkWriter.SendAsync();
-        }
-        
+        // add message boundary
+        _chunkWriter.OpenChunk();
+        _chunkWriter.CloseChunk();
+    }
+
+    public Task FlushAsync()
+    {
+        return _chunkWriter.SendAsync();
     }
 }
