@@ -40,6 +40,11 @@ namespace Neo4j.Driver
         /// </remarks>
         public static IAuthToken None => new AuthToken(new Dictionary<string, object> {{SchemeKey, "none"}});
 
+        public static IAuthToken Provider(Func<IAuthToken> provider)
+        {
+            return new ProviderToken(provider);
+        }
+
         /// <summary>
         ///     The basic authentication scheme, using a username and a password.
         /// </summary>

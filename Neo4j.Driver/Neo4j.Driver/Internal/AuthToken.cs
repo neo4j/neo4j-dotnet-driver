@@ -43,10 +43,13 @@ namespace Neo4j.Driver.Internal
     {
         public static IDictionary<string, object> AsDictionary(this IAuthToken authToken)
         {
-            if (authToken is AuthToken)
+            var validatedToken = authToken is ProviderToken pt ? pt.Provider() : authToken;
+
+            if (validatedToken is AuthToken at)
             {
-                return ((AuthToken) authToken).Content;
+                return at.Content;
             }
+
             throw new ClientException($"Unknown authentication token, `{authToken}`. Please use one of the supported " +
                                       $"tokens from `{nameof(AuthTokens)}`.");
         }
