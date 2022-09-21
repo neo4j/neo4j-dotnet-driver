@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
     {
         public override IEnumerable<Type> WritableTypes => new[] {typeof(DateTime)};
 
-        public override void Serialize(IPackStreamWriter writer, object value)
+        public override void Serialize(PackStreamWriter writer, object value)
         {
             var dateTime = value.CastOrThrow<DateTime>();
 

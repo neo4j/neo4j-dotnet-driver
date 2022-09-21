@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
 
         public IEnumerable<Type> WritableTypes => new[] {typeof(Point)};
 
-        public object Deserialize(IConnection conn, IPackStreamReader reader, byte signature, long size)
+        public object Deserialize(IConnection conn, PackStreamReader reader, byte signature, long size)
         {
             switch (signature)
             {
@@ -62,7 +62,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             }
         }
 
-        public void Serialize(IConnection conn, IPackStreamWriter writer, object value)
+        public void Serialize(IConnection conn, PackStreamWriter writer, object value)
         {
             var point = value.CastOrThrow<Point>();
 

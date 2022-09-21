@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
 
         public IEnumerable<Type> WritableTypes => new[] {typeof(Duration)};
 
-        public object Deserialize(IConnection connection, IPackStreamReader reader, byte signature, long size)
+        public object Deserialize(IConnection connection, PackStreamReader reader, byte signature, long size)
         {
             PackStream.EnsureStructSize("Duration", StructSize, size);
 
@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             return new Duration(months, days, seconds, nanos);
         }
 
-        public void Serialize(IConnection connection, IPackStreamWriter writer, object value)
+        public void Serialize(IConnection connection, PackStreamWriter writer, object value)
         {
             var duration = value.CastOrThrow<Duration>();
 

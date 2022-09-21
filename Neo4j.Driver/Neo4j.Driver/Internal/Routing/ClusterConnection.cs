@@ -18,7 +18,6 @@
 using System;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Routing
 {

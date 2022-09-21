@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+﻿// Copyright (c) 2002-2022 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -14,25 +14,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.IO
+namespace Neo4j.Driver.Internal.IO;
+
+/// <summary>
+/// 
+/// </summary>
+public enum PackStreamType
 {
-    internal interface IPackStreamReader
-    {
-        object Read();
-        string ReadString();
-        double ReadDouble();
-        long ReadLong();
-        int ReadInteger();
-        bool ReadBoolean();
-        object ReadNull();
-        long ReadListHeader();
-        long ReadMapHeader();
-        long ReadStructHeader();
-        byte ReadStructSignature();
-        Dictionary<string, object> ReadMap();
-        byte[] ReadBytes();
-        PackStream.PackType PeekNextType();
-    }
+    Null,
+    Boolean,
+    Integer,
+    Float,
+    Bytes,
+    String,
+    List,
+    Map,
+    Struct
 }

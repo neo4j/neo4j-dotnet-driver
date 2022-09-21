@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
     {
         public override IEnumerable<Type> WritableTypes => new[] {typeof(ResetMessage)};
 
-        public override void Serialize(IPackStreamWriter writer, object value)
+        public override void Serialize(PackStreamWriter writer, object value)
         {
             writer.WriteStructHeader(0, MsgReset);
         }

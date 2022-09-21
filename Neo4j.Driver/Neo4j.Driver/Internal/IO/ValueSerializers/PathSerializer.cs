@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
         public const byte Path = (byte)'P';
         public override IEnumerable<byte> ReadableStructs => new[] {Path};
 
-        public override object Deserialize(IPackStreamReader reader, byte signature, long size)
+        public override object Deserialize(PackStreamReader reader, byte signature, long size)
         {
             // List of unique nodes
             var uniqNodes = new INode[(int) reader.ReadListHeader()];

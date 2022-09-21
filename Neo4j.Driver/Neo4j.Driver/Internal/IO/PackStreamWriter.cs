@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -22,317 +23,308 @@ using System.IO;
 using Neo4j.Driver.Internal.Connector;
 using static Neo4j.Driver.Internal.IO.PackStream;
 
-namespace Neo4j.Driver.Internal.IO
+namespace Neo4j.Driver.Internal.IO;
+
+internal sealed class PackStreamWriter
 {
-    internal class PackStreamWriter: IPackStreamWriter
+    private readonly IConnection _connection;
+    private readonly Stream _stream;
+
+    public PackStreamWriter(IConnection connection, Stream stream,
+        IReadOnlyDictionary<Type, IPackStreamSerializer> structHandlers)
     {
-        public IReadOnlyDictionary<Type, IPackStreamSerializer> StructHandlers { get; }
+        StructHandlers = structHandlers;
+        _connection = connection;
+        _stream = stream;
+    }
 
-        public PackStreamWriter(IConnection connection, Stream stream, IReadOnlyDictionary<Type, IPackStreamSerializer> structHandlers)
+    public IReadOnlyDictionary<Type, IPackStreamSerializer> StructHandlers { get; }
+
+    public void Write(object value)
+    {
+        switch (value)
         {
-            StructHandlers = structHandlers;
-            _connection = connection;
-            _stream = stream;
+            case null:
+                WriteNull();
+                break;
+            case bool _:
+                Write((bool) value);
+                break;
+            case sbyte _:
+            case byte _:
+            case short _:
+            case int _:
+            case long _:
+                Write(Convert.ToInt64(value));
+                break;
+            case byte[] _:
+                Write((byte[]) value);
+                break;
+            case float _:
+            case double _:
+            case decimal _:
+                Write(Convert.ToDouble(value, CultureInfo.InvariantCulture));
+                break;
+            case char _:
+                Write((char) value);
+                break;
+            case string _:
+                Write((string) value);
+                break;
+            case IList _:
+                Write((IList) value);
+                break;
+            case IDictionary _:
+                Write((IDictionary) value);
+                break;
+            case IEnumerable _:
+                Write((IEnumerable) value);
+                break;
+            default:
+                if (StructHandlers.TryGetValue(value.GetType(), out var structHandler))
+                    structHandler.Serialize(_connection, this, value);
+                else
+                    throw new ProtocolException(
+                        $"Cannot understand {nameof(value)} with type {value.GetType().FullName}");
+                break;
         }
+    }
 
-        private readonly IConnection _connection;
-        private readonly Stream _stream;
+    public void Write(int value)
+    {
+        Write((long) value);
+    }
 
-        public void Write(object value)
+    public void Write(IEnumerable value)
+    {
+        IList list = new List<object>();
+        foreach (var item in value) list.Add(item);
+        Write(list);
+    }
+
+    public void Write(long value)
+    {
+        if (value >= Minus2ToThe4 && value < Plus2ToThe7)
         {
-            switch (value)
-            {
-                case null:
-                    WriteNull();
-                    break;
-                case bool _:
-                    Write((bool)value);
-                    break;
-                case sbyte _:
-                case byte _:
-                case short _:
-                case int _:
-                case long _:
-                    Write(Convert.ToInt64(value));
-                    break;
-                case byte[] _:
-                    Write((byte[])value);
-                    break;
-                case float _:
-                case double _:
-                case decimal _:
-                    Write(Convert.ToDouble(value, CultureInfo.InvariantCulture));
-                    break;
-                case char _:
-                    Write((char)value);
-                    break;
-                case string _:
-                    Write((string)value);
-                    break;
-                case IList _:
-                    Write((IList)value);
-                    break;
-                case IDictionary _:
-                    Write((IDictionary)value);
-                    break;
-                case IEnumerable _:
-                    Write((IEnumerable) value);
-                    break;
-                default:
-                    if (StructHandlers.TryGetValue(value.GetType(), out var structHandler))
-                    {
-                        structHandler.Serialize(_connection, this, value);
-                    }
-                    else
-                    {
-                        throw new ProtocolException(
-                            $"Cannot understand {nameof(value)} with type {value.GetType().FullName}");
-                    }
-                    break;
-            }
+            _stream.WriteByte((byte) value);
         }
-
-        public void Write(int value)
+        else if (value >= Minus2ToThe7 && value < Minus2ToThe4)
         {
-            Write((long)value);
+            _stream.WriteByte(Int8);
+            _stream.Write(PackStreamBitConverter.GetBytes((byte) value));
         }
-
-        public void Write(IEnumerable value)
+        else if (value >= Minus2ToThe15 && value < Plus2ToThe15)
         {
-            IList list = new List<object>();
-            foreach (var item in value)
-            {
-                list.Add(item);
-            }
-            Write(list);
+            _stream.WriteByte(PackStream.Int16);
+            _stream.Write(PackStreamBitConverter.GetBytes((short) value));
         }
-
-        public void Write(long value)
+        else if (value >= Minus2ToThe31 && value < Plus2ToThe31)
         {
-            if (value >= Minus2ToThe4 && value < Plus2ToThe7)
-            {
-                _stream.WriteByte((byte)value);
-            }
-            else if (value >= Minus2ToThe7 && value < Minus2ToThe4)
-            {
-                _stream.WriteByte(Int8);
-                _stream.Write(PackStreamBitConverter.GetBytes((byte)value));
-            }
-            else if (value >= Minus2ToThe15 && value < Plus2ToThe15)
-            {
-                _stream.WriteByte(PackStream.Int16);
-                _stream.Write(PackStreamBitConverter.GetBytes((short)value));
-            }
-            else if (value >= Minus2ToThe31 && value < Plus2ToThe31)
-            {
-                _stream.WriteByte(PackStream.Int32);
-                _stream.Write(PackStreamBitConverter.GetBytes((int)value));
-            }
-            else
-            {
-                _stream.WriteByte(PackStream.Int64);
-                _stream.Write(PackStreamBitConverter.GetBytes(value));
-            }
+            _stream.WriteByte(PackStream.Int32);
+            _stream.Write(PackStreamBitConverter.GetBytes((int) value));
         }
-
-        public void Write(double value)
+        else
         {
-            _stream.WriteByte(Float64);
+            _stream.WriteByte(PackStream.Int64);
             _stream.Write(PackStreamBitConverter.GetBytes(value));
         }
+    }
 
-        public void Write(bool value)
-        {
-            _stream.WriteByte(value ? True : False);
-        }
+    public void Write(double value)
+    {
+        _stream.WriteByte(Float64);
+        _stream.Write(PackStreamBitConverter.GetBytes(value));
+    }
 
-        public void Write(char value)
-        {
-            Write(value.ToString());
-        }
+    public void Write(bool value)
+    {
+        _stream.WriteByte(value ? True : False);
+    }
 
-        public void Write(string value)
-        {
-            if (value == null)
-            {
-                WriteNull();
-            }
-            else
-            {
-                var bytes = PackStreamBitConverter.GetBytes(value);
-                WriteStringHeader(bytes.Length);
-                _stream.Write(bytes);
-            }
-        }
+    public void Write(char value)
+    {
+        Write(value.ToString());
+    }
 
-        public virtual void Write(byte[] values)
+    public void Write(string value)
+    {
+        if (value == null)
         {
-            if (values == null)
-            {
-                WriteNull();
-            }
-            else
-            {
-                WriteBytesHeader(values.Length);
-                WriteRaw(values);
-            }
+            WriteNull();
         }
+        else
+        {
+            var bytes = PackStreamBitConverter.GetBytes(value);
+            WriteStringHeader(bytes.Length);
+            _stream.Write(bytes);
+        }
+    }
 
-        public void Write(IList value)
+    public void Write(byte[] values)
+    {
+        if (values == null)
         {
-            if (value == null)
-            {
-                WriteNull();
-            }
-            else
-            {
-                WriteListHeader(value.Count);
-                foreach (var item in value)
-                {
-                    Write(item);
-                }
-            }
+            WriteNull();
         }
+        else
+        {
+            WriteBytesHeader(values.Length);
+            WriteRaw(values);
+        }
+    }
 
-        public void Write(IDictionary values)
+    public void Write(IList value)
+    {
+        if (value == null)
         {
-            if (values == null)
-            {
-                WriteNull();
-            }
-            else
-            {
-                WriteMapHeader(values.Count);
-                foreach (var key in values.Keys)
-                {
-                    Write(key);
-                    Write(values[key]);
-                }
-            }
+            WriteNull();
         }
-        
-        public void WriteNull()
+        else
         {
-            _stream.WriteByte(Null);
+            WriteListHeader(value.Count);
+            foreach (var item in value) Write(item);
         }
+    }
 
-        private void WriteRaw(byte[] data)
+    public void Write(IDictionary values)
+    {
+        if (values == null)
         {
-            _stream.Write(data);
+            WriteNull();
         }
-
-        private void WriteBytesHeader(int size)
+        else
         {
-            if (size <= byte.MaxValue)
+            WriteMapHeader(values.Count);
+            foreach (var key in values.Keys)
             {
-                _stream.WriteByte(Bytes8);
-                _stream.Write(new byte[] {(byte) size});
-            }
-            else if (size <= short.MaxValue)
-            {
-                _stream.WriteByte(Bytes16);
-                _stream.Write(PackStreamBitConverter.GetBytes((short)size));
-            }
-            else
-            {
-                _stream.WriteByte(Bytes32);
-                _stream.Write(PackStreamBitConverter.GetBytes(size));
+                Write(key);
+                Write(values[key]);
             }
         }
+    }
 
-        public void WriteListHeader(int size)
+    public void WriteNull()
+    {
+        _stream.WriteByte(Null);
+    }
+
+    private void WriteRaw(byte[] data)
+    {
+        _stream.Write(data);
+    }
+
+    private void WriteBytesHeader(int size)
+    {
+        if (size <= byte.MaxValue)
         {
-            if (size < 0x10)
-            {
-                _stream.WriteByte((byte)(TinyList | size));
-                _stream.Write(new byte[0]);
-            }
-            else if (size <= byte.MaxValue)
-            {
-                _stream.WriteByte(List8);
-                _stream.Write(new byte[] {(byte) size});
-            }
-            else if (size <= short.MaxValue)
-            {
-                _stream.WriteByte(List16);
-                _stream.Write(PackStreamBitConverter.GetBytes((short)size));
-            }
-            else
-            {
-                _stream.WriteByte(List32);
-                _stream.Write(PackStreamBitConverter.GetBytes(size));
-            }
+            _stream.WriteByte(Bytes8);
+            _stream.Write(new[] {(byte) size});
         }
-
-        public void WriteMapHeader(int size)
+        else if (size <= short.MaxValue)
         {
-            if (size < 0x10)
-            {
-                _stream.WriteByte((byte)(TinyMap | size));
-                _stream.Write(new byte[0]);
-            }
-            else if (size <= byte.MaxValue)
-            {
-                _stream.WriteByte(Map8);
-                _stream.Write(new byte[] {(byte) size});
-            }
-            else if (size <= short.MaxValue)
-            {
-                _stream.WriteByte(Map16);
-                _stream.Write(PackStreamBitConverter.GetBytes((short)size));
-            }
-            else
-            {
-                _stream.WriteByte(Map32);
-                _stream.Write(PackStreamBitConverter.GetBytes(size));
-            }
+            _stream.WriteByte(Bytes16);
+            _stream.Write(PackStreamBitConverter.GetBytes((short) size));
         }
-
-        private void WriteStringHeader(int size)
+        else
         {
-            if (size < 0x10)
-            {
-                _stream.WriteByte((byte)(TinyString | size));
-            }
-            else if (size <= byte.MaxValue)
-            {
-                _stream.WriteByte(String8);
-                _stream.Write(new byte[] {(byte) size});
-            }
-            else if (size <= short.MaxValue)
-            {
-                _stream.WriteByte(String16);
-                _stream.Write(PackStreamBitConverter.GetBytes((short)size));
-            }
-            else
-            {
-                _stream.WriteByte(String32);
-                _stream.Write(PackStreamBitConverter.GetBytes(size));
-            }
+            _stream.WriteByte(Bytes32);
+            _stream.Write(PackStreamBitConverter.GetBytes(size));
         }
+    }
 
-        public void WriteStructHeader(int size, byte signature)
+    public void WriteListHeader(int size)
+    {
+        if (size < 0x10)
         {
-            if (size < 0x10)
-            {
-                _stream.WriteByte((byte)(TinyStruct | size));
-                _stream.Write(new byte[] { signature });
-            }
-            else if (size <= byte.MaxValue)
-            {
-                _stream.WriteByte(Struct8);
-                _stream.Write(new byte[] {(byte) size, signature});
-            }
-            else if (size <= short.MaxValue)
-            {
-                _stream.WriteByte(Struct16);
-                _stream.Write(PackStreamBitConverter.GetBytes((short)size));
-                _stream.WriteByte(signature);
-            }
-            else
-                throw new ProtocolException(
-                    $"Structures cannot have more than {short.MaxValue} fields");
+            _stream.WriteByte((byte) (TinyList | size));
+            _stream.Write(new byte[0]);
         }
+        else if (size <= byte.MaxValue)
+        {
+            _stream.WriteByte(List8);
+            _stream.Write(new[] {(byte) size});
+        }
+        else if (size <= short.MaxValue)
+        {
+            _stream.WriteByte(List16);
+            _stream.Write(PackStreamBitConverter.GetBytes((short) size));
+        }
+        else
+        {
+            _stream.WriteByte(List32);
+            _stream.Write(PackStreamBitConverter.GetBytes(size));
+        }
+    }
 
+    public void WriteMapHeader(int size)
+    {
+        if (size < 0x10)
+        {
+            _stream.WriteByte((byte) (TinyMap | size));
+            _stream.Write(new byte[0]);
+        }
+        else if (size <= byte.MaxValue)
+        {
+            _stream.WriteByte(Map8);
+            _stream.Write(new[] {(byte) size});
+        }
+        else if (size <= short.MaxValue)
+        {
+            _stream.WriteByte(Map16);
+            _stream.Write(PackStreamBitConverter.GetBytes((short) size));
+        }
+        else
+        {
+            _stream.WriteByte(Map32);
+            _stream.Write(PackStreamBitConverter.GetBytes(size));
+        }
+    }
+
+    private void WriteStringHeader(int size)
+    {
+        if (size < 0x10)
+        {
+            _stream.WriteByte((byte) (TinyString | size));
+        }
+        else if (size <= byte.MaxValue)
+        {
+            _stream.WriteByte(String8);
+            _stream.Write(new[] {(byte) size});
+        }
+        else if (size <= short.MaxValue)
+        {
+            _stream.WriteByte(String16);
+            _stream.Write(PackStreamBitConverter.GetBytes((short) size));
+        }
+        else
+        {
+            _stream.WriteByte(String32);
+            _stream.Write(PackStreamBitConverter.GetBytes(size));
+        }
+    }
+
+    public void WriteStructHeader(int size, byte signature)
+    {
+        if (size < 0x10)
+        {
+            _stream.WriteByte((byte) (TinyStruct | size));
+            _stream.Write(new[] {signature});
+        }
+        else if (size <= byte.MaxValue)
+        {
+            _stream.WriteByte(Struct8);
+            _stream.Write(new[] {(byte) size, signature});
+        }
+        else if (size <= short.MaxValue)
+        {
+            _stream.WriteByte(Struct16);
+            _stream.Write(PackStreamBitConverter.GetBytes((short) size));
+            _stream.WriteByte(signature);
+        }
+        else
+        {
+            throw new ProtocolException(
+                $"Structures cannot have more than {short.MaxValue} fields");
+        }
     }
 }

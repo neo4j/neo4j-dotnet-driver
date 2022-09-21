@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
         public const byte UnboundRelationship = (byte)'r';
         public override IEnumerable<byte> ReadableStructs => new[] { UnboundRelationship };
 
-        public override object Deserialize(IPackStreamReader reader, byte signature, long size)
+        public override object Deserialize(PackStreamReader reader, byte signature, long size)
         {
             var relId = reader.ReadLong();
 

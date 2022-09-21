@@ -267,8 +267,7 @@ namespace Neo4j.Driver.Internal
                 {
                     await AddConnectionAsync(connection).ConfigureAwait(false);
 
-                    connection.Mode = mode;
-                    connection.Database = database;
+                    connection.Configure(database, mode);
 
                     return connection;
                 }
@@ -356,8 +355,7 @@ namespace Neo4j.Driver.Internal
                     return;
                 }
 
-                connection.Mode = null;
-                connection.Database = null;
+                connection.Configure(null, null);
 
                 // Add back to idle pool
                 _idleConnections.Add(connection);

@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
         public const byte Relationship = (byte)'R';
         public override IEnumerable<byte> ReadableStructs => new[] {Relationship};
 
-        public override object Deserialize(IPackStreamReader reader, byte signature, long size)
+        public override object Deserialize(PackStreamReader reader, byte signature, long size)
         {
             var urn = reader.ReadLong();
             var startUrn = reader.ReadLong();

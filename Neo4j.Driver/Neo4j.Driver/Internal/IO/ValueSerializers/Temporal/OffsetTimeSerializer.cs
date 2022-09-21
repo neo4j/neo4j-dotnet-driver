@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
 
         public IEnumerable<Type> WritableTypes => new[] {typeof(OffsetTime)};
 
-        public object Deserialize(IConnection conn, IPackStreamReader reader, byte signature, long size)
+        public object Deserialize(IConnection conn, PackStreamReader reader, byte signature, long size)
         {
             PackStream.EnsureStructSize("Time", StructSize, size);
 
@@ -40,7 +40,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             return new OffsetTime(TemporalHelpers.NanoOfDayToTime(nanosOfDay), offsetSeconds);
         }
 
-        public void Serialize(IConnection conn, IPackStreamWriter writer, object value)
+        public void Serialize(IConnection conn, PackStreamWriter writer, object value)
         {
             var time = value.CastOrThrow<OffsetTime>();
 

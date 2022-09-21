@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
     {
         public override IEnumerable<byte> ReadableStructs => new[] {MsgRecord};
 
-        public override object Deserialize(IPackStreamReader reader, byte signature, long size)
+        public override object Deserialize(PackStreamReader reader, byte signature, long size)
         {
             var fieldCount = (int) reader.ReadListHeader();
             var fields = new object[fieldCount];

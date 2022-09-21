@@ -56,7 +56,7 @@ internal sealed class SocketConnection : IConnection
         _client = new SocketClient(this, uri, connectionSettings.SocketSettings, bufferSettings, _logger);
         _authToken = connectionSettings.AuthToken;
         _userAgent = connectionSettings.UserAgent;
-        Server = new ServerInfo(uri);
+        _serverInfo = new ServerInfo(uri);
 
         _responsePipeline = new ResponsePipeline(_logger);
         RoutingContext = routingContext;
@@ -64,7 +64,7 @@ internal sealed class SocketConnection : IConnection
 
     // for test only
     internal SocketConnection(ISocketClient socketClient, IAuthToken authToken,
-        string userAgent, ILogger logger, IServerInfo server,
+        string userAgent, ILogger logger, ServerInfo server,
         IResponsePipeline responsePipeline = null)
     {
         Throw.ArgumentNullException.IfNull(socketClient, nameof(socketClient));
@@ -75,7 +75,7 @@ internal sealed class SocketConnection : IConnection
         _client = socketClient;
         _authToken = authToken;
         _userAgent = userAgent;
-        Server = server;
+        _serverInfo = server;
         RoutingContext = null;
 
         _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
@@ -87,11 +87,19 @@ internal sealed class SocketConnection : IConnection
 
     public IDictionary<string, string> RoutingContext { get; set; }
 
-    public AccessMode? Mode { get; set; }
+    public AccessMode? Mode { get; private set; }
 
-    public string Database { get; set; }
+    public string Database { get; private set; }
 
     public BoltProtocolVersion Version => _client.Version;
+
+    public IBoltProtocol BoltProtocol => _boltProtocol;
+
+    public void Configure(string database, AccessMode? mode)
+    {
+        Mode = mode;
+        Database = database;
+    }
 
     public async Task InitAsync(CancellationToken cancellationToken = default)
     {
@@ -100,14 +108,14 @@ internal sealed class SocketConnection : IConnection
         try
         {
             await _client.ConnectAsync(RoutingContext, cancellationToken).ConfigureAwait(false);
-            BoltProtocol = BoltProtocolFactory.ForVersion(_client.Version);
+            _boltProtocol = BoltProtocolFactory.ForVersion(_client.Version);
         }
         finally
         {
             _sendLock.Release();
         }
 
-        await BoltProtocol.LoginAsync(this, _userAgent, _authToken).ConfigureAwait(false);
+        await _boltProtocol.LoginAsync(this, _userAgent, _authToken).ConfigureAwait(false);
     }
 
     public async Task SyncAsync()
@@ -156,13 +164,14 @@ internal sealed class SocketConnection : IConnection
 
     public Task ResetAsync()
     {
-        return BoltProtocol.ResetAsync(this);
+        return _boltProtocol.ResetAsync(this);
     }
 
     public bool IsOpen => _client.IsOpen;
-    public IServerInfo Server { get; set; }
+    private ServerInfo _serverInfo;
+    public IServerInfo Server => _serverInfo;
 
-    public IBoltProtocol BoltProtocol { get; set; }
+    private IBoltProtocol _boltProtocol;
 
     public bool UtcEncodedDateTime { get; private set; }
 
@@ -177,11 +186,7 @@ internal sealed class SocketConnection : IConnection
 
     public void UpdateVersion(ServerVersion newVersion)
     {
-        if (Server is ServerInfo info)
-            info.Update(_client.Version, newVersion.Agent);
-        else
-            throw new InvalidOperationException(
-                $"Current Server instance of type {Server.GetType().Name} does not allow version updating.");
+        _serverInfo.Update(_client.Version, newVersion.Agent);
     }
 
     public Task DestroyAsync()
@@ -195,8 +200,8 @@ internal sealed class SocketConnection : IConnection
         {
             try
             {
-                if (BoltProtocol != null)
-                    await BoltProtocol.LogoutAsync(this).ConfigureAwait(false);
+                if (_boltProtocol != null)
+                    await _boltProtocol.LogoutAsync(this).ConfigureAwait(false);
             }
             catch (Exception e) when (e.HasCause<ObjectDisposedException>())
             {

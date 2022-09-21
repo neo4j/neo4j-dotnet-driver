@@ -14,481 +14,434 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using Neo4j.Driver.Internal.Connector;
 
-namespace Neo4j.Driver.Internal.IO
+namespace Neo4j.Driver.Internal.IO;
+
+public sealed class PackStreamReader
 {
-    internal class PackStreamReader: IPackStreamReader
+    private static readonly byte[] EmptyByteArray = Array.Empty<byte>();
+
+    private readonly byte[] _byteBuffer = new byte[1];
+    private readonly byte[] _intBuffer = new byte[4];
+    private readonly byte[] _longBuffer = new byte[8];
+    private readonly byte[] _shortBuffer = new byte[2];
+
+    private readonly IConnection _connection;
+    private readonly Stream _stream;
+    private readonly IReadOnlyDictionary<byte, IPackStreamSerializer> _structHandlers;
+
+    internal PackStreamReader(IConnection connection, Stream stream, IMessageFormat format)
     {
-        private readonly IConnection _connection;
+        _connection = connection;
+        _stream = stream;
+        _structHandlers = format.ReaderStructHandlers;
+    }
 
-        public PackStreamReader(IConnection connection, Stream stream, 
-            IMessageFormat format)
+    public object Read()
+    {
+        var type = PeekNextType();
+        var result = ReadValue(type);
+        return result;
+    }
+
+    public Dictionary<string, object> ReadMap()
+    {
+        var size = (int) ReadMapHeader();
+        if (size == 0) return new Dictionary<string, object>(0);
+        var map = new Dictionary<string, object>(size);
+        for (var i = 0; i < size; i++)
         {
-            _connection = connection;
-            _stream = stream;
-            _structHandlers = format.ReaderStructHandlers;
+            var key = ReadString();
+            map.Add(key, Read());
         }
 
-        private static readonly byte[] EmptyByteArray = Array.Empty<byte>();
+        return map;
+    }
 
-        private readonly IReadOnlyDictionary<byte, IPackStreamSerializer> _structHandlers;
+    public IList<object> ReadList()
+    {
+        var size = (int) ReadListHeader();
+        var vals = new object[size];
+        for (var j = 0; j < size; j++) vals[j] = Read();
+        return new List<object>(vals);
+    }
 
-        private readonly byte[] _byteBuffer = new byte[1];
-        private readonly byte[] _shortBuffer = new byte[2];
-        private readonly byte[] _intBuffer = new byte[4];
-        private readonly byte[] _longBuffer = new byte[8];
-        private readonly Stream _stream;
-
-        public object Read()
+    private object ReadValue(PackStreamType streamType)
+    {
+        switch (streamType)
         {
-            var type = PeekNextType();
-            var result = ReadValue(type);
-            return result;
+            case PackStreamType.Bytes:
+                return ReadBytes();
+            case PackStreamType.Null:
+                return ReadNull();
+            case PackStreamType.Boolean:
+                return ReadBoolean();
+            case PackStreamType.Integer:
+                return ReadLong();
+            case PackStreamType.Float:
+                return ReadDouble();
+            case PackStreamType.String:
+                return ReadString();
+            case PackStreamType.Map:
+                return ReadMap();
+            case PackStreamType.List:
+                return ReadList();
+            case PackStreamType.Struct:
+                return ReadStruct();
+            default:
+                throw new ArgumentOutOfRangeException(nameof(streamType), streamType,
+                    $"Unknown value type: {streamType}");
         }
+    }
 
-        public Dictionary<string, object> ReadMap()
-        {
-            var size = (int)ReadMapHeader();
-            if (size == 0)
-            {
-                return new Dictionary<string, object>(0);
-            }
-            var map = new Dictionary<string, object>(size);
-            for (var i = 0; i < size; i++)
-            {
-                var key = ReadString();
-                map.Add(key, Read());
-            }
-            return map;
-        }
+    public object ReadStruct()
+    {
+        var size = ReadStructHeader();
+        var signature = ReadStructSignature();
 
-        private IList<object> ReadList()
-        {
-            var size = (int)ReadListHeader();
-            var vals = new object[size];
-            for (var j = 0; j < size; j++)
-            {
-                vals[j] = Read();
-            }
-            return new List<object>(vals);
-        }
+        if (_structHandlers.TryGetValue(signature, out var handler))
+            return handler.Deserialize(_connection, this, signature, size);
 
-        protected internal virtual object ReadValue(PackStream.PackType type)
-        {
-            switch (type)
-            {
-                case PackStream.PackType.Bytes:
-                    return ReadBytes();
-                case PackStream.PackType.Null:
-                    return ReadNull();
-                case PackStream.PackType.Boolean:
-                    return ReadBoolean();
-                case PackStream.PackType.Integer:
-                    return ReadLong();
-                case PackStream.PackType.Float:
-                    return ReadDouble();
-                case PackStream.PackType.String:
-                    return ReadString();
-                case PackStream.PackType.Map:
-                    return ReadMap();
-                case PackStream.PackType.List:
-                    return ReadList();
-                case PackStream.PackType.Struct:
-                    return ReadStruct();
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(type), type, $"Unknown value type: {type}");
-            }
-        }
+        throw new ProtocolException("Unknown structure type: " + signature);
+    }
 
-        public object ReadStruct()
-        {
-            var size = ReadStructHeader();
-            var signature = ReadStructSignature();
-
-            if (_structHandlers.TryGetValue(signature, out var handler))
-            {
-                return handler.Deserialize(_connection, this, signature, size);
-            }
-
-            throw new ProtocolException("Unknown structure type: " + signature);
-        }
-        
-        public object ReadNull()
-        {
-            byte markerByte = NextByte();
-            if (markerByte != PackStream.Null)
-            {
-                throw new ProtocolException(
-                    $"Expected a null, but got: 0x{(markerByte & 0xFF):X2}");
-            }
-            return null;
-        }
-
-        public bool ReadBoolean()
-        {
-            byte markerByte = NextByte();
-            switch (markerByte)
-            {
-                case PackStream.True:
-                    return true;
-                case PackStream.False:
-                    return false;
-                default:
-                    throw new ProtocolException(
-                        $"Expected a boolean, but got: 0x{(markerByte & 0xFF):X2}");
-            }
-        }
-
-        public int ReadInteger()
-        {
-            byte markerByte = NextByte();
-            if ((sbyte)markerByte >= PackStream.Minus2ToThe4)
-            {
-                return (sbyte)markerByte;
-            }
-            switch (markerByte)
-            {
-                case PackStream.Int8:
-                    return NextSByte();
-                case PackStream.Int16:
-                    return NextShort();
-                case PackStream.Int32:
-                    return NextInt();
-                case PackStream.Int64:
-                    throw new OverflowException($"Unexpectedly large Integer value unpacked {NextLong()}");
-                default:
-                    throw new ProtocolException(
-                        $"Expected an integer, but got: 0x{markerByte:X2}");
-            }
-        }
-
-        public long ReadLong()
-        {
-            byte markerByte = NextByte();
-            if ((sbyte)markerByte >= PackStream.Minus2ToThe4)
-            {
-                return (sbyte)markerByte;
-            }
-            switch (markerByte)
-            {
-                case PackStream.Int8:
-                    return NextSByte();
-                case PackStream.Int16:
-                    return NextShort();
-                case PackStream.Int32:
-                    return NextInt();
-                case PackStream.Int64:
-                    return NextLong();
-                default:
-                    throw new ProtocolException(
-                        $"Expected an integer, but got: 0x{markerByte:X2}");
-            }
-        }
-
-        public double ReadDouble()
-        {
-            byte markerByte = NextByte();
-            if (markerByte == PackStream.Float64)
-            {
-                return NextDouble();
-            }
+    public object ReadNull()
+    {
+        var markerByte = NextByte();
+        if (markerByte != PackStream.Null)
             throw new ProtocolException(
-                $"Expected a double, but got: 0x{markerByte:X2}");
-        }
+                $"Expected a null, but got: 0x{markerByte & 0xFF:X2}");
+        return null;
+    }
 
-        public string ReadString()
+    public bool ReadBoolean()
+    {
+        var markerByte = NextByte();
+        switch (markerByte)
         {
-            var markerByte = NextByte();
-            if (markerByte == PackStream.TinyString) // Note no mask, so we compare to 0x80.
+            case PackStream.True:
+                return true;
+            case PackStream.False:
+                return false;
+            default:
+                throw new ProtocolException(
+                    $"Expected a boolean, but got: 0x{markerByte & 0xFF:X2}");
+        }
+    }
+
+    public int ReadInteger()
+    {
+        var markerByte = NextByte();
+        if ((sbyte) markerByte >= PackStream.Minus2ToThe4) return (sbyte) markerByte;
+        switch (markerByte)
+        {
+            case PackStream.Int8:
+                return NextSByte();
+            case PackStream.Int16:
+                return NextShort();
+            case PackStream.Int32:
+                return NextInt();
+            case PackStream.Int64:
+                throw new OverflowException($"Unexpectedly large Integer value unpacked {NextLong()}");
+            default:
+                throw new ProtocolException(
+                    $"Expected an integer, but got: 0x{markerByte:X2}");
+        }
+    }
+
+    public long ReadLong()
+    {
+        var markerByte = NextByte();
+        if ((sbyte) markerByte >= PackStream.Minus2ToThe4) 
+            return (sbyte) markerByte;
+        switch (markerByte)
+        {
+            case PackStream.Int8:
+                return NextSByte();
+            case PackStream.Int16:
+                return NextShort();
+            case PackStream.Int32:
+                return NextInt();
+            case PackStream.Int64:
+                return NextLong();
+            default:
+                throw new ProtocolException(
+                    $"Expected an integer, but got: 0x{markerByte:X2}");
+        }
+    }
+
+    public double ReadDouble()
+    {
+        var markerByte = NextByte();
+        if (markerByte == PackStream.Float64) return NextDouble();
+        throw new ProtocolException(
+            $"Expected a double, but got: 0x{markerByte:X2}");
+    }
+
+    public string ReadString()
+    {
+        var markerByte = NextByte();
+        if (markerByte == PackStream.TinyString) // Note no mask, so we compare to 0x80.
+            return string.Empty;
+
+        return PackStreamBitConverter.ToString(ReadUtf8(markerByte));
+    }
+
+    public byte[] ReadBytes()
+    {
+        var markerByte = NextByte();
+
+        switch (markerByte)
+        {
+            case PackStream.Bytes8:
+                return ReadBytes(ReadUint8());
+            case PackStream.Bytes16:
+                return ReadBytes(ReadUint16());
+            case PackStream.Bytes32:
             {
-                return string.Empty;
+                var size = ReadUint32();
+                if (size <= int.MaxValue)
+                    return ReadBytes((int) size);
+                throw new ProtocolException(
+                    $"BYTES_32 {size} too long for PackStream");
             }
-
-            return PackStreamBitConverter.ToString(ReadUtf8(markerByte));
+            default:
+                throw new ProtocolException(
+                    $"Expected binary data, but got: 0x{markerByte & 0xFF:X2}");
         }
+    }
 
-        public virtual byte[] ReadBytes()
+    internal byte[] ReadBytes(int size)
+    {
+        if (size == 0) return EmptyByteArray;
+
+        var heapBuffer = new byte[size];
+        _stream.Read(heapBuffer);
+        return heapBuffer;
+    }
+
+    private byte[] ReadUtf8(byte markerByte)
+    {
+        var markerHighNibble = (byte) (markerByte & 0xF0);
+        var markerLowNibble = (byte) (markerByte & 0x0F);
+
+        if (markerHighNibble == PackStream.TinyString) return ReadBytes(markerLowNibble);
+        switch (markerByte)
         {
-            byte markerByte = NextByte();
-
-            switch (markerByte)
+            case PackStream.String8:
+                return ReadBytes(ReadUint8());
+            case PackStream.String16:
+                return ReadBytes(ReadUint16());
+            case PackStream.String32:
             {
-                case PackStream.Bytes8:
-                    return ReadBytes(ReadUint8());
-                case PackStream.Bytes16:
-                    return ReadBytes(ReadUint16());
-                case PackStream.Bytes32:
-                {
-                    long size = ReadUint32();
-                    if (size <= int.MaxValue)
-                    {
-                        return ReadBytes((int)size);
-                    }
-                    else
-                    {
-                        throw new ProtocolException(
-                            $"BYTES_32 {size} too long for PackStream");
-                    }
-                }
-                default:
-                    throw new ProtocolException(
-                        $"Expected binary data, but got: 0x{(markerByte & 0xFF):X2}");
+                var size = ReadUint32();
+                if (size <= int.MaxValue) return ReadBytes((int) size);
+                throw new ProtocolException(
+                    $"STRING_32 {size} too long for PackStream");
             }
+            default:
+                throw new ProtocolException(
+                    $"Expected a string, but got: 0x{markerByte & 0xFF:X2}");
         }
+    }
 
-        internal byte[] ReadBytes(int size)
+    public long ReadMapHeader()
+    {
+        var markerByte = _stream.ReadByte();
+        var markerHighNibble = (byte) (markerByte & 0xF0);
+        var markerLowNibble = (byte) (markerByte & 0x0F);
+
+        if (markerHighNibble == PackStream.TinyMap) return markerLowNibble;
+        switch (markerByte)
         {
-            if (size == 0)
-            {
-                return EmptyByteArray;
-            }
-
-            var heapBuffer = new byte[size];
-            _stream.Read(heapBuffer);
-            return heapBuffer;
+            case PackStream.Map8:
+                return ReadUint8();
+            case PackStream.Map16:
+                return ReadUint16();
+            case PackStream.Map32:
+                return ReadUint32();
+            default:
+                throw new ProtocolException(
+                    $"Expected a map, but got: 0x{markerByte:X2}");
         }
+    }
 
-        private byte[] ReadUtf8(byte markerByte)
+    public long ReadListHeader()
+    {
+        var markerByte = _stream.ReadByte();
+        var markerHighNibble = (byte) (markerByte & 0xF0);
+        var markerLowNibble = (byte) (markerByte & 0x0F);
+
+        if (markerHighNibble == PackStream.TinyList) return markerLowNibble;
+        switch (markerByte)
         {
-            var markerHighNibble = (byte)(markerByte & 0xF0);
-            var markerLowNibble = (byte)(markerByte & 0x0F);
-
-            if (markerHighNibble == PackStream.TinyString)
-            {
-                return ReadBytes(markerLowNibble);
-            }
-            switch (markerByte)
-            {
-                case PackStream.String8:
-                    return ReadBytes(ReadUint8());
-                case PackStream.String16:
-                    return ReadBytes(ReadUint16());
-                case PackStream.String32:
-                {
-                    var size = ReadUint32();
-                    if (size <= int.MaxValue)
-                    {
-                        return ReadBytes((int)size);
-                    }
-                    throw new ProtocolException(
-                        $"STRING_32 {size} too long for PackStream");
-                }
-                default:
-                    throw new ProtocolException(
-                        $"Expected a string, but got: 0x{(markerByte & 0xFF):X2}");
-            }
+            case PackStream.List8:
+                return ReadUint8();
+            case PackStream.List16:
+                return ReadUint16();
+            case PackStream.List32:
+                return ReadUint32();
+            default:
+                throw new ProtocolException(
+                    $"Expected a list, but got: 0x{markerByte & 0xFF:X2}");
         }
+    }
 
-        public long ReadMapHeader()
+    public byte ReadStructSignature()
+    {
+        return NextByte();
+    }
+
+    public long ReadStructHeader()
+    {
+        var markerByte = _stream.ReadByte();
+        var markerHighNibble = (byte) (markerByte & 0xF0);
+        var markerLowNibble = (byte) (markerByte & 0x0F);
+
+        if (markerHighNibble == PackStream.TinyStruct) return markerLowNibble;
+        switch (markerByte)
         {
-            var markerByte = _stream.ReadByte();
-            var markerHighNibble = (byte)(markerByte & 0xF0);
-            var markerLowNibble = (byte)(markerByte & 0x0F);
-
-            if (markerHighNibble == PackStream.TinyMap)
-            {
-                return markerLowNibble;
-            }
-            switch (markerByte)
-            {
-                case PackStream.Map8:
-                    return ReadUint8();
-                case PackStream.Map16:
-                    return ReadUint16();
-                case PackStream.Map32:
-                    return ReadUint32();
-                default:
-                    throw new ProtocolException(
-                        $"Expected a map, but got: 0x{markerByte:X2}");
-            }
+            case PackStream.Struct8:
+                return ReadUint8();
+            case PackStream.Struct16:
+                return ReadUint16();
+            default:
+                throw new ProtocolException(
+                    $"Expected a struct, but got: 0x{markerByte:X2}");
         }
+    }
 
-        public long ReadListHeader()
+    internal PackStreamType PeekNextType()
+    {
+        var markerByte = PeekByte();
+        var markerHighNibble = (byte) (markerByte & 0xF0);
+
+        switch (markerHighNibble)
         {
-            var markerByte = _stream.ReadByte();
-            var markerHighNibble = (byte)(markerByte & 0xF0);
-            var markerLowNibble = (byte)(markerByte & 0x0F);
-
-            if (markerHighNibble == PackStream.TinyList)
-            {
-                return markerLowNibble;
-            }
-            switch (markerByte)
-            {
-                case PackStream.List8:
-                    return ReadUint8();
-                case PackStream.List16:
-                    return ReadUint16();
-                case PackStream.List32:
-                    return ReadUint32();
-                default:
-                    throw new ProtocolException(
-                        $"Expected a list, but got: 0x{(markerByte & 0xFF):X2}");
-            }
+            case PackStream.TinyString:
+                return PackStreamType.String;
+            case PackStream.TinyList:
+                return PackStreamType.List;
+            case PackStream.TinyMap:
+                return PackStreamType.Map;
+            case PackStream.TinyStruct:
+                return PackStreamType.Struct;
         }
 
-        public byte ReadStructSignature()
+        if ((sbyte) markerByte >= PackStream.Minus2ToThe4)
+            return PackStreamType.Integer;
+
+        switch (markerByte)
         {
-            return NextByte();
+            case PackStream.Null:
+                return PackStreamType.Null;
+            case PackStream.True:
+            case PackStream.False:
+                return PackStreamType.Boolean;
+            case PackStream.Float64:
+                return PackStreamType.Float;
+            case PackStream.Bytes8:
+            case PackStream.Bytes16:
+            case PackStream.Bytes32:
+                return PackStreamType.Bytes;
+            case PackStream.String8:
+            case PackStream.String16:
+            case PackStream.String32:
+                return PackStreamType.String;
+            case PackStream.List8:
+            case PackStream.List16:
+            case PackStream.List32:
+                return PackStreamType.List;
+            case PackStream.Map8:
+            case PackStream.Map16:
+            case PackStream.Map32:
+                return PackStreamType.Map;
+            case PackStream.Struct8:
+            case PackStream.Struct16:
+                return PackStreamType.Struct;
+            case PackStream.Int8:
+            case PackStream.Int16:
+            case PackStream.Int32:
+            case PackStream.Int64:
+                return PackStreamType.Integer;
+            default:
+                throw new ProtocolException(
+                    $"Unknown type 0x{markerByte:X2}");
         }
+    }
 
-        public long ReadStructHeader()
+    private int ReadUint8()
+    {
+        return NextByte() & 0xFF;
+    }
+
+    private int ReadUint16()
+    {
+        return NextShort() & 0xFFFF;
+    }
+
+    private long ReadUint32()
+    {
+        return NextInt() & 0xFFFFFFFFL;
+    }
+
+    internal sbyte NextSByte()
+    {
+        _stream.Read(_byteBuffer);
+        return (sbyte) _byteBuffer[0];
+    }
+
+    public byte NextByte()
+    {
+        _stream.Read(_byteBuffer);
+
+        return _byteBuffer[0];
+    }
+
+    public short NextShort()
+    {
+        _stream.Read(_shortBuffer);
+
+        return PackStreamBitConverter.ToInt16(_shortBuffer);
+    }
+
+    public int NextInt()
+    {
+        _stream.Read(_intBuffer);
+
+        return PackStreamBitConverter.ToInt32(_intBuffer);
+    }
+
+    public long NextLong()
+    {
+        _stream.Read(_longBuffer);
+
+        return PackStreamBitConverter.ToInt64(_longBuffer);
+    }
+
+    public double NextDouble()
+    {
+        _stream.Read(_longBuffer);
+
+        return PackStreamBitConverter.ToDouble(_longBuffer);
+    }
+
+    public byte PeekByte()
+    {
+        if (_stream.Length - _stream.Position < 1) throw new ProtocolException("Unable to peek 1 byte from buffer.");
+
+        try
         {
-            var markerByte = _stream.ReadByte();
-            var markerHighNibble = (byte)(markerByte & 0xF0);
-            var markerLowNibble = (byte)(markerByte & 0x0F);
-
-            if (markerHighNibble == PackStream.TinyStruct)
-            {
-                return markerLowNibble;
-            }
-            switch (markerByte)
-            {
-                case PackStream.Struct8:
-                    return ReadUint8();
-                case PackStream.Struct16:
-                    return ReadUint16();
-                default:
-                    throw new ProtocolException(
-                        $"Expected a struct, but got: 0x{markerByte:X2}");
-            }
+            return (byte) _stream.ReadByte();
         }
-
-        public PackStream.PackType PeekNextType()
+        finally
         {
-            var markerByte = PeekByte();
-            var markerHighNibble = (byte)(markerByte & 0xF0);
-
-            switch (markerHighNibble)
-            {
-                case PackStream.TinyString:
-                    return PackStream.PackType.String;
-                case PackStream.TinyList:
-                    return PackStream.PackType.List;
-                case PackStream.TinyMap:
-                    return PackStream.PackType.Map;
-                case PackStream.TinyStruct:
-                    return PackStream.PackType.Struct;
-            }
-
-            if ((sbyte)markerByte >= PackStream.Minus2ToThe4)
-                return PackStream.PackType.Integer;
-
-            switch (markerByte)
-            {
-                case PackStream.Null:
-                    return PackStream.PackType.Null;
-                case PackStream.True:
-                case PackStream.False:
-                    return PackStream.PackType.Boolean;
-                case PackStream.Float64:
-                    return PackStream.PackType.Float;
-                case PackStream.Bytes8:
-                case PackStream.Bytes16:
-                case PackStream.Bytes32:
-                    return PackStream.PackType.Bytes;
-                case PackStream.String8:
-                case PackStream.String16:
-                case PackStream.String32:
-                    return PackStream.PackType.String;
-                case PackStream.List8:
-                case PackStream.List16:
-                case PackStream.List32:
-                    return PackStream.PackType.List;
-                case PackStream.Map8:
-                case PackStream.Map16:
-                case PackStream.Map32:
-                    return PackStream.PackType.Map;
-                case PackStream.Struct8:
-                case PackStream.Struct16:
-                    return PackStream.PackType.Struct;
-                case PackStream.Int8:
-                case PackStream.Int16:
-                case PackStream.Int32:
-                case PackStream.Int64:
-                    return PackStream.PackType.Integer;
-                default:
-                    throw new ProtocolException(
-                        $"Unknown type 0x{markerByte:X2}");
-            }
+            _stream.Seek(-1, SeekOrigin.Current);
         }
-
-        private int ReadUint8()
-        {
-            return NextByte() & 0xFF;
-        }
-
-        private int ReadUint16()
-        {
-            return NextShort() & 0xFFFF;
-        }
-
-        private long ReadUint32()
-        {
-            return NextInt() & 0xFFFFFFFFL;
-        }
-
-        internal sbyte NextSByte()
-        {
-            _stream.Read(_byteBuffer);
-            return (sbyte)_byteBuffer[0];
-        }
-
-        public byte NextByte()
-        {
-            _stream.Read(_byteBuffer);
-
-            return (byte)_byteBuffer[0];
-        }
-
-        public short NextShort()
-        {
-            _stream.Read(_shortBuffer);
-
-            return PackStreamBitConverter.ToInt16(_shortBuffer);
-        }
-
-        public int NextInt()
-        {
-            _stream.Read(_intBuffer);
-
-            return PackStreamBitConverter.ToInt32(_intBuffer);
-        }
-
-        public long NextLong()
-        {
-            _stream.Read(_longBuffer);
-
-            return PackStreamBitConverter.ToInt64(_longBuffer);
-        }
-
-        public double NextDouble()
-        {
-            _stream.Read(_longBuffer);
-
-            return PackStreamBitConverter.ToDouble(_longBuffer);
-        }
-
-        public byte PeekByte()
-        {
-            if (_stream.Length - _stream.Position < 1)
-            {
-                throw new ProtocolException("Unable to peek 1 byte from buffer.");
-            }
-
-            try
-            {
-                return (byte)_stream.ReadByte();
-            }
-            finally
-            {
-                _stream.Seek(-1, SeekOrigin.Current);
-            }
-        }
-
     }
 }

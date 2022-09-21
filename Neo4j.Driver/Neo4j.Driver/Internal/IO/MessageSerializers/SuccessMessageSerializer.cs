@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
     {
         public override IEnumerable<byte> ReadableStructs => new[] {MsgSuccess};
 
-        public override object Deserialize(IPackStreamReader reader, byte signature, long size)
+        public override object Deserialize(PackStreamReader reader, byte signature, long size)
         {
             var map = reader.ReadMap();
 

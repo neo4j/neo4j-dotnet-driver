@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal.IO
     {
         public IEnumerable<Type> WritableTypes => Enumerable.Empty<Type>();
 
-        public void Serialize(IConnection connection, IPackStreamWriter writer, object value)
+        public void Serialize(IConnection connection, PackStreamWriter writer, object value)
         {
             throw new ProtocolException(
                 $"{GetType().Name}: It is not allowed to send a value of type {value?.GetType().Name} to the server.");
@@ -34,11 +34,11 @@ namespace Neo4j.Driver.Internal.IO
 
         public abstract IEnumerable<byte> ReadableStructs { get; }
 
-        public object Deserialize(IConnection connection, IPackStreamReader reader, byte sig, long size)
+        public object Deserialize(IConnection connection, PackStreamReader reader, byte sig, long size)
         {
             return Deserialize(reader, sig, size);
         }
 
-        public abstract object Deserialize(IPackStreamReader reader, byte signature, long size);
+        public abstract object Deserialize(PackStreamReader reader, byte signature, long size);
     }
 }

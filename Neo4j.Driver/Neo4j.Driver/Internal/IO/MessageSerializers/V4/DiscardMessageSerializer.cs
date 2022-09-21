@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
     {
         public override IEnumerable<Type> WritableTypes => new[] {typeof(DiscardMessage)};
 
-        public override void Serialize(IPackStreamWriter writer, object value)
+        public override void Serialize(PackStreamWriter writer, object value)
         {
             var discardN = value.CastOrThrow<DiscardMessage>();
 

@@ -127,8 +127,6 @@ internal class BoltProtocolV3 : IBoltProtocol
         connection = connection ??
                      throw new ProtocolException("Attempting to get a routing table on a null connection");
 
-        connection.Mode = AccessMode.Read;
-
         //TODO: Proper message
         bookmarks = connection.Version.MajorVersion > 3
             ? bookmarks
@@ -139,7 +137,9 @@ internal class BoltProtocolV3 : IBoltProtocol
         var bookmarkTracker = new BookmarksTracker(bookmarks);
         var resourceHandler = new ConnectionResourceHandler(connection);
         var sessionDb = connection.SupportsMultidatabase() ? "system" : null;
-
+        
+        connection.Configure(sessionDb, AccessMode.Read);
+        
         GetProcedureAndParameters(connection, database, out var procedure, out var parameters);
         var query = new Query(procedure, parameters);
 

@@ -31,7 +31,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
 
         public IEnumerable<Type> WritableTypes => new[] {typeof(ZonedDateTime)};
 
-        public object Deserialize(IConnection connection, IPackStreamReader reader, byte signature, long size)
+        public object Deserialize(IConnection connection, PackStreamReader reader, byte signature, long size)
         {
             PackStream.EnsureStructSize($"ZonedDateTime[{(char) signature}]", StructSize, size);
 
@@ -54,7 +54,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             }
         }
 
-        public void Serialize(IConnection connection, IPackStreamWriter writer, object value)
+        public void Serialize(IConnection connection, PackStreamWriter writer, object value)
         {
             var dateTime = value.CastOrThrow<ZonedDateTime>();
 

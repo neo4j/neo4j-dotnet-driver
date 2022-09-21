@@ -9,7 +9,7 @@ class RouteMessageSerializer : WriteOnlySerializer
 {
     public override IEnumerable<Type> WritableTypes => new[] { typeof(RouteMessage) };
 
-    public override void Serialize(IPackStreamWriter writer, object value)
+    public override void Serialize(PackStreamWriter writer, object value)
     {
         var msg = value.CastOrThrow<RouteMessage>();
 

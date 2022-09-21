@@ -19,16 +19,15 @@ using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Connector;
 
-namespace Neo4j.Driver.Internal.IO
+namespace Neo4j.Driver.Internal.IO;
+
+internal interface IPackStreamSerializer
 {
-    internal interface IPackStreamSerializer
-    {
-        IEnumerable<byte> ReadableStructs { get; }
+    IEnumerable<byte> ReadableStructs { get; }
 
-        IEnumerable<Type> WritableTypes { get; }
+    IEnumerable<Type> WritableTypes { get; }
 
-        object Deserialize(IConnection connection, IPackStreamReader reader, byte signature, long size);
+    object Deserialize(IConnection connection, PackStreamReader reader, byte signature, long size);
 
-        void Serialize(IConnection connection, IPackStreamWriter writer, object value);
-    }
+    void Serialize(IConnection connection, PackStreamWriter writer, object value);
 }

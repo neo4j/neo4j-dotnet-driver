@@ -39,13 +39,11 @@ namespace Neo4j.Driver.Internal.Connector
         public AccessMode? Mode
         {
             get => Delegate.Mode;
-            set => Delegate.Mode = value;
         }
 
         public string Database
         {
             get => Delegate.Database;
-            set => Delegate.Database = value;
         }
 
         public IDictionary<string, string> RoutingContext { get; set; }
@@ -71,6 +69,11 @@ namespace Neo4j.Driver.Internal.Connector
         }
 
         public BoltProtocolVersion Version => Delegate.Version;
+
+        public void Configure(string database, AccessMode? mode)
+        {
+            Delegate.Configure(database, mode);
+        }
 
         public Task InitAsync(CancellationToken cancellationToken = default)
         {

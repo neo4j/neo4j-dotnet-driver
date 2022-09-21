@@ -25,9 +25,11 @@ using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.Connector
 {
-    internal interface IConnection
+    internal interface IConnection : IConnectionDetails
     {
-        BoltProtocolVersion Version { get; }
+        IBoltProtocol BoltProtocol { get; }
+
+        void Configure(string database, AccessMode? mode);
 
         Task InitAsync(CancellationToken cancellationToken = default);
 
@@ -56,41 +58,23 @@ namespace Neo4j.Driver.Internal.Connector
         /// </summary>
         Task CloseAsync();
 
-        /// <summary>
-        /// Return true if the underlying socket connection is till open, otherwise false.
-        /// </summary>
-        bool IsOpen { get; }
-
-        /// <summary>
-        /// The info of the server the connection connected to.
-        /// </summary>
-        IServerInfo Server { get; }
-
-        /// <summary>
-        /// The Bolt protocol that the connection is talking with.
-        /// </summary>
-        IBoltProtocol BoltProtocol { get; }
-
-        /// <summary>
-        /// The AccessMode this connection is operating in.
-        /// </summary>
-        AccessMode? Mode { get; set; }
-
-        /// <summary>
-        /// The Database this connection is acquired for.
-        /// </summary>
-        string Database { get; set; }
-
-        bool UtcEncodedDateTime { get; }
-
         void UpdateId(string newConnId);
 
         void UpdateVersion(ServerVersion newVersion);
 
-        IDictionary<string, string> RoutingContext { get; set; }
-
 		void SetReadTimeoutInSeconds(int seconds);
 
         void SetUseUtcEncodedDateTime();
+    }
+
+    internal interface IConnectionDetails
+    {
+        bool IsOpen { get; }
+        string Database { get; }
+        AccessMode? Mode { get; }
+        IServerInfo Server { get; }
+        IDictionary<string, string> RoutingContext { get; }
+        BoltProtocolVersion Version { get; }
+        bool UtcEncodedDateTime { get; }
     }
 }

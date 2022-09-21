@@ -32,7 +32,7 @@ internal class MessageWriter : IMessageWriter
     }
 
     private readonly IChunkWriter _chunkWriter;
-    private readonly IPackStreamWriter _packStreamWriter;
+    private readonly PackStreamWriter _packStreamWriter;
 
     public void Write(IRequestMessage message)
     {

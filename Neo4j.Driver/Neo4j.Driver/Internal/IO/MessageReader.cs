@@ -27,14 +27,14 @@ namespace Neo4j.Driver.Internal.IO
     internal class MessageReader : IMessageReader
     {
         private readonly IChunkReader _chunkReader;
-        private readonly IPackStreamReader _packStreamReader;
+        private readonly PackStreamReader _packStreamReader;
         private readonly ILogger _logger;
         private readonly MemoryStream _bufferStream;
         private readonly int _defaultBufferSize;
         private readonly int _maxBufferSize;
         private int _shrinkCounter = 0;
 
-        public MessageReader(IPackStreamReader reader, IChunkReader chunkReader, BufferSettings bufferSettings, ILogger logger)
+        public MessageReader(PackStreamReader reader, IChunkReader chunkReader, BufferSettings bufferSettings, ILogger logger)
         {
             _bufferStream = new MemoryStream(bufferSettings.DefaultReadBufferSize);
             _defaultBufferSize = bufferSettings.DefaultReadBufferSize;

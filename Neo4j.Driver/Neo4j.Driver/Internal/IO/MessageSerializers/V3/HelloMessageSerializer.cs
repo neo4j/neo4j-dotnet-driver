@@ -27,7 +27,7 @@ internal sealed class HelloMessageSerializer: WriteOnlySerializer
     private static readonly Type[] Types = { typeof(HelloMessage) };
     public override IEnumerable<Type> WritableTypes => Types;
 
-    public override void Serialize(IPackStreamWriter writer, object value)
+    public override void Serialize(PackStreamWriter writer, object value)
     {
         var msg = value.CastOrThrow<HelloMessage>();
         writer.WriteStructHeader(1, MessageFormat.MsgHello);

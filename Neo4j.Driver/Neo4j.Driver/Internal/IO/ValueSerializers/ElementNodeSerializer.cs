@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
         public const byte Node = (byte)'N';
         public override IEnumerable<byte> ReadableStructs => new[] {Node};
 
-        public override object Deserialize(IPackStreamReader reader, byte signature, long size)
+        public override object Deserialize(PackStreamReader reader, byte signature, long size)
         {
             var nodeId = reader.ReadLong();
 

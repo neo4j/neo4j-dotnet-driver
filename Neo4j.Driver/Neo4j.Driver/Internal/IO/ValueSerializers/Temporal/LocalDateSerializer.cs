@@ -34,7 +34,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
         public IEnumerable<Type> WritableTypes => new[] {typeof(LocalDate)};
 #endif
 
-        public object Deserialize(IConnection connection, IPackStreamReader reader, byte signature, long size)
+        public object Deserialize(IConnection connection, PackStreamReader reader, byte signature, long size)
         {
             PackStream.EnsureStructSize("Date", StructSize, size);
 
@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             return TemporalHelpers.EpochDaysToDate(epochDays);
         }
 
-        public void Serialize(IConnection connection, IPackStreamWriter writer, object value)
+        public void Serialize(IConnection connection, PackStreamWriter writer, object value)
         {
 #if NET6_0_OR_GREATER
             if (value is DateOnly date)
@@ -55,7 +55,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             WriteLocalDate(writer, value);
         }
 
-        private static void WriteLocalDate(IPackStreamWriter writer, object value)
+        private static void WriteLocalDate(PackStreamWriter writer, object value)
         {
             var date = value.CastOrThrow<LocalDate>();
             writer.WriteStructHeader(StructSize, StructType);
@@ -63,7 +63,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
         }
 
 #if NET6_0_OR_GREATER
-        private static void WriteDateOnly(IPackStreamWriter writer, DateOnly date)
+        private static void WriteDateOnly(PackStreamWriter writer, DateOnly date)
         {
             writer.WriteStructHeader(StructSize, StructType);
             writer.Write(date.ToEpochDays());

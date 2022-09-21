@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
     {
         public override IEnumerable<Type> WritableTypes => new[] {typeof(BeginMessage)};
 
-        public override void Serialize(IPackStreamWriter writer, object value)
+        public override void Serialize(PackStreamWriter writer, object value)
         {
             var msg = value.CastOrThrow<BeginMessage>();
 

@@ -21,7 +21,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V5
 {
     internal class FailureMessageSerializer : V3.FailureMessageSerializer
     {
-        public override object Deserialize(IPackStreamReader reader, byte signature, long size)
+        public override object Deserialize(PackStreamReader reader, byte signature, long size)
         {
             var values = reader.ReadMap();
             var code = values["code"]?.ToString();
