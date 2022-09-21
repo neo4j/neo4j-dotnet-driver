@@ -150,6 +150,11 @@ namespace Neo4j.Driver.Internal.Routing
             return Task.CompletedTask;
         }
 
+        public Task OnAuthExpiredAsync()
+        {
+            return ClearAsync();
+        }
+
         private Task ClearAsync()
         {
             var clearTasks = new List<Task>();

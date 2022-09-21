@@ -373,6 +373,11 @@ namespace Neo4j.Driver.Tests
                 // do nothing
             }
 
+            public void OnAuthenticationExpired()
+            {
+                // do nothing
+            }
+
             public Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmarks bookmarks)
             {
                 return Task.FromResult(Connection);

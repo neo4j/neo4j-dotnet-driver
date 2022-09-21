@@ -72,6 +72,11 @@ namespace Neo4j.Driver.Internal.Routing
 
         private bool IsClosed => _closedMarker > 0;
 
+        public void OnAuthenticationExpired()
+        {
+            _clusterConnectionPool.OnAuthExpiredAsync().GetAwaiter().GetResult();
+        }
+
         public async Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmarks bookmarks)
         {
             if (IsClosed)

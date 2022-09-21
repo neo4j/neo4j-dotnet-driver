@@ -76,6 +76,7 @@ namespace Neo4j.Driver.Internal
             internal set => Interlocked.Exchange(ref _poolStatus, value);
         }
 
+
         public ConnectionPool(
             Uri uri,
             IPooledConnectionFactory connectionFactory,
@@ -206,6 +207,11 @@ namespace Neo4j.Driver.Internal
         private void DecrementPoolSize()
         {
             Interlocked.Decrement(ref _poolSize);
+        }
+
+        public void OnAuthenticationExpired()
+        {
+            throw new NotImplementedException();
         }
 
         public async Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmarks bookmarks)
