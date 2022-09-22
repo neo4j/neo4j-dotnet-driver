@@ -233,8 +233,10 @@ namespace Neo4j.Driver
             EnsureNoRoutingContextOnBolt(uri, routingContext);
 
             var connectionProvider = parsedUri.IsRoutingUri()
-                ? new LoadBalancer(connectionFactory, routingSettings, connectionPoolSettings, logger)
-                : new ConnectionPool(parsedUri, connectionFactory, connectionPoolSettings, logger, null) as IConnectionProvider;
+                ? new LoadBalancer(connectionSettings.AuthToken, connectionFactory, routingSettings,
+                    connectionPoolSettings, logger)
+                : new ConnectionPool(parsedUri, connectionSettings.AuthToken,  connectionFactory,
+                    connectionPoolSettings, logger, null) as IConnectionProvider;
 
             return new Internal.Driver(parsedUri, 
                 connectionSettings.SocketSettings.EncryptionManager.UseTls,

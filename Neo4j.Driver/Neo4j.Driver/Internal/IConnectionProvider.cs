@@ -24,7 +24,8 @@ namespace Neo4j.Driver.Internal
 {
     internal interface IConnectionProvider
     {
-        void OnAuthenticationExpired();
+        IAuthToken AuthToken { get; }
+        Task OnAuthenticationExpiredAsync();
         Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmarks bookmarks);
         Task CloseAsync();
         Task<bool> SupportsMultiDbAsync();

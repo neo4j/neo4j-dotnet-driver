@@ -28,16 +28,19 @@ namespace Neo4j.Driver.Internal.Routing
     internal class ConnectionPoolFactory : IConnectionPoolFactory
     {
         private readonly IPooledConnectionFactory _connectionFactory;
+        private readonly IAuthToken _authToken;
         private readonly ConnectionPoolSettings _poolSettings;
         private readonly ILogger _logger;
-        private IDictionary<string, string> _routingContext;
+        private readonly IDictionary<string, string> _routingContext;
 
-        public ConnectionPoolFactory(IPooledConnectionFactory connectionFactory, ConnectionPoolSettings poolSettings, 
-                                     IDictionary<string, string> routingContext, ILogger logger)
+        public ConnectionPoolFactory(IAuthToken authToken, IPooledConnectionFactory connectionFactory, 
+            ConnectionPoolSettings poolSettings, IDictionary<string, string> routingContext, ILogger logger)
         {
             Throw.ArgumentNullException.IfNull(connectionFactory, nameof(connectionFactory));
             Throw.ArgumentNullException.IfNull(poolSettings, nameof(poolSettings));
+            
             _connectionFactory = connectionFactory;
+            _authToken = authToken;
             _poolSettings = poolSettings;
             _logger = logger;
             _routingContext = routingContext;
@@ -45,7 +48,7 @@ namespace Neo4j.Driver.Internal.Routing
 
         public IConnectionPool Create(Uri uri)
         {
-            return new ConnectionPool(uri, _connectionFactory, _poolSettings, _logger, _routingContext);
+            return new ConnectionPool(uri, _authToken, _connectionFactory, _poolSettings, _logger, _routingContext);
         }
     }
 }

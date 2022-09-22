@@ -16,15 +16,74 @@
 // limitations under the License.
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Neo4j.Driver;
 
 internal class ProviderToken : IAuthToken
 {
+    private readonly SemaphoreSlim _cacheLock;
+    private readonly Func<IAuthToken> _provider;
+    
+    public readonly bool CacheToken;
+    public readonly ConnectionPoolEvictionPolicy EvictionPolicy;
     public readonly Func<IAuthToken> Provider;
+    
+    private IAuthToken cachedToken;
 
-    public ProviderToken(Func<IAuthToken> provider)
+    public ProviderToken(Func<IAuthToken> provider, bool cacheToken, ConnectionPoolEvictionPolicy evictionPolicy)
     {
-        Provider = provider;
+        CacheToken = cacheToken;
+        if (CacheToken)
+        {
+            _cacheLock = new SemaphoreSlim(1, 1);
+            Provider = CacheProvider;
+        }
+        else
+        {
+            Provider = _provider;
+        }
+
+        _provider = provider;
+        EvictionPolicy = evictionPolicy;
+    }
+
+    private IAuthToken CacheProvider()
+    {
+        _cacheLock.Wait();
+        try
+        {
+            if (cachedToken == null)
+                cachedToken = _provider();
+
+            return cachedToken;
+        }
+        finally
+        {
+            _cacheLock.Release();
+        }
+    }
+
+    public async Task UpdateTokenAsync()
+    {
+        if (!CacheToken)
+            return;
+
+        var read = cachedToken;
+        await _cacheLock.WaitAsync().ConfigureAwait(false);
+
+        try
+        {
+            // Check if another thread has updated the value while we awaited the lock.
+            if (cachedToken != read)
+                return;
+
+            cachedToken = _provider();
+        }
+        finally
+        {
+            _cacheLock.Release();
+        }
     }
 }

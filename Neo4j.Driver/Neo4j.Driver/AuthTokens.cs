@@ -40,9 +40,17 @@ namespace Neo4j.Driver
         /// </remarks>
         public static IAuthToken None => new AuthToken(new Dictionary<string, object> {{SchemeKey, "none"}});
 
-        public static IAuthToken Provider(Func<IAuthToken> provider)
+        /// <summary>
+        ///	Creates a proxy for token that will provide tokens when requested.
+        /// </summary>
+        /// <param name="provider">Function to provide a new token, invoked when a new token is required.</param>
+        /// <param name="cacheToken">Whether or not the token provider should cache the token for reuse until it is expired.<br/>
+        /// If caching locally already this is redundant and should be false.</param>
+        /// <param name="evictionPolicy">Configure if when a token is flagged as expired if we should eagerly close all idle connections.</param>
+        /// <returns>A proxy for a token that will can be used ot provider tokens.</returns>
+        public static IAuthToken Provider(Func<IAuthToken> provider, bool cacheToken, ConnectionPoolEvictionPolicy evictionPolicy)
         {
-            return new ProviderToken(provider);
+            return new ProviderToken(provider, cacheToken, evictionPolicy);
         }
 
         /// <summary>

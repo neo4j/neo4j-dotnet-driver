@@ -41,11 +41,13 @@ namespace Neo4j.Driver.Internal.Routing
         public IDictionary<string, string> RoutingContext { get; set; }
 
         public LoadBalancer(
+            IAuthToken authToken,
             IPooledConnectionFactory connectionFactory,
             RoutingSettings routingSettings,
             ConnectionPoolSettings poolSettings,
             ILogger logger)
         {
+            AuthToken = authToken;
             RoutingSetting = routingSettings;
             RoutingContext = RoutingSetting.RoutingContext;
 
@@ -72,9 +74,17 @@ namespace Neo4j.Driver.Internal.Routing
 
         private bool IsClosed => _closedMarker > 0;
 
-        public void OnAuthenticationExpired()
+        public IAuthToken AuthToken { get; }
+
+        public async Task OnAuthenticationExpiredAsync()
         {
-            _clusterConnectionPool.OnAuthExpiredAsync().GetAwaiter().GetResult();
+            if (AuthToken is not ProviderToken providerToken)
+                return;
+            
+            await providerToken.UpdateTokenAsync().ConfigureAwait(false);
+            
+            if (providerToken.EvictionPolicy == ConnectionPoolEvictionPolicy.Eager)
+                await _clusterConnectionPool.OnAuthExpiredAsync().ConfigureAwait(false);
         }
 
         public async Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmarks bookmarks)

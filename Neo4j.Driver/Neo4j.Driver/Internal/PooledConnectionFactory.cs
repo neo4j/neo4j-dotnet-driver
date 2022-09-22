@@ -24,19 +24,21 @@ namespace Neo4j.Driver.Internal
 {
     internal interface IPooledConnectionFactory
     {
+        ConnectionSettings ConnectionSettings { get; }
         IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager, IDictionary<string, string> routingContext);
     }
+    
     internal class PooledConnectionFactory : IPooledConnectionFactory
     {
-        private readonly ConnectionSettings _connectionSettings;
+        public ConnectionSettings ConnectionSettings { get; }
         private readonly BufferSettings _bufferSettings;
         private readonly ILogger _logger;
-
+        
         public PooledConnectionFactory(ConnectionSettings connectionSettings, BufferSettings bufferSettings, ILogger logger)
         {
             Throw.ArgumentNullException.IfNull(connectionSettings, nameof(connectionSettings));
             Throw.ArgumentNullException.IfNull(bufferSettings, nameof(bufferSettings));
-            _connectionSettings = connectionSettings;
+            ConnectionSettings = connectionSettings;
             _bufferSettings = bufferSettings;
             _logger = logger;
         }
@@ -44,7 +46,7 @@ namespace Neo4j.Driver.Internal
         public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager, IDictionary<string, string> routingContext)
         {
             Throw.ArgumentNullException.IfNull(releaseManager, nameof(releaseManager));
-            return new PooledConnection(new SocketConnection(uri, _connectionSettings, _bufferSettings, routingContext, _logger),
+            return new PooledConnection(new SocketConnection(uri, ConnectionSettings, _bufferSettings, routingContext, _logger),
                 releaseManager);
         }
     }

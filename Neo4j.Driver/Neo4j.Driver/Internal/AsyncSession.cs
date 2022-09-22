@@ -271,7 +271,7 @@ namespace Neo4j.Driver.Internal
             }, ex =>
             {
                 if (ex is AuthorizationException)
-                    _connectionProvider.OnAuthenticationExpired();
+                    _connectionProvider.OnAuthenticationExpiredAsync();
                 return true;
             }));
         }

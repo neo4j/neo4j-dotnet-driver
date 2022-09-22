@@ -75,15 +75,18 @@ namespace Neo4j.Driver.Internal
             get => AtomicRead(ref _poolStatus);
             internal set => Interlocked.Exchange(ref _poolStatus, value);
         }
-
+        
+        public IAuthToken AuthToken { get; }
 
         public ConnectionPool(
             Uri uri,
+            IAuthToken authToken,
             IPooledConnectionFactory connectionFactory,
             ConnectionPoolSettings connectionPoolSettings,
             ILogger logger,
             IDictionary<string, string> routingContext)
         {
+            AuthToken = authToken;
             _uri = uri;
             _id = $"pool-{_uri.Host}:{_uri.Port}";
             _logger = new PrefixLogger(logger, $"[{_id}]");
@@ -111,7 +114,7 @@ namespace Neo4j.Driver.Internal
             ConnectionPoolSettings poolSettings = null,
             IConnectionValidator validator = null,
             ILogger logger = null)
-            : this(new Uri("bolt://localhost:7687"), connectionFactory,
+            : this(new Uri("bolt://localhost:7687"), null, connectionFactory,
                 poolSettings ?? new ConnectionPoolSettings(Config.Default), logger, null)
         {
             _idleConnections = idleConnections ?? new BlockingCollection<IPooledConnection>();
@@ -209,9 +212,12 @@ namespace Neo4j.Driver.Internal
             Interlocked.Decrement(ref _poolSize);
         }
 
-        public void OnAuthenticationExpired()
+        public Task OnAuthenticationExpiredAsync()
         {
-            throw new NotImplementedException();
+            if (AuthToken is ProviderToken pt)
+                return pt.UpdateTokenAsync();
+
+            return Task.CompletedTask;
         }
 
         public async Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmarks bookmarks)
