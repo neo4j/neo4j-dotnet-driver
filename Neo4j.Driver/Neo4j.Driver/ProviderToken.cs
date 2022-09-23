@@ -35,6 +35,9 @@ internal class ProviderToken : IAuthToken
     public ProviderToken(Func<IAuthToken> provider, bool cacheToken, ConnectionPoolEvictionPolicy evictionPolicy)
     {
         CacheToken = cacheToken;
+        EvictionPolicy = evictionPolicy;
+
+        _provider = provider;
         if (CacheToken)
         {
             _cacheLock = new SemaphoreSlim(1, 1);
@@ -44,9 +47,6 @@ internal class ProviderToken : IAuthToken
         {
             Provider = _provider;
         }
-
-        _provider = provider;
-        EvictionPolicy = evictionPolicy;
     }
 
     private IAuthToken CacheProvider()

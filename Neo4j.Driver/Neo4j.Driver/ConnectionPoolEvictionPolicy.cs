@@ -18,7 +18,7 @@
 namespace Neo4j.Driver;
 
 /// <summary>
-///     Specifies an evicition policy for when pooled connections when a authentication token expires.
+///     Specifies an eviction policy for when pooled connections when a authentication token expires.
 /// </summary>
 public enum ConnectionPoolEvictionPolicy
 {

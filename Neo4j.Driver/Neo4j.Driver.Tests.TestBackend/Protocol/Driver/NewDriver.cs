@@ -50,26 +50,16 @@ namespace Neo4j.Driver.Tests.TestBackend
             Control = controller;
             var authTokenData = data.authorizationToken.data;
 
-            IAuthToken authToken;
-
-            switch (authTokenData.scheme)
+            var authToken = new ProviderToken(() =>
             {
-                case "bearer":
-                    authToken = AuthTokens.Bearer(authTokenData.credentials);
-                    break;
-                case "kerberos":
-                    authToken = AuthTokens.Kerberos(authTokenData.credentials);
-                    break;
-
-                default:
-                    authToken = AuthTokens.Custom(authTokenData.principal,
-                                                  authTokenData.credentials,
-                                                  authTokenData.realm,
-                                                  authTokenData.scheme,
-                                                  authTokenData.parameters);
-                    break;
-
-            }
+                return authTokenData.scheme switch
+                {
+                    "bearer" => AuthTokens.Bearer(authTokenData.credentials),
+                    "kerberos" => AuthTokens.Kerberos(authTokenData.credentials),
+                    _ => AuthTokens.Custom(authTokenData.principal, authTokenData.credentials, authTokenData.realm,
+                        authTokenData.scheme, authTokenData.parameters)
+                };
+            }, false, ConnectionPoolEvictionPolicy.Eager);
 
             Driver = GraphDatabase.Driver(data.uri, authToken, DriverConfig);
 
