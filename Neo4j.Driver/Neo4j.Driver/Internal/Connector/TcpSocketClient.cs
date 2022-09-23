@@ -97,7 +97,7 @@ internal class TcpSocketClient : ITcpSocketClient
 #if NET6_0_OR_GREATER
         return ValueTask.CompletedTask;
 #else
-        return new ValueTask(Task.CompletedTask);
+        return default;
 #endif
     }
 
