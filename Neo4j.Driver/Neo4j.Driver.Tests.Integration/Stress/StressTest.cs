@@ -33,7 +33,6 @@ namespace Neo4j.Driver.IntegrationTests.Stress;
 public abstract class StressTest<TContext> : IDisposable
     where TContext : StressTestContext
 {
-    private const bool LoggingEnabled = false;
     private const int DefaultExecutionTime = 30;
 
     private const int StressTestThreadCount = 8;
@@ -68,10 +67,15 @@ public abstract class StressTest<TContext> : IDisposable
                 TimeSpan.FromSeconds(Convert.ToDouble(seconds) /
                                      3); //There are three areas so divide by 3, async, blocking and reactive.
 
+        var minLevel = StressTestMinLogLevel.None;
+        var minLevelText = Environment.GetEnvironmentVariable("TEST_NEO4J_STRESS_MIN_LOG_LEVEL");
+        if (!string.IsNullOrWhiteSpace(minLevelText))
+            Enum.TryParse(minLevelText, out minLevel);
+
         _driver = GraphDatabase.Driver(databaseUri, authToken, builder =>
         {
             builder
-                .WithLogger(new StressTestLogger(_output, LoggingEnabled))
+                .WithLogger(new StressTestLogger(_output, minLevel))
                 .WithMaxConnectionPoolSize(100)
                 .WithConnectionAcquisitionTimeout(TimeSpan.FromMinutes(1));
             configure?.Invoke(builder);
@@ -85,55 +89,65 @@ public abstract class StressTest<TContext> : IDisposable
         Dispose(false);
     }
 
+    public enum StressTestMinLogLevel
+    {
+        Trace, Debug, Info, Warn, Error, None
+    }
+
     private class StressTestLogger : ILogger
     {
-        private readonly bool _enabled;
         private readonly ITestOutputHelper _output;
+        private readonly StressTestMinLogLevel _minLevel;
 
-        public StressTestLogger(ITestOutputHelper output, bool enabled)
+        public StressTestLogger(ITestOutputHelper output, StressTestMinLogLevel minLevel)
         {
             _output = output ?? throw new ArgumentNullException(nameof(output));
-            _enabled = enabled;
+            _minLevel = minLevel;
         }
 
         public void Error(Exception cause, string message, params object[] args)
         {
-            Write(message, args);
+            if (_minLevel <= StressTestMinLogLevel.Error)
+                Write(message, args);
         }
 
         public void Warn(Exception cause, string message, params object[] args)
         {
-            Write(message, args);
+            if (_minLevel <= StressTestMinLogLevel.Warn)
+                Write(message, args);
         }
 
         public void Info(string message, params object[] args)
         {
-            Write(message, args);
+            if (_minLevel <= StressTestMinLogLevel.Info)
+                Write(message, args);
         }
 
         public void Debug(string message, params object[] args)
         {
-            Write(message, args);
+            if (_minLevel <= StressTestMinLogLevel.Debug)
+                Write(message, args);
         }
 
         public void Trace(string message, params object[] args)
         {
-            Write(message, args);
+            if (_minLevel <= StressTestMinLogLevel.Trace)
+                Write(message, args);
         }
 
         public bool IsTraceEnabled()
         {
-            return false;
+            return StressTestMinLogLevel.Trace == _minLevel;
         }
 
         public bool IsDebugEnabled()
         {
-            return true;
+            return _minLevel <= StressTestMinLogLevel.Debug;
         }
 
         private void Write(string message, params object[] args)
         {
-            if (_enabled) _output.WriteLine(message, args);
+            _output.WriteLine(message, args);
         }
     }
 
@@ -464,18 +478,9 @@ public abstract class StressTest<TContext> : IDisposable
                                     {"index", (long) index},
                                     {"name", $"name-{index}"},
                                     {"surname", $"surname-{index}"},
-                                    {
-                                        "longList",
-                                        Enumerable.Repeat((long) index, 10)
-                                    },
-                                    {
-                                        "doubleList",
-                                        Enumerable.Repeat((double) index, 10)
-                                    },
-                                    {
-                                        "boolList",
-                                        Enumerable.Repeat(index % 2 == 0, 10)
-                                    }
+                                    {"longList", Enumerable.Repeat((long) index, 10)},
+                                    {"doubleList", Enumerable.Repeat((double) index, 10)},
+                                    {"boolList", Enumerable.Repeat(index % 2 == 0, 10)}
                                 }
                             }), opts => opts.Including(x => x.Labels).Including(x => x.Properties));
 
@@ -522,7 +527,7 @@ public abstract class StressTest<TContext> : IDisposable
 
         var session = driver.RxSession(o => o.WithDefaultAccessMode(AccessMode.Read).WithBookmarks(bookmarks));
 
-        session.ExecuteRead(txc =>
+        session.ExecuteRead(txc => 
                 txc.Run("MATCH (n:Node) RETURN n ORDER BY n.index").Records().Select(r => r[0].As<INode>()).Do(n =>
                 {
                     var index = n.Properties["index"].As<int>();
