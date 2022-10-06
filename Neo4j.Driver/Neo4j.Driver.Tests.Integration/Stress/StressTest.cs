@@ -609,27 +609,6 @@ public abstract class StressTest<TContext> : IDisposable
         return tasks.ToArray();
     }
 
-    private (IDriver, ConcurrentQueue<IPooledConnection>) SetupMonitoredDriver()
-    {
-        var configBuilder = Config.Builder
-            .WithMetricsEnabled(true)
-            .WithConnectionAcquisitionTimeout(TimeSpan.FromMinutes(5))
-            .WithConnectionTimeout(Config.InfiniteInterval)
-            .WithMaxConnectionPoolSize(100)
-            .WithLogger(new StressTestLogger(_output, LoggingEnabled));
-        _configure?.Invoke(configBuilder);
-        var config = configBuilder.Build();
-
-        var connectionSettings = new ConnectionSettings(_databaseUri, _authToken, config);
-        var bufferSettings = new BufferSettings(config);
-        var connectionFactory = new MonitoredPooledConnectionFactory(
-            new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logger));
-
-        return (
-            (Internal.Driver) GraphDatabase.CreateDriver(_databaseUri, config, connectionFactory, connectionSettings),
-            connectionFactory.Connections);
-    }
-
     private class Worker
     {
         private static readonly (AccessMode, string)[] Queries =
