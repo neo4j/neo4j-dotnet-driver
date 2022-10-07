@@ -14,58 +14,63 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text;
 
-namespace Neo4j.Driver.Internal.Messaging.V4_4
+namespace Neo4j.Driver.Internal.Messaging.V4_4;
+
+internal class RouteMessage : IRequestMessage
 {
-	internal class RouteMessage : IRequestMessage
-	{
-		private const string DBNameKey = "db";
-		private const string ImpersonatedUserKey = "imp_user";
+    private const string DBNameKey = "db";
+    private const string ImpersonatedUserKey = "imp_user";
 
-		public IDictionary<string, string> Routing { get; }
-		public Bookmarks Bookmarks { get; }
-		public IDictionary<string, string> DatabaseContext { get; }
+    public RouteMessage(IDictionary<string, string> routingContext, Bookmarks bookmarks,
+        string databaseName, string impersonatedUser)
+    {
+        Routing = routingContext ?? new Dictionary<string, string>();
+        Bookmarks = bookmarks ?? Bookmarks.From(Array.Empty<string>());
+        DatabaseContext = new Dictionary<string, string>();
 
+        if (!string.IsNullOrEmpty(databaseName))
+            DatabaseContext.Add(DBNameKey, databaseName);
 
-		public RouteMessage(IDictionary<string, string> routingContext, Bookmarks bookmarks, 
-            string databaseName, string impersonatedUser)
-		{
-			Routing = routingContext ?? new Dictionary<string, string>();
-			Bookmarks = bookmarks ?? Bookmarks.From(Array.Empty<string>());
-			DatabaseContext = new Dictionary<string, string>();
+        if (!string.IsNullOrEmpty(impersonatedUser))
+            DatabaseContext.Add(ImpersonatedUserKey, impersonatedUser);
+    }
 
-			if(!string.IsNullOrEmpty(databaseName))
-                DatabaseContext.Add(DBNameKey, databaseName);
+    public IDictionary<string, string> Routing { get; }
+    public Bookmarks Bookmarks { get; }
+    public IDictionary<string, string> DatabaseContext { get; }
 
-			if (!string.IsNullOrEmpty(impersonatedUser))
-                DatabaseContext.Add(ImpersonatedUserKey, impersonatedUser);
-		}
+    public override string ToString()
+    {
+        var stringBuilder = new StringBuilder(50);
+        stringBuilder.Append("ROUTE {");
 
-		public override string ToString()
-		{
-			string message = "ROUTE {";
+        foreach (var data in Routing)
+            stringBuilder.Append(" '")
+                .Append(data.Key)
+                .Append("':'")
+                .Append(data.Value)
+                .Append("'");
+        stringBuilder.Append(" } ");
 
-			foreach (var data in Routing)
-			{
-				message += $" \'{data.Key}\':\'{data.Value}\'";
-			}
+        if (Bookmarks?.Values.Length > 0)
+            stringBuilder.Append("{ bookmarks, ")
+                .Append(Bookmarks.Values.ToContentString())
+                .Append(" }");
+        else
+            stringBuilder.Append("[]");
 
-			message += " } ";
+        stringBuilder.Append(" {");
+        foreach (var data in DatabaseContext)
+            stringBuilder.Append(" '")
+                .Append(data.Key)
+                .Append("':'")
+                .Append(data.Value)
+                .Append("'");
 
-			message += (Bookmarks is not null && Bookmarks.Values.Length > 0)
-				? "{ bookmarks, " + Bookmarks.Values.ToContentString() + " }"
-				: Array.Empty<string>().ToContentString();
+        stringBuilder.Append(" } ");
 
-			message += " {";
-
-			foreach (var data in DatabaseContext)
-			{
-				message += $" \'{data.Key}\':\'{data.Value}\'";
-			}
-
-			message += " }";
-
-			return message;
-		}
-	}
+        return stringBuilder.ToString();
+    }
 }

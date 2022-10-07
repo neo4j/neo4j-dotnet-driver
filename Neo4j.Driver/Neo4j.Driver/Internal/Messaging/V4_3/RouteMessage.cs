@@ -17,40 +17,50 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text;
 
-namespace Neo4j.Driver.Internal.Messaging.V4_3
+namespace Neo4j.Driver.Internal.Messaging.V4_3;
+
+internal class RouteMessage : IRequestMessage
 {
-	internal class RouteMessage : IRequestMessage
-	{
-		public IDictionary<string, string> Routing { get;}
-		public Bookmarks Bookmarks { get; }
-		public string DatabaseParam { get; }
+    public RouteMessage(IDictionary<string, string> routingContext, Bookmarks bookmarks, string db)
+    {
+        Routing = routingContext ?? new Dictionary<string, string>();
+        Bookmarks = bookmarks ?? Bookmarks.From(Array.Empty<string>());
+        DatabaseParam = db;
+    }
 
-		public RouteMessage(IDictionary<string, string> routingContext, Bookmarks bookmarks, string db)
-		{
-            Routing = routingContext ?? new Dictionary<string,string>();
-			Bookmarks = bookmarks ?? Bookmarks.From(Array.Empty<string>());
-            DatabaseParam = db;            
-		}
+    public IDictionary<string, string> Routing { get; }
+    public Bookmarks Bookmarks { get; }
+    public string DatabaseParam { get; }
 
-		public override string ToString()   
-		{
-			string message = "ROUTE {";
+    public override string ToString()
+    {
+        var stringBuilder = new StringBuilder(50);
 
-			foreach(var data in Routing)
-			{
-                message += $" \'{data.Key}\':\'{data.Value}\'";
-			}
+        stringBuilder.Append("ROUTE {");
+        foreach (var data in Routing)
+            stringBuilder.Append(" '")
+                .Append(data.Key)
+                .Append("':'")
+                .Append(data.Value)
+                .Append("'");
+        stringBuilder.Append(" } ");
 
-            message += " } ";
+        if (Bookmarks?.Values.Length > 0)
+            stringBuilder.Append("{ bookmarks, ")
+                .Append(Bookmarks.Values.ToContentString())
+                .Append(" }");
+        else
+            stringBuilder.Append("[]");
 
-			message += (Bookmarks is not null && Bookmarks.Values.Length > 0) 
-				? "{ bookmarks, " + Bookmarks.Values.ToContentString() + " }" 
-				: Array.Empty<string>().ToContentString();
-			
-			message += (!string.IsNullOrEmpty(DatabaseParam)) ? " \'" + DatabaseParam + "\'" : " None";
+        if (!string.IsNullOrEmpty(DatabaseParam))
+            stringBuilder.Append(" '")
+                .Append(DatabaseParam)
+                .Append("'");
+        else
+            stringBuilder.Append(" None");
 
-            return message;
-        }
-	}
+        return stringBuilder.ToString();
+    }
 }
