@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -29,6 +30,13 @@ namespace Neo4j.Driver.Internal.Protocol;
 
 internal class BoltProtocolV4_0 : BoltProtocolV3
 {
+    public BoltProtocolV4_0(IRoutingTableProtocol routingTableProtocol)
+    {
+        GetRoutingTableProtocol = routingTableProtocol;
+    }
+    
+    public IRoutingTableProtocol GetRoutingTableProtocol { get; set; }
+
     public override async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
         Query query, bool reactive, IBookmarksTracker bookmarksTracker, IResultResourceHandler resultResourceHandler,
         string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser, long fetchSize = Config.Infinite)
@@ -111,5 +119,13 @@ internal class BoltProtocolV4_0 : BoltProtocolV3
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
         };
+    }
+
+    public override Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmarks bookmarks)
+    {
+        if (connection.Version >= BoltProtocolVersion.V4_3)
+            return GetRoutingTableProtocol.GetRoutingTable(connection, database, impersonatedUser, bookmarks);
+
+        return base.GetRoutingTable(connection, database, impersonatedUser, bookmarks);
     }
 }

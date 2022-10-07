@@ -54,11 +54,11 @@ namespace Neo4j.Driver.Internal.Protocol
             return version switch
             {
                 {MajorVersion: 3, MinorVersion: 0} => new BoltProtocolV3(),
-                {MajorVersion: 4, MinorVersion: 1} => new BoltProtocolV4_0(),
-                {MajorVersion: 4, MinorVersion: 2} => new BoltProtocolV4_0(),
-                {MajorVersion: 4, MinorVersion: 3} => new BoltProtocolV4_3(),
-                {MajorVersion: 4, MinorVersion: 4} => new BoltProtocolV4_4(),
-                {MajorVersion: 5, MinorVersion: 0} => new BoltProtocolV4_4(),
+                {MajorVersion: 4, MinorVersion: 1} => new BoltProtocolV4_0(null),
+                {MajorVersion: 4, MinorVersion: 2} => new BoltProtocolV4_0(null),
+                {MajorVersion: 4, MinorVersion: 3} => new BoltProtocolV4_0(new RoutingTableProtocol_4_3()),
+                {MajorVersion: 4, MinorVersion: 4} => new BoltProtocolV4_0(new RoutingTableProtocol_4_4()),
+                {MajorVersion: 5, MinorVersion: 0} => new BoltProtocolV4_0(new RoutingTableProtocol_4_4()),
                 // no matching versions
                 {MajorVersion: 0, MinorVersion: 0} => throw new NotSupportedException(NoAgreedVersion),
                 // http response
