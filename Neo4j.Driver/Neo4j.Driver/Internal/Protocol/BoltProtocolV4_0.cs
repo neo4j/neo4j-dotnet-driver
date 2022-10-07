@@ -123,9 +123,8 @@ internal class BoltProtocolV4_0 : BoltProtocolV3
 
     public override Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmarks bookmarks)
     {
-        if (connection.Version >= BoltProtocolVersion.V4_3)
-            return GetRoutingTableProtocol.GetRoutingTable(connection, database, impersonatedUser, bookmarks);
-
-        return base.GetRoutingTable(connection, database, impersonatedUser, bookmarks);
+        return connection.Version >= BoltProtocolVersion.V4_3 
+            ? GetRoutingTableProtocol.GetRoutingTable(connection, database, impersonatedUser, bookmarks) 
+            : base.GetRoutingTable(connection, database, impersonatedUser, bookmarks);
     }
 }

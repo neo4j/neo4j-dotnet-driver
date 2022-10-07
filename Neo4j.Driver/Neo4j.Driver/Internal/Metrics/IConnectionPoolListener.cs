@@ -16,7 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Diagnostics;
 
 namespace Neo4j.Driver.Internal.Metrics
 {
