@@ -108,13 +108,21 @@ public abstract class StressTest<TContext> : IDisposable
         public void Error(Exception cause, string message, params object[] args)
         {
             if (_minLevel <= StressTestMinLogLevel.Error)
-                Write(message, args);
+            {
+                if (!string.IsNullOrEmpty(message))
+                    Write(message, args);
+                _output.WriteLine(cause.Message);
+            }
         }
 
         public void Warn(Exception cause, string message, params object[] args)
         {
             if (_minLevel <= StressTestMinLogLevel.Warn)
-                Write(message, args);
+            {
+                if (!string.IsNullOrEmpty(message))
+                    Write(message, args);
+                _output.WriteLine(cause.Message);
+            }
         }
 
         public void Info(string message, params object[] args)
