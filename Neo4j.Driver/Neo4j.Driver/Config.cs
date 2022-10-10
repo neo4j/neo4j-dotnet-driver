@@ -20,7 +20,6 @@ using System.Collections.Generic;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Logging;
-using Neo4j.Driver.Internal.Metrics;
 
 namespace Neo4j.Driver
 {
@@ -220,5 +219,7 @@ namespace Neo4j.Driver
         /// where x is the major version and y is the minor version.
         /// </summary>
         public string UserAgent { get; set; } = ConnectionSettings.DefaultUserAgent;
+
+        public List<NotificationFilter> NotificationFilters { get; set; } = new List<NotificationFilter>();
     }
 }

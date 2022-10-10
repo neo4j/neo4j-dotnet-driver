@@ -127,6 +127,7 @@ namespace Neo4j.Driver
         }
 
         public IBookmarkManager BookmarkManager { get; set; }
+        public List<NotificationFilter> NotificationFilters { get; set; }
     }
 
     /// <summary>
@@ -239,6 +240,22 @@ namespace Neo4j.Driver
         internal SessionConfigBuilder WithBookmarkManager(IBookmarkManager bookmarkManager)
         {
             _config.BookmarkManager = bookmarkManager;
+            return this;
+        }
+
+
+        /// <summary>
+        /// Add filter for notifications to be received.
+        /// TODO: Add more details
+        /// </summary>
+        /// <param name="filter">Filter to include</param>
+        /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+        public SessionConfigBuilder WithNotificationFilter(NotificationFilter filter)
+        {
+            if (_config.NotificationFilters == null)
+                _config.NotificationFilters = new List<NotificationFilter>();
+
+            _config.NotificationFilters.Add(filter);
             return this;
         }
     }

@@ -56,11 +56,13 @@ namespace Neo4j.Driver.Internal
         private readonly long _fetchSize;
         private readonly IBookmarkManager _bookmarkManager;
         private readonly bool _useBookmarkManager;
+        private readonly IReadOnlyList<NotificationFilter> _notificationFilters;
 
         public AsyncSession(IConnectionProvider provider,
             ILogger logger,
             IAsyncRetryLogic retryLogic,
             long defaultFetchSize,
+            IReadOnlyList<NotificationFilter> globalFilters,
             SessionConfig config,
             bool reactive
         )
@@ -74,6 +76,7 @@ namespace Neo4j.Driver.Internal
             _database = config.Database;
             _defaultMode = config.DefaultAccessMode;
             _fetchSize = config.FetchSize ?? defaultFetchSize;
+            _notificationFilters = config.NotificationFilters ?? globalFilters;
             _useBookmarkManager = config.BookmarkManager != null;
 
             if (_useBookmarkManager)

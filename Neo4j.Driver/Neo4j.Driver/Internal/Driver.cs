@@ -81,11 +81,12 @@ namespace Neo4j.Driver.Internal
             }
 
             var sessionConfig = ConfigBuilders.BuildSessionConfig(action);
-
+            
             var session = new AsyncSession(_connectionProvider, 
                                            _logger,
                                            _retryLogic,
                                            _config.FetchSize,
+                                           _config.NotificationFilters,
                                            sessionConfig,
                                            reactive);
 
