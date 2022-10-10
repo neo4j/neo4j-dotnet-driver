@@ -74,6 +74,11 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
         protected override void VerifyReadQueryDistribution(Context context)
         {
+            if (UsingBoltMoreThan5_0())
+                // 5.0 clusters don't provide a mechanism for this kind of inspection,
+                // so we disabled it.
+                return;
+
             var clusterAddresses = DiscoverClusterAddresses();
 
             VerifyServedReadQueries(context, clusterAddresses);
