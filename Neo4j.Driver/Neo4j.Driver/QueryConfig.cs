@@ -47,7 +47,14 @@ public class QueryConfig
     public IBookmarkManager BookmarkManager { get; }
 
 
-    public QueryConfig(RoutingControl routing, string database = null, string impersonatedUser = null,
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="routing"></param>
+    /// <param name="database"></param>
+    /// <param name="impersonatedUser"></param>
+    /// <param name="bookmarkManager"></param>
+    public QueryConfig(RoutingControl routing = RoutingControl.Writers, string database = null, string impersonatedUser = null,
         IBookmarkManager bookmarkManager = null)
     {
         Routing = routing;
@@ -62,7 +69,16 @@ public class QueryConfig
 /// </summary>
 public class QueryConfig<T> : QueryConfig
 {
-    public QueryConfig(RoutingControl routing, Func<IResultCursor, CancellationToken, Task<T>> cursorProcessor, string database = null,
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="cursorProcessor"></param>
+    /// <param name="routing"></param>
+    /// <param name="database"></param>
+    /// <param name="impersonatedUser"></param>
+    /// <param name="bookmarkManager"></param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public QueryConfig(Func<IResultCursor, CancellationToken, Task<T>> cursorProcessor, RoutingControl routing = RoutingControl.Writers, string database = null,
         string impersonatedUser = null, IBookmarkManager bookmarkManager = null) 
         : base(routing, database, impersonatedUser, bookmarkManager)
     {
@@ -70,6 +86,6 @@ public class QueryConfig<T> : QueryConfig
     }
     /// <summary>
     /// 
-    /// </summary>
+    /// </summary>  
     public Func<IResultCursor, CancellationToken, Task<T>> CursorProcessor { get; init; }
 }
