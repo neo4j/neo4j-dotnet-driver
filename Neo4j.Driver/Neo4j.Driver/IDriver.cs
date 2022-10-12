@@ -16,79 +16,140 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver;
+
+/// <summary>
+///     The <see cref="IDriver"/> instance maintains the connections with a Neo4j database, providing an access point via the
+///     <see cref="IAsyncSession" /> method.
+/// </summary>
+/// <remarks>
+/// The Driver maintains a connection pool buffering connections created by the user.
+/// The size of the buffer can be configured by the <see cref="Neo4j.Driver.Config.MaxConnectionPoolSize" />
+/// property on the <see cref="Neo4j.Driver.Config" /> when creating the Driver.
+/// </remarks>
+public interface IDriver : IDisposable, IAsyncDisposable
 {
     /// <summary>
-    ///     The <see cref="IDriver"/> instance maintains the connections with a Neo4j database, providing an access point via the
-    ///     <see cref="IAsyncSession" /> method.
+    /// Obtain a session with the default <see cref="SessionConfig"/>.
     /// </summary>
-    /// <remarks>
-    /// The Driver maintains a connection pool buffering connections created by the user.
-    /// The size of the buffer can be configured by the <see cref="Neo4j.Driver.Config.MaxConnectionPoolSize" />
-    /// property on the <see cref="Neo4j.Driver.Config" /> when creating the Driver.
-    /// </remarks>
-    public interface IDriver : IDisposable
-    {
-        /// <summary>
-        /// Obtain a session with the default <see cref="SessionConfig"/>.
-        /// </summary>
-        /// <returns>An <see cref="IAsyncSession"/> that could be used to execute queries.</returns>
-        IAsyncSession AsyncSession();
+    /// <returns>An <see cref="IAsyncSession"/> that could be used to execute queries.</returns>
+    IAsyncSession AsyncSession();
 
-        /// <summary>
-        /// Obtain a session with the customized <see cref="SessionConfig"/>.
-        /// </summary>
-        /// <param name="action">An action, provided with a <see cref="SessionConfigBuilder"/> instance, that should populate
-        /// the provided instance with desired <see cref="SessionConfig"/>.</param>
-        /// <returns>An <see cref="IAsyncSession"/> that could be used to execute queries.</returns>
-        IAsyncSession AsyncSession(Action<SessionConfigBuilder> action);
+    /// <summary>
+    /// Obtain a session with the customized <see cref="SessionConfig"/>.
+    /// </summary>
+    /// <param name="action">An action, provided with a <see cref="SessionConfigBuilder"/> instance, that should populate
+    /// the provided instance with desired <see cref="SessionConfig"/>.</param>
+    /// <returns>An <see cref="IAsyncSession"/> that could be used to execute queries.</returns>
+    IAsyncSession AsyncSession(Action<SessionConfigBuilder> action);
 
-        /// <summary>
-        /// Asynchronously releases all resources (connection pools, connections, etc) associated with this IDriver instance.
-        /// </summary>
-        /// <returns>A task that represents the asynchronous close operation.</returns>
-        Task CloseAsync();
+    /// <summary>
+    /// Asynchronously releases all resources (connection pools, connections, etc) associated with this IDriver instance.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous close operation.</returns>
+    Task CloseAsync();
 
-        /// <summary>
-        /// Asynchronously verify if the driver can connect to the remote server returning server info.
-        /// If the driver fails to connect to the remote server, an error will be thrown,
-        /// which can be used to further understand the cause of the connectivity issue.
-        /// Note: Even if this method failed with an error, the driver still need to be closed via <see cref="CloseAsync"/> to free up all resources.
-        /// </summary>
-        /// <returns>
-        /// A task that represents the asynchronous operation.
-        /// The task result contains the connected server's info.
-        /// </returns>
-        Task<IServerInfo> GetServerInfoAsync();
+    /// <summary>
+    /// Asynchronously verify if the driver can connect to the remote server returning server info.
+    /// If the driver fails to connect to the remote server, an error will be thrown,
+    /// which can be used to further understand the cause of the connectivity issue.
+    /// Note: Even if this method failed with an error, the driver still need to be closed via <see cref="CloseAsync"/> to free up all resources.
+    /// </summary>
+    /// <returns>
+    /// A task that represents the asynchronous operation.
+    /// The task result contains the connected server's info.
+    /// </returns>
+    Task<IServerInfo> GetServerInfoAsync();
 
-        /// <summary>
-        /// Asynchronously verify if the driver can connect to the remote server by establishing a network connection with the remote.
-        /// If the driver fails to connect to the remote server, an error will be thrown,
-        /// which can be used to further understand the cause of the connectivity issue.
-        /// Note: Even if this method failed with an error, the driver still need to be closed via <see cref="CloseAsync"/> to free up all resources.
-        /// </summary>
-        /// <returns>A task that represents the asynchronous verification operation.</returns>
-        Task VerifyConnectivityAsync();
+    /// <summary>
+    /// Asynchronously verify if the driver can connect to the remote server by establishing a network connection with the remote.
+    /// If the driver fails to connect to the remote server, an error will be thrown,
+    /// which can be used to further understand the cause of the connectivity issue.
+    /// Note: Even if this method failed with an error, the driver still need to be closed via <see cref="CloseAsync"/> to free up all resources.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous verification operation.</returns>
+    Task VerifyConnectivityAsync();
 
-        /// <summary>
-        /// Asynchronously verify if the driver connects to a server and/or cluster that can support multi-database feature.
-        /// </summary>
-        /// <returns>
-        /// A task that represents the asynchronous operation.
-        /// The task result contains True if the remote server and/or cluster support multi-databases, otherwise false.
-        /// </returns>
-        Task<bool> SupportsMultiDbAsync();
+    /// <summary>
+    /// Asynchronously verify if the driver connects to a server and/or cluster that can support multi-database feature.
+    /// </summary>
+    /// <returns>
+    /// A task that represents the asynchronous operation.
+    /// The task result contains True if the remote server and/or cluster support multi-databases, otherwise false.
+    /// </returns>
+    Task<bool> SupportsMultiDbAsync();
 
-        /// <summary>
-        /// Gets the driver configurations.
-        /// </summary>
-        Config Config { get; }
+    /// <summary>
+    /// Gets the driver configurations.
+    /// </summary>
+    Config Config { get; }
 
-        /// <summary>
-        /// Gets Encrypted status
-        /// </summary>
-        bool Encrypted { get; }
-    }
+    /// <summary>
+    /// Gets Encrypted status
+    /// </summary>
+    bool Encrypted { get; }
+
+    /// <summary>
+    /// Execute a query in a transaction.
+    /// </summary>
+    /// <param name="query">query to be executed.</param>
+    /// <param name="config">configuration for query.</param>
+    /// <returns> A task that represents the asynchronous query operation. <br/>
+    /// The task result contains a <see cref="QueryResult"/>.</returns>
+    Task<QueryResult> ExecuteQueryAsync(Query query, QueryConfig config);
+
+    /// <summary>
+    /// Execute a query in a transaction.
+    /// </summary>
+    /// <param name="query">query to be executed.</param>
+    /// <param name="queryParameters">parameters for query</param>
+    /// <param name="config">configuration for query.</param>
+    /// <returns> A task that represents the asynchronous query operation. <br/>
+    /// The task result contains a <see cref="QueryResult"/>.</returns>
+    Task<QueryResult> ExecuteQueryAsync(string query, object queryParameters, QueryConfig config);
+
+    /// <summary>
+    /// Execute a query in a transaction.
+    /// </summary>
+    /// <param name="query">query to be executed.</param>
+    /// <param name="queryParameters">parameters for query</param>
+    /// <param name="config">configuration for query.</param>
+    /// <returns> A task that represents the asynchronous query operation. <br/>
+    /// The task result contains a <see cref="QueryResult"/>.</returns>
+    Task<QueryResult> ExecuteQueryAsync(string query, Dictionary<string, object> queryParameters, QueryConfig config);
+
+    /// <summary>
+    /// Execute query in a transaction, using user-defined cursor processing.<br/>
+    /// </summary>
+    /// <param name="query">query to be executed.</param>
+    /// <param name="config">configuration for query.</param>
+    /// <typeparam name="TResult">return value of user-defined cursor processor.</typeparam>
+    /// <returns> A task that represents the asynchronous query operation. <br/>
+    /// The task result contains the result of <see cref="QueryConfig{T}.CursorProcessor"/>.</returns>
+    Task<TResult> ExecuteQueryAsync<TResult>(Query query, QueryConfig<TResult> config);
+
+    /// <summary>
+    /// Execute query in a transaction, using user-defined cursor processing.<br/>
+    /// </summary>
+    /// <param name="query">query to be executed.</param>
+    /// <param name="queryParameters">parameters for query</param>
+    /// <param name="config">configuration for query.</param>
+    /// <typeparam name="TResult">return value of user-defined cursor processor.</typeparam>
+    /// <returns> A task that represents the asynchronous query operation. <br/>
+    /// The task result contains the result of <see cref="QueryConfig{T}.CursorProcessor"/>.</returns>
+    Task<TResult> ExecuteQueryAsync<TResult>(string query, object queryParameters, QueryConfig<TResult> config);
+
+    /// <summary>
+    /// Execute query in a transaction, using user-defined cursor processing.<br/>
+    /// </summary>
+    /// <param name="query">query to be executed.</param>
+    /// <param name="queryParameters">parameters for query</param>
+    /// <param name="config">configuration for query.</param>
+    /// <typeparam name="TResult">return value of user-defined cursor processor.</typeparam>
+    /// <returns> A task that represents the asynchronous query operation. <br/>
+    /// The task result contains the result of <see cref="QueryConfig{T}.CursorProcessor"/>.</returns>
+    Task<TResult> ExecuteQueryAsync<TResult>(string query, Dictionary<string, object> queryParameters, QueryConfig<TResult> config);
 }
