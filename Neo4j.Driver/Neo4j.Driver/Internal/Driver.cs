@@ -161,7 +161,7 @@ internal sealed class Driver : IInternalDriver
         return _metrics;
     }
 
-    public async Task<QueryResult> ExecuteQueryAsync(Query query, QueryConfig config)
+    public async Task<QueryResult> ExecuteQueryAsync(Query query, QueryConfig config, CancellationToken cancellationToken = default)
     {
         query = query ?? throw new ArgumentNullException(nameof(query));
         config = config ?? throw new ArgumentNullException(nameof(config));
@@ -170,12 +170,12 @@ internal sealed class Driver : IInternalDriver
         await using (session.ConfigureAwait(false))
         {
             if (config.Routing == RoutingControl.Readers)
-                return await session.ExecuteReadAsync(x => Work(query, x, ProcessCursorAsync)).ConfigureAwait(false);
-            return await session.ExecuteWriteAsync(x => Work(query, x, ProcessCursorAsync)).ConfigureAwait(false);
+                return await session.ExecuteReadAsync(x => Work(query, x, ProcessCursorAsync, cancellationToken)).ConfigureAwait(false);
+            return await session.ExecuteWriteAsync(x => Work(query, x, ProcessCursorAsync, cancellationToken)).ConfigureAwait(false);
         }
     }
 
-    public async Task<T> ExecuteQueryAsync<T>(Query query, QueryConfig<T> config)
+    public async Task<T> ExecuteQueryAsync<T>(Query query, QueryConfig<T> config, CancellationToken cancellationToken = default)
     {
         query = query ?? throw new ArgumentNullException(nameof(query));
         config = config ?? throw new ArgumentNullException(nameof(config));
@@ -184,41 +184,41 @@ internal sealed class Driver : IInternalDriver
         await using (session.ConfigureAwait(false))
         {
             if (config.Routing == RoutingControl.Readers)
-                return await session.ExecuteReadAsync(x => Work(query, x, config.CursorProcessor)).ConfigureAwait(false);
-            return await session.ExecuteWriteAsync(x => Work(query, x, config.CursorProcessor)).ConfigureAwait(false);
+                return await session.ExecuteReadAsync(x => Work(query, x, config.CursorProcessor, cancellationToken)).ConfigureAwait(false);
+            return await session.ExecuteWriteAsync(x => Work(query, x, config.CursorProcessor, cancellationToken)).ConfigureAwait(false);
         }
     }
 
-    public Task<QueryResult> ExecuteQueryAsync(string query, object queryParameters, QueryConfig config)
+    public Task<QueryResult> ExecuteQueryAsync(string query, object queryParameters, QueryConfig config, CancellationToken cancellationToken = default)
     {
         query = query ?? throw new ArgumentNullException(nameof(query));
         config = config ?? throw new ArgumentNullException(nameof(config));
 
-        return ExecuteQueryAsync(new Query(query, queryParameters), config);
+        return ExecuteQueryAsync(new Query(query, queryParameters), config, cancellationToken);
     }
 
-    public Task<QueryResult> ExecuteQueryAsync(string query, Dictionary<string, object> queryParameters, QueryConfig config)
+    public Task<QueryResult> ExecuteQueryAsync(string query, Dictionary<string, object> queryParameters, QueryConfig config, CancellationToken cancellationToken = default)
     {
         query = query ?? throw new ArgumentNullException(nameof(query));
         config = config ?? throw new ArgumentNullException(nameof(config));
 
-        return ExecuteQueryAsync(new Query(query, queryParameters), config);
+        return ExecuteQueryAsync(new Query(query, queryParameters), config, cancellationToken);
     }
 
-    public Task<T> ExecuteQueryAsync<T>(string query, object queryParameters, QueryConfig<T> config)
+    public Task<T> ExecuteQueryAsync<T>(string query, object queryParameters, QueryConfig<T> config, CancellationToken cancellationToken = default)
     {
         query = query ?? throw new ArgumentNullException(nameof(query));
         config = config ?? throw new ArgumentNullException(nameof(config));
 
-        return ExecuteQueryAsync(new Query(query, queryParameters), config);
+        return ExecuteQueryAsync(new Query(query, queryParameters), config, cancellationToken);
     }
 
-    public Task<T> ExecuteQueryAsync<T>(string query, Dictionary<string, object> queryParameters, QueryConfig<T> config)
+    public Task<T> ExecuteQueryAsync<T>(string query, Dictionary<string, object> queryParameters, QueryConfig<T> config, CancellationToken cancellationToken = default)
     {
         query = query ?? throw new ArgumentNullException(nameof(query));
         config = config ?? throw new ArgumentNullException(nameof(config));
 
-        return ExecuteQueryAsync(new Query(query, queryParameters), config);
+        return ExecuteQueryAsync(new Query(query, queryParameters), config, cancellationToken);
     }
 
     private static void ApplyConfig(QueryConfig config, SessionConfigBuilder sessionConfigBuilder)
@@ -240,13 +240,13 @@ internal sealed class Driver : IInternalDriver
         });
     }
 
-    private static async Task<T> Work<T>(Query q, IAsyncQueryRunner x, Func<IResultCursor, Task<T>> process)
+    private static async Task<T> Work<T>(Query q, IAsyncQueryRunner x, Func<IResultCursor, CancellationToken, Task<T>> process, CancellationToken cancellationToken)
     {
         var cursor = await x.RunAsync(q).ConfigureAwait(false);
-        return await process(cursor).ConfigureAwait(false);
+        return await process(cursor, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<QueryResult> ProcessCursorAsync(IResultCursor cursor)
+    private static async Task<QueryResult> ProcessCursorAsync(IResultCursor cursor, CancellationToken _)
     {
         var records = await cursor.ToListAsync().ConfigureAwait(false);
         var keys = await cursor.KeysAsync().ConfigureAwait(false);
