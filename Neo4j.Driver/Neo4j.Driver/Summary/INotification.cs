@@ -14,40 +14,48 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-namespace Neo4j.Driver
+namespace Neo4j.Driver;
+
+/// <summary>
+/// Representation for notifications found when executing a query.
+/// 
+/// A notification can be visualized in a client pinpointing problems or other information about the query.
+/// </summary>
+public interface INotification
 {
     /// <summary>
-    /// Representation for notifications found when executing a query.
-    /// 
-    /// A notification can be visualized in a client pinpointing problems or other information about the query.
+    ///Gets a notification code for the discovered issue.
     /// </summary>
-    public interface INotification
-    {
-        /// <summary>
-        ///Gets a notification code for the discovered issue.
-        /// </summary>
-        string Code { get; }
+    string Code { get; }
 
-        /// <summary>
-        ///Gets a short summary of the notification.
-        /// </summary>
-        string Title { get; }
+    /// <summary>
+    ///Gets a short summary of the notification.
+    /// </summary>
+    string Title { get; }
 
-        /// <summary>
-        ///Gets a longer description of the notification.
-        /// </summary>
-        string Description { get; }
+    /// <summary>
+    ///Gets a longer description of the notification.
+    /// </summary>
+    string Description { get; }
 
-        /// <summary>
-        ///Gets the position in the query where this notification points to.
-        ///Not all notifications have a unique position to point to and in that case the position would be set to all 0s.
-        /// </summary>
-        IInputPosition Position { get; }
+    /// <summary>
+    ///Gets the position in the query where this notification points to.
+    ///Not all notifications have a unique position to point to and in that case the position would be set to all 0s.
+    /// </summary>
+    IInputPosition Position { get; }
 
-        /// <summary>
-        /// Gets The severity level of the notification.
-        /// </summary>
-        string Severity { get; }
-    }
+    /// <summary>
+    /// Gets The severity level of the notification.
+    /// </summary>
+    string Severity { get; }
 
+    /// <summary>
+    /// Severity of this <see cref="INotification"/> instance.
+    /// </summary>
+    NotificationSeverity NotificationSeverity { get; }
+
+    /// <summary>
+    /// Category of this <see cref="INotification"/> instance.
+    /// </summary>
+    NotificationCategory NotificationCategory { get; }
 }
