@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver;
@@ -61,7 +62,7 @@ public class QueryConfig
 /// </summary>
 public class QueryConfig<T> : QueryConfig
 {
-    public QueryConfig(RoutingControl routing, Func<IResultCursor, Task<T>> cursorProcessor, string database = null,
+    public QueryConfig(RoutingControl routing, Func<IResultCursor, CancellationToken, Task<T>> cursorProcessor, string database = null,
         string impersonatedUser = null, IBookmarkManager bookmarkManager = null) 
         : base(routing, database, impersonatedUser, bookmarkManager)
     {
@@ -70,5 +71,5 @@ public class QueryConfig<T> : QueryConfig
     /// <summary>
     /// 
     /// </summary>
-    public Func<IResultCursor, Task<T>> CursorProcessor { get; init; }
+    public Func<IResultCursor, CancellationToken, Task<T>> CursorProcessor { get; init; }
 }
