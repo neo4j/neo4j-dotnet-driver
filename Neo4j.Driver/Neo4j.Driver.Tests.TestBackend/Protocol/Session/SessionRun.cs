@@ -23,21 +23,6 @@ namespace Neo4j.Driver.Tests.TestBackend
             public Dictionary<string, CypherToNativeObject> parameters { get; set; } = new Dictionary<string, CypherToNativeObject>();
         }
 
-        private Dictionary<string, object> ConvertParameters(Dictionary<string, CypherToNativeObject> source)
-        {
-            if (data.parameters == null)
-                return null;
-
-            Dictionary<string, object> newParams = new Dictionary<string, object>();
-
-            foreach(KeyValuePair<string, CypherToNativeObject> element in source)
-            {
-                newParams.Add(element.Key, CypherToNative.Convert(element.Value));
-            }
-
-            return newParams;
-        }
-
         void TransactionConfig(TransactionConfigBuilder configBuilder)
         {
             try
@@ -62,7 +47,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         public override async Task Process()
         {
             var newSession = (NewSession)ObjManager.GetObject(data.sessionId);
-            IResultCursor cursor = await newSession.Session.RunAsync(data.cypher, ConvertParameters(data.parameters), TransactionConfig).ConfigureAwait(false);
+            IResultCursor cursor = await newSession.Session.RunAsync(data.cypher, FullQueryParameterConverter.ConvertParameters(data.parameters), TransactionConfig).ConfigureAwait(false);
 
             var result = ProtocolObjectFactory.CreateObject<Result>();
             result.ResultCursor = cursor;
