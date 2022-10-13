@@ -94,42 +94,42 @@ public interface IDriver : IDisposable, IAsyncDisposable
     bool Encrypted { get; }
 
     /// <summary>
-    /// Execute a query in a transaction.
+    /// Execute a query in a transaction and collect all results.
     /// </summary>
-    /// <param name="query">query to be executed.</param>
-    /// <param name="config">configuration for query.</param>
+    /// <param name="query">A query to be executed on the server.</param>
+    /// <param name="config">a Configuration object for how to execute query.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation. (Not completely observed.)</param>
     /// <returns> A task that represents the asynchronous query operation. <br/>
     /// The task result contains a <see cref="QueryResult"/>.</returns>
     Task<QueryResult> ExecuteQueryAsync(Query query, QueryConfig config, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Execute a query in a transaction.
+    /// Execute a query in a transaction and collect all results.
     /// </summary>
-    /// <param name="query">query to be executed.</param>
-    /// <param name="queryParameters">parameters for query</param>
-    /// <param name="config">configuration for query.</param>
+    /// <param name="query">A query to be executed on the server.</param>
+    /// <param name="queryParameters">A set of parameters to be passed to the server with query.</param>
+    /// <param name="config">a Configuration object for how to execute query.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation. (Not completely observed.)</param>
     /// <returns> A task that represents the asynchronous query operation. <br/>
     /// The task result contains a <see cref="QueryResult"/>.</returns>
     Task<QueryResult> ExecuteQueryAsync(string query, object queryParameters, QueryConfig config, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Execute a query in a transaction.
+    /// Execute a query in a transaction and collect all results.
     /// </summary>
-    /// <param name="query">query to be executed.</param>
-    /// <param name="queryParameters">parameters for query</param>
-    /// <param name="config">configuration for query.</param>
+    /// <param name="query">A query to be executed on the server.</param>
+    /// <param name="queryParameters">A set of parameters to be passed to the server with query.</param>
+    /// <param name="config">a Configuration object for how to execute query.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation. (Not completely observed.)</param>
     /// <returns> A task that represents the asynchronous query operation. <br/>
     /// The task result contains a <see cref="QueryResult"/>.</returns>
     Task<QueryResult> ExecuteQueryAsync(string query, Dictionary<string, object> queryParameters, QueryConfig config, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Execute query in a transaction, using user-defined cursor processing.<br/>
+    /// Execute query in a transaction, using user-defined cursor processing.
     /// </summary>
-    /// <param name="query">query to be executed.</param>
-    /// <param name="config">configuration for query.</param>
+    /// <param name="query">Query to be executed.</param>
+    /// <param name="config">a Configuration object for how to execute query and process results.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation. (Not completely observed.)</param>
     /// <typeparam name="TResult">return value of user-defined cursor processor.</typeparam>
     /// <returns> A task that represents the asynchronous query operation. <br/>
@@ -137,11 +137,11 @@ public interface IDriver : IDisposable, IAsyncDisposable
     Task<TResult> ExecuteQueryAsync<TResult>(Query query, QueryConfig<TResult> config, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Execute query in a transaction, using user-defined cursor processing.<br/>
+    /// Execute query in a transaction, using user-defined cursor processing.
     /// </summary>
-    /// <param name="query">query to be executed.</param>
-    /// <param name="queryParameters">parameters for query</param>
-    /// <param name="config">configuration for query.</param>
+    /// <param name="query">A query to be executed on the server.</param>
+    /// <param name="queryParameters">A set of parameters to be passed to the server with query.</param>
+    /// <param name="config">a Configuration object for how to execute query and process results.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation. (Not completely observed.)</param>
     /// <typeparam name="TResult">return value of user-defined cursor processor.</typeparam>
     /// <returns> A task that represents the asynchronous query operation. <br/>
@@ -149,11 +149,11 @@ public interface IDriver : IDisposable, IAsyncDisposable
     Task<TResult> ExecuteQueryAsync<TResult>(string query, object queryParameters, QueryConfig<TResult> config, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Execute query in a transaction, using user-defined cursor processing.<br/>
+    /// Execute query in a transaction, using user-defined cursor processing.
     /// </summary>
-    /// <param name="query">Query to be executed.</param>
-    /// <param name="queryParameters">Parameters for query</param>
-    /// <param name="config">Configuration for query.</param>
+    /// <param name="query">A query to be executed on the server.</param>
+    /// <param name="queryParameters">A set of parameters to be passed to the server with query.</param>
+    /// <param name="config">a Configuration object for how to execute query and process results.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation. (Not completely observed.)</param>
     /// <typeparam name="TResult">return value of user-defined cursor processor.</typeparam>
     /// <returns> A task that represents the asynchronous query operation. <br/>
