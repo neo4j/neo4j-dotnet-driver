@@ -161,10 +161,10 @@ internal sealed class Driver : IInternalDriver
         return _metrics;
     }
 
-    public async Task<QueryResult> ExecuteQueryAsync(Query query, QueryConfig config, CancellationToken cancellationToken = default)
+    public async Task<QueryResult> ExecuteQueryAsync(Query query, QueryConfig config = null, CancellationToken cancellationToken = default)
     {
         query = query ?? throw new ArgumentNullException(nameof(query));
-        config = config ?? throw new ArgumentNullException(nameof(config));
+        config ??= new QueryConfig();
 
         var session = AsyncSession(x => ApplyConfig(config, x));
         await using (session.ConfigureAwait(false))
@@ -189,19 +189,13 @@ internal sealed class Driver : IInternalDriver
         }
     }
 
-    public Task<QueryResult> ExecuteQueryAsync(string query, object queryParameters, QueryConfig config, CancellationToken cancellationToken = default)
+    public Task<QueryResult> ExecuteQueryAsync(string query, object queryParameters = null, QueryConfig config = null, CancellationToken cancellationToken = default)
     {
-        query = query ?? throw new ArgumentNullException(nameof(query));
-        config = config ?? throw new ArgumentNullException(nameof(config));
-
         return ExecuteQueryAsync(new Query(query, queryParameters), config, cancellationToken);
     }
 
-    public Task<QueryResult> ExecuteQueryAsync(string query, Dictionary<string, object> queryParameters, QueryConfig config, CancellationToken cancellationToken = default)
+    public Task<QueryResult> ExecuteQueryAsync(string query, Dictionary<string, object> queryParameters, QueryConfig config = null, CancellationToken cancellationToken = default)
     {
-        query = query ?? throw new ArgumentNullException(nameof(query));
-        config = config ?? throw new ArgumentNullException(nameof(config));
-
         return ExecuteQueryAsync(new Query(query, queryParameters), config, cancellationToken);
     }
 

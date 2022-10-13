@@ -101,7 +101,7 @@ public interface IDriver : IDisposable, IAsyncDisposable
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation. (Not completely observed.)</param>
     /// <returns> A task that represents the asynchronous query operation. <br/>
     /// The task result contains a <see cref="QueryResult"/>.</returns>
-    Task<QueryResult> ExecuteQueryAsync(Query query, QueryConfig config, CancellationToken cancellationToken = default);
+    Task<QueryResult> ExecuteQueryAsync(Query query, QueryConfig config = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Execute a query in a transaction and collect all results.
@@ -112,7 +112,7 @@ public interface IDriver : IDisposable, IAsyncDisposable
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation. (Not completely observed.)</param>
     /// <returns> A task that represents the asynchronous query operation. <br/>
     /// The task result contains a <see cref="QueryResult"/>.</returns>
-    Task<QueryResult> ExecuteQueryAsync(string query, object queryParameters, QueryConfig config, CancellationToken cancellationToken = default);
+    Task<QueryResult> ExecuteQueryAsync(string query, object queryParameters = null, QueryConfig config = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Execute a query in a transaction and collect all results.
@@ -123,7 +123,7 @@ public interface IDriver : IDisposable, IAsyncDisposable
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation. (Not completely observed.)</param>
     /// <returns> A task that represents the asynchronous query operation. <br/>
     /// The task result contains a <see cref="QueryResult"/>.</returns>
-    Task<QueryResult> ExecuteQueryAsync(string query, Dictionary<string, object> queryParameters, QueryConfig config, CancellationToken cancellationToken = default);
+    Task<QueryResult> ExecuteQueryAsync(string query, Dictionary<string, object> queryParameters, QueryConfig config = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Execute query in a transaction, using user-defined cursor processing.
