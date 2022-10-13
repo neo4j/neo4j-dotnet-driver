@@ -246,9 +246,9 @@ internal sealed class Driver : IInternalDriver
         return await process(cursor, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<QueryResult> ProcessCursorAsync(IResultCursor cursor, CancellationToken _)
+    private static async Task<QueryResult> ProcessCursorAsync(IResultCursor cursor, CancellationToken cancellationToken)
     {
-        var records = await cursor.ToListAsync().ConfigureAwait(false);
+        var records = await cursor.ToListAsync(cancellationToken).ConfigureAwait(false);
         var keys = await cursor.KeysAsync().ConfigureAwait(false);
         var summary = await cursor.ConsumeAsync().ConfigureAwait(false);
 
