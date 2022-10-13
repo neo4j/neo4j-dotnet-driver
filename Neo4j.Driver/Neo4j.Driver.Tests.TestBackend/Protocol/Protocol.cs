@@ -64,6 +64,7 @@ namespace Neo4j.Driver.Tests.TestBackend
                                     typeof(BookmarkManagerSupplierRequest),
                                     typeof(BookmarksConsumerCompleted),
                                     typeof(BookmarksSupplierCompleted),
+                                    typeof(ExecuteQuery)
                 };
 
 

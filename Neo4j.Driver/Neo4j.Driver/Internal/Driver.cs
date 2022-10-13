@@ -34,6 +34,7 @@ internal sealed class Driver : IInternalDriver
     private readonly ILogger _logger;
     private readonly IMetrics _metrics;
     private readonly Config _config;
+    private readonly DefaultBookmarkManager _bookmarkManager;
 
     public Uri Uri { get; }
     public bool Encrypted { get; }
@@ -55,6 +56,7 @@ internal sealed class Driver : IInternalDriver
         _retryLogic = retryLogic;
         _metrics = metrics;
         _config = config;
+        _bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig(null, null, null));
     }
 
     private bool IsClosed => _closedMarker > 0;
@@ -215,17 +217,15 @@ internal sealed class Driver : IInternalDriver
         return ExecuteQueryAsync(new Query(query, queryParameters), config, cancellationToken);
     }
 
-    private static void ApplyConfig(QueryConfig config, SessionConfigBuilder sessionConfigBuilder)
+    private void ApplyConfig(QueryConfig config, SessionConfigBuilder sessionConfigBuilder)
     {
         if (!string.IsNullOrWhiteSpace(config.Database))
             sessionConfigBuilder.WithDatabase(config.Database);
 
-        if (config.BookmarkManager != null)
-            sessionConfigBuilder.WithBookmarkManager(config.BookmarkManager);
-
         if (!string.IsNullOrWhiteSpace(config.ImpersonatedUser))
             sessionConfigBuilder.WithImpersonatedUser(config.ImpersonatedUser);
-
+        
+        sessionConfigBuilder.WithBookmarkManager(config.BookmarkManager ?? _bookmarkManager);
         sessionConfigBuilder.WithDefaultAccessMode(config.Routing switch
         {
             RoutingControl.Readers => AccessMode.Read,
