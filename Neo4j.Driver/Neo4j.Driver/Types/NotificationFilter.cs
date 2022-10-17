@@ -18,67 +18,67 @@
 namespace Neo4j.Driver;
 
 /// <summary>
-///     Used to specify what notifications to receive from the server.
+/// Used to specify what notifications to receive from the server.
 /// </summary>
 public enum NotificationFilter
 {
     /// <summary>
-    ///     Receive no notifications.
+    /// Receive no notifications.
     /// </summary>
     None,
 
     /// <summary>
-    ///     Receive all notifications.
+    /// Receive all notifications.
     /// </summary>
     All,
 
     /// <summary>
-    ///     Receive all query notifications.
+    /// Receive all query notifications.
     /// </summary>
     AllQuery,
 
     /// <summary>
-    ///     Receive all warning notifications.
+    /// Receive all warning notifications.
     /// </summary>
     WarningAll,
 
     /// <summary>
-    ///     Receive only deprecation notifications.
+    /// Receive only deprecation notifications.
     /// </summary>
     WarningDeprecation,
 
     /// <summary>
-    ///     Receive only warning hint notifications.
+    /// Receive only warning hint notifications.
     /// </summary>
     WarningHint,
 
     /// <summary>
-    ///     Receive only query notifications at a warning level.
+    /// Receive only query notifications at a warning level.
     /// </summary>
     WarningQuery,
 
     /// <summary>
-    ///     Receive only unsupported warning notifications.
+    /// Receive only unsupported warning notifications.
     /// </summary>
     WarningUnsupported,
 
     /// <summary>
-    ///     Receive all information notifications.
+    /// Receive all information notifications.
     /// </summary>
     InformationAll,
 
     /// <summary>
-    ///     Receive only runtime information notifications.
+    /// Receive only runtime information notifications.
     /// </summary>
     InformationRuntime,
 
     /// <summary>
-    ///     Receive only query notifications at a information level.
+    /// Receive only query notifications at a information level.
     /// </summary>
     InformationQuery,
 
     /// <summary>
-    ///     Receive only performance notifications.
+    /// Receive only performance notifications.
     /// </summary>
     InformationPerformance
 }

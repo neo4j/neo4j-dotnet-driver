@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Tests
     {
         internal static AsyncSession NewSession(IConnection connection, ILogger logger = null)
         {
-            return new AsyncSession(new TestConnectionProvider(connection), logger, null, 0, new List<NotificationFilter>(), new Driver.SessionConfig(), false);
+            return new AsyncSession(new TestConnectionProvider(connection), logger, null, 0, null, new Driver.SessionConfig(), false);
         }
 
         internal static AsyncSession NewSession(IBoltProtocol protocol, bool reactive = false)
@@ -47,7 +47,7 @@ namespace Neo4j.Driver.Tests
             mockConn.Setup(x => x.IsOpen).Returns(true);
             mockConn.Setup(x => x.BoltProtocol).Returns(protocol);
             
-            return new AsyncSession(new TestConnectionProvider(mockConn.Object), null, null, 0, new List<NotificationFilter>(), new Driver.SessionConfig(), reactive);
+            return new AsyncSession(new TestConnectionProvider(mockConn.Object), null, null, 0, null, new Driver.SessionConfig(), reactive);
         }
 
         internal static Mock<IConnection> NewMockedConnection(IBoltProtocol boltProtocol = null)
@@ -57,16 +57,16 @@ namespace Neo4j.Driver.Tests
             if (boltProtocol == null)
             {
                 var protocol = new Mock<IBoltProtocol>();
-                protocol.Setup(x => x.LoginAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<IAuthToken>()))
+                protocol.Setup(x => x.LoginAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<IAuthToken>(), It.IsAny<NotificationFilter[]>()))
                     .Returns(Task.CompletedTask);
                 protocol.Setup(x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Query>(),
                         false,
                         It.IsAny<IBookmarksTracker>(), It.IsAny<IResultResourceHandler>(), It.IsAny<string>(),
-                        It.IsAny<Bookmarks>(), It.IsAny<TransactionConfig>(), It.IsAny<string>(), It.IsAny<long>()))
+                        It.IsAny<Bookmarks>(), It.IsAny<TransactionConfig>(), It.IsAny<string>(), It.IsAny<long>(), It.IsAny<NotificationFilter[]>()))
                     .ReturnsAsync(new Mock<IResultCursor>().Object);
                 protocol.Setup(x =>
                         x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmarks>(),
-                            It.IsAny<TransactionConfig>(), null))
+                            It.IsAny<TransactionConfig>(), null, It.IsAny<NotificationFilter[]>()))
                     .Returns(Task.CompletedTask);
                 protocol.Setup(x =>
                         x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Query>(), false, It.IsAny<long>()))
@@ -105,7 +105,8 @@ namespace Neo4j.Driver.Tests
 
                 mockProtocol.Verify(
                     x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Query>(), reactive,
-                        session, session, It.IsAny<string>(), It.IsAny<Bookmarks>(), It.IsAny<TransactionConfig>(), It.IsAny<string>(), It.IsAny<long>()),
+                        session, session, It.IsAny<string>(), It.IsAny<Bookmarks>(), It.IsAny<TransactionConfig>(),
+                        It.IsAny<string>(), It.IsAny<long>(), It.IsAny<NotificationFilter[]>()),
                     Times.Once);
             }
         }
@@ -204,7 +205,7 @@ namespace Neo4j.Driver.Tests
 
                 mockProtocol.Setup(x =>
                         x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmarks>(),
-                            It.IsAny<TransactionConfig>(), It.IsAny<string>()))
+                            It.IsAny<TransactionConfig>(), It.IsAny<string>(), It.IsAny<NotificationFilter[]>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
                 var session = NewSession(mockConn.Object);
                 var exc = await Record.ExceptionAsync(() => session.BeginTransactionAsync());
@@ -226,7 +227,7 @@ namespace Neo4j.Driver.Tests
                 var calls = 0;
                 mockProtocol.Setup(x =>
                         x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmarks>(),
-                            It.IsAny<TransactionConfig>(), It.IsAny<string>()))
+                            It.IsAny<TransactionConfig>(), It.IsAny<string>(), It.IsAny<NotificationFilter[]>()))
                     .Returns(Task.CompletedTask).Callback(() =>
                     {
                         // only throw exception on the first beginTx call
@@ -258,7 +259,7 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection(mockProtocol.Object);
                 mockProtocol.Setup(x =>
                         x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmarks>(),
-                            It.IsAny<TransactionConfig>(), It.IsAny<string>()))
+                            It.IsAny<TransactionConfig>(), It.IsAny<string>(), It.IsAny<NotificationFilter[]>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
                 var session = NewSession(mockConn.Object);
                 var error = await Record.ExceptionAsync(() => session.BeginTransactionAsync());
@@ -416,7 +417,7 @@ namespace Neo4j.Driver.Tests
                     .WithBookmarkManager(bookmarkManager.Object)
                     .Build();
 
-                using (var session = new AsyncSession(null, null, null, 0, new List<NotificationFilter>(), cfg, false))
+                using (var session = new AsyncSession(null, null, null, 0, null, cfg, false))
                 {
                     session.UpdateBookmarks(new InternalBookmarks("a"));
                     bookmarkManager.Verify(x => x.UpdateBookmarksAsync("test", Array.Empty<string>(), new[] { "a" }, It.IsAny<CancellationToken>()), Times.Once);

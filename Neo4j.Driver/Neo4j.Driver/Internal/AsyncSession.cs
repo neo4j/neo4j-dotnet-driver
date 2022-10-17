@@ -56,13 +56,13 @@ namespace Neo4j.Driver.Internal
         private readonly long _fetchSize;
         private readonly IBookmarkManager _bookmarkManager;
         private readonly bool _useBookmarkManager;
-        private readonly IReadOnlyList<NotificationFilter> _notificationFilters;
+        private readonly NotificationFilter[] _notificationFilters;
 
         public AsyncSession(IConnectionProvider provider,
             ILogger logger,
             IAsyncRetryLogic retryLogic,
             long defaultFetchSize,
-            IReadOnlyList<NotificationFilter> globalFilters,
+            NotificationFilter[] globalFilters,
             SessionConfig config,
             bool reactive
         )
@@ -154,7 +154,7 @@ namespace Neo4j.Driver.Internal
 
                 return await protocol
                     .RunInAutoCommitTransactionAsync(_connection, query, _reactive, this, this, _database,
-                        _bookmarks, options, ImpersonatedUser(), _fetchSize)
+                        _bookmarks, options, ImpersonatedUser(), _fetchSize, _notificationFilters)
                     .ConfigureAwait(false);
             });
 

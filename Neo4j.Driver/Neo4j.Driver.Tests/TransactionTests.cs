@@ -55,7 +55,7 @@ namespace Neo4j.Driver.Tests
                 await tx.BeginTransactionAsync(null);
                 mockProtocol.Verify(
                     x => x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), bookmarks,
-                        It.IsAny<TransactionConfig>(), null),
+                        It.IsAny<TransactionConfig>(), null, It.IsAny<NotificationFilter[]>()),
                     Times.Once);
             }
         }
@@ -72,7 +72,7 @@ namespace Neo4j.Driver.Tests
                 await tx.BeginTransactionAsync(TransactionConfig.Default);
                 protocol.Verify(
                     x => x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmarks>(),
-                        It.IsAny<TransactionConfig>(), null), Times.Once);
+                        It.IsAny<TransactionConfig>(), null, It.IsAny<NotificationFilter[]>()), Times.Once);
             }
         }
 

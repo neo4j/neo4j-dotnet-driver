@@ -22,44 +22,39 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;
 
-namespace Neo4j.Driver.Internal.Protocol
+namespace Neo4j.Driver.Internal.Protocol;
+
+internal interface IBoltProtocol
 {
-    internal interface IBoltProtocol
-    {
-        IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null, bool useUtcEncodedDateTimes = false);
-        IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger = null, bool useUtcEncodedDateTimes = false);
+    BoltProtocolVersion Version { get; }
 
-        Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken);
+    IMessageReader NewReader(Stream stream, BufferSettings bufferSettings, ILogger logger = null, 
+        bool useUtcEncodedDateTimes = false);
+    IMessageWriter NewWriter(Stream writeStream, BufferSettings bufferSettings, ILogger logger = null, 
+        bool useUtcEncodedDateTimes = false);
 
-        Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, 
-                                                            Query query,
-                                                            bool reactive, 
-                                                            IBookmarksTracker bookmarksTracker, 
-                                                            IResultResourceHandler resultResourceHandler,
-                                                            string database, 
-                                                            Bookmarks bookmark, 
-                                                            TransactionConfig config,
-															string impersonatedUser,
-															long fetchSize);
+    Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken,
+        NotificationFilter[] filters = null);
 
-        Task BeginTransactionAsync(IConnection connection, string database, Bookmarks bookmark, TransactionConfig config, string impersonatedUser);
+    Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, Query query, bool reactive, 
+        IBookmarksTracker bookmarksTracker, IResultResourceHandler resultResourceHandler, string database, 
+        Bookmarks bookmark, TransactionConfig config, string impersonatedUser, long fetchSize, 
+        NotificationFilter[] filters);
 
-        Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection, Query query, bool reactive, long fetchSize);
+    Task BeginTransactionAsync(IConnection connection, string database, Bookmarks bookmark, TransactionConfig config,
+        string impersonatedUser, NotificationFilter[] filters = null);
 
-        Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker);
+    Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection, Query query, bool reactive,
+        long fetchSize);
 
-        Task RollbackTransactionAsync(IConnection connection);
+    Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker);
 
-        Task ResetAsync(IConnection connection);
+    Task RollbackTransactionAsync(IConnection connection);
 
-        Task LogoutAsync(IConnection connection);
+    Task ResetAsync(IConnection connection);
 
-        BoltProtocolVersion Version { get; }
+    Task LogoutAsync(IConnection connection);
 
-        Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection,
-																  string database,
-																  string impersonated_user,
-																  Bookmarks bookmark); 
-    }
-
+    Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database,
+        string impersonatedUser, Bookmarks bookmark); 
 }

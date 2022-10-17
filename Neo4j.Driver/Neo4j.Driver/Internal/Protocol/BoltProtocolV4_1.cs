@@ -20,9 +20,11 @@ namespace Neo4j.Driver.Internal.Protocol
         {
             RoutingContext = routingContext;
         }
+
         protected virtual IRequestMessage HelloMessage(string userAgent,
             IDictionary<string, object> auth,
-            IDictionary<string, string> routingContext)
+            IDictionary<string, string> routingContext,
+            NotificationFilter[] _)
         {
             return new HelloMessage(userAgent, auth, routingContext);
         }
@@ -30,9 +32,9 @@ namespace Neo4j.Driver.Internal.Protocol
         protected override IResponseHandler GetHelloResponseHandler(IConnection conn) => new HelloResponseHandler(conn, Version);
 
 
-        public override async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
+        public override async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken, NotificationFilter[] notificationFilters = null)
         {
-            await connection.EnqueueAsync(HelloMessage(userAgent, authToken.AsDictionary(), RoutingContext),
+            await connection.EnqueueAsync(HelloMessage(userAgent, authToken.AsDictionary(), RoutingContext, notificationFilters),
 										  GetHelloResponseHandler(connection)).ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
         }

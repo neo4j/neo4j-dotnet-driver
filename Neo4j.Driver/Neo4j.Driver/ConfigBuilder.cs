@@ -337,11 +337,11 @@ namespace Neo4j.Driver
         /// Add filter for notifications to be received.
         /// TODO: Add more details
         /// </summary>
-        /// <param name="filter">Filter to include</param>
+        /// <param name="filters"></param>
         /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
-        public ConfigBuilder WithNotificationFilter(NotificationFilter filter)
+        public ConfigBuilder WithNotificationFilters(params NotificationFilter[] filters)
         {
-            _config.NotificationFilters.Add(filter);
+            _config.NotificationFilters = filters;
             return this;
         }
     }

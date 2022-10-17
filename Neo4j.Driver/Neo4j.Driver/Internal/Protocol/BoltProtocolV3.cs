@@ -39,13 +39,14 @@ namespace Neo4j.Driver.Internal.Protocol
 		protected virtual IMessageFormat MessageFormat  => BoltProtocolMessageFormat.V3;
         public virtual BoltProtocolVersion Version => BoltProtocolVersion.V3_0;
 
-        protected virtual IRequestMessage GetHelloMessage(string userAgent,
-														IDictionary<string, object> auth)
+        protected virtual IRequestMessage GetHelloMessage(string userAgent, IDictionary<string, object> auth,
+            NotificationFilter[] notificationFilters = null)
 		{
 			return new Messaging.V3.HelloMessage(userAgent, auth);
 		}
 
-		protected virtual IRequestMessage GetBeginMessage(string database, Bookmarks bookmarks, TransactionConfig config, AccessMode mode, string impersonatedUser)
+		protected virtual IRequestMessage GetBeginMessage(string database, Bookmarks bookmarks, TransactionConfig config,
+            AccessMode mode, string impersonatedUser, NotificationFilter[] notificationFilters = null)
 		{
 			ValidateImpersonatedUserForVersion(impersonatedUser);
 			AssertNullDatabase(database);
@@ -53,7 +54,9 @@ namespace Neo4j.Driver.Internal.Protocol
 			return new BeginMessage(bookmarks, config, mode);
 		}
 
-		protected virtual IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmarks bookmarks = null, TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null, string impersonatedUser = null)
+		protected virtual IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmarks bookmarks = null,
+            TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null,
+            string impersonatedUser = null, NotificationFilter[] notificationFilters = null)
 		{
 			ValidateImpersonatedUserForVersion(impersonatedUser);
 			return new RunWithMetadataMessage(query, bookmarks, config, mode);
@@ -73,23 +76,18 @@ namespace Neo4j.Driver.Internal.Protocol
             return new MessageReader(stream, bufferSettings.DefaultReadBufferSize, bufferSettings.MaxReadBufferSize, logger, MessageFormat);
         }
 
-        public virtual async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
+        public virtual async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken,
+            NotificationFilter[] notificationFilters = null)
         {
-            await connection.EnqueueAsync(GetHelloMessage(userAgent, authToken.AsDictionary()),
+            await connection.EnqueueAsync(GetHelloMessage(userAgent, authToken.AsDictionary(), notificationFilters),
 										  GetHelloResponseHandler(connection)).ConfigureAwait(false);
             await connection.SyncAsync().ConfigureAwait(false);
         }
 
-        public virtual async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-                                                                                 Query query, 
-                                                                                 bool reactive, 
-                                                                                 IBookmarksTracker bookmarksTracker,
-                                                                                 IResultResourceHandler resultResourceHandler,
-                                                                                 string database, 
-                                                                                 Bookmarks bookmarks, 
-                                                                                 TransactionConfig config,
-																				 string impersonatedUser,
-																				 long fetchSize = Config.Infinite)
+        public virtual async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, Query query,
+            bool reactive, IBookmarksTracker bookmarksTracker, IResultResourceHandler resultResourceHandler, 
+            string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser, 
+            long fetchSize = Config.Infinite, NotificationFilter[] notificationFilters = null)
         {
             AssertNullDatabase(database);
 
@@ -97,20 +95,22 @@ namespace Neo4j.Driver.Internal.Protocol
             var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, resultResourceHandler);
             var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
             var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
-            await connection.EnqueueAsync(GetRunWithMetaDataMessage(query, bookmarks, config, connection.GetEnforcedAccessMode(), null, impersonatedUser), runHandler, PullAll, pullAllHandler).ConfigureAwait(false);
+            await connection.EnqueueAsync(GetRunWithMetaDataMessage(query, bookmarks, config, connection.GetEnforcedAccessMode(), null, impersonatedUser), runHandler, PullAll, pullAllHandler)
+                .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
             return streamBuilder.CreateCursor();
         }
 
-        public virtual async Task BeginTransactionAsync(IConnection connection, string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser)
-        {	
-			await connection.EnqueueAsync(GetBeginMessage(database, 
-													   bookmarks, 
-													   config, 
-													   connection.GetEnforcedAccessMode(), 
-													   impersonatedUser),
-										  new BeginResponseHandler())
-							.ConfigureAwait(false);
+        public virtual async Task BeginTransactionAsync(IConnection connection, string database, Bookmarks bookmarks,
+            TransactionConfig config, string impersonatedUser, NotificationFilter[] notificationFilters = null)
+        {
+            await connection.EnqueueAsync(GetBeginMessage(database,
+                        bookmarks,
+                        config,
+                        connection.GetEnforcedAccessMode(),
+                        impersonatedUser),
+                    new BeginResponseHandler())
+                .ConfigureAwait(false);
 			
 			await connection.SyncAsync().ConfigureAwait(false);
 		}
@@ -193,7 +193,8 @@ namespace Neo4j.Driver.Internal.Protocol
 
 		protected virtual void ValidateImpersonatedUserForVersion(string impersonatedUser)
 		{
-			if (impersonatedUser is not null) throw new ArgumentException($"Boltprotocol {Version} does not support impersonatedUser, yet has been passed a non null impersonated user string");
+			if (impersonatedUser is not null) 
+                throw new ArgumentException($"Boltprotocol {Version} does not support impersonatedUser, yet has been passed a non null impersonated user string");
 		}
 
         protected class ConnectionResourceHandler : IResultResourceHandler

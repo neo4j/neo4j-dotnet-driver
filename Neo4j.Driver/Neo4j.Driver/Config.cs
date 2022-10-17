@@ -220,6 +220,9 @@ namespace Neo4j.Driver
         /// </summary>
         public string UserAgent { get; set; } = ConnectionSettings.DefaultUserAgent;
 
-        public List<NotificationFilter> NotificationFilters { get; set; } = new List<NotificationFilter>();
+        /// <summary>
+        /// TODO: add details.
+        /// </summary>
+        public NotificationFilter[] NotificationFilters { get; set; } = null;
     }
 }

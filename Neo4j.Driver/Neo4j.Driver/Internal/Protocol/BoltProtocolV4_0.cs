@@ -41,19 +41,23 @@ namespace Neo4j.Driver.Internal.Protocol
         public override BoltProtocolVersion Version => BoltProtocolVersion.V4_0;
         protected override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V4;
 		
-        protected override IRequestMessage GetHelloMessage(string userAgent, IDictionary<string, object> auth)
+        protected override IRequestMessage GetHelloMessage(string userAgent, IDictionary<string, object> auth,
+            NotificationFilter[] _ = null)
 		{
 			return new HelloMessage(userAgent, auth);
 		}
 
-		protected override IRequestMessage GetBeginMessage(string database, Bookmarks bookmarks, TransactionConfig config, AccessMode mode, string impersonatedUser)
+		protected override IRequestMessage GetBeginMessage(string database, Bookmarks bookmarks, TransactionConfig config,
+            AccessMode mode, string impersonatedUser, NotificationFilter[] notificationFilters = null)
 		{
 			ValidateImpersonatedUserForVersion(impersonatedUser);
 
 			return new BeginMessage(database, bookmarks, config?.Timeout, config?.Metadata, mode);
 		}
 
-		protected override IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmarks bookmarks = null, TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null, string impersonatedUser = null)
+		protected override IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmarks bookmarks = null, 
+            TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null,
+            string impersonatedUser = null, NotificationFilter[] notificationFilters = null)
 		{
 			ValidateImpersonatedUserForVersion(impersonatedUser);
 
@@ -63,16 +67,10 @@ namespace Neo4j.Driver.Internal.Protocol
 		protected override IResponseHandler GetHelloResponseHandler(IConnection conn) { return new V3.HelloResponseHandler(conn); }
 
 
-        public override async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-																				  Query query, 
-																				  bool reactive, 
-																				  IBookmarksTracker bookmarksTracker,
-																				  IResultResourceHandler resultResourceHandler,
-																				  string database, 
-																				  Bookmarks bookmarks, 
-																				  TransactionConfig config,
-																				  string impersonatedUser,
-																				  long fetchSize = Config.Infinite)
+        public override async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, Query query,
+            bool reactive, IBookmarksTracker bookmarksTracker, IResultResourceHandler resultResourceHandler,
+            string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser, 
+            long fetchSize = Config.Infinite, NotificationFilter[] notificationFilters = null)
         {
             var summaryBuilder = new SummaryBuilder(query, connection.Server);
             var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,
@@ -93,15 +91,15 @@ namespace Neo4j.Driver.Internal.Protocol
             await connection
                 .EnqueueAsync(
                     GetRunWithMetaDataMessage(query, bookmarks, config,
-                        connection.GetEnforcedAccessMode(), database, impersonatedUser), runHandler,
+                        connection.GetEnforcedAccessMode(), database, impersonatedUser, notificationFilters), runHandler,
                     pullMessage, pullHandler)
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
             return streamBuilder.CreateCursor();
         }
 
-        public override async Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection,
-            Query query, bool reactive, long fetchSize = Config.Infinite)
+        public override async Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection, Query query,
+            bool reactive, long fetchSize = Config.Infinite)
         {
             var summaryBuilder = new SummaryBuilder(query, connection.Server);
             var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,

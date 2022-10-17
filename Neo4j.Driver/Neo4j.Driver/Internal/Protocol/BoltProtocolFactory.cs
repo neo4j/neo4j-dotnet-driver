@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Internal.Protocol
                     //This is a 'magic' handshake identifier to indicate we're using 'BOLT' ('GOGOBOLT')
                     goGoBolt,
                     // 4 versions max.
-                    BoltProtocolVersion.V5_0.PackToInt(),
+                    BoltProtocolVersion.V5_1.PackToIntRange(BoltProtocolVersion.V5_0),
                     BoltProtocolVersion.V4_4.PackToIntRange(BoltProtocolVersion.V4_2),
                     BoltProtocolVersion.V4_1.PackToInt(),
                     BoltProtocolVersion.V3_0.PackToInt()
@@ -55,12 +55,12 @@ namespace Neo4j.Driver.Internal.Protocol
             return version switch
             {
                 {MajorVersion: 3, MinorVersion: 0} => new BoltProtocolV3(),
-                {MajorVersion: 4, MinorVersion: 0} => new BoltProtocolV4_0(),
                 {MajorVersion: 4, MinorVersion: 1} => new BoltProtocolV4_1(routingContext),
                 {MajorVersion: 4, MinorVersion: 2} => new BoltProtocolV4_2(routingContext),
                 {MajorVersion: 4, MinorVersion: 3} => new BoltProtocolV4_3(routingContext),
                 {MajorVersion: 4, MinorVersion: 4} => new BoltProtocolV4_4(routingContext),
                 {MajorVersion: 5, MinorVersion: 0} => new BoltProtocolV5_0(routingContext),
+                {MajorVersion: 5, MinorVersion: 1} => new BoltProtocolV5_1(routingContext),
                 // no matching versions
                 {MajorVersion: 0, MinorVersion: 0} => throw new NotSupportedException(NoAgreedVersion),
                 // http response

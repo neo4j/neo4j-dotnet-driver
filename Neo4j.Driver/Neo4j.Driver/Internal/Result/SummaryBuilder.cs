@@ -289,6 +289,8 @@ namespace Neo4j.Driver.Internal.Result
         public string Description { get; }
         public IInputPosition Position { get; }
         public string Severity { get; }
+        public NotificationSeverity NotificationSeverity { get; }
+        public NotificationCategory NotificationCategory { get; }
 
         public Notification(string code, string title, string description, IInputPosition position, string severity)
         {
@@ -297,6 +299,39 @@ namespace Neo4j.Driver.Internal.Result
             Description = description;
             Position = position;
             Severity = severity;
+            NotificationCategory = ParseCategory(code);
+            NotificationSeverity = ParseSeverity(severity);
+        }
+
+        private NotificationCategory ParseCategory(string code)
+        {
+            try
+            {
+                return code.Split(new []{'.'}, StringSplitOptions.RemoveEmptyEntries)[1] switch
+                {
+                    "hint" => NotificationCategory.Hint,
+                    "query" => NotificationCategory.Query,
+                    "unsupported" => NotificationCategory.Unsupported,
+                    "performance" => NotificationCategory.Performance,
+                    "deprecation" => NotificationCategory.Deprecation,
+                    "runtime" => NotificationCategory.Runtime,
+                    _ => NotificationCategory.Unknown
+                };
+            }
+            catch
+            {
+                return NotificationCategory.Unknown;
+            }
+        }
+
+        private NotificationSeverity ParseSeverity(string severity)
+        {
+            return severity?.ToLower() switch
+            {
+                "information" => NotificationSeverity.Information,
+                "warning" => NotificationSeverity.Warning,
+                _ => NotificationSeverity.Unknown
+            };
         }
 
         public override string ToString()

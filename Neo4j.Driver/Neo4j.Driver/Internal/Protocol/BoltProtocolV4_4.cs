@@ -17,25 +17,28 @@ namespace Neo4j.Driver.Internal.Protocol
         protected override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V4_4;
         protected override IMessageFormat UtcMessageFormat => BoltProtocolMessageFormat.V4_4Utc;
         public const string BoltPatchKey = "patch_bolt";
+
         public BoltProtocolV4_4(IDictionary<string, string> routingContext)
             : base(routingContext)
         {
         }
 
-        protected override IRequestMessage HelloMessage(string userAgent,
-														IDictionary<string, object> auth,
-														IDictionary<string, string> routingContext)
-		{
+        protected override IRequestMessage HelloMessage(string userAgent, IDictionary<string, object> auth,
+            IDictionary<string, string> routingContext, NotificationFilter[] _)
+        {
 			return new HelloMessage(userAgent, auth, routingContext);
 		}
 				
-		protected override IRequestMessage GetBeginMessage(string database, Bookmarks bookmarks, TransactionConfig config, AccessMode mode, string impersonatedUser)
+		protected override IRequestMessage GetBeginMessage(string database, Bookmarks bookmarks, TransactionConfig config,
+            AccessMode mode, string impersonatedUser, NotificationFilter[] _ = null)
 		{
 			ValidateImpersonatedUserForVersion(impersonatedUser);
 			return new BeginMessage(database, bookmarks, config?.Timeout, config?.Metadata, mode, impersonatedUser);
 		}
 
-		protected override IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmarks bookmarks = null, TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null, string impersonatedUser = null)
+		protected override IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmarks bookmarks = null, 
+            TransactionConfig config = null, AccessMode mode = AccessMode.Write,string database = null, 
+            string impersonatedUser = null, NotificationFilter[] _ = null)
 		{
 			ValidateImpersonatedUserForVersion(impersonatedUser);
 			return new RunWithMetadataMessage(query, database, bookmarks, config, mode, impersonatedUser);

@@ -11,6 +11,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public static readonly BoltProtocolVersion V4_3 = new BoltProtocolVersion(4, 3);
         public static readonly BoltProtocolVersion V4_4 = new BoltProtocolVersion(4, 4);
         public static readonly BoltProtocolVersion V5_0 = new BoltProtocolVersion(5, 0);
+        public static readonly BoltProtocolVersion V5_1 = new BoltProtocolVersion(5, 1);
 
         public int MajorVersion { get; }
         public int MinorVersion { get; }
