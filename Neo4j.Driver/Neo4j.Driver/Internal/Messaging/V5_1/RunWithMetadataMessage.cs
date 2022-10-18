@@ -33,7 +33,7 @@ internal class RunWithMetadataMessage : TransactionStartingMessage
         if (!string.IsNullOrEmpty(impersonatedUser))
             Metadata.Add("imp_user", impersonatedUser);
 
-        if (notificationFilters != null)
+        if (notificationFilters is {Length: >0})
             Metadata.Add("notifications", notificationFilters);
     }
 

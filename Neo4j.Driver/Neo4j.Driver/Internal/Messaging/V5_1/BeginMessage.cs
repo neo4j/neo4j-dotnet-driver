@@ -23,13 +23,13 @@ namespace Neo4j.Driver.Internal.Messaging.V5_1;
 internal class BeginMessage : V3.BeginMessage
 {
     public BeginMessage(string database, Bookmarks bookmarks, TimeSpan? txTimeout, IDictionary<string, object> txMetadata,
-        AccessMode mode, string impersonatedUser, IReadOnlyList<string> notificationFilters)
+        AccessMode mode, string impersonatedUser, string[] notificationFilters)
         : base(database, bookmarks, txTimeout, txMetadata, mode)
     {
         if(!string.IsNullOrEmpty(impersonatedUser))
             Metadata.Add("imp_user", impersonatedUser);
 
-        if (notificationFilters is {Count: > 0})
+        if (notificationFilters is {Length: > 0})
             Metadata.Add("notifications", notificationFilters);
     }
 }
