@@ -52,10 +52,10 @@ public interface INotification
     /// <summary>
     /// Severity of this <see cref="INotification"/> instance.
     /// </summary>
-    NotificationSeverity NotificationSeverity { get; }
+    NotificationSeverity SeverityLevel { get; }
 
     /// <summary>
     /// Category of this <see cref="INotification"/> instance.
     /// </summary>
-    NotificationCategory NotificationCategory { get; }
+    NotificationCategory Category { get; }
 }

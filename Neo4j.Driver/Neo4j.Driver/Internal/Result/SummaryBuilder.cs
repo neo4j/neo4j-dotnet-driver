@@ -289,8 +289,8 @@ namespace Neo4j.Driver.Internal.Result
         public string Description { get; }
         public IInputPosition Position { get; }
         public string Severity { get; }
-        public NotificationSeverity NotificationSeverity { get; }
-        public NotificationCategory NotificationCategory { get; }
+        public NotificationSeverity SeverityLevel { get; }
+        public NotificationCategory Category { get; }
 
         public Notification(string code, string title, string description, IInputPosition position, string severity)
         {
@@ -299,8 +299,8 @@ namespace Neo4j.Driver.Internal.Result
             Description = description;
             Position = position;
             Severity = severity;
-            NotificationCategory = ParseCategory(code);
-            NotificationSeverity = ParseSeverity(severity);
+            Category = ParseCategory(code);
+            SeverityLevel = ParseSeverity(severity);
         }
 
         private NotificationCategory ParseCategory(string code)
