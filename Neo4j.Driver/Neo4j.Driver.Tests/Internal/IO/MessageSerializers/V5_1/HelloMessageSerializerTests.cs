@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
@@ -22,7 +23,6 @@ using Neo4j.Driver.Internal.Messaging.V5_1;
 using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
-//TODO: Update tests
 namespace Neo4j.Driver.Internal.IO.MessageSerializers.V5_1;
 
 public class HelloMessageSerializerTests : PackStreamSerializerTests
@@ -35,14 +35,14 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
         var handler = SerializerUnderTest;
 
         var ex = Record.Exception(() =>
-            handler.Deserialize(Mock.Of<IPackStreamReader>(), BoltProtocolV5_0MessageFormat.MsgBegin, 2));
+            handler.Deserialize(Mock.Of<IPackStreamReader>(), BoltProtocolV3MessageFormat.MsgBegin, 2));
 
         ex.Should().NotBeNull();
         ex.Should().BeOfType<ProtocolException>();
     }
 
     [Fact]
-    public void ShouldSerialize()
+    public void ShouldSerializeAndIgnoreNullNotifications()
     {
         var writerMachine = CreateWriterMachine();
         var writer = writerMachine.Writer();
@@ -51,7 +51,6 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
             {"credentials", "password"} };
         var routingContext = new Dictionary<string, string> { { "contextKey", "contextValue" } };
 
-
         writer.Write(new HelloMessage("Client-Version/1.0", authToken, routingContext, null));
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -59,25 +58,127 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
 
         reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
         reader.ReadStructHeader().Should().Be(1);
-        reader.ReadStructSignature().Should().Be(BoltProtocolV5_0MessageFormat.MsgHello);
-
-        var readMap = reader.ReadMap();
-        readMap.Should().HaveCount(5).And.Contain(
-            new[]
+        reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
+        reader.ReadMap().Should().BeEquivalentTo(
+            new Dictionary<string, object>
             {
-                new KeyValuePair<string, object>("user_agent", "Client-Version/1.0"),
-                new KeyValuePair<string, object>("scheme", "basic"),
-                new KeyValuePair<string, object>("principal", "username"),
-                new KeyValuePair<string, object>("credentials", "password")
+                ["user_agent"] = "Client-Version/1.0",
+                ["scheme"] = "basic",
+                ["principal"] = "username",
+                ["credentials"] = "password",
+                ["routing"] = new Dictionary<string, object> { ["contextKey"] = "contextValue" }
             });
+    }
 
+    [Fact]
+    public void ShouldIgnoreEmptyNotificationsArray()
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
+        var authToken = new Dictionary<string, object> { {"scheme", "basic"},
+            {"principal", "username"},
+            {"credentials", "password"} };
+        var routingContext = new Dictionary<string, string> { { "contextKey", "contextValue" } };
 
-        object dic;
-        readMap.ContainsKey("routing").Should().BeTrue();
-        readMap.TryGetValue("routing", out dic);
-        dic.ToDictionary()
-            .Should().HaveCount(1)
-            .And.Contain(new[] { new KeyValuePair<string, object>("contextKey", "contextValue") });
+        writer.Write(new HelloMessage("Client-Version/1.0", authToken, routingContext, Array.Empty<string>()));
+
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
+
+        reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+        reader.ReadStructHeader().Should().Be(1);
+        reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
+        reader.ReadMap().Should().BeEquivalentTo(
+            new Dictionary<string, object>
+            {
+                ["user_agent"] = "Client-Version/1.0",
+                ["scheme"] = "basic",
+                ["principal"] = "username",
+                ["credentials"] = "password",
+                ["routing"] = new Dictionary<string, object> {["contextKey"] = "contextValue"}
+            });
+    }
+
+    [Fact]
+    public void ShouldIncludeNotificationsArrayWithItems()
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
+        var authToken = new Dictionary<string, object> { {"scheme", "basic"},
+            {"principal", "username"},
+            {"credentials", "password"} };
+        var routingContext = new Dictionary<string, string> { { "contextKey", "contextValue" } };
+
+        writer.Write(new HelloMessage("Client-Version/1.0", authToken, routingContext, new[] {"WARNING.*"}));
+
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
+
+        reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+        reader.ReadStructHeader().Should().Be(1);
+        reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
+        reader.ReadMap().Should().BeEquivalentTo(
+            new Dictionary<string, object>
+            {
+                ["user_agent"] = "Client-Version/1.0",
+                ["scheme"] = "basic",
+                ["principal"] = "username",
+                ["credentials"]= "password",
+                ["routing"] = new Dictionary<string, object>{["contextKey"] = "contextValue"},
+                ["notifications"] = new [] { "WARNING.*"}
+            });
+    }
+
+    [Fact]
+    public void ShouldIncludeNotificationsArrayWithManyItems()
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
+        var authToken = new Dictionary<string, object> { {"scheme", "basic"},
+            {"principal", "username"},
+            {"credentials", "password"} };
+
+        writer.Write(new HelloMessage("Client-Version/1.0", authToken, null, new[] { "WARNING.*", "INFORMATION.*" }));
+
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
+
+        reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+        reader.ReadStructHeader().Should().Be(1);
+        reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
+        reader.ReadMap().Should().BeEquivalentTo(
+            new Dictionary<string, object>
+            {
+                ["user_agent"] = "Client-Version/1.0",
+                ["scheme"] = "basic",
+                ["principal"] = "username",
+                ["credentials"] = "password",
+                ["routing"] = null,
+                ["notifications"] = new[] { "WARNING.*", "INFORMATION.*" }
+            });
+    }
+
+    [Fact]
+    public void ShouldSerializeOnlyNotifications()
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
+
+        writer.Write(new HelloMessage("Client-Version/1.0", null, null, new[] { "WARNING.*" }));
+
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
+
+        reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+        reader.ReadStructHeader().Should().Be(1);
+        reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
+        reader.ReadMap().Should().BeEquivalentTo(
+            new Dictionary<string, object>
+            {
+                ["user_agent"] = "Client-Version/1.0",
+                ["routing"] = null,
+                ["notifications"] = new[] { "WARNING.*" }
+            });
     }
 
     [Fact]
@@ -94,19 +195,13 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
 
         reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
         reader.ReadStructHeader().Should().Be(1);
-        reader.ReadStructSignature().Should().Be(BoltProtocolV5_0MessageFormat.MsgHello);
-
-        var readMap = reader.ReadMap();
-        readMap.Should().NotBeNull().And.HaveCount(2).And.Contain(
-            new[]
+        reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
+        reader.ReadMap().Should().BeEquivalentTo(
+            new Dictionary<string, object>
             {
-                new KeyValuePair<string, object>("user_agent", "Client-Version/1.0"),
+                ["user_agent"] = "Client-Version/1.0",
+                ["routing"] = new Dictionary<string, object> { ["contextKey"] = "contextValue" },
             });
-
-        object dic;
-        readMap.ContainsKey("routing").Should().BeTrue();
-        readMap.TryGetValue("routing", out dic);
-        dic.ToDictionary().Should().HaveCount(1).And.Contain(new[] { new KeyValuePair<string, object>("contextKey", "contextValue") });
     }
 
     [Fact]
@@ -122,19 +217,13 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
 
         reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
         reader.ReadStructHeader().Should().Be(1);
-        reader.ReadStructSignature().Should().Be(BoltProtocolV5_0MessageFormat.MsgHello);
-
-        var readMap = reader.ReadMap();
-        readMap.Should().NotBeNull().And.HaveCount(2).And.Contain(
-            new[]
+        reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
+        reader.ReadMap().Should().BeEquivalentTo(
+            new Dictionary<string, object>
             {
-                new KeyValuePair<string, object>("user_agent", "Client-Version/1.0"),
+                ["user_agent"] = "Client-Version/1.0",
+                ["routing"] = null
             });
-
-        object dic;
-        readMap.ContainsKey("routing").Should().BeTrue();
-        readMap.TryGetValue("routing", out dic);
-        (dic == null).Should().BeTrue();
     }
 
     [Fact]
@@ -150,18 +239,12 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
 
         reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
         reader.ReadStructHeader().Should().Be(1);
-        reader.ReadStructSignature().Should().Be(BoltProtocolV5_0MessageFormat.MsgHello);
-
-        var readMap = reader.ReadMap();
-        readMap.Should().NotBeNull().And.HaveCount(2).And.Contain(
-            new[]
+        reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
+        reader.ReadMap().Should().BeEquivalentTo(
+            new Dictionary<string, object>
             {
-                new KeyValuePair<string, object>("user_agent", "Client-Version/1.0"),
+                ["user_agent"] = "Client-Version/1.0",
+                ["routing"] = new Dictionary<string, object>()
             });
-
-        object dic;
-        readMap.ContainsKey("routing").Should().BeTrue();
-        readMap.TryGetValue("routing", out dic);
-        dic.ToDictionary().Should().HaveCount(0);
     }
 }

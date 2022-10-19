@@ -76,8 +76,7 @@ namespace Neo4j.Driver.Internal
             internal set => Interlocked.Exchange(ref _poolStatus, value);
         }
 
-        public ConnectionPool(
-            Uri uri,
+        public ConnectionPool(Uri uri,
             IPooledConnectionFactory connectionFactory,
             ConnectionPoolSettings connectionPoolSettings,
             ILogger logger,

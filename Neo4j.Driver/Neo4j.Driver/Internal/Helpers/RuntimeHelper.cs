@@ -22,32 +22,20 @@ namespace Neo4j.Driver.Internal
 {
     internal static class RuntimeHelper
     {
-        private static readonly string FrameworkDescription;
+        private static readonly bool _isMono;
+        private static readonly bool _isFramework;
 
         static RuntimeHelper()
         {
-#if NET46
-            FrameworkDescription = ".NET Framework";
-#else
-            FrameworkDescription = RuntimeInformation.FrameworkDescription ?? string.Empty;
-#endif
+            var FrameworkDescription = RuntimeInformation.FrameworkDescription;
+            _isMono = FrameworkDescription.StartsWith("mono", StringComparison.OrdinalIgnoreCase);
+            _isFramework = FrameworkDescription.StartsWith(".net framework", StringComparison.OrdinalIgnoreCase);
         }
 
-        public static bool IsMono()
-        {
-            return FrameworkDescription.StartsWith("mono", StringComparison.OrdinalIgnoreCase);
-        }
+        public static bool IsMono() => _isMono;
 
-        public static bool IsDotnetFramework()
-        {
-            return FrameworkDescription.StartsWith(".net framework", StringComparison.OrdinalIgnoreCase);
-        }
+        public static bool IsDotnetFramework() => _isFramework;
 
-        public static bool IsDotnetCore()
-        {
-            // there are entries that RuntimeInformation.FrameworkDescription returns null
-            // so we will rely on not being IsMono and IsDotnetFramework
-            return !IsMono() && !IsDotnetFramework();
-        }
+        public static bool IsDotnetCore() => !IsMono() && !IsDotnetFramework();
     }
 }

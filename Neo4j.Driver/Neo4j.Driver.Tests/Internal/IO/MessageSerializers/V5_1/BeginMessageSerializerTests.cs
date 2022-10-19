@@ -24,7 +24,6 @@ using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Tests;
 using Xunit;
 
-//TODO: Update tests
 namespace Neo4j.Driver.Internal.IO.MessageSerializers.V5_1;
 
 public class BeginMessageSerializerTests : PackStreamSerializerTests
@@ -62,18 +61,40 @@ public class BeginMessageSerializerTests : PackStreamSerializerTests
         reader.ReadStructHeader().Should().Be(1);
         reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgBegin);
 
-        var metadata = reader.ReadMap();
-        metadata.Should().HaveCount(3).And.ContainKeys("bookmarks", "tx_timeout", "tx_metadata");
+        reader.ReadMap().Should().BeEquivalentTo(new Dictionary<string, object>
+        {
+            ["bookmarks"] = new List<object> {"bookmark-123"},
+            ["tx_timeout"] = 60000L,
+            ["tx_metadata"] = new Dictionary<string, object> { ["username"] = "MollyMostlyWhite"}
+        });
+    }
 
-        metadata["bookmarks"].CastOrThrow<List<object>>().Should().HaveCount(1).And
-            .Contain("bookmark-123");
-        metadata["tx_timeout"].Should().Be(60000L);
+    [Fact]
+    public void ShouldSerializeWithNotificationFilters()
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
 
-        metadata["tx_metadata"].CastOrThrow<Dictionary<string, object>>().Should().HaveCount(1).And.Contain(
-            new[]
+        writer.Write(new BeginMessage(null, Bookmarks.From(AsyncSessionTests.FakeABookmark(123)), TimeSpan.FromMinutes(1),
+            new Dictionary<string, object>
             {
-                new KeyValuePair<string, object>("username", "MollyMostlyWhite"),
-            });
+                {"username", "MollyMostlyWhite"}
+            }, AccessMode.Write, null, new []{ "test.filter.A", "test.filter.B"}));
+
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
+
+        reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+        reader.ReadStructHeader().Should().Be(1);
+        reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgBegin);
+        var map = reader.ReadMap();
+        map.Should().BeEquivalentTo(new Dictionary<string, object>
+        {
+            ["bookmarks"] = new List<object> { "bookmark-123" },
+            ["tx_timeout"] = 60000L,
+            ["tx_metadata"] = new Dictionary<string, object> { ["username"] = "MollyMostlyWhite" },
+            ["notifications"] = new[] { "test.filter.A", "test.filter.B" }
+        });
     }
 
     [Fact]

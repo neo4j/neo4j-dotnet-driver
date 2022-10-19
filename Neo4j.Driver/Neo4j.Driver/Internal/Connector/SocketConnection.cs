@@ -35,6 +35,7 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal class SocketConnection : IConnection
     {
+        private readonly NotificationFilter[] _notificationFilters;
         private readonly SemaphoreSlim _sendLock = new SemaphoreSlim(1, 1);
         private readonly SemaphoreSlim _recvLock = new SemaphoreSlim(1, 1);
 
@@ -54,7 +55,8 @@ namespace Neo4j.Driver.Internal.Connector
 
         public IDictionary<string, string> RoutingContext { get; set; }
 
-        public SocketConnection(Uri uri, ConnectionSettings connectionSettings, BufferSettings bufferSettings, IDictionary<string, string> routingContext, ILogger logger = null)
+        public SocketConnection(Uri uri, ConnectionSettings connectionSettings, BufferSettings bufferSettings,
+            IDictionary<string, string> routingContext, ILogger logger = null)
         {
             _idPrefix = $"conn-{uri.Host}:{uri.Port}-";
             _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
@@ -63,6 +65,7 @@ namespace Neo4j.Driver.Internal.Connector
             _client = new SocketClient(uri, connectionSettings.SocketSettings, bufferSettings, _logger);
             _authToken = connectionSettings.AuthToken;
             _userAgent = connectionSettings.UserAgent;
+            _notificationFilters = connectionSettings.NotificationFilters;
             Server = new ServerInfo(uri);
 
             _responsePipeline = new ResponsePipeline(_logger);
@@ -107,7 +110,7 @@ namespace Neo4j.Driver.Internal.Connector
                 _sendLock.Release();
             }
 
-            await _boltProtocol.LoginAsync(this, _userAgent, _authToken).ConfigureAwait(false);
+            await _boltProtocol.LoginAsync(this, _userAgent, _authToken, _notificationFilters).ConfigureAwait(false);
         }
 
         public async Task SyncAsync()

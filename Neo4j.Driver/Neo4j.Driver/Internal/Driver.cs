@@ -86,7 +86,6 @@ namespace Neo4j.Driver.Internal
                                            _logger,
                                            _retryLogic,
                                            _config.FetchSize,
-                                           _config.NotificationFilters,
                                            sessionConfig,
                                            reactive);
 

@@ -40,7 +40,6 @@ namespace Neo4j.Driver.Internal
             return RunAsync(new Query(query, parameters.ToDictionary()));
         }
 
-
 		private bool _disposed = false;
 
 		~AsyncQueryRunner() => Dispose(false);

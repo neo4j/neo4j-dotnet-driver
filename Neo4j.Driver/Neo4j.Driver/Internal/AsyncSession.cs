@@ -62,7 +62,6 @@ namespace Neo4j.Driver.Internal
             ILogger logger,
             IAsyncRetryLogic retryLogic,
             long defaultFetchSize,
-            NotificationFilter[] globalFilters,
             SessionConfig config,
             bool reactive
         )
@@ -74,9 +73,9 @@ namespace Neo4j.Driver.Internal
             _reactive = reactive;
 
             _database = config.Database;
+            _notificationFilters = config.NotificationFilters;
             _defaultMode = config.DefaultAccessMode;
             _fetchSize = config.FetchSize ?? defaultFetchSize;
-            _notificationFilters = config.NotificationFilters ?? globalFilters;
             _useBookmarkManager = config.BookmarkManager != null;
 
             if (_useBookmarkManager)

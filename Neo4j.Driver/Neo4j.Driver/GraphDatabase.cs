@@ -210,8 +210,7 @@ namespace Neo4j.Driver
 
             var connectionSettings = new ConnectionSettings(uri, authToken, config);
             var bufferSettings = new BufferSettings(config);
-            var connectionFactory =
-                new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logger);
+            var connectionFactory = new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logger);
 
             return CreateDriver(uri, config, connectionFactory, connectionSettings);
         }
@@ -247,7 +246,7 @@ namespace Neo4j.Driver
 
         private static void EnsureNoRoutingContextOnBolt(Uri uri, IDictionary<string, string> routingContext)
         {
-            if (!uri.IsRoutingUri() && !String.IsNullOrEmpty(uri.Query))
+            if (!uri.IsRoutingUri() && !string.IsNullOrEmpty(uri.Query))
             {
                 throw new ArgumentException(
                     $"Routing context are not supported with scheme 'bolt'. Given URI: '{uri}'");

@@ -40,8 +40,7 @@ namespace Neo4j.Driver.Internal.Routing
         public RoutingSettings RoutingSetting { get; set; }
         public IDictionary<string, string> RoutingContext { get; set; }
 
-        public LoadBalancer(
-            IPooledConnectionFactory connectionFactory,
+        public LoadBalancer(IPooledConnectionFactory connectionFactory,
             RoutingSettings routingSettings,
             ConnectionPoolSettings poolSettings,
             ILogger logger)

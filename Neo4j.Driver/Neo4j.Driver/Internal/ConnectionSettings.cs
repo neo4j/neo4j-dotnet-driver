@@ -19,7 +19,6 @@ using System.Reflection;
 using Neo4j.Driver.Internal.Connector;
 using static Neo4j.Driver.Internal.Throw.ArgumentNullException;
 
-
 namespace Neo4j.Driver.Internal
 {
     internal class ConnectionSettings
@@ -28,36 +27,36 @@ namespace Neo4j.Driver.Internal
         {
             get
             {
-                Version version = Assembly.GetExecutingAssembly().GetName().Version;
-                return "neo4j-dotnet/" + version.Major.ToString() + "." + version.Minor.ToString();
+                var version = Assembly.GetExecutingAssembly().GetName().Version;
+                return $"neo4j-dotnet/{version.Major}.{version.Minor}";
             }
         }
 
         public IAuthToken AuthToken { get; }
         public string UserAgent { get; }
+        public NotificationFilter[] NotificationFilters { get; set; }
         public SocketSettings SocketSettings { get; }
 
         public ConnectionSettings(Uri uri, IAuthToken auth, Config config)
             : this(auth, EncryptionManager.Create(uri, config.NullableEncryptionLevel, config.TrustManager, config.Logger),
-                config.ConnectionTimeout, config.SocketKeepAlive, config.Ipv6Enabled, config.UserAgent)
+                config.ConnectionTimeout, config.SocketKeepAlive, config.Ipv6Enabled, config.UserAgent, config.NotificationFilters)
         {
         }
 
         private ConnectionSettings(IAuthToken authToken,
             EncryptionManager encryptionManager, TimeSpan connectionTimeout, 
-            bool socketKeepAlive, bool ipv6Enabled, string userAgent)
+            bool socketKeepAlive, bool ipv6Enabled, string userAgent, NotificationFilter[] notificationFilters)
         {
             IfNull(authToken, nameof(authToken));
             IfNull(encryptionManager, nameof(encryptionManager));
 
             AuthToken = authToken;
             UserAgent = userAgent ?? DefaultUserAgent;
+            NotificationFilters = notificationFilters;
             
-            IHostResolver systemResolver = new SystemHostResolver();
-            if (RuntimeHelper.IsDotnetCore())
-            {
-                systemResolver = new SystemNetCoreHostResolver(systemResolver);
-            }
+            IHostResolver systemResolver = RuntimeHelper.IsDotnetCore() 
+                ? new SystemNetCoreHostResolver()
+                : new SystemHostResolver();
             
             SocketSettings = new SocketSettings
             {
@@ -69,6 +68,7 @@ namespace Neo4j.Driver.Internal
             };
         }
     }
+
     internal class SocketSettings
     {
         public IHostResolver HostResolver { get; set; }
