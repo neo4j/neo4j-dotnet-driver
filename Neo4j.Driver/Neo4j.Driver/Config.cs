@@ -221,7 +221,8 @@ namespace Neo4j.Driver
         public string UserAgent { get; set; } = ConnectionSettings.DefaultUserAgent;
 
         /// <summary>
-        /// TODO: add details.
+        /// Specifies which notifications the server will return when executing cypher, overriding any server defaults.<br/>
+        /// <see cref="INotification"/>s can be accessed via <see cref="IResultSummary.Notifications"/>.
         /// </summary>
         public NotificationFilter[] NotificationFilters { get; set; } = null;
     }

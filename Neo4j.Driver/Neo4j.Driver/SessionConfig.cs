@@ -244,11 +244,12 @@ namespace Neo4j.Driver
         }
 
 
+
         /// <summary>
-        /// Add filter for notifications to be received.
-        /// TODO: Add more details
+        /// Set which notifications the server will return when executing cypher in this session, overriding any server defaults and driver configuration(<see cref="ConfigBuilder.WithNotificationFilters"/>).<br/>
+        /// <see cref="INotification"/>s can be accessed via <see cref="IResultSummary.Notifications"/>.
         /// </summary>
-        /// <param name="filters">Filters</param>
+        /// <param name="filters">Filters to apply.</param>
         /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
         public SessionConfigBuilder WithNotificationFilters(params NotificationFilter[] filters)
         {
