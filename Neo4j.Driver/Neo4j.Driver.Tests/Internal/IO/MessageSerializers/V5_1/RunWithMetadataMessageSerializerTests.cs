@@ -18,12 +18,11 @@
 using System;
 using System.Collections.Generic;
 using FluentAssertions;
-using Moq;
 using Neo4j.Driver.Internal.Messaging.V5_1;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Tests;
 using Xunit;
-//todo: update tests
+
 namespace Neo4j.Driver.Internal.IO.MessageSerializers.V5_1;
 
 public class RunWithMetadataMessageSerializerTests : PackStreamSerializerTests
@@ -56,10 +55,7 @@ public class RunWithMetadataMessageSerializerTests : PackStreamSerializerTests
         reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgRun);
         reader.ReadString().Should().Be("RETURN $x");
         reader.ReadMap().Should().HaveCount(1).And.Contain(new KeyValuePair<string, object>("x", 1L));
-
-        var metadata = reader.ReadMap();
-
-        metadata.Should().BeEquivalentTo(
+        reader.ReadMap().Should().BeEquivalentTo(
             new Dictionary<string, object>
             {
                 {"bookmarks", new[] {"bookmark-123"}},
