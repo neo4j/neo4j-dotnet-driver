@@ -22,7 +22,6 @@ namespace Neo4j.Driver.Tests.TestBackend
         //Mapping of object type to a conversion delegate that will return a NativeToCypherObject that can be serialized to JSON.
         private static Dictionary<Type, Func<string, object, NativeToCypherObject>> FunctionMap { get; set; } = new Dictionary<Type, Func<string, object, NativeToCypherObject>>()
         {
-            //{ typeof(IList<IRecord>), RecordSet},
             { typeof(List<object>),                     CypherList },
             { typeof(Dictionary<string, object>),       CypherMap },
 

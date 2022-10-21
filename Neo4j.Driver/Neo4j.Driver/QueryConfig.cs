@@ -20,7 +20,6 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver;
-//TODO: Update comments!
 
 /// <summary>
 /// Configuration for running queries using <see cref="IDriver.ExecuteQueryAsync"/>
@@ -28,33 +27,32 @@ namespace Neo4j.Driver;
 public class QueryConfig
 {
     /// <summary>
-    /// 
+    /// Configures which members of the cluster the query can be processed by.
     /// </summary>
     public RoutingControl Routing { get; }
 
     /// <summary>
-    /// 
+    /// Configures which database to execute the query against.
     /// </summary>
     public string Database { get; }
     
     /// <summary>
-    /// 
+    /// Configures a user to impersonate while executing a query.
     /// </summary>
     public string ImpersonatedUser { get; }
     
     /// <summary>
-    /// 
+    /// Configures a <see cref="IBookmarkManager"/> to provide bookmarks for query execution, and receive resulting bookmarks.
     /// </summary>
     public IBookmarkManager BookmarkManager { get; }
 
-
     /// <summary>
-    /// 
+    /// Construct new instance for configuration for running queries using <see cref="IDriver.ExecuteQueryAsync"/>
     /// </summary>
-    /// <param name="routing"></param>
-    /// <param name="database"></param>
-    /// <param name="impersonatedUser"></param>
-    /// <param name="bookmarkManager"></param>
+    /// <param name="routing">Routing for query.</param>
+    /// <param name="database">Database name of database query should be executed against.</param>
+    /// <param name="impersonatedUser">Username of a user to impersonate while executing a query.</param>
+    /// <param name="bookmarkManager">Instance of <see cref="IBookmarkManager"/> to provide bookmarks for query execution, and receive resulting bookmarks.</param>
     public QueryConfig(RoutingControl routing = RoutingControl.Writers, string database = null, string impersonatedUser = null,
         IBookmarkManager bookmarkManager = null)
     {
@@ -71,13 +69,15 @@ public class QueryConfig
 public class QueryConfig<T> : QueryConfig
 {
     /// <summary>
-    /// 
+    /// Construct new instance for configuration for running queries using <see cref="IDriver.ExecuteQueryAsync{TResult}"/>.
     /// </summary>
-    /// <param name="cursorProcessor"></param>
-    /// <param name="routing"></param>
-    /// <param name="database"></param>
-    /// <param name="impersonatedUser"></param>
-    /// <param name="bookmarkManager"></param>
+    /// <param name="cursorProcessor">Function for processing an <see cref="IResultCursor"/>.<br/>
+    /// The cursor processor will execute inside the scope of an open transaction.<br/>
+    /// Raising any exception will cause the transaction to rollback.</param>
+    /// <param name="routing">Routing for query.</param>
+    /// <param name="database">Database name of database query should be executed against.</param>
+    /// <param name="impersonatedUser">Username of a user to impersonate while executing a query.</param>
+    /// <param name="bookmarkManager">Instance of <see cref="IBookmarkManager"/> to provide bookmarks for query execution, and receive resulting bookmarks.</param>
     /// <exception cref="ArgumentNullException"></exception>
     public QueryConfig(Func<IResultCursor, CancellationToken, Task<T>> cursorProcessor, RoutingControl routing = RoutingControl.Writers, string database = null,
         string impersonatedUser = null, IBookmarkManager bookmarkManager = null) 
@@ -85,8 +85,11 @@ public class QueryConfig<T> : QueryConfig
     {
         CursorProcessor = cursorProcessor ?? throw new ArgumentNullException(nameof(cursorProcessor));
     }
+
     /// <summary>
-    /// 
+    /// Configures a function for processing an <see cref="IResultCursor"/>.<br/>
+    /// The cursor processor will execute inside the scope of an open transaction.<br/>
+    /// Raising any exception will cause the transaction to rollback.
     /// </summary>  
     public Func<IResultCursor, CancellationToken, Task<T>> CursorProcessor { get; init; }
 }
