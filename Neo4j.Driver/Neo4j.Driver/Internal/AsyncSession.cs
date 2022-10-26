@@ -285,7 +285,7 @@ namespace Neo4j.Driver.Internal
 
             var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmarks, _reactive, _fetchSize,
                 ImpersonatedUser());
-            await tx.BeginTransactionAsync(config).ConfigureAwait(false);
+            await tx.BeginTransactionAsync(config, _notificationFilters).ConfigureAwait(false);
             _transaction = tx;
             return _transaction;
         }

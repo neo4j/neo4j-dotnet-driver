@@ -162,7 +162,10 @@ namespace Neo4j.Driver.Tests.TestBackend
             {
                 return Summary?.Notifications.Select(x => new
                 {
+                    rawCategory = x.CategoryString,
+                    category = x.Category.ToString().ToUpper(),
                     severity = x.Severity,
+                    severityLevel = x.SeverityLevel.ToString().ToUpper(),
                     description = x.Description,
                     code = x.Code,
                     title = x.Title,
@@ -171,7 +174,10 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             return Summary?.Notifications.Select(x => new
             {
+                rawCategory = x.CategoryString,
+                category = x.Category.ToString().ToUpper(),
                 severity = x.Severity,
+                severityLevel = x.SeverityLevel.ToString().ToUpper(),
                 description = x.Description,
                 code = x.Code,
                 title = x.Title,

@@ -43,6 +43,8 @@ namespace Neo4j.Driver.Tests.TestBackend
             }
 
             public bool? encrypted { get; set; }
+
+            public string[] notificationFilters { get; set; }
         }
 
         public override async Task Process(Controller controller)
@@ -132,9 +134,14 @@ namespace Neo4j.Driver.Tests.TestBackend
             if (data.fetchSize.HasValue)
                 configBuilder.WithFetchSize(data.fetchSize.Value);
 
+            if (data.notificationFilters != null)
+                configBuilder.WithNotificationFilters(data.notificationFilters
+                    .Select(NotificationFilterParsing.ExtractNotificationFilter).ToArray());
+
             var logger = new SimpleLogger();
 
             configBuilder.WithLogger(logger);
         }
+
     }
 }

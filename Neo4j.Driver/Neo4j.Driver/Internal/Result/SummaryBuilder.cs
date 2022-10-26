@@ -289,25 +289,25 @@ namespace Neo4j.Driver.Internal.Result
         public string Description { get; }
         public IInputPosition Position { get; }
         public string Severity { get; }
-        public NotificationSeverity SeverityLevel { get; }
-        public NotificationCategory Category { get; }
+        public NotificationSeverity SeverityLevel => ParseSeverity(Severity);
+        public string CategoryString { get; }
+        public NotificationCategory Category => ParseCategory(CategoryString);
 
-        public Notification(string code, string title, string description, IInputPosition position, string severity)
+        public Notification(string code, string title, string description, IInputPosition position, string severity, string category = null)
         {
             Code = code;
             Title = title;
             Description = description;
             Position = position;
             Severity = severity;
-            Category = ParseCategory(code);
-            SeverityLevel = ParseSeverity(severity);
+            CategoryString = category;
         }
 
-        private NotificationCategory ParseCategory(string code)
+        private NotificationCategory ParseCategory(string category)
         {
             try
             {
-                return code.Split(new []{'.'}, StringSplitOptions.RemoveEmptyEntries)[1] switch
+                return category?.ToLower() switch
                 {
                     "hint" => NotificationCategory.Hint,
                     "query" => NotificationCategory.Query,
@@ -340,7 +340,8 @@ namespace Neo4j.Driver.Internal.Result
                    $"{nameof(Title)}={Title}, " +
                    $"{nameof(Description)}={Description}, " +
                    $"{nameof(Position)}={Position}, " +
-                   $"{nameof(Severity)}={Severity}}}";
+                   $"{nameof(Severity)}={Severity}" +
+                   $"{nameof(Category)}={CategoryString}}}";
         }
     }
 

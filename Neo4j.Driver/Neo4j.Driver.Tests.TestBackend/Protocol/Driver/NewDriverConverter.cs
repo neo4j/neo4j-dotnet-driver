@@ -51,6 +51,9 @@ namespace Neo4j.Driver.Tests.TestBackend
             if (jsonObj.TryGetValue("encrypted", out token))
                 newDriverRequest.encrypted = token.Value<bool?>();
 
+            if (jsonObj.TryGetValue("notificationFilters", out token))
+                newDriverRequest.notificationFilters = token.ToObject<string[]>();
+
             return newDriverRequest;
         }
     }

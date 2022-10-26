@@ -40,7 +40,7 @@ internal class HelloMessage : IRequestMessage
             MetaData = new Dictionary<string, object>(authToken) { { UserAgentMetadataKey, userAgent } };
         }
 
-        if (notificationFilters is {Length: > 0})
+        if (notificationFilters is not null)
             MetaData.Add("notifications", notificationFilters);
 
         MetaData.Add("routing", routingContext);

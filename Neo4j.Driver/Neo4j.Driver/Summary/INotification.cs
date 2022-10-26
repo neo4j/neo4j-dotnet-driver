@@ -50,6 +50,11 @@ public interface INotification
     string Severity { get; }
 
     /// <summary>
+    /// Gets The category of the notification.
+    /// </summary>
+    string CategoryString { get; }
+
+    /// <summary>
     /// Severity of this <see cref="INotification"/> instance.
     /// </summary>
     NotificationSeverity SeverityLevel { get; }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -42,6 +43,8 @@ namespace Neo4j.Driver.Tests.TestBackend
             public string impersonatedUser { get; set; }
 
             public string bookmarkManagerId { get; set; }
+            
+            public string[] notificationFilters { get; set; }
         }
 
         [JsonIgnore]
@@ -74,6 +77,10 @@ namespace Neo4j.Driver.Tests.TestBackend
             if (data.bookmarkManagerId != null)
                 configBuilder.WithBookmarkManager(ObjManager.GetObject<NewBookmarkManager>(data.bookmarkManagerId)
                     .BookmarkManager);
+
+            if (data.notificationFilters != null)
+                configBuilder.WithNotificationFilters(data.notificationFilters
+                    .Select(NotificationFilterParsing.ExtractNotificationFilter).ToArray());
         }
 
         public override async Task Process()

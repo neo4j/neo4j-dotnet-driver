@@ -54,7 +54,7 @@ internal class BoltProtocolV5_1 : BoltProtocolV5_0
         TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null,
         string impersonatedUser = null, NotificationFilter[] notificationFilters = null)
     {
-        return new RunWithMetadataMessage(query, database, bookmarks, config.Timeout, config.Metadata, 
+        return new RunWithMetadataMessage(query, database, bookmarks, config?.Timeout, config?.Metadata, 
             mode, impersonatedUser, NotificationFilterEncoder.EncodeNotificationFilters(notificationFilters));
     }
 

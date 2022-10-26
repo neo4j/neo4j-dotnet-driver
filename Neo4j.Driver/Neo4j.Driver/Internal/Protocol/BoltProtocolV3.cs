@@ -108,7 +108,8 @@ namespace Neo4j.Driver.Internal.Protocol
                         bookmarks,
                         config,
                         connection.GetEnforcedAccessMode(),
-                        impersonatedUser),
+                        impersonatedUser,
+                        notificationFilters),
                     new BeginResponseHandler())
                 .ConfigureAwait(false);
 			

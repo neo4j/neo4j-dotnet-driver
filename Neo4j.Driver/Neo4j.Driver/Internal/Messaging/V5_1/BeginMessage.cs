@@ -29,7 +29,7 @@ internal class BeginMessage : V3.BeginMessage
         if(!string.IsNullOrEmpty(impersonatedUser))
             Metadata.Add("imp_user", impersonatedUser);
 
-        if (notificationFilters is {Length: > 0})
+        if (notificationFilters is not null)
             Metadata.Add("notifications", notificationFilters);
     }
 }
