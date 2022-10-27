@@ -15,19 +15,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Internal;
-
 namespace Neo4j.Driver.Experimental;
 
 /// <summary>
-/// Methods being considered for moving to the Neo4j.Driver.GraphDatabase.
+/// Methods being considered for moving to the Neo4j.Driver.
+/// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
 /// </summary>
 public static class ExperimentalExtensions
 {
     /// <summary>
-    /// Experimental: Bookmark Manager API is still under consideration. <br/>
-    /// Gets a new <see cref="IBookmarkManagerFactory"/>, which can construct a default implementation of <see cref="IBookmarkManager"/>.<br/>
-    /// <see cref="IBookmarkManager"/> instances can be passed to <see cref="SessionConfigBuilder"/> when opening a new session.
+    /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
+    /// Sets the <see cref="IBookmarkManager"/> for maintaining bookmarks for the lifetime of a session.
     /// </summary>
-    public static IBookmarkManagerFactory BookmarkManagerFactory => new BookmarkManagerFactory();
+    /// <param name="builder">this builder.</param>
+    /// <param name="bookmarkManager">Instance of <see cref="IBookmarkManager"/>.</param>
+    /// <returns>this <see cref="SessionConfigBuilder"/> instance.</returns>
+    public static SessionConfigBuilder WithBookmarkManager(this SessionConfigBuilder builder, IBookmarkManager bookmarkManager)
+    {
+        return builder.WithBookmarkManager(bookmarkManager);
+    }
 }
