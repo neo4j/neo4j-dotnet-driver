@@ -116,7 +116,7 @@ namespace Neo4j.Driver
 
         /// <summary>
         /// Allows the specification of a username that the user wants to impersonate for the duration of the
-        /// session. Once set this cannot be changed for the duration of the sessions lifetime. 
+        /// session. Once set this cannot be changed for the duration of the session's lifetime. 
         /// </summary>
         /// <exception cref="set_ImpersonatedUser">throws <see cref="System.ArgumentNullException"/> when provided with a
         /// null or empty string</exception>
@@ -218,7 +218,7 @@ namespace Neo4j.Driver
 
         /// <summary>
         /// Allows the specification of a username that the user wants to impersonate for the duration of the
-        /// session. Once set this cannot be changed for the duration of the sessions lifetime. 
+        /// session. Once set this cannot be changed for the duration of the session's lifetime. 
         /// </summary>
         /// <param name="impersonatedUser">username that the user wants to impersonate</param>
         /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
