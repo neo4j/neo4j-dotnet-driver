@@ -12,6 +12,13 @@ This section is prepared for application developers who would like to use this d
 
 For users who wish to migrate from 1.7 series to 4.0, checkout our [migration guide](#migrating-from-17-to-40).
 
+## Versions
+Starting with 5.0, the Neo4j Drivers will be moving to a monthly release cadence. A minor version will be released on the last Friday of each month so as to maintain versioning consistency with the core product (Neo4j DBMS) which has also moved to a monthly cadence.
+
+As a policy, patch versions will not be released except on rare occasions. Bug fixes and updates will go into the latest minor version and users should upgrade to that. Driver upgrades within a major version will never contain breaking API changes.
+
+See also: https://neo4j.com/developer/kb/neo4j-supported-versions/
+
 ### Getting the Driver
 
 The Neo4j driver is distributed under three packages:
