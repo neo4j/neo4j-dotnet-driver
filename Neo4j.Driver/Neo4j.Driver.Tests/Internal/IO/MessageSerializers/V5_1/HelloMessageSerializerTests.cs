@@ -71,7 +71,7 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
     }
 
     [Fact]
-    public void ShouldIgnoreEmptyNotificationsArray()
+    public void ShouldIncludeEmptyNotificationsArray()
     {
         var writerMachine = CreateWriterMachine();
         var writer = writerMachine.Writer();
@@ -95,7 +95,8 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
                 ["scheme"] = "basic",
                 ["principal"] = "username",
                 ["credentials"] = "password",
-                ["routing"] = new Dictionary<string, object> {["contextKey"] = "contextValue"}
+                ["routing"] = new Dictionary<string, object> {["contextKey"] = "contextValue" },
+                ["notifications"] = Array.Empty<string>()
             });
     }
 

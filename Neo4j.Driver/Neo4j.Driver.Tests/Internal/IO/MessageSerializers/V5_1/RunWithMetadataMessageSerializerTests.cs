@@ -65,7 +65,6 @@ public class RunWithMetadataMessageSerializerTests : PackStreamSerializerTests
             });
     }
 
-
     [Fact]
     public void ShouldSerializeWithNotifications()
     {
@@ -100,6 +99,42 @@ public class RunWithMetadataMessageSerializerTests : PackStreamSerializerTests
                 ["tx_metadata"] = new Dictionary<string, object> { ["username"] = "MollyMostlyWhite"},
                 ["db"]= "my-database",
                 ["notifications"] = new[] {"test.filter.A", "test.filter.B"}
+            });
+    }
+    [Fact]
+    public void ShouldSerializeWithEmptyNotifications()
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
+
+        var query = new Query("RETURN $x", new Dictionary<string, object>
+        {
+            {"x", 1L}
+        });
+
+        writer.Write(new RunWithMetadataMessage(query, "my-database",
+            Bookmarks.From(AsyncSessionTests.FakeABookmark(123)), TimeSpan.FromMinutes(1),
+            new Dictionary<string, object>
+            {
+                {"username", "MollyMostlyWhite"}
+            }, AccessMode.Write, null, Array.Empty<string>()));
+
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
+
+        reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+        reader.ReadStructHeader().Should().Be(3);
+        reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgRun);
+        reader.ReadString().Should().Be("RETURN $x");
+        reader.ReadMap().Should().BeEquivalentTo(new Dictionary<string, object> { ["x"] = 1L });
+        reader.ReadMap().Should().BeEquivalentTo(
+            new Dictionary<string, object>
+            {
+                ["bookmarks"] = new[] { "bookmark-123" },
+                ["tx_timeout"] = 60_000L,
+                ["tx_metadata"] = new Dictionary<string, object> { ["username"] = "MollyMostlyWhite" },
+                ["db"] = "my-database",
+                ["notifications"] = Array.Empty<string>()
             });
     }
 }

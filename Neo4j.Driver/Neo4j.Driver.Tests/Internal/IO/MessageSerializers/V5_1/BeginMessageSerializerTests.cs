@@ -98,6 +98,34 @@ public class BeginMessageSerializerTests : PackStreamSerializerTests
     }
 
     [Fact]
+    public void ShouldSerializeWithEmptyNotificationFilters()
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
+
+        writer.Write(new BeginMessage(null, Bookmarks.From(AsyncSessionTests.FakeABookmark(123)), TimeSpan.FromMinutes(1),
+            new Dictionary<string, object>
+            {
+                {"username", "MollyMostlyWhite"}
+            }, AccessMode.Write, null, Array.Empty<string>()));
+
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
+
+        reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+        reader.ReadStructHeader().Should().Be(1);
+        reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgBegin);
+        var map = reader.ReadMap();
+        map.Should().BeEquivalentTo(new Dictionary<string, object>
+        {
+            ["bookmarks"] = new List<object> { "bookmark-123" },
+            ["tx_timeout"] = 60000L,
+            ["tx_metadata"] = new Dictionary<string, object> { ["username"] = "MollyMostlyWhite" },
+            ["notifications"] = Array.Empty<string>()
+        });
+    }
+
+    [Fact]
     public void ShouldSerializeEmptyMapWhenMetadataIsNull()
     {
         var writerMachine = CreateWriterMachine();
