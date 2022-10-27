@@ -1,5 +1,5 @@
 # Neo4j .NET Driver
-This is the official Neo4j .NET driver for connecting to Neo4j 4.0.0+ databases via in-house binary protocol Bolt.
+This is the official Neo4j driver for .NET.
 
 Resources to get you started:
 * [Nuget](https://www.nuget.org/profiles/Neo4j) for getting the latest driver.
