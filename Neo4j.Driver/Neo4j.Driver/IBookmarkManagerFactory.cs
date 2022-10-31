@@ -25,7 +25,8 @@ public interface IBookmarkManagerFactory
     /// <summary>
     /// Create an <see cref="IBookmarkManager"/> with specified configuration.
     /// </summary>
-    /// <param name="config">Configuration object.</param>
+    /// <param name="config">Configuration object. If this is null or not specified,
+    /// default configuration is used.</param>
     /// <returns>New configured instance of <see cref="IBookmarkManager"/>.</returns>
-    IBookmarkManager NewBookmarkManager(BookmarkManagerConfig config);
+    IBookmarkManager NewBookmarkManager(BookmarkManagerConfig config = null);
 }

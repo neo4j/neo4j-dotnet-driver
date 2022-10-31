@@ -15,13 +15,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+
 namespace Neo4j.Driver.Internal;
 
 internal class BookmarkManagerFactory : IBookmarkManagerFactory
 {
-    public IBookmarkManager NewBookmarkManager(BookmarkManagerConfig config) =>
-        config == null ? NoOpBookmarkManager() : new DefaultBookmarkManager(config);
-    
-    internal IBookmarkManager NoOpBookmarkManager() => 
-        new NoOpBookmarkManager();
+    public IBookmarkManager NewBookmarkManager(BookmarkManagerConfig config = null)
+    {
+        return new DefaultBookmarkManager(config ?? new());
+    }
 }
