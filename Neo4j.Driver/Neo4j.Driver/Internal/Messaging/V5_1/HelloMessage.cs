@@ -20,39 +20,37 @@ namespace Neo4j.Driver.Internal.Messaging.V5_1;
 
 internal class HelloMessage : IRequestMessage
 {
-    public IDictionary<string, object> MetaData { get; }
+    public Dictionary<string, object> MetaData { get; }
+    public Dictionary<string, object> Auth { get; }
+
     private const string UserAgentMetadataKey = "user_agent";
 
     public HelloMessage(string userAgent, IDictionary<string, object> authToken) :
         this(userAgent, authToken, null, null)
     {
-
     }
 
     public HelloMessage(string userAgent, IDictionary<string, object> authToken, IDictionary<string, string> routingContext, string[] notificationFilters)
     {
-        if (authToken == null || authToken.Count == 0)
+        Auth = authToken != null ? new Dictionary<string, object>(authToken) : new Dictionary<string, object>();
+
+        MetaData = new Dictionary<string, object>
         {
-            MetaData = new Dictionary<string, object> { { UserAgentMetadataKey, userAgent } };
-        }
-        else
-        {
-            MetaData = new Dictionary<string, object>(authToken) { { UserAgentMetadataKey, userAgent } };
-        }
+            [UserAgentMetadataKey] = userAgent,
+            ["routing"] = routingContext
+        };
 
         if (notificationFilters is not null)
             MetaData.Add("notifications", notificationFilters);
-
-        MetaData.Add("routing", routingContext);
     }
 
     public override string ToString()
     {
-        IDictionary<string, object> metadataCopy = new Dictionary<string, object>(MetaData);
-        if (metadataCopy.ContainsKey(AuthToken.CredentialsKey))
-        {
-            metadataCopy[AuthToken.CredentialsKey] = "******";
-        }
-        return "HELLO " + metadataCopy.ToContentString();
+        var authDictionaryClone = new Dictionary<string, object>(Auth);
+
+        if (authDictionaryClone.ContainsKey(AuthToken.CredentialsKey))
+            authDictionaryClone[AuthToken.CredentialsKey] = "******";
+
+        return $"HELLO {MetaData.ToContentString()} {authDictionaryClone.ToContentString()}";
     }
 }

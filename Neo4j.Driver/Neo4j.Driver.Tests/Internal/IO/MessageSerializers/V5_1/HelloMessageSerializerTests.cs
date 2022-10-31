@@ -59,13 +59,16 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
         reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
         reader.ReadStructHeader().Should().Be(1);
         reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
+        reader.ReadMap().Should().BeEquivalentTo(new Dictionary<string, object>
+        {
+            ["scheme"] = "basic",
+            ["principal"] = "username",
+            ["credentials"] = "password"
+        });
         reader.ReadMap().Should().BeEquivalentTo(
             new Dictionary<string, object>
             {
                 ["user_agent"] = "Client-Version/1.0",
-                ["scheme"] = "basic",
-                ["principal"] = "username",
-                ["credentials"] = "password",
                 ["routing"] = new Dictionary<string, object> { ["contextKey"] = "contextValue" }
             });
     }
@@ -88,13 +91,16 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
         reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
         reader.ReadStructHeader().Should().Be(1);
         reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
+        reader.ReadMap().Should().BeEquivalentTo(new Dictionary<string, object>
+        {
+            ["scheme"] = "basic",
+            ["principal"] = "username",
+            ["credentials"] = "password"
+        });
         reader.ReadMap().Should().BeEquivalentTo(
             new Dictionary<string, object>
             {
                 ["user_agent"] = "Client-Version/1.0",
-                ["scheme"] = "basic",
-                ["principal"] = "username",
-                ["credentials"] = "password",
                 ["routing"] = new Dictionary<string, object> {["contextKey"] = "contextValue" },
                 ["notifications"] = Array.Empty<string>()
             });
@@ -118,13 +124,16 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
         reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
         reader.ReadStructHeader().Should().Be(1);
         reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
+        reader.ReadMap().Should().BeEquivalentTo(new Dictionary<string, object>
+        {
+            ["scheme"] = "basic",
+            ["principal"] = "username",
+            ["credentials"] = "password"
+        });
         reader.ReadMap().Should().BeEquivalentTo(
             new Dictionary<string, object>
             {
                 ["user_agent"] = "Client-Version/1.0",
-                ["scheme"] = "basic",
-                ["principal"] = "username",
-                ["credentials"]= "password",
                 ["routing"] = new Dictionary<string, object>{["contextKey"] = "contextValue"},
                 ["notifications"] = new [] { "WARNING.*"}
             });
@@ -147,13 +156,16 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
         reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
         reader.ReadStructHeader().Should().Be(1);
         reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
+        reader.ReadMap().Should().BeEquivalentTo(new Dictionary<string, object>
+        {
+            ["scheme"] = "basic",
+            ["principal"] = "username",
+            ["credentials"] = "password"
+        });
         reader.ReadMap().Should().BeEquivalentTo(
             new Dictionary<string, object>
             {
                 ["user_agent"] = "Client-Version/1.0",
-                ["scheme"] = "basic",
-                ["principal"] = "username",
-                ["credentials"] = "password",
                 ["routing"] = null,
                 ["notifications"] = new[] { "WARNING.*", "INFORMATION.*" }
             });
@@ -173,6 +185,7 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
         reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
         reader.ReadStructHeader().Should().Be(1);
         reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
+        reader.ReadMap().Should().BeEquivalentTo(new Dictionary<string, object>());
         reader.ReadMap().Should().BeEquivalentTo(
             new Dictionary<string, object>
             {
@@ -197,6 +210,7 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
         reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
         reader.ReadStructHeader().Should().Be(1);
         reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
+        reader.ReadMap().Should().BeEquivalentTo(new Dictionary<string, object>());
         reader.ReadMap().Should().BeEquivalentTo(
             new Dictionary<string, object>
             {
@@ -219,6 +233,7 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
         reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
         reader.ReadStructHeader().Should().Be(1);
         reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
+        reader.ReadMap().Should().BeEquivalentTo(new Dictionary<string, object>());
         reader.ReadMap().Should().BeEquivalentTo(
             new Dictionary<string, object>
             {
@@ -241,6 +256,7 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
         reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
         reader.ReadStructHeader().Should().Be(1);
         reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
+        reader.ReadMap().Should().BeEquivalentTo(new Dictionary<string, object>());
         reader.ReadMap().Should().BeEquivalentTo(
             new Dictionary<string, object>
             {
