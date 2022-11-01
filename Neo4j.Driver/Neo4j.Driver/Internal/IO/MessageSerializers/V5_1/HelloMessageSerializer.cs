@@ -30,7 +30,7 @@ internal class HelloMessageSerializer : WriteOnlySerializer
     {
         var msg = value.CastOrThrow<HelloMessage>();
 
-        writer.WriteStructHeader(1, BoltProtocolV3MessageFormat.MsgHello);
+        writer.WriteStructHeader(2, BoltProtocolV3MessageFormat.MsgHello);
         writer.Write(msg.Auth);
         writer.Write(msg.MetaData);
     }

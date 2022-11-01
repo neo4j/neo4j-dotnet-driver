@@ -32,7 +32,9 @@ internal class HelloMessage : IRequestMessage
 
     public HelloMessage(string userAgent, IDictionary<string, object> authToken, IDictionary<string, string> routingContext, string[] notificationFilters)
     {
-        Auth = authToken != null ? new Dictionary<string, object>(authToken) : new Dictionary<string, object>();
+        Auth = authToken != null
+            ? new Dictionary<string, object>(authToken) 
+            : new Dictionary<string, object>();
 
         MetaData = new Dictionary<string, object>
         {
@@ -51,6 +53,6 @@ internal class HelloMessage : IRequestMessage
         if (authDictionaryClone.ContainsKey(AuthToken.CredentialsKey))
             authDictionaryClone[AuthToken.CredentialsKey] = "******";
 
-        return $"HELLO {MetaData.ToContentString()} {authDictionaryClone.ToContentString()}";
+        return $"HELLO {authDictionaryClone.ToContentString()} {MetaData.ToContentString()}";
     }
 }

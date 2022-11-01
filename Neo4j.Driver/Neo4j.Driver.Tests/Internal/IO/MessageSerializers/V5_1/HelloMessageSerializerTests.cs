@@ -57,7 +57,7 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
         var reader = readerMachine.Reader();
 
         reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-        reader.ReadStructHeader().Should().Be(1);
+        reader.ReadStructHeader().Should().Be(2);
         reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
         reader.ReadMap().Should().BeEquivalentTo(new Dictionary<string, object>
         {
@@ -89,7 +89,7 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
         var reader = readerMachine.Reader();
 
         reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-        reader.ReadStructHeader().Should().Be(1);
+        reader.ReadStructHeader().Should().Be(2);
         reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
         reader.ReadMap().Should().BeEquivalentTo(new Dictionary<string, object>
         {
@@ -122,7 +122,7 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
         var reader = readerMachine.Reader();
 
         reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-        reader.ReadStructHeader().Should().Be(1);
+        reader.ReadStructHeader().Should().Be(2);
         reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
         reader.ReadMap().Should().BeEquivalentTo(new Dictionary<string, object>
         {
@@ -154,7 +154,7 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
         var reader = readerMachine.Reader();
 
         reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-        reader.ReadStructHeader().Should().Be(1);
+        reader.ReadStructHeader().Should().Be(2);
         reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
         reader.ReadMap().Should().BeEquivalentTo(new Dictionary<string, object>
         {
@@ -183,7 +183,7 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
         var reader = readerMachine.Reader();
 
         reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-        reader.ReadStructHeader().Should().Be(1);
+        reader.ReadStructHeader().Should().Be(2);
         reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
         reader.ReadMap().Should().BeEquivalentTo(new Dictionary<string, object>());
         reader.ReadMap().Should().BeEquivalentTo(
@@ -208,7 +208,7 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
         var reader = readerMachine.Reader();
 
         reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-        reader.ReadStructHeader().Should().Be(1);
+        reader.ReadStructHeader().Should().Be(2);
         reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
         reader.ReadMap().Should().BeEquivalentTo(new Dictionary<string, object>());
         reader.ReadMap().Should().BeEquivalentTo(
@@ -231,7 +231,7 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
         var reader = readerMachine.Reader();
 
         reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-        reader.ReadStructHeader().Should().Be(1);
+        reader.ReadStructHeader().Should().Be(2);
         reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
         reader.ReadMap().Should().BeEquivalentTo(new Dictionary<string, object>());
         reader.ReadMap().Should().BeEquivalentTo(
@@ -254,7 +254,7 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
         var reader = readerMachine.Reader();
 
         reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-        reader.ReadStructHeader().Should().Be(1);
+        reader.ReadStructHeader().Should().Be(2);
         reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgHello);
         reader.ReadMap().Should().BeEquivalentTo(new Dictionary<string, object>());
         reader.ReadMap().Should().BeEquivalentTo(
