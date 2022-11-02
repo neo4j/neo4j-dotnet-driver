@@ -27,39 +27,48 @@ namespace Neo4j.Driver;
 public class QueryConfig
 {
     /// <summary>
-    /// Configures which members of the cluster the query can be processed by.
+    /// Members of the cluster the query can be processed by.
     /// </summary>
     public RoutingControl Routing { get; }
 
     /// <summary>
-    /// Configures which database to execute the query against.
+    /// Database to execute the query against.
     /// </summary>
     public string Database { get; }
     
     /// <summary>
-    /// Configures a user to impersonate while executing a query.
+    /// User to impersonate while executing a query.
     /// </summary>
     public string ImpersonatedUser { get; }
     
     /// <summary>
-    /// Configures a <see cref="IBookmarkManager"/> to provide bookmarks for query execution, and receive resulting bookmarks.
+    /// <see cref="IBookmarkManager"/> to provide bookmarks for query execution, and receive resulting bookmarks.<br/>
+    /// Can be disabled by setting <see cref="EnableBookmarkManager"/> to false.
     /// </summary>
     public IBookmarkManager BookmarkManager { get; }
 
     /// <summary>
-    /// Construct new instance for configuration for running queries using <see cref="IDriver.ExecuteQueryAsync"/>
+    /// Enables or disables the use of an <see cref="IBookmarkManager"/> for causal chaining.
+    /// </summary>
+    public bool EnableBookmarkManager { get; }
+
+    /// <summary>
+    /// Construct new instance for configuration for running queries using <see cref="IDriver.ExecuteQueryAsync"/>.
     /// </summary>
     /// <param name="routing">Routing for query.</param>
     /// <param name="database">Database name of database query should be executed against.</param>
     /// <param name="impersonatedUser">Username of a user to impersonate while executing a query.</param>
-    /// <param name="bookmarkManager">Instance of <see cref="IBookmarkManager"/> to provide bookmarks for query execution, and receive resulting bookmarks.</param>
+    /// <param name="bookmarkManager">Instance of <see cref="IBookmarkManager"/> to provide bookmarks for query execution, and receive resulting bookmarks.<br/>
+    /// When null the driver will use it's own <see cref="IBookmarkManager"/> for causal chaining.</param>
+    /// <param name="enableBookmarkManager">Whether or not to use a <see cref="IBookmarkManager"/>, setting to false will remove any usage or modification of <see cref="IBookmarkManager"/>.</param>
     public QueryConfig(RoutingControl routing = RoutingControl.Writers, string database = null, string impersonatedUser = null,
-        IBookmarkManager bookmarkManager = null)
+        IBookmarkManager bookmarkManager = null, bool enableBookmarkManager = true)
     {
         Routing = routing;
         Database = database;
         ImpersonatedUser = impersonatedUser;
         BookmarkManager = bookmarkManager;
+        EnableBookmarkManager = enableBookmarkManager;
     }
 }
 
@@ -78,10 +87,11 @@ public class QueryConfig<T> : QueryConfig
     /// <param name="database">Database name of database query should be executed against.</param>
     /// <param name="impersonatedUser">Username of a user to impersonate while executing a query.</param>
     /// <param name="bookmarkManager">Instance of <see cref="IBookmarkManager"/> to provide bookmarks for query execution, and receive resulting bookmarks.</param>
+    /// <param name="enableBookmarkManager">Whether or not to use an <see cref="IBookmarkManager"/>, setting to false will remove any usage or modification of <see cref="IBookmarkManager"/>.</param>
     /// <exception cref="ArgumentNullException"></exception>
     public QueryConfig(Func<IResultCursor, CancellationToken, Task<T>> cursorProcessor, RoutingControl routing = RoutingControl.Writers, string database = null,
-        string impersonatedUser = null, IBookmarkManager bookmarkManager = null) 
-        : base(routing, database, impersonatedUser, bookmarkManager)
+        string impersonatedUser = null, IBookmarkManager bookmarkManager = null, bool enableBookmarkManager = true) 
+        : base(routing, database, impersonatedUser, bookmarkManager, enableBookmarkManager)
     {
         CursorProcessor = cursorProcessor ?? throw new ArgumentNullException(nameof(cursorProcessor));
     }

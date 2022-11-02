@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal;
 using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
@@ -44,22 +42,28 @@ internal class ExecuteQuery : IProtocolObject
     {
         if (data.config == null)
             return null;
-
-        var bookmarkManager = !string.IsNullOrEmpty(data.config.bookmarkManagerId)
-            ? data.config.bookmarkManagerId != "-1" 
-                ? ObjManager.GetObject<NewBookmarkManager>(data.config.bookmarkManagerId).BookmarkManager
-                : new NoOpBookmarkManager()
-            : null;
         
         var routingControl = data.config.routing?.Equals("w", StringComparison.OrdinalIgnoreCase) ?? true
             ? RoutingControl.Writers
             : RoutingControl.Readers;
 
+        var bookmarkManager = default(IBookmarkManager);
+        var enableBookmarkManager = true;
+
+        if (!string.IsNullOrEmpty(data.config.bookmarkManagerId))
+        {
+            if (data.config.bookmarkManagerId != "-1")
+                enableBookmarkManager = false;
+            else
+                bookmarkManager = ObjManager.GetObject<NewBookmarkManager>(data.config.bookmarkManagerId).BookmarkManager;
+        }
+
         return new QueryConfig(
             routingControl,
             data.config.database,
             data.config.impersonatedUser,
-            bookmarkManager);
+            bookmarkManager, 
+            enableBookmarkManager);
     }
 
     public override string Respond()

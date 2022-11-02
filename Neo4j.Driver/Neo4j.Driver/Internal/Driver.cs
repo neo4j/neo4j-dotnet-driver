@@ -224,8 +224,10 @@ internal sealed class Driver : IInternalDriver
 
         if (!string.IsNullOrWhiteSpace(config.ImpersonatedUser))
             sessionConfigBuilder.WithImpersonatedUser(config.ImpersonatedUser);
-        
-        sessionConfigBuilder.WithBookmarkManager(config.BookmarkManager ?? _bookmarkManager);
+
+        if(config.EnableBookmarkManager)
+            sessionConfigBuilder.WithBookmarkManager(config.BookmarkManager ?? _bookmarkManager);
+
         sessionConfigBuilder.WithDefaultAccessMode(config.Routing switch
         {
             RoutingControl.Readers => AccessMode.Read,
