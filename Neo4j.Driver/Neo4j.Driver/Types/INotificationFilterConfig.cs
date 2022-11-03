@@ -80,10 +80,14 @@ internal interface INotificationFilterConfig
 
 internal sealed class ServerDefaultNotificationFilterConfig : INotificationFilterConfig
 {
+    public static ServerDefaultNotificationFilterConfig Instance = new ServerDefaultNotificationFilterConfig();
+    private ServerDefaultNotificationFilterConfig() { }
 }
 
 internal sealed class NoNotificationFilterConfig : INotificationFilterConfig
 {
+    public static NoNotificationFilterConfig Instance = new NoNotificationFilterConfig();
+    private NoNotificationFilterConfig() { }
 }
 
 internal sealed class NotificationFilterSetConfig : INotificationFilterConfig
