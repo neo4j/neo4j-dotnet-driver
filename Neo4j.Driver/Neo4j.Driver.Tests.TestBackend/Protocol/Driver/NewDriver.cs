@@ -134,9 +134,20 @@ namespace Neo4j.Driver.Tests.TestBackend
             if (data.fetchSize.HasValue)
                 configBuilder.WithFetchSize(data.fetchSize.Value);
 
-            if (data.notificationFilters != null)
-                configBuilder.WithNotificationFilters(data.notificationFilters
-                    .Select(NotificationFilterParsing.ExtractNotificationFilter).ToArray());
+            switch (data.notificationFilters)
+            {
+                case null: // don't do anything when null.
+                    break;
+                case ["None"]: 
+                    configBuilder.WithNoNotifications();
+                    break;
+                case ["ServerDefault"]:
+                    configBuilder.WithServerDefaultNotifications();
+                    break;
+                default:
+                    configBuilder.WithNotificationFilters(NotificationFilterParsing.Parse(data.notificationFilters));
+                    break;
+            }
 
             var logger = new SimpleLogger();
 

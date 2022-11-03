@@ -1,23 +1,21 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
 internal static class NotificationFilterParsing
 {
-    public static NotificationFilter ExtractNotificationFilter(string filterText)
+    public static (Severity, Category)[] Parse(IEnumerable<string> filters)
     {
-        if (filterText.ToLower() == "none")
-            return NotificationFilter.None;
-
-        var split = filterText.ToLower().Split('.', StringSplitOptions.RemoveEmptyEntries);
-        var sev = split[0];
-        var cat = split[1];
-
-        if (sev == "all" && cat == "all")
-            return NotificationFilter.All;
-
-        return Enum.TryParse(sev + cat, true, out NotificationFilter val)
-            ? val
-            : throw new ArgumentOutOfRangeException();
+        return filters.Select(x =>
+        {
+            var tuple = x.Split('.', StringSplitOptions.RemoveEmptyEntries);
+            var sev = tuple[0];
+            var cat = tuple[1];
+            return (
+                Enum.Parse<Severity>(sev, true), 
+                Enum.Parse<Category>(cat, true));
+        }).ToArray();
     }
 }

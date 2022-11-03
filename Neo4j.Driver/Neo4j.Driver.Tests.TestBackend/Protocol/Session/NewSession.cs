@@ -78,9 +78,21 @@ namespace Neo4j.Driver.Tests.TestBackend
                 configBuilder.WithBookmarkManager(ObjManager.GetObject<NewBookmarkManager>(data.bookmarkManagerId)
                     .BookmarkManager);
 
-            if (data.notificationFilters != null)
-                configBuilder.WithNotificationFilters(data.notificationFilters
-                    .Select(NotificationFilterParsing.ExtractNotificationFilter).ToArray());
+            switch (data.notificationFilters)
+            {
+                case null: // don't do anything when null.
+                    break;
+                case ["None"]:
+                    configBuilder.WithNoNotifications();
+                    break;
+                case ["ServerDefault"]:
+                    configBuilder.WithServerDefaultNotifications();
+                    break;
+                default:
+                    configBuilder.WithNotificationFilters(NotificationFilterParsing.Parse(data.notificationFilters));
+                    break;
+            }
+
         }
 
         public override async Task Process()

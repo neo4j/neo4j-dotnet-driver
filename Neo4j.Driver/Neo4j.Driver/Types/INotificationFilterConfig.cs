@@ -15,70 +15,83 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+
 namespace Neo4j.Driver;
 
 /// <summary>
-/// Used to specify what notifications to receive from the server.
+/// 
 /// </summary>
-public enum NotificationFilter
+public enum Severity
 {
     /// <summary>
-    /// Receive no notifications.
-    /// </summary>
-    None,
-
-    /// <summary>
-    /// Receive all notifications.
+    /// 
     /// </summary>
     All,
-
     /// <summary>
-    /// Receive all query notifications.
+    /// 
     /// </summary>
-    AllQuery,
-
+    Warning,
     /// <summary>
-    /// Receive all warning notifications.
+    /// 
     /// </summary>
-    WarningAll,
+    Information
+}
 
+/// <summary>
+/// 
+/// </summary>
+public enum Category
+{
     /// <summary>
-    /// Receive only deprecation notifications.
+    /// 
     /// </summary>
-    WarningDeprecation,
+    All,
+    /// <summary>
+    /// 
+    /// </summary>
+    Hint,
+    /// <summary>
+    /// 
+    /// </summary>
+    Unrecognized,
+    /// <summary>
+    /// 
+    /// </summary>
+    Unsupported,
+    /// <summary>
+    /// 
+    /// </summary>
+    Performance,
+    /// <summary>
+    /// 
+    /// </summary>
+    Deprecation,
+    /// <summary>
+    /// 
+    /// </summary>
+    Generic
+}
 
-    /// <summary>
-    /// Receive only warning hint notifications.
-    /// </summary>
-    WarningHint,
 
-    /// <summary>
-    /// Receive only query notifications at a warning level.
-    /// </summary>
-    WarningQuery,
+internal interface INotificationFilterConfig
+{
+}
 
-    /// <summary>
-    /// Receive only unsupported warning notifications.
-    /// </summary>
-    WarningUnsupported,
+internal sealed class ServerDefaultNotificationFilterConfig : INotificationFilterConfig
+{
+}
 
-    /// <summary>
-    /// Receive all information notifications.
-    /// </summary>
-    InformationAll,
+internal sealed class NoNotificationFilterConfig : INotificationFilterConfig
+{
+}
 
-    /// <summary>
-    /// Receive only runtime information notifications.
-    /// </summary>
-    InformationRuntime,
+internal sealed class NotificationFilterSetConfig : INotificationFilterConfig
+{
+    public ValueTuple<Severity, Category>[] Filters;
 
-    /// <summary>
-    /// Receive only query notifications at a information level.
-    /// </summary>
-    InformationQuery,
-
-    /// <summary>
-    /// Receive only performance notifications.
-    /// </summary>
-    InformationPerformance
+    public NotificationFilterSetConfig(ValueTuple<Severity, Category>[] filters)
+    {
+        Filters = filters;
+    }
 }

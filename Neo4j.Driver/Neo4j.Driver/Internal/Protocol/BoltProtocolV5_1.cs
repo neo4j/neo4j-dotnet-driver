@@ -37,14 +37,14 @@ internal class BoltProtocolV5_1 : BoltProtocolV5_0
     }
 
     protected override IRequestMessage HelloMessage(string userAgent, IDictionary<string, object> auth,
-        IDictionary<string, string> routingContext, NotificationFilter[] notificationFilters)
+        IDictionary<string, string> routingContext, INotificationFilterConfig[] notificationFilters)
     {
         return new HelloMessage(userAgent, auth, routingContext,
             NotificationFilterEncoder.EncodeNotificationFilters(notificationFilters));
     }
 
     protected override IRequestMessage GetBeginMessage(string database, Bookmarks bookmarks, TransactionConfig config,
-        AccessMode mode, string impersonatedUser, NotificationFilter[] notificationFilters = null)
+        AccessMode mode, string impersonatedUser, INotificationFilterConfig[] notificationFilters = null)
     {
         return new BeginMessage(database, bookmarks, config.Timeout, config.Metadata, mode, impersonatedUser,
             NotificationFilterEncoder.EncodeNotificationFilters(notificationFilters));
@@ -52,7 +52,7 @@ internal class BoltProtocolV5_1 : BoltProtocolV5_0
 
     protected override IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmarks bookmarks = null, 
         TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null,
-        string impersonatedUser = null, NotificationFilter[] notificationFilters = null)
+        string impersonatedUser = null, INotificationFilterConfig[] notificationFilters = null)
     {
         return new RunWithMetadataMessage(query, database, bookmarks, config?.Timeout, config?.Metadata, 
             mode, impersonatedUser, NotificationFilterEncoder.EncodeNotificationFilters(notificationFilters));

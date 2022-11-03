@@ -22,35 +22,35 @@ namespace Neo4j.Driver.Internal.Protocol;
 
 internal static class NotificationFilterEncoder
 {
-    public static string[] EncodeNotificationFilters(NotificationFilter[] filters)
+    public static string[] EncodeNotificationFilters(INotificationFilterConfig[] filters)
     {
         if (filters is null or { Length: 0 })
             return null;
 
-        if (filters.Length == 1 && filters[0] == NotificationFilter.None)
+        if (filters.Length == 1 && filters[0] == INotificationFilterConfig.None)
             return Array.Empty<string>();
 
         return filters.Select(MapFilterToString).ToArray();
     }
 
-    public static string MapFilterToString(NotificationFilter arg)
+    public static string MapFilterToString(INotificationFilterConfig arg)
     {
         return arg switch
         {
-            NotificationFilter.None => 
+            INotificationFilterConfig.None => 
                 throw new ArgumentException(
-                    $"Attempted to use {nameof(NotificationFilter.None)} with another {nameof(NotificationFilter)}."),
-            NotificationFilter.All => "*.*",
-            NotificationFilter.AllQuery => "*.QUERY",
-            NotificationFilter.WarningAll => "WARNING.*",
-            NotificationFilter.WarningDeprecation => "WARNING.DEPRECATION",
-            NotificationFilter.WarningHint => "WARNING.HINT",
-            NotificationFilter.WarningQuery => "WARNING.QUERY",
-            NotificationFilter.WarningUnsupported => "WARNING.UNSUPPORTED",
-            NotificationFilter.InformationAll => "INFORMATION.*",
-            NotificationFilter.InformationRuntime => "INFORMATION.RUNTIME",
-            NotificationFilter.InformationQuery => "INFORMATION.QUERY",
-            NotificationFilter.InformationPerformance => "INFORMATION.PERFORMANCE",
+                    $"Attempted to use {nameof(INotificationFilterConfig.None)} with another {nameof(INotificationFilterConfig)}."),
+            INotificationFilterConfig.All => "*.*",
+            INotificationFilterConfig.AllQuery => "*.QUERY",
+            INotificationFilterConfig.WarningAll => "WARNING.*",
+            INotificationFilterConfig.WarningDeprecation => "WARNING.DEPRECATION",
+            INotificationFilterConfig.WarningHint => "WARNING.HINT",
+            INotificationFilterConfig.WarningQuery => "WARNING.QUERY",
+            INotificationFilterConfig.WarningUnsupported => "WARNING.UNSUPPORTED",
+            INotificationFilterConfig.InformationAll => "INFORMATION.*",
+            INotificationFilterConfig.InformationRuntime => "INFORMATION.RUNTIME",
+            INotificationFilterConfig.InformationQuery => "INFORMATION.QUERY",
+            INotificationFilterConfig.InformationPerformance => "INFORMATION.PERFORMANCE",
             _ => throw new ArgumentOutOfRangeException(nameof(arg), arg, null)
         };
     }

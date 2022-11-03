@@ -24,13 +24,13 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         protected override IRequestMessage HelloMessage(string userAgent, IDictionary<string, object> auth,
-            IDictionary<string, string> routingContext, NotificationFilter[] _)
+            IDictionary<string, string> routingContext, INotificationFilterConfig[] _)
         {
 			return new HelloMessage(userAgent, auth, routingContext);
 		}
 				
 		protected override IRequestMessage GetBeginMessage(string database, Bookmarks bookmarks, TransactionConfig config,
-            AccessMode mode, string impersonatedUser, NotificationFilter[] _ = null)
+            AccessMode mode, string impersonatedUser, INotificationFilterConfig[] _ = null)
 		{
 			ValidateImpersonatedUserForVersion(impersonatedUser);
 			return new BeginMessage(database, bookmarks, config?.Timeout, config?.Metadata, mode, impersonatedUser);
@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
 		protected override IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmarks bookmarks = null, 
             TransactionConfig config = null, AccessMode mode = AccessMode.Write,string database = null, 
-            string impersonatedUser = null, NotificationFilter[] _ = null)
+            string impersonatedUser = null, INotificationFilterConfig[] _ = null)
 		{
 			ValidateImpersonatedUserForVersion(impersonatedUser);
 			return new RunWithMetadataMessage(query, database, bookmarks, config, mode, impersonatedUser);

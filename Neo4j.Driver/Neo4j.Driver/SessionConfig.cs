@@ -127,7 +127,7 @@ namespace Neo4j.Driver
         }
 
         public IBookmarkManager BookmarkManager { get; set; }
-        public NotificationFilter[] NotificationFilters { get; set; }
+        public INotificationFilterConfig[] NotificationFilters { get; set; }
     }
 
     /// <summary>
@@ -251,7 +251,7 @@ namespace Neo4j.Driver
         /// </summary>
         /// <param name="filters">Filters to apply.</param>
         /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
-        public SessionConfigBuilder WithNotificationFilters(params NotificationFilter[] filters)
+        public SessionConfigBuilder WithNotificationFilters(params INotificationFilterConfig[] filters)
         {
             _config.NotificationFilters = filters;
             return this;

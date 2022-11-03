@@ -334,14 +334,58 @@ namespace Neo4j.Driver
         }
 
         /// <summary>
-        /// Set which notifications the server will return when executing cypher, overriding any server defaults.<br/>
-        /// <see cref="INotification"/>s can be accessed via <see cref="IResultSummary.Notifications"/>.
+        /// Set driver to receive notifications the server will return when executing cypher, overriding any server defaults.<br/>
+        /// <see cref="INotification"/>s can be accessed via <see cref="IResultSummary.Notifications"/>.<br/>
+        /// Note: cannot be used with either: <see cref="WithServerDefaultNotifications"/>, <see cref="WithNoNotifications"/>.
         /// </summary>
         /// <param name="filters">Filters to apply.</param>
+        /// <exception cref="InvalidOperationException">When either <see cref="WithServerDefaultNotifications"/> or <see cref="WithNoNotifications"/> was called previously on <see cref="ConfigBuilder"/> instance.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">When <paramref name="filters"/> is empty.</exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="filters"/> is null.</exception>
         /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
-        public ConfigBuilder WithNotificationFilters(params NotificationFilter[] filters)
+        public ConfigBuilder WithNotificationFilters((Severity, Category)[] filters)
         {
-            _config.NotificationFilters = filters;
+            if (filters is null)
+                throw new ArgumentNullException(nameof(filters));
+            if (filters.Length == 0)
+                throw new ArgumentOutOfRangeException(nameof(filters), "Cannot be empty.");
+
+            if (_config.NotificationFilters != null)
+                throw new InvalidOperationException(
+                    $"Cannot call {nameof(WithServerDefaultNotifications)} and any other configuration of NotificationFilters({nameof(WithServerDefaultNotifications)}, {nameof(WithNoNotifications)}");
+   
+            _config.NotificationFilters = new NotificationFilterSetConfig(filters.ToArray());
+            return this;
+        }
+
+        /// <summary>
+        /// Set driver to receive all notifications the server has configured.<br/>
+        /// <see cref="INotification"/>s can be accessed via <see cref="IResultSummary.Notifications"/>.<br/>
+        /// Note: cannot be used with either: <see cref="WithNotificationFilters"/>, <see cref="WithNoNotifications"/>.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">When either <see cref="WithNotificationFilters"/> or <see cref="WithNoNotifications"/> was called previously on <see cref="ConfigBuilder"/> instance.</exception>
+        /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+        public ConfigBuilder WithServerDefaultNotifications()
+        {
+            if (_config.NotificationFilters != null && _config.NotificationFilters is not ServerDefaultNotificationFilterConfig)
+                throw new InvalidOperationException(
+                    $"Cannot call {nameof(WithServerDefaultNotifications)} and any other configuration of NotificationFilters({nameof(WithNotificationFilters)}, {nameof(WithNoNotifications)}");
+            _config.NotificationFilters = new ServerDefaultNotificationFilterConfig();
+            return this;
+        }
+
+        /// <summary>
+        /// Set driver to receive no notifications from the server when executing cypher.<br/>
+        /// Note: Cannot be used with either: <see cref="WithNotificationFilters"/>, <see cref="WithServerDefaultNotifications"/>.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">When either <see cref="WithNotificationFilters"/> or <see cref="WithServerDefaultNotifications"/> was called previously on <see cref="ConfigBuilder"/> instance.</exception>
+        /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+        public ConfigBuilder WithNoNotifications()
+        {
+            if (_config.NotificationFilters != null && _config.NotificationFilters is not NoNotificationFilterConfig)
+                throw new InvalidOperationException(
+                    $"Cannot call {nameof(WithNoNotifications)} and any other configuration of NotificationFilters({nameof(WithNotificationFilters)}, {nameof(WithServerDefaultNotifications)}");
+            _config.NotificationFilters = new NoNotificationFilterConfig();
             return this;
         }
     }

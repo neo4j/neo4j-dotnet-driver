@@ -224,6 +224,6 @@ namespace Neo4j.Driver
         /// Specifies which notifications the server will return when executing cypher, overriding any server defaults.<br/>
         /// <see cref="INotification"/>s can be accessed via <see cref="IResultSummary.Notifications"/>.
         /// </summary>
-        public NotificationFilter[] NotificationFilters { get; set; } = null;
+        public INotificationFilterConfig NotificationFilters { get; set; } = null;
     }
 }

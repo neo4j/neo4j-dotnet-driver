@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal class SocketConnection : IConnection
     {
-        private readonly NotificationFilter[] _notificationFilters;
+        private readonly INotificationFilterConfig[] _notificationFilters;
         private readonly SemaphoreSlim _sendLock = new SemaphoreSlim(1, 1);
         private readonly SemaphoreSlim _recvLock = new SemaphoreSlim(1, 1);
 
