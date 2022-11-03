@@ -288,19 +288,22 @@ namespace Neo4j.Driver.Internal.Result
         public string Title { get; }
         public string Description { get; }
         public IInputPosition Position { get; }
+        [Obsolete("Deprecated, Replaced by RawSeverityLevel. Will be removed in 6.0")]
         public string Severity { get; }
+        public string RawSeverityLevel { get; }
         public NotificationSeverity SeverityLevel => ParseSeverity(Severity);
-        public string CategoryString { get; }
-        public NotificationCategory Category => ParseCategory(CategoryString);
+        public string RawCategory { get; }
+        public NotificationCategory Category => ParseCategory(RawCategory);
 
-        public Notification(string code, string title, string description, IInputPosition position, string severity, string category = null)
+        public Notification(string code, string title, string description, IInputPosition position, string severity, string rawCategory = null)
         {
             Code = code;
             Title = title;
             Description = description;
             Position = position;
             Severity = severity;
-            CategoryString = category;
+            RawSeverityLevel = severity;
+            RawCategory = rawCategory;
         }
 
         private NotificationCategory ParseCategory(string category)
@@ -336,12 +339,20 @@ namespace Neo4j.Driver.Internal.Result
 
         public override string ToString()
         {
-            return $"{GetType().Name}{{{nameof(Code)}={Code}, " +
-                   $"{nameof(Title)}={Title}, " +
-                   $"{nameof(Description)}={Description}, " +
-                   $"{nameof(Position)}={Position}, " +
-                   $"{nameof(Severity)}={Severity}" +
-                   $"{nameof(Category)}={CategoryString}}}";
+            const string space = " ";
+            const string equals = "=";
+
+            return string.Concat(
+                nameof(Notification), "{",
+                nameof(Code), equals, Code, space,
+                nameof(Title), equals, Title, space,
+                nameof(Description), equals, Description, space,
+                nameof(Position), equals, Position.ToString(), space,
+                nameof(SeverityLevel), equals, SeverityLevel.ToString(), space,
+                nameof(Category), equals, Category.ToString(), space,
+                nameof(RawSeverityLevel), equals, RawSeverityLevel, space,
+                nameof(RawCategory), equals, RawCategory, //no space
+                "}");
         }
     }
 

@@ -14,6 +14,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using System;
+
 namespace Neo4j.Driver;
 
 /// <summary>
@@ -47,12 +50,18 @@ public interface INotification
     /// <summary>
     /// Gets The severity level of the notification.
     /// </summary>
+    [Obsolete("Deprecated, Replaced by RawSeverityLevel. Will be removed in 6.0")]
     string Severity { get; }
 
     /// <summary>
-    /// Gets The category of the notification.
+    /// Gets the unparsed string value for <see cref="SeverityLevel"/> of this <see cref="INotification"/>.
     /// </summary>
-    string CategoryString { get; }
+    public string RawSeverityLevel { get; }
+
+    /// <summary>
+    /// Gets the unparsed string value for <see cref="Category"/> of this <see cref="INotification"/>.
+    /// </summary>
+    string RawCategory { get; }
 
     /// <summary>
     /// Severity of this <see cref="INotification"/> instance.
