@@ -32,6 +32,6 @@ internal class HelloMessageSerializer : WriteOnlySerializer
 
         writer.WriteStructHeader(2, BoltProtocolV3MessageFormat.MsgHello);
         writer.Write(msg.Auth);
-        writer.Write(msg.MetaData);
+        writer.Write(msg.Metadata);
     }
 }

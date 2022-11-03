@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Messaging.V5_1;
 using Neo4j.Driver.Internal.Protocol;
+using Neo4j.Driver.Internal.Types;
 using Neo4j.Driver.Tests;
 using Xunit;
 
@@ -30,7 +31,7 @@ public class RunWithMetadataMessageSerializerTests : PackStreamSerializerTests
     internal override IPackStreamSerializer SerializerUnderTest => new RunWithMetadataMessageSerializer();
 
     [Fact]
-    public void ShouldSerialize()
+    public void ShouldSerializeOmittingFilters()
     {
         var writerMachine = CreateWriterMachine();
         var writer = writerMachine.Writer();
@@ -81,7 +82,7 @@ public class RunWithMetadataMessageSerializerTests : PackStreamSerializerTests
             new Dictionary<string, object>
             {
                 {"username", "MollyMostlyWhite"}
-            }, AccessMode.Write, null, new[]{"test.filter.A", "test.filter.B"}));
+            }, AccessMode.Write, null, new NotificationFilterSetConfig(new[] { (Severity.Warning, Category.All) })));
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
         var reader = readerMachine.Reader();
@@ -98,11 +99,12 @@ public class RunWithMetadataMessageSerializerTests : PackStreamSerializerTests
                 ["tx_timeout"] = 60_000L,
                 ["tx_metadata"] = new Dictionary<string, object> { ["username"] = "MollyMostlyWhite"},
                 ["db"]= "my-database",
-                ["notifications"] = new[] {"test.filter.A", "test.filter.B"}
+                ["notifications"] = new[] { "WARNING.*" }
             });
     }
+
     [Fact]
-    public void ShouldSerializeWithEmptyNotifications()
+    public void ShouldSerializeWithNullNotificationFilters()
     {
         var writerMachine = CreateWriterMachine();
         var writer = writerMachine.Writer();
@@ -117,7 +119,44 @@ public class RunWithMetadataMessageSerializerTests : PackStreamSerializerTests
             new Dictionary<string, object>
             {
                 {"username", "MollyMostlyWhite"}
-            }, AccessMode.Write, null, Array.Empty<string>()));
+            }, AccessMode.Write, null, ServerDefaultNotificationFilterConfig.Instance));
+
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
+
+        reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+        reader.ReadStructHeader().Should().Be(3);
+        reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgRun);
+        reader.ReadString().Should().Be("RETURN $x");
+        reader.ReadMap().Should().BeEquivalentTo(new Dictionary<string, object> { ["x"] = 1L });
+        reader.ReadMap().Should().BeEquivalentTo(
+            new Dictionary<string, object>
+            {
+                ["bookmarks"] = new[] { "bookmark-123" },
+                ["tx_timeout"] = 60_000L,
+                ["tx_metadata"] = new Dictionary<string, object> { ["username"] = "MollyMostlyWhite" },
+                ["db"] = "my-database",
+                ["notifications"] = null
+            });
+    }
+
+    [Fact]
+    public void ShouldSerializeWithNoNotificationFilters()
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
+
+        var query = new Query("RETURN $x", new Dictionary<string, object>
+        {
+            {"x", 1L}
+        });
+
+        writer.Write(new RunWithMetadataMessage(query, "my-database",
+            Bookmarks.From(AsyncSessionTests.FakeABookmark(123)), TimeSpan.FromMinutes(1),
+            new Dictionary<string, object>
+            {
+                {"username", "MollyMostlyWhite"}
+            }, AccessMode.Write, null, NoNotificationFilterConfig.Instance));
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
         var reader = readerMachine.Reader();

@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver;
 
@@ -335,7 +336,7 @@ public sealed class ConfigBuilder
 
     /// <summary>
     /// Set which <see cref="INotification"/>s the driver can receive in <see cref="IResultSummary.Notifications"/>
-    /// when executing a query, overriding any server defaults.
+    /// when executing a query, overriding any server configuration.
     /// </summary>
     /// <remarks>Cannot be used with either: <see cref="WithServerDefaultNotifications"/>, <see cref="WithNoNotifications"/>.</remarks>
     /// <param name="filters">Filters to apply.</param>
@@ -348,20 +349,20 @@ public sealed class ConfigBuilder
     {
         if (filters is null)
             throw new ArgumentNullException(nameof(filters));
-
         if (filters.Length == 0)
-            throw new ArgumentOutOfRangeException(nameof(filters), "Cannot be empty.");
+            throw new ArgumentOutOfRangeException(nameof(filters), 
+                $"{nameof(filters)} should not be empty when configuring notification filters.");
 
-        if (_config.NotificationFilters == null || _config.NotificationFilters is not NotificationFilterSetConfig)
+        if (_config.NotificationFilters is not null and not NotificationFilterSetConfig)
         {
-            _config.NotificationFilters = new NotificationFilterSetConfig(filters.ToArray());
-            return this;
+            const string message = $"Cannot call {nameof(WithNotificationFilters)} " +
+                                   "after calling any other configuration of notification filters(" +
+                                   $"{nameof(WithServerDefaultNotifications)}, {nameof(WithNoNotifications)})";
+            throw new InvalidOperationException(message);
         }
 
-        const string message = $"Cannot call {nameof(WithServerDefaultNotifications)} "+
-                               "after calling any other configuration of Notification Filters(" +
-                               $"{nameof(WithServerDefaultNotifications)}, {nameof(WithNoNotifications)})";
-        throw new InvalidOperationException(message);
+        _config.NotificationFilters = new NotificationFilterSetConfig(filters.ToArray());
+        return this;
     }
 
     /// <summary>
@@ -374,17 +375,17 @@ public sealed class ConfigBuilder
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithServerDefaultNotifications()
     {
-        if (_config.NotificationFilters == null ||
+        if (_config.NotificationFilters != null &&
             _config.NotificationFilters != ServerDefaultNotificationFilterConfig.Instance)
         {
-            _config.NotificationFilters = ServerDefaultNotificationFilterConfig.Instance;
-            return this;
+            const string message = $"Cannot call {nameof(WithServerDefaultNotifications)} " +
+                                   "after calling any other configuration of notification filters(" +
+                                   $"{nameof(WithNotificationFilters)}, {nameof(WithNoNotifications)}).";
+            throw new InvalidOperationException(message);
         }
 
-        const string message = $"Cannot call {nameof(WithServerDefaultNotifications)} "+
-                               "after calling any other configuration of Notification Filters(" + 
-                               $"{nameof(WithNotificationFilters)}, {nameof(WithNoNotifications)}).";
-        throw new InvalidOperationException(message);
+        _config.NotificationFilters = ServerDefaultNotificationFilterConfig.Instance;
+        return this;
     }
 
     /// <summary>
@@ -396,17 +397,16 @@ public sealed class ConfigBuilder
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithNoNotifications()
     {
-        if (_config.NotificationFilters == null ||
-            _config.NotificationFilters == NoNotificationFilterConfig.Instance)
+        if (_config.NotificationFilters != null &&
+            _config.NotificationFilters != NoNotificationFilterConfig.Instance)
         {
-            _config.NotificationFilters = NoNotificationFilterConfig.Instance;
-            return this;
+            const string message = $"Cannot call {nameof(WithNoNotifications)} " +
+                                   "after calling any other configuration of notification filters(" +
+                                   $"{nameof(WithNotificationFilters)}, {nameof(WithServerDefaultNotifications)}).";
+            throw new InvalidOperationException(message);
         }
 
-        const string message = $"Cannot call {nameof(WithNoNotifications)} " +
-                               "after calling any other configuration of NotificationFilters(" +
-                               $"{nameof(WithNotificationFilters)}, {nameof(WithServerDefaultNotifications)}).";
-        throw new InvalidOperationException(message);
-      
+        _config.NotificationFilters = NoNotificationFilterConfig.Instance;
+        return this;
     }
 }

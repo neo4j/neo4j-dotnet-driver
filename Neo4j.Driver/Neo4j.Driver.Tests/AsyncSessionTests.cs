@@ -57,16 +57,16 @@ namespace Neo4j.Driver.Tests
             if (boltProtocol == null)
             {
                 var protocol = new Mock<IBoltProtocol>();
-                protocol.Setup(x => x.LoginAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<IAuthToken>(), It.IsAny<INotificationFilterConfig[]>()))
+                protocol.Setup(x => x.LoginAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<IAuthToken>(), It.IsAny<INotificationFilterConfig>()))
                     .Returns(Task.CompletedTask);
                 protocol.Setup(x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Query>(),
                         false,
                         It.IsAny<IBookmarksTracker>(), It.IsAny<IResultResourceHandler>(), It.IsAny<string>(),
-                        It.IsAny<Bookmarks>(), It.IsAny<TransactionConfig>(), It.IsAny<string>(), It.IsAny<long>(), It.IsAny<INotificationFilterConfig[]>()))
+                        It.IsAny<Bookmarks>(), It.IsAny<TransactionConfig>(), It.IsAny<string>(), It.IsAny<long>(), It.IsAny<INotificationFilterConfig>()))
                     .ReturnsAsync(new Mock<IResultCursor>().Object);
                 protocol.Setup(x =>
                         x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmarks>(),
-                            It.IsAny<TransactionConfig>(), null, It.IsAny<INotificationFilterConfig[]>()))
+                            It.IsAny<TransactionConfig>(), null, It.IsAny<INotificationFilterConfig>()))
                     .Returns(Task.CompletedTask);
                 protocol.Setup(x =>
                         x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Query>(), false, It.IsAny<long>()))
@@ -106,7 +106,7 @@ namespace Neo4j.Driver.Tests
                 mockProtocol.Verify(
                     x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Query>(), reactive,
                         session, session, It.IsAny<string>(), It.IsAny<Bookmarks>(), It.IsAny<TransactionConfig>(),
-                        It.IsAny<string>(), It.IsAny<long>(), It.IsAny<INotificationFilterConfig[]>()),
+                        It.IsAny<string>(), It.IsAny<long>(), It.IsAny<INotificationFilterConfig>()),
                     Times.Once);
             }
         }
@@ -205,7 +205,7 @@ namespace Neo4j.Driver.Tests
 
                 mockProtocol.Setup(x =>
                         x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmarks>(),
-                            It.IsAny<TransactionConfig>(), It.IsAny<string>(), It.IsAny<INotificationFilterConfig[]>()))
+                            It.IsAny<TransactionConfig>(), It.IsAny<string>(), It.IsAny<INotificationFilterConfig>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
                 var session = NewSession(mockConn.Object);
                 var exc = await Record.ExceptionAsync(() => session.BeginTransactionAsync());
@@ -227,7 +227,7 @@ namespace Neo4j.Driver.Tests
                 var calls = 0;
                 mockProtocol.Setup(x =>
                         x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmarks>(),
-                            It.IsAny<TransactionConfig>(), It.IsAny<string>(), It.IsAny<INotificationFilterConfig[]>()))
+                            It.IsAny<TransactionConfig>(), It.IsAny<string>(), It.IsAny<INotificationFilterConfig>()))
                     .Returns(Task.CompletedTask).Callback(() =>
                     {
                         // only throw exception on the first beginTx call
@@ -259,7 +259,7 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection(mockProtocol.Object);
                 mockProtocol.Setup(x =>
                         x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmarks>(),
-                            It.IsAny<TransactionConfig>(), It.IsAny<string>(), It.IsAny<INotificationFilterConfig[]>()))
+                            It.IsAny<TransactionConfig>(), It.IsAny<string>(), It.IsAny<INotificationFilterConfig>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
                 var session = NewSession(mockConn.Object);
                 var error = await Record.ExceptionAsync(() => session.BeginTransactionAsync());

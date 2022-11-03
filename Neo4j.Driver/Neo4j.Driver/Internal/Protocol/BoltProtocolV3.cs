@@ -40,13 +40,13 @@ namespace Neo4j.Driver.Internal.Protocol
         public virtual BoltProtocolVersion Version => BoltProtocolVersion.V3_0;
 
         protected virtual IRequestMessage GetHelloMessage(string userAgent, IDictionary<string, object> auth,
-            INotificationFilterConfig[] notificationFilters = null)
+            INotificationFilterConfig notificationFilters = null)
 		{
 			return new Messaging.V3.HelloMessage(userAgent, auth);
 		}
 
 		protected virtual IRequestMessage GetBeginMessage(string database, Bookmarks bookmarks, TransactionConfig config,
-            AccessMode mode, string impersonatedUser, INotificationFilterConfig[] notificationFilters = null)
+            AccessMode mode, string impersonatedUser, INotificationFilterConfig notificationFilters = null)
 		{
 			ValidateImpersonatedUserForVersion(impersonatedUser);
 			AssertNullDatabase(database);
@@ -56,7 +56,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
 		protected virtual IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmarks bookmarks = null,
             TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null,
-            string impersonatedUser = null, INotificationFilterConfig[] notificationFilters = null)
+            string impersonatedUser = null, INotificationFilterConfig notificationFilters = null)
 		{
 			ValidateImpersonatedUserForVersion(impersonatedUser);
 			return new RunWithMetadataMessage(query, bookmarks, config, mode);
@@ -77,7 +77,7 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         public virtual async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken,
-            INotificationFilterConfig[] notificationFilters = null)
+            INotificationFilterConfig notificationFilters = null)
         {
             await connection.EnqueueAsync(GetHelloMessage(userAgent, authToken.AsDictionary(), notificationFilters),
 										  GetHelloResponseHandler(connection)).ConfigureAwait(false);
@@ -87,7 +87,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public virtual async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, Query query,
             bool reactive, IBookmarksTracker bookmarksTracker, IResultResourceHandler resultResourceHandler, 
             string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser, 
-            long fetchSize = Config.Infinite, INotificationFilterConfig[] notificationFilters = null)
+            long fetchSize = Config.Infinite, INotificationFilterConfig notificationFilters = null)
         {
             AssertNullDatabase(database);
 
@@ -102,7 +102,7 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         public virtual async Task BeginTransactionAsync(IConnection connection, string database, Bookmarks bookmarks,
-            TransactionConfig config, string impersonatedUser, INotificationFilterConfig[] notificationFilters = null)
+            TransactionConfig config, string impersonatedUser, INotificationFilterConfig notificationFilters = null)
         {
             await connection.EnqueueAsync(GetBeginMessage(database,
                         bookmarks,

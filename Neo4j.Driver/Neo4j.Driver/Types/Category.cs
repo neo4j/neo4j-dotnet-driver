@@ -18,9 +18,36 @@
 namespace Neo4j.Driver;
 
 /// <summary>
-/// Configuration object for which notifications server will send when executing queries.
-/// Marker interface.
+/// 
 /// </summary>
-public interface INotificationFilterConfig
+public enum Category
 {
+    /// <summary>
+    /// 
+    /// </summary>
+    All,
+    /// <summary>
+    /// 
+    /// </summary>
+    Hint,
+    /// <summary>
+    /// 
+    /// </summary>
+    Unrecognized,
+    /// <summary>
+    /// 
+    /// </summary>
+    Unsupported,
+    /// <summary>
+    /// 
+    /// </summary>
+    Performance,
+    /// <summary>
+    /// 
+    /// </summary>
+    Deprecation,
+    /// <summary>
+    /// 
+    /// </summary>
+    Generic
 }

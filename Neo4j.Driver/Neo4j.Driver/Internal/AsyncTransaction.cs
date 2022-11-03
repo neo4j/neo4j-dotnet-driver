@@ -73,7 +73,7 @@ namespace Neo4j.Driver.Internal
             return _protocol.BeginTransactionAsync(_connection, Database, _bookmarks, config, _impersonatedUser);
         }
 
-        internal Task BeginTransactionAsync(TransactionConfig config, INotificationFilterConfig[] notificationFilters)
+        internal Task BeginTransactionAsync(TransactionConfig config, INotificationFilterConfig notificationFilters)
         {
             TransactionConfig = config;
             return _protocol.BeginTransactionAsync(_connection, Database, _bookmarks, config, _impersonatedUser,

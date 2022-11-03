@@ -34,7 +34,7 @@ namespace Neo4j.Driver.Internal
 
         public IAuthToken AuthToken { get; }
         public string UserAgent { get; }
-        public INotificationFilterConfig[] NotificationFilters { get; set; }
+        public INotificationFilterConfig NotificationFilters { get; set; }
         public SocketSettings SocketSettings { get; }
 
         public ConnectionSettings(Uri uri, IAuthToken auth, Config config)
@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Internal
 
         private ConnectionSettings(IAuthToken authToken,
             EncryptionManager encryptionManager, TimeSpan connectionTimeout, 
-            bool socketKeepAlive, bool ipv6Enabled, string userAgent, INotificationFilterConfig[] notificationFilters)
+            bool socketKeepAlive, bool ipv6Enabled, string userAgent, INotificationFilterConfig notificationFilters)
         {
             IfNull(authToken, nameof(authToken));
             IfNull(encryptionManager, nameof(encryptionManager));

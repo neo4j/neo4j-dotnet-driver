@@ -25,7 +25,7 @@ internal class RunWithMetadataMessage : TransactionStartingMessage
 {
     public RunWithMetadataMessage(Query query, string database, Bookmarks bookmarks, TimeSpan? txTimeout,
         IDictionary<string, object> txMetadata, AccessMode mode, string impersonatedUser,
-        string[] notificationFilters)
+        INotificationFilterConfig notificationFilters)
         : base(database, bookmarks, txTimeout, txMetadata, mode)
     {
         Query = query;
@@ -33,8 +33,7 @@ internal class RunWithMetadataMessage : TransactionStartingMessage
         if (!string.IsNullOrEmpty(impersonatedUser))
             Metadata.Add("imp_user", impersonatedUser);
 
-        if (notificationFilters is not null)
-            Metadata.Add("notifications", notificationFilters);
+        NotificationFiltersMetadata.SetNotificationFiltersOnMetadata(Metadata, notificationFilters);
     }
 
     public Query Query { get; }

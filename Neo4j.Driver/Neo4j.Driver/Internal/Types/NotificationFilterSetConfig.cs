@@ -15,12 +15,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver;
+using System;
+using System.Linq;
 
-/// <summary>
-/// Configuration object for which notifications server will send when executing queries.
-/// Marker interface.
-/// </summary>
-public interface INotificationFilterConfig
+namespace Neo4j.Driver.Internal.Types;
+
+internal sealed class NotificationFilterSetConfig : INotificationFilterConfig
 {
+    public ValueTuple<Severity, Category>[] Filters;
+
+    public NotificationFilterSetConfig(ValueTuple<Severity, Category>[] filters)
+    {
+        Filters = filters;
+    }
 }

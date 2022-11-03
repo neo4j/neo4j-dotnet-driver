@@ -17,19 +17,20 @@
 
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver.Internal.Messaging.V5_1;
 
 internal class BeginMessage : V3.BeginMessage
 {
     public BeginMessage(string database, Bookmarks bookmarks, TimeSpan? txTimeout, IDictionary<string, object> txMetadata,
-        AccessMode mode, string impersonatedUser, string[] notificationFilters)
+        AccessMode mode, string impersonatedUser, INotificationFilterConfig notificationFilters)
         : base(database, bookmarks, txTimeout, txMetadata, mode)
     {
         if(!string.IsNullOrEmpty(impersonatedUser))
             Metadata.Add("imp_user", impersonatedUser);
 
-        if (notificationFilters is not null)
-            Metadata.Add("notifications", notificationFilters);
+        NotificationFiltersMetadata.SetNotificationFiltersOnMetadata(Metadata, notificationFilters);
     }
+
 }

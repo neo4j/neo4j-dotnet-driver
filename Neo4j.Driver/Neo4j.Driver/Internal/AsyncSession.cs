@@ -56,7 +56,7 @@ namespace Neo4j.Driver.Internal
         private readonly long _fetchSize;
         private readonly IBookmarkManager _bookmarkManager;
         private readonly bool _useBookmarkManager;
-        private readonly INotificationFilterConfig[] _notificationFilters;
+        private readonly INotificationFilterConfig _notificationFilters;
 
         public AsyncSession(IConnectionProvider provider,
             ILogger logger,

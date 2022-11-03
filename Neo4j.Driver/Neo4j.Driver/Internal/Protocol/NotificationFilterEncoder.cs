@@ -17,41 +17,25 @@
 
 using System;
 using System.Linq;
+using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver.Internal.Protocol;
 
 internal static class NotificationFilterEncoder
 {
-    public static string[] EncodeNotificationFilters(INotificationFilterConfig[] filters)
+    public static string[] EncodeNotificationFilters(INotificationFilterConfig filters)
     {
-        if (filters is null or { Length: 0 })
-            return null;
-
-        if (filters.Length == 1 && filters[0] == INotificationFilterConfig.None)
-            return Array.Empty<string>();
-
-        return filters.Select(MapFilterToString).ToArray();
+        return filters switch
+        {
+            NoNotificationFilterConfig => Array.Empty<string>(),
+            ServerDefaultNotificationFilterConfig => null,
+            NotificationFilterSetConfig set => set.Filters.Select(x => MapFilterToString(x).ToUpper()).ToArray(),
+            _ => throw new ArgumentOutOfRangeException(nameof(filters), filters, null)
+        };
     }
 
-    public static string MapFilterToString(INotificationFilterConfig arg)
+    public static string MapFilterToString((Severity Severity, Category Category) pair)
     {
-        return arg switch
-        {
-            INotificationFilterConfig.None => 
-                throw new ArgumentException(
-                    $"Attempted to use {nameof(INotificationFilterConfig.None)} with another {nameof(INotificationFilterConfig)}."),
-            INotificationFilterConfig.All => "*.*",
-            INotificationFilterConfig.AllQuery => "*.QUERY",
-            INotificationFilterConfig.WarningAll => "WARNING.*",
-            INotificationFilterConfig.WarningDeprecation => "WARNING.DEPRECATION",
-            INotificationFilterConfig.WarningHint => "WARNING.HINT",
-            INotificationFilterConfig.WarningQuery => "WARNING.QUERY",
-            INotificationFilterConfig.WarningUnsupported => "WARNING.UNSUPPORTED",
-            INotificationFilterConfig.InformationAll => "INFORMATION.*",
-            INotificationFilterConfig.InformationRuntime => "INFORMATION.RUNTIME",
-            INotificationFilterConfig.InformationQuery => "INFORMATION.QUERY",
-            INotificationFilterConfig.InformationPerformance => "INFORMATION.PERFORMANCE",
-            _ => throw new ArgumentOutOfRangeException(nameof(arg), arg, null)
-        };
+        return pair.Severity == Severity.All ? $"*.{pair.Category:G}" : $"{pair.Severity:G}.{pair.Category:G}";
     }
 }

@@ -21,6 +21,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Messaging.V5_1;
 using Neo4j.Driver.Internal.Protocol;
+using Neo4j.Driver.Internal.Types;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers.V5_1;
@@ -74,7 +75,7 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
     }
 
     [Fact]
-    public void ShouldIncludeEmptyNotificationsArray()
+    public void ShouldWriteNoNotificationConfigAsEmptyArray()
     {
         var writerMachine = CreateWriterMachine();
         var writer = writerMachine.Writer();
@@ -83,7 +84,8 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
             {"credentials", "password"} };
         var routingContext = new Dictionary<string, string> { { "contextKey", "contextValue" } };
 
-        writer.Write(new HelloMessage("Client-Version/1.0", authToken, routingContext, Array.Empty<string>()));
+        writer.Write(new HelloMessage("Client-Version/1.0", authToken, routingContext,
+            NoNotificationFilterConfig.Instance));
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
         var reader = readerMachine.Reader();
@@ -116,7 +118,9 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
             {"credentials", "password"} };
         var routingContext = new Dictionary<string, string> { { "contextKey", "contextValue" } };
 
-        writer.Write(new HelloMessage("Client-Version/1.0", authToken, routingContext, new[] {"WARNING.*"}));
+
+        writer.Write(new HelloMessage("Client-Version/1.0", authToken, routingContext,
+            new NotificationFilterSetConfig(new []{(Severity.Warning, Category.All)})));
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
         var reader = readerMachine.Reader();
@@ -148,7 +152,11 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
             {"principal", "username"},
             {"credentials", "password"} };
 
-        writer.Write(new HelloMessage("Client-Version/1.0", authToken, null, new[] { "WARNING.*", "INFORMATION.*" }));
+        writer.Write(new HelloMessage("Client-Version/1.0", authToken, null,
+                new NotificationFilterSetConfig(new[] { 
+                    (Severity.Warning, Category.All), 
+                    (Severity.Information, Category.All) }
+                )));
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
         var reader = readerMachine.Reader();
@@ -177,7 +185,8 @@ public class HelloMessageSerializerTests : PackStreamSerializerTests
         var writerMachine = CreateWriterMachine();
         var writer = writerMachine.Writer();
 
-        writer.Write(new HelloMessage("Client-Version/1.0", null, null, new[] { "WARNING.*" }));
+        writer.Write(new HelloMessage("Client-Version/1.0", null, null, 
+            new NotificationFilterSetConfig(new[] { (Severity.Warning, Category.All) })));
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
         var reader = readerMachine.Reader();

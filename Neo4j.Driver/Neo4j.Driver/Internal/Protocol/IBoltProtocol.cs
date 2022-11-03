@@ -34,15 +34,15 @@ internal interface IBoltProtocol
         bool useUtcEncodedDateTimes = false);
 
     Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken,
-        INotificationFilterConfig[] filters = null);
+        INotificationFilterConfig filters = null);
 
     Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, Query query, bool reactive, 
         IBookmarksTracker bookmarksTracker, IResultResourceHandler resultResourceHandler, string database, 
         Bookmarks bookmark, TransactionConfig config, string impersonatedUser, long fetchSize, 
-        INotificationFilterConfig[] filters);
+        INotificationFilterConfig filters);
 
     Task BeginTransactionAsync(IConnection connection, string database, Bookmarks bookmark, TransactionConfig config,
-        string impersonatedUser, INotificationFilterConfig[] filters = null);
+        string impersonatedUser, INotificationFilterConfig filters = null);
 
     Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection, Query query, bool reactive,
         long fetchSize);

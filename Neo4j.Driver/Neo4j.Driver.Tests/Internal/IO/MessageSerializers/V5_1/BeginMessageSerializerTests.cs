@@ -21,6 +21,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Messaging.V5_1;
 using Neo4j.Driver.Internal.Protocol;
+using Neo4j.Driver.Internal.Types;
 using Neo4j.Driver.Tests;
 using Xunit;
 
@@ -43,7 +44,7 @@ public class BeginMessageSerializerTests : PackStreamSerializerTests
     }
 
     [Fact]
-    public void ShouldSerialize()
+    public void ShouldSerializeOmittingNotificationsWhenNull()
     {
         var writerMachine = CreateWriterMachine();
         var writer = writerMachine.Writer();
@@ -52,7 +53,7 @@ public class BeginMessageSerializerTests : PackStreamSerializerTests
             new Dictionary<string, object>
             {
                 {"username", "MollyMostlyWhite"}
-            }, AccessMode.Write, null,null));
+            }, AccessMode.Write, null, null));
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
         var reader = readerMachine.Reader();
@@ -74,12 +75,12 @@ public class BeginMessageSerializerTests : PackStreamSerializerTests
     {
         var writerMachine = CreateWriterMachine();
         var writer = writerMachine.Writer();
-
+        
         writer.Write(new BeginMessage(null, Bookmarks.From(AsyncSessionTests.FakeABookmark(123)), TimeSpan.FromMinutes(1),
             new Dictionary<string, object>
             {
                 {"username", "MollyMostlyWhite"}
-            }, AccessMode.Write, null, new []{ "test.filter.A", "test.filter.B"}));
+            }, AccessMode.Write, null, new NotificationFilterSetConfig(new[] {(Severity.Warning, Category.All)})));
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
         var reader = readerMachine.Reader();
@@ -93,12 +94,12 @@ public class BeginMessageSerializerTests : PackStreamSerializerTests
             ["bookmarks"] = new List<object> { "bookmark-123" },
             ["tx_timeout"] = 60000L,
             ["tx_metadata"] = new Dictionary<string, object> { ["username"] = "MollyMostlyWhite" },
-            ["notifications"] = new[] { "test.filter.A", "test.filter.B" }
+            ["notifications"] = new[] { "WARNING.*" }
         });
     }
 
     [Fact]
-    public void ShouldSerializeWithEmptyNotificationFilters()
+    public void ShouldSerializeWithAllNotificationFilters()
     {
         var writerMachine = CreateWriterMachine();
         var writer = writerMachine.Writer();
@@ -107,7 +108,91 @@ public class BeginMessageSerializerTests : PackStreamSerializerTests
             new Dictionary<string, object>
             {
                 {"username", "MollyMostlyWhite"}
-            }, AccessMode.Write, null, Array.Empty<string>()));
+            }, AccessMode.Write, null, new NotificationFilterSetConfig(new[] { (Severity.All, Category.All) })));
+
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
+
+        reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+        reader.ReadStructHeader().Should().Be(1);
+        reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgBegin);
+        var map = reader.ReadMap();
+        map.Should().BeEquivalentTo(new Dictionary<string, object>
+        {
+            ["bookmarks"] = new List<object> { "bookmark-123" },
+            ["tx_timeout"] = 60000L,
+            ["tx_metadata"] = new Dictionary<string, object> { ["username"] = "MollyMostlyWhite" },
+            ["notifications"] = new[] { "*.*" }
+        });
+    }
+
+    [Fact]
+    public void ShouldSerializeWithAllSeverityNotificationFilters()
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
+
+        writer.Write(new BeginMessage(null, Bookmarks.From(AsyncSessionTests.FakeABookmark(123)), TimeSpan.FromMinutes(1),
+            new Dictionary<string, object>
+            {
+                {"username", "MollyMostlyWhite"}
+            }, AccessMode.Write, null, new NotificationFilterSetConfig(new[] { (Severity.All, Category.Generic) })));
+
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
+
+        reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+        reader.ReadStructHeader().Should().Be(1);
+        reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgBegin);
+        var map = reader.ReadMap();
+        map.Should().BeEquivalentTo(new Dictionary<string, object>
+        {
+            ["bookmarks"] = new List<object> { "bookmark-123" },
+            ["tx_timeout"] = 60000L,
+            ["tx_metadata"] = new Dictionary<string, object> { ["username"] = "MollyMostlyWhite" },
+            ["notifications"] = new[] { "*.GENERIC" }
+        });
+    }
+
+    [Fact]
+    public void ShouldSerializeNullNotificationFilters()
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
+
+        writer.Write(new BeginMessage(null, Bookmarks.From(AsyncSessionTests.FakeABookmark(123)), TimeSpan.FromMinutes(1),
+            new Dictionary<string, object>
+            {
+                {"username", "MollyMostlyWhite"}
+            }, AccessMode.Write, null, ServerDefaultNotificationFilterConfig.Instance));
+
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
+
+        reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+        reader.ReadStructHeader().Should().Be(1);
+        reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgBegin);
+        var map = reader.ReadMap();
+        map.Should().BeEquivalentTo(new Dictionary<string, object>
+        {
+            ["bookmarks"] = new List<object> { "bookmark-123" },
+            ["tx_timeout"] = 60000L,
+            ["tx_metadata"] = new Dictionary<string, object> { ["username"] = "MollyMostlyWhite" },
+            ["notifications"] = null
+        });
+    }
+
+    [Fact]
+    public void ShouldSerializeWithNoNotificationFilters()
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
+
+        writer.Write(new BeginMessage(null, Bookmarks.From(AsyncSessionTests.FakeABookmark(123)), TimeSpan.FromMinutes(1),
+            new Dictionary<string, object>
+            {
+                {"username", "MollyMostlyWhite"}
+            }, AccessMode.Write, null, NoNotificationFilterConfig.Instance));
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
         var reader = readerMachine.Reader();

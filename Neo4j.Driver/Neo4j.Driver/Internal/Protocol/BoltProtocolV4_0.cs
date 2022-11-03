@@ -42,13 +42,13 @@ namespace Neo4j.Driver.Internal.Protocol
         protected override IMessageFormat MessageFormat => BoltProtocolMessageFormat.V4;
 		
         protected override IRequestMessage GetHelloMessage(string userAgent, IDictionary<string, object> auth,
-            INotificationFilterConfig[] _ = null)
+            INotificationFilterConfig _ = null)
 		{
 			return new HelloMessage(userAgent, auth);
 		}
 
 		protected override IRequestMessage GetBeginMessage(string database, Bookmarks bookmarks, TransactionConfig config,
-            AccessMode mode, string impersonatedUser, INotificationFilterConfig[] notificationFilters = null)
+            AccessMode mode, string impersonatedUser, INotificationFilterConfig notificationFilters = null)
 		{
 			ValidateImpersonatedUserForVersion(impersonatedUser);
 
@@ -57,7 +57,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
 		protected override IRequestMessage GetRunWithMetaDataMessage(Query query, Bookmarks bookmarks = null, 
             TransactionConfig config = null, AccessMode mode = AccessMode.Write, string database = null,
-            string impersonatedUser = null, INotificationFilterConfig[] notificationFilters = null)
+            string impersonatedUser = null, INotificationFilterConfig notificationFilters = null)
 		{
 			ValidateImpersonatedUserForVersion(impersonatedUser);
 
@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public override async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, Query query,
             bool reactive, IBookmarksTracker bookmarksTracker, IResultResourceHandler resultResourceHandler,
             string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser, 
-            long fetchSize = Config.Infinite, INotificationFilterConfig[] notificationFilters = null)
+            long fetchSize = Config.Infinite, INotificationFilterConfig notificationFilters = null)
         {
             var summaryBuilder = new SummaryBuilder(query, connection.Server);
             var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,

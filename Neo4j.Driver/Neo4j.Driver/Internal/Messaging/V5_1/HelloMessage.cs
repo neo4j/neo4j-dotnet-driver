@@ -20,8 +20,8 @@ namespace Neo4j.Driver.Internal.Messaging.V5_1;
 
 internal class HelloMessage : IRequestMessage
 {
-    public Dictionary<string, object> MetaData { get; }
-    public Dictionary<string, object> Auth { get; }
+    public IDictionary<string, object> Metadata { get; }
+    public IDictionary<string, object> Auth { get; }
 
     private const string UserAgentMetadataKey = "user_agent";
 
@@ -30,20 +30,20 @@ internal class HelloMessage : IRequestMessage
     {
     }
 
-    public HelloMessage(string userAgent, IDictionary<string, object> authToken, IDictionary<string, string> routingContext, string[] notificationFilters)
+    public HelloMessage(string userAgent, IDictionary<string, object> authToken, 
+        IDictionary<string, string> routingContext, INotificationFilterConfig notificationFilters)
     {
         Auth = authToken != null
             ? new Dictionary<string, object>(authToken) 
             : new Dictionary<string, object>();
 
-        MetaData = new Dictionary<string, object>
+        Metadata = new Dictionary<string, object>
         {
             [UserAgentMetadataKey] = userAgent,
             ["routing"] = routingContext
         };
 
-        if (notificationFilters is not null)
-            MetaData.Add("notifications", notificationFilters);
+        NotificationFiltersMetadata.SetNotificationFiltersOnMetadata(Metadata, notificationFilters);
     }
 
     public override string ToString()
@@ -53,6 +53,6 @@ internal class HelloMessage : IRequestMessage
         if (authDictionaryClone.ContainsKey(AuthToken.CredentialsKey))
             authDictionaryClone[AuthToken.CredentialsKey] = "******";
 
-        return $"HELLO {authDictionaryClone.ToContentString()} {MetaData.ToContentString()}";
+        return $"HELLO {authDictionaryClone.ToContentString()} {Metadata.ToContentString()}";
     }
 }

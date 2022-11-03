@@ -15,12 +15,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver;
+namespace Neo4j.Driver.Internal.Types;
 
-/// <summary>
-/// Configuration object for which notifications server will send when executing queries.
-/// Marker interface.
-/// </summary>
-public interface INotificationFilterConfig
+internal sealed class NoNotificationFilterConfig : INotificationFilterConfig
 {
+    public static NoNotificationFilterConfig Instance = new NoNotificationFilterConfig();
+    private NoNotificationFilterConfig() { }
 }

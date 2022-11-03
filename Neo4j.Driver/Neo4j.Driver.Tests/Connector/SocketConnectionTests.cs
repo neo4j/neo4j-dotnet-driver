@@ -71,7 +71,7 @@ namespace Neo4j.Driver.Tests
                 // Then
                 mockClient.Verify(c => c.ConnectAsync(null, CancellationToken.None), Times.Once);
                 mockProtocol.Verify(p => 
-                    p.LoginAsync(conn, It.IsAny<string>(), It.IsAny<IAuthToken>(),It.IsAny<INotificationFilterConfig[]>()));
+                    p.LoginAsync(conn, It.IsAny<string>(), It.IsAny<IAuthToken>(), It.IsAny<INotificationFilterConfig>()));
             }
 
             [Fact]

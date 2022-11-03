@@ -19,7 +19,7 @@ namespace Neo4j.Driver.Internal.Protocol
         }
 
         protected override IRequestMessage HelloMessage(string userAgent, IDictionary<string, object> auth, 
-            IDictionary<string, string> routingContext, INotificationFilterConfig[] _)
+            IDictionary<string, string> routingContext, INotificationFilterConfig _)
         {
             return new HelloMessage(userAgent, auth, routingContext);
         }

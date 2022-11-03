@@ -18,9 +18,20 @@
 namespace Neo4j.Driver;
 
 /// <summary>
-/// Configuration object for which notifications server will send when executing queries.
-/// Marker interface.
+/// 
 /// </summary>
-public interface INotificationFilterConfig
+public enum Severity
 {
+    /// <summary>
+    /// 
+    /// </summary>
+    All,
+    /// <summary>
+    /// 
+    /// </summary>
+    Warning,
+    /// <summary>
+    /// 
+    /// </summary>
+    Information
 }

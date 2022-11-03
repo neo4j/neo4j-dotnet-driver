@@ -13,9 +13,7 @@ internal static class NotificationFilterParsing
             var tuple = x.Split('.', StringSplitOptions.RemoveEmptyEntries);
             var sev = tuple[0];
             var cat = tuple[1];
-            return (
-                Enum.Parse<Severity>(sev, true), 
-                Enum.Parse<Category>(cat, true));
+            return (Enum.Parse<Severity>(sev, true), Enum.Parse<Category>(cat, true));
         }).ToArray();
     }
 }
