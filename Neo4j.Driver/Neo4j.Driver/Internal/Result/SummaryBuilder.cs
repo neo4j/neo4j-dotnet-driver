@@ -313,11 +313,11 @@ namespace Neo4j.Driver.Internal.Result
                 return category?.ToLower() switch
                 {
                     "hint" => NotificationCategory.Hint,
-                    "query" => NotificationCategory.Query,
+                    "unrecognized" => NotificationCategory.Unrecognized,
                     "unsupported" => NotificationCategory.Unsupported,
                     "performance" => NotificationCategory.Performance,
                     "deprecation" => NotificationCategory.Deprecation,
-                    "runtime" => NotificationCategory.Runtime,
+                    "generic" => NotificationCategory.Generic,
                     _ => NotificationCategory.Unknown
                 };
             }

@@ -24,31 +24,29 @@ namespace Neo4j.Driver;
 public enum NotificationCategory
 {
     /// <summary>
-    /// A hint specified in the query cannot be satisfied.
+    /// 
     /// </summary>
     Hint,
     /// <summary>
-    /// An possible issue is identified in the query.<br/>
-    /// <see cref="INotification"/> will contain more details.
+    /// 
     /// </summary>
-    Query,
+    Unrecognized,
     /// <summary>
-    /// Using an unsupported feature.<br/>
-    /// Unsupported features are not recommended for usage in production code.
+    /// 
     /// </summary>
     Unsupported,
     /// <summary>
-    /// Performance of query is sub-optimal.
+    /// 
     /// </summary>
     Performance,
     /// <summary>
-    /// Use of a deprecated feature, format or functionality identified in the query.
+    /// 
     /// </summary>
     Deprecation,
     /// <summary>
-    /// The outcome of the operation is impacted by the system's current status.
+    /// 
     /// </summary>
-    Runtime,
+    Generic,
     /// <summary>
     /// <see cref="INotification"/>'s category is a value unknown to this driver version.
     /// </summary>
