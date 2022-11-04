@@ -138,10 +138,10 @@ namespace Neo4j.Driver.Tests.TestBackend
             {
                 case null: // don't do anything when null.
                     break;
-                case ["None"]: 
+                case ["NONE"]: 
                     configBuilder.WithNoNotifications();
                     break;
-                case ["ServerDefault"]:
+                case ["SERVER_DEFAULT"]:
                     configBuilder.WithServerDefaultNotifications();
                     break;
                 default:
