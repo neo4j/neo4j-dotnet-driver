@@ -18,20 +18,27 @@
 namespace Neo4j.Driver;
 
 /// <summary>
-/// 
+/// Used In conjunction with <see cref="Category"/> to filter
+/// which <see cref="INotification"/>s will be sent in <see cref="IResultSummary.Notifications"/>.<br/><br/>
+/// Can be used in <see cref="ConfigBuilder.WithNotificationFilters"/>
+/// and <see cref="SessionConfigBuilder.WithNotificationFilters"/>.
 /// </summary>
 public enum Severity
 {
     /// <summary>
-    /// 
+    /// Request all notification severities.
     /// </summary>
     All,
     /// <summary>
-    /// 
+    /// Request warning severity notifications. <br/>
+    /// Neo4j recommends user intervention for all warning notifications
     /// </summary>
+    /// <remarks>Will be returned as <see cref="NotificationSeverity.Warning"/></remarks>
     Warning,
     /// <summary>
-    /// 
+    /// Request information severity notifications. <br/>
+    /// Information notifications are for providing additional information.
     /// </summary>
+    /// <remarks>Will be returned as <see cref="NotificationSeverity.Information"/></remarks>
     Information
 }

@@ -24,27 +24,27 @@ namespace Neo4j.Driver;
 public enum NotificationCategory
 {
     /// <summary>
-    /// 
+    /// The given hint cannot be satisfied.
     /// </summary>
     Hint,
     /// <summary>
-    /// 
+    /// The query or command mentions entities that are unknown to the system.
     /// </summary>
     Unrecognized,
     /// <summary>
-    /// 
+    /// The query/command is trying to use features that are not supported by the current system or using features that are experimental and should not be used in production.
     /// </summary>
     Unsupported,
     /// <summary>
-    /// 
+    /// The query uses costly operations and might be slow.
     /// </summary>
     Performance,
     /// <summary>
-    /// 
+    /// The query/command use deprecated features that should be replaced.
     /// </summary>
     Deprecation,
     /// <summary>
-    /// 
+    /// Notification not covered by other categories.
     /// </summary>
     Generic,
     /// <summary>
