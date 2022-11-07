@@ -33,6 +33,6 @@ namespace Neo4j.Driver;
 /// the argument will be either a database name when driver calls <see cref="IBookmarkManager.GetBookmarksAsync"/> or null when the driver calls <see cref="IBookmarkManager.GetAllBookmarksAsync"/>.</param>
 /// <param name="NotifyBookmarksAsync">Nullable delegate to notify application of new bookmarks received by the driver from the server for a database.</param>
 public record BookmarkManagerConfig(
-    Dictionary<string, IEnumerable<string>>? InitialBookmarks,
-    Func<string?, CancellationToken, Task<string[]>>? BookmarkSupplierAsync,
-    Func<string, string[], CancellationToken, Task>? NotifyBookmarksAsync);
+    Dictionary<string, IEnumerable<string>>? InitialBookmarks = null,
+    Func<string?, CancellationToken, Task<string[]>>? BookmarkSupplierAsync = null,
+    Func<string, string[], CancellationToken, Task>? NotifyBookmarksAsync = null);

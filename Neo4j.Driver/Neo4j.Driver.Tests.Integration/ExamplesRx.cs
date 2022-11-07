@@ -16,7 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Microsoft.Reactive.Testing;
@@ -28,197 +27,186 @@ using Xunit.Abstractions;
 using static Microsoft.Reactive.Testing.ReactiveTest;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
 
-namespace Neo4j.Driver.ExamplesAsync
+namespace Neo4j.Driver.ExamplesAsync;
+
+public class ExamplesRx
 {
-    public class ExamplesRx
+    public class RxSectionExamples : BaseRxExample
     {
-        public class RxSectionExamples : BaseRxExample
+        public RxSectionExamples(StandAloneIntegrationTestFixture fixture)
+            : base(fixture)
         {
-            public RxSectionExamples(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
-                : base(output, fixture)
-            {
-            }
+        }
 
-            // tag::rx-autocommit-transaction[]
-            public IObservable<string> ReadProductTitles()
-            {
-                var session = Driver.RxSession();
+        // tag::rx-autocommit-transaction[]
+        public IObservable<string> ReadProductTitles()
+        {
+            var session = Driver.RxSession();
 
-                return session.Run(
+            return session.Run(
+                    "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher query
+                    new {id = 0} // Parameters in the query, if any
+                )
+                .Records()
+                .Select(record => record[0].ToString())
+                .OnErrorResumeNext(session.Close<string>());
+        }
+        // end::rx-autocommit-transaction[]
+
+        // tag::rx-transaction-function[]
+        public IObservable<string> PrintAllProducts()
+        {
+            var session = Driver.RxSession();
+
+            return session.ExecuteRead(tx =>
+            {
+                return tx.Run(
+                        "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher query
+                        new {id = 0} // Parameters in the query, if any
+                    )
+                    .Records()
+                    .Select(record => record[0].ToString());
+            }).OnErrorResumeNext(session.Close<string>());
+        }
+        // end::rx-transaction-function[]
+
+        // tag::rx-explicit-transaction[]
+        public IObservable<string> PrintSingleProduct()
+        {
+            var session = Driver.RxSession();
+
+            // Start an explicit transaction
+            return session.BeginTransaction()
+                .SelectMany(tx => tx.Run(
                         "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher query
                         new {id = 0} // Parameters in the query, if any
                     )
                     .Records()
                     .Select(record => record[0].ToString())
-                    .OnErrorResumeNext(session.Close<string>());
-            }
-            // end::rx-autocommit-transaction[]
+                    .Concat(tx.Commit<string>())
+                    .Catch(tx.Rollback<string>()));
+        }
+        // end::rx-explicit-transaction[]
 
-            // tag::rx-transaction-function[]
-            public IObservable<string> PrintAllProducts()
-            {
-                var session = Driver.RxSession();
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        public async void TestAutocommitTransactionExample()
+        {
+            await WriteAsync("CREATE (p:Product) SET p.id = $id, p.title = $title",
+                new {id = 0, title = "Product-0"});
 
-                return session.ReadTransaction(tx =>
-                {
-                    return tx.Run(
-                            "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher query
-                            new {id = 0} // Parameters in the query, if any
-                        )
-                        .Records()
-                        .Select(record => record[0].ToString());
-                }).OnErrorResumeNext(session.Close<string>());
-            }
-            // end::rx-transaction-function[]
+            var results = ReadProductTitles();
 
-            // tag::rx-explicit-transaction[]
-            public IObservable<string> PrintSingleProduct()
-            {
-                var session = Driver.RxSession();
-
-                // Start an explicit transaction
-                return session.BeginTransaction()
-                        .SelectMany(tx => tx.Run(
-                                "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher query
-                                new {id = 0} // Parameters in the query, if any
-                            )
-                            .Records()
-                            .Select(record => record[0].ToString())
-                            .Concat(tx.Commit<string>())
-                            .Catch(tx.Rollback<string>()));
-            }
-            // end::rx-explicit-transaction[]
-
-            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-            public async void TestAutocommitTransactionExample()
-            {
-                await WriteAsync("CREATE (p:Product) SET p.id = $id, p.title = $title",
-                    new {id = 0, title = "Product-0"});
-
-                var results = ReadProductTitles();
-
-                results.WaitForCompletion()
-                    .AssertEqual(
-                        OnNext(0, "Product-0"),
-                        OnCompleted<string>(0));
-            }
-
-            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-            public async void TestTransactionFunctionExample()
-            {
-                await WriteAsync("CREATE (p:Product) SET p.id = $id, p.title = $title",
-                    new {id = 0, title = "Product-0"});
-
-                var results = PrintAllProducts();
-
-                results.WaitForCompletion()
-                    .AssertEqual(
-                        OnNext(0, "Product-0"),
-                        OnCompleted<string>(0));
-            }
-
-            [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-            public async void TestExplicitTransactionExample()
-            {
-                await WriteAsync("CREATE (p:Product) SET p.id = $id, p.title = $title",
-                    new {id = 0, title = "Product-0"});
-
-                var results = PrintSingleProduct();
-
-                results.WaitForCompletion()
-                    .AssertEqual(
-                        OnNext(0, "Product-0"),
-                        OnCompleted<string>(0));
-            }
+            results.WaitForCompletion()
+                .AssertEqual(
+                    OnNext(0, "Product-0"),
+                    OnCompleted<string>(0));
         }
 
-        public class ResultConsumeExample : BaseAsyncExample
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        public async void TestTransactionFunctionExample()
         {
-            public ResultConsumeExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
-                : base(output, fixture)
-            {
-            }
+            await WriteAsync("CREATE (p:Product) SET p.id = $id, p.title = $title",
+                new {id = 0, title = "Product-0"});
 
-            // tag::rx-result-consume[]
-            public IObservable<string> GetPeople()
-            {
-                var session = Driver.RxSession();
-                return session.ReadTransaction(tx =>
-                {
-                    return tx.Run("MATCH (a:Person) RETURN a.name ORDER BY a.name")
-                        .Records()
-                        .Select(record => record[0].As<string>());
-                }).OnErrorResumeNext(session.Close<string>());
-            }
-            // end::rx-result-consume[]
+            var results = PrintAllProducts();
 
-            [RequireServerFact]
-            public async Task TestResultConsumeExample()
-            {
-                // Given
-                await WriteAsync("CREATE (a:Person {name: 'Alice'})");
-                await WriteAsync("CREATE (a:Person {name: 'Bob'})");
-                // When & Then
-                var results = GetPeople();
+            results.WaitForCompletion()
+                .AssertEqual(
+                    OnNext(0, "Product-0"),
+                    OnCompleted<string>(0));
+        }
 
-                results.WaitForCompletion()
-                    .AssertEqual(
-                        OnNext(0, "Alice"),
-                        OnNext(0, "Bob"),
-                        OnCompleted<string>(0));
-            }
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        public async void TestExplicitTransactionExample()
+        {
+            await WriteAsync("CREATE (p:Product) SET p.id = $id, p.title = $title",
+                new {id = 0, title = "Product-0"});
+
+            var results = PrintSingleProduct();
+
+            results.WaitForCompletion()
+                .AssertEqual(
+                    OnNext(0, "Product-0"),
+                    OnCompleted<string>(0));
         }
     }
 
-    [Collection(SAIntegrationCollection.CollectionName)]
-    public abstract class BaseRxExample : AbstractRxTest, IDisposable
+    public class ResultConsumeExample : BaseAsyncExample
     {
-        private bool _disposed = false;
-        protected IDriver Driver { set; get; }
-        protected string Uri = Neo4jDefaultInstallation.BoltUri;
-        protected string User = Neo4jDefaultInstallation.User;
-        protected string Password = Neo4jDefaultInstallation.Password;
-
-        ~BaseRxExample() => Dispose(false);
-
-        protected BaseRxExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+        public ResultConsumeExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            : base(output, fixture)
         {
-            Driver = fixture.StandAloneSharedInstance.Driver;
         }
 
-        public void Dispose()
+        // tag::rx-result-consume[]
+        public IObservable<string> GetPeople()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_disposed)
-                return;
-
-            if (disposing)
+            var session = Driver.RxSession();
+            return session.ExecuteRead(tx =>
             {
-                using (var session = Driver.Session())
-                {
-                    session.Run("MATCH (n) DETACH DELETE n").Consume();
-                }
-            }
-
-            _disposed = true;
+                return tx.Run("MATCH (a:Person) RETURN a.name ORDER BY a.name")
+                    .Records()
+                    .Select(record => record[0].As<string>());
+            }).OnErrorResumeNext(session.Close<string>());
         }
+        // end::rx-result-consume[]
 
-        protected async Task WriteAsync(string query, object parameters)
+        [RequireServerFact]
+        public async Task TestResultConsumeExample()
         {
-            var session = Driver.AsyncSession();
-            try
-            {
-                await session.WriteTransactionAsync(async tx => await tx.RunAsync(query, parameters));
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
+            // Given
+            await WriteAsync("CREATE (a:Person {name: 'Alice'})");
+            await WriteAsync("CREATE (a:Person {name: 'Bob'})");
+            // When & Then
+            var results = GetPeople();
+
+            results.WaitForCompletion()
+                .AssertEqual(
+                    OnNext(0, "Alice"),
+                    OnNext(0, "Bob"),
+                    OnCompleted<string>(0));
         }
+    }
+}
+
+[Collection(SAIntegrationCollection.CollectionName)]
+public abstract class BaseRxExample : AbstractRxTest, IDisposable
+{
+    private bool _disposed;
+    protected IDriver Driver { set; get; }
+    protected string Uri = Neo4jDefaultInstallation.BoltUri;
+    protected string User = Neo4jDefaultInstallation.User;
+
+    ~BaseRxExample() => Dispose(false);
+
+    protected BaseRxExample(StandAloneIntegrationTestFixture fixture)
+    {
+        Driver = fixture.StandAloneSharedInstance.Driver;
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed)
+            return;
+
+        if (disposing)
+        {
+            using var session = Driver.Session();
+            session.Run("MATCH (n) DETACH DELETE n").Consume();
+        }
+
+        _disposed = true;
+    }
+
+    protected async Task WriteAsync(string query, object parameters)
+    {
+        await using var session = Driver.AsyncSession();
+        await session.ExecuteWriteAsync(async tx => await tx.RunAsync(query, parameters));
     }
 }

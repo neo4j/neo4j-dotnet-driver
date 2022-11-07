@@ -40,12 +40,12 @@ public class BookmarkManagerFactoryTests
         bookmarkManager.Should().BeAssignableTo<DefaultBookmarkManager>();
     }
     [Fact]
-    public void ShouldReturnNoOpBookmarkManagerOnNullConfig()
+    public void ShouldReturnDefaultBookmarkManagerWhenNoConfigSupplied()
     {
         var factory = new BookmarkManagerFactory();
 
-        var bookmarkManager = factory.NewBookmarkManager(null);
+        var bookmarkManager = factory.NewBookmarkManager();
 
-        bookmarkManager.Should().BeAssignableTo<NoOpBookmarkManager>();
+        bookmarkManager.Should().BeAssignableTo<DefaultBookmarkManager>();
     }
 }

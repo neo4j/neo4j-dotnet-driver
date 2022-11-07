@@ -23,7 +23,7 @@
     <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
     <LangVersion>latest</LangVersion>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Neo4j.Driver.xml</DocumentationFile>
-    <AllowUnsafeBlocks>False</AllowUnsafeBlocks>
+    <Version>5.1.0</Version>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net6.0|AnyCPU'">
     <WarningLevel>2</WarningLevel>
@@ -44,17 +44,6 @@
     <PackageReference Include="System.Net.Security" Version="4.3.2" />
     <PackageReference Include="System.Net.Sockets" Version="4.3.0" />
     <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Remove="Internal\Messaging\V4_1\**" />
-    <Compile Remove="Internal\Messaging\V4_2\**" />
-    <Compile Remove="Internal\Messaging\V5_0\**" />
-    <EmbeddedResource Remove="Internal\Messaging\V4_1\**" />
-    <EmbeddedResource Remove="Internal\Messaging\V4_2\**" />
-    <EmbeddedResource Remove="Internal\Messaging\V5_0\**" />
-    <None Remove="Internal\Messaging\V4_1\**" />
-    <None Remove="Internal\Messaging\V4_2\**" />
-    <None Remove="Internal\Messaging\V5_0\**" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Internal\Temporal\windowsZones.xml" />
