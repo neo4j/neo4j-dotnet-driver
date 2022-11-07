@@ -70,7 +70,7 @@ internal sealed class SocketClient : ISocketClient
     public MessageFormat Format { get; set; }
 
     public IDictionary<string,string> RoutingContext { get; set; }
-    public BoltProtocolVersion Version { get; private set; }    
+    public BoltProtocolVersion Version { get; private set; }
 
     public async Task SendAsync(IEnumerable<IRequestMessage> messages)
     {
@@ -148,13 +148,14 @@ internal sealed class SocketClient : ISocketClient
         await _tcpSocketClient.WriterStream.FlushAsync(cancellationToken).ConfigureAwait(false);
         _logger?.Debug("C: [HANDSHAKE] {0}", data.ToHexString());
 
-        data = new byte[4];
-        var read = await _tcpSocketClient.ReaderStream.ReadAsync(data, 0, data.Length, cancellationToken)
-            .ConfigureAwait(false);
-        if (read < data.Length)
-            throw new IOException($"Unexpected end of stream when performing handshake, read returned {read}");
+        
+        var responseBytes = new byte[4];
+        var read = await _tcpSocketClient.ReaderStream.ReadAsync(responseBytes, 0, responseBytes.Length, cancellationToken).ConfigureAwait(false);
 
-        var agreedVersion = BoltProtocolFactory.UnpackAgreedVersion(data);
+        if (read < responseBytes.Length)
+            throw new IOException($"Unexpected end of stream when performing handshake, read returned {read}");
+            
+        var agreedVersion = BoltProtocolFactory.UnpackAgreedVersion(responseBytes);
         _logger?.Debug("S: [HANDSHAKE] {0}.{1}", agreedVersion.MajorVersion, agreedVersion.MinorVersion);
         return agreedVersion;
     }

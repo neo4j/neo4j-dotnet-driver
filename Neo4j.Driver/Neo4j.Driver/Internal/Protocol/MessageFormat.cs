@@ -169,15 +169,14 @@ internal class MessageFormat : IMessageFormat
         RemoveHandler<UnboundRelationshipSerializer>();
         AddHandler<ElementUnboundRelationshipSerializer>();
 
-        RemoveHandler<IO.MessageSerializers.V3.FailureMessageSerializer>();
+        RemoveHandler<FailureMessageSerializer>();
         AddHandler<IO.MessageSerializers.V5.FailureMessageSerializer>();
     }
 
     public void UseUtcEncoder()
     {
-        //TODO: REPLACE MESSAGE
         if (Version > BoltProtocolVersion.V4_4 || Version <= BoltProtocolVersion.V4_3)
-            throw new Exception("Should not have called this");
+            return;
 
         RemoveHandler<ZonedDateTimeSerializer>();
         AddHandler<UtcZonedDateTimeSerializer>();

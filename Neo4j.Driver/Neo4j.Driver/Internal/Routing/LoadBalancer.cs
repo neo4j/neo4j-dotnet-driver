@@ -112,16 +112,6 @@ namespace Neo4j.Driver.Internal.Routing
             return CreateClusterConnectionAsync(uri, AccessMode.Write, null, null, Bookmarks.Empty);
         }
 
-        public Task CloseAsync()
-        {
-            if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
-            {
-                _routingTableManager.Clear();
-                return _clusterConnectionPool.CloseAsync();
-            }
-
-            return Task.CompletedTask;
-        }
 
         public async Task<IServerInfo> VerifyConnectivityAndGetInfoAsync()
         {
@@ -255,6 +245,17 @@ namespace Neo4j.Driver.Internal.Routing
                 .AppendFormat("closed={0}", IsClosed)
                 .Append("}")
                 .ToString();
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
+            {
+                _routingTableManager.Clear();
+                return _clusterConnectionPool.DisposeAsync();
+            }
+
+            return default;
         }
 
         private static ILoadBalancingStrategy CreateLoadBalancingStrategy(IClusterConnectionPool pool, ILogger logger)

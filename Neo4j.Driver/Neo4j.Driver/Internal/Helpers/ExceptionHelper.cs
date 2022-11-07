@@ -17,14 +17,11 @@
 
 using System;
 using System.Linq;
-using System.Reflection;
 
 namespace Neo4j.Driver.Internal
 {
     internal static class ExceptionHelper
     {
-        private static readonly TypeInfo ExceptionType = typeof(Exception).GetTypeInfo();
-
         private static bool HasCause(this Exception exc, Func<Exception, bool> predicate)
         {
             // First check exception itself

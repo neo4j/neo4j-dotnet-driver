@@ -24,8 +24,13 @@ using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+#if NET6_0_OR_GREATER
+#else
 using Neo4j.Driver.Internal.Extensions;
+#endif
 using static System.Security.Authentication.SslProtocols;
+
+
 
 namespace Neo4j.Driver.Internal.Connector;
 
@@ -107,10 +112,10 @@ internal class TcpSocketClient : ITcpSocketClient
         var addresses = await _resolver.ResolveAsync(uri.Host).ConfigureAwait(false);
 
         foreach (var address in addresses)
+        {
             try
             {
                 await ConnectSocketAsync(address, uri.Port, cancellationToken).ConfigureAwait(false);
-
                 return;
             }
             catch (Exception e)
@@ -121,6 +126,7 @@ internal class TcpSocketClient : ITcpSocketClient
                     $"Failed to connect to server '{uri}' via IP address '{address}': {exception.Message}",
                     exception));
             }
+        }
 
         // all failed
         throw new IOException(
@@ -128,25 +134,15 @@ internal class TcpSocketClient : ITcpSocketClient
             new AggregateException(innerErrors));
     }
 
-    internal async Task ConnectSocketAsync(IPAddress address, int port,
-        CancellationToken cancellationToken = default)
+    internal async Task ConnectSocketAsync(IPAddress address, int port, CancellationToken cancellationToken = default)
     {
         InitClient();
-        var source = CancellationTokenSource.CreateLinkedTokenSource(
-            new CancellationTokenSource(_connectionTimeout).Token, 
-            cancellationToken);
-        using var _ = source.Token.Register(() => _client.Close());
+        using var timeout = new CancellationTokenSource(_connectionTimeout);
+        using var source = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token, cancellationToken);
 
         try
         {
-#if NET6_0_OR_GREATER
-            await _client.ConnectAsync(new IPEndPoint(address, port), source.Token)
-                .ConfigureAwait(false);
-#else
-            await _client.ConnectAsync(new IPEndPoint(address, port))
-                .Timeout(_connectionTimeout, source.Token)
-                .ConfigureAwait(false);
-#endif
+            await ConnectAsync(address, port, source.Token).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is OperationCanceledException or TimeoutException)
         {
@@ -165,6 +161,26 @@ internal class TcpSocketClient : ITcpSocketClient
             await TryCleanUpAsync(address, port).ConfigureAwait(false);
             throw;
         }
+    }
+
+    private async Task ConnectAsync(IPAddress address, int port, CancellationToken cancellationToken)
+    {
+        var ctr = cancellationToken.Register(() => _client.Close());
+#if NET6_0_OR_GREATER
+        await using var _ = ctr.ConfigureAwait(false);
+        await _client.ConnectAsync(new IPEndPoint(address, port), cancellationToken).ConfigureAwait(false);
+#else
+        try
+        {
+            await _client.ConnectAsync(new IPEndPoint(address, port))
+                .Timeout(_connectionTimeout, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        finally
+        {
+            ctr.Dispose();
+        }
+#endif
     }
 
     private async Task TryCleanUpAsync(IPAddress address, int port)
@@ -197,25 +213,28 @@ internal class TcpSocketClient : ITcpSocketClient
 
     private SslStream CreateSecureStream(Uri uri)
     {
-        return new SslStream(ReaderStream, true,
-            (sender, certificate, chain, errors) =>
-            {
-                if (errors.HasFlag(SslPolicyErrors.RemoteCertificateNotAvailable))
-                {
-                    _logger?.Error(null, $"{GetType().Name}: Certificate not available.");
-                    return false;
-                }
-
-                var trust = _encryptionManager.TrustManager.ValidateServerCertificate(uri,
-                    new X509Certificate2(certificate.Export(X509ContentType.Cert)), chain, errors);
-
-                if (trust)
-                    _logger?.Debug("Trust is established, resuming connection.");
-                else
-                    _logger?.Error(null, "Trust not established, aborting communication.");
-
-                return trust;
-            });
+        return new SslStream(ReaderStream, true, ValidateConnection(uri));
     }
 
+    private RemoteCertificateValidationCallback ValidateConnection(Uri uri)
+    {
+        return (_, certificate, chain, errors) =>
+        {
+            if (errors.HasFlag(SslPolicyErrors.RemoteCertificateNotAvailable))
+            {
+                _logger?.Error(null, $"{GetType().Name}: Certificate not available.");
+                return false;
+            }
+
+            var trust = _encryptionManager.TrustManager.ValidateServerCertificate(uri,
+                new X509Certificate2(certificate.Export(X509ContentType.Cert)), chain, errors);
+
+            if (trust)
+                _logger?.Debug("Trust is established, resuming connection.");
+            else
+                _logger?.Error(null, "Trust not established, aborting communication.");
+
+            return trust;
+        };
+    }
 }

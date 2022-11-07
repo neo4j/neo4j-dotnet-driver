@@ -168,7 +168,7 @@ namespace Neo4j.Driver.Internal.Routing
             var removed = _pools.TryRemove(uri, out var toRemove);
             if (removed)
             {
-                return toRemove.CloseAsync();
+                return toRemove.DisposeAsync().AsTask();
             }
 
             return Task.CompletedTask;
@@ -177,6 +177,11 @@ namespace Neo4j.Driver.Internal.Routing
         public override string ToString()
         {
             return _pools.ToContentString();
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            return new ValueTask(CloseAsync());
         }
 
         private static IConnectionPool ActivateConnectionPool(Uri uri, IConnectionPool pool)

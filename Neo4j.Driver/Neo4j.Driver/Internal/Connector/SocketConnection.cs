@@ -203,10 +203,13 @@ internal sealed class SocketConnection : IConnection
                 if (_boltProtocol != null)
                     await _boltProtocol.LogoutAsync(this).ConfigureAwait(false);
             }
-            catch (Exception e) when (e.HasCause<ObjectDisposedException>())
+            catch (ObjectDisposedException)
             {
-                // we'll ignore this error since the underlying socket is disposed earlier,
-                // mostly because of an error.
+                //ignore
+            }
+            catch (AggregateException ex) when (ex.InnerExceptions.Any(x => x is ObjectDisposedException))
+            {
+                //ignore.
             }
             catch (Exception e)
             {

@@ -34,22 +34,23 @@ internal class BoltProtocolV4_0 : BoltProtocolV3
     {
         GetRoutingTableProtocol = routingTableProtocol;
     }
-    
+
     public IRoutingTableProtocol GetRoutingTableProtocol { get; set; }
 
     public override async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
         Query query, bool reactive, IBookmarksTracker bookmarksTracker, IResultResourceHandler resultResourceHandler,
-        string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser, long fetchSize = Config.Infinite)
+        string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser,
+        long fetchSize = Config.Infinite)
     {
         var summaryBuilder = new SummaryBuilder(query, connection.Server);
         var streamBuilder = new ResultCursorBuilder(
-            summaryBuilder, 
+            summaryBuilder,
             connection.ReceiveOneAsync,
             RequestMore(connection, summaryBuilder, bookmarksTracker),
             CancelRequest(connection, summaryBuilder, bookmarksTracker),
             resultResourceHandler,
             fetchSize, reactive);
-        
+
         var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
 
         var pullMessage = default(PullMessage);
@@ -121,10 +122,11 @@ internal class BoltProtocolV4_0 : BoltProtocolV3
         };
     }
 
-    public override Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmarks bookmarks)
+    public override Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database,
+        string impersonatedUser, Bookmarks bookmarks)
     {
-        return connection.Version >= BoltProtocolVersion.V4_3 
-            ? GetRoutingTableProtocol.GetRoutingTable(connection, database, impersonatedUser, bookmarks) 
+        return connection.Version >= BoltProtocolVersion.V4_3
+            ? GetRoutingTableProtocol.GetRoutingTable(connection, database, impersonatedUser, bookmarks)
             : base.GetRoutingTable(connection, database, impersonatedUser, bookmarks);
     }
 }

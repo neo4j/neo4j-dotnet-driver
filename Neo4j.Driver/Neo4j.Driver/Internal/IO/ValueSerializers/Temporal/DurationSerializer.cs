@@ -19,38 +19,37 @@ using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Connector;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
+
+internal class DurationSerializer : IPackStreamSerializer
 {
-    internal class DurationSerializer : IPackStreamSerializer
+    public const byte StructType = (byte) 'E';
+    public const int StructSize = 4;
+
+    public IEnumerable<byte> ReadableStructs => new[] {StructType};
+
+    public IEnumerable<Type> WritableTypes => new[] {typeof(Duration)};
+
+    public object Deserialize(IConnection connection, PackStreamReader reader, byte signature, long size)
     {
-        public const byte StructType = (byte) 'E';
-        public const int StructSize = 4;
+        PackStream.EnsureStructSize("Duration", StructSize, size);
 
-        public IEnumerable<byte> ReadableStructs => new[] {StructType};
+        var months = reader.ReadLong();
+        var days = reader.ReadLong();
+        var seconds = reader.ReadLong();
+        var nanos = reader.ReadInteger();
 
-        public IEnumerable<Type> WritableTypes => new[] {typeof(Duration)};
+        return new Duration(months, days, seconds, nanos);
+    }
 
-        public object Deserialize(IConnection connection, PackStreamReader reader, byte signature, long size)
-        {
-            PackStream.EnsureStructSize("Duration", StructSize, size);
+    public void Serialize(IConnection connection, PackStreamWriter writer, object value)
+    {
+        var duration = value.CastOrThrow<Duration>();
 
-            var months = reader.ReadLong();
-            var days = reader.ReadLong();
-            var seconds = reader.ReadLong();
-            var nanos = reader.ReadInteger();
-
-            return new Duration(months, days, seconds, nanos);
-        }
-
-        public void Serialize(IConnection connection, PackStreamWriter writer, object value)
-        {
-            var duration = value.CastOrThrow<Duration>();
-
-            writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(duration.Months);
-            writer.Write(duration.Days);
-            writer.Write(duration.Seconds);
-            writer.Write(duration.Nanos);
-        }
+        writer.WriteStructHeader(StructSize, StructType);
+        writer.Write(duration.Months);
+        writer.Write(duration.Days);
+        writer.Write(duration.Seconds);
+        writer.Write(duration.Nanos);
     }
 }

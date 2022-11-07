@@ -19,76 +19,75 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal abstract class AsyncQueryRunner : IAsyncQueryRunner
 {
-    internal abstract class AsyncQueryRunner : IAsyncQueryRunner
+    public abstract Task<IResultCursor> RunAsync(Query query);
+
+    public Task<IResultCursor> RunAsync(string query)
     {
-        public abstract Task<IResultCursor> RunAsync(Query query);
-
-        public Task<IResultCursor> RunAsync(string query)
-        {
-            return RunAsync(new Query(query));
-        }
-
-        public Task<IResultCursor> RunAsync(string query, IDictionary<string, object> parameters)
-        {
-            return RunAsync(new Query(query, parameters));
-        }
-
-        public Task<IResultCursor> RunAsync(string query, object parameters)
-        {
-            return RunAsync(new Query(query, parameters.ToDictionary()));
-        }
-
-
-		private bool _disposed = false;
-
-		~AsyncQueryRunner() => Dispose(false);
-
-		public void Dispose()
-		{
-			Dispose(true);
-			GC.SuppressFinalize(this);
-		}
-
-		protected virtual void Dispose(bool disposing)
-		{
-			if (_disposed)
-				return;
-
-			//No resources to clean up
-			if(disposing)
-			{
-				//Dispose of resources here				
-			}
-
-			//Set disposed resources to null
-
-			_disposed = true;
-		}
-
-		public async ValueTask DisposeAsync()
-		{
-			await DisposeAsyncCore().ConfigureAwait(false);
-
-			Dispose(disposing: false);
-			GC.SuppressFinalize(this);
-		}
-
-		protected virtual ValueTask DisposeAsyncCore()
-		{
-			//Nothing to dispose of in this class. Methods required for derived classes and correct dispose pattern
-			return new ValueTask(Task.CompletedTask);
-		}
-	}
-
-    internal interface IResultResourceHandler
-    {
-        Task OnResultConsumedAsync();
+        return RunAsync(new Query(query));
     }
 
-    internal interface ITransactionResourceHandler
+    public Task<IResultCursor> RunAsync(string query, IDictionary<string, object> parameters)
     {
-        Task OnTransactionDisposeAsync(Bookmarks bookmarks, string database);
+        return RunAsync(new Query(query, parameters));
     }
+
+    public Task<IResultCursor> RunAsync(string query, object parameters)
+    {
+        return RunAsync(new Query(query, parameters.ToDictionary()));
+    }
+
+
+    private bool _disposed = false;
+
+    ~AsyncQueryRunner() => Dispose(false);
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed)
+            return;
+
+        //No resources to clean up
+        if(disposing)
+        {
+            //Dispose of resources here				
+        }
+
+        //Set disposed resources to null
+
+        _disposed = true;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await DisposeAsyncCore().ConfigureAwait(false);
+
+        Dispose(disposing: false);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual ValueTask DisposeAsyncCore()
+    {
+        //Nothing to dispose of in this class. Methods required for derived classes and correct dispose pattern
+        return new ValueTask(Task.CompletedTask);
+    }
+}
+
+internal interface IResultResourceHandler
+{
+    Task OnResultConsumedAsync();
+}
+
+internal interface ITransactionResourceHandler
+{
+    Task OnTransactionDisposeAsync(Bookmarks bookmarks, string database);
 }

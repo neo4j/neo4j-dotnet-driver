@@ -25,6 +25,7 @@ namespace Neo4j.Driver.Internal.Protocol;
 internal interface IBoltProtocol
 {
     Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken);
+    Task LogoutAsync(IConnection connection);
 
     Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, Query query, bool reactive,
         IBookmarksTracker bookmarksTracker, IResultResourceHandler resultResourceHandler, string database,
@@ -42,8 +43,5 @@ internal interface IBoltProtocol
 
     Task ResetAsync(IConnection connection);
 
-    Task LogoutAsync(IConnection connection);
-
-    Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database,
-        string impersonatedUser, Bookmarks bookmarks);
+    Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmarks bookmarks);
 }

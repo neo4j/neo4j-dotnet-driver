@@ -15,21 +15,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Routing;
 
-namespace Neo4j.Driver.Internal
-{
-    internal interface IConnectionProvider
-    {
-        Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmarks bookmarks);
-        Task CloseAsync();
-        Task<bool> SupportsMultiDbAsync();
-        IRoutingTable GetRoutingTable(string database);
+namespace Neo4j.Driver.Internal;
 
-        IDictionary<string, string> RoutingContext { get; set; }
-        Task<IServerInfo> VerifyConnectivityAndGetInfoAsync();
-    }
+internal interface IConnectionProvider : IAsyncDisposable
+{
+    Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmarks bookmarks);
+    Task<bool> SupportsMultiDbAsync();
+    IRoutingTable GetRoutingTable(string database);
+
+    IDictionary<string, string> RoutingContext { get; set; }
+    Task<IServerInfo> VerifyConnectivityAndGetInfoAsync();
 }

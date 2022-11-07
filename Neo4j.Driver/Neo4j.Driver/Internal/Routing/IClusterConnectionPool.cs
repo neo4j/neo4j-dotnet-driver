@@ -20,26 +20,22 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 
-namespace Neo4j.Driver.Internal.Routing
+namespace Neo4j.Driver.Internal.Routing;
+
+internal interface IClusterConnectionPool : IAsyncDisposable
 {
-    internal interface IClusterConnectionPool
-    {
-        // Try to acquire a connection with the server specified by the uri
-        Task<IConnection> AcquireAsync(Uri uri, AccessMode mode, string database, string impersonatedUser, Bookmarks bookmarks);
+    // Try to acquire a connection with the server specified by the uri
+    Task<IConnection> AcquireAsync(Uri uri, AccessMode mode, string database, string impersonatedUser, Bookmarks bookmarks);
 
-        // Add a set of uri to this pool
-        Task AddAsync(IEnumerable<Uri> uris);
+    // Add a set of uri to this pool
+    Task AddAsync(IEnumerable<Uri> uris);
 
-        // Update the pool keys with the new server uris
-        Task UpdateAsync(IEnumerable<Uri> added, IEnumerable<Uri> removed);
+    // Update the pool keys with the new server uris
+    Task UpdateAsync(IEnumerable<Uri> added, IEnumerable<Uri> removed);
 
-        // Deactivate all the connection pool with the server specified by the uri
-        Task DeactivateAsync(Uri uri);
+    // Deactivate all the connection pool with the server specified by the uri
+    Task DeactivateAsync(Uri uri);
 
-        // Get number of in-use connections for the uri
-        int NumberOfInUseConnections(Uri uri);
-
-        Task CloseAsync();
-
-    }
+    // Get number of in-use connections for the uri
+    int NumberOfInUseConnections(Uri uri);
 }
