@@ -164,7 +164,8 @@ namespace Neo4j.Driver.Tests.TestBackend
                 {
                     rawCategory = x.RawCategory,
                     category = x.Category.ToString().ToUpper(),
-                    severity = x.RawSeverityLevel,
+                    severity = x.Severity,
+                    rawSeverityLevel = x.RawSeverityLevel,
                     severityLevel = x.SeverityLevel.ToString().ToUpper(),
                     description = x.Description,
                     code = x.Code,
@@ -176,7 +177,8 @@ namespace Neo4j.Driver.Tests.TestBackend
             {
                 rawCategory = x.RawCategory,
                 category = x.Category.ToString().ToUpper(),
-                severity = x.RawSeverityLevel,
+                severity = x.Severity,
+                rawSeverityLevel = x.RawSeverityLevel,
                 severityLevel = x.SeverityLevel.ToString().ToUpper(),
                 description = x.Description,
                 code = x.Code,
