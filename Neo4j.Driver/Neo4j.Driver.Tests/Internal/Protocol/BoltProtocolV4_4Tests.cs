@@ -26,10 +26,11 @@ using Neo4j.Driver.Internal.Result;
 using Xunit;
 using Neo4j.Driver.Internal.MessageHandling.V4_4;
 using static Neo4j.Driver.Internal.Protocol.BoltProtocolUtils;
+using Neo4j.Driver.Internal.Protocol.@interface;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
-	public class BoltProtocolV4_4Tests
+    public class BoltProtocolV4_4Tests
 	{
 		private async Task EnqueAndSync(IBoltProtocol protocol)
 		{

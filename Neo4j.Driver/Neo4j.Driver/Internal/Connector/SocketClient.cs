@@ -165,7 +165,7 @@ internal sealed class SocketClient : ISocketClient
         _tcpSocketClient.ReaderStream.ReadTimeout = seconds * 1000;
     }
 
-    public IChunkReader ChunkReader { get; private set; }
+    public ChunkReader ChunkReader { get; private set; }
     public ChunkWriter ChunkWriter { get; private set; }
 
     public void UseUtcEncoded()

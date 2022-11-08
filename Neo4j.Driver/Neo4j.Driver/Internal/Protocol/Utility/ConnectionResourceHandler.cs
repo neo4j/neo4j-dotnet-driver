@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+// Copyright (c) 2002-2022 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,20 +15,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal.MessageHandling;
+using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Connector;
 
-namespace Neo4j.Driver.Internal.Messaging;
+namespace Neo4j.Driver.Internal.Protocol.Utility;
 
-internal interface IRequestMessage : IMessage
+internal class ConnectionResourceHandler : IResultResourceHandler
 {
-}
+    public ConnectionResourceHandler(IConnection conn)
+    {
+        Connection = conn;
+    }
 
-internal interface IResponseMessage : IMessage
-{
-    void Dispatch(IResponsePipeline pipeline);
-}
+    private IConnection Connection { get; }
 
-internal interface IMessage
-{
+    public Task OnResultConsumedAsync()
+    {
+        return CloseConnection();
+    }
+
+    private Task CloseConnection()
+    {
+        return Connection.CloseAsync();
+    }
 }

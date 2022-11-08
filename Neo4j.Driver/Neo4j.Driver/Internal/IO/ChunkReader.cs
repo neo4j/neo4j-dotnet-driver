@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 namespace Neo4j.Driver.Internal.IO;
 
 //TODO: Optimize reading stream with Span/Memory in .net6+
-internal class ChunkReader : IChunkReader
+internal sealed class ChunkReader : IChunkReader
 {
     private Stream InputStream { get; }
     private MemoryStream ChunkBuffer { get; set; }
@@ -42,7 +42,7 @@ internal class ChunkReader : IChunkReader
     private void ChunkBufferTrimUsedData()
     {
         //Remove 'used' data from memory stream, that is everything before it's current position
-        byte[] internalBuffer = ChunkBuffer.GetBuffer();
+        var internalBuffer = ChunkBuffer.GetBuffer();
         Buffer.BlockCopy(internalBuffer, (int)ChunkBuffer.Position, internalBuffer, 0, (int)ChunkBufferRemaining);
         ChunkBuffer.SetLength((int)ChunkBufferRemaining);
         ChunkBuffer.Position = 0;
@@ -56,8 +56,7 @@ internal class ChunkReader : IChunkReader
         ChunkBufferTrimUsedData();
 
         long storedPosition = ChunkBuffer.Position;
-        int numBytesRead = 0;
-        requiredSize = requiredSize - (int)ChunkBufferRemaining;
+        requiredSize -= (int)ChunkBufferRemaining;
         int bufferSize = Math.Max(Constants.ChunkBufferSize, requiredSize);
         byte[] data = new byte[bufferSize];
 
@@ -65,7 +64,7 @@ internal class ChunkReader : IChunkReader
 
         while (requiredSize > 0)
         {
-            numBytesRead = await InputStream.ReadWithTimeoutAsync(data, 0, bufferSize, (int)_readTimeoutMs).ConfigureAwait(false);
+            var numBytesRead = await InputStream.ReadWithTimeoutAsync(data, 0, bufferSize, (int)_readTimeoutMs).ConfigureAwait(false);
 
             if (numBytesRead <= 0) break;
 
@@ -94,9 +93,9 @@ internal class ChunkReader : IChunkReader
         return data;
     }
 
-    private async Task<bool> ConstructMessageAsync(Stream outputMessageStream)
+    private async Task<bool> ConstructMessageAsync(MemoryStream outputMessageStream)
     {
-        bool dataRead = false;
+        var dataRead = false;
 
         while (true)
         {
@@ -125,7 +124,7 @@ internal class ChunkReader : IChunkReader
 
     public async Task<int> ReadNextMessagesAsync(Stream outputMessageStream)
     {
-        int messageCount = 0;
+        var messageCount = 0;
         //store output streams state, and ensure we add to the end of it.
         var previousStreamPosition = outputMessageStream.Position;
         outputMessageStream.Position = outputMessageStream.Length;

@@ -149,10 +149,20 @@ internal sealed partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSes
             if (_useBookmarkManager)
                 _bookmarks = await GetBookmarksAsync().ConfigureAwait(false);
 
-            return await protocol
-                .RunInAutoCommitTransactionAsync(_connection, query, _reactive, this, this, _database,
-                    _bookmarks, options, ImpersonatedUser(), _fetchSize)
-                .ConfigureAwait(false);
+            var autoCommit = new AutoCommitParams
+            {
+                Query = query,
+                Reactive = _reactive,
+                Bookmarks = _bookmarks,
+                BookmarksTracker = this,
+                ResultResourceHandler = this,
+                Config = options,
+                Database = _database,
+                FetchSize = _fetchSize,
+                ImpersonatedUser = ImpersonatedUser(),
+            };
+
+            return await protocol.RunInAutoCommitTransactionAsync(_connection, autoCommit).ConfigureAwait(false);
         });
 
         _result = result;

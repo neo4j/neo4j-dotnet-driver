@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+// Copyright (c) 2002-2022 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,20 +15,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Internal.IO;
+using System.Linq;
 using Neo4j.Driver.Internal.MessageHandling;
 
-namespace Neo4j.Driver.Internal.Messaging;
+namespace Neo4j.Driver.Internal.Protocol.Utility;
 
-internal interface IRequestMessage : IMessage
+internal class BookmarksTracker : IBookmarksTracker
 {
-}
+    public BookmarksTracker(Bookmarks bookmarks)
+    {
+        InternalBookmarks = bookmarks;
+    }
 
-internal interface IResponseMessage : IMessage
-{
-    void Dispatch(IResponsePipeline pipeline);
-}
+    private Bookmarks InternalBookmarks { get; set; }
 
-internal interface IMessage
-{
+    public void UpdateBookmarks(Bookmarks bookmarks, IDatabaseInfo dbInfo = null)
+    {
+        if (InternalBookmarks != null && InternalBookmarks.Values.Any())
+            InternalBookmarks = bookmarks;
+    }
 }

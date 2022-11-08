@@ -28,41 +28,47 @@ using static Neo4j.Driver.Internal.Messaging.V4.ResultHandleMessage;
 
 namespace Neo4j.Driver.Internal.Protocol;
 
-internal class BoltProtocolV4_0 : BoltProtocolV3
+internal sealed class BoltProtocol : IBoltProtocol
 {
-    public BoltProtocolV4_0(IRoutingTableProtocol routingTableProtocol)
+    private readonly LegacyBoltProtocol _legacyProtocol;
+    private readonly IRoutingTableProtocol _getRoutingTableProtocol;
+
+    public BoltProtocol(IRoutingTableProtocol routingTableProtocol)
     {
-        GetRoutingTableProtocol = routingTableProtocol;
+        _getRoutingTableProtocol = routingTableProtocol;
+        _legacyProtocol = new LegacyBoltProtocol();
     }
 
-    public IRoutingTableProtocol GetRoutingTableProtocol { get; set; }
-
-    public override async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-        Query query, bool reactive, IBookmarksTracker bookmarksTracker, IResultResourceHandler resultResourceHandler,
-        string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser,
-        long fetchSize = Config.Infinite)
+    public async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, AutoCommitParams autoCommitParams)
     {
-        var summaryBuilder = new SummaryBuilder(query, connection.Server);
+        var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
         var streamBuilder = new ResultCursorBuilder(
             summaryBuilder,
             connection.ReceiveOneAsync,
-            RequestMore(connection, summaryBuilder, bookmarksTracker),
-            CancelRequest(connection, summaryBuilder, bookmarksTracker),
-            resultResourceHandler,
-            fetchSize, reactive);
+            RequestMore(connection, summaryBuilder, autoCommitParams.BookmarksTracker),
+            CancelRequest(connection, summaryBuilder,
+                autoCommitParams.BookmarksTracker),
+            autoCommitParams.ResultResourceHandler,
+            autoCommitParams.FetchSize,
+            autoCommitParams.Reactive);
 
         var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
 
         var pullMessage = default(PullMessage);
         var pullHandler = default(PullResponseHandler);
-        if (!reactive)
+        if (!autoCommitParams.Reactive)
         {
-            pullMessage = new PullMessage(fetchSize);
-            pullHandler = new PullResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
+            pullMessage = new PullMessage(autoCommitParams.FetchSize);
+            pullHandler = new PullResponseHandler(streamBuilder, summaryBuilder, autoCommitParams.BookmarksTracker);
         }
-
-        var message = new RunWithMetadataMessage(connection, query, bookmarks, config,
-            connection.GetEnforcedAccessMode(), database, impersonatedUser);
+        // Refactor to take AC Params
+        var message = new RunWithMetadataMessage(connection,
+            autoCommitParams.Query,
+            autoCommitParams.Bookmarks,
+            autoCommitParams.Config,
+            connection.GetEnforcedAccessMode(),
+            autoCommitParams.Database,
+            autoCommitParams.ImpersonatedUser);
 
         await connection.EnqueueAsync(message, runHandler, pullMessage, pullHandler)
             .ConfigureAwait(false);
@@ -71,7 +77,13 @@ internal class BoltProtocolV4_0 : BoltProtocolV3
         return streamBuilder.CreateCursor();
     }
 
-    public override async Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection,
+    public Task BeginTransactionAsync(IConnection connection, string database, Bookmarks bookmarks, TransactionConfig config,
+        string impersonatedUser)
+    {
+        return _legacyProtocol.BeginTransactionAsync(connection, database, bookmarks, config, impersonatedUser);
+    }
+
+    public async Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection,
         Query query, bool reactive, long fetchSize = Config.Infinite)
     {
         var summaryBuilder = new SummaryBuilder(query, connection.Server);
@@ -88,12 +100,22 @@ internal class BoltProtocolV4_0 : BoltProtocolV3
             pullMessage = new PullMessage(fetchSize);
             pullHandler = new PullResponseHandler(streamBuilder, summaryBuilder, null);
         }
-
+        
         await connection.EnqueueAsync(new RunWithMetadataMessage(connection, query),
                 runHandler, pullMessage, pullHandler)
             .ConfigureAwait(false);
         await connection.SendAsync().ConfigureAwait(false);
         return streamBuilder.CreateCursor();
+    }
+
+    public Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker)
+    {
+        return _legacyProtocol.CommitTransactionAsync(connection, bookmarksTracker);
+    }
+
+    public Task RollbackTransactionAsync(IConnection connection)
+    {
+        return _legacyProtocol.RollbackTransactionAsync(connection);
     }
 
     private static Func<IResultStreamBuilder, long, long, Task> RequestMore(IConnection connection,
@@ -122,11 +144,26 @@ internal class BoltProtocolV4_0 : BoltProtocolV3
         };
     }
 
-    public override Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database,
+    public Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
+    {
+        return _legacyProtocol.LoginAsync(connection, userAgent, authToken);
+    }
+
+    public Task LogoutAsync(IConnection connection)
+    {
+        return _legacyProtocol.LogoutAsync(connection);
+    }
+
+    public Task ResetAsync(IConnection connection)
+    {
+        return _legacyProtocol.ResetAsync(connection);
+    }
+
+    public Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database,
         string impersonatedUser, Bookmarks bookmarks)
     {
         return connection.Version >= BoltProtocolVersion.V4_3
-            ? GetRoutingTableProtocol.GetRoutingTable(connection, database, impersonatedUser, bookmarks)
-            : base.GetRoutingTable(connection, database, impersonatedUser, bookmarks);
+            ? _getRoutingTableProtocol.GetRoutingTable(connection, database, impersonatedUser, bookmarks)
+            : _legacyProtocol.GetRoutingTable(connection, database, impersonatedUser, bookmarks);
     }
 }

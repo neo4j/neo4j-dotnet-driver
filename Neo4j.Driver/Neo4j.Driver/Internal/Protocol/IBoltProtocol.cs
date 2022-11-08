@@ -20,28 +20,31 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 
-namespace Neo4j.Driver.Internal.Protocol;
+namespace Neo4j.Driver.Internal;
 
 internal interface IBoltProtocol
 {
     Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken);
     Task LogoutAsync(IConnection connection);
-
-    Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, Query query, bool reactive,
-        IBookmarksTracker bookmarksTracker, IResultResourceHandler resultResourceHandler, string database,
-        Bookmarks bookmark, TransactionConfig config, string impersonatedUser, long fetchSize);
-
-    Task BeginTransactionAsync(IConnection connection, string database, Bookmarks bookmarks, TransactionConfig config,
-        string impersonatedUser);
-
-    Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection, Query query, bool reactive,
-        long fetchSize);
-
-    Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker);
-
-    Task RollbackTransactionAsync(IConnection connection);
-
     Task ResetAsync(IConnection connection);
-
     Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmarks bookmarks);
+    Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, AutoCommitParams autoCommitParams);
+
+    Task BeginTransactionAsync(IConnection connection, string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser);
+    Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection, Query query, bool reactive, long fetchSize);
+    Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker);
+    Task RollbackTransactionAsync(IConnection connection);
+}
+
+internal sealed record AutoCommitParams
+{
+    public Query Query { get; init; }
+    public bool Reactive { get; init; } = false;
+    public IBookmarksTracker BookmarksTracker { get; init; }
+    public IResultResourceHandler ResultResourceHandler { get; init; }
+    public string Database { get; init; }
+    public Bookmarks Bookmarks { get; init; }
+    public TransactionConfig Config { get; init; } 
+    public string ImpersonatedUser { get; init; }
+    public long FetchSize { get; init; } = Neo4j.Driver.Config.Infinite;
 }

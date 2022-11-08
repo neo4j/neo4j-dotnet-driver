@@ -25,6 +25,7 @@ using Neo4j.Driver.Internal.Messaging.V4_3;
 using Neo4j.Driver.Internal.Result;
 using Xunit;
 using Neo4j.Driver.Internal.MessageHandling.V4_3;
+using Neo4j.Driver.Internal.Protocol.@interface;
 
 namespace Neo4j.Driver.Internal.Protocol
 {

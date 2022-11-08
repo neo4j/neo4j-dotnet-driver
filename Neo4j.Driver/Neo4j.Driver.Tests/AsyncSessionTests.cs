@@ -26,11 +26,11 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.MessageHandling;
 using Xunit;
 using Record = Xunit.Record;
 using Neo4j.Driver.Internal.Routing;
+using Neo4j.Driver.Internal.Protocol.@interface;
 
 namespace Neo4j.Driver.Tests
 {
@@ -402,6 +402,11 @@ namespace Neo4j.Driver.Tests
 			{
 				throw new NotSupportedException();
 			}
+
+            public ValueTask DisposeAsync()
+            {
+                throw new NotImplementedException();
+            }
         }
 
         public class BookmarksManager

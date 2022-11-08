@@ -25,7 +25,6 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -34,6 +33,7 @@ using Xunit;
 using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
 using static Xunit.Record;
 using Record = Xunit.Record;
+using Neo4j.Driver.Internal.Protocol.@interface;
 
 namespace Neo4j.Driver.Tests
 {

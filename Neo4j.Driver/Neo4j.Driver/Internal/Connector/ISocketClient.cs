@@ -36,7 +36,7 @@ internal interface ISocketClient
     Task StopAsync();
     void SetReadTimeoutInSeconds(int seconds);
 
-    IChunkReader ChunkReader { get; }
+    ChunkReader ChunkReader { get; }
     ChunkWriter ChunkWriter { get; }
     void UseUtcEncoded();
 }

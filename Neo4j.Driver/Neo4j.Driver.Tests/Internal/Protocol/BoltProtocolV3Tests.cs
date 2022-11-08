@@ -28,7 +28,7 @@ using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Tests;
 using Xunit;
 using static Neo4j.Driver.Internal.Protocol.BoltProtocolUtils;
-using static Neo4j.Driver.Internal.Protocol.BoltProtocolV3;
+using static Neo4j.Driver.Internal.Protocol.LegacyBoltProtocol;
 using V3 = Neo4j.Driver.Internal.MessageHandling.V3;
 
 namespace Neo4j.Driver.Internal.Protocol
@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Internal.Protocol
             public async Task ShouldEnqueueHelloAndSync()
             {
                 var mockConn = new Mock<IConnection>();
-                var V3 = new BoltProtocolV3();
+                var V3 = new LegacyBoltProtocol();
                 mockConn.Setup(x => x.Server).Returns(new ServerInfo(new Uri("http://neo4j.com")));
                 await V3.LoginAsync(mockConn.Object, "user-zhen", AuthTokens.None);
 
@@ -83,7 +83,7 @@ namespace Neo4j.Driver.Internal.Protocol
             public async Task ShouldEnqueueGoodbyeAndSend()
             {
                 var mockConn = new Mock<IConnection>();
-                var V3 = new BoltProtocolV3();
+                var V3 = new LegacyBoltProtocol();
 
                 await V3.LogoutAsync(mockConn.Object);
 
@@ -103,7 +103,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var query = new Query("A cypher query");
                 var bookmarkTracker = new Mock<IBookmarksTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
-                var V3 = new BoltProtocolV3();
+                var V3 = new LegacyBoltProtocol();
 
                 mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
                         It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
@@ -130,7 +130,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var query = new Query("A cypher query");
                 var bookmarkTracker = new Mock<IBookmarksTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
-                var V3 = new BoltProtocolV3();
+                var V3 = new LegacyBoltProtocol();
 
                 mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
                         It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
@@ -153,7 +153,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var query = new Query("A cypher query");
                 var bookmarkTracker = new Mock<IBookmarksTracker>();
                 var resourceHandler = new Mock<IResultResourceHandler>();
-                var V3 = new BoltProtocolV3();
+                var V3 = new LegacyBoltProtocol();
 
                 mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
                         It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
@@ -179,7 +179,7 @@ namespace Neo4j.Driver.Internal.Protocol
             [InlineData("database")]
             public void ShouldThrowWhenADatabaseIsGiven(string database)
             {
-                var V3 = new BoltProtocolV3();
+                var V3 = new LegacyBoltProtocol();
 
                 V3.Awaiting(p => p.RunInAutoCommitTransactionAsync(Mock.Of<IConnection>(), new Query("text"),
                         false, Mock.Of<IBookmarksTracker>(), Mock.Of<IResultResourceHandler>(), database,
@@ -196,7 +196,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = NewConnectionWithMode();
                 var bookmarks = Bookmarks.From(AsyncSessionTests.FakeABookmark(234));
-                var V3 = new BoltProtocolV3();
+                var V3 = new LegacyBoltProtocol();
 
                 await V3.BeginTransactionAsync(mockConn.Object, null, bookmarks, null, null);
 
@@ -212,7 +212,7 @@ namespace Neo4j.Driver.Internal.Protocol
             public async Task ShouldPassBookmarkTxConfigAndModeToRunWithMetadataMessage(AccessMode mode)
             {
                 var mockConn = NewConnectionWithMode(mode);
-                var V3 = new BoltProtocolV3();
+                var V3 = new LegacyBoltProtocol();
 
                 mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
                         It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
@@ -235,7 +235,7 @@ namespace Neo4j.Driver.Internal.Protocol
             [InlineData("database")]
             public void ShouldThrowWhenADatabaseIsGiven(string database)
             {
-                var V3 = new BoltProtocolV3();
+                var V3 = new LegacyBoltProtocol();
 				var mockConn = NewConnectionWithMode(AccessMode.Read);
 
 				V3.Awaiting(p => p.BeginTransactionAsync(mockConn.Object, database, Bookmarks.From("123"),
@@ -246,7 +246,7 @@ namespace Neo4j.Driver.Internal.Protocol
 			[Fact]
 			public async Task ShouldThrowOnImpersonatedUserAsync()
 			{
-				var protocol = new BoltProtocolV3();
+				var protocol = new LegacyBoltProtocol();
 				var mockConn = NewConnectionWithMode(AccessMode.Read);
 				
 				var ex = await Assert.ThrowsAsync<ArgumentException>(() => protocol.BeginTransactionAsync(mockConn.Object, 
@@ -266,7 +266,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = NewConnectionWithMode();
                 var bookmarkTracker = new Mock<IBookmarksTracker>();
-                var V3 = new BoltProtocolV3();
+                var V3 = new LegacyBoltProtocol();
 
                 await V3.CommitTransactionAsync(mockConn.Object, bookmarkTracker.Object);
 
@@ -283,7 +283,7 @@ namespace Neo4j.Driver.Internal.Protocol
             public async Task ShouldEnqueueRollbackAndSync()
             {
                 var mockConn = NewConnectionWithMode();
-                var V3 = new BoltProtocolV3();
+                var V3 = new LegacyBoltProtocol();
 
                 await V3.RollbackTransactionAsync(mockConn.Object);
 
@@ -301,7 +301,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = AsyncSessionTests.MockedConnectionWithSuccessResponse();
                 var query = new Query("lalala");
-                var V3 = new BoltProtocolV3();
+                var V3 = new LegacyBoltProtocol();
 
                 await V3.RunInExplicitTransactionAsync(mockConn.Object, query, true);
 
@@ -318,7 +318,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = AsyncSessionTests.MockedConnectionWithSuccessResponse();
                 var query = new Query("lalala");
-                var V3 = new BoltProtocolV3();
+                var V3 = new LegacyBoltProtocol();
 
                 await V3.RunInExplicitTransactionAsync(mockConn.Object, query, true);
                 mockConn.Verify(x => x.Server, Times.Once);
@@ -341,13 +341,13 @@ namespace Neo4j.Driver.Internal.Protocol
                 
                 serverInfoMock.Setup(m => m.Agent).Returns(version);
                 mockConnection.Setup(m => m.Server).Returns(serverInfoMock.Object);
-                mockConnection.Setup(m => m.BoltProtocol).Returns(new BoltProtocolV3());
+                mockConnection.Setup(m => m.BoltProtocol).Returns(new LegacyBoltProtocol());
                 mockConnection.Setup(m => m.RoutingContext).Returns(context);
 
                 // When
                 string procedure;
                 var parameters = new Dictionary<string, object>();
-                GetProcedureAndParameters(mockConnection.Object, "database", out procedure, out parameters);
+                GetRoutingTableQuery(mockConnection.Object, "database", out procedure, out parameters);
 
                 // Then
                 procedure.Should().Be("CALL dbms.cluster.routing.getRoutingTable($context)");
@@ -357,7 +357,7 @@ namespace Neo4j.Driver.Internal.Protocol
             [Fact]
             public async Task GetRoutingTableShouldThrowOnNullConnectionObject()
 			{
-                var v3 = new BoltProtocolV3();
+                var v3 = new LegacyBoltProtocol();
 
                 var ex = await Xunit.Record.ExceptionAsync(async () => await v3.GetRoutingTable(null, "adb", null, null));
 
@@ -370,7 +370,7 @@ namespace Neo4j.Driver.Internal.Protocol
 			public async Task RoutingTableShouldContainDatabase()
 			{
 				var connection = SetupMockedConnection();
-				var boltProtocolV3 = new BoltProtocolV3();
+				var boltProtocolV3 = new LegacyBoltProtocol();
 				
 				//When
 				var routingTableDictionary = await boltProtocolV3.GetRoutingTable(connection, "myTestDatabase", null, null);
@@ -383,7 +383,7 @@ namespace Neo4j.Driver.Internal.Protocol
 			public async Task ShouldThrowOnImpersonatedUser()
 			{
 				var connection = SetupMockedConnection();
-				var boltProtocolV3 = new BoltProtocolV3();
+				var boltProtocolV3 = new LegacyBoltProtocol();
 
 				//When
 				var ex = await Assert.ThrowsAsync<ArgumentException>(() => boltProtocolV3.GetRoutingTable(connection, "myTestDatabase", string.Empty, null));

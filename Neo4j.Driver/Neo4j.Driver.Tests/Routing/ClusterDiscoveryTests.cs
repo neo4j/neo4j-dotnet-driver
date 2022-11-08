@@ -412,7 +412,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 _mockConn.Setup(x => x.Mode).Returns(mode);
 
-                var protocol = new BoltProtocolV3();
+                var protocol = new LegacyBoltProtocol();
 
                 if (serverInfo != null)
                 {
@@ -422,7 +422,7 @@ namespace Neo4j.Driver.Tests.Routing
                     }
                     else if (serverInfo.Protocol >= BoltProtocolVersion.V4_0)                        
                     {
-                        protocol = new BoltProtocolV4_0();
+                        protocol = new BoltProtocol();
                     }
 
                     _mockConn.Setup(x => x.Server).Returns(serverInfo);

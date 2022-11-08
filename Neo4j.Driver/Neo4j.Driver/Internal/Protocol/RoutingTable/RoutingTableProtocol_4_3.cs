@@ -19,27 +19,29 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling.V4_3;
-using Neo4j.Driver.Internal.Messaging.V4_4;
 
-namespace Neo4j.Driver.Internal.Protocol;
+namespace Neo4j.Driver.Internal;
 
-internal class RoutingTableProtocol_4_4 : IRoutingTableProtocol
+internal sealed class RoutingTableProtocol43 : IRoutingTableProtocol
 {
-    public async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection,
+    private const string RoutingTableDbKey = "db";
+
+    public async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, 
         string database, string impersonatedUser, Bookmarks bookmarks)
     {
-        connection = connection ??
-                     throw new ProtocolException("Attempting to get a routing table on a null connection");
+        connection = connection ?? throw new ProtocolException("Attempting to get a routing table on a null connection");
 
+        var message = new Messaging.V4_3.RouteMessage(connection.RoutingContext, bookmarks, database);
         var responseHandler = new RouteResponseHandler();
 
-        await connection.EnqueueAsync(
-                new RouteMessage(connection.RoutingContext, bookmarks, database, impersonatedUser),
-                responseHandler)
-            .ConfigureAwait(false);
+        await connection.EnqueueAsync(message, responseHandler).ConfigureAwait(false);
 
         await connection.SyncAsync().ConfigureAwait(false);
         await connection.CloseAsync().ConfigureAwait(false);
+
+        // Since 4.4 the Routing information will contain a db.
+        // 4.3 needs to populate this here as it's not received in the older route response...
+        responseHandler.RoutingInformation.Add(RoutingTableDbKey, database);
 
         return (IReadOnlyDictionary<string, object>)responseHandler.RoutingInformation;
     }

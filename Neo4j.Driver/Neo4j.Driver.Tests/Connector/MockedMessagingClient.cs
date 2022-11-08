@@ -23,11 +23,11 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
 using V3 = Neo4j.Driver.Internal.Messaging.V3;
 using V4_1 = Neo4j.Driver.Internal.Messaging.V4_1;
+using Neo4j.Driver.Internal.Protocol.@interface;
 
 namespace Neo4j.Driver.Tests.Routing
 {

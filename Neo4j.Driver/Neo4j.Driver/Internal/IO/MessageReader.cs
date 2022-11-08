@@ -34,22 +34,14 @@ namespace Neo4j.Driver.Internal.IO
         private readonly int _maxBufferSize;
         private int _shrinkCounter = 0;
 
-        public MessageReader(PackStreamReader reader, IChunkReader chunkReader, BufferSettings bufferSettings, ILogger logger)
-        {
-            _bufferStream = new MemoryStream(bufferSettings.DefaultReadBufferSize);
-            _defaultBufferSize = bufferSettings.DefaultReadBufferSize;
-            _maxBufferSize = bufferSettings.MaxReadBufferSize; 
-            _packStreamReader = reader;
-            _chunkReader = chunkReader;
-            _logger = logger;
-        }
-
         public MessageReader(IConnection owner, MessageFormat format, IChunkReader chunkReader, BufferSettings bufferSettings, ILogger logger)
         {
             _bufferStream = new MemoryStream(bufferSettings.DefaultReadBufferSize);
             _defaultBufferSize = bufferSettings.DefaultReadBufferSize;
+            _maxBufferSize = bufferSettings.MaxReadBufferSize;
             _packStreamReader = new PackStreamReader(owner, _bufferStream, format);
             _chunkReader = chunkReader;
+            _logger = logger;
         }
 
         public async Task ReadAsync(IResponsePipeline pipeline)
