@@ -29,6 +29,7 @@ using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Internal.Protocol;
+using Neo4j.Driver.Tests.Connector;
 using Xunit;
 using static Xunit.Record;
 using Record = Xunit.Record;
@@ -107,9 +108,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldCloseConnectionIfErrorAsync()
             {
                 // Given
-                var connMock = new Mock<ITcpSocketClient>();
-
-                var client = new SocketClient(null, null, connMock.Object);
+                var client = new SocketClient(FakeUri, new SocketSettings(), new BufferSettings(Config.Default));
                 client.SetOpened();
 
                 // When
@@ -118,7 +117,7 @@ namespace Neo4j.Driver.Tests
 
                 // Then
                 exception.Should().BeOfType<NullReferenceException>();
-                connMock.Verify(x => x.DisconnectAsync(), Times.Once);
+                connection.Verify(x => x.DisposeAsync(), Times.Once);
             }
         }
 

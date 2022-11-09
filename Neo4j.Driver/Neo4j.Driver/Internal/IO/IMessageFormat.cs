@@ -17,11 +17,13 @@
 
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO;
 
 internal interface IMessageFormat
 {
+    BoltProtocolVersion Version { get; }
     IReadOnlyDictionary<byte, IPackStreamSerializer> ReaderStructHandlers { get; }
     IReadOnlyDictionary<Type, IPackStreamSerializer> WriteStructHandlers { get; }
 }

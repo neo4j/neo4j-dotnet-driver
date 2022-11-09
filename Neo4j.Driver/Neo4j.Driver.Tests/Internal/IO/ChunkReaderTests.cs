@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Internal.IO
         [Fact]
         public void ShouldThrowWhenConstructedUsingNullStreamWithLogger()
         {
-            var ex = Record.Exception(() => new ChunkReader(null, Mock.Of<ILogger>()));
+            var ex = Record.Exception(() => new ChunkReader(null));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ArgumentNullException>();
@@ -141,8 +141,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             var data = GenerateMessages(1000, 128 * 1024);
 
-            var logger = new Mock<ILogger>();
-            var reader = new ChunkReader(new MemoryStream(data.ToArray()), logger.Object);
+            var reader = new ChunkReader(new MemoryStream(data.ToArray()));
 
             var bufferStream = new MemoryStream();
             bufferStream.Write(GenerateMessageChunk(1035));
@@ -201,8 +200,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             var data = GenerateMessages(1000, 128 * 1024);
 
-            var logger = new Mock<ILogger>();
-            var reader = new ChunkReader(new MemoryStream(data.ToArray()), logger.Object);
+            var reader = new ChunkReader(new MemoryStream(data.ToArray()));
 
             var bufferStream = new MemoryStream();
             bufferStream.Write(GenerateMessageChunk(1035));

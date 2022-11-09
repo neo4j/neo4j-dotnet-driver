@@ -122,7 +122,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             relationships[0].EndNodeElementId.Should().Be("n2");
         }
 
-        private static void SerializeElementPath(IPackStreamWriter writer, List<Node> nodes, List<Relationship> rels,
+        private static void SerializeElementPath(PackStreamWriter writer, List<Node> nodes, List<Relationship> rels,
             List<int> indicies)
         {
             writer.WriteStructHeader(3, PathSerializer.Path);

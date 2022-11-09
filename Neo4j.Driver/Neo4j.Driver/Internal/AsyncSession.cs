@@ -162,7 +162,7 @@ internal sealed partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSes
                 ImpersonatedUser = ImpersonatedUser(),
             };
 
-            return await protocol.RunInAutoCommitTransactionAsync(_connection, autoCommit).ConfigureAwait(false);
+            return await _connection.RunInAutoCommitTransactionAsync(autoCommit).ConfigureAwait(false);
         });
 
         _result = result;

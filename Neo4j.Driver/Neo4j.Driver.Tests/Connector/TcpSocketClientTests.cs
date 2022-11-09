@@ -19,6 +19,7 @@ using System;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
@@ -30,28 +31,12 @@ namespace Neo4j.Driver.Tests.Connector
 {
     public class TcpSocketClientTests
     {
-        internal class TcpSocketClientWithDisposeDetection : TcpSocketClient
-        {
-            public TcpSocketClientWithDisposeDetection(SocketSettings socketSettings, ILogger logger = null) :
-                base(socketSettings, logger)
-            {
-            }
-
-            public override Task DisconnectAsync()
-            {
-                DisposeCalled = true;
-                return base.DisconnectAsync();
-            }
-
-            public bool DisposeCalled { get; set; }
-        }
-
         public class ConnectSocketAsyncMethod
         {
             [Fact]
             public async Task ShouldThrowExceptionIfConnectionTimedOut()
             {
-                var client = new TcpSocketClientWithDisposeDetection(
+                var client = new TcpSocketClient(
                     new SocketSettings
                     {
                         ConnectionTimeout = TimeSpan.FromSeconds(1),
@@ -60,15 +45,15 @@ namespace Neo4j.Driver.Tests.Connector
                             new EncryptionManager(false, null)
                     });
 
-                // ReSharper disable once PossibleNullReferenceException
                 // use non-routable IP address to mimic a connect timeout
                 // https://stackoverflow.com/questions/100841/artificially-create-a-connection-timeout-error
-                var exception = await Record.ExceptionAsync(
-                    () => client.ConnectSocketAsync(IPAddress.Parse("192.168.0.0"), 9999));
+                var exception = await Record.ExceptionAsync(() => client.ConnectAsync(new Uri("192.168.0.0:9999")));
                 exception.Should().NotBeNull();
                 exception.Should().BeOfType<OperationCanceledException>(exception.ToString());
                 exception.Message.Should().Be("Failed to connect to server 192.168.0.0:9999 within 1000ms.");
-                client.DisposeCalled.Should().BeTrue();
+
+                var disposed = await Record.ExceptionAsync(() => client.ConnectAsync(new Uri("192.168.0.0:9999")));
+                disposed.Should().BeOfType<ObjectDisposedException>();
             }
 
             [Fact]

@@ -23,12 +23,12 @@ namespace Neo4j.Driver.Internal.IO.Utils
     public class PackStreamWriterMachine
     {
         private readonly MemoryStream _output;
-        private readonly IPackStreamWriter _writer;
+        private readonly PackStreamWriter _writer;
 
-        internal PackStreamWriterMachine(Func<Stream, IPackStreamWriter> writerFactory)
+        internal PackStreamWriterMachine(Func<Stream, PackStreamWriter> writerFactory)
         {
-            this._output = new MemoryStream();
-            this._writer = writerFactory(_output);
+            _output = new MemoryStream();
+            _writer = writerFactory(_output);
         }
 
         public void Reset()
@@ -41,7 +41,7 @@ namespace Neo4j.Driver.Internal.IO.Utils
             return _output.ToArray();
         }
 
-        internal IPackStreamWriter Writer()
+        internal PackStreamWriter Writer()
         {
             return _writer;
         }
@@ -51,18 +51,17 @@ namespace Neo4j.Driver.Internal.IO.Utils
     public class PackStreamReaderMachine
     {
         private readonly MemoryStream _input;
-        private readonly IPackStreamReader _reader;
+        private readonly PackStreamReader _reader;
 
-        internal PackStreamReaderMachine(byte[] bytes, Func<Stream, IPackStreamReader> readerFactory)
+        internal PackStreamReaderMachine(byte[] bytes, Func<Stream, PackStreamReader> readerFactory)
         {
-            this._input = new MemoryStream(bytes);
-            this._reader = readerFactory(_input);
+            _input = new MemoryStream(bytes);
+            _reader = readerFactory(_input);
         }
 
-        internal IPackStreamReader Reader()
+        internal PackStreamReader Reader()
         {
             return _reader;
         }
-
     }
 }

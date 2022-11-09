@@ -62,7 +62,8 @@ internal sealed class BoltProtocol : IBoltProtocol
             pullHandler = new PullResponseHandler(streamBuilder, summaryBuilder, autoCommitParams.BookmarksTracker);
         }
         // Refactor to take AC Params
-        var message = new RunWithMetadataMessage(connection,
+        var message = new RunWithMetadataMessage(
+            connection.Version,
             autoCommitParams.Query,
             autoCommitParams.Bookmarks,
             autoCommitParams.Config,
@@ -101,7 +102,7 @@ internal sealed class BoltProtocol : IBoltProtocol
             pullHandler = new PullResponseHandler(streamBuilder, summaryBuilder, null);
         }
         
-        await connection.EnqueueAsync(new RunWithMetadataMessage(connection, query),
+        await connection.EnqueueAsync(new RunWithMetadataMessage(connection.Version, query),
                 runHandler, pullMessage, pullHandler)
             .ConfigureAwait(false);
         await connection.SendAsync().ConfigureAwait(false);

@@ -18,7 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO;
 
@@ -31,14 +31,14 @@ public sealed class PackStreamReader
     private readonly byte[] _longBuffer = new byte[8];
     private readonly byte[] _shortBuffer = new byte[2];
 
-    private readonly IConnection _connection;
     private readonly Stream _stream;
     private readonly IReadOnlyDictionary<byte, IPackStreamSerializer> _structHandlers;
+    private readonly BoltProtocolVersion _version;
 
-    internal PackStreamReader(IConnection connection, Stream stream, IMessageFormat format)
+    internal PackStreamReader(Stream stream, IMessageFormat format)
     {
-        _connection = connection;
         _stream = stream;
+        _version = format.Version;
         _structHandlers = format.ReaderStructHandlers;
     }
 
@@ -105,7 +105,7 @@ public sealed class PackStreamReader
         var signature = ReadStructSignature();
 
         if (_structHandlers.TryGetValue(signature, out var handler))
-            return handler.Deserialize(_connection, this, signature, size);
+            return handler.Deserialize(_version, this, signature, size);
 
         throw new ProtocolException("Unknown structure type: " + signature);
     }

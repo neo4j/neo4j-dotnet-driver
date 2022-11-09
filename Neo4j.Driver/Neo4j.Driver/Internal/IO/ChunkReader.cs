@@ -66,7 +66,8 @@ internal sealed class ChunkReader : IChunkReader
         {
             var numBytesRead = await InputStream.ReadWithTimeoutAsync(data, 0, bufferSize, (int)_readTimeoutMs).ConfigureAwait(false);
 
-            if (numBytesRead <= 0) break;
+            if (numBytesRead <= 0)
+                break;
 
             ChunkBuffer.Write(data, 0, numBytesRead);
             requiredSize -= numBytesRead;

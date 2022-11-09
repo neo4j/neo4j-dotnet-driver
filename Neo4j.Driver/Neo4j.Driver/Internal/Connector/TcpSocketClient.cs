@@ -30,11 +30,9 @@ using Neo4j.Driver.Internal.Extensions;
 #endif
 using static System.Security.Authentication.SslProtocols;
 
-
-
 namespace Neo4j.Driver.Internal.Connector;
 
-internal class TcpSocketClient : ITcpSocketClient
+internal sealed class TcpSocketClient : ITcpSocketClient
 {
     private readonly TimeSpan _connectionTimeout;
     private readonly EncryptionManager _encryptionManager;
@@ -60,9 +58,7 @@ internal class TcpSocketClient : ITcpSocketClient
         _socketKeepAliveEnabled = socketSettings.SocketKeepAliveEnabled;
     }
     private Stream _stream;
-
     public Stream ReaderStream => _stream;
-
     public Stream WriterStream => _stream;
 
     public async Task ConnectAsync(Uri uri, CancellationToken cancellationToken = default)
@@ -165,7 +161,7 @@ internal class TcpSocketClient : ITcpSocketClient
 
     private async Task ConnectAsync(IPAddress address, int port, CancellationToken cancellationToken)
     {
-        var ctr = cancellationToken.Register(() => _client.Close());
+        var ctr = cancellationToken.Register(_client.Close);
 #if NET6_0_OR_GREATER
         await using var _ = ctr.ConfigureAwait(false);
         await _client.ConnectAsync(new IPEndPoint(address, port), cancellationToken).ConfigureAwait(false);
@@ -199,26 +195,20 @@ internal class TcpSocketClient : ITcpSocketClient
 
     private void InitClient()
     {
-        if (_ipv6Enabled)
-            _client = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp)
-            {
-                DualMode = true
-            };
-        else
-            _client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        var addressFamily = _ipv6Enabled ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
 
-        _client.NoDelay = true;
+        _client = new Socket(addressFamily, SocketType.Stream, ProtocolType.Tcp)
+        {
+            DualMode = _ipv6Enabled,
+            NoDelay = true
+        };
+
         _client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, _socketKeepAliveEnabled);
     }
 
     private SslStream CreateSecureStream(Uri uri)
     {
-        return new SslStream(ReaderStream, true, ValidateConnection(uri));
-    }
-
-    private RemoteCertificateValidationCallback ValidateConnection(Uri uri)
-    {
-        return (_, certificate, chain, errors) =>
+        return new SslStream(ReaderStream, true, (_, certificate, chain, errors) =>
         {
             if (errors.HasFlag(SslPolicyErrors.RemoteCertificateNotAvailable))
             {
@@ -235,6 +225,6 @@ internal class TcpSocketClient : ITcpSocketClient
                 _logger?.Error(null, "Trust not established, aborting communication.");
 
             return trust;
-        };
+        });
     }
 }

@@ -18,7 +18,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using FluentAssertions;
-using Moq;
 using Neo4j.Driver.Internal.Types;
 using Xunit;
 
@@ -27,19 +26,6 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
     public class UnboundRelationshipSerializerTests : PackStreamSerializerTests
     {
         internal override IPackStreamSerializer SerializerUnderTest => new UnboundRelationshipSerializer();
-
-        [Fact]
-        public void ShouldThrowOnSerialize()
-        {
-            var handler = SerializerUnderTest;
-
-            var ex = Record.Exception(() =>
-                handler.Serialize(Mock.Of<IPackStreamWriter>(),
-                    new Relationship(0, -1, -1, "RELATES_TO", new Dictionary<string, object>())));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ProtocolException>();
-        }
 
         [Fact]
         public void ShouldDeserialize()
@@ -93,7 +79,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             VerifySerializedUnboundRelationship(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
         }
 
-        private static void SerializeUnboundRelationship(IPackStreamWriter writer)
+        private static void SerializeUnboundRelationship(PackStreamWriter writer)
         {
             writer.WriteStructHeader(3, UnboundRelationshipSerializer.UnboundRelationship);
             writer.Write(1);

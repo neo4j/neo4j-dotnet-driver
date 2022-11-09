@@ -18,7 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO;
 
@@ -26,7 +26,7 @@ internal abstract class WriteOnlySerializer : IPackStreamSerializer
 {
     public IEnumerable<byte> ReadableStructs => Enumerable.Empty<byte>();
 
-    public object Deserialize(IConnection _, PackStreamReader reader, byte signature, long size)
+    public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
     {
         throw new ProtocolException(
             $"{GetType().Name}: It is not expected to receive a struct of signature {signature:X2} from the server.");
@@ -34,7 +34,7 @@ internal abstract class WriteOnlySerializer : IPackStreamSerializer
 
     public abstract IEnumerable<Type> WritableTypes { get; }
 
-    public void Serialize(IConnection _, PackStreamWriter writer, object value)
+    public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
     {
         Serialize(writer, value);
     }

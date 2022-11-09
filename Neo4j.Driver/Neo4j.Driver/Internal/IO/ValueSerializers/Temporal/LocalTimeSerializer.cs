@@ -15,58 +15,57 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Internal.Connector;
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
+
+internal class LocalTimeSerializer : IPackStreamSerializer
 {
-    internal class LocalTimeSerializer : IPackStreamSerializer
-    {
-        public const byte StructType = (byte) 't';
-        public const int StructSize = 1;
+    public const byte StructType = (byte) 't';
+    public const int StructSize = 1;
 
-        public IEnumerable<byte> ReadableStructs => new[] {StructType};
+    public IEnumerable<byte> ReadableStructs => new[] {StructType};
 #if NET6_0_OR_GREATER
-        public IEnumerable<Type> WritableTypes => new[] {typeof(LocalTime), typeof(TimeOnly)};
+    public IEnumerable<Type> WritableTypes => new[] {typeof(LocalTime), typeof(TimeOnly)};
 #else
         public IEnumerable<Type> WritableTypes => new[] {typeof(LocalTime)};
 #endif
 
-        public object Deserialize(IConnection conn, PackStreamReader reader, byte signature, long size)
-        {
-            PackStream.EnsureStructSize("LocalTime", StructSize, size);
+    public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
+    {
+        PackStream.EnsureStructSize("LocalTime", StructSize, size);
 
-            var nanosOfDay = reader.ReadLong();
+        var nanosOfDay = reader.ReadLong();
 
-            return TemporalHelpers.NanoOfDayToTime(nanosOfDay);
-        }
+        return TemporalHelpers.NanoOfDayToTime(nanosOfDay);
+    }
 
-        public void Serialize(IConnection conn, PackStreamWriter writer, object value)
-        {
+    public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
+    {
 #if NET6_0_OR_GREATER
-            if (value is TimeOnly time)
-            {
-                WriteTimeOnly(writer, time);
-                return;
-            }
-#endif
-            WriteLocalTime(writer, value);
-        }
-
-#if NET6_0_OR_GREATER
-        private void WriteTimeOnly(PackStreamWriter writer, TimeOnly time)
+        if (value is TimeOnly time)
         {
-            writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(time.ToNanoOfDay());
+            WriteTimeOnly(writer, time);
+            return;
         }
 #endif
+        WriteLocalTime(writer, value);
+    }
 
-        private static void WriteLocalTime(PackStreamWriter writer, object value)
-        {
-            var time = value.CastOrThrow<LocalTime>();
-            writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(time.ToNanoOfDay());
-        }
+#if NET6_0_OR_GREATER
+    private void WriteTimeOnly(PackStreamWriter writer, TimeOnly time)
+    {
+        writer.WriteStructHeader(StructSize, StructType);
+        writer.Write(time.ToNanoOfDay());
+    }
+#endif
+
+    private static void WriteLocalTime(PackStreamWriter writer, object value)
+    {
+        var time = value.CastOrThrow<LocalTime>();
+        writer.WriteStructHeader(StructSize, StructType);
+        writer.Write(time.ToNanoOfDay());
     }
 }

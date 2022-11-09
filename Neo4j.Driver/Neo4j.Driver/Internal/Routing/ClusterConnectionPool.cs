@@ -140,7 +140,7 @@ namespace Neo4j.Driver.Internal.Routing
             return 0;
         }
 
-        public Task CloseAsync()
+        internal Task CloseAsync()
         {
             if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
             {

@@ -61,7 +61,7 @@ internal class MessageFormat : IMessageFormat
     public IReadOnlyDictionary<byte, IPackStreamSerializer> ReaderStructHandlers => _readerStructHandlers;
     public IReadOnlyDictionary<Type, IPackStreamSerializer> WriteStructHandlers => _writerStructHandlers;
 
-    public readonly BoltProtocolVersion Version;
+    public BoltProtocolVersion Version { get; }
 
     #region Message Constants Inherited Over Older Versions
 

@@ -94,7 +94,7 @@ namespace Neo4j.Driver.Internal.Result
         }
     }
 
-    internal class ServerInfo : IServerInfo
+    internal class ServerInfo : IServerInfo, IUpdateableInfo
     {
         public ServerInfo(Uri uri)
         {
@@ -121,6 +121,11 @@ namespace Neo4j.Driver.Internal.Result
                    $"{nameof(Agent)}={Agent}, " +
 				   $"{nameof(ProtocolVersion)}={ProtocolVersion}}}";
         }
+    }
+
+    internal interface IUpdateableInfo
+    {
+        void Update(BoltProtocolVersion boltVersion, string agent);
     }
 
     internal class Plan : IPlan

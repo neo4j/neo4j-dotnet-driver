@@ -168,7 +168,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var exception = await Record.ExceptionAsync(() => pool.UpdateAsync(new[] {ServerUri}, new Uri[0]));
 
                 // Then
-                mockedConnectionPool.Verify(x => x.CloseAsync());
+                mockedConnectionPool.Verify(x => x.DisposeAsync());
 
                 exception.Should().BeOfType<ObjectDisposedException>();
                 exception.Message.Should().Contain("Failed to create connections with server");
@@ -304,11 +304,10 @@ namespace Neo4j.Driver.Tests.Routing
 
                 var pool = new ClusterConnectionPool(null, connectionPoolDict);
 
-                // When
-                await pool.CloseAsync();
+                await pool.DisposeAsync();
 
                 // Then
-                mockedConnectionPool.Verify(x => x.CloseAsync(), Times.Once);
+                mockedConnectionPool.Verify(x => x.DisposeAsync(), Times.Once);
                 connectionPoolDict.Count.Should().Be(0);
                 connectionPoolDict.ContainsKey(ServerUri).Should().BeFalse();
             }

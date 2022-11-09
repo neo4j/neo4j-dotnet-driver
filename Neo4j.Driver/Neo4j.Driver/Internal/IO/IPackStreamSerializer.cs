@@ -17,7 +17,7 @@
 
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO;
 
@@ -27,7 +27,6 @@ internal interface IPackStreamSerializer
 
     IEnumerable<Type> WritableTypes { get; }
 
-    object Deserialize(IConnection connection, PackStreamReader reader, byte signature, long size);
-
-    void Serialize(IConnection connection, PackStreamWriter writer, object value);
+    object Deserialize(BoltProtocolVersion version, PackStreamReader reader, byte signature, long size);
+    void Serialize(BoltProtocolVersion version, PackStreamWriter writer, object value);
 }

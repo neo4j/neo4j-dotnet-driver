@@ -29,19 +29,6 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
         internal override IPackStreamSerializer SerializerUnderTest => new RelationshipSerializer();
 
         [Fact]
-        public void ShouldThrowOnSerialize()
-        {
-            var handler = SerializerUnderTest;
-
-            var ex = Record.Exception(() =>
-                handler.Serialize(Mock.Of<IPackStreamWriter>(),
-                    new Relationship(0, 1, 2, "RELATES_TO", new Dictionary<string, object>())));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ProtocolException>();
-        }
-
-        [Fact]
         public void ShouldDeserialize()
         {
             var writerMachine = CreateWriterMachine();
@@ -93,7 +80,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             VerifySerializedRelationship(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
         }
 
-        private static void SerializeRelationship(IPackStreamWriter writer)
+        private static void SerializeRelationship(PackStreamWriter writer)
         {
             writer.WriteStructHeader(5, RelationshipSerializer.Relationship);
             writer.Write(1);

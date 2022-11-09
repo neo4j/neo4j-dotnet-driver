@@ -46,14 +46,14 @@ internal sealed class SocketConnection : IConnection
 
     private string _id;
 
-    public SocketConnection(Uri uri, ConnectionSettings connectionSettings,
+    internal SocketConnection(Uri uri, ConnectionSettings connectionSettings,
         BufferSettings bufferSettings, IDictionary<string, string> routingContext, ILogger logger = null)
     {
         _idPrefix = $"conn-{uri.Host}:{uri.Port}-";
         _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
         _logger = new PrefixLogger(logger, FormatPrefix(_id));
 
-        _client = new SocketClient(this, uri, connectionSettings.SocketSettings, bufferSettings, _logger);
+        _client = new SocketClient(uri, connectionSettings.SocketSettings, bufferSettings, _logger);
         _authToken = connectionSettings.AuthToken;
         _userAgent = connectionSettings.UserAgent;
         _serverInfo = new ServerInfo(uri);
@@ -93,7 +93,10 @@ internal sealed class SocketConnection : IConnection
 
     public BoltProtocolVersion Version => _client.Version;
 
-    public IBoltProtocol BoltProtocol => _boltProtocol;
+    /// <summary>
+    /// Internal Set used for tests.
+    /// </summary>
+    public IBoltProtocol BoltProtocol { get; internal set; }
 
     public void Configure(string database, AccessMode? mode)
     {
@@ -108,14 +111,14 @@ internal sealed class SocketConnection : IConnection
         try
         {
             await _client.ConnectAsync(RoutingContext, cancellationToken).ConfigureAwait(false);
-            _boltProtocol = BoltProtocolFactory.ForVersion(_client.Version);
+            BoltProtocol = BoltProtocolFactory.ForVersion(_client.Version);
         }
         finally
         {
             _sendLock.Release();
         }
 
-        await _boltProtocol.LoginAsync(this, _userAgent, _authToken).ConfigureAwait(false);
+        await BoltProtocol.LoginAsync(this, _userAgent, _authToken).ConfigureAwait(false);
     }
 
     public async Task SyncAsync()
@@ -164,14 +167,13 @@ internal sealed class SocketConnection : IConnection
 
     public Task ResetAsync()
     {
-        return _boltProtocol.ResetAsync(this);
+        return BoltProtocol.ResetAsync(this);
     }
 
     public bool IsOpen => _client.IsOpen;
-    private ServerInfo _serverInfo;
+    private readonly ServerInfo _serverInfo;
     public IServerInfo Server => _serverInfo;
 
-    private IBoltProtocol _boltProtocol;
 
     public bool UtcEncodedDateTime { get; private set; }
 
@@ -200,8 +202,8 @@ internal sealed class SocketConnection : IConnection
         {
             try
             {
-                if (_boltProtocol != null)
-                    await _boltProtocol.LogoutAsync(this).ConfigureAwait(false);
+                if (BoltProtocol != null)
+                    await BoltProtocol.LogoutAsync(this).ConfigureAwait(false);
             }
             catch (ObjectDisposedException)
             {
@@ -216,7 +218,7 @@ internal sealed class SocketConnection : IConnection
                 _logger.Debug($"Failed to logout user before closing connection due to error: {e.Message}");
             }
 
-            await _client.StopAsync().ConfigureAwait(false);
+            await _client.DisposeAsync().ConfigureAwait(false);
         }
         catch (Exception e)
         {

@@ -20,11 +20,9 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver;
 using Xunit;
 using static Neo4j.Driver.Tests.AsyncSessionTests;
 using static Xunit.Record;
-using Neo4j.Driver.Internal.Protocol.@interface;
 
 namespace Neo4j.Driver.Tests
 {

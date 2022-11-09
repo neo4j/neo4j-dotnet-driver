@@ -27,9 +27,9 @@ internal interface IBoltProtocol
     Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken);
     Task LogoutAsync(IConnection connection);
     Task ResetAsync(IConnection connection);
+
     Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmarks bookmarks);
     Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, AutoCommitParams autoCommitParams);
-
     Task BeginTransactionAsync(IConnection connection, string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser);
     Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection, Query query, bool reactive, long fetchSize);
     Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker);

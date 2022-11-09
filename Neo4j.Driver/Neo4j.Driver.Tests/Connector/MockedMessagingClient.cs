@@ -23,11 +23,8 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
-using V3 = Neo4j.Driver.Internal.Messaging.V3;
-using V4_1 = Neo4j.Driver.Internal.Messaging.V4_1;
-using Neo4j.Driver.Internal.Protocol.@interface;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Tests.Routing
 {
@@ -108,10 +105,10 @@ namespace Neo4j.Driver.Tests.Routing
             ClientMock.Setup(x => x.IsOpen).Returns(() => _responseCount < _responseMessages.Count);
         }
 
-        internal static V3.HelloMessage LoginMessage(IAuthToken auth = null)
+        internal static HelloMessage LoginMessage(IAuthToken auth = null)
         {
-            auth = auth ?? AuthTokens.None;
-            return new V3.HelloMessage(ConnectionSettings.DefaultUserAgent, auth.AsDictionary());
+            auth ??= AuthTokens.None;
+            return new HelloMessage(BoltProtocolVersion.V30, ConnectionSettings.DefaultUserAgent, auth.AsDictionary(), null);
         }
 
         internal static SuccessMessage SuccessMessage(IList<object> fields = null)
@@ -140,10 +137,10 @@ namespace Neo4j.Driver.Tests.Routing
         {
         }
 
-        internal new static V4_1.HelloMessage LoginMessage(IAuthToken auth = null)
+        internal new static HelloMessage LoginMessage(IAuthToken auth = null)
         {
-            auth = auth ?? AuthTokens.None;
-            return new V4_1.HelloMessage(ConnectionSettings.DefaultUserAgent, auth.AsDictionary(), null);
+            auth ??= AuthTokens.None;
+            return new HelloMessage(BoltProtocolVersion.V4_1, ConnectionSettings.DefaultUserAgent, auth.AsDictionary(), null);
         }
     }
 

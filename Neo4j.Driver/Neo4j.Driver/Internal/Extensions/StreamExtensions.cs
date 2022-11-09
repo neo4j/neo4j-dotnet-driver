@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Internal
         }
 
 		/// <summary>
-		/// The standard ReadAsync in .Net does not honour the CancellationToken even if supplied. This method wraps a call to ReadAsync in a task that
+		/// The standard ReadAsync in .Net does not honor the CancellationToken even if supplied. This method wraps a call to ReadAsync in a task that
 		/// monitors the token, and when detected calls the streams close method.
 		/// </summary>
 		/// <param name="stream">Stream instance that is being extended</param>
@@ -61,18 +61,20 @@ namespace Neo4j.Driver.Internal
 		public static async Task<int> ReadWithTimeoutAsync(this Stream stream, byte[] buffer, int offset, int count, int timeoutMs)
 		{
 			var timeout = timeoutMs <= 0 ? TimeSpan.FromMilliseconds(-1) : TimeSpan.FromMilliseconds(timeoutMs);
-            var cancellationToken = new CancellationTokenSource(timeout);
-            using var _ = cancellationToken.Token.Register(stream.Close);
+            var source = new CancellationTokenSource(timeout);
 
             try
             {
 #if NET6_0_OR_GREATER
-                return await stream.ReadAsync(buffer.AsMemory(offset, count), cancellationToken.Token).ConfigureAwait(false);
+                var ctr = source.Token.Register(stream.Close);
+                await using var _ = ctr.ConfigureAwait(false);
+                return await stream.ReadAsync(buffer.AsMemory(offset, count), source.Token).ConfigureAwait(false);
 #else
-                return await stream.ReadAsync(buffer, offset, count, cancellationToken.Token).ConfigureAwait(false);
+                using var _ = source.Token.Register(stream.Close);
+                return await stream.ReadAsync(buffer, offset, count, source.Token).ConfigureAwait(false);
 #endif
             }
-            catch (Exception ex) when (cancellationToken.IsCancellationRequested)
+            catch (Exception ex) when (source.IsCancellationRequested)
             {
                 stream.Close();
                 throw new ConnectionReadTimeoutException(

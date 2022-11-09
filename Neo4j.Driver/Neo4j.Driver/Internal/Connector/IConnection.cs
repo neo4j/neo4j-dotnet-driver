@@ -23,58 +23,57 @@ using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Util;
 
-namespace Neo4j.Driver.Internal.Connector
+namespace Neo4j.Driver.Internal.Connector;
+
+internal interface IConnection : IConnectionDetails
 {
-    internal interface IConnection : IConnectionDetails
-    {
-        IBoltProtocol BoltProtocol { get; }
+    IBoltProtocol BoltProtocol { get; }
 
-        void Configure(string database, AccessMode? mode);
+    void Configure(string database, AccessMode? mode);
 
-        Task InitAsync(CancellationToken cancellationToken = default);
+    Task InitAsync(CancellationToken cancellationToken = default);
 
-        // send all and receive all
-        Task SyncAsync();
+    // send all and receive all
+    Task SyncAsync();
 
-        // send all
-        Task SendAsync();
+    // send all
+    Task SendAsync();
 
-        // receive one
-        Task ReceiveOneAsync();
+    // receive one
+    Task ReceiveOneAsync();
 
-        Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1, IRequestMessage message2 = null,
-            IResponseHandler handler2 = null);
+    Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1, IRequestMessage message2 = null,
+        IResponseHandler handler2 = null);
 
-        // Enqueue a reset message
-        Task ResetAsync();
+    // Enqueue a reset message
+    Task ResetAsync();
 
-        /// <summary>
-        /// Close and release related resources
-        /// </summary>
-        Task DestroyAsync();
+    /// <summary>
+    /// Close and release related resources
+    /// </summary>
+    Task DestroyAsync();
 
-        /// <summary>
-        /// Close connection
-        /// </summary>
-        Task CloseAsync();
+    /// <summary>
+    /// Close connection
+    /// </summary>
+    Task CloseAsync();
 
-        void UpdateId(string newConnId);
+    void UpdateId(string newConnId);
 
-        void UpdateVersion(ServerVersion newVersion);
+    void UpdateVersion(ServerVersion newVersion);
 
-		void SetReadTimeoutInSeconds(int seconds);
+    void SetReadTimeoutInSeconds(int seconds);
 
-        void SetUseUtcEncodedDateTime();
-    }
+    void SetUseUtcEncodedDateTime();
+}
 
-    internal interface IConnectionDetails
-    {
-        bool IsOpen { get; }
-        string Database { get; }
-        AccessMode? Mode { get; }
-        IServerInfo Server { get; }
-        IDictionary<string, string> RoutingContext { get; }
-        BoltProtocolVersion Version { get; }
-        bool UtcEncodedDateTime { get; }
-    }
+internal interface IConnectionDetails
+{
+    bool IsOpen { get; }
+    string Database { get; }
+    AccessMode? Mode { get; }
+    IServerInfo Server { get; }
+    IDictionary<string, string> RoutingContext { get; }
+    BoltProtocolVersion Version { get; }
+    bool UtcEncodedDateTime { get; }
 }

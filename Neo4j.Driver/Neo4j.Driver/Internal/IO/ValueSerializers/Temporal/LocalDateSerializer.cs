@@ -17,7 +17,7 @@
 
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
 {
@@ -34,7 +34,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
         public IEnumerable<Type> WritableTypes => new[] {typeof(LocalDate)};
 #endif
 
-        public object Deserialize(IConnection connection, PackStreamReader reader, byte signature, long size)
+        public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
         {
             PackStream.EnsureStructSize("Date", StructSize, size);
 
@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             return TemporalHelpers.EpochDaysToDate(epochDays);
         }
 
-        public void Serialize(IConnection connection, PackStreamWriter writer, object value)
+        public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
         {
 #if NET6_0_OR_GREATER
             if (value is DateOnly date)

@@ -106,7 +106,7 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
         var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, autoCommitParams.BookmarksTracker);
         
         var autoCommitMessage = new RunWithMetadataMessage(
-            connection, 
+            connection.Version, 
             autoCommitParams.Query,
             autoCommitParams.Bookmarks,
             autoCommitParams.Config,
@@ -126,7 +126,7 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
         ValidateDatabase(database);
 
         await connection.EnqueueAsync(
-                new BeginMessage(connection, database, bookmarks, config, connection.GetEnforcedAccessMode(),
+                new BeginMessage(connection.Version, database, bookmarks, config, connection.GetEnforcedAccessMode(),
                     impersonatedUser), NoOpResponseHandler.Instance)
             .ConfigureAwait(false);
 
@@ -138,13 +138,15 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
     {
         var summaryBuilder = new SummaryBuilder(query, connection.Server);
         var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, null);
+        
         var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
         var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, null);
 
-        await connection.EnqueueAsync(new RunWithMetadataMessage(connection, query),
-                runHandler, PullAll, pullAllHandler)
-            .ConfigureAwait(false);
+        var message = new RunWithMetadataMessage(connection.Version, query);
+
+        await connection.EnqueueAsync(message, runHandler, PullAll, pullAllHandler).ConfigureAwait(false);
         await connection.SendAsync().ConfigureAwait(false);
+        
         return streamBuilder.CreateCursor();
     }
 

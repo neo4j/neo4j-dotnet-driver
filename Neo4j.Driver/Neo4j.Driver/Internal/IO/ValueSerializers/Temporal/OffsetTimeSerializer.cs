@@ -15,38 +15,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Protocol;
 using System;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
+
+internal class OffsetTimeSerializer : IPackStreamSerializer
 {
-    internal class OffsetTimeSerializer : IPackStreamSerializer
+    public const byte StructType = (byte) 'T';
+    public const int StructSize = 2;
+
+    public IEnumerable<byte> ReadableStructs => new[] {StructType};
+
+    public IEnumerable<Type> WritableTypes => new[] {typeof(OffsetTime)};
+
+    public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
     {
-        public const byte StructType = (byte) 'T';
-        public const int StructSize = 2;
+        PackStream.EnsureStructSize("Time", StructSize, size);
 
-        public IEnumerable<byte> ReadableStructs => new[] {StructType};
+        var nanosOfDay = reader.ReadLong();
+        var offsetSeconds = reader.ReadInteger();
 
-        public IEnumerable<Type> WritableTypes => new[] {typeof(OffsetTime)};
+        return new OffsetTime(TemporalHelpers.NanoOfDayToTime(nanosOfDay), offsetSeconds);
+    }
 
-        public object Deserialize(IConnection conn, PackStreamReader reader, byte signature, long size)
-        {
-            PackStream.EnsureStructSize("Time", StructSize, size);
+    public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
+    {
+        var time = value.CastOrThrow<OffsetTime>();
 
-            var nanosOfDay = reader.ReadLong();
-            var offsetSeconds = reader.ReadInteger();
-
-            return new OffsetTime(TemporalHelpers.NanoOfDayToTime(nanosOfDay), offsetSeconds);
-        }
-
-        public void Serialize(IConnection conn, PackStreamWriter writer, object value)
-        {
-            var time = value.CastOrThrow<OffsetTime>();
-
-            writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(time.ToNanoOfDay());
-            writer.Write(time.OffsetSeconds);
-        }
+        writer.WriteStructHeader(StructSize, StructType);
+        writer.Write(time.ToNanoOfDay());
+        writer.Write(time.OffsetSeconds);
     }
 }

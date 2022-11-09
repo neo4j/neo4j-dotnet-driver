@@ -16,19 +16,16 @@
 // limitations under the License.
 
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.IO;
 
 internal class MessageWriter : IMessageWriter
 {
-    public MessageWriter(IConnection connection, ChunkWriter chunkWriter, IMessageFormat format)
+    public MessageWriter(ChunkWriter chunkWriter, IMessageFormat format)
     {
         _chunkWriter = chunkWriter;
-        _packStreamWriter = new PackStreamWriter(connection, 
-            chunkWriter.ChunkerStream, 
-            format.WriteStructHandlers);
+        _packStreamWriter = new PackStreamWriter(format, chunkWriter.ChunkerStream);
     }
 
     private readonly IChunkWriter _chunkWriter;

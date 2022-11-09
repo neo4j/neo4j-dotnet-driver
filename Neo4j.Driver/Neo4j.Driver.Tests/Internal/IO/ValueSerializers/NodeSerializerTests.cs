@@ -18,7 +18,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using FluentAssertions;
-using Moq;
 using Neo4j.Driver.Internal.Types;
 using Xunit;
 
@@ -27,19 +26,6 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
     public class NodeSerializerTests : PackStreamSerializerTests
     {
         internal override IPackStreamSerializer SerializerUnderTest => new NodeSerializer();
-
-        [Fact]
-        public void ShouldThrowOnSerialize()
-        {
-            var handler = SerializerUnderTest;
-
-            var ex = Record.Exception(() =>
-                handler.Serialize(Mock.Of<IPackStreamWriter>(),
-                    new Node(0, new List<string> {"Label"}, new Dictionary<string, object>())));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ProtocolException>();
-        }
 
         [Fact]
         public void ShouldDeserialize()
@@ -93,7 +79,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             VerifySerializedNode(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
         }
 
-        private static void SerializeNode(IPackStreamWriter writer)
+        private static void SerializeNode(PackStreamWriter writer)
         {
             writer.WriteStructHeader(3, NodeSerializer.Node);
             writer.Write(1);

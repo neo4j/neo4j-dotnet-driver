@@ -31,7 +31,6 @@ namespace Neo4j.Driver.Internal.Connector;
 internal sealed class SocketClient : ISocketClient
 {
     private const string MessagePattern = "C: {0}";
-    private readonly IConnection _owner;
     private readonly Uri _uri;
     private readonly BufferSettings _bufferSettings;
 
@@ -41,10 +40,9 @@ internal sealed class SocketClient : ISocketClient
 
     private readonly ILogger _logger;
 
-    public SocketClient(IConnection owner, Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings, ILogger logger = null,
+    public SocketClient(Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings, ILogger logger = null,
         ITcpSocketClient socketClient = null)
     {
-        _owner = owner;
         _uri = uri;
         _logger = logger;
         _bufferSettings = bufferSettings;
@@ -78,7 +76,7 @@ internal sealed class SocketClient : ISocketClient
         {
             foreach (var message in messages)
             {
-                var writer = new MessageWriter(_owner, ChunkWriter, Format);
+                var writer = new MessageWriter(ChunkWriter, Format);
                 writer.Write(message);
                 _logger?.Debug(MessagePattern, message);
             }
@@ -88,7 +86,7 @@ internal sealed class SocketClient : ISocketClient
         catch (Exception ex)
         {
             _logger?.Warn(ex, $"Unable to send message to server {_uri}, connection will be terminated.");
-            await StopAsync().ConfigureAwait(false);
+            await DisposeAsync().ConfigureAwait(false);
             throw;
         }
     }
@@ -105,13 +103,13 @@ internal sealed class SocketClient : ISocketClient
     {
         try
         {
-            var reader = new MessageReader(_owner, Format, ChunkReader, _bufferSettings, _logger);
+            var reader = new MessageReader(Format, ChunkReader, _bufferSettings, _logger);
             await reader.ReadAsync(responsePipeline).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             _logger?.Error(ex, $"Unable to read message from server {_uri}, connection will be terminated.");
-            await StopAsync().ConfigureAwait(false);
+            await DisposeAsync().ConfigureAwait(false);
             throw;
         }
 
@@ -124,7 +122,7 @@ internal sealed class SocketClient : ISocketClient
         {
             _logger?.Warn(exc, "A bolt protocol error has occurred with server {0}, connection will be terminated.",
                 _uri.ToString());
-            await StopAsync().ConfigureAwait(false);
+            await DisposeAsync().ConfigureAwait(false);
             throw;
         }
     }
@@ -132,13 +130,6 @@ internal sealed class SocketClient : ISocketClient
     internal void SetOpened()
     {
         Interlocked.CompareExchange(ref _closedMarker, 0, -1);
-    }
-
-    public Task StopAsync()
-    {
-        return Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0 
-            ? _tcpSocketClient.DisposeAsync().AsTask() 
-            : Task.CompletedTask;
     }
 
     private async Task<BoltProtocolVersion> DoHandshakeAsync(CancellationToken cancellationToken = default)
@@ -171,5 +162,12 @@ internal sealed class SocketClient : ISocketClient
     public void UseUtcEncoded()
     {
         Format.UseUtcEncoder();
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        return Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0
+            ? _tcpSocketClient.DisposeAsync()
+            : default;
     }
 }

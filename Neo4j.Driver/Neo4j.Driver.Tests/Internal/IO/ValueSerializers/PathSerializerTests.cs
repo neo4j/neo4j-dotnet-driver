@@ -18,7 +18,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using FluentAssertions;
-using Moq;
 using Neo4j.Driver.Internal.Types;
 using Xunit;
 
@@ -30,19 +29,6 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
 
         internal override IEnumerable<IPackStreamSerializer> SerializersNeeded =>
             new IPackStreamSerializer[] {new NodeSerializer(), new UnboundRelationshipSerializer()};
-
-        [Fact]
-        public void ShouldThrowOnSerialize()
-        {
-            var handler = SerializerUnderTest;
-
-            var ex = Record.Exception(() =>
-                handler.Serialize(Mock.Of<IPackStreamWriter>(),
-                    new Path(new List<ISegment>(), new List<INode>(), new List<IRelationship>())));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ProtocolException>();
-        }
 
         [Fact]
         public void ShouldDeserialize()
@@ -110,7 +96,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             VerifySerializedPath(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
         }
 
-        private static void SerializePath(IPackStreamWriter writer, bool reverse = false)
+        private static void SerializePath(PackStreamWriter writer, bool reverse = false)
         {
             writer.WriteStructHeader(3, PathSerializer.Path);
             
@@ -134,7 +120,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             writer.Write(0);
         }
 
-        private static void SerializeNode(IPackStreamWriter writer, int id)
+        private static void SerializeNode(PackStreamWriter writer, int id)
         {
             writer.WriteStructHeader(3, NodeSerializer.Node);
             writer.Write(id);
@@ -145,7 +131,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             });
         }
 
-        private static void SerializeUnboundedRelationship(IPackStreamWriter writer, int id)
+        private static void SerializeUnboundedRelationship(PackStreamWriter writer, int id)
         {
             writer.WriteStructHeader(3, UnboundRelationshipSerializer.UnboundRelationship);
             writer.Write(id);

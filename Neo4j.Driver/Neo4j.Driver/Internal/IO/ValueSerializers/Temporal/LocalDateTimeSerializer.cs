@@ -17,36 +17,35 @@
 
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
+
+internal class LocalDateTimeSerializer : IPackStreamSerializer
 {
-    internal class LocalDateTimeSerializer : IPackStreamSerializer
+    public const byte StructType = (byte) 'd';
+    public const int StructSize = 2;
+
+    public IEnumerable<byte> ReadableStructs => new[] {StructType};
+
+    public IEnumerable<Type> WritableTypes => new[] {typeof(LocalDateTime)};
+
+    public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
     {
-        public const byte StructType = (byte) 'd';
-        public const int StructSize = 2;
+        PackStream.EnsureStructSize("LocalDateTime", StructSize, size);
 
-        public IEnumerable<byte> ReadableStructs => new[] {StructType};
+        var epochSeconds = reader.ReadLong();
+        var nanosOfSecond = reader.ReadInteger();
 
-        public IEnumerable<Type> WritableTypes => new[] {typeof(LocalDateTime)};
+        return TemporalHelpers.EpochSecondsAndNanoToDateTime(epochSeconds, nanosOfSecond);
+    }
 
-        public object Deserialize(IConnection conn, PackStreamReader reader, byte signature, long size)
-        {
-            PackStream.EnsureStructSize("LocalDateTime", StructSize, size);
+    public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
+    {
+        var dateTime = value.CastOrThrow<LocalDateTime>();
 
-            var epochSeconds = reader.ReadLong();
-            var nanosOfSecond = reader.ReadInteger();
-
-            return TemporalHelpers.EpochSecondsAndNanoToDateTime(epochSeconds, nanosOfSecond);
-        }
-
-        public void Serialize(IConnection conn, PackStreamWriter writer, object value)
-        {
-            var dateTime = value.CastOrThrow<LocalDateTime>();
-
-            writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(dateTime.ToEpochSeconds());
-            writer.Write(dateTime.Nanosecond);
-        }
+        writer.WriteStructHeader(StructSize, StructType);
+        writer.Write(dateTime.ToEpochSeconds());
+        writer.Write(dateTime.Nanosecond);
     }
 }

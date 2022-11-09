@@ -20,6 +20,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO.Utils;
 using Neo4j.Driver.Internal.Protocol;
 using Xunit;
@@ -119,7 +120,7 @@ namespace Neo4j.Driver.Internal.IO
 
                 public IEnumerable<Type> WritableTypes => new[] { typeof(StructType) };
 
-                public object Deserialize(IPackStreamReader reader, byte signature, long size)
+                public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
                 {
                     var values = new List<object>();
                     for (var i = 0; i < size; i++)
@@ -130,7 +131,7 @@ namespace Neo4j.Driver.Internal.IO
                     return new StructType(values);
                 }
 
-                public void Serialize(IPackStreamWriter writer, object value)
+                public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
                 {
                     var structValue = (StructType)value;
 
@@ -145,31 +146,31 @@ namespace Neo4j.Driver.Internal.IO
 
         }
 
-        public class V3 : PackStreamTestSpecs
-        {
-            internal override PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
-            {
-                return new PackStreamReaderMachine(bytes, stream => BoltProtocolMessageFormat.V3.CreateReader(stream));
-            }
+        //public class V3 : PackStreamTestSpecs
+        //{
+        //    internal override PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
+        //    {
+        //        return new PackStreamReaderMachine(bytes, stream => BoltProtocolMessageFormat.V3.CreateReader(stream));
+        //    }
 
-            internal override PackStreamWriterMachine CreateWriterMachine()
-            {
-                return new PackStreamWriterMachine(stream => BoltProtocolMessageFormat.V3.CreateWriter(stream));
-            }
-        }
+        //    internal override PackStreamWriterMachine CreateWriterMachine()
+        //    {
+        //        return new PackStreamWriterMachine(stream => BoltProtocolMessageFormat.V3.CreateWriter(stream));
+        //    }
+        //}
 
-        public class V4 : PackStreamTestSpecs
-        {
-            internal override PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
-            {
-                return new PackStreamReaderMachine(bytes, stream => BoltProtocolMessageFormat.V4.CreateReader(stream));
-            }
+        //public class V4 : PackStreamTestSpecs
+        //{
+        //    internal override PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
+        //    {
+        //        return new PackStreamReaderMachine(bytes, stream => BoltProtocolMessageFormat.V4.CreateReader(stream));
+        //    }
 
-            internal override PackStreamWriterMachine CreateWriterMachine()
-            {
-                return new PackStreamWriterMachine(stream => BoltProtocolMessageFormat.V4.CreateWriter(stream));
-            }
-        }
+        //    internal override PackStreamWriterMachine CreateWriterMachine()
+        //    {
+        //        return new PackStreamWriterMachine(stream => BoltProtocolMessageFormat.V4.CreateWriter(stream));
+        //    }
+        //}
 
     }
 }

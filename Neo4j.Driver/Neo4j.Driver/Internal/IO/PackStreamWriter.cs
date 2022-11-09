@@ -20,21 +20,20 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Protocol;
 using static Neo4j.Driver.Internal.IO.PackStream;
 
 namespace Neo4j.Driver.Internal.IO;
 
 internal sealed class PackStreamWriter
 {
-    private readonly IConnection _connection;
+    private readonly BoltProtocolVersion _version;
     private readonly Stream _stream;
 
-    public PackStreamWriter(IConnection connection, Stream stream,
-        IReadOnlyDictionary<Type, IPackStreamSerializer> structHandlers)
+    public PackStreamWriter(IMessageFormat format, Stream stream)
     {
-        StructHandlers = structHandlers;
-        _connection = connection;
+        StructHandlers = format.WriteStructHandlers;
+        _version = format.Version;
         _stream = stream;
     }
 
@@ -82,7 +81,7 @@ internal sealed class PackStreamWriter
                 break;
             default:
                 if (StructHandlers.TryGetValue(value.GetType(), out var structHandler))
-                    structHandler.Serialize(_connection, this, value);
+                    structHandler.Serialize(_version, this, value);
                 else
                     throw new ProtocolException(
                         $"Cannot understand {nameof(value)} with type {value.GetType().FullName}");

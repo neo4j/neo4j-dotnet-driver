@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.Messaging.V3;
@@ -25,15 +24,15 @@ namespace Neo4j.Driver.Internal.Messaging.V3;
 internal class BeginMessage : TransactionStartingMessage
 {
     public BeginMessage(
-        IConnection connection, string database, Bookmarks bookmarks, TransactionConfig configBuilder,
+        BoltProtocolVersion version, string database, Bookmarks bookmarks, TransactionConfig configBuilder,
         AccessMode mode, string impersonatedUser)
-        : this(connection, database, bookmarks, configBuilder?.Timeout, configBuilder?.Metadata, mode,
+        : this(version, database, bookmarks, configBuilder?.Timeout, configBuilder?.Metadata, mode,
             impersonatedUser)
     {
     }
 
     public BeginMessage(
-        IConnection connection,
+        BoltProtocolVersion version,
         string database,
         Bookmarks bookmarks,
         TimeSpan? txTimeout,
@@ -41,7 +40,7 @@ internal class BeginMessage : TransactionStartingMessage
         AccessMode mode, string impersonatedUser)
         : base(database, bookmarks, txTimeout, txMetadata, mode)
     {
-        if (!string.IsNullOrEmpty(impersonatedUser) && connection.Version >= BoltProtocolVersion.V4_4)
+        if (!string.IsNullOrEmpty(impersonatedUser) && version >= BoltProtocolVersion.V4_4)
             Metadata.Add("imp_user", impersonatedUser);
     }
 

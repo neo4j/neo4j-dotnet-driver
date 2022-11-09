@@ -19,10 +19,9 @@ using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 using V3 = Neo4j.Driver.Internal.Messaging.V3;
 using V4 = Neo4j.Driver.Internal.Messaging.V4;
-using V4_1 = Neo4j.Driver.Internal.Messaging.V4_1;
-using V4_2 = Neo4j.Driver.Internal.Messaging.V4_2;
 using V4_3 = Neo4j.Driver.Internal.Messaging.V4_3;
 using V4_4 = Neo4j.Driver.Internal.Messaging.V4_4;
 using Xunit;
@@ -45,7 +44,7 @@ namespace Neo4j.Driver.Tests
 
 			public static IEnumerable<object[]> MessageData => new[]
             {
-				new object[] {new V4_4.BeginMessage(Bookmarks.From(new []{ "bookmark1", "bookmark2" }), 
+				new object[] {new V3.BeginMessage(BoltProtocolVersion.V4_4, null, Bookmarks.From(new []{ "bookmark1", "bookmark2" }), 
 													TransactionConfigGenerator(), 
 													AccessMode.Read, 
 													"Impersonated User"), 
@@ -60,19 +59,19 @@ namespace Neo4j.Driver.Tests
 				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "adb" } }, Bookmarks.From("bookmark-1"), "adb"), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'adb\' } { bookmarks, [bookmark-1] } \'adb\'" },
 				new object[] {new V4_3.RouteMessage(new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "adb" } }, null, "adb"), "ROUTE { \'RoutingKey\':\'RoutingValue\' \'Bob\':\'adb\' } [] \'adb\'" },
 				new object[] {new FailureMessage("CODE", "MESSAGE"), "FAILURE code=CODE, message=MESSAGE"},
-				new object[] {new V4_4.HelloMessage("mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}, {patch_bolt, [utc]}]"},
-				new object[] {new V4_4.HelloMessage("mydriver", null, new Dictionary<string, string>()), "HELLO [{user_agent, mydriver}, {routing, []}, {patch_bolt, [utc]}]"},
-				new object[] {new V4_4.HelloMessage("mydriver", null, null), "HELLO [{user_agent, mydriver}, {routing, NULL}, {patch_bolt, [utc]}]"},
-				new object[] {new V4_3.HelloMessage("mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}, {patch_bolt, [utc]}]"},
-                new object[] {new V4_3.HelloMessage("mydriver", null, new Dictionary<string, string>()), "HELLO [{user_agent, mydriver}, {routing, []}, {patch_bolt, [utc]}]"},
-                new object[] {new V4_3.HelloMessage("mydriver", null, null), "HELLO [{user_agent, mydriver}, {routing, NULL}, {patch_bolt, [utc]}]"},
-                new object[] {new V4_2.HelloMessage("mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}]"},
-                new object[] {new V4_2.HelloMessage("mydriver", null, new Dictionary<string, string>()), "HELLO [{user_agent, mydriver}, {routing, []}]"},
-                new object[] {new V4_2.HelloMessage("mydriver", null, null), "HELLO [{user_agent, mydriver}, {routing, NULL}]"},
-                new object[] {new V4_1.HelloMessage("mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}]"},
-                new object[] {new V4_1.HelloMessage("mydriver", null, new Dictionary<string, string>()), "HELLO [{user_agent, mydriver}, {routing, []}]"},
-                new object[] {new V4_1.HelloMessage("mydriver", null, null), "HELLO [{user_agent, mydriver}, {routing, NULL}]"},
-                new object[] {new V3.HelloMessage("mydriver", null), "HELLO [{user_agent, mydriver}]"},
+				new object[] {new HelloMessage(BoltProtocolVersion.V4_4, "mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}, {patch_bolt, [utc]}]"},
+				new object[] {new HelloMessage(BoltProtocolVersion.V4_4, "mydriver", null, new Dictionary<string, string>()), "HELLO [{user_agent, mydriver}, {routing, []}, {patch_bolt, [utc]}]"},
+				new object[] {new HelloMessage(BoltProtocolVersion.V4_4, "mydriver", null, null), "HELLO [{user_agent, mydriver}, {routing, NULL}, {patch_bolt, [utc]}]"},
+				new object[] {new HelloMessage(BoltProtocolVersion.V4_4, "mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}, {patch_bolt, [utc]}]"},
+                new object[] {new HelloMessage(BoltProtocolVersion.V4_4, "mydriver", null, new Dictionary<string, string>()), "HELLO [{user_agent, mydriver}, {routing, []}, {patch_bolt, [utc]}]"},
+                new object[] {new HelloMessage(BoltProtocolVersion.V4_4, "mydriver", null, null), "HELLO [{user_agent, mydriver}, {routing, NULL}, {patch_bolt, [utc]}]"},
+                new object[] {new HelloMessage(BoltProtocolVersion.V4_2, "mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}]"},
+                new object[] {new HelloMessage(BoltProtocolVersion.V4_2, "mydriver", null, new Dictionary<string, string>()), "HELLO [{user_agent, mydriver}, {routing, []}]"},
+                new object[] {new HelloMessage(BoltProtocolVersion.V4_2, "mydriver", null, null), "HELLO [{user_agent, mydriver}, {routing, NULL}]"},
+                new object[] {new HelloMessage(BoltProtocolVersion.V4_1, "mydriver", null, new Dictionary<string, string> {{ "RoutingKey", "RoutingValue" }}), "HELLO [{user_agent, mydriver}, {routing, [{RoutingKey, RoutingValue}]}]"},
+                new object[] {new HelloMessage(BoltProtocolVersion.V4_1, "mydriver", null, new Dictionary<string, string>()), "HELLO [{user_agent, mydriver}, {routing, []}]"},
+                new object[] {new HelloMessage(BoltProtocolVersion.V4_1, "mydriver", null, null), "HELLO [{user_agent, mydriver}, {routing, NULL}]"},
+                new object[] {new HelloMessage(BoltProtocolVersion.V30, "mydriver", null, null), "HELLO [{user_agent, mydriver}]"},
                 new object[] {new SuccessMessage(new Dictionary<string, object>()), "SUCCESS []"},
                 new object[] {DiscardAll, "DISCARDALL"},
                 new object[] {Ignored, "IGNORED"},
@@ -85,11 +84,13 @@ namespace Neo4j.Driver.Tests
                 new object[] {ResetMessage.Reset, "RESET"},
                 new object[]
                 {
-                    new V3.RunWithMetadataMessage(new Query("A query", new Dictionary<string, object>
+                    new V3.RunWithMetadataMessage(
+                        BoltProtocolVersion.V30,
+                        new Query("A query", new Dictionary<string, object>
                     {
                         {"key1", 1},
                         {"key2", new[] {2, 4}}
-                    }), "my-database", Bookmarks.From("bookmark-1"), TransactionConfig.Default, AccessMode.Read),
+                    }), database: "my-database", bookmarks: Bookmarks.From("bookmark-1"), config: TransactionConfig.Default, mode: AccessMode.Read),
                     "RUN `A query`, [{key1, 1}, {key2, [2, 4]}] [{bookmarks, [bookmark-1]}, {mode, r}, {db, my-database}]"
                 },
                 new object[] {new V4.PullMessage(1, 2), "PULL [{n, 2}, {qid, 1}]"},

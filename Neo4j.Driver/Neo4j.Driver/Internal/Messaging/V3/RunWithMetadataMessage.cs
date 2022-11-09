@@ -15,7 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.Messaging.V3;
@@ -23,7 +22,7 @@ namespace Neo4j.Driver.Internal.Messaging.V3;
 internal class RunWithMetadataMessage : TransactionStartingMessage
 {
     public RunWithMetadataMessage(
-        IConnection connection,
+        BoltProtocolVersion version,
         Query query,
         Bookmarks bookmarks = null,
         TransactionConfig config = null,
@@ -34,7 +33,7 @@ internal class RunWithMetadataMessage : TransactionStartingMessage
     {
         Query = query;
 
-        if (connection.Version >= BoltProtocolVersion.V4_4 &&
+        if (version >= BoltProtocolVersion.V4_4 &&
             !string.IsNullOrEmpty(impersonatedUser))
             Metadata.Add("imp_user", impersonatedUser);
     }

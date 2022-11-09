@@ -26,31 +26,29 @@ using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging.V3;
+using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
-using static Xunit.Record;
 using Record = Xunit.Record;
-using Neo4j.Driver.Internal.Protocol.@interface;
 
 namespace Neo4j.Driver.Tests
 {
     public class SocketConnectionTests
     {
-        private static readonly IResponseHandler NoOpHandler = new NoOpResponseHandler();
+        private static readonly IResponseHandler NoOpHandler = NoOpResponseHandler.Instance;
         private static IAuthToken AuthToken => AuthTokens.None;
         private static string UserAgent => ConnectionSettings.DefaultUserAgent;
         private static ILogger Logger => new Mock<ILogger>().Object;
-        private static IServerInfo Server => new ServerInfo(new Uri("http://neo4j.com"));
+        private static ServerInfo Server => new ServerInfo(new Uri("http://neo4j.com"));
         private static ISocketClient SocketClient => new Mock<ISocketClient>().Object;
 
         internal static SocketConnection NewSocketConnection(ISocketClient socketClient = null,
-            IResponsePipeline pipeline = null, IServerInfo server = null, ILogger logger = null)
+            IResponsePipeline pipeline = null, ServerInfo server = null, ILogger logger = null)
         {
-            socketClient = socketClient ?? SocketClient;
-            server = server ?? Server;
+            socketClient ??= SocketClient;
+            server ??= Server;
             return new SocketConnection(socketClient, AuthToken, UserAgent, logger ?? Logger, server, pipeline);
         }
 
@@ -62,7 +60,7 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var mockClient = new Mock<ISocketClient>();
                 var mockProtocol = new Mock<IBoltProtocol>();
-                mockClient.Setup(x => x.ConnectAsync(null, CancellationToken.None)).ReturnsAsync(mockProtocol.Object);
+                mockClient.Setup(x => x.ConnectAsync(null, CancellationToken.None));
                 var conn = NewSocketConnection(mockClient.Object);
 
                 // When
@@ -123,7 +121,7 @@ namespace Neo4j.Driver.Tests
                 var mock = new Mock<ISocketClient>();
                 var con = NewSocketConnection(mock.Object);
 
-                await con.EnqueueAsync(new RunWithMetadataMessage(new Query("A query"), AccessMode.Read),
+                await con.EnqueueAsync(new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("A query"), mode: AccessMode.Read),
                     NoOpHandler);
                 await con.SyncAsync();
 
@@ -141,7 +139,7 @@ namespace Neo4j.Driver.Tests
                 var con = NewSocketConnection();
 
                 // When
-                await con.EnqueueAsync(new RunWithMetadataMessage(new Query("a query"), AccessMode.Write),
+                await con.EnqueueAsync(new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("a query"), mode: AccessMode.Write),
                     NoOpHandler);
 
                 // Then
@@ -155,10 +153,10 @@ namespace Neo4j.Driver.Tests
                 var pipeline = new Mock<IResponsePipeline>();
                 var con = NewSocketConnection(pipeline: pipeline.Object);
 
-                await con.EnqueueAsync(new RunWithMetadataMessage(new Query("query"), AccessMode.Read),
+                await con.EnqueueAsync(new RunWithMetadataMessage(BoltProtocolVersion.V4_0, new Query("query"), mode: AccessMode.Read),
                     NoOpHandler);
 
-                pipeline.Verify(h => h.Enqueue(It.IsAny<RunWithMetadataMessage>(), NoOpHandler), Times.Once);
+                pipeline.Verify(h => h.Enqueue(NoOpHandler), Times.Once);
             }
 
             [Fact]
@@ -168,7 +166,7 @@ namespace Neo4j.Driver.Tests
                 var con = NewSocketConnection();
 
                 // When
-                await con.EnqueueAsync(new RunWithMetadataMessage(new Query("a query"), AccessMode.Read),
+                await con.EnqueueAsync(new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("a query"), mode: AccessMode.Read),
                     NoOpHandler, PullAll, NoOpHandler);
 
                 // Then
@@ -183,13 +181,11 @@ namespace Neo4j.Driver.Tests
                 var pipeline = new Mock<IResponsePipeline>();
                 var con = NewSocketConnection(pipeline: pipeline.Object);
 
-                await con.EnqueueAsync(new RunWithMetadataMessage(new Query("query"), AccessMode.Read),
+                await con.EnqueueAsync(new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("query"), mode: AccessMode.Read),
                     NoOpHandler, PullAll, NoOpHandler);
 
-                pipeline.Verify(h => h.Enqueue(It.IsAny<RunWithMetadataMessage>(), NoOpHandler),
-                    Times.Once);
-                pipeline.Verify(h => h.Enqueue(It.IsAny<PullAllMessage>(), NoOpHandler),
-                    Times.Once);
+                pipeline.Verify(h => h.Enqueue(NoOpHandler), Times.Once);
+                pipeline.Verify(h => h.Enqueue(NoOpHandler), Times.Once);
             }
         }
 
@@ -200,11 +196,13 @@ namespace Neo4j.Driver.Tests
             {
                 var mockClient = new Mock<ISocketClient>();
                 var mockProtocol = new Mock<IBoltProtocol>();
-                mockClient.Setup(x => x.ConnectAsync(null, CancellationToken.None)).ReturnsAsync(mockProtocol.Object);
+                mockClient.Setup(x => x.ConnectAsync(null, CancellationToken.None));
 
                 var con = NewSocketConnection(mockClient.Object);
 
-                await con.InitAsync(); // to assign protocol to connection
+                // Should not be done outside of tests.
+                con.BoltProtocol = mockProtocol.Object;
+                
                 await con.ResetAsync();
 
                 mockProtocol.Verify(x => x.ResetAsync(con), Times.Once);

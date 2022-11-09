@@ -18,27 +18,26 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.IO
+namespace Neo4j.Driver.Internal.IO;
+
+internal abstract class ReadOnlySerializer : IPackStreamSerializer
 {
-    internal abstract class ReadOnlySerializer : IPackStreamSerializer
+    public IEnumerable<Type> WritableTypes => Enumerable.Empty<Type>();
+
+    public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
     {
-        public IEnumerable<Type> WritableTypes => Enumerable.Empty<Type>();
-
-        public void Serialize(IConnection connection, PackStreamWriter writer, object value)
-        {
-            throw new ProtocolException(
-                $"{GetType().Name}: It is not allowed to send a value of type {value?.GetType().Name} to the server.");
-        }
-
-        public abstract IEnumerable<byte> ReadableStructs { get; }
-
-        public object Deserialize(IConnection connection, PackStreamReader reader, byte sig, long size)
-        {
-            return Deserialize(reader, sig, size);
-        }
-
-        public abstract object Deserialize(PackStreamReader reader, byte signature, long size);
+        throw new ProtocolException(
+            $"{GetType().Name}: It is not allowed to send a value of type {value?.GetType().Name} to the server.");
     }
+
+    public abstract IEnumerable<byte> ReadableStructs { get; }
+
+    public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte sig, long size)
+    {
+        return Deserialize(reader, sig, size);
+    }
+
+    public abstract object Deserialize(PackStreamReader reader, byte signature, long size);
 }
