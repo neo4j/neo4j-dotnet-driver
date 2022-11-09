@@ -55,10 +55,10 @@ internal sealed class ChunkReader : IChunkReader
 
         ChunkBufferTrimUsedData();
 
-        long storedPosition = ChunkBuffer.Position;
+        var storedPosition = ChunkBuffer.Position;
         requiredSize -= (int)ChunkBufferRemaining;
-        int bufferSize = Math.Max(Constants.ChunkBufferSize, requiredSize);
-        byte[] data = new byte[bufferSize];
+        var bufferSize = Math.Max(Constants.ChunkBufferSize, requiredSize);
+        var data = new byte[bufferSize];
 
         ChunkBuffer.Position = ChunkBuffer.Length;
 
@@ -72,11 +72,11 @@ internal sealed class ChunkReader : IChunkReader
             requiredSize -= numBytesRead;
         }
 
-        ChunkBuffer.Position = storedPosition;  //Restore the chunkbuffer state so that any reads can continue
+        ChunkBuffer.Position = storedPosition;  //Restore the chunk buffer state so that any reads can continue
 
         if (ChunkBuffer.Length == 0)  //No data so stop
         {
-            throw new IOException($"Unexpected end of stream, unable to read expected data from the network connection");
+            throw new IOException("Unexpected end of stream, unable to read expected data from the network connection");
         }
     }
 
@@ -85,15 +85,15 @@ internal sealed class ChunkReader : IChunkReader
         await PopulateChunkBufferAsync(requiredSize).ConfigureAwait(false);
 
         var data = new byte[requiredSize];
-        int readSize = ChunkBuffer.Read(data, 0, requiredSize);
+        var readSize = ChunkBuffer.Read(data, 0, requiredSize);
 
         if (readSize != requiredSize)
-            throw new IOException($"Unexpected end of stream, unable to read required data size");
+            throw new IOException("Unexpected end of stream, unable to read required data size");
 
         return data;
     }
 
-    private async Task<bool> ConstructMessageAsync(MemoryStream outputMessageStream)
+    private async Task<bool> ConstructMessageAsync(Stream outputMessageStream)
     {
         var dataRead = false;
 
@@ -115,7 +115,7 @@ internal sealed class ChunkReader : IChunkReader
 
             var rawChunkData = await ReadDataOfSizeAsync(chunkSize).ConfigureAwait(false);
             dataRead = true;
-            outputMessageStream.Write(rawChunkData, 0, chunkSize);    //Put the raw chunk data into the outputstream
+            outputMessageStream.Write(rawChunkData, 0, chunkSize);    //Put the raw chunk data into the output stream
         }
 
         return dataRead;    //Return if a message was constructed
@@ -133,7 +133,7 @@ internal sealed class ChunkReader : IChunkReader
         {
             long chunkBufferPosition = -1;   //Use this as we need an initial state < ChunkBuffer.Length
 
-            while (chunkBufferPosition < ChunkBuffer.Length)   //We have not finished parsing the chunkbuffer, so further messages to dechunk
+            while (chunkBufferPosition < ChunkBuffer.Length)   //We have not finished parsing the chunk buffer, so further messages to de-chunk
             {
                 if (await ConstructMessageAsync(outputMessageStream).ConfigureAwait(false))
                 {
