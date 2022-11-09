@@ -30,7 +30,6 @@ using Neo4j.Driver.Internal.MessageHandling;
 using Xunit;
 using Record = Xunit.Record;
 using Neo4j.Driver.Internal.Routing;
-using Neo4j.Driver.Internal.Protocol.@interface;
 
 namespace Neo4j.Driver.Tests
 {

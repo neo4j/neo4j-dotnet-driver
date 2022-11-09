@@ -18,7 +18,7 @@
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 
-namespace Neo4j.Driver.Internal.Protocol.Utility;
+namespace Neo4j.Driver.Internal;
 
 internal class ConnectionResourceHandler : IResultResourceHandler
 {

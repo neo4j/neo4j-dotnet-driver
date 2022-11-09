@@ -23,7 +23,6 @@ using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.MessageHandling.V3;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Messaging.V3;
-using Neo4j.Driver.Internal.Protocol.Utility;
 using Neo4j.Driver.Internal.Result;
 using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
 
@@ -73,8 +72,16 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
 
         var query = GetRoutingTableQuery(connection, database);
 
-        var result = await RunInAutoCommitTransactionAsync(connection, query, false, bookmarkTracker, resourceHandler,
-            sessionDb, bookmarks, null, null).ConfigureAwait(false);
+        var autoCommitParams = new AutoCommitParams
+        {
+            Query = query,
+            BookmarksTracker = bookmarkTracker,
+            ResultResourceHandler = resourceHandler,
+            Database = sessionDb,
+            Bookmarks = bookmarks
+        };
+
+        var result = await RunInAutoCommitTransactionAsync(connection, autoCommitParams).ConfigureAwait(false);
         var record = await result.SingleAsync().ConfigureAwait(false);
 
         //Since 4.4 the Routing information will contain a db.
@@ -86,26 +93,28 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
         return (IReadOnlyDictionary<string, object>)finalDictionary;
     }
 
-    public async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
-        Query query, bool reactive, IBookmarksTracker bookmarksTracker, IResultResourceHandler resultResourceHandler,
-        string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser,
-        long fetchSize = Config.Infinite)
+    public async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, AutoCommitParams autoCommitParams)
     {
-        ValidateImpersonatedUserForVersion(connection, impersonatedUser);
-        ValidateDatabase(database);
+        ValidateImpersonatedUserForVersion(connection, autoCommitParams.ImpersonatedUser);
+        ValidateDatabase(autoCommitParams.Database);
 
-        var summaryBuilder = new SummaryBuilder(query, connection.Server);
+        var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
         var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null,
-            resultResourceHandler);
+            autoCommitParams.ResultResourceHandler);
 
         var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
-        var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
+        var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, autoCommitParams.BookmarksTracker);
+        
+        var autoCommitMessage = new RunWithMetadataMessage(
+            connection, 
+            autoCommitParams.Query,
+            autoCommitParams.Bookmarks,
+            autoCommitParams.Config,
+            connection.GetEnforcedAccessMode(),
+            null,
+            autoCommitParams.ImpersonatedUser);
 
-        await connection
-            .EnqueueAsync(
-                new RunWithMetadataMessage(connection, query, bookmarks, config, connection.GetEnforcedAccessMode(),
-                    null,
-                    impersonatedUser), runHandler, PullAll, pullAllHandler).ConfigureAwait(false);
+        await connection.EnqueueAsync(autoCommitMessage, runHandler, PullAll, pullAllHandler).ConfigureAwait(false);
         await connection.SendAsync().ConfigureAwait(false);
         return streamBuilder.CreateCursor();
     }

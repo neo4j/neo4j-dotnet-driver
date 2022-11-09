@@ -18,7 +18,7 @@
 using System.Linq;
 using Neo4j.Driver.Internal.MessageHandling;
 
-namespace Neo4j.Driver.Internal.Protocol.Utility;
+namespace Neo4j.Driver.Internal;
 
 internal class BookmarksTracker : IBookmarksTracker
 {
