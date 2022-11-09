@@ -118,7 +118,7 @@ internal sealed class Driver : IInternalDriver
     //Non public facing api. Used for testing with testkit only
     public IRoutingTable GetRoutingTable(string database)
     {
-        return _connectionProvider.GetRoutingTable(database);		
+        return _connectionProvider.GetRoutingTable(database);
     }
 
     public void Dispose()

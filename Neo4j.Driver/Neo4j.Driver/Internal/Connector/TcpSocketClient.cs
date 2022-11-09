@@ -199,9 +199,11 @@ internal sealed class TcpSocketClient : ITcpSocketClient
 
         _client = new Socket(addressFamily, SocketType.Stream, ProtocolType.Tcp)
         {
-            DualMode = _ipv6Enabled,
             NoDelay = true
         };
+
+        if (_ipv6Enabled)
+            _client.DualMode = true;
 
         _client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, _socketKeepAliveEnabled);
     }
