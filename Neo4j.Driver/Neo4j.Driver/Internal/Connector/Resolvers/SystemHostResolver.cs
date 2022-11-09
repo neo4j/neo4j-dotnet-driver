@@ -24,11 +24,7 @@ namespace Neo4j.Driver.Internal.Connector
     {
         public IPAddress[] Resolve(string hostname)
         {
-#if NET452
-            return Dns.GetHostAddresses(hostname);
-#else
-            return Dns.GetHostAddressesAsync(hostname).ConfigureAwait(false).GetAwaiter().GetResult();
-#endif
+            return Dns.GetHostAddressesAsync(hostname).GetAwaiter().GetResult();
         }
 
         public Task<IPAddress[]> ResolveAsync(string hostname)

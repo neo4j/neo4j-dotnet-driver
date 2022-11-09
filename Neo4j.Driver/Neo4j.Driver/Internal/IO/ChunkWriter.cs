@@ -53,8 +53,6 @@ internal sealed class ChunkWriter: Stream, IChunkWriter
         _chunkStream = new MemoryStream(defaultBufferSize);
     }
 
-    public Stream ChunkerStream => this;
-
     public void OpenChunk()
     {
         // Emit size buffers into the buffer
@@ -133,22 +131,13 @@ internal sealed class ChunkWriter: Stream, IChunkWriter
         Cleanup();
     }
 
-    public Task SendAsync()
+    public async Task SendAsync()
     {
         LogStream(_chunkStream);
 
         _chunkStream.Position = 0;
-        _chunkStream.CopyTo(_downStream);
+        await _chunkStream.CopyToAsync(_downStream).ConfigureAwait(false);
         Cleanup();
-        return Task.CompletedTask;
-        return
-            _chunkStream.CopyToAsync(_downStream)
-                .ContinueWith(t =>
-                {
-                    Cleanup();
-
-                    return Task.CompletedTask;
-                }).Unwrap();
     }
 
     private void Cleanup()

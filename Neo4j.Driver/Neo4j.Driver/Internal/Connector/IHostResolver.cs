@@ -22,10 +22,7 @@ namespace Neo4j.Driver.Internal.Connector
 {
     internal interface IHostResolver
     {
-
         IPAddress[] Resolve(string hostname);
-
         Task<IPAddress[]> ResolveAsync(string hostname);
-
     }
 }

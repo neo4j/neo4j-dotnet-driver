@@ -33,20 +33,13 @@ namespace Neo4j.Driver.Internal.Connector
         protected DelegatedConnection(IConnection connection)
         {
             Delegate = connection;
-            RoutingContext = connection.RoutingContext;
         }
 
-        public AccessMode? Mode
-        {
-            get => Delegate.Mode;
-        }
+        public AccessMode? Mode => Delegate.Mode;
 
-        public string Database
-        {
-            get => Delegate.Database;
-        }
+        public string Database => Delegate.Database;
 
-        public IDictionary<string, string> RoutingContext { get; set; }
+        public IDictionary<string, string> RoutingContext => Delegate.RoutingContext;
         
         public virtual Task OnErrorAsync(Exception error)
         {
@@ -55,17 +48,17 @@ namespace Neo4j.Driver.Internal.Connector
 
         public Task SyncAsync()
         {
-            return TaskWithErrorHandling(() => Delegate.SyncAsync());
+            return TaskWithErrorHandling(Delegate.SyncAsync);
         }
 
         public Task SendAsync()
         {
-            return TaskWithErrorHandling(() => Delegate.SendAsync());
+            return TaskWithErrorHandling(Delegate.SendAsync);
         }
 
         public Task ReceiveOneAsync()
         {
-            return TaskWithErrorHandling(() => Delegate.ReceiveOneAsync());
+            return TaskWithErrorHandling(Delegate.ReceiveOneAsync);
         }
 
         public BoltProtocolVersion Version => Delegate.Version;
@@ -157,6 +150,46 @@ namespace Neo4j.Driver.Internal.Connector
         public void SetUseUtcEncodedDateTime()
         {
             Delegate.SetUseUtcEncodedDateTime();
+        }
+
+        public Task LoginAsync(string userAgent, IAuthToken authToken)
+        {
+            return Delegate.LoginAsync(userAgent, authToken);
+        }
+
+        public Task LogoutAsync()
+        {
+            return Delegate.LogoutAsync();
+        }
+
+        public Task<IReadOnlyDictionary<string, object>> GetRoutingTable(string database, string impersonatedUser, Bookmarks bookmarks)
+        {
+            return Delegate.GetRoutingTable(database, impersonatedUser, bookmarks);
+        }
+
+        public Task<IResultCursor> RunInAutoCommitTransactionAsync(AutoCommitParams autoCommitParams)
+        {
+            return Delegate.RunInAutoCommitTransactionAsync(autoCommitParams);
+        }
+
+        public Task BeginTransactionAsync(string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser)
+        {
+            return Delegate.BeginTransactionAsync(database, bookmarks, config, impersonatedUser);
+        }
+
+        public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize)
+        {
+            return Delegate.RunInExplicitTransactionAsync(query, reactive, fetchSize);
+        }
+
+        public Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker)
+        {
+            return Delegate.CommitTransactionAsync(bookmarksTracker);
+        }
+
+        public Task RollbackTransactionAsync()
+        {
+            return Delegate.RollbackTransactionAsync();
         }
     }
 }

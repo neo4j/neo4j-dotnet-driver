@@ -22,7 +22,6 @@ namespace Neo4j.Driver.Internal.IO;
 
 internal interface IChunkWriter
 {
-    Stream ChunkerStream { get; }
     void OpenChunk();
     void CloseChunk();
     void Send();

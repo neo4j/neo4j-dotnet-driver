@@ -25,7 +25,7 @@ using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.Connector;
 
-internal interface IConnection : IConnectionDetails
+internal interface IConnection : IConnectionDetails, IConnectionRunner
 {
     IBoltProtocol BoltProtocol { get; }
 
@@ -65,6 +65,18 @@ internal interface IConnection : IConnectionDetails
     void SetReadTimeoutInSeconds(int seconds);
 
     void SetUseUtcEncodedDateTime();
+}
+
+interface IConnectionRunner
+{
+    Task LoginAsync(string userAgent, IAuthToken authToken);
+    Task LogoutAsync();
+    Task<IReadOnlyDictionary<string, object>> GetRoutingTable(string database, string impersonatedUser, Bookmarks bookmarks);
+    Task<IResultCursor> RunInAutoCommitTransactionAsync(AutoCommitParams autoCommitParams);
+    Task BeginTransactionAsync(string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser);
+    Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize);
+    Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker);
+    Task RollbackTransactionAsync();
 }
 
 internal interface IConnectionDetails

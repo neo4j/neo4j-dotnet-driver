@@ -144,8 +144,6 @@ internal sealed partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSes
 
             await AcquireConnectionAndDbNameAsync(_defaultMode).ConfigureAwait(false);
 
-            var protocol = _connection.BoltProtocol;
-
             if (_useBookmarkManager)
                 _bookmarks = await GetBookmarksAsync().ConfigureAwait(false);
 
@@ -302,7 +300,6 @@ internal sealed partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSes
     {
         if (_useBookmarkManager)
             _bookmarks = await GetBookmarksAsync("system").ConfigureAwait(false);
-
 
         _connection = await _connectionProvider.AcquireAsync(mode, _database, ImpersonatedUser(), _bookmarks)
             .ConfigureAwait(false);

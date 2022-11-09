@@ -291,4 +291,44 @@ internal sealed class SocketConnection : IConnection
     {
         return $"[{id}]";
     }
+
+    public Task LoginAsync(string userAgent, IAuthToken authToken)
+    {
+        return BoltProtocol.LoginAsync(this, userAgent, authToken);
+    }
+
+    public Task LogoutAsync()
+    {
+        return BoltProtocol.LogoutAsync(this);
+    }
+
+    public Task<IReadOnlyDictionary<string, object>> GetRoutingTable(string database, string impersonatedUser, Bookmarks bookmarks)
+    {
+        return BoltProtocol.GetRoutingTable(this, database, impersonatedUser, bookmarks);
+    }
+
+    public Task<IResultCursor> RunInAutoCommitTransactionAsync(AutoCommitParams autoCommitParams)
+    {
+        return BoltProtocol.RunInAutoCommitTransactionAsync(this, autoCommitParams);
+    }
+
+    public Task BeginTransactionAsync(string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser)
+    {
+        return BoltProtocol.BeginTransactionAsync(this, database, bookmarks, config, impersonatedUser);
+    }
+
+    public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize)
+    {
+        return BoltProtocol.RunInExplicitTransactionAsync(this, query, reactive, fetchSize);
+    }
+
+    public Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker)
+    {
+        return BoltProtocol.CommitTransactionAsync(this, bookmarksTracker);
+    }
+
+    public Task RollbackTransactionAsync()
+    {
+        return BoltProtocol.RollbackTransactionAsync(this);
+    }
 }
