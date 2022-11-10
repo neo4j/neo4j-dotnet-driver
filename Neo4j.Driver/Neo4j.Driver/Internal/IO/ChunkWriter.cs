@@ -38,19 +38,17 @@ internal sealed class ChunkWriter: Stream, IChunkWriter
     private long _dataPos = -1;
 
     //TODO: ArrayPool avoid creating a new array for each chunk writer
-    public ChunkWriter(Stream downStream, int defaultBufferSize, int maxBufferSize, ILogger logger, int chunkSize = Constants.MaxChunkSize)
+    public ChunkWriter(Stream downStream, BufferSettings settings, ILogger logger)
     {
         Throw.ArgumentNullException.IfNull(downStream, nameof(downStream));
         Throw.ArgumentOutOfRangeException.IfFalse(downStream.CanWrite, nameof(downStream));
-        Throw.ArgumentOutOfRangeException.IfValueLessThan(chunkSize, Constants.MinChunkSize, nameof(chunkSize));
-        Throw.ArgumentOutOfRangeException.IfValueGreaterThan(chunkSize, Constants.MaxChunkSize, nameof(chunkSize));
 
+        _chunkSize = Constants.MaxChunkSize;
         _logger = logger;
-        _chunkSize = chunkSize;
         _downStream = downStream;
-        _defaultBufferSize = defaultBufferSize;
-        _maxBufferSize = maxBufferSize;
-        _chunkStream = new MemoryStream(defaultBufferSize);
+        _defaultBufferSize = settings.DefaultWriteBufferSize;
+        _maxBufferSize = settings.MaxWriteBufferSize;
+        _chunkStream = new MemoryStream(settings.DefaultWriteBufferSize);
     }
 
     public void OpenChunk()

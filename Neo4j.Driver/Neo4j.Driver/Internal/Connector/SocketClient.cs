@@ -39,6 +39,7 @@ internal sealed class SocketClient : ISocketClient
     private int _closedMarker = -1;
 
     private readonly ILogger _logger;
+    private MessageFormat _format;
 
     public SocketClient(Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings, ILogger logger = null,
         ITcpSocketClient socketClient = null)
@@ -51,23 +52,21 @@ internal sealed class SocketClient : ISocketClient
 
     public bool IsOpen => _closedMarker == 0;
 
-    public async Task ConnectAsync(IDictionary<string, string> routingContext, CancellationToken cancellationToken = default)
+    public async Task ConnectAsync(IDictionary<string, string> routingContext, 
+        CancellationToken cancellationToken = default)
     {
         await _tcpSocketClient.ConnectAsync(_uri, cancellationToken).ConfigureAwait(false);
 
         _logger?.Debug($"~~ [CONNECT] {_uri}");
         Version = await DoHandshakeAsync(cancellationToken).ConfigureAwait(false);
-        RoutingContext = routingContext;
-        Format = new MessageFormat(Version);
+        _format = new MessageFormat(Version);
 
         ChunkReader = new ChunkReader(_tcpSocketClient.ReaderStream);
-        ChunkWriter = new ChunkWriter(_tcpSocketClient.WriterStream, _bufferSettings.DefaultWriteBufferSize, _bufferSettings.MaxWriteBufferSize, _logger);
+        ChunkWriter = new ChunkWriter(_tcpSocketClient.WriterStream, _bufferSettings, _logger);
         SetOpened();
     }
 
-    public MessageFormat Format { get; set; }
 
-    public IDictionary<string,string> RoutingContext { get; set; }
     public BoltProtocolVersion Version { get; private set; }
 
     public async Task SendAsync(IEnumerable<IRequestMessage> messages)
@@ -76,7 +75,7 @@ internal sealed class SocketClient : ISocketClient
         {
             foreach (var message in messages)
             {
-                var writer = new MessageWriter(ChunkWriter, Format);
+                var writer = new MessageWriter(ChunkWriter, _format);
                 writer.Write(message);
                 _logger?.Debug(MessagePattern, message);
             }
@@ -103,7 +102,7 @@ internal sealed class SocketClient : ISocketClient
     {
         try
         {
-            var reader = new MessageReader(Format, ChunkReader, _bufferSettings, _logger);
+            var reader = new MessageReader(_format, ChunkReader, _bufferSettings, _logger);
             await reader.ReadAsync(responsePipeline).ConfigureAwait(false);
         }
         catch (Exception ex)
@@ -137,17 +136,20 @@ internal sealed class SocketClient : ISocketClient
         var data = BoltProtocolFactory.PackSupportedVersions();
         await _tcpSocketClient.WriterStream.WriteAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(false);
         await _tcpSocketClient.WriterStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+        
         _logger?.Debug("C: [HANDSHAKE] {0}", data.ToHexString());
-
         
         var responseBytes = new byte[4];
-        var read = await _tcpSocketClient.ReaderStream.ReadAsync(responseBytes, 0, responseBytes.Length, cancellationToken).ConfigureAwait(false);
+        var read = await _tcpSocketClient.ReaderStream
+            .ReadAsync(responseBytes, 0, responseBytes.Length, cancellationToken).ConfigureAwait(false);
 
         if (read < responseBytes.Length)
             throw new IOException($"Unexpected end of stream when performing handshake, read returned {read}");
             
         var agreedVersion = BoltProtocolFactory.UnpackAgreedVersion(responseBytes);
+        
         _logger?.Debug("S: [HANDSHAKE] {0}.{1}", agreedVersion.MajorVersion, agreedVersion.MinorVersion);
+        
         return agreedVersion;
     }
 
@@ -156,12 +158,12 @@ internal sealed class SocketClient : ISocketClient
         _tcpSocketClient.ReaderStream.ReadTimeout = seconds * 1000;
     }
 
-    public ChunkReader ChunkReader { get; private set; }
-    public ChunkWriter ChunkWriter { get; private set; }
+    private ChunkReader ChunkReader { get; set; }
+    private ChunkWriter ChunkWriter { get; set; }
 
     public void UseUtcEncoded()
     {
-        Format.UseUtcEncoder();
+        _format.UseUtcEncoder();
     }
 
     public ValueTask DisposeAsync()
