@@ -71,26 +71,12 @@ internal abstract class DelegatedConnection : IConnection
     public Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1,
         IRequestMessage message2 = null, IResponseHandler handler2 = null)
     {
-        try
-        {
-            return Delegate.EnqueueAsync(message1, handler1, message2, handler2);
-        }
-        catch (Exception e)
-        {
-            return OnErrorAsync(e);
-        }
+        return TaskWithErrorHandling(() => Delegate.EnqueueAsync(message1, handler1, message2, handler2));
     }
 
     public Task ResetAsync()
     {
-        try
-        {
-            return Delegate.ResetAsync();
-        }
-        catch (Exception e)
-        {
-            return OnErrorAsync(e);
-        }
+        return TaskWithErrorHandling(Delegate.ResetAsync);
     }
 
     public virtual bool IsOpen => Delegate.IsOpen;

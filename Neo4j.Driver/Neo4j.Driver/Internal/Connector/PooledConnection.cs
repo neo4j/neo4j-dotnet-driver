@@ -62,9 +62,12 @@ internal class PooledConnection : DelegatedConnection, IPooledConnection
         return base.DestroyAsync();
     }
 
-    public override async Task CloseAsync()
+    public override Task CloseAsync()
     {
-        await _releaseManager?.ReleaseAsync(this);
+        if (_releaseManager == null)
+            return Task.CompletedTask;
+        
+        return _releaseManager.ReleaseAsync(this);
     }
 
     public ITimer IdleTimer { get; }

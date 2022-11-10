@@ -126,7 +126,7 @@ internal sealed class SocketClient : ISocketClient
         }
     }
 
-    internal void SetOpened()
+    private void SetOpened()
     {
         Interlocked.CompareExchange(ref _closedMarker, 0, -1);
     }

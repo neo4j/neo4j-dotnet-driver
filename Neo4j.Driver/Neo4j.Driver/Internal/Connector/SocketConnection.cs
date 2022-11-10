@@ -227,11 +227,11 @@ internal sealed class SocketConnection : IConnection
         }
     }
 
-    public Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1,
+    public async Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1,
         IRequestMessage message2 = null,
         IResponseHandler handler2 = null)
     {
-        _sendLock.Wait();
+        await _sendLock.WaitAsync().ConfigureAwait(false);
 
         try
         {
@@ -248,8 +248,6 @@ internal sealed class SocketConnection : IConnection
         {
             _sendLock.Release();
         }
-
-        return Task.CompletedTask;
     }
 
     public void SetReadTimeoutInSeconds(int seconds)
