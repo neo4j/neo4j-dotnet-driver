@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
             var pullN = value.CastOrThrow<PullMessage>();
 
             writer.WriteStructHeader(1, Protocol.MessageFormat.MsgPull);
-            writer.Write(pullN.Metadata);
+            writer.WriteDictionary(pullN.Metadata);
         }
     }
 }

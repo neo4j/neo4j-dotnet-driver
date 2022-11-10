@@ -58,7 +58,7 @@ internal class LocalTimeSerializer : IPackStreamSerializer
     private void WriteTimeOnly(PackStreamWriter writer, TimeOnly time)
     {
         writer.WriteStructHeader(StructSize, StructType);
-        writer.Write(time.ToNanoOfDay());
+        writer.WriteLong(time.ToNanoOfDay());
     }
 #endif
 
@@ -66,6 +66,6 @@ internal class LocalTimeSerializer : IPackStreamSerializer
     {
         var time = value.CastOrThrow<LocalTime>();
         writer.WriteStructHeader(StructSize, StructType);
-        writer.Write(time.ToNanoOfDay());
+        writer.WriteLong(time.ToNanoOfDay());
     }
 }

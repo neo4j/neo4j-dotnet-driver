@@ -62,15 +62,15 @@ internal class ZonedDateTimeSerializer : IPackStreamSerializer
         {
             case ZoneId zone:
                 writer.WriteStructHeader(StructSize, StructTypeWithId);
-                writer.Write(dateTime.ToEpochSeconds());
-                writer.Write(dateTime.Nanosecond);
-                writer.Write(zone.Id);
+                writer.WriteLong(dateTime.ToEpochSeconds());
+                writer.WriteInt(dateTime.Nanosecond);
+                writer.WriteString(zone.Id);
                 break;
             case ZoneOffset zone:
                 writer.WriteStructHeader(StructSize, StructTypeWithOffset);
-                writer.Write(dateTime.ToEpochSeconds());
-                writer.Write(dateTime.Nanosecond);
-                writer.Write(zone.OffsetSeconds);
+                writer.WriteLong(dateTime.ToEpochSeconds());
+                writer.WriteInt(dateTime.Nanosecond);
+                writer.WriteInt(zone.OffsetSeconds);
                 break;
             default:
                 throw new ProtocolException(

@@ -47,9 +47,9 @@ internal class DurationSerializer : IPackStreamSerializer
         var duration = value.CastOrThrow<Duration>();
 
         writer.WriteStructHeader(StructSize, StructType);
-        writer.Write(duration.Months);
-        writer.Write(duration.Days);
-        writer.Write(duration.Seconds);
-        writer.Write(duration.Nanos);
+        writer.WriteLong(duration.Months);
+        writer.WriteLong(duration.Days);
+        writer.WriteLong(duration.Seconds);
+        writer.WriteInt(duration.Nanos);
     }
 }

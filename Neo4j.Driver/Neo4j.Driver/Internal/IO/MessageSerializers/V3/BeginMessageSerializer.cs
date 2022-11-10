@@ -31,7 +31,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
             var msg = value.CastOrThrow<BeginMessage>();
 
             writer.WriteStructHeader(1, MsgBegin);
-            writer.Write(msg.Metadata);
+            writer.WriteDictionary(msg.Metadata);
         }
     }
 }

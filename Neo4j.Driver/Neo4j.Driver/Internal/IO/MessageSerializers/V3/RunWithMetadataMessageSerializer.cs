@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Messaging.V3;
 using static Neo4j.Driver.Internal.Protocol.MessageFormat;
@@ -31,9 +32,9 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
             var msg = value.CastOrThrow<RunWithMetadataMessage>();
 
             writer.WriteStructHeader(3, MsgRun);
-            writer.Write(msg.Query.Text);
-            writer.Write(msg.Query.Parameters);
-            writer.Write(msg.Metadata);
+            writer.WriteString(msg.Query.Text);
+            writer.WriteDictionary(msg.Query.Parameters);
+            writer.WriteDictionary(msg.Metadata);
         }
     }
 }

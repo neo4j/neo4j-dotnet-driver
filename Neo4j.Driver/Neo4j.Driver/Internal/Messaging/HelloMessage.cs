@@ -25,7 +25,8 @@ internal sealed class HelloMessage : IRequestMessage
     public IDictionary<string, object> MetaData { get; }
     private const string UserAgentMetadataKey = "user_agent";
 
-    public HelloMessage(BoltProtocolVersion version, string userAgent, IDictionary<string, object> authToken, IDictionary<string, string> routingContext)
+    public HelloMessage(BoltProtocolVersion version, string userAgent, IDictionary<string, object> authToken, 
+        IDictionary<string, object> routingContext)
     {
         if (authToken == null || authToken.Count == 0)
         {
@@ -46,7 +47,7 @@ internal sealed class HelloMessage : IRequestMessage
 
     public override string ToString()
     {
-        IDictionary<string, object> metadataCopy = new Dictionary<string, object>(MetaData);
+        var metadataCopy = new Dictionary<string, object>(MetaData);
         if (metadataCopy.ContainsKey(AuthToken.CredentialsKey))
         {
             metadataCopy[AuthToken.CredentialsKey] = "******";

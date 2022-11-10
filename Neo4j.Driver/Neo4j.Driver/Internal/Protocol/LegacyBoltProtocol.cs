@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -33,7 +34,8 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
     public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
     {
         await connection.EnqueueAsync(
-                new HelloMessage(connection.Version, userAgent, authToken.AsDictionary(), connection.RoutingContext),
+                new HelloMessage(connection.Version, userAgent, authToken.AsDictionary(),
+                    connection.RoutingContext?.ToDictionary(x => x.Key, x => (object)x.Value)),
                 new HelloResponseHandler(connection))
             .ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);

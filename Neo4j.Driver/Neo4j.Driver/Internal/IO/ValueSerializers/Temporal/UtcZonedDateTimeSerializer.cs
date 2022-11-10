@@ -58,15 +58,15 @@ internal class UtcZonedDateTimeSerializer : IPackStreamSerializer
         {
             case ZoneId zone:
                 writer.WriteStructHeader(StructSize, StructTypeWithId);
-                writer.Write(TemporalHelpers.UtcEpochSeconds(dateTime));
-                writer.Write(dateTime.Nanosecond);
-                writer.Write(zone.Id);
+                writer.WriteLong(TemporalHelpers.UtcEpochSeconds(dateTime));
+                writer.WriteInt(dateTime.Nanosecond);
+                writer.WriteString(zone.Id);
                 break;
             case ZoneOffset zone:
                 writer.WriteStructHeader(StructSize, StructTypeWithOffset);
-                writer.Write(TemporalHelpers.UtcEpochSeconds(dateTime));
-                writer.Write(dateTime.Nanosecond);
-                writer.Write(zone.OffsetSeconds);
+                writer.WriteLong(TemporalHelpers.UtcEpochSeconds(dateTime));
+                writer.WriteInt(dateTime.Nanosecond);
+                writer.WriteInt(zone.OffsetSeconds);
                 break;
             default:
                 throw new ProtocolException(

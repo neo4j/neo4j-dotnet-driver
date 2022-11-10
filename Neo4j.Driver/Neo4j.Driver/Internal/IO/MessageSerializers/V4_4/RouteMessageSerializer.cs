@@ -13,9 +13,9 @@ class RouteMessageSerializer : WriteOnlySerializer
     {
         var msg = value.CastOrThrow<RouteMessage>();
 
-        writer.WriteStructHeader(3, Protocol.MessageFormat.MsgRoute);
-        writer.Write(msg.Routing);
-        writer.Write(msg.Bookmarks.Values);
-        writer.Write(msg.DatabaseContext);
+        writer.WriteStructHeader(3, MessageFormat.MsgRoute);
+        writer.WriteDictionary(msg.Routing);
+        writer.WriteList(msg.Bookmarks.Values);
+        writer.WriteDictionary(msg.DatabaseContext);
     }
 }

@@ -45,7 +45,7 @@ internal class OffsetTimeSerializer : IPackStreamSerializer
         var time = value.CastOrThrow<OffsetTime>();
 
         writer.WriteStructHeader(StructSize, StructType);
-        writer.Write(time.ToNanoOfDay());
-        writer.Write(time.OffsetSeconds);
+        writer.WriteLong(time.ToNanoOfDay());
+        writer.WriteInt(time.OffsetSeconds);
     }
 }

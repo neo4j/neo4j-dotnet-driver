@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
@@ -31,6 +32,6 @@ internal sealed class HelloMessageSerializer: WriteOnlySerializer
     {
         var msg = value.CastOrThrow<HelloMessage>();
         writer.WriteStructHeader(1, MessageFormat.MsgHello);
-        writer.Write(msg.MetaData);
+        writer.WriteDictionary(msg.MetaData);
     }
 }

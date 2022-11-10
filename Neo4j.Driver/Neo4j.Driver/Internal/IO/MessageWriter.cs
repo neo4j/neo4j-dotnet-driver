@@ -28,7 +28,7 @@ internal class MessageWriter : IMessageWriter
         _packStreamWriter = new PackStreamWriter(format, chunkWriter);
     }
 
-    private readonly IChunkWriter _chunkWriter;
+    private readonly ChunkWriter _chunkWriter;
     private readonly PackStreamWriter _packStreamWriter;
 
     public void Write(IRequestMessage message)

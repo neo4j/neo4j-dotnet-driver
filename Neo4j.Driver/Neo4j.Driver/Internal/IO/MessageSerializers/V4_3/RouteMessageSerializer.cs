@@ -31,8 +31,8 @@ internal class RouteMessageSerializer : WriteOnlySerializer
         var msg = value.CastOrThrow<RouteMessage>();
 
         writer.WriteStructHeader(3, MessageFormat.MsgRoute);
-        writer.Write(msg.Routing);
-        writer.Write(msg.Bookmarks.Values);
-        writer.Write(string.IsNullOrEmpty(msg.DatabaseParam) ? null : msg.DatabaseParam);
+        writer.WriteDictionary(msg.Routing);
+        writer.WriteList(msg.Bookmarks.Values);
+        writer.WriteString(string.IsNullOrEmpty(msg.DatabaseParam) ? null : msg.DatabaseParam);
     }
 }

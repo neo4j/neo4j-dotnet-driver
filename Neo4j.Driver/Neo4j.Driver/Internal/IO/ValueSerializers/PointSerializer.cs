@@ -70,19 +70,19 @@ internal class PointSerializer : IPackStreamSerializer
             case Point.TwoD:
             {
                 writer.WriteStructHeader(Point2DStructSize, Point2DStructType);
-                writer.Write(point.SrId);
-                writer.Write(point.X);
-                writer.Write(point.Y);
+                writer.WriteInt(point.SrId);
+                writer.WriteDouble(point.X);
+                writer.WriteDouble(point.Y);
 
                 break;
             }
             case Point.ThreeD:
             {
                 writer.WriteStructHeader(Point3DStructSize, Point3DStructType);
-                writer.Write(point.SrId);
-                writer.Write(point.X);
-                writer.Write(point.Y);
-                writer.Write(point.Z);
+                writer.WriteInt(point.SrId);
+                writer.WriteDouble(point.X);
+                writer.WriteDouble(point.Y);
+                writer.WriteDouble(point.Z);
 
                 break;
             }

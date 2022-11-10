@@ -30,7 +30,7 @@ internal sealed class PackStreamWriter
     private readonly BoltProtocolVersion _version;
     private readonly Stream _stream;
 
-    public PackStreamWriter(IMessageFormat format, Stream stream)
+    public PackStreamWriter(IMessageFormat format, ChunkWriter stream)
     {
         StructHandlers = format.WriteStructHandlers;
         _version = format.Version;
@@ -46,38 +46,50 @@ internal sealed class PackStreamWriter
             case null:
                 WriteNull();
                 break;
-            case bool _:
-                Write((bool) value);
+            case bool boolValue:
+                WriteBool(boolValue);
                 break;
-            case sbyte _:
-            case byte _:
-            case short _:
-            case int _:
-            case long _:
-                Write(Convert.ToInt64(value));
+            case sbyte sbyteValue:
+                WriteLong(Convert.ToInt64(sbyteValue));
                 break;
-            case byte[] _:
-                Write((byte[]) value);
+            case byte byteValue:
+                WriteLong(Convert.ToInt64(byteValue));
                 break;
-            case float _:
-            case double _:
-            case decimal _:
-                Write(Convert.ToDouble(value, CultureInfo.InvariantCulture));
+            case short shortValue:
+                WriteLong(Convert.ToInt64(shortValue));
                 break;
-            case char _:
-                Write((char) value);
+            case int intValue:
+                WriteLong(Convert.ToInt64(intValue));
                 break;
-            case string _:
-                Write((string) value);
+            case long longValue:
+                WriteLong(longValue);
                 break;
-            case IList _:
-                Write((IList) value);
+            case byte[] bytes:
+                WriteByteArray(bytes);
                 break;
-            case IDictionary _:
-                Write((IDictionary) value);
+            case double doubleValue:
+                WriteDouble(doubleValue);
                 break;
-            case IEnumerable _:
-                Write((IEnumerable) value);
+            case float floatValue:
+                WriteDouble(Convert.ToDouble(floatValue, CultureInfo.InvariantCulture));
+                break;
+            case decimal decimalValue:
+                WriteDouble(Convert.ToDouble(decimalValue, CultureInfo.InvariantCulture));
+                break;
+            case char charValue:
+                WriteChar(charValue);
+                break;
+            case string stringValue:
+                WriteString(stringValue);
+                break;
+            case IList list:
+                WriteList(list);
+                break;
+            case IDictionary dictionary:
+                WriteDictionary(dictionary);
+                break;
+            case IEnumerable enumerable:
+                WriteEnumerable(enumerable);
                 break;
             default:
                 if (StructHandlers.TryGetValue(value.GetType(), out var structHandler))
@@ -89,25 +101,26 @@ internal sealed class PackStreamWriter
         }
     }
 
-    public void Write(int value)
+    public void WriteInt(int value)
     {
-        Write((long) value);
+        WriteLong(value);
     }
 
-    public void Write(IEnumerable value)
+    public void WriteEnumerable(IEnumerable value)
     {
         IList list = new List<object>();
-        foreach (var item in value) list.Add(item);
-        Write(list);
+        foreach (var item in value)
+            list.Add(item);
+        WriteList(list);
     }
 
-    public void Write(long value)
+    public void WriteLong(long value)
     {
         if (value >= Minus2ToThe4 && value < Plus2ToThe7)
         {
             _stream.WriteByte((byte) value);
         }
-        else if (value >= Minus2ToThe7 && value < Minus2ToThe4)
+        else if (value is >= Minus2ToThe7 and < Minus2ToThe4)
         {
             _stream.WriteByte(Int8);
             _stream.Write(PackStreamBitConverter.GetBytes((byte) value));
@@ -129,23 +142,23 @@ internal sealed class PackStreamWriter
         }
     }
 
-    public void Write(double value)
+    public void WriteDouble(double value)
     {
         _stream.WriteByte(Float64);
         _stream.Write(PackStreamBitConverter.GetBytes(value));
     }
 
-    public void Write(bool value)
+    public void WriteBool(bool value)
     {
         _stream.WriteByte(value ? True : False);
     }
 
-    public void Write(char value)
+    public void WriteChar(char value)
     {
-        Write(value.ToString());
+        WriteString(value.ToString());
     }
 
-    public void Write(string value)
+    public void WriteString(string value)
     {
         if (value == null)
         {
@@ -159,7 +172,7 @@ internal sealed class PackStreamWriter
         }
     }
 
-    public void Write(byte[] values)
+    public void WriteByteArray(byte[] values)
     {
         if (values == null)
         {
@@ -172,7 +185,7 @@ internal sealed class PackStreamWriter
         }
     }
 
-    public void Write(IList value)
+    public void WriteList(IList value)
     {
         if (value == null)
         {
@@ -185,7 +198,7 @@ internal sealed class PackStreamWriter
         }
     }
 
-    public void Write(IDictionary values)
+    public void WriteDictionary(IDictionary values)
     {
         if (values == null)
         {
@@ -197,6 +210,40 @@ internal sealed class PackStreamWriter
             foreach (var key in values.Keys)
             {
                 Write(key);
+                Write(values[key]);
+            }
+        }
+    }
+    
+    public void WriteDictionary(IDictionary<string, string> values)
+    {
+        if (values == null)
+        {
+            WriteNull();
+        }
+        else
+        {
+            WriteMapHeader(values.Count);
+            foreach (var key in values.Keys)
+            {
+                WriteString(key);
+                Write(values[key]);
+            }
+        }
+    }
+
+    public void WriteDictionary(IDictionary<string, object> values)
+    {
+        if (values == null)
+        {
+            WriteNull();
+        }
+        else
+        {
+            WriteMapHeader(values.Count);
+            foreach (var key in values.Keys)
+            {
+                WriteString(key);
                 Write(values[key]);
             }
         }

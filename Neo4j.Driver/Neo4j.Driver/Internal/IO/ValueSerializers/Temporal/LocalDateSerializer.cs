@@ -59,14 +59,14 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
         {
             var date = value.CastOrThrow<LocalDate>();
             writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(date.ToEpochDays());
+            writer.WriteLong(date.ToEpochDays());
         }
 
 #if NET6_0_OR_GREATER
         private static void WriteDateOnly(PackStreamWriter writer, DateOnly date)
         {
             writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(date.ToEpochDays());
+            writer.WriteLong(date.ToEpochDays());
         }
 #endif
     }

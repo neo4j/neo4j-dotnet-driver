@@ -45,7 +45,7 @@ internal class LocalDateTimeSerializer : IPackStreamSerializer
         var dateTime = value.CastOrThrow<LocalDateTime>();
 
         writer.WriteStructHeader(StructSize, StructType);
-        writer.Write(dateTime.ToEpochSeconds());
-        writer.Write(dateTime.Nanosecond);
+        writer.WriteLong(dateTime.ToEpochSeconds());
+        writer.WriteInt(dateTime.Nanosecond);
     }
 }
