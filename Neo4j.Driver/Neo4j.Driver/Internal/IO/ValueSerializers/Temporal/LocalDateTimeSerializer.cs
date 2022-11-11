@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 

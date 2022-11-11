@@ -16,7 +16,6 @@
 // limitations under the License.
 
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers;

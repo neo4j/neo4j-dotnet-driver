@@ -25,7 +25,7 @@ using Neo4j.Driver.Internal.MessageHandling.V3;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
 
-namespace Neo4j.Driver.Internal.Protocol;
+namespace Neo4j.Driver.Internal;
 
 internal sealed class LegacyBoltProtocol : IBoltProtocol
 {
@@ -93,7 +93,8 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
         return (IReadOnlyDictionary<string, object>)finalDictionary;
     }
 
-    public async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, AutoCommitParams autoCommitParams)
+    public async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
+        AutoCommitParams autoCommitParams)
     {
         ValidateImpersonatedUserForVersion(connection, autoCommitParams.ImpersonatedUser);
         ValidateDatabase(autoCommitParams.Database);
@@ -114,7 +115,8 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
             null,
             autoCommitParams.ImpersonatedUser);
 
-        await connection.EnqueueAsync(autoCommitMessage, runHandler, PullAllMessage.Instance, pullAllHandler).ConfigureAwait(false);
+        await connection.EnqueueAsync(autoCommitMessage, runHandler, PullAllMessage.Instance, pullAllHandler)
+            .ConfigureAwait(false);
         await connection.SendAsync().ConfigureAwait(false);
         return streamBuilder.CreateCursor();
     }

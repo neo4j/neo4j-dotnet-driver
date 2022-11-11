@@ -16,13 +16,13 @@
 // limitations under the License.
 
 using System;
-using Neo4j.Driver.Internal.IO;
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.IO.ValueSerializers;
 using Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 
-namespace Neo4j.Driver.Internal.Protocol;
+namespace Neo4j.Driver.Internal;
 
 internal sealed class MessageFormat
 {

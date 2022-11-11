@@ -23,9 +23,8 @@ using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.MessageHandling.V4;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
-using static Neo4j.Driver.Internal.Messaging.ResultHandleMessage;
 
-namespace Neo4j.Driver.Internal.Protocol;
+namespace Neo4j.Driver.Internal;
 
 internal sealed class BoltProtocol : IBoltProtocol
 {
@@ -138,7 +137,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         {
             var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
             await connection
-                .EnqueueAsync(new DiscardMessage(id, All), pullAllHandler)
+                .EnqueueAsync(new DiscardMessage(id, ResultHandleMessage.All), pullAllHandler)
                 .ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
         };
