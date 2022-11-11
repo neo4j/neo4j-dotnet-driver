@@ -20,8 +20,6 @@ using Neo4j.Driver.Internal.IO;
 using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
-using Neo4j.Driver.Internal.IO.MessageSerializers.V3;
-using Neo4j.Driver.Internal.IO.MessageSerializers.V4;
 using Neo4j.Driver.Internal.IO.ValueSerializers;
 using Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 
@@ -32,7 +30,7 @@ internal sealed class MessageFormat
     private readonly Dictionary<byte, IPackStreamSerializer> _readerStructHandlers = new();
     private readonly Dictionary<Type, IPackStreamSerializer> _writerStructHandlers = new();
 
-    protected void AddHandler<T>() where T : IPackStreamSerializer, new()
+    private void AddHandler<T>() where T : IPackStreamSerializer, new()
     {
         var handler = new T();
 
@@ -43,7 +41,7 @@ internal sealed class MessageFormat
             _writerStructHandlers.Add(writableType, handler);
     }
 
-    protected void RemoveHandler<T>()
+    private void RemoveHandler<T>()
     {
         _readerStructHandlers
             .Where(kvp => kvp.Value is T)
@@ -63,8 +61,7 @@ internal sealed class MessageFormat
 
     public BoltProtocolVersion Version { get; }
 
-    #region Message Constants Inherited Over Older Versions
-
+    // Message Constants Inherited Over Older Versions
     public const byte MsgReset = 0x0F;
     public const byte MsgRun = 0x10;
 
@@ -76,9 +73,7 @@ internal sealed class MessageFormat
     public const byte MsgIgnored = 0x7E;
     public const byte MsgFailure = 0x7F;
 
-    #endregion
-
-    #region Message Constants
+    // Message Constants
 
     public const byte MsgHello = 0x01;
     public const byte MsgGoodbye = 0x02;
@@ -86,28 +81,12 @@ internal sealed class MessageFormat
     public const byte MsgCommit = 0x12;
     public const byte MsgRollback = 0x13;
 
-    #endregion
-
     //4.3+
     public const byte MsgRoute = 0x66;
 
     internal MessageFormat(BoltProtocolVersion version)
     {
         Version = version;
-        // BoltV3 Request Message Types
-        AddHandler<HelloMessageSerializer>();
-        AddHandler<RunWithMetadataMessageSerializer>();
-        AddHandler<BeginMessageSerializer>();
-        AddHandler<CommitMessageSerializer>();
-        AddHandler<RollbackMessageSerializer>();
-
-        // BoltV3 optional Goodbye
-        AddHandler<GoodbyeMessageSerializer>();
-
-        AddHandler<PullAllMessageSerializer>();
-        AddHandler<DiscardAllMessageSerializer>();
-        AddHandler<ResetMessageSerializer>();
-
         // Response Message Types
         AddHandler<FailureMessageSerializer>();
         AddHandler<IgnoredMessageSerializer>();
@@ -136,28 +115,10 @@ internal sealed class MessageFormat
         AddHandler<SystemDateTimeOffsetHandler>();
         AddHandler<SystemTimeSpanSerializer>();
 
-        if (version.MajorVersion < 4)
-            return;
-
-        //4.0+
-        RemoveHandler<PullAllMessageSerializer>();
-        AddHandler<PullMessageSerializer>();
-
-        RemoveHandler<DiscardAllMessageSerializer>();
-        AddHandler<DiscardMessageSerializer>();
-
-        if (version < BoltProtocolVersion.V4_4)
-            return;
-
-        //4.4+
-        RemoveHandler<IO.MessageSerializers.V4_3.RouteMessageSerializer>();
-        AddHandler<IO.MessageSerializers.V4_4.RouteMessageSerializer>();
-
         if (version < BoltProtocolVersion.V5_0)
             return;
 
         //5.0+
-        RemoveHandler<ZonedDateTimeSerializer>();
         AddHandler<UtcZonedDateTimeSerializer>();
 
         RemoveHandler<NodeSerializer>();
@@ -168,9 +129,6 @@ internal sealed class MessageFormat
 
         RemoveHandler<UnboundRelationshipSerializer>();
         AddHandler<ElementUnboundRelationshipSerializer>();
-
-        RemoveHandler<FailureMessageSerializer>();
-        AddHandler<IO.MessageSerializers.V5.FailureMessageSerializer>();
     }
 
     public void UseUtcEncoder()
@@ -178,7 +136,6 @@ internal sealed class MessageFormat
         if (Version > BoltProtocolVersion.V4_4 || Version <= BoltProtocolVersion.V4_3)
             return;
 
-        RemoveHandler<ZonedDateTimeSerializer>();
         AddHandler<UtcZonedDateTimeSerializer>();
     }
 }

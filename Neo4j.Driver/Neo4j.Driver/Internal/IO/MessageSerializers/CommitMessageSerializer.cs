@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,20 +15,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Internal.Messaging.V4
+using System;
+using System.Collections.Generic;
+using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
+
+namespace Neo4j.Driver.Internal.IO.MessageSerializers;
+
+internal sealed class CommitMessageSerializer: WriteOnlySerializer
 {
-    internal class DiscardMessage : ResultHandleMessage
+    internal static CommitMessageSerializer Instance = new();
+    
+    private static readonly Type[] Types = {typeof(CommitMessage)};
+    public override IEnumerable<Type> WritableTypes => Types;
+
+    public override void Serialize(PackStreamWriter writer, object _)
     {
-        public DiscardMessage(long n)
-            : this(NoQueryId, n)
-        {
-        }
-
-        public DiscardMessage(long id, long n)
-            : base(id, n)
-        {
-        }
-
-        protected override string Name => "DISCARD";
+        writer.WriteStructHeader(0, MessageFormat.MsgCommit);
     }
 }

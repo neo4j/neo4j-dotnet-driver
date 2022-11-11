@@ -15,19 +15,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Internal.Messaging.V3
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
+
+namespace Neo4j.Driver.Internal.Messaging;
+
+internal sealed class CommitMessage : IRequestMessage
 {
-    internal class CommitMessage : IRequestMessage
+    public static readonly CommitMessage Instance = new();
+
+    private CommitMessage()
     {
-        public static readonly CommitMessage Commit = new CommitMessage();
-
-        private CommitMessage()
-        {
-        }
-
-        public override string ToString()
-        {
-            return "COMMIT";
-        }
     }
+
+    public override string ToString()
+    {
+        return "COMMIT";
+    }
+
+    public IPackStreamSerializer Serializer => CommitMessageSerializer.Instance;
 }

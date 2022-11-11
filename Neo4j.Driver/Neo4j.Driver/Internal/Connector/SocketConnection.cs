@@ -111,7 +111,7 @@ internal sealed class SocketConnection : IConnection
         try
         {
             await _client.ConnectAsync(RoutingContext, cancellationToken).ConfigureAwait(false);
-            BoltProtocol = BoltProtocolFactory.ForVersion(_client.Version);
+            BoltProtocol = BoltProtocolFactory.ForVersion(Version);
         }
         finally
         {
@@ -188,7 +188,7 @@ internal sealed class SocketConnection : IConnection
 
     public void UpdateVersion(ServerVersion newVersion)
     {
-        _serverInfo.Update(_client.Version, newVersion.Agent);
+        _serverInfo.Update(Version, newVersion.Agent);
     }
 
     public Task DestroyAsync()

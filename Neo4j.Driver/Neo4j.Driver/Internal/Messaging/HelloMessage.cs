@@ -16,6 +16,8 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.Messaging;
@@ -54,4 +56,6 @@ internal sealed class HelloMessage : IRequestMessage
         }
         return "HELLO " + metadataCopy.ToContentString();
     }
+
+    public IPackStreamSerializer Serializer => HelloMessageSerializer.Instance;
 }

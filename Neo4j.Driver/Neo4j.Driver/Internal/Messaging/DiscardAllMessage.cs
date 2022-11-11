@@ -14,26 +14,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+namespace Neo4j.Driver.Internal.Messaging;
 
-namespace Neo4j.Driver.Internal.Messaging
+internal sealed class DiscardAllMessage : IRequestMessage
 {
-    internal class DiscardAllMessage : IRequestMessage
+    private static readonly IPackStreamSerializer MessageSerializer = new DiscardAllMessageSerializer();
+
+    private DiscardAllMessage()
     {
-        public static readonly DiscardAllMessage DiscardAll = new DiscardAllMessage();
-
-        private DiscardAllMessage()
-        {
-        }
-
-        public override string ToString()
-        {
-            return "DISCARDALL";
-        }
     }
+
+    public override string ToString()
+    {
+        return "DISCARDALL";
+    }
+
+    public IPackStreamSerializer Serializer => MessageSerializer;
 }

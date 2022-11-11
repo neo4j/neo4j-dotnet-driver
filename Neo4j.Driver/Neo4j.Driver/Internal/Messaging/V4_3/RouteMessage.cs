@@ -18,10 +18,12 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers.V4_3;
 
 namespace Neo4j.Driver.Internal.Messaging.V4_3;
 
-internal class RouteMessage : IRequestMessage
+internal sealed class RouteMessage : IRequestMessage
 {
     public RouteMessage(IDictionary<string, string> routingContext, Bookmarks bookmarks, string db)
     {
@@ -63,4 +65,6 @@ internal class RouteMessage : IRequestMessage
 
         return stringBuilder.ToString();
     }
+
+    public IPackStreamSerializer Serializer => RouteMessageSerializer.Instance;
 }

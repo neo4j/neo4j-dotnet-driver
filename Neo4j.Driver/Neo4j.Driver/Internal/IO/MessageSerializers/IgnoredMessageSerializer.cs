@@ -16,18 +16,20 @@
 // limitations under the License.
 
 using System.Collections.Generic;
-using static Neo4j.Driver.Internal.Messaging.IgnoredMessage;
-using static Neo4j.Driver.Internal.Protocol.MessageFormat;
+using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers
+namespace Neo4j.Driver.Internal.IO.MessageSerializers;
+
+internal sealed class IgnoredMessageSerializer : ReadOnlySerializer
 {
-    internal class IgnoredMessageSerializer : ReadOnlySerializer
-    {
-        public override IEnumerable<byte> ReadableStructs => new[] {MsgIgnored};
+    internal static IgnoredMessageSerializer Instance = new();
+    
+    private static readonly byte[] StructTags = {MessageFormat.MsgIgnored};
+    public override IEnumerable<byte> ReadableStructs => StructTags;
 
-        public override object Deserialize(PackStreamReader reader, byte signature, long size)
-        {
-            return Ignored;
-        }
+    public override object Deserialize(PackStreamReader _, byte __, long ___)
+    {
+        return IgnoredMessage.Instance;
     }
 }

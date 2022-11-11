@@ -34,7 +34,7 @@ internal abstract class ReadOnlySerializer : IPackStreamSerializer
 
     public abstract IEnumerable<byte> ReadableStructs { get; }
 
-    public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte sig, long size)
+    public virtual object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte sig, long size)
     {
         return Deserialize(reader, sig, size);
     }

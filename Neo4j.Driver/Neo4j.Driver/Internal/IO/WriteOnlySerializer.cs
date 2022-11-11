@@ -34,7 +34,7 @@ internal abstract class WriteOnlySerializer : IPackStreamSerializer
 
     public abstract IEnumerable<Type> WritableTypes { get; }
 
-    public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
+    public virtual void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
     {
         Serialize(writer, value);
     }

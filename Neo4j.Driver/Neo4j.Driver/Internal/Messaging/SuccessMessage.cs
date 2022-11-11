@@ -17,27 +17,30 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.MessageHandling;
 
-namespace Neo4j.Driver.Internal.Messaging
+namespace Neo4j.Driver.Internal.Messaging;
+
+internal sealed class SuccessMessage : IResponseMessage
 {
-    internal class SuccessMessage : IResponseMessage
+    public SuccessMessage(IDictionary<string, object> meta)
     {
-        public SuccessMessage(IDictionary<string, object> meta)
-        {
-            Meta = meta;
-        }
-
-        public IDictionary<string, object> Meta { get; }
-
-        public override string ToString()
-        {
-            return $"SUCCESS {Meta.ToContentString()}";
-        }
-
-        public void Dispatch(IResponsePipeline pipeline)
-        {
-            pipeline.OnSuccess(Meta);
-        }
+        Meta = meta;
     }
+
+    public IDictionary<string, object> Meta { get; }
+
+    public override string ToString()
+    {
+        return $"SUCCESS {Meta.ToContentString()}";
+    }
+
+    public void Dispatch(IResponsePipeline pipeline)
+    {
+        pipeline.OnSuccess(Meta);
+    }
+
+    public IPackStreamSerializer Serializer => SuccessMessageSerializer.Instance;
 }

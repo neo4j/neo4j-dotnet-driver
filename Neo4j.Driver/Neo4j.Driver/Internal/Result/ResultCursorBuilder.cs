@@ -20,7 +20,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.MessageHandling;
-using static Neo4j.Driver.Internal.Messaging.V4.ResultHandleMessage;
+using static Neo4j.Driver.Internal.Messaging.ResultHandleMessage;
 
 namespace Neo4j.Driver.Internal.Result
 {

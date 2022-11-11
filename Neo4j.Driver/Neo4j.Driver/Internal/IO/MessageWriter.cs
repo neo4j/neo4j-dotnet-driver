@@ -23,19 +23,17 @@ namespace Neo4j.Driver.Internal.IO;
 
 internal sealed class MessageWriter
 {
-    public MessageWriter(ChunkWriter chunkWriter, MessageFormat format)
+    public MessageWriter(ChunkWriter chunkWriter)
     {
         _chunkWriter = chunkWriter;
-        _packStreamWriter = new PackStreamWriter(format, chunkWriter);
     }
 
     private readonly ChunkWriter _chunkWriter;
-    private readonly PackStreamWriter _packStreamWriter;
 
-    public void Write(IRequestMessage message)
+    public void Write(IRequestMessage message, PackStreamWriter writer)
     {
         _chunkWriter.OpenChunk();
-        _packStreamWriter.Write(message);
+        writer.Write(message);
         _chunkWriter.CloseChunk();
 
         // add message boundary

@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,20 +15,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Internal.Messaging.V4
+using System;
+using System.Collections.Generic;
+using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
+
+namespace Neo4j.Driver.Internal.IO.MessageSerializers;
+
+internal sealed class GoodbyeMessageSerializer : WriteOnlySerializer
 {
-    internal class PullMessage : ResultHandleMessage
+    internal static GoodbyeMessageSerializer Instance = new();
+
+    private static readonly Type[] Types = {typeof(GoodbyeMessage)};
+    public override IEnumerable<Type> WritableTypes => Types;
+
+    public override void Serialize(PackStreamWriter writer, object _)
     {
-        public PullMessage(long n)
-            : this(NoQueryId, n)
-        {
-        }
-
-        public PullMessage(long id, long n)
-            : base(id, n)
-        {
-        }
-
-        protected override string Name => "PULL";
+        writer.WriteStructHeader(0, MessageFormat.MsgGoodbye);
     }
 }

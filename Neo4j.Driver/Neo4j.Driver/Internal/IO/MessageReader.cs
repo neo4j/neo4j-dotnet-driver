@@ -33,12 +33,11 @@ internal sealed class MessageReader
     private readonly int _maxBufferSize;
     private int _shrinkCounter = 0;
 
-    public MessageReader(ChunkReader chunkReader, BufferSettings bufferSettings,
-        MemoryStream bufferStream, ILogger logger)
+    public MessageReader(ChunkReader chunkReader, BufferSettings bufferSettings, ILogger logger)
     {
+        _chunkReader = chunkReader;
         _defaultBufferSize = bufferSettings.DefaultReadBufferSize;
         _maxBufferSize = bufferSettings.MaxReadBufferSize;
-        _chunkReader = chunkReader;
         _logger = logger;
     }
 

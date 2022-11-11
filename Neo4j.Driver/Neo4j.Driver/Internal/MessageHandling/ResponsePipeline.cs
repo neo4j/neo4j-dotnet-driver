@@ -140,7 +140,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
         {
             if (_logger != null && _logger.IsDebugEnabled())
             {
-                _logger?.Debug(MessagePattern, IgnoredMessage.Ignored);
+                _logger?.Debug(MessagePattern, IgnoredMessage.Instance);
             }
         }
     }

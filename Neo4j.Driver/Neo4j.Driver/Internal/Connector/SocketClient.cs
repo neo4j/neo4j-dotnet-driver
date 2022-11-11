@@ -39,10 +39,13 @@ internal sealed class SocketClient
     private int _closedMarker = -1;
 
     private readonly ILogger _logger;
+    
     private MessageFormat _format;
     private MemoryStream _readBufferStream;
     private MessageReader _messageReader;
     private MessageWriter _messageWriter;
+    private ChunkReader _chunkReader;
+    private ChunkWriter _chunkWriter;
 
     public SocketClient(Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings, ILogger logger = null,
         ITcpSocketClient socketClient = null)
@@ -62,13 +65,14 @@ internal sealed class SocketClient
 
         _logger?.Debug($"~~ [CONNECT] {_uri}");
         Version = await DoHandshakeAsync(cancellationToken).ConfigureAwait(false);
+        
         _format = new MessageFormat(Version);
 
-        ChunkReader = new ChunkReader(_tcpSocketClient.ReaderStream);
+        _chunkReader = new ChunkReader(_tcpSocketClient.ReaderStream);
+        _chunkWriter = new ChunkWriter(_tcpSocketClient.WriterStream, _bufferSettings, _logger);
         _readBufferStream = new MemoryStream(_bufferSettings.MaxReadBufferSize);
-        ChunkWriter = new ChunkWriter(_tcpSocketClient.WriterStream, _bufferSettings, _logger);
-        _messageReader = new MessageReader(_format, ChunkReader, _bufferSettings, _readBufferStream, _logger);
-        _messageWriter = new MessageWriter(ChunkWriter, _format);
+        _messageReader = new MessageReader(_chunkReader, _bufferSettings, _logger);
+        _messageWriter = new MessageWriter(_chunkWriter);
 
         SetOpened();
     }
@@ -82,11 +86,11 @@ internal sealed class SocketClient
         {
             foreach (var message in messages)
             {
-                _messageWriter.Write(message);
+                _messageWriter.Write(message, new PackStreamWriter(_format, _chunkWriter));
                 _logger?.Debug(MessagePattern, message);
             }
 
-            await ChunkWriter.SendAsync().ConfigureAwait(false);
+            await _chunkWriter.SendAsync().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -104,12 +108,12 @@ internal sealed class SocketClient
         }
     }
 
-
     public async Task ReceiveOneAsync(IResponsePipeline responsePipeline)
     {
         try
         {
-            await _messageReader.ReadAsync(responsePipeline, _format, _readerBuffers).ConfigureAwait(false);
+            var packStreamReader = new PackStreamReader(_readBufferStream, _format,  _readerBuffers);
+            await _messageReader.ReadAsync(responsePipeline, packStreamReader).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -165,8 +169,6 @@ internal sealed class SocketClient
         _tcpSocketClient.ReaderStream.ReadTimeout = seconds * 1000;
     }
 
-    private ChunkReader ChunkReader { get; set; }
-    private ChunkWriter ChunkWriter { get; set; }
 
     public void UseUtcEncoded()
     {

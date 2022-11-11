@@ -15,27 +15,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Messaging;
-using static Neo4j.Driver.Internal.Protocol.MessageFormat;
+using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers
+namespace Neo4j.Driver.Internal.IO.MessageSerializers;
+
+internal sealed class RecordMessageSerializer : ReadOnlySerializer
 {
-    internal class RecordMessageSerializer : ReadOnlySerializer
+    internal static RecordMessageSerializer Instance = new();
+
+    private static readonly byte[] StructTags = {MessageFormat.MsgRecord};
+    public override IEnumerable<byte> ReadableStructs => StructTags;
+
+    public override object Deserialize(PackStreamReader reader, byte _, long __)
     {
-        public override IEnumerable<byte> ReadableStructs => new[] {MsgRecord};
-
-        public override object Deserialize(PackStreamReader reader, byte signature, long size)
+        var fieldCount = (int) reader.ReadListHeader();
+        var fields = new object[fieldCount];
+        for (var i = 0; i < fieldCount; i++)
         {
-            var fieldCount = (int) reader.ReadListHeader();
-            var fields = new object[fieldCount];
-            for (var i = 0; i < fieldCount; i++)
-            {
-                fields[i] = reader.Read();
-            }
-
-            return new RecordMessage(fields);
+            fields[i] = reader.Read();
         }
+
+        return new RecordMessage(fields);
     }
 }

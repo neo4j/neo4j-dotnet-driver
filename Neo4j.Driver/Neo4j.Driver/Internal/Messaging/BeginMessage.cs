@@ -17,11 +17,13 @@
 
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.Messaging.V3;
+namespace Neo4j.Driver.Internal.Messaging;
 
-internal class BeginMessage : TransactionStartingMessage
+internal sealed class BeginMessage : TransactionStartingMessage
 {
     public BeginMessage(
         BoltProtocolVersion version, string database, Bookmarks bookmarks, TransactionConfig configBuilder,
@@ -48,4 +50,6 @@ internal class BeginMessage : TransactionStartingMessage
     {
         return $"BEGIN {Metadata.ToContentString()}";
     }
+
+    public override IPackStreamSerializer Serializer => BeginMessageSerializer.Instance;
 }

@@ -21,10 +21,9 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.MessageHandling.V4;
-using Neo4j.Driver.Internal.Messaging.V3;
-using Neo4j.Driver.Internal.Messaging.V4;
+using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
-using static Neo4j.Driver.Internal.Messaging.V4.ResultHandleMessage;
+using static Neo4j.Driver.Internal.Messaging.ResultHandleMessage;
 
 namespace Neo4j.Driver.Internal.Protocol;
 

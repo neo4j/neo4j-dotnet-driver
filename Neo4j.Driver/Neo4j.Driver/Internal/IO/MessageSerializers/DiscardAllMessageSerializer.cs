@@ -20,15 +20,17 @@ using System.Collections.Generic;
 using Neo4j.Driver.Internal.Messaging;
 using static Neo4j.Driver.Internal.Protocol.MessageFormat;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers
-{
-    internal class DiscardAllMessageSerializer : WriteOnlySerializer
-    {
-        public override IEnumerable<Type> WritableTypes => new[] {typeof(DiscardAllMessage)};
+namespace Neo4j.Driver.Internal.IO.MessageSerializers;
 
-        public override void Serialize(PackStreamWriter writer, object value)
-        {
-            writer.WriteStructHeader(0, MsgDiscard);
-        }
+internal sealed class DiscardAllMessageSerializer : WriteOnlySerializer
+{
+    internal static DiscardAllMessageSerializer Instance = new();
+
+    private static readonly Type[] WriteableTypes = {typeof(DiscardAllMessage)};
+    public override IEnumerable<Type> WritableTypes => WriteableTypes;
+
+    public override void Serialize(PackStreamWriter writer, object _)
+    {
+        writer.WriteStructHeader(0, MsgDiscard);
     }
 }

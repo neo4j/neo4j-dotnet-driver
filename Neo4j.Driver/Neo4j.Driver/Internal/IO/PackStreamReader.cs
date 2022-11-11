@@ -14,7 +14,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -23,21 +22,19 @@ using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO;
 
-public sealed class PackStreamReader
+internal sealed class PackStreamReader
 {
     private static readonly byte[] EmptyByteArray = Array.Empty<byte>();
 
     private readonly Stream _stream;
     private readonly ByteBuffers _buffers;
-    private readonly IReadOnlyDictionary<byte, IPackStreamSerializer> _structHandlers;
-    private readonly BoltProtocolVersion _version;
+    private readonly MessageFormat _format;
 
     internal PackStreamReader(Stream stream, MessageFormat format, ByteBuffers buffers)
     {
         _stream = stream;
+        _format = format;
         _buffers = buffers;
-        _version = format.Version;
-        _structHandlers = format.ReaderStructHandlers;
     }
 
     public object Read()
@@ -101,9 +98,9 @@ public sealed class PackStreamReader
     {
         var size = ReadStructHeader();
         var signature = ReadStructSignature();
-
-        if (_structHandlers.TryGetValue(signature, out var handler))
-            return handler.Deserialize(_version, this, signature, size);
+        
+        if (_format.ReaderStructHandlers.TryGetValue(signature, out var handler))
+            return handler.Deserialize(_format.Version, this, signature, size);
 
         throw new ProtocolException("Unknown structure type: " + signature);
     }
@@ -275,7 +272,8 @@ public sealed class PackStreamReader
         var markerHighNibble = (byte) (markerByte & 0xF0);
         var markerLowNibble = (byte) (markerByte & 0x0F);
 
-        if (markerHighNibble == PackStream.TinyList) return markerLowNibble;
+        if (markerHighNibble == PackStream.TinyList)
+            return markerLowNibble;
         switch (markerByte)
         {
             case PackStream.List8:

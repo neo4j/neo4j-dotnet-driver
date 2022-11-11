@@ -15,15 +15,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Internal.Messaging.V3;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
 
-internal class RollbackMessage : IRequestMessage
+namespace Neo4j.Driver.Internal.Messaging;
+
+internal sealed class RollbackMessage : IRequestMessage
 {
-    public static readonly RollbackMessage Rollback = new();
+    public static readonly RollbackMessage Instance = new();
 
     private RollbackMessage()
     {
     }
 
-    public override string ToString() => "ROLLBACK";
+    public override string ToString()
+    {
+        return "ROLLBACK";
+    }
+
+    public IPackStreamSerializer Serializer => RollbackMessageSerializer.Instance;
 }

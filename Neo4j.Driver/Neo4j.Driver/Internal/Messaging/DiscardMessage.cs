@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2002-2022 "Neo4j,"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,19 +15,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers.V5
+namespace Neo4j.Driver.Internal.Messaging;
+
+internal sealed class DiscardMessage : ResultHandleMessage
 {
-    internal class FailureMessageSerializer : V3.FailureMessageSerializer
+    public DiscardMessage(long id, long n)
+        : base(id, n)
     {
-        public override object Deserialize(PackStreamReader reader, byte signature, long size)
-        {
-            var values = reader.ReadMap();
-            var code = values["code"]?.ToString();
-            var message = values["message"]?.ToString();
-
-            return new FailureMessage(code, message);
-        }
     }
+
+    protected override string Name => "DISCARD";
+    
+    public override IPackStreamSerializer Serializer => DiscardMessageSerializer.Instance;
 }

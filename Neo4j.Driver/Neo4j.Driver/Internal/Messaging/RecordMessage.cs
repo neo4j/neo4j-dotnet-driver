@@ -15,32 +15,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.MessageHandling;
 
-namespace Neo4j.Driver.Internal.Messaging
+namespace Neo4j.Driver.Internal.Messaging;
+
+internal sealed class RecordMessage : IResponseMessage
 {
-    internal class RecordMessage : IResponseMessage
+    public RecordMessage(object[] fields)
     {
-        public RecordMessage(object[] fields)
-        {
-            Fields = fields;
-        }
-
-        public object[] Fields { get; }
-
-        public override string ToString()
-        {
-            return $"RECORD {Fields.ToContentString()}";
-        }
-
-        public void Dispatch(IResponsePipeline pipeline)
-        {
-            pipeline.OnRecord(Fields);
-        }
+        Fields = fields;
     }
+
+    public object[] Fields { get; }
+
+    public override string ToString()
+    {
+        return $"RECORD {Fields.ToContentString()}";
+    }
+
+    public void Dispatch(IResponsePipeline pipeline)
+    {
+        pipeline.OnRecord(Fields);
+    }
+
+    public IPackStreamSerializer Serializer => RecordMessageSerializer.Instance;
 }

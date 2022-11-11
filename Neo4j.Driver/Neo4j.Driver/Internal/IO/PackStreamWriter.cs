@@ -20,6 +20,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
 using static Neo4j.Driver.Internal.IO.PackStream;
 
@@ -27,17 +28,14 @@ namespace Neo4j.Driver.Internal.IO;
 
 internal sealed class PackStreamWriter
 {
-    private readonly BoltProtocolVersion _version;
     private readonly Stream _stream;
-
+    private readonly MessageFormat _format;
+    
     public PackStreamWriter(MessageFormat format, ChunkWriter stream)
     {
-        StructHandlers = format.WriteStructHandlers;
-        _version = format.Version;
+        _format = format;
         _stream = stream;
     }
-
-    public IReadOnlyDictionary<Type, IPackStreamSerializer> StructHandlers { get; }
 
     public void Write(object value)
     {
@@ -91,14 +89,22 @@ internal sealed class PackStreamWriter
             case IEnumerable enumerable:
                 WriteEnumerable(enumerable);
                 break;
+            case IMessage message:
+                WriteMessage(message);
+                break;
             default:
-                if (StructHandlers.TryGetValue(value.GetType(), out var structHandler))
-                    structHandler.Serialize(_version, this, value);
+                if (_format.WriteStructHandlers.TryGetValue(value.GetType(), out var structHandler))
+                    structHandler.Serialize(_format.Version, this, value);
                 else
                     throw new ProtocolException(
                         $"Cannot understand {nameof(value)} with type {value.GetType().FullName}");
                 break;
         }
+    }
+
+    private void WriteMessage(IMessage message)
+    {
+        message.Serializer.Serialize(_format.Version, this, message);
     }
 
     public void WriteInt(int value)

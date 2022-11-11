@@ -15,22 +15,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using Neo4j.Driver.Internal.Messaging.V4;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4
+namespace Neo4j.Driver.Internal.Messaging;
+
+internal sealed class PullMessage : ResultHandleMessage
 {
-    internal class DiscardMessageSerializer : WriteOnlySerializer
+    public PullMessage(long n)
+        : this(NoQueryId, n)
     {
-        public override IEnumerable<Type> WritableTypes => new[] {typeof(DiscardMessage)};
-
-        public override void Serialize(PackStreamWriter writer, object value)
-        {
-            var discardN = value.CastOrThrow<DiscardMessage>();
-
-            writer.WriteStructHeader(1, Protocol.MessageFormat.MsgDiscard);
-            writer.WriteDictionary(discardN.Metadata);
-        }
     }
+
+    public PullMessage(long id, long n)
+        : base(id, n)
+    {
+    }
+
+    protected override string Name => "PULL";
+    
+    public override IPackStreamSerializer Serializer => PullMessageSerializer.Instance;
 }

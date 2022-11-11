@@ -15,19 +15,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Internal.Messaging
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
+
+namespace Neo4j.Driver.Internal.Messaging;
+
+internal sealed class ResetMessage : IRequestMessage
 {
-    internal class ResetMessage : IRequestMessage
+    public static readonly ResetMessage Instance = new();
+
+    private ResetMessage()
     {
-        public static readonly ResetMessage Reset = new ResetMessage();
-
-        private ResetMessage()
-        {
-        }
-
-        public override string ToString()
-        {
-            return "RESET";
-        }
     }
+
+    public override string ToString()
+    {
+        return "RESET";
+    }
+
+    public IPackStreamSerializer Serializer => ResetMessageSerializer.Instance;
 }

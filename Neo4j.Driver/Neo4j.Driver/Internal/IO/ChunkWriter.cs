@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 namespace Neo4j.Driver.Internal.IO;
 
 //TODO: .NET6+ Span/memory optimize
-internal sealed class ChunkWriter: Stream, IChunkWriter
+internal sealed class ChunkWriter: Stream
 {
     private static readonly byte[] ZeroChunkSizeBuffer = PackStreamBitConverter.GetBytes((ushort) 0);
 

@@ -15,11 +15,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.Messaging.V3;
+namespace Neo4j.Driver.Internal.Messaging;
 
-internal class RunWithMetadataMessage : TransactionStartingMessage
+internal sealed class RunWithMetadataMessage : TransactionStartingMessage
 {
     public RunWithMetadataMessage(
         BoltProtocolVersion version,
@@ -44,4 +46,6 @@ internal class RunWithMetadataMessage : TransactionStartingMessage
     {
         return $"RUN {Query} {Metadata.ToContentString()}";
     }
+
+    public override IPackStreamSerializer Serializer => RunWithMetadataMessageSerializer.Instance;
 }

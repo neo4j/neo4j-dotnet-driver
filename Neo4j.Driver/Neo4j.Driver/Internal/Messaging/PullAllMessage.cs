@@ -15,25 +15,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
 
-namespace Neo4j.Driver.Internal.Messaging
+namespace Neo4j.Driver.Internal.Messaging;
+
+internal sealed class PullAllMessage : IRequestMessage
 {
-    internal class PullAllMessage : IRequestMessage
+    public static readonly PullAllMessage Instance = new();
+
+    private PullAllMessage()
     {
-        public static readonly PullAllMessage PullAll = new PullAllMessage();
-
-        private PullAllMessage()
-        {
-        }
-
-        public override string ToString()
-        {
-            return "PULLALL";
-        }
     }
+
+    public override string ToString()
+    {
+        return "PULLALL";
+    }
+
+    public IPackStreamSerializer Serializer => PullMessageSerializer.Instance;
 }

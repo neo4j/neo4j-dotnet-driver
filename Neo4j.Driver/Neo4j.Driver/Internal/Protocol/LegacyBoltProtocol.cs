@@ -23,9 +23,7 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.MessageHandling.V3;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Internal.Result;
-using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
 
 namespace Neo4j.Driver.Internal.Protocol;
 
@@ -43,13 +41,13 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
 
     public async Task LogoutAsync(IConnection connection)
     {
-        await connection.EnqueueAsync(GoodbyeMessage.Goodbye, NoOpResponseHandler.Instance).ConfigureAwait(false);
+        await connection.EnqueueAsync(GoodbyeMessage.Instance, NoOpResponseHandler.Instance).ConfigureAwait(false);
         await connection.SendAsync().ConfigureAwait(false);
     }
 
     public Task ResetAsync(IConnection connection)
     {
-        return connection.EnqueueAsync(ResetMessage.Reset, NoOpResponseHandler.Instance);
+        return connection.EnqueueAsync(ResetMessage.Instance, NoOpResponseHandler.Instance);
     }
 
     public async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection,
@@ -116,7 +114,7 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
             null,
             autoCommitParams.ImpersonatedUser);
 
-        await connection.EnqueueAsync(autoCommitMessage, runHandler, PullAll, pullAllHandler).ConfigureAwait(false);
+        await connection.EnqueueAsync(autoCommitMessage, runHandler, PullAllMessage.Instance, pullAllHandler).ConfigureAwait(false);
         await connection.SendAsync().ConfigureAwait(false);
         return streamBuilder.CreateCursor();
     }
@@ -146,7 +144,8 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
 
         var message = new RunWithMetadataMessage(connection.Version, query);
 
-        await connection.EnqueueAsync(message, runHandler, PullAll, pullAllHandler).ConfigureAwait(false);
+        await connection.EnqueueAsync(message, runHandler, PullAllMessage.Instance, pullAllHandler)
+            .ConfigureAwait(false);
         await connection.SendAsync().ConfigureAwait(false);
         
         return streamBuilder.CreateCursor();
@@ -154,14 +153,14 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
 
     public async Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker)
     {
-        await connection.EnqueueAsync(CommitMessage.Commit, new CommitResponseHandler(bookmarksTracker))
+        await connection.EnqueueAsync(CommitMessage.Instance, new CommitResponseHandler(bookmarksTracker))
             .ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);
     }
 
     public async Task RollbackTransactionAsync(IConnection connection)
     {
-        await connection.EnqueueAsync(RollbackMessage.Rollback, NoOpResponseHandler.Instance)
+        await connection.EnqueueAsync(RollbackMessage.Instance, NoOpResponseHandler.Instance)
             .ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);
     }

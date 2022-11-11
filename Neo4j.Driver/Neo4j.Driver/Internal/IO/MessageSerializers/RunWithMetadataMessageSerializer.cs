@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -16,22 +16,28 @@
 // limitations under the License.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3;
+namespace Neo4j.Driver.Internal.IO.MessageSerializers;
 
-internal sealed class HelloMessageSerializer: WriteOnlySerializer
+internal sealed class RunWithMetadataMessageSerializer : WriteOnlySerializer
 {
-    private static readonly Type[] Types = { typeof(HelloMessage) };
+    internal static RunWithMetadataMessageSerializer Instance = new();
+    
+    private static readonly Type[] Types = {typeof(RunWithMetadataMessage)};
     public override IEnumerable<Type> WritableTypes => Types;
 
     public override void Serialize(PackStreamWriter writer, object value)
     {
-        var msg = value.CastOrThrow<HelloMessage>();
-        writer.WriteStructHeader(1, MessageFormat.MsgHello);
-        writer.WriteDictionary(msg.MetaData);
+        if (value is not RunWithMetadataMessage msg)
+            throw new ArgumentOutOfRangeException(
+                $"Encountered {value?.GetType().Name} where {nameof(RunWithMetadataMessage)} was expected");
+        
+        writer.WriteStructHeader(3, MessageFormat.MsgRun);
+        writer.WriteString(msg.Query.Text);
+        writer.WriteDictionary(msg.Query.Parameters);
+        writer.WriteDictionary(msg.Metadata);
     }
 }

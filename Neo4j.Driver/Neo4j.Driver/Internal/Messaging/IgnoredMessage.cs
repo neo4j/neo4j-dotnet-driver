@@ -15,26 +15,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.MessageHandling;
 
-namespace Neo4j.Driver.Internal.Messaging
+namespace Neo4j.Driver.Internal.Messaging;
+
+internal sealed class IgnoredMessage : IResponseMessage
 {
-    internal class IgnoredMessage : IResponseMessage
+    public static readonly IgnoredMessage Instance = new();
+    public IPackStreamSerializer Serializer => IgnoredMessageSerializer.Instance;
+    
+    private IgnoredMessage()
     {
-        public static readonly IgnoredMessage Ignored = new IgnoredMessage();
+    }
 
-        private IgnoredMessage()
-        {
-        }
+    public override string ToString()
+    {
+        return "IGNORED";
+    }
 
-        public override string ToString()
-        {
-            return "IGNORED";
-        }
-
-        public void Dispatch(IResponsePipeline pipeline)
-        {
-            pipeline.OnIgnored();
-        }
+    public void Dispatch(IResponsePipeline pipeline)
+    {
+        pipeline.OnIgnored();
     }
 }

@@ -15,10 +15,12 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers.V4_4;
 
 namespace Neo4j.Driver.Internal.Messaging.V4_4;
 
-internal class RouteMessage : IRequestMessage
+internal sealed class RouteMessage : IRequestMessage
 {
     private const string DBNameKey = "db";
     private const string ImpersonatedUserKey = "imp_user";
@@ -73,4 +75,6 @@ internal class RouteMessage : IRequestMessage
 
         return stringBuilder.ToString();
     }
+
+    public IPackStreamSerializer Serializer => RouteMessageSerializer.Instance;
 }

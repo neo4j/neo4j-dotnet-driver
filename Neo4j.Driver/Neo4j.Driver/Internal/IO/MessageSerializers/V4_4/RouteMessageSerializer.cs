@@ -5,13 +5,18 @@ using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_4;
 
-class RouteMessageSerializer : WriteOnlySerializer
+internal sealed class RouteMessageSerializer : WriteOnlySerializer
 {
-    public override IEnumerable<Type> WritableTypes => new[] { typeof(RouteMessage) };
+    internal static RouteMessageSerializer Instance = new();
+    
+    private static readonly Type[] MessageSerializer = {typeof(RouteMessage)};
+    public override IEnumerable<Type> WritableTypes => MessageSerializer;
 
     public override void Serialize(PackStreamWriter writer, object value)
     {
-        var msg = value.CastOrThrow<RouteMessage>();
+        if (value is not RouteMessage msg)
+            throw new ArgumentOutOfRangeException(
+                $"Encountered {value?.GetType().Name} where {nameof(RouteMessage)} was expected.");
 
         writer.WriteStructHeader(3, MessageFormat.MsgRoute);
         writer.WriteDictionary(msg.Routing);

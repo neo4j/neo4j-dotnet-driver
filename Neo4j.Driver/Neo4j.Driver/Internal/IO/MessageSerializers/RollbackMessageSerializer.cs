@@ -17,18 +17,20 @@
 
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.Messaging.V3;
-using static Neo4j.Driver.Internal.Protocol.MessageFormat;
+using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers.V3
+namespace Neo4j.Driver.Internal.IO.MessageSerializers;
+
+internal sealed class RollbackMessageSerializer: WriteOnlySerializer
 {
-    internal class CommitMessageSerializer: WriteOnlySerializer
-    {
-        public override IEnumerable<Type> WritableTypes => new[] {typeof(CommitMessage)};
+    internal static RollbackMessageSerializer Instance = new();
+    
+    private static readonly Type[] Types = {typeof(RollbackMessage)};
+    public override IEnumerable<Type> WritableTypes => Types;
 
-        public override void Serialize(PackStreamWriter writer, object value)
-        {
-            writer.WriteStructHeader(0, MsgCommit);
-        }
+    public override void Serialize(PackStreamWriter writer, object value)
+    {
+        writer.WriteStructHeader(0, MessageFormat.MsgRollback);
     }
 }
