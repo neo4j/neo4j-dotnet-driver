@@ -20,7 +20,7 @@ using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal;
 
-internal class ConnectionResourceHandler : IResultResourceHandler
+internal sealed class ConnectionResourceHandler : IResultResourceHandler
 {
     public ConnectionResourceHandler(IConnection conn)
     {

@@ -29,7 +29,8 @@ internal sealed class RoutingTableProtocol43 : IRoutingTableProtocol
     public async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, 
         string database, string impersonatedUser, Bookmarks bookmarks)
     {
-        connection = connection ?? throw new ProtocolException("Attempting to get a routing table on a null connection");
+        connection = connection ??
+                     throw new ProtocolException("Attempting to get a routing table on a null connection");
 
         var message = new Messaging.V4_3.RouteMessage(connection.RoutingContext, bookmarks, database);
         var responseHandler = new RouteResponseHandler();

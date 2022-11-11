@@ -15,23 +15,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Linq;
 using Neo4j.Driver.Internal.MessageHandling;
 
 namespace Neo4j.Driver.Internal;
 
-internal sealed class BookmarksTracker : IBookmarksTracker
+internal sealed record AutoCommitParams
 {
-    public BookmarksTracker(Bookmarks bookmarks)
-    {
-        InternalBookmarks = bookmarks;
-    }
-
-    private Bookmarks InternalBookmarks { get; set; }
-
-    public void UpdateBookmarks(Bookmarks bookmarks, IDatabaseInfo dbInfo = null)
-    {
-        if (InternalBookmarks != null && InternalBookmarks.Values.Any())
-            InternalBookmarks = bookmarks;
-    }
+    public Query Query { get; init; }
+    public bool Reactive { get; init; } = false;
+    public IBookmarksTracker BookmarksTracker { get; init; }
+    public IResultResourceHandler ResultResourceHandler { get; init; }
+    public string Database { get; init; }
+    public Bookmarks Bookmarks { get; init; }
+    public TransactionConfig Config { get; init; } 
+    public string ImpersonatedUser { get; init; }
+    public long FetchSize { get; init; } = Neo4j.Driver.Config.Infinite;
 }
