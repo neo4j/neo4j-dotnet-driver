@@ -24,11 +24,10 @@ using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.MessageHandling;
-using MessageFormat = Neo4j.Driver.Internal.Protocol.MessageFormat;
 
 namespace Neo4j.Driver.Internal.Connector;
 
-internal sealed class SocketClient : ISocketClient
+internal sealed class SocketClient
 {
     private const string MessagePattern = "C: {0}";
     private readonly Uri _uri;

@@ -33,7 +33,7 @@ internal sealed class SocketConnection : IConnection
 {
     private readonly IAuthToken _authToken;
 
-    private readonly ISocketClient _client;
+    private readonly SocketClient _client;
     private readonly string _idPrefix;
 
     private readonly PrefixLogger _logger;
@@ -63,7 +63,7 @@ internal sealed class SocketConnection : IConnection
     }
 
     // for test only
-    internal SocketConnection(ISocketClient socketClient, IAuthToken authToken,
+    internal SocketConnection(SocketClient socketClient, IAuthToken authToken,
         string userAgent, ILogger logger, ServerInfo server,
         IResponsePipeline responsePipeline = null)
     {
