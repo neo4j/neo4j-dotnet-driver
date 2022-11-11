@@ -14,77 +14,79 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Extensions;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal static class StreamExtensions
 {
-    internal static class StreamExtensions
+    public static void Write(this Stream stream, byte[] bytes)
     {
-        public static void Write(this Stream stream, byte[] bytes)
+        stream.Write(bytes, 0, bytes.Length);
+    }
+
+    public static int Read(this Stream stream, byte[] bytes)
+    {
+        var hasRead = 0;
+        var offset = 0;
+        var toRead = bytes.Length;
+        
+        do
         {
-            stream.Write(bytes, 0, bytes.Length);
-        }
+            hasRead = stream.Read(bytes, offset, toRead);
+            offset += hasRead;
+            toRead -= hasRead;
+        } while (toRead > 0 && hasRead > 0);
 
-        public static int Read(this Stream stream, byte[] bytes)
+        if (hasRead <= 0)
+            throw new IOException(
+                $"Failed to read more from input stream. Expected {bytes.Length} bytes, received {offset}.");
+        
+        return offset;
+    }
+
+    /// <summary>
+    ///     The standard ReadAsync in .Net does not honor the CancellationToken even if supplied. This method wraps a call to
+    ///     ReadAsync in a task that
+    ///     monitors the token, and when detected calls the streams close method.
+    /// </summary>
+    /// <param name="stream">Stream instance that is being extended</param>
+    /// <param name="buffer">Target buffer to write into</param>
+    /// <param name="offset">Offset from which to begin writing data from the stream</param>
+    /// <param name="count">The maximum number of bytes to read</param>
+    /// <param name="timeoutMs">The timeout in milliseconds that the stream will close after if there is no activity.</param>
+    /// <returns>The number of bytes read</returns>
+    public static async Task<int> ReadWithTimeoutAsync(this Stream stream, byte[] buffer, int offset, int count,
+        int timeoutMs)
+    {
+        var timeout = timeoutMs <= 0 ? TimeSpan.FromMilliseconds(-1) : TimeSpan.FromMilliseconds(timeoutMs);
+        using var source = new CancellationTokenSource(timeout);
+
+        try
         {
-            int hasRead = 0, offset = 0, toRead = bytes.Length;
-            do
-            {
-                hasRead = stream.Read(bytes, offset, toRead);
-                offset += hasRead;
-                toRead -= hasRead;
-            } while (toRead > 0 && hasRead > 0);
-
-            if (hasRead <= 0)
-            {
-                throw new IOException($"Failed to read more from input stream. Expected {bytes.Length} bytes, received {offset}.");
-            }
-            return offset;
-        }
-
-		/// <summary>
-		/// The standard ReadAsync in .Net does not honor the CancellationToken even if supplied. This method wraps a call to ReadAsync in a task that
-		/// monitors the token, and when detected calls the streams close method.
-		/// </summary>
-		/// <param name="stream">Stream instance that is being extended</param>
-		/// <param name="buffer">Target buffer to write into</param>
-		/// <param name="offset">Offset from which to begin writing data from the stream</param>
-		/// <param name="count">The maximum number of bytes to read</param>
-		/// <param name="timeoutMs">The timeout in milliseconds that the stream will close after if there is no activity. </param>
-		/// <returns>The number of bytes read</returns>
-		public static async Task<int> ReadWithTimeoutAsync(this Stream stream, byte[] buffer, int offset, int count, int timeoutMs)
-		{
-			var timeout = timeoutMs <= 0 ? TimeSpan.FromMilliseconds(-1) : TimeSpan.FromMilliseconds(timeoutMs);
-            var source = new CancellationTokenSource(timeout);
-
-            try
-            {
 #if NET6_0_OR_GREATER
-                var ctr = source.Token.Register(stream.Close);
-                await using var _ = ctr.ConfigureAwait(false);
-                return await stream.ReadAsync(buffer.AsMemory(offset, count), source.Token).ConfigureAwait(false);
+            var ctr = source.Token.Register(stream.Close);
+            await using var _ = ctr.ConfigureAwait(false);
+            return await stream.ReadAsync(buffer.AsMemory(offset, count), source.Token).ConfigureAwait(false);
 #else
                 using var _ = source.Token.Register(stream.Close);
                 return await stream.ReadAsync(buffer, offset, count, source.Token).ConfigureAwait(false);
 #endif
-            }
-            catch (Exception ex) when (source.IsCancellationRequested)
-            {
-                stream.Close();
-                throw new ConnectionReadTimeoutException(
-                    $"Socket/Stream timed out after {timeoutMs}ms, socket closed.", ex);
-            }
-            catch
-            {
-                stream.Close();
-                throw;
-            }
-		}
-	}
+        }
+        catch (Exception ex) when (source.IsCancellationRequested)
+        {
+            stream.Close();
+            throw new ConnectionReadTimeoutException(
+                $"Socket/Stream timed out after {timeoutMs}ms, socket closed.", ex);
+        }
+        catch
+        {
+            stream.Close();
+            throw;
+        }
+    }
 }

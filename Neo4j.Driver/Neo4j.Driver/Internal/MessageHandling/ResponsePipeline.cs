@@ -20,128 +20,127 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Messaging;
 
-namespace Neo4j.Driver.Internal.MessageHandling
+namespace Neo4j.Driver.Internal.MessageHandling;
+
+internal sealed class ResponsePipeline : IResponsePipeline
 {
-    internal class ResponsePipeline : IResponsePipeline
+    private const string MessagePattern = "S: {0}";
+
+    private readonly ConcurrentQueue<IResponseHandler> _handlers;
+    private readonly ILogger _logger;
+
+    private IResponsePipelineError _error;
+
+    public ResponsePipeline(ILogger logger)
     {
-        private const string MessagePattern = "S: {0}";
+        _handlers = new ConcurrentQueue<IResponseHandler>();
+        _logger = logger;
+        _error = null;
+    }
 
-        private readonly ConcurrentQueue<IResponseHandler> _handlers;
-        private readonly ILogger _logger;
+    public bool HasNoPendingMessages => _handlers.IsEmpty;
 
-        private IResponsePipelineError _error;
+    public void Enqueue(IResponseHandler handler)
+    {
+        _handlers.Enqueue(handler ?? throw new ArgumentNullException(nameof(handler)));
+    }
 
-        public ResponsePipeline(ILogger logger)
+    public void AssertNoFailure()
+    {
+        _error?.EnsureThrown();
+    }
+
+    public void AssertNoProtocolViolation()
+    {
+        _error?.EnsureThrownIf<ProtocolException>();
+    }
+
+    public IResponseHandler Dequeue()
+    {
+        if (_handlers.TryDequeue(out var handler))
         {
-            _handlers = new ConcurrentQueue<IResponseHandler>();
-            _logger = logger;
-            _error = null;
+            return handler;
         }
 
-        public bool HasNoPendingMessages => _handlers.IsEmpty;
+        throw new InvalidOperationException("No handlers registered");
+    }
 
-        public void Enqueue(IResponseHandler handler)
+    internal IResponseHandler Peek()
+    {
+        if (_handlers.TryPeek(out var handler))
         {
-            _handlers.Enqueue(handler ?? throw new ArgumentNullException(nameof(handler)));
+            return handler;
         }
 
-        public void AssertNoFailure()
+        throw new InvalidOperationException("No handlers registered");
+    }
+
+    public void OnSuccess(IDictionary<string, object> metadata)
+    {
+        LogSuccess(metadata);
+        var handler = Dequeue();
+        handler.OnSuccess(metadata);
+    }
+
+    public void OnRecord(object[] fieldValues)
+    {
+        LogRecord(fieldValues);
+        var handler = Peek();
+        handler.OnRecord(fieldValues);
+    }
+
+    public void OnFailure(string code, string message)
+    {
+        LogFailure(code, message);
+        var handler = Dequeue();
+        _error = new ResponsePipelineError(ErrorExtensions.ParseServerException(code, message));
+        handler.OnFailure(_error);
+    }
+
+    public void OnIgnored()
+    {
+        LogIgnored();
+        var handler = Dequeue();
+
+        if (_error != null)
         {
-            _error?.EnsureThrown();
-        }
-
-        public void AssertNoProtocolViolation()
-        {
-            _error?.EnsureThrownIf<ProtocolException>();
-        }
-
-        public IResponseHandler Dequeue()
-        {
-            if (_handlers.TryDequeue(out var handler))
-            {
-                return handler;
-            }
-
-            throw new InvalidOperationException("No handlers registered");
-        }
-
-        internal IResponseHandler Peek()
-        {
-            if (_handlers.TryPeek(out var handler))
-            {
-                return handler;
-            }
-
-            throw new InvalidOperationException("No handlers registered");
-        }
-
-        public void OnSuccess(IDictionary<string, object> metadata)
-        {
-            LogSuccess(metadata);
-            var handler = Dequeue();
-            handler.OnSuccess(metadata);
-        }
-
-        public void OnRecord(object[] fieldValues)
-        {
-            LogRecord(fieldValues);
-            var handler = Peek();
-            handler.OnRecord(fieldValues);
-        }
-
-        public void OnFailure(string code, string message)
-        {
-            LogFailure(code, message);
-            var handler = Dequeue();
-            _error = new ResponsePipelineError(ErrorExtensions.ParseServerException(code, message));
             handler.OnFailure(_error);
         }
-
-        public void OnIgnored()
+        else
         {
-            LogIgnored();
-            var handler = Dequeue();
-
-            if (_error != null)
-            {
-                handler.OnFailure(_error);
-            }
-            else
-            {
-                handler.OnIgnored();
-            }
+            handler.OnIgnored();
         }
+    }
 
-        private void LogSuccess(IDictionary<string, object> meta)
+    private void LogSuccess(IDictionary<string, object> meta)
+    {
+        if (_logger != null && _logger.IsDebugEnabled())
         {
-            if (_logger != null && _logger.IsDebugEnabled())
-            {
-                _logger?.Debug(MessagePattern, new SuccessMessage(meta));
-            }
+            _logger?.Debug(MessagePattern, new SuccessMessage(meta));
         }
+    }
 
-        private void LogRecord(object[] fields)
+    private void LogRecord(object[] fields)
+    {
+        if (_logger != null && _logger.IsDebugEnabled())
         {
-            if (_logger != null && _logger.IsDebugEnabled())
-            {
-                _logger?.Debug(MessagePattern, new RecordMessage(fields));
-            }
+            _logger?.Debug(MessagePattern, new RecordMessage(fields));
         }
+    }
 
-        private void LogFailure(string code, string message)
+    private void LogFailure(string code, string message)
+    {
+        if (_logger != null && _logger.IsDebugEnabled())
         {
-            if (_logger != null && _logger.IsDebugEnabled())
-            {
-                _logger?.Debug(MessagePattern, new FailureMessage(code, message));
-            }
+            _logger?.Debug(MessagePattern, new FailureMessage(code, message));
         }
+    }
 
-        private void LogIgnored()
+    private void LogIgnored()
+    {
+        if (_logger != null && _logger.IsDebugEnabled())
         {
-            if (_logger != null && _logger.IsDebugEnabled())
-            {
-                _logger?.Debug(MessagePattern, IgnoredMessage.Instance);
-            }
+            _logger?.Debug(MessagePattern, IgnoredMessage.Instance);
         }
     }
 }

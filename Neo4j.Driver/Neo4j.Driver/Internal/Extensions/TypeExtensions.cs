@@ -21,7 +21,6 @@ namespace Neo4j.Driver.Internal;
 
 internal static class TypeExtensions
 {
-    //TODO: Consider Aggressive Inlining.
     public static T CastOrThrow<T>(this object value)
     {
         if (value is not T result)

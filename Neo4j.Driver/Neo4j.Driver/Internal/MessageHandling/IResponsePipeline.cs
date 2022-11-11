@@ -17,24 +17,23 @@
 
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.MessageHandling
+namespace Neo4j.Driver.Internal.MessageHandling;
+
+internal interface IResponsePipeline
 {
-    internal interface IResponsePipeline
-    {
-        bool HasNoPendingMessages { get; }
+    bool HasNoPendingMessages { get; }
 
-        void Enqueue(IResponseHandler handler);
+    void Enqueue(IResponseHandler handler);
 
-        void OnSuccess(IDictionary<string, object> metadata);
+    void OnSuccess(IDictionary<string, object> metadata);
 
-        void OnRecord(object[] fieldValues);
+    void OnRecord(object[] fieldValues);
 
-        void OnFailure(string code, string message);
+    void OnFailure(string code, string message);
 
-        void OnIgnored();
+    void OnIgnored();
 
-        void AssertNoFailure();
+    void AssertNoFailure();
 
-        void AssertNoProtocolViolation();
-    }
+    void AssertNoProtocolViolation();
 }

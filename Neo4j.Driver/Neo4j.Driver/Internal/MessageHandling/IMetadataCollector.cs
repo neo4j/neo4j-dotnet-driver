@@ -17,17 +17,16 @@
 
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.MessageHandling
+namespace Neo4j.Driver.Internal.MessageHandling;
+
+internal interface IMetadataCollector
 {
-    internal interface IMetadataCollector
-    {
-        object Collected { get; }
+    object Collected { get; }
 
-        void Collect(IDictionary<string, object> metadata);
-    }
+    void Collect(IDictionary<string, object> metadata);
+}
 
-    internal interface IMetadataCollector<out TMetadata> : IMetadataCollector
-    {
-        new TMetadata Collected { get; }
-    }
+internal interface IMetadataCollector<out TMetadata> : IMetadataCollector
+{
+    new TMetadata Collected { get; }
 }

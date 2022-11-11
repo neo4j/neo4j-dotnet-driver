@@ -24,13 +24,13 @@ using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.MessageHandling;
 
-internal class HelloResponseHandler : MetadataCollectingResponseHandler
+internal sealed class HelloResponseHandler : MetadataCollectingResponseHandler
 {
-    protected readonly IConnection Connection;
+    private readonly IConnection _connection;
 
     public HelloResponseHandler(IConnection connection)
     {
-        Connection = connection ?? throw new ArgumentNullException(nameof(connection));
+        _connection = connection ?? throw new ArgumentNullException(nameof(connection));
 
         AddMetadata<ServerVersionCollector, ServerVersion>();
         AddMetadata<ConnectionIdCollector, string>();
@@ -52,16 +52,16 @@ internal class HelloResponseHandler : MetadataCollectingResponseHandler
     private void UpdateUtcEncodedDateTime()
     {
         // ignore all version not 4.3/4.4
-        if (Connection.Version < BoltProtocolVersion.V4_3 || Connection.Version.MajorVersion != 4)
+        if (_connection.Version < BoltProtocolVersion.V4_3 || _connection.Version.MajorVersion != 4)
             return;
 
         if (GetMetadata<BoltPatchCollector, string[]>()?.Contains("utc") ?? false)
-            Connection.SetUseUtcEncodedDateTime();
+            _connection.SetUseUtcEncodedDateTime();
     }
 
     private void UpdateReadTimeout()
     {
-        if (Connection.Version < BoltProtocolVersion.V4_3)
+        if (_connection.Version < BoltProtocolVersion.V4_3)
             return;
 
         var configMetadata = GetMetadata<ConfigurationHintsCollector, Dictionary<string, object>>();
@@ -73,16 +73,16 @@ internal class HelloResponseHandler : MetadataCollectingResponseHandler
             return;
 
         if (timeout is int readConnectionTimeoutSeconds)
-            Connection.SetReadTimeoutInSeconds(readConnectionTimeoutSeconds);
+            _connection.SetReadTimeoutInSeconds(readConnectionTimeoutSeconds);
     }
 
-    protected virtual void UpdateConnectionServerVersion()
+    private void UpdateConnectionServerVersion()
     {
-        Connection.UpdateVersion(GetMetadata<ServerVersionCollector, ServerVersion>());
+        _connection.UpdateVersion(GetMetadata<ServerVersionCollector, ServerVersion>());
     }
 
-    protected virtual void UpdateId()
+    private void UpdateId()
     {
-        Connection.UpdateId(GetMetadata<ConnectionIdCollector, string>());
+        _connection.UpdateId(GetMetadata<ConnectionIdCollector, string>());
     }
 }

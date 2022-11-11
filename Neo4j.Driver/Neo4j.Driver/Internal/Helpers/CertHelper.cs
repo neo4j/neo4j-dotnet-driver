@@ -19,50 +19,39 @@ using System;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal static class CertHelper
 {
-    internal static class CertHelper
+    public static bool CheckValidity(X509Certificate2 certificate, DateTime time)
     {
-
-        public static bool CheckValidity(X509Certificate2 certificate, DateTime time)
-        {
-            return time > certificate.NotBefore && time < certificate.NotAfter;
-        }
-
-        public static bool FindCertificate(StoreLocation location, StoreName name, X509Certificate certificate)
-        {
-            var store = new X509Store(name, location);
-            try
-            {
-                store.Open(OpenFlags.ReadOnly);
-                return FindCertificate(store.Certificates, certificate);
-            }
-            finally
-            {
-#if NET452
-                store.Close();
-#endif
-            }
-        }
-
-        public static bool FindCertificate(X509Certificate2Collection store, X509Certificate certificate)
-        {
-            var matches = store.Find(X509FindType.FindByThumbprint, string.Concat(certificate.GetCertHash().Select(b => b.ToString("X2"))), false);
-            return matches.Count > 0;
-        }
-
-        public static string ChainStatusToText(X509ChainStatus[] statuses)
-        {
-            return string.Join(Environment.NewLine, statuses.Select(ChainStatusToText));
-        }
-
-        public static string ChainStatusToText(X509ChainStatus status)
-        {
-            if (string.IsNullOrEmpty(status.StatusInformation))
-                return $"[{status.Status}]";
-
-            return $"[{status.Status}]: {status.StatusInformation}";
-        }
-
+        return time > certificate.NotBefore && time < certificate.NotAfter;
     }
+
+    public static bool FindCertificate(StoreLocation location, StoreName name, X509Certificate certificate)
+    {
+        using var store = new X509Store(name, location);
+        store.Open(OpenFlags.ReadOnly);
+        return FindCertificate(store.Certificates, certificate);
+    }
+
+    public static bool FindCertificate(X509Certificate2Collection store, X509Certificate certificate)
+    {
+        var matches = store.Find(X509FindType.FindByThumbprint,
+            string.Concat(certificate.GetCertHash().Select(b => b.ToString("X2"))), false);
+        return matches.Count > 0;
+    }
+
+    public static string ChainStatusToText(X509ChainStatus[] statuses)
+    {
+        return string.Join(Environment.NewLine, statuses.Select(ChainStatusToText));
+    }
+
+    public static string ChainStatusToText(X509ChainStatus status)
+    {
+        return string.IsNullOrEmpty(status.StatusInformation) 
+            ? $"[{status.Status}]" 
+            : $"[{status.Status}]: {status.StatusInformation}";
+    }
+
 }

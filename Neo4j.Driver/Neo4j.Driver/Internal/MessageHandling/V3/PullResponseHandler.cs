@@ -20,59 +20,58 @@ using System.Collections.Generic;
 using Neo4j.Driver.Internal.MessageHandling.Metadata;
 using Neo4j.Driver.Internal.Result;
 
-namespace Neo4j.Driver.Internal.MessageHandling.V3
+namespace Neo4j.Driver.Internal.MessageHandling.V3;
+
+internal sealed class PullResponseHandler : MetadataCollectingResponseHandler
 {
-    internal class PullResponseHandler : MetadataCollectingResponseHandler
+    private readonly IResultStreamBuilder _streamBuilder;
+    private readonly SummaryBuilder _summaryBuilder;
+    private readonly IBookmarksTracker _bookmarksTracker;
+
+    public PullResponseHandler(IResultStreamBuilder streamBuilder, SummaryBuilder summaryBuilder,
+        IBookmarksTracker bookmarksTracker)
     {
-        private readonly IResultStreamBuilder _streamBuilder;
-        private readonly SummaryBuilder _summaryBuilder;
-        private readonly IBookmarksTracker _bookmarksTracker;
+        _streamBuilder = streamBuilder ?? throw new ArgumentNullException(nameof(streamBuilder));
+        _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
+        _bookmarksTracker = bookmarksTracker;
 
-        public PullResponseHandler(IResultStreamBuilder streamBuilder, SummaryBuilder summaryBuilder,
-            IBookmarksTracker bookmarksTracker)
-        {
-            _streamBuilder = streamBuilder ?? throw new ArgumentNullException(nameof(streamBuilder));
-            _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
-            _bookmarksTracker = bookmarksTracker;
+        AddMetadata<BookmarksCollector, Bookmarks>();
+        AddMetadata<TimeToLastCollector, long>();
+        AddMetadata<TypeCollector, QueryType>();
+        AddMetadata<CountersCollector, ICounters>();
+        AddMetadata<PlanCollector, IPlan>();
+        AddMetadata<ProfiledPlanCollector, IProfiledPlan>();
+        AddMetadata<NotificationsCollector, IList<INotification>>();
+    }
 
-            AddMetadata<BookmarksCollector, Bookmarks>();
-            AddMetadata<TimeToLastCollector, long>();
-            AddMetadata<TypeCollector, QueryType>();
-            AddMetadata<CountersCollector, ICounters>();
-            AddMetadata<PlanCollector, IPlan>();
-            AddMetadata<ProfiledPlanCollector, IProfiledPlan>();
-            AddMetadata<NotificationsCollector, IList<INotification>>();
-        }
+    public override void OnSuccess(IDictionary<string, object> metadata)
+    {
+        base.OnSuccess(metadata);
+        _bookmarksTracker?.UpdateBookmarks(GetMetadata<BookmarksCollector, Bookmarks>(),
+            GetMetadata<DatabaseInfoCollector, IDatabaseInfo>());
 
-        public override void OnSuccess(IDictionary<string, object> metadata)
-        {
-            base.OnSuccess(metadata);
-            _bookmarksTracker?.UpdateBookmarks(GetMetadata<BookmarksCollector, Bookmarks>(),
-                GetMetadata<DatabaseInfoCollector, IDatabaseInfo>());
+        _summaryBuilder.ResultConsumedAfter = GetMetadata<TimeToLastCollector, long>();
+        _summaryBuilder.Counters = GetMetadata<CountersCollector, ICounters>();
+        _summaryBuilder.Notifications = GetMetadata<NotificationsCollector, IList<INotification>>();
+        _summaryBuilder.Plan = GetMetadata<PlanCollector, IPlan>();
+        _summaryBuilder.Profile = GetMetadata<ProfiledPlanCollector, IProfiledPlan>();
+        _summaryBuilder.QueryType = GetMetadata<TypeCollector, QueryType>();
 
-            _summaryBuilder.ResultConsumedAfter = GetMetadata<TimeToLastCollector, long>();
-            _summaryBuilder.Counters = GetMetadata<CountersCollector, ICounters>();
-            _summaryBuilder.Notifications = GetMetadata<NotificationsCollector, IList<INotification>>();
-            _summaryBuilder.Plan = GetMetadata<PlanCollector, IPlan>();
-            _summaryBuilder.Profile = GetMetadata<ProfiledPlanCollector, IProfiledPlan>();
-            _summaryBuilder.QueryType = GetMetadata<TypeCollector, QueryType>();
+        _streamBuilder.PullCompleted(false, null);
+    }
 
-            _streamBuilder.PullCompleted(false, null);
-        }
+    public override void OnFailure(IResponsePipelineError error)
+    {
+        _streamBuilder.PullCompleted(false, error);
+    }
 
-        public override void OnFailure(IResponsePipelineError error)
-        {
-            _streamBuilder.PullCompleted(false, error);
-        }
+    public override void OnIgnored()
+    {
+        _streamBuilder.PullCompleted(false, null);
+    }
 
-        public override void OnIgnored()
-        {
-            _streamBuilder.PullCompleted(false, null);
-        }
-
-        public override void OnRecord(object[] fieldValues)
-        {
-            _streamBuilder.PushRecord(fieldValues);
-        }
+    public override void OnRecord(object[] fieldValues)
+    {
+        _streamBuilder.PushRecord(fieldValues);
     }
 }

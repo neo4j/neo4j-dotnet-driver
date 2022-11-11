@@ -15,10 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Internal.MessageHandling
+namespace Neo4j.Driver.Internal.MessageHandling;
+
+internal interface IBookmarksTracker
 {
-    internal interface IBookmarksTracker
-    {
-        void UpdateBookmarks(Bookmarks bookmarks, IDatabaseInfo dbInfo = null);
-    }
+    void UpdateBookmarks(Bookmarks bookmarks, IDatabaseInfo dbInfo = null);
 }

@@ -17,16 +17,15 @@
 
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.MessageHandling
+namespace Neo4j.Driver.Internal.MessageHandling;
+
+internal interface IResponseHandler
 {
-    internal interface IResponseHandler
-    {
-        void OnSuccess(IDictionary<string, object> metadata);
+    void OnSuccess(IDictionary<string, object> metadata);
 
-        void OnRecord(object[] fieldValues);
+    void OnRecord(object[] fieldValues);
 
-        void OnFailure(IResponsePipelineError error);
+    void OnFailure(IResponsePipelineError error);
 
-        void OnIgnored();
-    }
+    void OnIgnored();
 }

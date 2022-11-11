@@ -21,7 +21,7 @@ using Neo4j.Driver.Internal.MessageHandling.Metadata;
 
 namespace Neo4j.Driver.Internal.MessageHandling;
 
-internal class CommitResponseHandler : MetadataCollectingResponseHandler
+internal sealed class CommitResponseHandler : MetadataCollectingResponseHandler
 {
     private readonly IBookmarksTracker _tracker;
 

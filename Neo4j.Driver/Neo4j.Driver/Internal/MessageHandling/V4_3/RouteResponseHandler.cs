@@ -20,7 +20,7 @@ using Neo4j.Driver.Internal.MessageHandling.Metadata;
 
 namespace Neo4j.Driver.Internal.MessageHandling.V4_3;
 
-internal class RouteResponseHandler : MetadataCollectingResponseHandler
+internal sealed class RouteResponseHandler : MetadataCollectingResponseHandler
 {
     public IDictionary<string, object> RoutingInformation { get; set; }
 

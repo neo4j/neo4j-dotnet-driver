@@ -17,51 +17,46 @@
 
 using System;
 
-namespace Neo4j.Driver.Internal.MessageHandling
+namespace Neo4j.Driver.Internal.MessageHandling;
+
+internal sealed class ResponsePipelineError : IResponsePipelineError
 {
-    internal class ResponsePipelineError : IResponsePipelineError
+    private readonly Exception _exception;
+    private volatile bool _thrown;
+
+    public ResponsePipelineError(Exception exception)
     {
-        private readonly Exception _exception;
-        private volatile bool _thrown;
+        _exception = exception ?? throw new ArgumentNullException(nameof(exception));
+        _thrown = false;
+    }
 
-        public ResponsePipelineError(Exception exception)
+    public void EnsureThrown()
+    {
+        if (_thrown)
+            return;
+
+        lock (this)
         {
-            _exception = exception ?? throw new ArgumentNullException(nameof(exception));
-            _thrown = false;
+            if (_thrown)
+                return;
+            
+            _thrown = true;
+            throw _exception;
         }
+    }
 
-        public bool Is<T>()
+    public void EnsureThrownIf<T>()
+    {
+        if (_thrown || _exception is not T)
+            return;
+
+        lock (this)
         {
-            return _exception is T;
-        }
-
-        public bool Is(Func<Exception, bool> predicate)
-        {
-            return predicate(_exception);
-        }
-
-        public void EnsureThrown()
-        {
-            EnsureThrownIf(e => true);
-        }
-
-        public void EnsureThrownIf<T>()
-        {
-            EnsureThrownIf(e => e is T);
-        }
-
-        public void EnsureThrownIf(Func<Exception, bool> predicate)
-        {
-            if (_thrown || !Is(predicate)) return;
-
-            lock (this)
-            {
-                if (!_thrown)
-                {
-                    _thrown = true;
-                    throw _exception;
-                }
-            }
+            if (_thrown)
+                return;
+            
+            _thrown = true;
+            throw _exception;
         }
     }
 }
