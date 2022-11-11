@@ -2,54 +2,53 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.Extensions
+namespace Neo4j.Driver.Internal.Extensions;
+
+internal static class TaskExtensions
 {
-    internal static class TaskExtensions
+    public static async Task Timeout(this Task task, TimeSpan timeout, CancellationToken cancellationToken)
     {
-        public static async Task Timeout(this Task task, TimeSpan timeout, CancellationToken cancellationToken)
+        using var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+        try
         {
-            using var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            var delay = Task.Delay(timeout, linkedSource.Token);
+            var finished = await Task.WhenAny(task, delay).ConfigureAwait(false);
 
-            try
-            {
-                var delay = Task.Delay(timeout, linkedSource.Token);
-                var finished = await Task.WhenAny(task, delay).ConfigureAwait(false);
+            if (finished.IsCanceled)
+                throw new TaskCanceledException(task);
 
-                if (finished.IsCanceled)
-                    throw new TaskCanceledException(task);
+            if (finished.IsCompleted && finished == delay)
+                throw new TimeoutException();
 
-                if (finished.IsCompleted && finished == delay)
-                    throw new TimeoutException();
-
-                await task.ConfigureAwait(false);
-            }
-            finally
-            {
-                linkedSource.Cancel();
-            }
+            await task.ConfigureAwait(false);
         }
-
-        public static async Task<T> Timeout<T>(this Task<T> task, TimeSpan timeout, CancellationToken cancellationToken)
+        finally
         {
-            using var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            linkedSource.Cancel();
+        }
+    }
 
-            try
-            {
-                var delay = Task.Delay(timeout, linkedSource.Token);
-                var finished = await Task.WhenAny(task, delay).ConfigureAwait(false);
+    public static async Task<T> Timeout<T>(this Task<T> task, TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        using var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-                if (finished.IsCanceled)
-                    throw new TaskCanceledException(task);
+        try
+        {
+            var delay = Task.Delay(timeout, linkedSource.Token);
+            var finished = await Task.WhenAny(task, delay).ConfigureAwait(false);
 
-                if (finished.IsCompleted && finished == delay)
-                    throw new TimeoutException();
+            if (finished.IsCanceled)
+                throw new TaskCanceledException(task);
 
-                return await task.ConfigureAwait(false);
-            }
-            finally
-            {
-                linkedSource.Cancel();
-            }
+            if (finished.IsCompleted && finished == delay)
+                throw new TimeoutException();
+
+            return await task.ConfigureAwait(false);
+        }
+        finally
+        {
+            linkedSource.Cancel();
         }
     }
 }

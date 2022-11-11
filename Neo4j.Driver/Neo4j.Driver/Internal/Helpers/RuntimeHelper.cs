@@ -18,36 +18,17 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal static class RuntimeHelper
 {
-    internal static class RuntimeHelper
+    static RuntimeHelper()
     {
-        private static readonly string FrameworkDescription;
-
-        static RuntimeHelper()
-        {
-#if NET46
-            FrameworkDescription = ".NET Framework";
-#else
-            FrameworkDescription = RuntimeInformation.FrameworkDescription ?? string.Empty;
-#endif
-        }
-
-        public static bool IsMono()
-        {
-            return FrameworkDescription.StartsWith("mono", StringComparison.OrdinalIgnoreCase);
-        }
-
-        public static bool IsDotnetFramework()
-        {
-            return FrameworkDescription.StartsWith(".net framework", StringComparison.OrdinalIgnoreCase);
-        }
-
-        public static bool IsDotnetCore()
-        {
-            // there are entries that RuntimeInformation.FrameworkDescription returns null
-            // so we will rely on not being IsMono and IsDotnetFramework
-            return !IsMono() && !IsDotnetFramework();
-        }
+        var frameworkDescription = RuntimeInformation.FrameworkDescription;
+        var mono = frameworkDescription.StartsWith("mono", StringComparison.OrdinalIgnoreCase);
+        var framework = frameworkDescription.StartsWith(".net framework", StringComparison.OrdinalIgnoreCase);
+        IsDotNetCore = !mono && !framework;
     }
+
+    public static bool IsDotNetCore { get; }
 }

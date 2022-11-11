@@ -17,21 +17,19 @@
 
 using System;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.Util;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal static class ConnectionExtensions
 {
-    internal static class ConnectionExtensions
+    public static AccessMode GetEnforcedAccessMode(this IConnection connection)
     {
-        public static AccessMode GetEnforcedAccessMode(this IConnection connection)
-        {
-            return connection.Mode ??
-                   throw new InvalidOperationException("Connection should have its Mode property set.");
-        }
+        return connection.Mode ??
+               throw new InvalidOperationException("Connection should have its Mode property set.");
+    }
 
-        public static bool SupportsMultidatabase(this IConnection connection)
-        {
-            return connection.Version >= BoltProtocolVersion.V4_0;
-        }
+    public static bool SupportsMultiDatabase(this IConnection connection)
+    {
+        return connection.Version >= BoltProtocolVersion.V4_0;
     }
 }

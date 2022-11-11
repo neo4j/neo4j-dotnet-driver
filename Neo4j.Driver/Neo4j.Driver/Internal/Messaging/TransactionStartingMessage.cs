@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal.Messaging;
 
 internal abstract class TransactionStartingMessage : IRequestMessage
 {
-    private const string BookmarksKey = BookmarksHelper.BookmarksKey;
+    private const string BookmarksKey = "bookmarks";
     private const string TxTimeoutMetadataKey = "tx_timeout";
     private const string TxMetadataMetadataKey = "tx_metadata";
     private const string AccessModeKey = "mode";

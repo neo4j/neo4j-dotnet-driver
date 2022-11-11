@@ -34,7 +34,7 @@ internal static class StreamExtensions
         var hasRead = 0;
         var offset = 0;
         var toRead = bytes.Length;
-        
+
         do
         {
             hasRead = stream.Read(bytes, offset, toRead);
@@ -45,7 +45,7 @@ internal static class StreamExtensions
         if (hasRead <= 0)
             throw new IOException(
                 $"Failed to read more from input stream. Expected {bytes.Length} bytes, received {offset}.");
-        
+
         return offset;
     }
 

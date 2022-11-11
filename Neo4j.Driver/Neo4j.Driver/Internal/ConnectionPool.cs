@@ -397,7 +397,7 @@ internal sealed class ConnectionPool : IConnectionPool
     {
         // Establish a connection with the server and immediately close it.
         var connection = await AcquireAsync(Simple.Mode, Simple.Database, null, Simple.Bookmarks).ConfigureAwait(false);
-        var multiDb = connection.SupportsMultidatabase();
+        var multiDb = connection.SupportsMultiDatabase();
         await connection.CloseAsync().ConfigureAwait(false);
 
         return multiDb;

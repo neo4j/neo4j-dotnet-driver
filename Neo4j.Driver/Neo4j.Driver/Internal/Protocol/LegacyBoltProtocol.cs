@@ -66,7 +66,7 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
 
         var bookmarkTracker = new BookmarksTracker(bookmarks);
         var resourceHandler = new ConnectionResourceHandler(connection);
-        var sessionDb = connection.SupportsMultidatabase() ? "system" : null;
+        var sessionDb = connection.SupportsMultiDatabase() ? "system" : null;
 
         connection.Configure(sessionDb, AccessMode.Read);
 

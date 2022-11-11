@@ -147,7 +147,7 @@ namespace Neo4j.Driver.Internal.Routing
                 {
                     var connection = await CreateClusterConnectionAsync(uri, Simple.Mode, Simple.Database, null,
                         Simple.Bookmarks).ConfigureAwait(false);
-                    var multiDb = connection.SupportsMultidatabase();
+                    var multiDb = connection.SupportsMultiDatabase();
                     await connection.CloseAsync().ConfigureAwait(false);
                     return multiDb;
                 }

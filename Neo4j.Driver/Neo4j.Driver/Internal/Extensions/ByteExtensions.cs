@@ -15,54 +15,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 using System;
-using System.Linq;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal static class ByteExtensions
 {
-    internal static class ByteExtensions
+    public static string ToHexString(this byte[] bytes, string separator, int start = 0, int size = -1)
     {
-        public static byte[] PadRight(this byte[] bytes, int totalSize)
+        if (bytes == null)
+            return "NULL";
+
+        if (size < 0)
         {
-            var output = new byte[totalSize];
-            Array.Copy(bytes, output, bytes.Length);
-            return output;
+            size = bytes.Length;
         }
 
-        public static string ToHexString(this byte[] bytes, string separator, int start = 0, int size = -1)
-        {
-            if (bytes == null)
-                return "NULL";
+        var destination = new byte[size];
+        Array.Copy(bytes, start, destination, 0, size);
+        var output = BitConverter.ToString(destination);
 
-            if (size < 0)
-            {
-                size = bytes.Length;
-            }
+        return output.Replace("-", separator);
+    }
 
-            var destination = new byte[size];
-            Array.Copy(bytes, start, destination, 0, size);
-            var output = BitConverter.ToString(destination);
-
-            return output.Replace("-", separator);
-        }
-
-        public static string ToHexString(this byte[] bytes, int start = 0, int size = -1, bool showX = false)
-        {
-            var hexStr = bytes.ToHexString(" ", start, size);
-            return showX ? $"0x{hexStr.Replace(" ", ", 0x")}" : hexStr;
-        }
-
-        /// <summary>
-        /// Takes the format: 00 00 00 and converts to a byte array.
-        /// </summary>
-        /// <param name="hex"></param>
-        /// <returns></returns>
-        public static byte[] ToByteArray(this string hex)
-        {
-            hex = hex.Replace(" ", "").Replace(Environment.NewLine, "");
-            return Enumerable.Range(0, hex.Length)
-                .Where(x => x % 2 == 0)
-                .Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
-                .ToArray();
-        }
+    public static string ToHexString(this byte[] bytes, int start = 0, int size = -1)
+    {
+        return bytes.ToHexString(" ", start, size);
     }
 }

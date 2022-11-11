@@ -1,4 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
+// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -19,112 +20,97 @@ using System;
 using System.IO;
 using System.Net.Sockets;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal static class ErrorExtensions
 {
-    internal static class ErrorExtensions
+    public static Neo4jException ParseServerException(string code, string message)
     {
-        public static Neo4jException ParseServerException(string code, string message)
+        Neo4jException error;
+        var parts = code.Split('.');
+        var classification = parts[1].ToLowerInvariant();
+        switch (classification)
         {
-            Neo4jException error;
-            var parts = code.Split('.');
-            var classification = parts[1].ToLowerInvariant();
-            switch (classification)
-            {
-                case "clienterror":
-                    if (AuthenticationException.IsAuthenticationError(code))
-                    {
-                        error = new AuthenticationException(message);
-                    }
-					else if(AuthorizationException.IsAuthorizationError(code))
-					{
-						error = new AuthorizationException(message);
-					}
-                    else if (ProtocolException.IsProtocolError(code))
-                    {
-                        error = new ProtocolException(code, message);
-                    }
-                    else if (FatalDiscoveryException.IsFatalDiscoveryError(code))
-                    {
-                        error = new FatalDiscoveryException(message);
-                    }
-					else if(TokenExpiredException.IsTokenExpiredError(code))
-					{
-						error = new TokenExpiredException(message);
-					}
-					else if(InvalidBookmarkException.IsInvalidBookmarkException(code))
-					{
-						error = new InvalidBookmarkException(message);
-					}
-                    else
-                    {
-                        error = new ClientException(code, message);
-                    }
+            case "clienterror":
+                if (AuthenticationException.IsAuthenticationError(code))
+                    error = new AuthenticationException(message);
+                else if (AuthorizationException.IsAuthorizationError(code))
+                    error = new AuthorizationException(message);
+                else if (ProtocolException.IsProtocolError(code))
+                    error = new ProtocolException(code, message);
+                else if (FatalDiscoveryException.IsFatalDiscoveryError(code))
+                    error = new FatalDiscoveryException(message);
+                else if (TokenExpiredException.IsTokenExpiredError(code))
+                    error = new TokenExpiredException(message);
+                else if (InvalidBookmarkException.IsInvalidBookmarkException(code))
+                    error = new InvalidBookmarkException(message);
+                else
+                    error = new ClientException(code, message);
 
-                    break;
-                case "transienterror":
-                    error = new TransientException(code, message);
-                    break;
-                default:
-                    error = new DatabaseException(code, message);
-                    break;
-            }
-
-            return error;
+                break;
+            case "transienterror":
+                error = new TransientException(code, message);
+                break;
+            default:
+                error = new DatabaseException(code, message);
+                break;
         }
 
-        public static bool CanBeRetried(this Exception error)
-        {
-            return error is Neo4jException neo4JException && neo4JException.CanBeRetried;
-        }
+        return error;
+    }
 
-        public static bool IsRecoverableError(this Exception error)
-        {
-            return error is ClientException || error is TransientException;
-        }
+    public static bool CanBeRetried(this Exception error)
+    {
+        return error is Neo4jException neo4JException && neo4JException.CanBeRetried;
+    }
 
-        public static bool IsConnectionError(this Exception error)
-        {
-            return error is IOException || error is SocketException ||
-                   error.GetBaseException() is IOException || error.GetBaseException() is SocketException;
-        }
+    public static bool IsRecoverableError(this Exception error)
+    {
+        return error is ClientException || error is TransientException;
+    }
 
-		public static bool IsAuthorizationError(this Exception error)
-		{
-			return error is AuthorizationException;
-		}
+    public static bool IsConnectionError(this Exception error)
+    {
+        return error is IOException || error is SocketException ||
+               error.GetBaseException() is IOException || error.GetBaseException() is SocketException;
+    }
 
-        public static bool IsDatabaseUnavailableError(this Exception error)
-        {
-            return error.HasErrorCode("Neo.TransientError.General.DatabaseUnavailable");
-        }
+    public static bool IsAuthorizationError(this Exception error)
+    {
+        return error is AuthorizationException;
+    }
 
-        public static bool IsClusterError(this Exception error)
-        {
-            return IsClusterNotALeaderError(error)
-                   || IsForbiddenOnReadOnlyDatabaseError(error);
-        }
+    public static bool IsDatabaseUnavailableError(this Exception error)
+    {
+        return error.HasErrorCode("Neo.TransientError.General.DatabaseUnavailable");
+    }
 
-        private static bool IsClusterNotALeaderError(this Exception error)
-        {
-            return error.HasErrorCode("Neo.ClientError.Cluster.NotALeader");
-        }
+    public static bool IsClusterError(this Exception error)
+    {
+        return IsClusterNotALeaderError(error)
+               || IsForbiddenOnReadOnlyDatabaseError(error);
+    }
 
-        private static bool IsForbiddenOnReadOnlyDatabaseError(this Exception error)
-        {
-            return error.HasErrorCode("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase");
-        }
+    private static bool IsClusterNotALeaderError(this Exception error)
+    {
+        return error.HasErrorCode("Neo.ClientError.Cluster.NotALeader");
+    }
 
-        private static bool HasErrorCode(this Exception error, string code)
-        {
-            var exception = error as Neo4jException;
-            return exception?.Code != null && exception.Code.Equals(code);
-        }
+    private static bool IsForbiddenOnReadOnlyDatabaseError(this Exception error)
+    {
+        return error.HasErrorCode("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase");
+    }
 
-        public static ResultConsumedException NewResultConsumedException()
-        {
-            return new ResultConsumedException(
-                "Cannot access records on this result any more as the result has already been consumed " +
-                "or the query runner where the result is created has already been closed.");
-        }
+    private static bool HasErrorCode(this Exception error, string code)
+    {
+        var exception = error as Neo4jException;
+        return exception?.Code != null && exception.Code.Equals(code);
+    }
+
+    public static ResultConsumedException NewResultConsumedException()
+    {
+        return new ResultConsumedException(
+            "Cannot access records on this result any more as the result has already been consumed " +
+            "or the query runner where the result is created has already been closed.");
     }
 }

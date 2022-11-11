@@ -54,7 +54,7 @@ namespace Neo4j.Driver.Internal
             UserAgent = userAgent ?? DefaultUserAgent;
             
             IHostResolver systemResolver = new SystemHostResolver();
-            if (RuntimeHelper.IsDotnetCore())
+            if (RuntimeHelper.IsDotNetCore)
             {
                 systemResolver = new SystemNetCoreHostResolver(systemResolver);
             }

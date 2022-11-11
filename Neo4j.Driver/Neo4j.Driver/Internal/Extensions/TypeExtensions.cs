@@ -24,7 +24,8 @@ internal static class TypeExtensions
     public static T CastOrThrow<T>(this object value)
     {
         if (value is not T result)
-            throw new ArgumentOutOfRangeException($"Encountered {value?.GetType().Name} where {typeof(T).Name} was expected");
+            throw new ArgumentOutOfRangeException(
+                $"Encountered {value?.GetType().Name} where {typeof(T).Name} was expected");
 
         return result;
     }
