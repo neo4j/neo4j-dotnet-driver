@@ -35,7 +35,6 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
     private readonly long _fetchSize;
     private readonly string _impersonatedUser;
     private readonly ILogger _logger;
-    private readonly IBoltProtocol _protocol;
     private readonly bool _reactive;
     private readonly ITransactionResourceHandler _resourceHandler;
 
@@ -112,7 +111,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
     public Task BeginTransactionAsync(TransactionConfig config)
     {
         TransactionConfig = config;
-        return _protocol.BeginTransactionAsync(_connection, Database, _bookmarks, config, _impersonatedUser);
+        return _connection.BeginTransactionAsync(Database, _bookmarks, config, _impersonatedUser);
     }
 
     public async Task MarkToCloseAsync()
@@ -152,7 +151,8 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
                 // ignore if cursor failed to create
             }
 
-            if (cursor != null) await cursor.ConsumeAsync().ConfigureAwait(false);
+            if (cursor != null)
+                await cursor.ConsumeAsync().ConfigureAwait(false);
         }
     }
 
