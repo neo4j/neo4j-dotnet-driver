@@ -27,7 +27,7 @@ using Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 
 namespace Neo4j.Driver.Internal.Protocol;
 
-internal class MessageFormat : IMessageFormat
+internal sealed class MessageFormat
 {
     private readonly Dictionary<byte, IPackStreamSerializer> _readerStructHandlers = new();
     private readonly Dictionary<Type, IPackStreamSerializer> _writerStructHandlers = new();

@@ -30,7 +30,7 @@ internal sealed class PackStreamWriter
     private readonly BoltProtocolVersion _version;
     private readonly Stream _stream;
 
-    public PackStreamWriter(IMessageFormat format, ChunkWriter stream)
+    public PackStreamWriter(MessageFormat format, ChunkWriter stream)
     {
         StructHandlers = format.WriteStructHandlers;
         _version = format.Version;

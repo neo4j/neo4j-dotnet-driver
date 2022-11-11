@@ -35,7 +35,7 @@ public sealed class PackStreamReader
     private readonly IReadOnlyDictionary<byte, IPackStreamSerializer> _structHandlers;
     private readonly BoltProtocolVersion _version;
 
-    internal PackStreamReader(Stream stream, IMessageFormat format)
+    internal PackStreamReader(Stream stream, MessageFormat format)
     {
         _stream = stream;
         _version = format.Version;

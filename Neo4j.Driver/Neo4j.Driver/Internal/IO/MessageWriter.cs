@@ -17,12 +17,13 @@
 
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO;
 
-internal class MessageWriter : IMessageWriter
+internal sealed class MessageWriter
 {
-    public MessageWriter(ChunkWriter chunkWriter, IMessageFormat format)
+    public MessageWriter(ChunkWriter chunkWriter, MessageFormat format)
     {
         _chunkWriter = chunkWriter;
         _packStreamWriter = new PackStreamWriter(format, chunkWriter);

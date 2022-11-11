@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 namespace Neo4j.Driver.Internal.IO;
 
 //TODO: Optimize reading stream with Span/Memory in .net6+
-internal sealed class ChunkReader : IChunkReader
+internal sealed class ChunkReader
 {
     private Stream InputStream { get; }
     private MemoryStream ChunkBuffer { get; set; }

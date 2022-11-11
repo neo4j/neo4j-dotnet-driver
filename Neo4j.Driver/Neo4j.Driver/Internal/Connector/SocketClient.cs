@@ -40,6 +40,7 @@ internal sealed class SocketClient : ISocketClient
 
     private readonly ILogger _logger;
     private MessageFormat _format;
+    private MemoryStream _readBufferStream;
 
     public SocketClient(Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings, ILogger logger = null,
         ITcpSocketClient socketClient = null)
@@ -62,6 +63,7 @@ internal sealed class SocketClient : ISocketClient
         _format = new MessageFormat(Version);
 
         ChunkReader = new ChunkReader(_tcpSocketClient.ReaderStream);
+        _readBufferStream = new MemoryStream(_bufferSettings.MaxReadBufferSize);
         ChunkWriter = new ChunkWriter(_tcpSocketClient.WriterStream, _bufferSettings, _logger);
         SetOpened();
     }
@@ -102,7 +104,7 @@ internal sealed class SocketClient : ISocketClient
     {
         try
         {
-            var reader = new MessageReader(_format, ChunkReader, _bufferSettings, _logger);
+            var reader = new MessageReader(_format, ChunkReader, _bufferSettings, _readBufferStream, _logger);
             await reader.ReadAsync(responsePipeline).ConfigureAwait(false);
         }
         catch (Exception ex)
