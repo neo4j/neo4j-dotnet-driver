@@ -110,7 +110,6 @@ internal sealed class ChunkWriter: Stream, IChunkWriter
         try
         {
             _chunkStream.Position = _startPos;
-
             _chunkStream.Write(chunkSize, 0, chunkSize.Length);
         }
         finally

@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO;
@@ -26,18 +27,15 @@ public sealed class PackStreamReader
 {
     private static readonly byte[] EmptyByteArray = Array.Empty<byte>();
 
-    private readonly byte[] _byteBuffer = new byte[1];
-    private readonly byte[] _shortBuffer = new byte[2];
-    private readonly byte[] _intBuffer = new byte[4];
-    private readonly byte[] _longBuffer = new byte[8];
-
     private readonly Stream _stream;
+    private readonly ByteBuffers _buffers;
     private readonly IReadOnlyDictionary<byte, IPackStreamSerializer> _structHandlers;
     private readonly BoltProtocolVersion _version;
 
-    internal PackStreamReader(Stream stream, MessageFormat format)
+    internal PackStreamReader(Stream stream, MessageFormat format, ByteBuffers buffers)
     {
         _stream = stream;
+        _buffers = buffers;
         _version = format.Version;
         _structHandlers = format.ReaderStructHandlers;
     }
@@ -392,48 +390,49 @@ public sealed class PackStreamReader
 
     internal sbyte NextSByte()
     {
-        _stream.Read(_byteBuffer);
-        return (sbyte) _byteBuffer[0];
+        _stream.Read(_buffers.ByteArray);
+        return (sbyte) _buffers.ByteArray[0];
     }
 
     public byte NextByte()
     {
-        _stream.Read(_byteBuffer);
+        _stream.Read(_buffers.ByteArray);
 
-        return _byteBuffer[0];
+        return _buffers.ByteArray[0];
     }
 
     public short NextShort()
     {
-        _stream.Read(_shortBuffer);
+        _stream.Read(_buffers.ShortBuffer);
 
-        return PackStreamBitConverter.ToInt16(_shortBuffer);
+        return PackStreamBitConverter.ToInt16(_buffers.ShortBuffer);
     }
 
     public int NextInt()
     {
-        _stream.Read(_intBuffer);
+        _stream.Read(_buffers.IntBuffer);
 
-        return PackStreamBitConverter.ToInt32(_intBuffer);
+        return PackStreamBitConverter.ToInt32(_buffers.IntBuffer);
     }
 
     public long NextLong()
     {
-        _stream.Read(_longBuffer);
+        _stream.Read(_buffers.LongBuffer);
 
-        return PackStreamBitConverter.ToInt64(_longBuffer);
+        return PackStreamBitConverter.ToInt64(_buffers.LongBuffer);
     }
 
     public double NextDouble()
     {
-        _stream.Read(_longBuffer);
+        _stream.Read(_buffers.LongBuffer);
 
-        return PackStreamBitConverter.ToDouble(_longBuffer);
+        return PackStreamBitConverter.ToDouble(_buffers.LongBuffer);
     }
 
     public byte PeekByte()
     {
-        if (_stream.Length - _stream.Position < 1) throw new ProtocolException("Unable to peek 1 byte from buffer.");
+        if (_stream.Length - _stream.Position < 1) 
+            throw new ProtocolException("Unable to peek 1 byte from buffer.");
 
         try
         {

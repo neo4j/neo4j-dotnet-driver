@@ -108,7 +108,7 @@ internal sealed class PackStreamWriter
 
     public void WriteEnumerable(IEnumerable value)
     {
-        IList list = new List<object>();
+        var list = new List<object>();
         foreach (var item in value)
             list.Add(item);
         WriteList(list);
@@ -194,7 +194,8 @@ internal sealed class PackStreamWriter
         else
         {
             WriteListHeader(value.Count);
-            foreach (var item in value) Write(item);
+            foreach (var item in value)
+                Write(item);
         }
     }
 

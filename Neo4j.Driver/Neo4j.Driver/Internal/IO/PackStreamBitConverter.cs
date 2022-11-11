@@ -34,7 +34,7 @@ internal static class PackStreamBitConverter
     }
 
     /// <summary>
-    ///     Converts a shot (Int16) to bytes.
+    ///     Converts a short (Int16) to bytes.
     /// </summary>
     /// <param name="value">The short (Int16) value to convert.</param>
     /// <returns>The specified short (Int16) value as an array of bytes.</returns>
@@ -45,7 +45,7 @@ internal static class PackStreamBitConverter
     }
 
     /// <summary>
-    ///     Converts a shot (UInt16) to bytes.
+    ///     Converts a short (UInt16) to bytes.
     /// </summary>
     /// <param name="value">The short (UInt16) value to convert.</param>
     /// <returns>The specified short (UInt16) value as an array of bytes.</returns>

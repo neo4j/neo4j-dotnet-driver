@@ -32,6 +32,7 @@ internal sealed class SocketClient
     private const string MessagePattern = "C: {0}";
     private readonly Uri _uri;
     private readonly BufferSettings _bufferSettings;
+    private readonly ByteBuffers _readerBuffers = new();
 
     private readonly ITcpSocketClient _tcpSocketClient;
 
@@ -103,11 +104,12 @@ internal sealed class SocketClient
         }
     }
 
+
     public async Task ReceiveOneAsync(IResponsePipeline responsePipeline)
     {
         try
         {
-            await _messageReader.ReadAsync(responsePipeline).ConfigureAwait(false);
+            await _messageReader.ReadAsync(responsePipeline, _format, _readerBuffers).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -177,4 +179,13 @@ internal sealed class SocketClient
             ? _tcpSocketClient.DisposeAsync()
             : default;
     }
+}
+
+internal sealed class ByteBuffers
+{
+    public byte[] ByteArray = new byte[1];
+    public byte[] ShortBuffer = new byte[2];
+    public byte[] IntBuffer = new byte[4];
+    public byte[] LongBuffer = new byte[8];
+
 }
