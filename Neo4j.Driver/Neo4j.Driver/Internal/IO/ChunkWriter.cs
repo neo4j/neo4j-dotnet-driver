@@ -166,7 +166,7 @@ internal sealed class ChunkWriter: Stream, IChunkWriter
         if (_logger != null && _logger.IsTraceEnabled())
         {
             var buffer = stream.ToArray();
-            _logger?.Trace("C: {0}", buffer.ToHexString(0, buffer.Length));
+            _logger.Trace("C: {0}", buffer.ToHexString(0, buffer.Length));
         }
     }
 
