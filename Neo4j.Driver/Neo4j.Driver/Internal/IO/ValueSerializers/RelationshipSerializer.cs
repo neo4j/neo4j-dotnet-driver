@@ -19,22 +19,23 @@ using System.Collections.Generic;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Types;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers
+namespace Neo4j.Driver.Internal.IO.ValueSerializers;
+
+internal sealed class RelationshipSerializer : ReadOnlySerializer
 {
-    internal class RelationshipSerializer : ReadOnlySerializer
+    internal static readonly RelationshipSerializer Instance = new();
+    
+    public const byte Relationship = (byte)'R';
+    public override IEnumerable<byte> ReadableStructs => new[] {Relationship};
+
+    public override object Deserialize(PackStreamReader reader, byte signature, long size)
     {
-        public const byte Relationship = (byte)'R';
-        public override IEnumerable<byte> ReadableStructs => new[] {Relationship};
+        var urn = reader.ReadLong();
+        var startUrn = reader.ReadLong();
+        var endUrn = reader.ReadLong();
+        var relType = reader.ReadString();
+        var props = reader.ReadMap();
 
-        public override object Deserialize(PackStreamReader reader, byte signature, long size)
-        {
-            var urn = reader.ReadLong();
-            var startUrn = reader.ReadLong();
-            var endUrn = reader.ReadLong();
-            var relType = reader.ReadString();
-            var props = reader.ReadMap();
-
-            return new Relationship(urn, startUrn, endUrn, relType, props);
-        }
+        return new Relationship(urn, startUrn, endUrn, relType, props);
     }
 }

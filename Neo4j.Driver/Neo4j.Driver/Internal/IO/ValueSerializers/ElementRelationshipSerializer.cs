@@ -18,27 +18,28 @@
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Types;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers
+namespace Neo4j.Driver.Internal.IO.ValueSerializers;
+
+internal sealed class ElementRelationshipSerializer : ReadOnlySerializer
 {
-    internal class ElementRelationshipSerializer : ReadOnlySerializer
+    internal static readonly ElementRelationshipSerializer Instance = new();
+
+    public const byte Relationship = (byte)'R';
+    public override IEnumerable<byte> ReadableStructs => new[] { Relationship };
+
+    public override object Deserialize(PackStreamReader reader, byte signature, long size)
     {
-        public const byte Relationship = (byte)'R';
-        public override IEnumerable<byte> ReadableStructs => new[] { Relationship };
+        var relId = reader.ReadLong();
+        var relStartId = reader.ReadLong();
+        var relEndId = reader.ReadLong();
 
-        public override object Deserialize(PackStreamReader reader, byte signature, long size)
-        {
-            var relId = reader.ReadLong();
-            var relStartId = reader.ReadLong();
-            var relEndId = reader.ReadLong();
-
-            var relType = reader.ReadString();
-            var props = reader.ReadMap();
+        var relType = reader.ReadString();
+        var props = reader.ReadMap();
             
-            var urn = reader.ReadString();
-            var startUrn = reader.ReadString();
-            var endUrn = reader.ReadString();
+        var urn = reader.ReadString();
+        var startUrn = reader.ReadString();
+        var endUrn = reader.ReadString();
 
-            return new Relationship(relId, urn, relStartId, relEndId, startUrn, endUrn, relType, props);
-        }
+        return new Relationship(relId, urn, relStartId, relEndId, startUrn, endUrn, relType, props);
     }
 }

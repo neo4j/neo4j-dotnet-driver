@@ -19,33 +19,34 @@ using System.Collections.Generic;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Types;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers
+namespace Neo4j.Driver.Internal.IO.ValueSerializers;
+
+internal sealed class NodeSerializer : ReadOnlySerializer
 {
-    internal class NodeSerializer : ReadOnlySerializer
+    internal static readonly NodeSerializer Instance = new();
+    
+    public const byte Node = (byte)'N';
+    public override IEnumerable<byte> ReadableStructs => new[] {Node};
+
+    public override object Deserialize(PackStreamReader reader, byte signature, long size)
     {
-        public const byte Node = (byte)'N';
-        public override IEnumerable<byte> ReadableStructs => new[] {Node};
+        var urn = reader.ReadLong();
 
-        public override object Deserialize(PackStreamReader reader, byte signature, long size)
+        var numLabels = (int) reader.ReadListHeader();
+        var labels = new List<string>(numLabels);
+        for (var i = 0; i < numLabels; i++)
         {
-            var urn = reader.ReadLong();
-
-            var numLabels = (int) reader.ReadListHeader();
-            var labels = new List<string>(numLabels);
-            for (var i = 0; i < numLabels; i++)
-            {
-                labels.Add(reader.ReadString());
-            }
-
-            var numProps = (int) reader.ReadMapHeader();
-            var props = new Dictionary<string, object>(numProps);
-            for (var j = 0; j < numProps; j++)
-            {
-                var key = reader.ReadString();
-                props.Add(key, reader.Read());
-            }
-
-            return new Node(urn, labels, props);
+            labels.Add(reader.ReadString());
         }
+
+        var numProps = (int) reader.ReadMapHeader();
+        var props = new Dictionary<string, object>(numProps);
+        for (var j = 0; j < numProps; j++)
+        {
+            var key = reader.ReadString();
+            props.Add(key, reader.Read());
+        }
+
+        return new Node(urn, labels, props);
     }
 }

@@ -23,6 +23,8 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 
 internal class UtcZonedDateTimeSerializer : IPackStreamSerializer
 {
+    internal static readonly UtcZonedDateTimeSerializer Instance = new();
+
     public const byte StructTypeWithOffset = (byte) 'I'; //49
     public const byte StructTypeWithId = (byte) 'i'; // 69
     public const int StructSize = 3;

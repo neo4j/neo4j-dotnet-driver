@@ -18,23 +18,24 @@
 using System;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
+
+internal sealed class SystemTimeSpanSerializer : WriteOnlySerializer
 {
-    internal class SystemTimeSpanSerializer : WriteOnlySerializer
+    internal static readonly SystemTimeSpanSerializer Instance = new();
+    
+    public override IEnumerable<Type> WritableTypes => new[] {typeof(TimeSpan)};
+
+    public override void Serialize(PackStreamWriter writer, object value)
     {
-        public override IEnumerable<Type> WritableTypes => new[] {typeof(TimeSpan)};
+        var time = value.CastOrThrow<TimeSpan>();
 
-        public override void Serialize(PackStreamWriter writer, object value)
+        if (time.Ticks < 0 || time.Ticks >= TimeSpan.TicksPerDay)
         {
-            var time = value.CastOrThrow<TimeSpan>();
-
-            if (time.Ticks < 0 || time.Ticks >= TimeSpan.TicksPerDay)
-            {
-                throw new ProtocolException(
-                    $"TimeSpan instance ({time}) passed to {nameof(SystemDateTimeSerializer)} is not a valid time of day!");
-            }
-
-            writer.Write(new LocalTime(time));
+            throw new ProtocolException(
+                $"TimeSpan instance ({time}) passed to {nameof(SystemDateTimeSerializer)} is not a valid time of day!");
         }
+
+        writer.Write(new LocalTime(time));
     }
 }

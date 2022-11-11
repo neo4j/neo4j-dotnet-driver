@@ -21,8 +21,10 @@ using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 
-internal class DurationSerializer : IPackStreamSerializer
+internal sealed class DurationSerializer : IPackStreamSerializer
 {
+    internal static readonly DurationSerializer Instance = new();
+    
     public const byte StructType = (byte) 'E';
     public const int StructSize = 4;
 

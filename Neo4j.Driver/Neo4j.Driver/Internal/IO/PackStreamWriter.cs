@@ -91,7 +91,7 @@ internal sealed class PackStreamWriter
                 break;
             case IMessage message:
                 WriteMessage(message);
-                break;
+                break;  
             default:
                 if (_format.WriteStructHandlers.TryGetValue(value.GetType(), out var structHandler))
                     structHandler.Serialize(_format.Version, this, value);

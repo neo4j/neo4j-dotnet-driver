@@ -21,8 +21,10 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 
-internal class OffsetTimeSerializer : IPackStreamSerializer
+internal sealed class OffsetTimeSerializer : IPackStreamSerializer
 {
+    internal static readonly OffsetTimeSerializer Instance = new();
+
     public const byte StructType = (byte) 'T';
     public const int StructSize = 2;
 

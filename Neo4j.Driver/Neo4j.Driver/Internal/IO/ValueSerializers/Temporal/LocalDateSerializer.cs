@@ -19,55 +19,56 @@ using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
-{
-    internal class LocalDateSerializer : IPackStreamSerializer
-    {
-        public const byte StructType = (byte) 'D';
-        public const int StructSize = 1;
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 
-        public IEnumerable<byte> ReadableStructs => new[] {StructType};
+internal sealed class LocalDateSerializer : IPackStreamSerializer
+{
+    internal static readonly LocalDateSerializer Instance = new();
+    
+    public const byte StructType = (byte) 'D';
+    public const int StructSize = 1;
+
+    public IEnumerable<byte> ReadableStructs => new[] {StructType};
 
 #if NET6_0_OR_GREATER
-        public IEnumerable<Type> WritableTypes => new[] {typeof(LocalDate), typeof(DateOnly)};
+    public IEnumerable<Type> WritableTypes => new[] {typeof(LocalDate), typeof(DateOnly)};
 #else
         public IEnumerable<Type> WritableTypes => new[] {typeof(LocalDate)};
 #endif
 
-        public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
-        {
-            PackStream.EnsureStructSize("Date", StructSize, size);
+    public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
+    {
+        PackStream.EnsureStructSize("Date", StructSize, size);
 
-            var epochDays = reader.ReadLong();
+        var epochDays = reader.ReadLong();
 
-            return TemporalHelpers.EpochDaysToDate(epochDays);
-        }
-
-        public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
-        {
-#if NET6_0_OR_GREATER
-            if (value is DateOnly date)
-            {
-                WriteDateOnly(writer, date);
-                return;
-            }
-#endif
-            WriteLocalDate(writer, value);
-        }
-
-        private static void WriteLocalDate(PackStreamWriter writer, object value)
-        {
-            var date = value.CastOrThrow<LocalDate>();
-            writer.WriteStructHeader(StructSize, StructType);
-            writer.WriteLong(date.ToEpochDays());
-        }
-
-#if NET6_0_OR_GREATER
-        private static void WriteDateOnly(PackStreamWriter writer, DateOnly date)
-        {
-            writer.WriteStructHeader(StructSize, StructType);
-            writer.WriteLong(date.ToEpochDays());
-        }
-#endif
+        return TemporalHelpers.EpochDaysToDate(epochDays);
     }
+
+    public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
+    {
+#if NET6_0_OR_GREATER
+        if (value is DateOnly date)
+        {
+            WriteDateOnly(writer, date);
+            return;
+        }
+#endif
+        WriteLocalDate(writer, value);
+    }
+
+    private static void WriteLocalDate(PackStreamWriter writer, object value)
+    {
+        var date = value.CastOrThrow<LocalDate>();
+        writer.WriteStructHeader(StructSize, StructType);
+        writer.WriteLong(date.ToEpochDays());
+    }
+
+#if NET6_0_OR_GREATER
+    private static void WriteDateOnly(PackStreamWriter writer, DateOnly date)
+    {
+        writer.WriteStructHeader(StructSize, StructType);
+        writer.WriteLong(date.ToEpochDays());
+    }
+#endif
 }

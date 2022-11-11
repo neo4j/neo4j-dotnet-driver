@@ -18,20 +18,21 @@
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Types;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers
+namespace Neo4j.Driver.Internal.IO.ValueSerializers;
+
+internal sealed class UnboundRelationshipSerializer : ReadOnlySerializer
 {
-    internal class UnboundRelationshipSerializer : ReadOnlySerializer
+    internal static readonly UnboundRelationshipSerializer Instance = new();
+    
+    public const byte UnboundRelationship = (byte) 'r';
+    public override IEnumerable<byte> ReadableStructs => new[] {UnboundRelationship};
+
+    public override object Deserialize(PackStreamReader reader, byte signature, long size)
     {
-        public const byte UnboundRelationship = (byte) 'r';
-        public override IEnumerable<byte> ReadableStructs => new[] {UnboundRelationship};
+        var urn = reader.ReadLong();
+        var relType = reader.ReadString();
+        var props = reader.ReadMap();
 
-        public override object Deserialize(PackStreamReader reader, byte signature, long size)
-        {
-            var urn = reader.ReadLong();
-            var relType = reader.ReadString();
-            var props = reader.ReadMap();
-
-            return new Relationship(urn, -1, -1, relType, props);
-        }
+        return new Relationship(urn, -1, -1, relType, props);
     }
 }

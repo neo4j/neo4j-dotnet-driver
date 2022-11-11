@@ -21,8 +21,10 @@ using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 
-internal class ZonedDateTimeSerializer : IPackStreamSerializer
+internal sealed class ZonedDateTimeSerializer : IPackStreamSerializer
 {
+    internal static readonly ZonedDateTimeSerializer Instance = new();
+    
     public const byte StructTypeWithOffset = (byte) 'F';
     public const byte StructTypeWithId = (byte) 'f';
     public const int StructSize = 3;

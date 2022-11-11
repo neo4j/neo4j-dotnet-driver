@@ -23,6 +23,8 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 
 internal class LocalDateTimeSerializer : IPackStreamSerializer
 {
+    internal static readonly LocalDateTimeSerializer Instance = new();
+
     public const byte StructType = (byte) 'd';
     public const int StructSize = 2;
 

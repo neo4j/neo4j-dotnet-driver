@@ -18,29 +18,30 @@
 using System;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
+
+internal sealed class SystemDateTimeSerializer : WriteOnlySerializer
 {
-    internal class SystemDateTimeSerializer : WriteOnlySerializer
+    internal static readonly SystemDateTimeSerializer Instance = new();
+    
+    public override IEnumerable<Type> WritableTypes => new[] {typeof(DateTime)};
+
+    public override void Serialize(PackStreamWriter writer, object value)
     {
-        public override IEnumerable<Type> WritableTypes => new[] {typeof(DateTime)};
+        var dateTime = value.CastOrThrow<DateTime>();
 
-        public override void Serialize(PackStreamWriter writer, object value)
+        switch (dateTime.Kind)
         {
-            var dateTime = value.CastOrThrow<DateTime>();
-
-            switch (dateTime.Kind)
-            {
-                case DateTimeKind.Local:
-                case DateTimeKind.Unspecified:
-                    writer.Write(new LocalDateTime(dateTime));
-                    break;
-                case DateTimeKind.Utc:
-                    writer.Write(new ZonedDateTime(dateTime, 0));
-                    break;
-                default:
-                    throw new ProtocolException(
-                        $"Unsupported DateTimeKind {dateTime.Kind} passed to {nameof(SystemDateTimeSerializer)}!");
-            }
+            case DateTimeKind.Local:
+            case DateTimeKind.Unspecified:
+                writer.Write(new LocalDateTime(dateTime));
+                break;
+            case DateTimeKind.Utc:
+                writer.Write(new ZonedDateTime(dateTime, 0));
+                break;
+            default:
+                throw new ProtocolException(
+                    $"Unsupported DateTimeKind {dateTime.Kind} passed to {nameof(SystemDateTimeSerializer)}!");
         }
     }
 }

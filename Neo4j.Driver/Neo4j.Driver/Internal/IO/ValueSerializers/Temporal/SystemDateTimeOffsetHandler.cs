@@ -18,17 +18,18 @@
 using System;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
+
+internal sealed class SystemDateTimeOffsetHandler : WriteOnlySerializer
 {
-    internal class SystemDateTimeOffsetHandler : WriteOnlySerializer
+    internal static readonly SystemDateTimeOffsetHandler Instance = new();
+    
+    public override IEnumerable<Type> WritableTypes => new[] {typeof(DateTimeOffset)};
+
+    public override void Serialize(PackStreamWriter writer, object value)
     {
-        public override IEnumerable<Type> WritableTypes => new[] {typeof(DateTimeOffset)};
+        var dateTime = value.CastOrThrow<DateTimeOffset>();
 
-        public override void Serialize(PackStreamWriter writer, object value)
-        {
-            var dateTime = value.CastOrThrow<DateTimeOffset>();
-
-            writer.Write(new ZonedDateTime(dateTime));
-        }
+        writer.Write(new ZonedDateTime(dateTime));
     }
 }

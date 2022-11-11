@@ -21,15 +21,16 @@ using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers;
 
-internal class PointSerializer : IPackStreamSerializer
+internal sealed class PointSerializer : IPackStreamSerializer
 {
+    internal static readonly PointSerializer Instance = new();
+
     public const byte Point2DStructType = (byte) 'X';
     public const byte Point3DStructType = (byte) 'Y';
     public const int Point2DStructSize = 3;
     public const int Point3DStructSize = 4;
 
     public IEnumerable<byte> ReadableStructs => new[] {Point2DStructType, Point3DStructType};
-
     public IEnumerable<Type> WritableTypes => new[] {typeof(Point)};
 
     public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)

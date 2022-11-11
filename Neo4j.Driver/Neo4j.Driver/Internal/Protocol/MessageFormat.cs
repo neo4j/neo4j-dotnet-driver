@@ -18,7 +18,6 @@
 using System;
 using Neo4j.Driver.Internal.IO;
 using System.Collections.Generic;
-using System.Linq;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.IO.ValueSerializers;
 using Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
@@ -30,30 +29,13 @@ internal sealed class MessageFormat
     private readonly Dictionary<byte, IPackStreamSerializer> _readerStructHandlers = new();
     private readonly Dictionary<Type, IPackStreamSerializer> _writerStructHandlers = new();
 
-    private void AddHandler<T>() where T : IPackStreamSerializer, new()
+    private void AddHandler<T>(T instance) where T : IPackStreamSerializer
     {
-        var handler = new T();
+        foreach (var readableStruct in instance.ReadableStructs)
+            _readerStructHandlers.Add(readableStruct, instance);
 
-        foreach (var readableStruct in handler.ReadableStructs)
-            _readerStructHandlers.Add(readableStruct, handler);
-
-        foreach (var writableType in handler.WritableTypes)
-            _writerStructHandlers.Add(writableType, handler);
-    }
-
-    private void RemoveHandler<T>()
-    {
-        _readerStructHandlers
-            .Where(kvp => kvp.Value is T)
-            .Select(kvp => kvp.Key)
-            .ToList()
-            .ForEach(b => _readerStructHandlers.Remove(b));
-
-        _writerStructHandlers
-            .Where(kvp => kvp.Value is T)
-            .Select(kvp => kvp.Key)
-            .ToList()
-            .ForEach(t => _writerStructHandlers.Remove(t));
+        foreach (var writableType in instance.WritableTypes)
+            _writerStructHandlers.Add(writableType, instance);
     }
 
     public IReadOnlyDictionary<byte, IPackStreamSerializer> ReaderStructHandlers => _readerStructHandlers;
@@ -88,54 +70,53 @@ internal sealed class MessageFormat
     {
         Version = version;
         // Response Message Types
-        AddHandler<FailureMessageSerializer>();
-        AddHandler<IgnoredMessageSerializer>();
-        AddHandler<RecordMessageSerializer>();
-        AddHandler<SuccessMessageSerializer>();
-
-        // Struct Data Types
-        AddHandler<NodeSerializer>();
-        AddHandler<RelationshipSerializer>();
-        AddHandler<UnboundRelationshipSerializer>();
-        AddHandler<PathSerializer>();
+        AddHandler(FailureMessageSerializer.Instance);
+        AddHandler(IgnoredMessageSerializer.Instance);
+        AddHandler(RecordMessageSerializer.Instance);
+        AddHandler(SuccessMessageSerializer.Instance);
 
         // Add V2 Spatial Types
-        AddHandler<PointSerializer>();
-
+        AddHandler(PointSerializer.Instance);
+        
         // Add V2 Temporal Types
-        AddHandler<LocalDateSerializer>();
-        AddHandler<LocalTimeSerializer>();
-        AddHandler<LocalDateTimeSerializer>();
-        AddHandler<OffsetTimeSerializer>();
-        AddHandler<ZonedDateTimeSerializer>();
-        AddHandler<DurationSerializer>();
+        AddHandler(LocalDateSerializer.Instance);
+        AddHandler(LocalTimeSerializer.Instance);
+        AddHandler(LocalDateTimeSerializer.Instance);
+        AddHandler(OffsetTimeSerializer.Instance);
+        
+        AddHandler(DurationSerializer.Instance);
 
+        
         // Add BCL Handlers
-        AddHandler<SystemDateTimeSerializer>();
-        AddHandler<SystemDateTimeOffsetHandler>();
-        AddHandler<SystemTimeSpanSerializer>();
+        AddHandler(SystemDateTimeSerializer.Instance);
+        AddHandler(SystemDateTimeOffsetHandler.Instance);
+        AddHandler(SystemTimeSpanSerializer.Instance);
+        
+        AddHandler(PathSerializer.Instance);
+        // Struct Data Types
+        if (Version < BoltProtocolVersion.V5_0)
+        {
+            AddHandler(ZonedDateTimeSerializer.Instance);
 
-        if (version < BoltProtocolVersion.V5_0)
-            return;
-
-        //5.0+
-        AddHandler<UtcZonedDateTimeSerializer>();
-
-        RemoveHandler<NodeSerializer>();
-        AddHandler<ElementNodeSerializer>();
-
-        RemoveHandler<RelationshipSerializer>();
-        AddHandler<ElementRelationshipSerializer>();
-
-        RemoveHandler<UnboundRelationshipSerializer>();
-        AddHandler<ElementUnboundRelationshipSerializer>();
+            AddHandler(NodeSerializer.Instance);
+            AddHandler(RelationshipSerializer.Instance);
+            AddHandler(UnboundRelationshipSerializer.Instance);
+        }
+        else
+        {
+            AddHandler(UtcZonedDateTimeSerializer.Instance);
+            
+            AddHandler(ElementNodeSerializer.Instance);
+            AddHandler(ElementRelationshipSerializer.Instance);
+            AddHandler(ElementUnboundRelationshipSerializer.Instance);
+        }
     }
 
     public void UseUtcEncoder()
     {
         if (Version > BoltProtocolVersion.V4_4 || Version <= BoltProtocolVersion.V4_3)
             return;
-
-        AddHandler<UtcZonedDateTimeSerializer>();
+        
+        AddHandler(UtcZonedDateTimeSerializer.Instance);
     }
 }
