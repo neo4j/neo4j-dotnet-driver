@@ -27,9 +27,9 @@ public sealed class PackStreamReader
     private static readonly byte[] EmptyByteArray = Array.Empty<byte>();
 
     private readonly byte[] _byteBuffer = new byte[1];
+    private readonly byte[] _shortBuffer = new byte[2];
     private readonly byte[] _intBuffer = new byte[4];
     private readonly byte[] _longBuffer = new byte[8];
-    private readonly byte[] _shortBuffer = new byte[2];
 
     private readonly Stream _stream;
     private readonly IReadOnlyDictionary<byte, IPackStreamSerializer> _structHandlers;

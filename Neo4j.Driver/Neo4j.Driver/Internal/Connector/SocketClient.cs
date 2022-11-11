@@ -40,6 +40,8 @@ internal sealed class SocketClient
     private readonly ILogger _logger;
     private MessageFormat _format;
     private MemoryStream _readBufferStream;
+    private MessageReader _messageReader;
+    private MessageWriter _messageWriter;
 
     public SocketClient(Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings, ILogger logger = null,
         ITcpSocketClient socketClient = null)
@@ -64,6 +66,9 @@ internal sealed class SocketClient
         ChunkReader = new ChunkReader(_tcpSocketClient.ReaderStream);
         _readBufferStream = new MemoryStream(_bufferSettings.MaxReadBufferSize);
         ChunkWriter = new ChunkWriter(_tcpSocketClient.WriterStream, _bufferSettings, _logger);
+        _messageReader = new MessageReader(_format, ChunkReader, _bufferSettings, _readBufferStream, _logger);
+        _messageWriter = new MessageWriter(ChunkWriter, _format);
+
         SetOpened();
     }
 
@@ -76,8 +81,7 @@ internal sealed class SocketClient
         {
             foreach (var message in messages)
             {
-                var writer = new MessageWriter(ChunkWriter, _format);
-                writer.Write(message);
+                _messageWriter.Write(message);
                 _logger?.Debug(MessagePattern, message);
             }
 
@@ -103,8 +107,7 @@ internal sealed class SocketClient
     {
         try
         {
-            var reader = new MessageReader(_format, ChunkReader, _bufferSettings, _readBufferStream, _logger);
-            await reader.ReadAsync(responsePipeline).ConfigureAwait(false);
+            await _messageReader.ReadAsync(responsePipeline).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -142,7 +145,8 @@ internal sealed class SocketClient
         
         var responseBytes = new byte[4];
         var read = await _tcpSocketClient.ReaderStream
-            .ReadAsync(responseBytes, 0, responseBytes.Length, cancellationToken).ConfigureAwait(false);
+            .ReadAsync(responseBytes, 0, responseBytes.Length, cancellationToken)
+            .ConfigureAwait(false);
 
         if (read < responseBytes.Length)
             throw new IOException($"Unexpected end of stream when performing handshake, read returned {read}");
