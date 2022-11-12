@@ -40,12 +40,11 @@ internal sealed class ChunkWriter: Stream
     //TODO: ArrayPool avoid creating a new array for each chunk writer
     public ChunkWriter(Stream downStream, BufferSettings settings, ILogger logger)
     {
-        Throw.ArgumentNullException.IfNull(downStream, nameof(downStream));
-        Throw.ArgumentOutOfRangeException.IfFalse(downStream.CanWrite, nameof(downStream));
-
+        _downStream = downStream ?? throw new ArgumentNullException(nameof(downStream));
+        Throw.ArgumentOutOfRangeException.IfFalse(downStream.CanWrite, nameof(downStream.CanWrite));
+        
         _chunkSize = Constants.MaxChunkSize;
         _logger = logger;
-        _downStream = downStream;
         _defaultBufferSize = settings.DefaultWriteBufferSize;
         _maxBufferSize = settings.MaxWriteBufferSize;
         _chunkStream = new MemoryStream(settings.DefaultWriteBufferSize);

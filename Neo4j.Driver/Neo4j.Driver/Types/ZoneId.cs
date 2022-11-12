@@ -28,7 +28,9 @@ namespace Neo4j.Driver
 
         internal ZoneId(string id)
         {
-            Throw.ArgumentNullException.If(() => string.IsNullOrWhiteSpace(id), nameof(id));
+            if (string.IsNullOrWhiteSpace(id))
+                throw new ArgumentNullException(nameof(id));
+            
             Id = id;
         }
 

@@ -63,7 +63,8 @@ namespace Neo4j.Driver.Internal.Temporal
 
         public static TimeZoneInfo Get(string zoneId)
         {
-            Throw.ArgumentNullException.If(() => string.IsNullOrWhiteSpace(zoneId), nameof(zoneId));
+            if (string.IsNullOrWhiteSpace(zoneId))
+                throw new ArgumentNullException(nameof(zoneId));
 
             if (SystemToTZInfo.TryGetValue(zoneId, out var tzInfo))
             {

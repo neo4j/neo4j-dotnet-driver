@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Internal.Result
 
         public SummaryBuilder(Query query, IServerInfo serverInfo)
         {
-            Query = query;
+            Query = query ?? throw new ArgumentNullException(nameof(query));
             Server = serverInfo;
         }
 
@@ -50,8 +50,6 @@ namespace Neo4j.Driver.Internal.Result
         {
             public ResultSummary(SummaryBuilder builder)
             {
-                Throw.ArgumentNullException.IfNull(builder.Query, nameof(builder.Query));
-                //Throw.ArgumentNullException.IfNull(builder.QueryType, nameof(builder.QueryType));
                 Query = builder.Query;
                 QueryType = builder.QueryType;
                 Counters = builder.Counters ?? new Counters();

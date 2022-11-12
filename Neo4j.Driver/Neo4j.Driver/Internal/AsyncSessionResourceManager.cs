@@ -50,7 +50,9 @@ namespace Neo4j.Driver.Internal
         /// </summary>
         public Task OnResultConsumedAsync()
         {
-            Throw.ArgumentNullException.IfNull(_connection, nameof(_connection));
+            if (_connection != null)
+                throw new ArgumentNullException(nameof(_connection)); // TODO: Assess if this correct exception type.
+            
             return DisposeConnectionAsync();
         }
 

@@ -17,8 +17,6 @@
 using System;
 using System.Reflection;
 using Neo4j.Driver.Internal.Connector;
-using static Neo4j.Driver.Internal.Throw.ArgumentNullException;
-
 
 namespace Neo4j.Driver.Internal
 {
@@ -28,8 +26,8 @@ namespace Neo4j.Driver.Internal
         {
             get
             {
-                Version version = Assembly.GetExecutingAssembly().GetName().Version;
-                return "neo4j-dotnet/" + version.Major.ToString() + "." + version.Minor.ToString();
+                var version = Assembly.GetExecutingAssembly().GetName().Version;
+                return $"neo4j-dotnet/{version!.Major}.{version.Minor}";
             }
         }
 
@@ -38,7 +36,8 @@ namespace Neo4j.Driver.Internal
         public SocketSettings SocketSettings { get; }
 
         public ConnectionSettings(Uri uri, IAuthToken auth, Config config)
-            : this(auth, EncryptionManager.Create(uri, config.NullableEncryptionLevel, config.TrustManager, config.Logger),
+            : this(auth, EncryptionManager.Create(uri, config.NullableEncryptionLevel, config.TrustManager, 
+                    config.Logger),
                 config.ConnectionTimeout, config.SocketKeepAlive, config.Ipv6Enabled, config.UserAgent)
         {
         }
@@ -47,10 +46,7 @@ namespace Neo4j.Driver.Internal
             EncryptionManager encryptionManager, TimeSpan connectionTimeout, 
             bool socketKeepAlive, bool ipv6Enabled, string userAgent)
         {
-            IfNull(authToken, nameof(authToken));
-            IfNull(encryptionManager, nameof(encryptionManager));
-
-            AuthToken = authToken;
+            AuthToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
             UserAgent = userAgent ?? DefaultUserAgent;
             
             IHostResolver systemResolver = new SystemHostResolver();
@@ -59,22 +55,29 @@ namespace Neo4j.Driver.Internal
                 systemResolver = new SystemNetCoreHostResolver(systemResolver);
             }
             
-            SocketSettings = new SocketSettings
+            SocketSettings = new SocketSettings(
+                new DefaultHostResolver(systemResolver, ipv6Enabled),
+                encryptionManager)
             {
-                HostResolver = new DefaultHostResolver(systemResolver, ipv6Enabled),
-                EncryptionManager =  encryptionManager,
                 ConnectionTimeout = connectionTimeout,
                 SocketKeepAliveEnabled = socketKeepAlive,
                 Ipv6Enabled = ipv6Enabled
             };
         }
     }
+    
     internal class SocketSettings
     {
-        public IHostResolver HostResolver { get; set; }
-        public EncryptionManager EncryptionManager { get; set; }
-        public TimeSpan ConnectionTimeout { get; set; }
-        public bool SocketKeepAliveEnabled { get; set; }
-        public bool Ipv6Enabled { get; set; }
+        public IHostResolver HostResolver { get; }
+        public EncryptionManager EncryptionManager { get; }
+        public TimeSpan ConnectionTimeout { get; init; }
+        public bool SocketKeepAliveEnabled { get; init; }
+        public bool Ipv6Enabled { get; init; }
+        
+        public SocketSettings(IHostResolver hostResolver, EncryptionManager encryptionManager)
+        {
+            HostResolver = hostResolver ?? throw new ArgumentNullException(nameof(hostResolver));
+            EncryptionManager = encryptionManager ?? throw new ArgumentNullException(nameof(encryptionManager));
+        }
     }
 }

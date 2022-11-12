@@ -34,9 +34,8 @@ internal sealed class ChunkReader
 
     internal ChunkReader(Stream downStream)
     {
-        Throw.ArgumentNullException.IfNull(downStream, nameof(downStream));
-        Throw.ArgumentOutOfRangeException.IfFalse(downStream.CanRead, nameof(downStream));
-        InputStream = downStream;
+        InputStream = downStream ?? throw new ArgumentNullException(nameof(downStream));
+        Throw.ArgumentOutOfRangeException.IfFalse(downStream.CanRead, nameof(downStream.CanRead));
     }
 
     private void ChunkBufferTrimUsedData()

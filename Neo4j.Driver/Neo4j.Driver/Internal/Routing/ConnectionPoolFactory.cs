@@ -14,38 +14,35 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.Internal.Routing
+namespace Neo4j.Driver.Internal.Routing;
+
+internal interface IConnectionPoolFactory
 {
-    internal interface IConnectionPoolFactory
+    IConnectionPool Create(Uri uri);
+}
+
+internal class ConnectionPoolFactory : IConnectionPoolFactory
+{
+    private readonly IPooledConnectionFactory _connectionFactory;
+    private readonly ILogger _logger;
+    private readonly ConnectionPoolSettings _poolSettings;
+    private readonly IDictionary<string, string> _routingContext;
+
+    public ConnectionPoolFactory(IPooledConnectionFactory connectionFactory, ConnectionPoolSettings poolSettings,
+        IDictionary<string, string> routingContext, ILogger logger)
     {
-        IConnectionPool Create(Uri uri);
+        _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+        _poolSettings = poolSettings ?? throw new ArgumentNullException(nameof(poolSettings));
+        _logger = logger;
+        _routingContext = routingContext;
     }
 
-    internal class ConnectionPoolFactory : IConnectionPoolFactory
+    public IConnectionPool Create(Uri uri)
     {
-        private readonly IPooledConnectionFactory _connectionFactory;
-        private readonly ConnectionPoolSettings _poolSettings;
-        private readonly ILogger _logger;
-        private IDictionary<string, string> _routingContext;
-
-        public ConnectionPoolFactory(IPooledConnectionFactory connectionFactory, ConnectionPoolSettings poolSettings, 
-                                     IDictionary<string, string> routingContext, ILogger logger)
-        {
-            Throw.ArgumentNullException.IfNull(connectionFactory, nameof(connectionFactory));
-            Throw.ArgumentNullException.IfNull(poolSettings, nameof(poolSettings));
-            _connectionFactory = connectionFactory;
-            _poolSettings = poolSettings;
-            _logger = logger;
-            _routingContext = routingContext;
-        }
-
-        public IConnectionPool Create(Uri uri)
-        {
-            return new ConnectionPool(uri, _connectionFactory, _poolSettings, _logger, _routingContext);
-        }
+        return new ConnectionPool(uri, _connectionFactory, _poolSettings, _logger, _routingContext);
     }
 }

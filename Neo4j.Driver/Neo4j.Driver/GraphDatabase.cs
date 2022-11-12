@@ -204,8 +204,9 @@ namespace Neo4j.Driver
         /// <returns>A new driver to the database instance specified by the <paramref name="uri"/>.</returns>
         public static IDriver Driver(Uri uri, IAuthToken authToken, Action<ConfigBuilder> action)
         {
-            Throw.ArgumentNullException.IfNull(uri, nameof(uri));
-            Throw.ArgumentNullException.IfNull(authToken, nameof(authToken));
+            uri = uri ?? throw new ArgumentNullException(nameof(uri));
+            authToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
+            
             var config = ConfigBuilders.BuildConfig(action);
 
             var connectionSettings = new ConnectionSettings(uri, authToken, config);

@@ -45,12 +45,10 @@ internal sealed class Driver : IInternalDriver
         IMetrics metrics = null,
         Config config = null)
     {
-        Throw.ArgumentNullException.IfNull(connectionProvider, nameof(connectionProvider));
-
         Uri = uri;
         Encrypted = encrypted;
         _logger = logger;
-        _connectionProvider = connectionProvider;
+        _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
         _retryLogic = retryLogic;
         _metrics = metrics;
         _config = config;

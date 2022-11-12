@@ -143,7 +143,6 @@ namespace Neo4j.Driver
                 TemporalHelpers.MaxSecond, nameof(second));
             Throw.ArgumentOutOfRangeException.IfValueNotBetween(nanosecond, TemporalHelpers.MinNanosecond,
                 TemporalHelpers.MaxNanosecond, nameof(nanosecond));
-            Throw.ArgumentNullException.IfNull(zone, nameof(zone));
 
             _year = year;
             _month = month;
@@ -153,7 +152,7 @@ namespace Neo4j.Driver
             _second = second;
 
             Nanosecond = nanosecond;
-            Zone = zone;
+            Zone = zone ?? throw new ArgumentNullException(nameof(zone));
         }
 
         internal ZonedDateTime(IHasDateTimeComponents dateTime, Zone zone)

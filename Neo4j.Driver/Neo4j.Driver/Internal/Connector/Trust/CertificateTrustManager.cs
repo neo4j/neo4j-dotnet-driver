@@ -30,8 +30,6 @@ namespace Neo4j.Driver.Internal.Connector.Trust
 
         public CertificateTrustManager(bool verifyHostname, IEnumerable<X509Certificate2> trustedCertificates)
         {
-            Throw.ArgumentNullException.IfNull(trustedCertificates, nameof(trustedCertificates));
-
             _verifyHostname = verifyHostname;
             _trustedCertificates = new X509Certificate2Collection(trustedCertificates.ToArray());
         }

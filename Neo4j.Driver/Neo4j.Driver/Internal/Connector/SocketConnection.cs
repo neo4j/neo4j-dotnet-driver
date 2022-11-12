@@ -66,15 +66,10 @@ internal sealed class SocketConnection : IConnection
         string userAgent, ILogger logger, ServerInfo server,
         IResponsePipeline responsePipeline = null)
     {
-        Throw.ArgumentNullException.IfNull(socketClient, nameof(socketClient));
-        Throw.ArgumentNullException.IfNull(authToken, nameof(authToken));
-        Throw.ArgumentNullException.IfNull(userAgent, nameof(userAgent));
-        Throw.ArgumentNullException.IfNull(server, nameof(server));
-
-        _client = socketClient;
-        _authToken = authToken;
-        _userAgent = userAgent;
-        _serverInfo = server;
+        _client = socketClient ?? throw new ArgumentNullException(nameof(socketClient));
+        _authToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
+        _userAgent = userAgent ?? throw new ArgumentNullException(nameof(userAgent));
+        _serverInfo = server ?? throw new ArgumentNullException(nameof(server));
         RoutingContext = null;
 
         _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";

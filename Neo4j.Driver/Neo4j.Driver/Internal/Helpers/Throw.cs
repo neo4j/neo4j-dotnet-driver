@@ -26,22 +26,6 @@ namespace Neo4j.Driver.Internal
                 typeName, "Failed to acquire a new connection as the driver has already been disposed.");
         }
 
-        public static class ArgumentNullException
-        {
-            public static void IfNull(object parameter, string paramName)
-            {
-                If(() => parameter == null, paramName);
-            }
-
-            public static void If(Func<bool> func, string paramName)
-            {
-                if (func())
-                {
-                    throw new System.ArgumentNullException(paramName);
-                }
-            }
-        }
-
         public static class ProtocolException
         {
             public static void IfNotEqual(int first, int second, string firstParam, string secondParam)
@@ -78,11 +62,6 @@ namespace Neo4j.Driver.Internal
                     throw new System.ArgumentOutOfRangeException(parameterName, value, $"Value given ({value}) cannot be less than {limit}.");
             }
 
-            public static void IfValueGreaterThan(long value, long limit, string parameterName)
-            {
-                if(value > limit)
-                    throw new System.ArgumentOutOfRangeException(parameterName, value, $"Value given ({value}) cannot be greater than {limit}.");
-            }
             public static void IfFalse(bool value, string nameofValue)
             {
                 if (!value)

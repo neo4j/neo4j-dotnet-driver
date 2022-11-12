@@ -33,12 +33,12 @@ namespace Neo4j.Driver.Internal
 
         public RoutingSettings(Uri initServerUri, IDictionary<string, string> routingContext, Config config)
         {
-            Throw.ArgumentNullException.IfNull(initServerUri, nameof(initServerUri));
-            Throw.ArgumentNullException.IfNull(routingContext, nameof(routingContext));
-            Throw.ArgumentNullException.IfNull(config, nameof(config));
-
-            InitialServerAddressProvider = new InitialServerAddressProvider(initServerUri, config.Resolver);
-            RoutingContext = routingContext;
+            if (config == null)
+                throw new ArgumentNullException(nameof(config));
+            
+            InitialServerAddressProvider = new InitialServerAddressProvider(
+                initServerUri ?? throw new ArgumentNullException(nameof(initServerUri)), config.Resolver);
+            RoutingContext = routingContext ?? throw new ArgumentNullException(nameof(routingContext));
             RoutingTablePurgeDelay = DefaultRoutingTablePurgeDelay;
         }
     }

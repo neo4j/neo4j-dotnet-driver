@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Internal
 
         public BlockingExecutor(TaskScheduler scheduler)
         {
-            Throw.ArgumentNullException.IfNull(scheduler, nameof(scheduler));
+            scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
 
             _taskFactory = new TaskFactory(CancellationToken.None, TaskCreationOptions.None,
                 TaskContinuationOptions.None, scheduler);

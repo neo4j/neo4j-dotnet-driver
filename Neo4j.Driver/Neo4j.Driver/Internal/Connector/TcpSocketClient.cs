@@ -45,17 +45,18 @@ internal sealed class TcpSocketClient : ITcpSocketClient
 
     public TcpSocketClient(SocketSettings socketSettings, ILogger logger = null)
     {
-        Throw.ArgumentNullException.IfNull(socketSettings, nameof(socketSettings));
-        Throw.ArgumentNullException.IfNull(socketSettings.HostResolver, nameof(SocketSettings.HostResolver));
-        Throw.ArgumentNullException.IfNull(socketSettings.EncryptionManager,
-            nameof(SocketSettings.EncryptionManager));
-
-        _logger = logger;
+        if (socketSettings == null)
+            throw new ArgumentNullException(nameof(socketSettings));
+        
         _resolver = socketSettings.HostResolver;
         _encryptionManager = socketSettings.EncryptionManager;
+        
         _ipv6Enabled = socketSettings.Ipv6Enabled;
         _connectionTimeout = socketSettings.ConnectionTimeout;
         _socketKeepAliveEnabled = socketSettings.SocketKeepAliveEnabled;
+        
+        _logger = logger;
+
     }
     private Stream _stream;
     public Stream ReaderStream => _stream;

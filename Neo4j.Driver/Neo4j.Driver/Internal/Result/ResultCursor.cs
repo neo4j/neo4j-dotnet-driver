@@ -16,125 +16,102 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.Internal.Result
+namespace Neo4j.Driver.Internal.Result;
+
+internal class ResultCursor : IInternalResultCursor
 {
-    internal class ResultCursor : IInternalResultCursor
+    private readonly IResultStream _resultStream;
+    private bool _atEnd;
+    private IRecord _current;
+
+    private Task<string[]> _keys;
+    private IRecord _peeked;
+    private Task<IResultSummary> _summary;
+
+    public ResultCursor(IResultStream resultStream)
     {
-        private bool _atEnd;
-        private IRecord _peeked;
-        private IRecord _current;
+        _resultStream = resultStream ?? throw new ArgumentNullException(nameof(resultStream));
+    }
 
-        private Task<string[]> _keys;
-        private readonly IResultStream _resultStream;
-        private Task<IResultSummary> _summary;
+    public Task<string[]> KeysAsync()
+    {
+        if (_keys == null)
+            _keys = _resultStream.GetKeysAsync();
 
-        public ResultCursor(IResultStream resultStream)
+        return _keys;
+    }
+
+    public Task<IResultSummary> ConsumeAsync()
+    {
+        if (_summary == null)
         {
-            Throw.ArgumentNullException.IfNull(resultStream, nameof(resultStream));
-
-            _resultStream = resultStream;
+            Cancel();
+            _summary = _resultStream.ConsumeAsync();
+        }
+        else
+        {
+            if (_summary.IsFaulted) _summary = _resultStream.ConsumeAsync();
         }
 
-        public Task<string[]> KeysAsync()
-        {
-            if (_keys == null)
-            {
-                _keys = _resultStream.GetKeysAsync();
-            }
+        return _summary;
+    }
 
-            return _keys;
+    public async Task<IRecord> PeekAsync()
+    {
+        if (_peeked != null) return _peeked;
+
+        if (_atEnd) return null;
+
+        _peeked = await _resultStream.NextRecordAsync().ConfigureAwait(false);
+        if (_peeked == null)
+        {
+            _atEnd = true;
+
+            return null;
         }
 
-        public Task<IResultSummary> ConsumeAsync()
-        {
-            if (_summary == null)
-            {
-                Cancel();
-                _summary = _resultStream.ConsumeAsync();
-            }
-            else
-            {
-                if (_summary.IsFaulted)
-                {
-                    _summary = _resultStream.ConsumeAsync();
-                }
-            }
+        return _peeked;
+    }
 
-            return _summary;
+    public async Task<bool> FetchAsync()
+    {
+        if (_peeked != null)
+        {
+            _current = _peeked;
+            _peeked = null;
         }
-
-        public async Task<IRecord> PeekAsync()
+        else
         {
-            if (_peeked != null)
+            try
             {
-                return _peeked;
+                _current = await _resultStream.NextRecordAsync().ConfigureAwait(false);
             }
-
-            if (_atEnd)
+            finally
             {
-                return null;
-            }
-
-            _peeked = await _resultStream.NextRecordAsync().ConfigureAwait(false);
-            if (_peeked == null)
-            {
-                _atEnd = true;
-
-                return null;
-            }
-
-            return _peeked;
-        }
-
-        public async Task<bool> FetchAsync()
-        {
-            if (_peeked != null)
-            {
-                _current = _peeked;
-                _peeked = null;
-            }
-            else
-            {
-                try
-                {
-                    _current = await _resultStream.NextRecordAsync().ConfigureAwait(false);
-                }
-                finally
-                {
-                    if (_current == null)
-                    {
-                        _atEnd = true;
-                    }
-                }
-            }
-
-            return _current != null;
-        }
-
-        public IRecord Current
-        {
-            get
-            {
-                if (!_atEnd && _current == null && _peeked == null)
-                {
-                    throw new InvalidOperationException("Tried to access Current without calling FetchAsync.");
-                }
-
-                return _current;
+                if (_current == null) _atEnd = true;
             }
         }
 
-        public bool IsOpen => _summary == null;
+        return _current != null;
+    }
 
-        public void Cancel()
+    public IRecord Current
+    {
+        get
         {
-            _resultStream.Cancel();
+            if (!_atEnd && _current == null && _peeked == null)
+                throw new InvalidOperationException("Tried to access Current without calling FetchAsync.");
+
+            return _current;
         }
+    }
+
+    public bool IsOpen => _summary == null;
+
+    public void Cancel()
+    {
+        _resultStream.Cancel();
     }
 }

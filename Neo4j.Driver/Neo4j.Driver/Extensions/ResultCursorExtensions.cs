@@ -51,7 +51,8 @@ namespace Neo4j.Driver
         /// if the result contains more than one record or the result is empty.</remarks>
         public static async Task<T> SingleAsync<T>(this IResultCursor result, Func<IRecord, T> operation)
         {
-            Throw.ArgumentNullException.IfNull(result, nameof(result));
+            result = result ?? throw new ArgumentNullException(nameof(result));
+            
             if (await result.FetchAsync().ConfigureAwait(false))
             {
                 var record = result.Current;
@@ -77,7 +78,7 @@ namespace Neo4j.Driver
         /// <returns>A list with all records in the result stream.</returns>
         public static async Task<List<IRecord>> ToListAsync(this IResultCursor result)
         {
-            Throw.ArgumentNullException.IfNull(result, nameof(result));
+            result = result ?? throw new ArgumentNullException(nameof(result));
             List<IRecord> list = new List<IRecord>();
             while (await result.FetchAsync().ConfigureAwait(false))
             {
@@ -96,7 +97,7 @@ namespace Neo4j.Driver
         /// <returns>A list of collected operation result.</returns>
         public static async Task<List<T>> ToListAsync<T>(this IResultCursor result, Func<IRecord, T> operation)
         {
-            Throw.ArgumentNullException.IfNull(result, nameof(result));
+            result = result ?? throw new ArgumentNullException(nameof(result));
             var list = new List<T>();
             while (await result.FetchAsync().ConfigureAwait(false))
             {
@@ -116,7 +117,7 @@ namespace Neo4j.Driver
         public static async Task<IResultSummary> ForEachAsync(this IResultCursor result,
             Action<IRecord> operation)
         {
-            Throw.ArgumentNullException.IfNull(result, nameof(result));
+            result = result ?? throw new ArgumentNullException(nameof(result));
             while (await result.FetchAsync().ConfigureAwait(false))
             {
                 var record = result.Current;
