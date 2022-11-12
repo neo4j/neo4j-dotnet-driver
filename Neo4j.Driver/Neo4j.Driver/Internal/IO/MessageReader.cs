@@ -15,9 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.IO;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.MessageHandling;
 
@@ -27,7 +25,6 @@ internal sealed class MessageReader
 {
     private readonly ChunkReader _chunkReader;
     private readonly ILogger _logger;
-    private readonly MemoryStream _bufferStream;
     private readonly int _defaultBufferSize;
     private readonly int _maxBufferSize;
     private int _shrinkCounter = 0;
@@ -42,7 +39,7 @@ internal sealed class MessageReader
 
     public async Task ReadAsync(IResponsePipeline pipeline, PackStreamReader reader)
     {
-        var messageCount = await _chunkReader.ReadNextMessagesAsync(_bufferStream).ConfigureAwait(false);
+        var messageCount = await _chunkReader.ReadNextMessagesAsync(reader.Stream).ConfigureAwait(false);
         ConsumeMessages(pipeline, messageCount, reader);
     }
 
@@ -50,7 +47,7 @@ internal sealed class MessageReader
     {
         var leftMessages = messages;
 
-        while (_bufferStream.Length > _bufferStream.Position && leftMessages > 0)
+        while (packStreamReader.Stream.Length > packStreamReader.Stream.Position && leftMessages > 0)
         {
             ProcessMessage(pipeline, packStreamReader);
     
@@ -58,26 +55,26 @@ internal sealed class MessageReader
         }
 
         // Check whether we have incomplete message in the buffers
-        if (_bufferStream.Length != _bufferStream.Position)
+        if (packStreamReader.Stream.Length != packStreamReader.Stream.Position)
             return;
-            
-        _bufferStream.SetLength(0);
 
-        if (_bufferStream.Capacity <= _maxBufferSize)
+        packStreamReader.Stream.SetLength(0);
+
+        if (packStreamReader.Stream.Capacity <= _maxBufferSize)
             return;
             
         _logger?.Info(
             $@"Shrinking read buffers to the default read buffer size {
                 _defaultBufferSize
             } since its size reached {
-                _bufferStream.Capacity
+                packStreamReader.Stream.Capacity
             } which is larger than the maximum read buffer size {
                 _maxBufferSize
             }. This has already occurred {_shrinkCounter} times for this connection.");
 
         _shrinkCounter += 1;
 
-        _bufferStream.Capacity = _defaultBufferSize;
+        packStreamReader.Stream.Capacity = _defaultBufferSize;
     }
 
     private void ProcessMessage(IResponsePipeline pipeline, PackStreamReader packStreamReader)

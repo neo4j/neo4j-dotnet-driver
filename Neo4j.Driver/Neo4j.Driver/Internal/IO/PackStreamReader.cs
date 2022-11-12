@@ -25,13 +25,13 @@ internal sealed class PackStreamReader
 {
     private static readonly byte[] EmptyByteArray = Array.Empty<byte>();
 
-    private readonly Stream _stream;
+    public MemoryStream Stream;
     private readonly ByteBuffers _buffers;
     private readonly MessageFormat _format;
 
-    internal PackStreamReader(Stream stream, MessageFormat format, ByteBuffers buffers)
+    internal PackStreamReader(MemoryStream stream, MessageFormat format, ByteBuffers buffers)
     {
-        _stream = stream;
+        Stream = stream;
         _format = format;
         _buffers = buffers;
     }
@@ -215,7 +215,7 @@ internal sealed class PackStreamReader
         if (size == 0) return EmptyByteArray;
 
         var heapBuffer = new byte[size];
-        _stream.Read(heapBuffer);
+        Stream.Read(heapBuffer);
         return heapBuffer;
     }
 
@@ -246,7 +246,7 @@ internal sealed class PackStreamReader
 
     public long ReadMapHeader()
     {
-        var markerByte = _stream.ReadByte();
+        var markerByte = Stream.ReadByte();
         var markerHighNibble = (byte) (markerByte & 0xF0);
         var markerLowNibble = (byte) (markerByte & 0x0F);
 
@@ -267,7 +267,7 @@ internal sealed class PackStreamReader
 
     public long ReadListHeader()
     {
-        var markerByte = _stream.ReadByte();
+        var markerByte = Stream.ReadByte();
         var markerHighNibble = (byte) (markerByte & 0xF0);
         var markerLowNibble = (byte) (markerByte & 0x0F);
 
@@ -294,7 +294,7 @@ internal sealed class PackStreamReader
 
     public long ReadStructHeader()
     {
-        var markerByte = _stream.ReadByte();
+        var markerByte = Stream.ReadByte();
         var markerHighNibble = (byte) (markerByte & 0xF0);
         var markerLowNibble = (byte) (markerByte & 0x0F);
 
@@ -387,57 +387,57 @@ internal sealed class PackStreamReader
 
     internal sbyte NextSByte()
     {
-        _stream.Read(_buffers.ByteArray);
+        Stream.Read(_buffers.ByteArray);
         return (sbyte) _buffers.ByteArray[0];
     }
 
     public byte NextByte()
     {
-        _stream.Read(_buffers.ByteArray);
+        Stream.Read(_buffers.ByteArray);
 
         return _buffers.ByteArray[0];
     }
 
     public short NextShort()
     {
-        _stream.Read(_buffers.ShortBuffer);
+        Stream.Read(_buffers.ShortBuffer);
 
         return PackStreamBitConverter.ToInt16(_buffers.ShortBuffer);
     }
 
     public int NextInt()
     {
-        _stream.Read(_buffers.IntBuffer);
+        Stream.Read(_buffers.IntBuffer);
 
         return PackStreamBitConverter.ToInt32(_buffers.IntBuffer);
     }
 
     public long NextLong()
     {
-        _stream.Read(_buffers.LongBuffer);
+        Stream.Read(_buffers.LongBuffer);
 
         return PackStreamBitConverter.ToInt64(_buffers.LongBuffer);
     }
 
     public double NextDouble()
     {
-        _stream.Read(_buffers.LongBuffer);
+        Stream.Read(_buffers.LongBuffer);
 
         return PackStreamBitConverter.ToDouble(_buffers.LongBuffer);
     }
 
     public byte PeekByte()
     {
-        if (_stream.Length - _stream.Position < 1) 
+        if (Stream.Length - Stream.Position < 1) 
             throw new ProtocolException("Unable to peek 1 byte from buffer.");
 
         try
         {
-            return (byte) _stream.ReadByte();
+            return (byte) Stream.ReadByte();
         }
         finally
         {
-            _stream.Seek(-1, SeekOrigin.Current);
+            Stream.Seek(-1, SeekOrigin.Current);
         }
     }
 }

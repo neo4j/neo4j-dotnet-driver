@@ -97,7 +97,7 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
         AutoCommitParams autoCommitParams)
     {
         ValidateImpersonatedUserForVersion(connection, autoCommitParams.ImpersonatedUser);
-        ValidateDatabase(autoCommitParams.Database);
+        ValidateDatabase(connection, autoCommitParams.Database);
 
         var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
         var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null,
@@ -125,7 +125,7 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
         TransactionConfig config, string impersonatedUser)
     {
         ValidateImpersonatedUserForVersion(connection, impersonatedUser);
-        ValidateDatabase(database);
+        ValidateDatabase(connection, database);
 
         await connection.EnqueueAsync(
                 new BeginMessage(connection.Version, database, bookmarks, config, connection.GetEnforcedAccessMode(),
@@ -167,8 +167,11 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
         await connection.SyncAsync().ConfigureAwait(false);
     }
 
-    private static void ValidateDatabase(string database)
+    private static void ValidateDatabase(IConnection connection, string database)
     {
+        if (connection.Version.MajorVersion >= 4)
+            return;
+
         if (!string.IsNullOrEmpty(database))
             throw new ClientException(
                 "Driver is connected to a server that does not support multiple databases. "+
