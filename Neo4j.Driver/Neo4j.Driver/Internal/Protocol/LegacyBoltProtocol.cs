@@ -196,7 +196,7 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
 
     private static void ValidateImpersonatedUserForVersion(IConnection conn, string impersonatedUser)
     {
-        if (conn.Version >= BoltProtocolVersion.V4_3)
+        if (conn.Version >= BoltProtocolVersion.V4_4)
             return;
 
         if (impersonatedUser is not null)

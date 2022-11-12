@@ -33,7 +33,7 @@ internal class ClusterConnection : DelegatedConnection
         _errorHandler = errorHandler;
     }
 
-    protected override async Task OnErrorAsync(Exception error)
+    internal override async Task OnErrorAsync(Exception error)
     {
         if (error is ServiceUnavailableException)
         {

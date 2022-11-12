@@ -39,6 +39,9 @@ internal sealed class BoltProtocol : IBoltProtocol
 
     public async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, AutoCommitParams autoCommitParams)
     {
+        if (connection.Version <= BoltProtocolVersion.V4_4 && string.IsNullOrWhiteSpace(autoCommitParams.ImpersonatedUser))
+            throw new Exception("Can not impersonate users in 3.0-4.3"); //TODO: Make better.
+
         var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
         var streamBuilder = new ResultCursorBuilder(
             summaryBuilder,
@@ -79,6 +82,9 @@ internal sealed class BoltProtocol : IBoltProtocol
     public Task BeginTransactionAsync(IConnection connection, string database, Bookmarks bookmarks, TransactionConfig config,
         string impersonatedUser)
     {
+        if (connection.Version <= BoltProtocolVersion.V4_4 && string.IsNullOrWhiteSpace(impersonatedUser))
+            throw new Exception("Can not impersonate users in 3.0-4.3"); //TODO: Make better.
+
         return _legacyProtocol.BeginTransactionAsync(connection, database, bookmarks, config, impersonatedUser);
     }
 
@@ -161,6 +167,9 @@ internal sealed class BoltProtocol : IBoltProtocol
     public Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database,
         string impersonatedUser, Bookmarks bookmarks)
     {
+        if (connection.Version <= BoltProtocolVersion.V4_4 && string.IsNullOrWhiteSpace(impersonatedUser))
+            throw new Exception("Can not impersonate users in 3.0-4.3"); //TODO: Make better.
+
         return connection.Version >= BoltProtocolVersion.V4_3
             ? _getRoutingTableProtocol.GetRoutingTable(connection, database, impersonatedUser, bookmarks)
             : _legacyProtocol.GetRoutingTable(connection, database, impersonatedUser, bookmarks);

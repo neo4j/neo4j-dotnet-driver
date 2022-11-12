@@ -157,12 +157,12 @@ internal abstract class DelegatedConnection : IConnection
         return Delegate.RollbackTransactionAsync();
     }
 
-    protected virtual Task OnErrorAsync(Exception error)
+    internal virtual Task OnErrorAsync(Exception error)
     {
         return Task.CompletedTask;
     }
 
-    protected virtual async Task TaskWithErrorHandling(Func<Task> task)
+    internal virtual async Task TaskWithErrorHandling(Func<Task> task)
     {
         try
         {

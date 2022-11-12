@@ -38,7 +38,8 @@ namespace Neo4j.Driver.Tests
         private static IAuthToken AuthToken => AuthTokens.None;
         private static string UserAgent => ConnectionSettings.DefaultUserAgent;
         private static ILogger Logger => new Mock<ILogger>().Object;
-        private static ServerInfo Server => new ServerInfo(new Uri("http://neo4j.com"));
+        private static Uri uri => new Uri("http://neo4j.com");
+        private static ServerInfo Server => new ServerInfo(uri);
         private static ISocketClient SocketClient => new Mock<ISocketClient>().Object;
 
         internal static SocketConnection NewSocketConnection(ISocketClient socketClient = null,
@@ -95,7 +96,7 @@ namespace Neo4j.Driver.Tests
 
                 await con.DestroyAsync();
 
-                mock.Verify(c => c.StopAsync(), Times.Once);
+                mock.Verify(c => c.DisposeAsync(), Times.Once);
             }
         }
 
@@ -223,7 +224,7 @@ namespace Neo4j.Driver.Tests
 
                 // Then
                 mockProtocol.Verify(p => p.LogoutAsync(conn));
-                mockClient.Verify(c => c.StopAsync());
+                mockClient.Verify(c => c.DisposeAsync());
             }
 
             [Fact]
@@ -242,7 +243,7 @@ namespace Neo4j.Driver.Tests
                 await conn.CloseAsync();
 
                 // Then
-                mockClient.Verify(c => c.StopAsync());
+                mockClient.Verify(c => c.DisposeAsync());
             }
 
             [Fact]
@@ -250,7 +251,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mockClient = new Mock<ISocketClient>();
-                mockClient.Setup(x => x.StopAsync()).Throws<InvalidOperationException>();
+                mockClient.Setup(x => x.DisposeAsync()).Throws<InvalidOperationException>();
 
                 var mockProtocol = new Mock<IBoltProtocol>();
                 mockProtocol.Setup(x => x.LogoutAsync(It.IsAny<SocketConnection>()))
@@ -263,7 +264,7 @@ namespace Neo4j.Driver.Tests
                 await conn.CloseAsync();
 
                 // Then
-                mockClient.Verify(c => c.StopAsync());
+                mockClient.Verify(c => c.DisposeAsync());
                 mockProtocol.Verify(c => c.LogoutAsync(It.IsAny<SocketConnection>()));
             }
 

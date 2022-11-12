@@ -157,10 +157,12 @@ namespace Neo4j.Driver.Tests.Routing
                 var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
                 {
                     MessagePair(
-                        new RunWithMetadataMessage(new Query("CALL dbms.cluster.routing.getRoutingTable($context)",
-                            new Dictionary<string, object> {{"context", null}}), AccessMode.Write),
+                        new RunWithMetadataMessage(BoltProtocolVersion.V4_4,
+                            new Query("CALL dbms.cluster.routing.getRoutingTable($context)",
+                            new Dictionary<string, object> {{"context", null}}), 
+                            mode: AccessMode.Write),
                         new FailureMessage("Neo.ClientError.Procedure.ProcedureNotFound", "not found")),
-                    MessagePair(PullAll, Ignored)
+                    MessagePair(PullAllMessage.Instance, IgnoredMessage.Instance)
                 };
 
                 var connMock = new MockedConnection(AccessMode.Write, pairs).MockConn;
@@ -404,17 +406,17 @@ namespace Neo4j.Driver.Tests.Routing
 
                 _mockConn.Setup(x => x.Mode).Returns(mode);
 
-                var protocol = new LegacyBoltProtocol();
+                IBoltProtocol protocol = new LegacyBoltProtocol();
 
                 if (serverInfo != null)
                 {
                     if (serverInfo.Protocol >= BoltProtocolVersion.V4_3)
                     {
-                        protocol = new BoltProtocolV4_3(routingContext);
+                        protocol = new BoltProtocol(new RoutingTableProtocol43());
                     }
                     else if (serverInfo.Protocol >= BoltProtocolVersion.V4_0)                        
                     {
-                        protocol = new BoltProtocol();
+                        protocol = new BoltProtocol(null);
                     }
 
                     _mockConn.Setup(x => x.Server).Returns(serverInfo);

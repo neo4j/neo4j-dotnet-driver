@@ -17,6 +17,7 @@
 
 using System;
 using FluentAssertions;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Result;
 using Xunit;
 
@@ -34,7 +35,7 @@ namespace Neo4j.Driver.Tests
         {
             var uri = new Uri(uriStr);
             var serverInfo = new ServerInfo(uri);
-            serverInfo.Update(new Internal.Protocol.BoltProtocolVersion(1, 2), version);
+            serverInfo.Update(new BoltProtocolVersion(1, 2), version);
 
             serverInfo.ToString().Should().Be(expected);
         }

@@ -53,7 +53,7 @@ namespace Neo4j.Driver.Internal.IO.Utils
         private readonly MemoryStream _input;
         private readonly PackStreamReader _reader;
 
-        internal PackStreamReaderMachine(byte[] bytes, Func<Stream, PackStreamReader> readerFactory)
+        internal PackStreamReaderMachine(byte[] bytes, Func<MemoryStream, PackStreamReader> readerFactory)
         {
             _input = new MemoryStream(bytes);
             _reader = readerFactory(_input);

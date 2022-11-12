@@ -209,14 +209,14 @@ public class SocketClientTests
         public async Task ShouldCallDisconnectAsyncOnTheTcpSocketClientWhenStoppedAsync()
         {
             var connMock = new Mock<ITcpSocketClient>();
-            var client = new SocketClient(null, null, connMock.Object);
+            var client = new SocketClient(null, null, null, socketClient: connMock.Object);
             client.SetOpened();
 
             // When
-            await client.StopAsync();
+            await client.DisposeAsync();
 
             // Then
-            connMock.Verify(x => x.DisconnectAsync(), Times.Once);
+            connMock.Verify(x => x.DisposeAsync(), Times.Once);
             client.IsOpen.Should().BeFalse();
         }
     }

@@ -26,7 +26,7 @@ using Neo4j.Driver.Internal.MessageHandling;
 
 namespace Neo4j.Driver.Internal.Connector;
 
-internal sealed class SocketClient
+internal sealed class SocketClient : ISocketClient
 {
     private const string MessagePattern = "C: {0}";
     private readonly Uri _uri;
@@ -135,7 +135,10 @@ internal sealed class SocketClient
         }
     }
 
-    private void SetOpened()
+    /// <summary>
+    /// Internal for testing, not for use outside of SocketClient.
+    /// </summary>
+    internal void SetOpened()
     {
         Interlocked.CompareExchange(ref _closedMarker, 0, -1);
     }

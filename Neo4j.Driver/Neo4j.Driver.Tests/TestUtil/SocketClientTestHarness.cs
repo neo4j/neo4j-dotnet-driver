@@ -36,14 +36,14 @@ namespace Neo4j.Driver.Tests
             memoryStream.Flush();
             memoryStream.Position = 0;
 
-            mock.Setup(c => c.ReadStream).Returns(memoryStream);
+            mock.Setup(c => c.ReaderStream).Returns(memoryStream);
         }
 
         public static Mock<Stream> CreateReadStreamMock(Mock<ITcpSocketClient> mock)
         {
             var mockedStream = new Mock<Stream>();
             mockedStream.Setup(x => x.CanRead).Returns(true);
-            mock.Setup(c => c.ReadStream).Returns(mockedStream.Object);
+            mock.Setup(c => c.ReaderStream).Returns(mockedStream.Object);
             return mockedStream;
         }
 
@@ -51,7 +51,7 @@ namespace Neo4j.Driver.Tests
         {
             var mockedStream = new Mock<Stream>();
             mockedStream.Setup(x => x.CanWrite).Returns(true);
-            mock.Setup(c => c.WriteStream).Returns(mockedStream.Object);
+            mock.Setup(c => c.WriterStream).Returns(mockedStream.Object);
 
             return mockedStream;
         }
