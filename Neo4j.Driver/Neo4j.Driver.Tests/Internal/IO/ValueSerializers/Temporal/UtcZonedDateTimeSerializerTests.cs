@@ -74,7 +74,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be((byte) 'I');
             writer.Write(expected.seconds);
@@ -116,7 +116,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be((byte)'i');
             reader.Read().Should().Be(expected.seconds);
@@ -156,7 +156,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be((byte)'i');
             reader.Read().Should().Be(expected.seconds);
@@ -194,7 +194,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be((byte)'i');
             reader.Read().Should().Be(expected.seconds);
@@ -237,14 +237,14 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             var reader = readerMachine.Reader();
 
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be((byte)'I');
             var bstSecs = reader.Read();
             reader.Read();
             reader.Read().Should().Be(3600);
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be((byte)'I');
             var utcSecs = reader.Read();

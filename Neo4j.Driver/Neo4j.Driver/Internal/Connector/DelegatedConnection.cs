@@ -162,7 +162,7 @@ internal abstract class DelegatedConnection : IConnection
         return Task.CompletedTask;
     }
 
-    private async Task TaskWithErrorHandling(Func<Task> task)
+    protected virtual async Task TaskWithErrorHandling(Func<Task> task)
     {
         try
         {

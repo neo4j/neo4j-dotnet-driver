@@ -50,16 +50,6 @@ namespace Neo4j.Driver.Tests
             {
                 var bookmark = Bookmarks.From(bookmarks);
                 bookmark.Values.Should().BeEquivalentTo(expectedValues);
-
-                var parameters = bookmark.AsBeginTransactionParameters();
-                if (expectedValues.Length > 0)
-                {
-                    parameters.Should().ContainKey("bookmarks").WhichValue.Should().BeEquivalentTo(expectedValues);
-                }
-                else
-                {
-                    parameters.Should().BeNull();
-                }
             }
 
             public class EqualsMethod

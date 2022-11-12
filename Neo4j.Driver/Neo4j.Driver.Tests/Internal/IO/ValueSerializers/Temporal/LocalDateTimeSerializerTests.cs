@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(2);
             reader.ReadStructSignature().Should().Be((byte) 'd');
             reader.Read().Should().Be(282659759L);

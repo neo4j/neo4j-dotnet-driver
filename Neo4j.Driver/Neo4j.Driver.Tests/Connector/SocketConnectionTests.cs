@@ -27,10 +27,7 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.MessageHandling;
-using Neo4j.Driver.Internal.Messaging.V3;
-using Neo4j.Driver.Internal.Protocol;
 using Xunit;
-using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
 using Record = Xunit.Record;
 
 namespace Neo4j.Driver.Tests

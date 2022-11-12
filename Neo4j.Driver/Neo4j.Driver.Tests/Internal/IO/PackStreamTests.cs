@@ -29,7 +29,6 @@ namespace Neo4j.Driver.Internal.IO
 {
     public class PackStreamTests
     {
-
         public class Base : PackStreamTestSpecs
         {
             internal override PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
@@ -142,35 +141,6 @@ namespace Neo4j.Driver.Internal.IO
                     }
                 }
             }
-
-
         }
-
-        //public class V3 : PackStreamTestSpecs
-        //{
-        //    internal override PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
-        //    {
-        //        return new PackStreamReaderMachine(bytes, stream => BoltProtocolMessageFormat.V3.CreateReader(stream));
-        //    }
-
-        //    internal override PackStreamWriterMachine CreateWriterMachine()
-        //    {
-        //        return new PackStreamWriterMachine(stream => BoltProtocolMessageFormat.V3.CreateWriter(stream));
-        //    }
-        //}
-
-        //public class V4 : PackStreamTestSpecs
-        //{
-        //    internal override PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
-        //    {
-        //        return new PackStreamReaderMachine(bytes, stream => BoltProtocolMessageFormat.V4.CreateReader(stream));
-        //    }
-
-        //    internal override PackStreamWriterMachine CreateWriterMachine()
-        //    {
-        //        return new PackStreamWriterMachine(stream => BoltProtocolMessageFormat.V4.CreateWriter(stream));
-        //    }
-        //}
-
     }
 }

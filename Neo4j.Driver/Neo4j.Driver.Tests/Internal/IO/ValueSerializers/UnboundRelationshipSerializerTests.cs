@@ -18,6 +18,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using FluentAssertions;
+using Neo4j.Driver.Internal.IO.Utils;
 using Neo4j.Driver.Internal.Types;
 using Xunit;
 
@@ -27,6 +28,11 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
     {
         internal override IPackStreamSerializer SerializerUnderTest => new UnboundRelationshipSerializer();
 
+        private PackStreamWriterMachine CreateWriterMachine()
+        {
+            return CreateWriterMachine(BoltProtocolVersion.V4_0);
+        }
+        
         [Fact]
         public void ShouldDeserialize()
         {

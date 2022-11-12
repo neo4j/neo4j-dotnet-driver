@@ -33,7 +33,7 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
     {
         await connection.EnqueueAsync(
                 new HelloMessage(connection.Version, userAgent, authToken.AsDictionary(),
-                    connection.RoutingContext?.ToDictionary(x => x.Key, x => (object)x.Value)),
+                    connection.RoutingContext),
                 new HelloResponseHandler(connection))
             .ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);

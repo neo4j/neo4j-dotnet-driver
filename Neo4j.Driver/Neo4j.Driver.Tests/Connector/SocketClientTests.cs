@@ -27,201 +27,197 @@ using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;
-using Neo4j.Driver.Internal.Messaging.V3;
-using Neo4j.Driver.Internal.Protocol;
-using Neo4j.Driver.Tests.Connector;
 using Xunit;
-using static Xunit.Record;
-using Record = Xunit.Record;
 
-namespace Neo4j.Driver.Tests
+namespace Neo4j.Driver.Tests;
+
+public class SocketClientTests
 {
-    public class SocketClientTests
+    private static Uri FakeUri => new Uri("bolt://foo.bar:7878");
+
+    public class ConnectMethod
     {
-        private static Uri FakeUri => new Uri("bolt://foo.bar:7878");
-
-        public class ConnectMethod
+        [Fact]
+        public async void ShouldThrowIOExceptionIfFailedToReadOnHandshakeAsync()
         {
-            [Fact]
-            public async void ShouldThrowIOExceptionIfFailedToReadOnHandshakeAsync()
-            {
-                var bufferSettings = new BufferSettings(Config.Default);
+            var bufferSettings = new BufferSettings(Config.Default);
 
-                var connMock = new Mock<ITcpSocketClient>();
-                TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
+            var connMock = new Mock<ITcpSocketClient>();
+            TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
+            TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
 
-                var client = new SocketClient(FakeUri, null, bufferSettings, socketClient: connMock.Object);
+            var client = new SocketClient(FakeUri, null, bufferSettings, socketClient: connMock.Object);
 
-                var ex = await Record.ExceptionAsync(() => client.ConnectAsync(new Dictionary<string, string>(), CancellationToken.None));
+            var ex = await Record.ExceptionAsync(() => 
+                client.ConnectAsync(new Dictionary<string, string>(), CancellationToken.None));
 
-                ex.Should().NotBeNull().And.BeOfType<IOException>();
-            }
+            ex.Should().NotBeNull().And.BeOfType<IOException>();
         }
+    }
 
-        public class StartMethod
+    public class StartMethod
+    {
+        [Fact]
+        public async Task ShouldConnectServerAsync()
         {
-            [Fact]
-            public async Task ShouldConnectServerAsync()
-            {
-                var bufferSettings = new BufferSettings(Config.Default);
-                var version = new BoltProtocolVersion(4, 1);
-                var connMock = new Mock<ITcpSocketClient>();
+            var bufferSettings = new BufferSettings(Config.Default);
+            var version = new BoltProtocolVersion(4, 1);
+            var connMock = new Mock<ITcpSocketClient>();
                 
-                TcpSocketClientTestSetup.CreateReadStreamMock(connMock, PackStreamBitConverter.GetBytes(version.PackToInt()));
-                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
+            TcpSocketClientTestSetup.CreateReadStreamMock(connMock,
+                PackStreamBitConverter.GetBytes(version.PackToInt()));
+            TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
 
-                PackStreamBitConverter.GetBytes((int)0x14);
+            PackStreamBitConverter.GetBytes(0x14);
 
-                var client = new SocketClient(FakeUri, null, bufferSettings, socketClient: connMock.Object);
+            var client = new SocketClient(FakeUri, null, bufferSettings, socketClient: connMock.Object);
 
-                await client.ConnectAsync(new Dictionary<string, string>());
+            await client.ConnectAsync(new Dictionary<string, string>());
 
-                // Then
-                connMock.Verify(x => x.ConnectAsync(FakeUri, CancellationToken.None), Times.Once);
-            }
+            // Then
+            connMock.Verify(x => x.ConnectAsync(FakeUri, CancellationToken.None), Times.Once);
+        }
+    }
+
+    public class SendMethod
+    {
+        [Fact]
+        public async Task ShouldSendAllMessagesAsync()
+        {
+            // Given
+            var writerMock = new Mock<IMessageWriter>();
+
+            var m1 = new RunWithMetadataMessage(new Query("Run message 1"), AccessMode.Write);
+            var m2 = new RunWithMetadataMessage(new Query("Run message 2"), AccessMode.Read);
+            var messages = new IRequestMessage[] {m1, m2};
+            var client = new SocketClient(null, writerMock.Object);
+
+            // When
+            await client.SendAsync(messages);
+
+            // Then
+            writerMock.Verify(x => x.Write(m1), Times.Once);
+            writerMock.Verify(x => x.Write(m2), Times.Once);
+            writerMock.Verify(x => x.FlushAsync(), Times.Once);
         }
 
-        public class SendMethod
+        [Fact]
+        public async Task ShouldCloseConnectionIfErrorAsync()
         {
-            [Fact]
-            public async Task ShouldSendAllMessagesAsync()
-            {
-                // Given
-                var writerMock = new Mock<IMessageWriter>();
+            // Given
+            var client = new SocketClient(FakeUri, new SocketSettings(), new BufferSettings(Config.Default));
+            client.SetOpened();
 
-                var m1 = new RunWithMetadataMessage(new Query("Run message 1"), AccessMode.Write);
-                var m2 = new RunWithMetadataMessage(new Query("Run message 2"), AccessMode.Read);
-                var messages = new IRequestMessage[] {m1, m2};
-                var client = new SocketClient(null, writerMock.Object);
+            // When
+            var exception = await ExceptionAsync(() =>
+                client.SendAsync(null /*cause null point exception in send method*/));
 
-                // When
-                await client.SendAsync(messages);
+            // Then
+            exception.Should().BeOfType<NullReferenceException>();
+            connection.Verify(x => x.DisposeAsync(), Times.Once);
+        }
+    }
 
-                // Then
-                writerMock.Verify(x => x.Write(m1), Times.Once);
-                writerMock.Verify(x => x.Write(m2), Times.Once);
-                writerMock.Verify(x => x.FlushAsync(), Times.Once);
-            }
+    public class ReceiveOneMethod
+    {
+        [Fact]
+        public async Task ShouldReadMessageAsync()
+        {
+            // Given
+            var readerMock = new Mock<IMessageReader>();
 
-            [Fact]
-            public async Task ShouldCloseConnectionIfErrorAsync()
-            {
-                // Given
-                var client = new SocketClient(FakeUri, new SocketSettings(), new BufferSettings(Config.Default));
-                client.SetOpened();
+            var client = new SocketClient(readerMock.Object, null);
+            var pipeline = new Mock<IResponsePipeline>();
 
-                // When
-                var exception = await ExceptionAsync(() =>
-                    client.SendAsync(null /*cause null point exception in send method*/));
+            // When
+            await client.ReceiveOneAsync(pipeline.Object);
 
-                // Then
-                exception.Should().BeOfType<NullReferenceException>();
-                connection.Verify(x => x.DisposeAsync(), Times.Once);
-            }
+            // Then
+            readerMock.Verify(x => x.ReadAsync(pipeline.Object), Times.Once);
         }
 
-        public class ReceiveOneMethod
+        [Fact]
+        public async Task ShouldCloseConnectionIfErrorAsync()
         {
-            [Fact]
-            public async Task ShouldReadMessageAsync()
-            {
-                // Given
-                var readerMock = new Mock<IMessageReader>();
+            // Given
+            var readerMock = new Mock<IMessageReader>();
+            var connMock = new Mock<ITcpSocketClient>();
 
-                var client = new SocketClient(readerMock.Object, null);
-                var pipeline = new Mock<IResponsePipeline>();
+            var client = new SocketClient(readerMock.Object, null, connMock.Object);
+            client.SetOpened();
 
-                // When
-                await client.ReceiveOneAsync(pipeline.Object);
+            var pipeline = new Mock<IResponsePipeline>();
+            // Throw error when try to read
+            readerMock.Setup(x => x.ReadAsync(pipeline.Object)).Throws<IOException>();
 
-                // Then
-                readerMock.Verify(x => x.ReadAsync(pipeline.Object), Times.Once);
-            }
+            // When
+            var exception = await ExceptionAsync(() => client.ReceiveOneAsync(pipeline.Object));
 
-            [Fact]
-            public async Task ShouldCloseConnectionIfErrorAsync()
-            {
-                // Given
-                var readerMock = new Mock<IMessageReader>();
-                var connMock = new Mock<ITcpSocketClient>();
-
-                var client = new SocketClient(readerMock.Object, null, connMock.Object);
-                client.SetOpened();
-
-                var pipeline = new Mock<IResponsePipeline>();
-                // Throw error when try to read
-                readerMock.Setup(x => x.ReadAsync(pipeline.Object)).Throws<IOException>();
-
-                // When
-                var exception = await ExceptionAsync(() => client.ReceiveOneAsync(pipeline.Object));
-
-                // Then
-                exception.Should().BeOfType<IOException>();
-                connMock.Verify(x => x.DisconnectAsync(), Times.Once);
-            }
-
-            [Fact]
-            public async Task ShouldCloseConnectionOnProtocolException()
-            {
-                // Given
-                var readerMock = new Mock<IMessageReader>();
-                var connMock = new Mock<ITcpSocketClient>();
-
-                var client = new SocketClient(readerMock.Object, null, connMock.Object);
-                client.SetOpened();
-
-                var pipeline = new Mock<IResponsePipeline>();
-                pipeline.Setup(x => x.AssertNoProtocolViolation()).Throws(new ProtocolException("some protocol error"));
-
-                // When
-                var exception = await ExceptionAsync(() => client.ReceiveOneAsync(pipeline.Object));
-
-                // Then
-                exception.Should().BeOfType<ProtocolException>();
-                readerMock.Verify(x => x.ReadAsync(pipeline.Object), Times.Once);
-                connMock.Verify(x => x.DisconnectAsync(), Times.Once);
-            }
-
-            [Fact]
-            public async Task ShouldCloseConnectionWhenReaderThrowsException()
-            {
-                // Given
-                var readerMock = new Mock<IMessageReader>();
-                var connMock = new Mock<ITcpSocketClient>();
-                var pipeline = new Mock<IResponsePipeline>();
-
-                var client = new SocketClient(readerMock.Object, null, connMock.Object);
-                client.SetOpened();
-
-                readerMock.Setup(x => x.ReadAsync(pipeline.Object)).ThrowsAsync(new DatabaseException());
-
-                // When
-                var exception = await ExceptionAsync(() => client.ReceiveOneAsync(pipeline.Object));
-
-                // Then
-                exception.Should().BeOfType<DatabaseException>();
-                readerMock.Verify(x => x.ReadAsync(pipeline.Object), Times.Once);
-                connMock.Verify(x => x.DisconnectAsync(), Times.Once);
-            }
+            // Then
+            exception.Should().BeOfType<IOException>();
+            connMock.Verify(x => x.DisconnectAsync(), Times.Once);
         }
 
-        public class DisposeAndStopMethods
+        [Fact]
+        public async Task ShouldCloseConnectionOnProtocolException()
         {
-            [Fact]
-            public async Task ShouldCallDisconnectAsyncOnTheTcpSocketClientWhenStoppedAsync()
-            {
-                var connMock = new Mock<ITcpSocketClient>();
-                var client = new SocketClient(null, null, connMock.Object);
-                client.SetOpened();
+            // Given
+            var readerMock = new Mock<IMessageReader>();
+            var connMock = new Mock<ITcpSocketClient>();
 
-                // When
-                await client.StopAsync();
+            var client = new SocketClient(readerMock.Object, null, connMock.Object);
+            client.SetOpened();
 
-                // Then
-                connMock.Verify(x => x.DisconnectAsync(), Times.Once);
-                client.IsOpen.Should().BeFalse();
-            }
+            var pipeline = new Mock<IResponsePipeline>();
+            pipeline.Setup(x => x.AssertNoProtocolViolation()).Throws(new ProtocolException("some protocol error"));
+
+            // When
+            var exception = await ExceptionAsync(() => client.ReceiveOneAsync(pipeline.Object));
+
+            // Then
+            exception.Should().BeOfType<ProtocolException>();
+            readerMock.Verify(x => x.ReadAsync(pipeline.Object), Times.Once);
+            connMock.Verify(x => x.DisconnectAsync(), Times.Once);
+        }
+
+        [Fact]
+        public async Task ShouldCloseConnectionWhenReaderThrowsException()
+        {
+            // Given
+            var readerMock = new Mock<IMessageReader>();
+            var connMock = new Mock<ITcpSocketClient>();
+            var pipeline = new Mock<IResponsePipeline>();
+
+            var client = new SocketClient(readerMock.Object, null, connMock.Object);
+            client.SetOpened();
+
+            readerMock.Setup(x => x.ReadAsync(pipeline.Object)).ThrowsAsync(new DatabaseException());
+
+            // When
+            var exception = await ExceptionAsync(() => client.ReceiveOneAsync(pipeline.Object));
+
+            // Then
+            exception.Should().BeOfType<DatabaseException>();
+            readerMock.Verify(x => x.ReadAsync(pipeline.Object), Times.Once);
+            connMock.Verify(x => x.DisconnectAsync(), Times.Once);
+        }
+    }
+
+    public class DisposeAndStopMethods
+    {
+        [Fact]
+        public async Task ShouldCallDisconnectAsyncOnTheTcpSocketClientWhenStoppedAsync()
+        {
+            var connMock = new Mock<ITcpSocketClient>();
+            var client = new SocketClient(null, null, connMock.Object);
+            client.SetOpened();
+
+            // When
+            await client.StopAsync();
+
+            // Then
+            connMock.Verify(x => x.DisconnectAsync(), Times.Once);
+            client.IsOpen.Should().BeFalse();
         }
     }
 }

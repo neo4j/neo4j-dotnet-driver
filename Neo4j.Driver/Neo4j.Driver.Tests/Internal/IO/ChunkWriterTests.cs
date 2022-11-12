@@ -28,26 +28,16 @@ namespace Neo4j.Driver.Internal.IO
 {
     public class ChunkWriterTests
     {
-
-        [Theory]
-        [InlineData(0)]
-        [InlineData(5)]
-        [InlineData(Constants.MaxChunkSize + 1)]
-        public void ShouldThrowWhenConstructedWithInvalidChunkSize(int chunkSize)
-        {
-            var ex = Record.Exception(() => new ChunkWriter(new MemoryStream(), chunkSize));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ArgumentOutOfRangeException>();
-        }
+        private BufferSettings _settings = new BufferSettings(Config.Default);
+        private Mock<ILogger> _logger = new Mock<ILogger>();
 
         [Fact]
         public void ShouldThrowWhenConstructedUsingUnreadableStream()
         {
-            var mockLogger = new Mock<Stream>();
-            mockLogger.Setup(l => l.CanWrite).Returns(false);
+            var mockStream = new Mock<Stream>();
+            mockStream.Setup(l => l.CanWrite).Returns(false);
 
-            var ex = Record.Exception(() => new ChunkWriter(mockLogger.Object));
+            var ex = Record.Exception(() => new ChunkWriter(mockStream.Object, _settings, _logger.Object));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ArgumentOutOfRangeException>();
@@ -58,7 +48,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             var buffer = new byte[1024];
             var stream = new MemoryStream();
-            var writer = new ChunkWriter(stream);
+            var writer = new ChunkWriter(stream, _settings, _logger.Object);
 
             // Write data
             writer.OpenChunk();
@@ -77,7 +67,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             var buffer = new byte[1024];
             var stream = new MemoryStream();
-            var writer = new ChunkWriter(stream);
+            var writer = new ChunkWriter(stream, _settings, _logger.Object);
 
             // Write data
             writer.OpenChunk();
@@ -101,7 +91,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             var buffer = Enumerable.Range(0, chunkSize).Select(i => i % byte.MaxValue).Select(i => (byte)i).ToArray();
             var stream = new MemoryStream();
-            var writer = new ChunkWriter(stream);
+            var writer = new ChunkWriter(stream, _settings, _logger.Object);
 
             // Write data
             writer.OpenChunk();
@@ -131,7 +121,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             var buffer = Enumerable.Range(0, chunkSize).Select(i => i % byte.MaxValue).Select(i => (byte)i).ToArray();
             var stream = new MemoryStream();
-            var writer = new ChunkWriter(stream);
+            var writer = new ChunkWriter(stream, _settings, _logger.Object);
 
             // Write data
             writer.OpenChunk();
@@ -157,7 +147,7 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = Enumerable.Range(0, 10).Select(i => (byte)i).ToArray();
             var stream = new MemoryStream();
             var logger = LoggingHelper.GetTraceEnabledLogger();
-            var writer = new ChunkWriter(stream, logger.Object);
+            var writer = new ChunkWriter(stream, _settings, logger.Object);
 
             // Write data
             writer.OpenChunk();
@@ -177,7 +167,7 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = Enumerable.Range(0, 10).Select(i => (byte)i).ToArray();
             var stream = new MemoryStream();
             var logger = LoggingHelper.GetTraceEnabledLogger();
-            var writer = new ChunkWriter(stream, logger.Object);
+            var writer = new ChunkWriter(stream, _settings, logger.Object);
 
             // Write data
             writer.OpenChunk();
@@ -201,7 +191,8 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var writer = new ChunkWriter(stream, defaultBufferSize, maxBufferSize, logger.Object);
+            var settings = new BufferSettings(defaultBufferSize, maxBufferSize, defaultBufferSize, maxBufferSize);
+            var writer = new ChunkWriter(stream, settings, logger.Object);
 
             writer.OpenChunk();
             writer.Write(buffer, 0, buffer.Length);
@@ -221,7 +212,9 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var writer = new ChunkWriter(stream, defaultBufferSize, maxBufferSize, logger.Object);
+            var writer = new ChunkWriter(stream, 
+                new BufferSettings(defaultBufferSize, maxBufferSize, defaultBufferSize, maxBufferSize), 
+                logger.Object);
 
             writer.OpenChunk();
             writer.Write(buffer, 0, buffer.Length);
@@ -242,7 +235,8 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var writer = new ChunkWriter(stream, defaultBufferSize, maxBufferSize, logger.Object);
+            var settings = new BufferSettings(defaultBufferSize, maxBufferSize, defaultBufferSize, maxBufferSize);
+            var writer = new ChunkWriter(stream, settings, logger.Object);
 
             writer.OpenChunk();
             writer.Write(buffer, 0, buffer.Length);
@@ -262,7 +256,9 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var writer = new ChunkWriter(stream, defaultBufferSize, maxBufferSize, logger.Object);
+            var settings = new BufferSettings(defaultBufferSize, maxBufferSize, defaultBufferSize, maxBufferSize);
+
+            var writer = new ChunkWriter(stream, settings, logger.Object);
 
             writer.OpenChunk();
             writer.Write(buffer, 0, buffer.Length);
@@ -279,7 +275,9 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = new byte[1536];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var writer = new ChunkWriter(stream, 512, 1024, logger.Object);
+            var settings = new BufferSettings(512, 1024, 512, 1024);
+
+            var writer = new ChunkWriter(stream, settings, logger.Object);
 
             writer.OpenChunk();
             writer.Write(buffer, 0, buffer.Length);
@@ -300,7 +298,9 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = new byte[1536];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var writer = new ChunkWriter(stream, 512, 1024, logger.Object);
+            var settings = new BufferSettings(512, 1024, 512, 1024);
+
+            var writer = new ChunkWriter(stream, settings, logger.Object);
 
             writer.OpenChunk();
             writer.Write(buffer, 0, buffer.Length);

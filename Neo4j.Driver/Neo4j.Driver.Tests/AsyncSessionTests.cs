@@ -46,7 +46,8 @@ namespace Neo4j.Driver.Tests
             mockConn.Setup(x => x.IsOpen).Returns(true);
             mockConn.Setup(x => x.BoltProtocol).Returns(protocol);
             
-            return new AsyncSession(new TestConnectionProvider(mockConn.Object), null, null, 0,  new Driver.SessionConfig(), reactive);
+            return new AsyncSession(new TestConnectionProvider(mockConn.Object), null, null, 0, 
+                new Driver.SessionConfig(), reactive);
         }
 
         internal static Mock<IConnection> NewMockedConnection(IBoltProtocol boltProtocol = null)
@@ -58,10 +59,8 @@ namespace Neo4j.Driver.Tests
                 var protocol = new Mock<IBoltProtocol>();
                 protocol.Setup(x => x.LoginAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<IAuthToken>()))
                     .Returns(Task.CompletedTask);
-                protocol.Setup(x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Query>(),
-                        false,
-                        It.IsAny<IBookmarksTracker>(), It.IsAny<IResultResourceHandler>(), It.IsAny<string>(),
-                        It.IsAny<Bookmarks>(), It.IsAny<TransactionConfig>(), It.IsAny<string>(), It.IsAny<long>()))
+                protocol.Setup(x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), 
+                        It.IsAny<AutoCommitParams>()))
                     .ReturnsAsync(new Mock<IResultCursor>().Object);
                 protocol.Setup(x =>
                         x.BeginTransactionAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<Bookmarks>(),
@@ -103,8 +102,7 @@ namespace Neo4j.Driver.Tests
                 await session.RunAsync("lalalal");
 
                 mockProtocol.Verify(
-                    x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<Query>(), reactive,
-                        session, session, It.IsAny<string>(), It.IsAny<Bookmarks>(), It.IsAny<TransactionConfig>(), It.IsAny<string>(), It.IsAny<long>()),
+                    x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<AutoCommitParams>()),
                     Times.Once);
             }
         }

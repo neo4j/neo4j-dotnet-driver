@@ -2,7 +2,7 @@
 
 namespace Neo4j.Driver.Internal;
 //TODO: Consider converting to struct.
-internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
+public sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
 {
     // The int 1213486160 is 0x‭48 54 54 50 - or HTTP in ascii codes... this determines the max major and minor versions supported.
     public const int MaxMajorVersion = 80;

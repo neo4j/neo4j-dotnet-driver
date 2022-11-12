@@ -27,7 +27,7 @@ internal sealed class HelloMessage : IRequestMessage
     private const string UserAgentMetadataKey = "user_agent";
 
     public HelloMessage(BoltProtocolVersion version, string userAgent, IDictionary<string, object> authToken, 
-        IDictionary<string, object> routingContext)
+        IDictionary<string, string> routingContext)
     {
         if (authToken == null || authToken.Count == 0)
         {

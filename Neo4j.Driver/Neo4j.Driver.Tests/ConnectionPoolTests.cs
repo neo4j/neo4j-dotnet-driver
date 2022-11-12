@@ -496,9 +496,6 @@ namespace Neo4j.Driver.Tests
 
                 await pool.ReleaseAsync((IPooledConnection) acquired);
                 acquired.Mode.Should().BeNull();
-
-                connection.VerifySet(x => x.Mode = mode);
-                connection.VerifySet(x => x.Mode = null);
             }
         }
 

@@ -22,6 +22,11 @@ namespace Neo4j.Driver.Internal.Messaging;
 
 internal sealed class DiscardMessage : ResultHandleMessage
 {
+    public DiscardMessage(long n)
+        : this(NoQueryId, n)
+    {
+    }
+
     public DiscardMessage(long id, long n)
         : base(id, n)
     {

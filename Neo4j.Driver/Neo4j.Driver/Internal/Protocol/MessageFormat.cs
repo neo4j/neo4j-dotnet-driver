@@ -112,6 +112,19 @@ internal sealed class MessageFormat
         }
     }
 
+    /// <summary>
+    /// Only for use in tests, consider refactoring.
+    /// </summary>
+    /// <param name="serializer"></param>
+    internal MessageFormat(IPackStreamSerializer serializer, IEnumerable<IPackStreamSerializer> needed)
+    {
+        foreach (var packStreamSerializer in needed)
+        {
+            AddHandler(packStreamSerializer);
+        }
+        AddHandler(serializer);
+    }
+    
     public void UseUtcEncoder()
     {
         if (Version > BoltProtocolVersion.V4_4 || Version <= BoltProtocolVersion.V4_3)

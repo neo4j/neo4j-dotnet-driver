@@ -23,21 +23,13 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.Routing;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.MessageHandling;
-using Neo4j.Driver.Internal.Messaging.V3;
-using Neo4j.Driver.Internal.Messaging.V4;
-using Neo4j.Driver.Internal.Util;
 using Xunit;
-using static Neo4j.Driver.Internal.Messaging.IgnoredMessage;
-using static Neo4j.Driver.Internal.Messaging.PullAllMessage;
 using static Neo4j.Driver.Tests.Routing.MockedMessagingClientV3;
 using static Neo4j.Driver.Tests.Routing.MockedMessagingClientV4_3;
-using Record = Xunit.Record;
 using Neo4j.Driver.Internal.Messaging.V4_3;
 
 namespace Neo4j.Driver.Tests.Routing

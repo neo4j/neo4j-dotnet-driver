@@ -41,7 +41,10 @@ internal sealed class ChunkWriter: Stream
     public ChunkWriter(Stream downStream, BufferSettings settings, ILogger logger)
     {
         _downStream = downStream ?? throw new ArgumentNullException(nameof(downStream));
-        Throw.ArgumentOutOfRangeException.IfFalse(downStream.CanWrite, nameof(downStream.CanWrite));
+        
+        if (!_downStream.CanWrite)
+            throw new ArgumentOutOfRangeException(
+                $"Parameter {nameof(downStream)} is invalid. Property:{nameof(downStream.CanWrite)} is false but should be true");
         
         _chunkSize = Constants.MaxChunkSize;
         _logger = logger;

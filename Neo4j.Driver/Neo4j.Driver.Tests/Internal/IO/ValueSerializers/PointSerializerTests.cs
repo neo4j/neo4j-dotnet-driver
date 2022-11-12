@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be((byte) 'X');
             reader.Read().Should().Be(7203L);
@@ -54,7 +54,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(4);
             reader.ReadStructSignature().Should().Be((byte) 'Y');
             reader.Read().Should().Be(7203L);

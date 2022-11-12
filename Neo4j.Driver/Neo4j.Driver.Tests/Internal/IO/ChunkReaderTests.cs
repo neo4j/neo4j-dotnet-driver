@@ -252,7 +252,8 @@ namespace Neo4j.Driver.Internal.IO
         {
             var buffer = Enumerable.Range(0, messageSize).Select(i => i % byte.MaxValue).Select(i => (byte)i).ToArray();
             var stream = new MemoryStream();
-            var writer = new ChunkWriter(stream);
+            var settings = new BufferSettings(Config.Default);
+            var writer = new ChunkWriter(stream, settings, new Mock<ILogger>().Object);
 
             writer.OpenChunk();
             writer.Write(buffer, 0, buffer.Length);

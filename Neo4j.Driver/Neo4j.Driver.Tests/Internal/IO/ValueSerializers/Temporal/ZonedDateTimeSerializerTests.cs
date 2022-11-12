@@ -17,6 +17,7 @@
 
 using System;
 using FluentAssertions;
+using Neo4j.Driver.Internal.IO.Utils;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
@@ -24,6 +25,11 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
     public class ZonedDateTimeSerializerTests : PackStreamSerializerTests
     {
         internal override IPackStreamSerializer SerializerUnderTest => new ZonedDateTimeSerializer();
+
+        private PackStreamWriterMachine CreateWriterMachine()
+        {
+            return CreateWriterMachine(BoltProtocolVersion.V4_0);
+        }
 
         [Fact]
         public void ShouldSerializeDateTimeWithOffset()
@@ -38,7 +44,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be((byte) 'F');
             reader.Read().Should().Be(282659759L);
@@ -84,7 +90,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be((byte)'f');
             reader.Read().Should().Be(282659759L);
