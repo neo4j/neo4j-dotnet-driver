@@ -122,7 +122,8 @@ internal sealed class MessageFormat
         {
             AddHandler(packStreamSerializer);
         }
-        AddHandler(serializer);
+        if (serializer != null)
+            AddHandler(serializer);
     }
     
     public void UseUtcEncoder()

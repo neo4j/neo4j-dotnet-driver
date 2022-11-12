@@ -37,12 +37,9 @@ namespace Neo4j.Driver.Tests.Connector
             public async Task ShouldThrowExceptionIfConnectionTimedOut()
             {
                 var client = new TcpSocketClient(
-                    new SocketSettings
+                    new SocketSettings(new SystemHostResolver(), new EncryptionManager(false, null))
                     {
                         ConnectionTimeout = TimeSpan.FromSeconds(1),
-                        HostResolver = new SystemHostResolver(),
-                        EncryptionManager =
-                            new EncryptionManager(false, null)
                     });
 
                 // use non-routable IP address to mimic a connect timeout
@@ -59,12 +56,9 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public async Task ShouldBeAbleToConnectAgainIfFirstFailed()
             {
-                var socketSettings = new SocketSettings
+                var socketSettings = new SocketSettings(new SystemHostResolver(), new EncryptionManager(false, null))
                 {
                     ConnectionTimeout = TimeSpan.FromSeconds(10),
-                    HostResolver = new SystemHostResolver(),
-                    EncryptionManager =
-                        new EncryptionManager(false, null)
                 };
                 var client = new TcpSocketClient(socketSettings);
 
@@ -94,11 +88,11 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public async Task ShouldThrowExceptionIfConnectionTimedOut()
             {
-                var client = new TcpSocketClient(new SocketSettings
+                var client = new TcpSocketClient(new SocketSettings(
+                    new SystemHostResolver(), 
+                    new EncryptionManager(false, null))
                 {
                     ConnectionTimeout = TimeSpan.FromSeconds(1),
-                    HostResolver = new SystemHostResolver(),
-                    EncryptionManager = new EncryptionManager(false, null)
                 });
 
                 // ReSharper disable once PossibleNullReferenceException

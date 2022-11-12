@@ -102,21 +102,21 @@ namespace Neo4j.Driver.Tests.Connector
 
                 connMock.VerifyGet(x => x.Mode);
             }
-
-            [Theory]
-            [InlineData(AccessMode.Read)]
-            [InlineData(AccessMode.Write)]
-            public void ShouldSetModeOnDelegate(AccessMode mode)
-            {
-                var connMock = new Mock<IConnection>();
-                connMock.Setup(x => x.Mode).Returns(mode);
-
-                var delegateConnection = new TestDelegatedConnection(connMock.Object);
-
-                delegateConnection.Mode = mode;
-
-                connMock.VerifySet(c => c.Mode = mode);
-            }
+            //
+            // [Theory]
+            // [InlineData(AccessMode.Read)]
+            // [InlineData(AccessMode.Write)]
+            // public void ShouldSetModeOnDelegate(AccessMode mode)
+            // {
+            //     var connMock = new Mock<IConnection>();
+            //     connMock.Setup(x => x.Mode).Returns(mode);
+            //
+            //     var delegateConnection = new TestDelegatedConnection(connMock.Object);
+            //
+            //     delegateConnection.Mode = mode;
+            //
+            //     connMock.VerifySet(c => c.Mode = mode);
+            // }
         }
     }
 }
