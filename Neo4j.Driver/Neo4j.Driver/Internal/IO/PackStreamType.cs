@@ -17,7 +17,8 @@
 
 namespace Neo4j.Driver.Internal.IO;
 
-internal enum PackStreamType{
+internal enum PackStreamType
+{
     Null,
     Boolean,
     Integer,
