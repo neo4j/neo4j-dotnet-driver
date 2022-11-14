@@ -15,24 +15,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
+namespace Neo4j.Driver.Internal.Util;
 
-namespace Neo4j.Driver.Internal.Util
+internal class ConnectionContext
 {
-    internal class ConnectionContext
+    /// <summary>This describes a read connection with default database.</summary>
+    internal static readonly ConnectionContext Simple = new()
     {
-        public AccessMode Mode { get; private set; }
-        public String Database { get; private set; }
-        public Bookmarks Bookmarks { get; private set; }
+        Mode = AccessMode.Read,
+        Database = null,
+        Bookmarks = Bookmarks.Empty
+    };
 
-        /// <summary>
-        /// This describes a read connection with default database.
-        /// </summary>
-        internal static readonly ConnectionContext Simple = new ConnectionContext
-        {
-            Mode = AccessMode.Read,
-            Database = null,
-            Bookmarks = Bookmarks.Empty
-        };
-    }
+    public AccessMode Mode { get; private set; }
+    public string Database { get; private set; }
+    public Bookmarks Bookmarks { get; private set; }
 }

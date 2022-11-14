@@ -17,39 +17,37 @@
 
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.IO;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+/// <summary>A simple common token for authentication schemes that easily convert to an auth token map</summary>
+internal class AuthToken : IAuthToken
 {
-    /// <summary>
-    ///     A simple common token for authentication schemes that easily convert to an auth token map
-    /// </summary>
-    internal class AuthToken : IAuthToken
-    {
-        public const string SchemeKey = "scheme";
-        public const string PrincipalKey = "principal";
-        public const string CredentialsKey = "credentials";
-        public const string RealmKey = "realm";
-        public const string ParametersKey = "parameters";
-        
-        public AuthToken(IDictionary<string, object> content)
-        {
-            Content = content ?? throw new ArgumentNullException(nameof(content));
-        }
+    public const string SchemeKey = "scheme";
+    public const string PrincipalKey = "principal";
+    public const string CredentialsKey = "credentials";
+    public const string RealmKey = "realm";
+    public const string ParametersKey = "parameters";
 
-        public IDictionary<string, object> Content { get; }
+    public AuthToken(IDictionary<string, object> content)
+    {
+        Content = content ?? throw new ArgumentNullException(nameof(content));
     }
 
-    internal static class AuthTokenExtensions
+    public IDictionary<string, object> Content { get; }
+}
+
+internal static class AuthTokenExtensions
+{
+    public static IDictionary<string, object> AsDictionary(this IAuthToken authToken)
     {
-        public static IDictionary<string, object> AsDictionary(this IAuthToken authToken)
+        if (authToken is AuthToken)
         {
-            if (authToken is AuthToken)
-            {
-                return ((AuthToken) authToken).Content;
-            }
-            throw new ClientException($"Unknown authentication token, `{authToken}`. Please use one of the supported " +
-                                      $"tokens from `{nameof(AuthTokens)}`.");
+            return ((AuthToken)authToken).Content;
         }
+
+        throw new ClientException(
+            $"Unknown authentication token, `{authToken}`. Please use one of the supported " +
+            $"tokens from `{nameof(AuthTokens)}`.");
     }
 }

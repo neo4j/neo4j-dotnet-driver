@@ -14,22 +14,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-using System;
-using System.Collections.Generic;
-using System.Text;
-using Moq;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.Tests.TestUtil
+using Moq;
+
+namespace Neo4j.Driver.Tests.TestUtil;
+
+public static class LoggingHelper
 {
-    public static class LoggingHelper
+    public static Mock<ILogger> GetTraceEnabledLogger()
     {
-        public static Mock<ILogger> GetTraceEnabledLogger()
-        {
-            var mockLogger = new Mock<ILogger>();
-            mockLogger.Setup(x => x.IsTraceEnabled()).Returns(true);
-            mockLogger.Setup(x => x.IsDebugEnabled()).Returns(true);
-            return mockLogger;
-        }
+        var mockLogger = new Mock<ILogger>();
+        mockLogger.Setup(x => x.IsTraceEnabled()).Returns(true);
+        mockLogger.Setup(x => x.IsDebugEnabled()).Returns(true);
+        return mockLogger;
     }
 }

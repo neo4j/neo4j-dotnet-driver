@@ -53,27 +53,39 @@ internal sealed class HelloResponseHandler : MetadataCollectingResponseHandler
     {
         // ignore all version not 4.3/4.4
         if (_connection.Version < BoltProtocolVersion.V4_3 || _connection.Version.MajorVersion != 4)
+        {
             return;
+        }
 
         if (GetMetadata<BoltPatchCollector, string[]>()?.Contains("utc") ?? false)
+        {
             _connection.SetUseUtcEncodedDateTime();
+        }
     }
 
     private void UpdateReadTimeout()
     {
         if (_connection.Version < BoltProtocolVersion.V4_3)
+        {
             return;
+        }
 
         var configMetadata = GetMetadata<ConfigurationHintsCollector, Dictionary<string, object>>();
-        
+
         if (configMetadata == null)
+        {
             return;
+        }
 
         if (!configMetadata.TryGetValue("connection.recv_timeout_seconds", out var timeout))
+        {
             return;
+        }
 
         if (timeout is int readConnectionTimeoutSeconds)
+        {
             _connection.SetReadTimeoutInSeconds(readConnectionTimeoutSeconds);
+        }
     }
 
     private void UpdateConnectionServerVersion()

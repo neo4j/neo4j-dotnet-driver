@@ -15,10 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal interface IInternalAsyncTransaction : IAsyncTransaction
 {
-    internal interface IInternalAsyncTransaction : IAsyncTransaction
-    {
-        bool IsOpen { get; }
-    }
+    bool IsOpen { get; }
 }

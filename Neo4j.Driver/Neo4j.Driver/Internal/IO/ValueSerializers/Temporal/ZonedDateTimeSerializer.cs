@@ -22,19 +22,18 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 
 internal sealed class ZonedDateTimeSerializer : IPackStreamSerializer
 {
-    internal static readonly ZonedDateTimeSerializer Instance = new();
-    
-    public const byte StructTypeWithOffset = (byte) 'F';
-    public const byte StructTypeWithId = (byte) 'f';
+    public const byte StructTypeWithOffset = (byte)'F';
+    public const byte StructTypeWithId = (byte)'f';
     public const int StructSize = 3;
+    internal static readonly ZonedDateTimeSerializer Instance = new();
 
-    public IEnumerable<byte> ReadableStructs => new[] {StructTypeWithId, StructTypeWithOffset};
+    public IEnumerable<byte> ReadableStructs => new[] { StructTypeWithId, StructTypeWithOffset };
 
-    public IEnumerable<Type> WritableTypes => new[] {typeof(ZonedDateTime)};
+    public IEnumerable<Type> WritableTypes => new[] { typeof(ZonedDateTime) };
 
     public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
     {
-        PackStream.EnsureStructSize($"ZonedDateTime[{(char) signature}]", StructSize, size);
+        PackStream.EnsureStructSize($"ZonedDateTime[{(char)signature}]", StructSize, size);
 
         var epochSecondsUtc = reader.ReadLong();
         var nanosOfSecond = reader.ReadInteger();
@@ -45,10 +44,12 @@ internal sealed class ZonedDateTimeSerializer : IPackStreamSerializer
                 return new ZonedDateTime(
                     TemporalHelpers.EpochSecondsAndNanoToDateTime(epochSecondsUtc, nanosOfSecond),
                     Zone.Of(reader.ReadString()));
+
             case StructTypeWithOffset:
                 return new ZonedDateTime(
                     TemporalHelpers.EpochSecondsAndNanoToDateTime(epochSecondsUtc, nanosOfSecond),
                     Zone.Of(reader.ReadInteger()));
+
             default:
                 throw new ProtocolException(
                     $"Unsupported struct signature {signature} passed to {nameof(ZonedDateTimeSerializer)}!");
@@ -67,12 +68,14 @@ internal sealed class ZonedDateTimeSerializer : IPackStreamSerializer
                 writer.WriteInt(dateTime.Nanosecond);
                 writer.WriteString(zone.Id);
                 break;
+
             case ZoneOffset zone:
                 writer.WriteStructHeader(StructSize, StructTypeWithOffset);
                 writer.WriteLong(dateTime.ToEpochSeconds());
                 writer.WriteInt(dateTime.Nanosecond);
                 writer.WriteInt(zone.OffsetSeconds);
                 break;
+
             default:
                 throw new ProtocolException(
                     $"{GetType().Name}: Zone('{dateTime.Zone.GetType().Name}') is not supported.");

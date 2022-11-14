@@ -18,58 +18,38 @@
 using System;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver;
+
+/// <summary>Common interface for components that can execute Neo4j queries.</summary>
+/// <remarks><see cref="IAsyncSession" /> and <see cref="IAsyncTransaction" /></remarks>
+public interface IQueryRunner : IDisposable
 {
     /// <summary>
-    ///  Common interface for components that can execute Neo4j queries.
+    /// Run a query and return a result stream. This method accepts a String representing a Cypher query which will be
+    /// compiled into a query object that can be used to efficiently execute this query multiple times.
     /// </summary>
-    /// <remarks>
-    /// <see cref="IAsyncSession"/> and <see cref="IAsyncTransaction"/>
-    /// </remarks>
-    public interface IQueryRunner : IDisposable
-    {
-        /// <summary>
-        /// 
-        /// Run a query and return a result stream.
-        ///
-        /// This method accepts a String representing a Cypher query which will be 
-        /// compiled into a query object that can be used to efficiently execute this
-        /// query multiple times. 
-        /// </summary>
-        /// <param name="query">A Cypher query.</param>
-        /// <returns>A stream of result values and associated metadata.</returns>
-        IResult Run(string query);
+    /// <param name="query">A Cypher query.</param>
+    /// <returns>A stream of result values and associated metadata.</returns>
+    IResult Run(string query);
 
-        /// <summary>
-        /// Execute a query and return a result stream.
-        /// </summary>
-        /// <param name="query">A Cypher query.</param>
-        /// <param name="parameters">A parameter dictionary which is made of prop.Name=prop.Value pairs would be created.</param>
-        /// <returns>A stream of result values and associated metadata.</returns>
-        IResult Run(string query, object parameters);
+    /// <summary>Execute a query and return a result stream.</summary>
+    /// <param name="query">A Cypher query.</param>
+    /// <param name="parameters">A parameter dictionary which is made of prop.Name=prop.Value pairs would be created.</param>
+    /// <returns>A stream of result values and associated metadata.</returns>
+    IResult Run(string query, object parameters);
 
-        /// <summary>
-        /// 
-        /// Run a query and return a result stream.
-        ///
-        /// This method accepts a String representing a Cypher query which will be 
-        /// compiled into a query object that can be used to efficiently execute this
-        /// query multiple times. This method optionally accepts a set of parameters
-        /// which will be injected into the query object query by Neo4j. 
-        ///
-        /// </summary>
-        /// <param name="query">A Cypher query.</param>
-        /// <param name="parameters">Input parameters for the query.</param>
-        /// <returns>A stream of result values and associated metadata.</returns>
-        IResult Run(string query, IDictionary<string, object> parameters);
+    /// <summary>
+    /// Run a query and return a result stream. This method accepts a String representing a Cypher query which will be
+    /// compiled into a query object that can be used to efficiently execute this query multiple times. This method optionally
+    /// accepts a set of parameters which will be injected into the query object query by Neo4j.
+    /// </summary>
+    /// <param name="query">A Cypher query.</param>
+    /// <param name="parameters">Input parameters for the query.</param>
+    /// <returns>A stream of result values and associated metadata.</returns>
+    IResult Run(string query, IDictionary<string, object> parameters);
 
-        /// <summary>
-        ///
-        /// Execute a query and return a result stream.
-        ///
-        /// </summary>
-        /// <param name="query">A Cypher query, <see cref="Query"/>.</param>
-        /// <returns>A stream of result values and associated metadata.</returns>
-        IResult Run(Query query);
-    }
+    /// <summary>Execute a query and return a result stream.</summary>
+    /// <param name="query">A Cypher query, <see cref="Query" />.</param>
+    /// <returns>A stream of result values and associated metadata.</returns>
+    IResult Run(Query query);
 }

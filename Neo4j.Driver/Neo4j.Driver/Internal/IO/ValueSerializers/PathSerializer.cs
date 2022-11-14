@@ -23,15 +23,14 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers;
 
 internal class PathSerializer : ReadOnlySerializer
 {
-    internal static readonly PathSerializer Instance = new();
-        
     public const byte Path = (byte)'P';
-    public override IEnumerable<byte> ReadableStructs => new[] {Path};
+    internal static readonly PathSerializer Instance = new();
+    public override IEnumerable<byte> ReadableStructs => new[] { Path };
 
     public override object Deserialize(PackStreamReader reader, byte signature, long size)
     {
         // List of unique nodes
-        var uniqNodes = new INode[(int) reader.ReadListHeader()];
+        var uniqNodes = new INode[(int)reader.ReadListHeader()];
         for (var i = 0; i < uniqNodes.Length; i++)
         {
             var node = reader.Read() as INode;
@@ -42,7 +41,7 @@ internal class PathSerializer : ReadOnlySerializer
         }
 
         // List of unique relationships, without start/end information
-        var uniqRels = new Relationship[(int) reader.ReadListHeader()];
+        var uniqRels = new Relationship[(int)reader.ReadListHeader()];
         for (var i = 0; i < uniqRels.Length; i++)
         {
             var uniqRel = reader.Read() as Relationship;
@@ -53,7 +52,7 @@ internal class PathSerializer : ReadOnlySerializer
         }
 
         // Path sequence
-        var length = (int) reader.ReadListHeader();
+        var length = (int)reader.ReadListHeader();
 
         // Knowing the sequence length, we can create the arrays that will represent the nodes, rels and segments in their "path order"
         var segments = new ISegment[length / 2];
@@ -64,14 +63,15 @@ internal class PathSerializer : ReadOnlySerializer
         nodes[0] = prevNode;
         for (var i = 0; i < segments.Length; i++)
         {
-            var relIdx = (int) reader.ReadLong();
+            var relIdx = (int)reader.ReadLong();
             var nextNode =
-                uniqNodes[(int) reader.ReadLong()]; // Start node is always 0, and isn't encoded in the sequence
+                uniqNodes[(int)reader.ReadLong()]; // Start node is always 0, and isn't encoded in the sequence
+
             // Negative rel index means this rel was traversed "inversed" from its direction
             Relationship rel;
             if (relIdx < 0)
             {
-                rel = uniqRels[(-relIdx) - 1]; // -1 because rel idx are 1-indexed
+                rel = uniqRels[-relIdx - 1]; // -1 because rel idx are 1-indexed
                 rel.SetStartAndEnd(nextNode, prevNode);
             }
             else

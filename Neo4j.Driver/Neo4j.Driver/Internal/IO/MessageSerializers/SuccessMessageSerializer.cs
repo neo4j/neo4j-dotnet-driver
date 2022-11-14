@@ -23,8 +23,8 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers;
 internal sealed class SuccessMessageSerializer : ReadOnlySerializer
 {
     internal static SuccessMessageSerializer Instance = new();
-    
-    private static readonly byte[] StructTags = {MessageFormat.MsgSuccess};
+
+    private static readonly byte[] StructTags = { MessageFormat.MsgSuccess };
     public override IEnumerable<byte> ReadableStructs => StructTags;
 
     public override object Deserialize(PackStreamReader reader, byte _, long __)

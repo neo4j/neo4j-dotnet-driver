@@ -27,7 +27,7 @@ internal sealed record AutoCommitParams
     public IResultResourceHandler ResultResourceHandler { get; init; }
     public string Database { get; init; }
     public Bookmarks Bookmarks { get; init; }
-    public TransactionConfig Config { get; init; } 
+    public TransactionConfig Config { get; init; }
     public string ImpersonatedUser { get; init; }
     public long FetchSize { get; init; } = Neo4j.Driver.Config.Infinite;
 }

@@ -18,54 +18,68 @@
 using System;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.Internal.Connector.Trust
+namespace Neo4j.Driver.Internal.Connector.Trust;
+
+internal sealed class PeerTrustManager : TrustManager
 {
-    internal sealed class PeerTrustManager : TrustManager
-    {
-        private readonly StoreLocation _location;
-        private readonly bool _verifyHostname;
+    private readonly StoreLocation _location;
+    private readonly bool _verifyHostname;
 
-        public PeerTrustManager(bool useMachineCtx, bool verifyHostname)
+    public PeerTrustManager(bool useMachineCtx, bool verifyHostname)
+    {
+        _location = useMachineCtx ? StoreLocation.LocalMachine : StoreLocation.CurrentUser;
+        _verifyHostname = verifyHostname;
+    }
+
+    public override bool ValidateServerCertificate(
+        Uri uri,
+        X509Certificate2 certificate,
+        X509Chain chain,
+        SslPolicyErrors sslPolicyErrors)
+    {
+        var now = DateTime.Now;
+
+        if (_verifyHostname)
         {
-            _location = useMachineCtx ? StoreLocation.LocalMachine : StoreLocation.CurrentUser;
-            _verifyHostname = verifyHostname;
+            if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch))
+            {
+                Logger?.Error(
+                    null,
+                    $"{GetType().Name}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
+
+                return false;
+            }
         }
 
-        public override bool ValidateServerCertificate(Uri uri, X509Certificate2 certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        if (!CertHelper.CheckValidity(certificate, now))
         {
-            var now = DateTime.Now;
+            Logger?.Error(
+                null,
+                $"{GetType().Name}: Certificate '{certificate.Subject}' is not valid at the time of validity check '{now}'.");
 
-            if (_verifyHostname)
-            {
-                if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch))
-                {
-                    Logger?.Error(null, $"{GetType().Name}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
-                    return false;
-                }
-            }
+            return false;
+        }
 
-            if (!CertHelper.CheckValidity(certificate, now))
+        if (CertHelper.FindCertificate(_location, StoreName.TrustedPeople, certificate))
+        {
+            if (CertHelper.FindCertificate(_location, StoreName.Disallowed, certificate))
             {
-                Logger?.Error(null, $"{GetType().Name}: Certificate '{certificate.Subject}' is not valid at the time of validity check '{now}'.");
+                Logger?.Error(
+                    null,
+                    $"{GetType().Name}: Certificate '{certificate.Subject}' is found in '{_location}\\Disallowed` store.");
+
                 return false;
             }
 
-            if (CertHelper.FindCertificate(_location, StoreName.TrustedPeople, certificate))
-            {
-                if (CertHelper.FindCertificate(_location, StoreName.Disallowed, certificate))
-                {
-                    Logger?.Error(null, $"{GetType().Name}: Certificate '{certificate.Subject}' is found in '{_location}\\Disallowed` store.");
-                    return false;
-                }
-
-                Logger?.Info($"{GetType().Name}: Trusting {uri} with certificate '{certificate.Subject}'.");
-                return true;
-            }
-
-            Logger?.Error(null, $"{GetType().Name}: Unable to locate a certificate for {uri} in '{_location}\\TrustedPeople` store.");
-            return false;
+            Logger?.Info($"{GetType().Name}: Trusting {uri} with certificate '{certificate.Subject}'.");
+            return true;
         }
+
+        Logger?.Error(
+            null,
+            $"{GetType().Name}: Unable to locate a certificate for {uri} in '{_location}\\TrustedPeople` store.");
+
+        return false;
     }
 }

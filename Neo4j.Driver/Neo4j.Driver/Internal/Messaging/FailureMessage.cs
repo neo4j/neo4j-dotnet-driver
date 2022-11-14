@@ -33,15 +33,15 @@ internal sealed class FailureMessage : IResponseMessage
 
     public string Message { get; }
 
-    public override string ToString()
-    {
-        return $"FAILURE code={Code}, message={Message}";
-    }
-
     public void Dispatch(IResponsePipeline pipeline)
     {
         pipeline.OnFailure(Code, Message);
     }
 
     public IPackStreamSerializer Serializer => FailureMessageSerializer.Instance;
+
+    public override string ToString()
+    {
+        return $"FAILURE code={Code}, message={Message}";
+    }
 }

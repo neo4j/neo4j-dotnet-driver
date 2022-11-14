@@ -22,15 +22,14 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers;
 
 internal sealed class PointSerializer : IPackStreamSerializer
 {
-    internal static readonly PointSerializer Instance = new();
-
-    public const byte Point2DStructType = (byte) 'X';
-    public const byte Point3DStructType = (byte) 'Y';
+    public const byte Point2DStructType = (byte)'X';
+    public const byte Point3DStructType = (byte)'Y';
     public const int Point2DStructSize = 3;
     public const int Point3DStructSize = 4;
+    internal static readonly PointSerializer Instance = new();
 
-    public IEnumerable<byte> ReadableStructs => new[] {Point2DStructType, Point3DStructType};
-    public IEnumerable<Type> WritableTypes => new[] {typeof(Point)};
+    public IEnumerable<byte> ReadableStructs => new[] { Point2DStructType, Point3DStructType };
+    public IEnumerable<Type> WritableTypes => new[] { typeof(Point) };
 
     public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
     {
@@ -45,6 +44,7 @@ internal sealed class PointSerializer : IPackStreamSerializer
 
                 return new Point(srId, x, y);
             }
+
             case Point3DStructType:
             {
                 PackStream.EnsureStructSize("Point3D", Point3DStructSize, size);
@@ -55,6 +55,7 @@ internal sealed class PointSerializer : IPackStreamSerializer
 
                 return new Point(srId, x, y, z);
             }
+
             default:
                 throw new ProtocolException(
                     $"Unsupported struct signature {signature} passed to {nameof(PointSerializer)}!");
@@ -76,6 +77,7 @@ internal sealed class PointSerializer : IPackStreamSerializer
 
                 break;
             }
+
             case Point.ThreeD:
             {
                 writer.WriteStructHeader(Point3DStructSize, Point3DStructType);
@@ -86,9 +88,9 @@ internal sealed class PointSerializer : IPackStreamSerializer
 
                 break;
             }
+
             default:
-                throw new ProtocolException(
-                    $"{GetType().Name}: Dimension('{point.Dimension}') is not supported.");
+                throw new ProtocolException($"{GetType().Name}: Dimension('{point.Dimension}') is not supported.");
         }
     }
 }

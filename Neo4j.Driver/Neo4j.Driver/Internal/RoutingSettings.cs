@@ -17,59 +17,59 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Routing;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal class RoutingSettings
 {
-    internal class RoutingSettings
+    private static readonly TimeSpan DefaultRoutingTablePurgeDelay = TimeSpan.FromSeconds(30);
+
+    public RoutingSettings(Uri initServerUri, IDictionary<string, string> routingContext, Config config)
     {
-        private static readonly TimeSpan DefaultRoutingTablePurgeDelay = TimeSpan.FromSeconds(30);
-
-        public IDictionary<string, string> RoutingContext { get; }
-        public IInitialServerAddressProvider InitialServerAddressProvider { get; }
-        public TimeSpan RoutingTablePurgeDelay { get; }
-
-        public RoutingSettings(Uri initServerUri, IDictionary<string, string> routingContext, Config config)
+        if (config == null)
         {
-            if (config == null)
-                throw new ArgumentNullException(nameof(config));
-            
-            InitialServerAddressProvider = new InitialServerAddressProvider(
-                initServerUri ?? throw new ArgumentNullException(nameof(initServerUri)), config.Resolver);
-            RoutingContext = routingContext ?? throw new ArgumentNullException(nameof(routingContext));
-            RoutingTablePurgeDelay = DefaultRoutingTablePurgeDelay;
+            throw new ArgumentNullException(nameof(config));
         }
+
+        InitialServerAddressProvider = new InitialServerAddressProvider(
+            initServerUri ?? throw new ArgumentNullException(nameof(initServerUri)),
+            config.Resolver);
+
+        RoutingContext = routingContext ?? throw new ArgumentNullException(nameof(routingContext));
+        RoutingTablePurgeDelay = DefaultRoutingTablePurgeDelay;
     }
 
-    internal interface IInitialServerAddressProvider
+    public IDictionary<string, string> RoutingContext { get; }
+    public IInitialServerAddressProvider InitialServerAddressProvider { get; }
+    public TimeSpan RoutingTablePurgeDelay { get; }
+}
+
+internal interface IInitialServerAddressProvider
+{
+    ISet<Uri> Get();
+}
+
+internal class InitialServerAddressProvider : IInitialServerAddressProvider
+{
+    private readonly Uri _initAddress;
+    private readonly IServerAddressResolver _resolver;
+
+    public InitialServerAddressProvider(Uri initialServerAddress, IServerAddressResolver resolver)
     {
-        ISet<Uri> Get();
+        _initAddress = initialServerAddress;
+        _resolver = resolver;
     }
 
-    internal class InitialServerAddressProvider : IInitialServerAddressProvider
+    public ISet<Uri> Get()
     {
-        private readonly Uri _initAddress;
-        private readonly IServerAddressResolver _resolver;
-
-        public InitialServerAddressProvider(Uri initialServerAddress, IServerAddressResolver resolver)
+        var set = new HashSet<Uri>();
+        var addresses = _resolver.Resolve(ServerAddress.From(_initAddress));
+        foreach (var address in addresses)
         {
-            _initAddress = initialServerAddress;
-            _resolver = resolver;
+            // for now we convert this ServerAddress back to Uri
+            set.Add(new UriBuilder("neo4j://", address.Host, address.Port).Uri);
         }
 
-        public ISet<Uri> Get()
-        {
-            var set = new HashSet<Uri>();
-            var addresses = _resolver.Resolve(ServerAddress.From(_initAddress));
-            foreach (var address in addresses)
-            {
-                // for now we convert this ServerAddress back to Uri
-                set.Add(new UriBuilder("neo4j://", address.Host, address.Port).Uri);
-            }
-
-            return set;
-        }
+        return set;
     }
 }

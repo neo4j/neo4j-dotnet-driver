@@ -17,38 +17,39 @@
 
 using System.Threading;
 
-namespace Neo4j.Driver.Internal.Routing
+namespace Neo4j.Driver.Internal.Routing;
+
+internal class RoundRobinArrayIndex
 {
-    internal class RoundRobinArrayIndex
+    private const int InitialValue = -1;
+
+    private int _offset;
+
+    public RoundRobinArrayIndex()
     {
-        private const int InitialValue = -1;
+        _offset = InitialValue;
+    }
 
-        private int _offset;
+    // only for testing
+    internal RoundRobinArrayIndex(int initialOffset)
+    {
+        _offset = initialOffset;
+    }
 
-        public RoundRobinArrayIndex()
+    public int Next(int arrayLength)
+    {
+        if (arrayLength == 0)
         {
-            _offset = InitialValue;
+            return -1;
         }
 
-        // only for testing
-        internal RoundRobinArrayIndex(int initialOffset)
+        int nextOffset;
+        while ((nextOffset = Interlocked.Increment(ref _offset)) < 0)
         {
-            _offset = initialOffset;
+            // overflow, try resetting back to zero
+            Interlocked.CompareExchange(ref _offset, InitialValue, nextOffset);
         }
 
-        public int Next(int arrayLength)
-        {
-            if (arrayLength == 0)
-            {
-                return -1;
-            }
-            int nextOffset;
-            while ((nextOffset = Interlocked.Increment(ref _offset)) < 0)
-            {
-                // overflow, try resetting back to zero
-                Interlocked.CompareExchange(ref _offset, InitialValue, nextOffset);
-            }
-            return nextOffset % arrayLength;
-        }
+        return nextOffset % arrayLength;
     }
 }

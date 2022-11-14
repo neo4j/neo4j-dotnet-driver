@@ -33,24 +33,40 @@ internal static class ErrorExtensions
         {
             case "clienterror":
                 if (AuthenticationException.IsAuthenticationError(code))
+                {
                     error = new AuthenticationException(message);
+                }
                 else if (AuthorizationException.IsAuthorizationError(code))
+                {
                     error = new AuthorizationException(message);
+                }
                 else if (ProtocolException.IsProtocolError(code))
+                {
                     error = new ProtocolException(code, message);
+                }
                 else if (FatalDiscoveryException.IsFatalDiscoveryError(code))
+                {
                     error = new FatalDiscoveryException(message);
+                }
                 else if (TokenExpiredException.IsTokenExpiredError(code))
+                {
                     error = new TokenExpiredException(message);
+                }
                 else if (InvalidBookmarkException.IsInvalidBookmarkException(code))
+                {
                     error = new InvalidBookmarkException(message);
+                }
                 else
+                {
                     error = new ClientException(code, message);
+                }
 
                 break;
+
             case "transienterror":
                 error = new TransientException(code, message);
                 break;
+
             default:
                 error = new DatabaseException(code, message);
                 break;
@@ -71,8 +87,10 @@ internal static class ErrorExtensions
 
     public static bool IsConnectionError(this Exception error)
     {
-        return error is IOException || error is SocketException ||
-               error.GetBaseException() is IOException || error.GetBaseException() is SocketException;
+        return error is IOException ||
+            error is SocketException ||
+            error.GetBaseException() is IOException ||
+            error.GetBaseException() is SocketException;
     }
 
     public static bool IsAuthorizationError(this Exception error)
@@ -87,8 +105,7 @@ internal static class ErrorExtensions
 
     public static bool IsClusterError(this Exception error)
     {
-        return IsClusterNotALeaderError(error)
-               || IsForbiddenOnReadOnlyDatabaseError(error);
+        return IsClusterNotALeaderError(error) || IsForbiddenOnReadOnlyDatabaseError(error);
     }
 
     private static bool IsClusterNotALeaderError(this Exception error)

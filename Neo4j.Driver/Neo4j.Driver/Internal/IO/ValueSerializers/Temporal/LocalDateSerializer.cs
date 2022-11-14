@@ -23,17 +23,17 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 internal sealed class LocalDateSerializer : IPackStreamSerializer
 {
     internal static readonly LocalDateSerializer Instance = new();
-    
-    public const byte StructType = (byte) 'D';
+
+    public const byte StructType = (byte)'D';
     public const int StructSize = 1;
 
-    public IEnumerable<byte> ReadableStructs => new[] {StructType};
+    public IEnumerable<byte> ReadableStructs => new[] { StructType };
 
-#if NET6_0_OR_GREATER
-    public IEnumerable<Type> WritableTypes => new[] {typeof(LocalDate), typeof(DateOnly)};
-#else
+    #if NET6_0_OR_GREATER
+    public IEnumerable<Type> WritableTypes => new[] { typeof(LocalDate), typeof(DateOnly) };
+    #else
         public IEnumerable<Type> WritableTypes => new[] {typeof(LocalDate)};
-#endif
+    #endif
 
     public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
     {
@@ -46,13 +46,13 @@ internal sealed class LocalDateSerializer : IPackStreamSerializer
 
     public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
     {
-#if NET6_0_OR_GREATER
+        #if NET6_0_OR_GREATER
         if (value is DateOnly date)
         {
             WriteDateOnly(writer, date);
             return;
         }
-#endif
+        #endif
         WriteLocalDate(writer, value);
     }
 
@@ -63,11 +63,11 @@ internal sealed class LocalDateSerializer : IPackStreamSerializer
         writer.WriteLong(date.ToEpochDays());
     }
 
-#if NET6_0_OR_GREATER
+    #if NET6_0_OR_GREATER
     private static void WriteDateOnly(PackStreamWriter writer, DateOnly date)
     {
         writer.WriteStructHeader(StructSize, StructType);
         writer.WriteLong(date.ToEpochDays());
     }
-#endif
+    #endif
 }

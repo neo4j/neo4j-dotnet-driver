@@ -22,102 +22,101 @@ using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Neo4j.Driver.IntegrationTests.Stub
+namespace Neo4j.Driver.IntegrationTests.Stub;
+
+public class RoutingDriverTests
 {
-    public class RoutingDriverTests
+    public RoutingDriverTests(ITestOutputHelper output)
     {
-        public Action<ConfigBuilder> SetupConfig { get; }
+        SetupConfig = o => o
+            .WithEncryptionLevel(EncryptionLevel.None);
+    }
 
-        public RoutingDriverTests(ITestOutputHelper output)
-        {
-            SetupConfig = o => o
-                .WithEncryptionLevel(EncryptionLevel.None);
-        }
+    public Action<ConfigBuilder> SetupConfig { get; }
 
-        [RequireBoltStubServerTheory]
-        [InlineData("V3")]
-        [InlineData("V4")]
-        public async Task SendRoutingContextToServer(string boltVersion)
+    [RequireBoltStubServerTheory]
+    [InlineData("V3")]
+    [InlineData("V4")]
+    public async Task SendRoutingContextToServer(string boltVersion)
+    {
+        using (BoltStubServer.Start($"{boltVersion}/get_routing_table_with_context", 9001))
         {
-            using (BoltStubServer.Start($"{boltVersion}/get_routing_table_with_context", 9001))
+            var uri = new Uri("neo4j://127.0.0.1:9001/?policy=my_policy&region=china");
+            using (var driver = GraphDatabase.Driver(uri, SetupConfig))
             {
-                var uri = new Uri("neo4j://127.0.0.1:9001/?policy=my_policy&region=china");
-                using (var driver = GraphDatabase.Driver(uri, SetupConfig))
+                var session = driver.AsyncSession();
+                try
                 {
-                    var session = driver.AsyncSession();
-                    try
-                    {
-                        var cursor = await session.RunAsync("MATCH (n) RETURN n.name AS name");
-                        var records = await cursor.ToListAsync();
+                    var cursor = await session.RunAsync("MATCH (n) RETURN n.name AS name");
+                    var records = await cursor.ToListAsync();
 
-                        records.Count.Should().Be(2);
-                        records[0]["name"].As<string>().Should().Be("Alice");
-                        records[1]["name"].As<string>().Should().Be("Bob");
-                    }
-                    finally
-                    {
-                        await session.CloseAsync();
-                    }
+                    records.Count.Should().Be(2);
+                    records[0]["name"].As<string>().Should().Be("Alice");
+                    records[1]["name"].As<string>().Should().Be("Bob");
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
         }
+    }
 
-        [RequireBoltStubServerTheory]
-        [InlineData("V3")]
-        [InlineData("V4")]
-        public async Task InvokeProcedureGetRoutingTableWhenServerVersionPermits(string boltVersion)
+    [RequireBoltStubServerTheory]
+    [InlineData("V3")]
+    [InlineData("V4")]
+    public async Task InvokeProcedureGetRoutingTableWhenServerVersionPermits(string boltVersion)
+    {
+        using (BoltStubServer.Start($"{boltVersion}/get_routing_table", 9001))
         {
-            using (BoltStubServer.Start($"{boltVersion}/get_routing_table", 9001))
+            var uri = new Uri("neo4j://127.0.0.1:9001");
+            using (var driver = GraphDatabase.Driver(uri, SetupConfig))
             {
-                var uri = new Uri("neo4j://127.0.0.1:9001");
-                using (var driver = GraphDatabase.Driver(uri, SetupConfig))
+                var session = driver.AsyncSession();
+                try
                 {
-                    var session = driver.AsyncSession();
-                    try
-                    {
-                        var cursor = await session.RunAsync("MATCH (n) RETURN n.name AS name");
-                        var records = await cursor.ToListAsync();
+                    var cursor = await session.RunAsync("MATCH (n) RETURN n.name AS name");
+                    var records = await cursor.ToListAsync();
 
-                        records.Count.Should().Be(3);
-                        records[0]["name"].As<string>().Should().Be("Alice");
-                        records[1]["name"].As<string>().Should().Be("Bob");
-                        records[2]["name"].As<string>().Should().Be("Eve");
-                    }
-                    finally
-                    {
-                        await session.CloseAsync();
-                    }
+                    records.Count.Should().Be(3);
+                    records[0]["name"].As<string>().Should().Be("Alice");
+                    records[1]["name"].As<string>().Should().Be("Bob");
+                    records[2]["name"].As<string>().Should().Be("Eve");
+                }
+                finally
+                {
+                    await session.CloseAsync();
                 }
             }
         }
+    }
 
-        [RequireBoltStubServerTheory]
-        [InlineData("V3")]
-        [InlineData("V4")]
-        public async Task ShouldVerifyConnectivity(string boltVersion)
+    [RequireBoltStubServerTheory]
+    [InlineData("V3")]
+    [InlineData("V4")]
+    public async Task ShouldVerifyConnectivity(string boltVersion)
+    {
+        using (BoltStubServer.Start($"{boltVersion}/verify_connectivity", 9001))
         {
-            using (BoltStubServer.Start($"{boltVersion}/verify_connectivity", 9001))
+            using (var driver = GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, SetupConfig))
             {
-                using (var driver = GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, SetupConfig))
-                {
-                    await driver.VerifyConnectivityAsync();
-                }
+                await driver.VerifyConnectivityAsync();
             }
         }
+    }
 
-        [RequireBoltStubServerTheory]
-        [InlineData("V3")]
-        [InlineData("V4")]
-        public async Task ShouldThrowSecurityErrorWhenFailedToHello(string boltVersion)
+    [RequireBoltStubServerTheory]
+    [InlineData("V3")]
+    [InlineData("V4")]
+    public async Task ShouldThrowSecurityErrorWhenFailedToHello(string boltVersion)
+    {
+        using (BoltStubServer.Start($"{boltVersion}/fail_to_auth", 9001))
         {
-            using (BoltStubServer.Start($"{boltVersion}/fail_to_auth", 9001))
+            using (var driver = GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, SetupConfig))
             {
-                using (var driver = GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, SetupConfig))
-                {
-                    var error = await Record.ExceptionAsync(() => driver.VerifyConnectivityAsync());
-                    error.Should().BeOfType<AuthenticationException>();
-                    error.Message.Should().StartWith("blabla");
-                }
+                var error = await Record.ExceptionAsync(() => driver.VerifyConnectivityAsync());
+                error.Should().BeOfType<AuthenticationException>();
+                error.Message.Should().StartWith("blabla");
             }
         }
     }

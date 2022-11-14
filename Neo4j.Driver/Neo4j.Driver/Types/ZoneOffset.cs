@@ -18,76 +18,89 @@
 using System;
 using Neo4j.Driver.Internal;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver;
+
+/// <summary>Represents a time zone specified by its offset from UTC.</summary>
+public sealed class ZoneOffset : Zone, IEquatable<ZoneOffset>
 {
-    /// <summary>
-    /// Represents a time zone specified by its offset from UTC.
-    /// </summary>
-    public sealed class ZoneOffset: Zone, IEquatable<ZoneOffset>
+    internal ZoneOffset(int offsetSeconds)
     {
+        Throw.ArgumentOutOfRangeException.IfValueNotBetween(
+            offsetSeconds,
+            TemporalHelpers.MinOffset,
+            TemporalHelpers.MaxOffset,
+            nameof(offsetSeconds));
 
-        internal ZoneOffset(int offsetSeconds)
+        OffsetSeconds = offsetSeconds;
+    }
+
+    /// <summary>The offset (in seconds) from UTC.</summary>
+    public int OffsetSeconds { get; }
+
+    /// <summary>The offset from UTC as a <see cref="TimeSpan" /> instance.</summary>
+    public TimeSpan Offset => TimeSpan.FromSeconds(OffsetSeconds);
+
+    /// <summary>
+    /// Returns a value indicating whether the value of this instance is equal to the value of the specified
+    /// <see cref="ZoneOffset" /> instance.
+    /// </summary>
+    /// <param name="other">The object to compare to this instance.</param>
+    /// <returns>
+    /// <code>true</code> if the <code>value</code> parameter equals the value of this instance; otherwise,
+    /// <code>false</code>
+    /// </returns>
+    public bool Equals(ZoneOffset other)
+    {
+        if (other is null)
         {
-            Throw.ArgumentOutOfRangeException.IfValueNotBetween(offsetSeconds, TemporalHelpers.MinOffset,
-                TemporalHelpers.MaxOffset, nameof(offsetSeconds));
-
-            OffsetSeconds = offsetSeconds;
+            return false;
         }
 
-        /// <summary>The offset (in seconds) from UTC.</summary>
-        public int OffsetSeconds { get; }
-
-        /// <summary>The offset from UTC as a <see cref="TimeSpan"/> instance.</summary>
-        public TimeSpan Offset => TimeSpan.FromSeconds(OffsetSeconds);
-
-        internal override int OffsetSecondsAt(DateTime dateTime)
+        if (ReferenceEquals(this, other))
         {
-            return OffsetSeconds;
+            return true;
         }
 
-        /// <summary>
-        /// Converts the value of the current <see cref="ZoneOffset"/> object to its equivalent string representation.
-        /// </summary>
-        /// <returns>String representation of this Point.</returns>
-        public override string ToString()
+        return OffsetSeconds == other.OffsetSeconds;
+    }
+
+    internal override int OffsetSecondsAt(DateTime dateTime)
+    {
+        return OffsetSeconds;
+    }
+
+    /// <summary>Converts the value of the current <see cref="ZoneOffset" /> object to its equivalent string representation.</summary>
+    /// <returns>String representation of this Point.</returns>
+    public override string ToString()
+    {
+        return TemporalHelpers.ToIsoTimeZoneOffset(OffsetSeconds);
+    }
+
+    /// <summary>Returns a value indicating whether this instance is equal to a specified object.</summary>
+    /// <param name="obj">The object to compare to this instance.</param>
+    /// <returns>
+    /// <code>true</code> if <code>value</code> is an instance of <see cref="ZoneOffset" /> and equals the value of
+    /// this instance; otherwise, <code>false</code>
+    /// </returns>
+    public override bool Equals(object obj)
+    {
+        if (obj is null)
         {
-            return TemporalHelpers.ToIsoTimeZoneOffset(OffsetSeconds);
+            return false;
         }
 
-        /// <summary>
-        /// Returns a value indicating whether the value of this instance is equal to the 
-        /// value of the specified <see cref="ZoneOffset"/> instance. 
-        /// </summary>
-        /// <param name="other">The object to compare to this instance.</param>
-        /// <returns><code>true</code> if the <code>value</code> parameter equals the value of 
-        /// this instance; otherwise, <code>false</code></returns>
-        public bool Equals(ZoneOffset other)
+        if (ReferenceEquals(this, obj))
         {
-            if (other is null) return false;
-            if (ReferenceEquals(this, other)) return true;
-            return OffsetSeconds == other.OffsetSeconds;
+            return true;
         }
 
-        /// <summary>
-        /// Returns a value indicating whether this instance is equal to a specified object.
-        /// </summary>
-        /// <param name="obj">The object to compare to this instance.</param>
-        /// <returns><code>true</code> if <code>value</code> is an instance of <see cref="ZoneOffset"/> and 
-        /// equals the value of this instance; otherwise, <code>false</code></returns>
-        public override bool Equals(object obj)
-        {
-            if (obj is null) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            return obj is ZoneOffset offset && Equals(offset);
-        }
+        return obj is ZoneOffset offset && Equals(offset);
+    }
 
-        /// <summary>
-        /// Returns the hash code for this instance.
-        /// </summary>
-        /// <returns>A 32-bit signed integer hash code.</returns>
-        public override int GetHashCode()
-        {
-            return OffsetSeconds;
-        }
+    /// <summary>Returns the hash code for this instance.</summary>
+    /// <returns>A 32-bit signed integer hash code.</returns>
+    public override int GetHashCode()
+    {
+        return OffsetSeconds;
     }
 }

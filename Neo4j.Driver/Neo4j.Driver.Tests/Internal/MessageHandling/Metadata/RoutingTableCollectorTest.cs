@@ -15,74 +15,96 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata
+namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
+
+public class RoutingTableCollectorTest
 {
-	public class RoutingTableCollectorTest
-	{
-        [Fact]
-        public void ShouldNotCollectIfMetadataIsNull()
+    [Fact]
+    public void ShouldNotCollectIfMetadataIsNull()
+    {
+        var collector = new RoutingTableCollector();
+
+        collector.Collect(null);
+
+        collector.Collected.Should().BeNull();
+    }
+
+    [Fact]
+    public void ShouldNotCollectIfNoValueIsGiven()
+    {
+        var collector = new RoutingTableCollector();
+
+        collector.Collect(new Dictionary<string, object>());
+
+        collector.Collected.Should().BeNull();
+    }
+
+    [Fact]
+    public void ShouldThrowIfValueIsOfWrongType()
+    {
+        var metadata = new Dictionary<string, object> { { RoutingTableCollector.RoutingTableKey, "some string" } };
+        var collector = new RoutingTableCollector();
+
+        var ex = Record.Exception(() => collector.Collect(metadata));
+
+        ex.Should()
+            .BeOfType<ProtocolException>()
+            .Which
+            .Message.Should()
+            .Contain(
+                $"Expected '{RoutingTableCollector.RoutingTableKey}' metadata to be of type 'Dictionary<string, object>', but got 'String'.");
+    }
+
+    [Fact]
+    public void ShouldCollect()
+    {
+        var metadata = new Dictionary<string, object>
         {
-            var collector = new RoutingTableCollector();
+            {
+                RoutingTableCollector.RoutingTableKey, new Dictionary<string, object>
+                {
+                    { "Key1", "Value1" },
+                    { "Key2", "Value2" },
+                    { "Key3", "Value3" }
+                }
+            }
+        };
 
-            collector.Collect(null);
+        var collector = new RoutingTableCollector();
 
-            collector.Collected.Should().BeNull();
-        }
+        collector.Collect(metadata);
 
-        [Fact]
-        public void ShouldNotCollectIfNoValueIsGiven()
+        collector.Collected.Should()
+            .HaveCount(3)
+            .And.Contain(
+                new KeyValuePair<string, object>("Key1", "Value1"),
+                new KeyValuePair<string, object>("Key2", "Value2"),
+                new KeyValuePair<string, object>("Key3", "Value3"));
+    }
+
+    [Fact]
+    public void ShouldReturnSameCollected()
+    {
+        var metadata = new Dictionary<string, object>
         {
-            var collector = new RoutingTableCollector();
+            {
+                RoutingTableCollector.RoutingTableKey, new Dictionary<string, object>
+                {
+                    { "Key1", "Value1" },
+                    { "Key2", "Value2" },
+                    { "Key3", "Value3" }
+                }
+            }
+        };
 
-            collector.Collect(new Dictionary<string, object>());
+        var collector = new RoutingTableCollector();
 
-            collector.Collected.Should().BeNull();
-        }
+        collector.Collect(metadata);
 
-        [Fact]
-        public void ShouldThrowIfValueIsOfWrongType()
-        {
-            var metadata = new Dictionary<string, object> { { RoutingTableCollector.RoutingTableKey, "some string" } };
-            var collector = new RoutingTableCollector();
-
-            var ex = Record.Exception(() => collector.Collect(metadata));
-
-            ex.Should().BeOfType<ProtocolException>().Which
-                .Message.Should()
-                .Contain($"Expected '{RoutingTableCollector.RoutingTableKey}' metadata to be of type 'Dictionary<string, object>', but got 'String'.");
-        }
-
-        [Fact]
-        public void ShouldCollect()
-        {
-            var metadata = new Dictionary<string, object> { { RoutingTableCollector.RoutingTableKey, new Dictionary<string, object> { { "Key1", "Value1" },
-                                                                                                                                      { "Key2", "Value2" },
-                                                                                                                                      { "Key3", "Value3" } } } };
-            var collector = new RoutingTableCollector();
-
-            collector.Collect(metadata);
-
-            collector.Collected.Should().HaveCount(3).And.Contain(new [] { new KeyValuePair<string, object>("Key1", "Value1"),
-                                                                           new KeyValuePair<string, object>("Key2", "Value2"),
-                                                                           new KeyValuePair<string, object>("Key3", "Value3") });            
-        }
-
-        [Fact]
-        public void ShouldReturnSameCollected()
-        {
-            var metadata = new Dictionary<string, object> { { RoutingTableCollector.RoutingTableKey, new Dictionary<string, object> { { "Key1", "Value1" },
-                                                                                                                                      { "Key2", "Value2" },
-                                                                                                                                      { "Key3", "Value3" } } } };
-            var collector = new RoutingTableCollector();
-
-            collector.Collect(metadata);
-
-            ((IMetadataCollector)collector).Collected.Should().BeSameAs(collector.Collected);
-        }
+        ((IMetadataCollector)collector).Collected.Should().BeSameAs(collector.Collected);
     }
 }

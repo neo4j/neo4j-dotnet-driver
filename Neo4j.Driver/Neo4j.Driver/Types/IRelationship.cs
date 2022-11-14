@@ -17,39 +17,26 @@
 
 using System;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver;
+
+/// <summary>Represents a <c>Relationship</c> in the Neo4j graph database.</summary>
+public interface IRelationship : IEntity, IEquatable<IRelationship>
 {
-    /// <summary>
-    /// Represents a <c>Relationship</c> in the Neo4j graph database.
-    /// </summary>
-    public interface IRelationship : IEntity, IEquatable<IRelationship>
-    {
-        /// <summary>
-        /// Gets the type of the relationship.
-        /// </summary>
-        string Type { get; }
+    /// <summary>Gets the type of the relationship.</summary>
+    string Type { get; }
 
-        //bool HasType(string type);
-        /// <summary>
-        /// Gets the id of the start node of the relationship.
-        /// </summary>
-        [Obsolete("Replaced with StartNodeElementId, will be removed in 6.0")]
-        long StartNodeId { get; }
+    //bool HasType(string type);
+    /// <summary>Gets the id of the start node of the relationship.</summary>
+    [Obsolete("Replaced with StartNodeElementId, will be removed in 6.0")]
+    long StartNodeId { get; }
 
-        /// <summary>
-        /// Gets the id of the end node of the relationship.
-        /// </summary>
-        [Obsolete("Replaced with EndNodeElementId, will be removed in 6.0")]
-        long EndNodeId { get; }
+    /// <summary>Gets the id of the end node of the relationship.</summary>
+    [Obsolete("Replaced with EndNodeElementId, will be removed in 6.0")]
+    long EndNodeId { get; }
 
-        /// <summary>
-        /// Gets the ElementId of the start node of the relationship.
-        /// </summary>
-        string StartNodeElementId { get; }
+    /// <summary>Gets the ElementId of the start node of the relationship.</summary>
+    string StartNodeElementId { get; }
 
-        /// <summary>
-        /// Gets the ElementId of the end node of the relationship.
-        /// </summary>
-        string EndNodeElementId { get; }
-    }
+    /// <summary>Gets the ElementId of the end node of the relationship.</summary>
+    string EndNodeElementId { get; }
 }

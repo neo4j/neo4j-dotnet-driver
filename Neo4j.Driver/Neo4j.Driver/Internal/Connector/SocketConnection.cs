@@ -41,12 +41,17 @@ internal sealed class SocketConnection : IConnection
     private readonly SemaphoreSlim _recvLock = new(1, 1);
     private readonly IResponsePipeline _responsePipeline;
     private readonly SemaphoreSlim _sendLock = new(1, 1);
+    private readonly ServerInfo _serverInfo;
     private readonly string _userAgent;
 
     private string _id;
 
-    internal SocketConnection(Uri uri, ConnectionSettings connectionSettings,
-        BufferSettings bufferSettings, IDictionary<string, string> routingContext, ILogger logger = null)
+    internal SocketConnection(
+        Uri uri,
+        ConnectionSettings connectionSettings,
+        BufferSettings bufferSettings,
+        IDictionary<string, string> routingContext,
+        ILogger logger = null)
     {
         _idPrefix = $"conn-{uri.Host}:{uri.Port}-";
         _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
@@ -62,8 +67,12 @@ internal sealed class SocketConnection : IConnection
     }
 
     // for test only
-    internal SocketConnection(ISocketClient socketClient, IAuthToken authToken,
-        string userAgent, ILogger logger, ServerInfo server,
+    internal SocketConnection(
+        ISocketClient socketClient,
+        IAuthToken authToken,
+        string userAgent,
+        ILogger logger,
+        ServerInfo server,
         IResponsePipeline responsePipeline = null)
     {
         _client = socketClient ?? throw new ArgumentNullException(nameof(socketClient));
@@ -87,9 +96,7 @@ internal sealed class SocketConnection : IConnection
 
     public BoltProtocolVersion Version => _client.Version;
 
-    /// <summary>
-    /// Internal Set used for tests.
-    /// </summary>
+    /// <summary>Internal Set used for tests.</summary>
     public IBoltProtocol BoltProtocol { get; internal set; }
 
     public void Configure(string database, AccessMode? mode)
@@ -125,7 +132,9 @@ internal sealed class SocketConnection : IConnection
     {
         if (_messages.Count == 0)
             // nothing to send
+        {
             return;
+        }
 
         await _sendLock.WaitAsync().ConfigureAwait(false);
         try
@@ -147,7 +156,9 @@ internal sealed class SocketConnection : IConnection
         try
         {
             if (_responsePipeline.HasNoPendingMessages)
+            {
                 return;
+            }
 
             await _client.ReceiveOneAsync(_responsePipeline).ConfigureAwait(false);
 
@@ -165,9 +176,7 @@ internal sealed class SocketConnection : IConnection
     }
 
     public bool IsOpen => _client.IsOpen;
-    private readonly ServerInfo _serverInfo;
     public IServerInfo Server => _serverInfo;
-
 
     public bool UtcEncodedDateTime { get; private set; }
 
@@ -175,7 +184,9 @@ internal sealed class SocketConnection : IConnection
     {
         _logger.Debug(
             "Connection '{0}' renamed to '{1}'. The new name identifies the connection uniquely both on the client side and the server side.",
-            _id, newConnId);
+            _id,
+            newConnId);
+
         _id = newConnId;
         _logger.Prefix = FormatPrefix(_id);
     }
@@ -197,7 +208,9 @@ internal sealed class SocketConnection : IConnection
             try
             {
                 if (BoltProtocol != null)
+                {
                     await BoltProtocol.LogoutAsync(this).ConfigureAwait(false);
+                }
             }
             catch (ObjectDisposedException)
             {
@@ -221,7 +234,9 @@ internal sealed class SocketConnection : IConnection
         }
     }
 
-    public async Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1,
+    public async Task EnqueueAsync(
+        IRequestMessage message1,
+        IResponseHandler handler1,
         IRequestMessage message2 = null,
         IResponseHandler handler2 = null)
     {
@@ -255,6 +270,53 @@ internal sealed class SocketConnection : IConnection
         _client.UseUtcEncoded();
     }
 
+    public Task LoginAsync(string userAgent, IAuthToken authToken)
+    {
+        return BoltProtocol.LoginAsync(this, userAgent, authToken);
+    }
+
+    public Task LogoutAsync()
+    {
+        return BoltProtocol.LogoutAsync(this);
+    }
+
+    public Task<IReadOnlyDictionary<string, object>> GetRoutingTable(
+        string database,
+        string impersonatedUser,
+        Bookmarks bookmarks)
+    {
+        return BoltProtocol.GetRoutingTable(this, database, impersonatedUser, bookmarks);
+    }
+
+    public Task<IResultCursor> RunInAutoCommitTransactionAsync(AutoCommitParams autoCommitParams)
+    {
+        return BoltProtocol.RunInAutoCommitTransactionAsync(this, autoCommitParams);
+    }
+
+    public Task BeginTransactionAsync(
+        string database,
+        Bookmarks bookmarks,
+        TransactionConfig config,
+        string impersonatedUser)
+    {
+        return BoltProtocol.BeginTransactionAsync(this, database, bookmarks, config, impersonatedUser);
+    }
+
+    public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize)
+    {
+        return BoltProtocol.RunInExplicitTransactionAsync(this, query, reactive, fetchSize);
+    }
+
+    public Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker)
+    {
+        return BoltProtocol.CommitTransactionAsync(this, bookmarksTracker);
+    }
+
+    public Task RollbackTransactionAsync()
+    {
+        return BoltProtocol.RollbackTransactionAsync(this);
+    }
+
     private async Task ReceiveAsync()
     {
         await _recvLock.WaitAsync().ConfigureAwait(false);
@@ -262,7 +324,9 @@ internal sealed class SocketConnection : IConnection
         try
         {
             if (_responsePipeline.HasNoPendingMessages)
+            {
                 return;
+            }
 
             await _client.ReceiveAsync(_responsePipeline).ConfigureAwait(false);
 
@@ -282,45 +346,5 @@ internal sealed class SocketConnection : IConnection
     private static string FormatPrefix(string id)
     {
         return $"[{id}]";
-    }
-
-    public Task LoginAsync(string userAgent, IAuthToken authToken)
-    {
-        return BoltProtocol.LoginAsync(this, userAgent, authToken);
-    }
-
-    public Task LogoutAsync()
-    {
-        return BoltProtocol.LogoutAsync(this);
-    }
-
-    public Task<IReadOnlyDictionary<string, object>> GetRoutingTable(string database, string impersonatedUser, Bookmarks bookmarks)
-    {
-        return BoltProtocol.GetRoutingTable(this, database, impersonatedUser, bookmarks);
-    }
-
-    public Task<IResultCursor> RunInAutoCommitTransactionAsync(AutoCommitParams autoCommitParams)
-    {
-        return BoltProtocol.RunInAutoCommitTransactionAsync(this, autoCommitParams);
-    }
-
-    public Task BeginTransactionAsync(string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser)
-    {
-        return BoltProtocol.BeginTransactionAsync(this, database, bookmarks, config, impersonatedUser);
-    }
-
-    public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize)
-    {
-        return BoltProtocol.RunInExplicitTransactionAsync(this, query, reactive, fetchSize);
-    }
-
-    public Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker)
-    {
-        return BoltProtocol.CommitTransactionAsync(this, bookmarksTracker);
-    }
-
-    public Task RollbackTransactionAsync()
-    {
-        return BoltProtocol.RollbackTransactionAsync(this);
     }
 }

@@ -18,15 +18,14 @@
 using Moq;
 using Neo4j.Driver.Internal.Connector;
 
-namespace Neo4j.Driver.Internal.Protocol
+namespace Neo4j.Driver.Internal.Protocol;
+
+internal class BoltProtocolUtils
 {
-    internal class BoltProtocolUtils
+    public static Mock<IConnection> NewConnectionWithMode(AccessMode mode = AccessMode.Write)
     {
-        public static Mock<IConnection> NewConnectionWithMode(AccessMode mode = AccessMode.Write)
-        {
-            var mockConn = new Mock<IConnection>();
-            mockConn.SetupGet(x => x.Mode).Returns(mode);
-            return mockConn;
-        }
+        var mockConn = new Mock<IConnection>();
+        mockConn.SetupGet(x => x.Mode).Returns(mode);
+        return mockConn;
     }
 }

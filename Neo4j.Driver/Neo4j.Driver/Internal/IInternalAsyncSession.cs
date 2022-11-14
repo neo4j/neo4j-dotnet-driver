@@ -18,16 +18,21 @@
 using System;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal
-{
-    internal interface IInternalAsyncSession: IAsyncSession
-    {
-        Task<IAsyncTransaction> BeginTransactionAsync(Action<TransactionConfigBuilder> action,
-            bool disposeUnconsumedSessionResult);
-        Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode, Action<TransactionConfigBuilder> action,
-            bool disposeUnconsumedSessionResult);
+namespace Neo4j.Driver.Internal;
 
-        Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action,
-            bool disposeUnconsumedSessionResult);
-    }
+internal interface IInternalAsyncSession : IAsyncSession
+{
+    Task<IAsyncTransaction> BeginTransactionAsync(
+        Action<TransactionConfigBuilder> action,
+        bool disposeUnconsumedSessionResult);
+
+    Task<IAsyncTransaction> BeginTransactionAsync(
+        AccessMode mode,
+        Action<TransactionConfigBuilder> action,
+        bool disposeUnconsumedSessionResult);
+
+    Task<IResultCursor> RunAsync(
+        Query query,
+        Action<TransactionConfigBuilder> action,
+        bool disposeUnconsumedSessionResult);
 }

@@ -16,65 +16,63 @@
 // limitations under the License.
 
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
+namespace Neo4j.Driver.IntegrationTests.Stress;
+
+public class AsyncWriteCommandInTx<TContext> : AsyncCommand<TContext>
+    where TContext : StressTestContext
 {
-    public class AsyncWriteCommandInTx<TContext> : AsyncCommand<TContext>
-        where TContext : StressTestContext
+    private readonly StressTest<TContext> _test;
+
+    public AsyncWriteCommandInTx(StressTest<TContext> test, IDriver driver, bool useBookmark)
+        : base(driver, useBookmark)
     {
-        private readonly StressTest<TContext> _test;
+        _test = test ?? throw new ArgumentNullException(nameof(test));
+    }
 
-        public AsyncWriteCommandInTx(StressTest<TContext> test, IDriver driver, bool useBookmark)
-            : base(driver, useBookmark)
+    public override async Task ExecuteAsync(TContext context)
+    {
+        var summary = default(IResultSummary);
+        var error = default(Exception);
+
+        var session = NewSession(AccessMode.Write, context);
+        try
         {
-            _test = test ?? throw new ArgumentNullException(nameof(test));
-        }
-
-        public override async Task ExecuteAsync(TContext context)
-        {
-            var summary = default(IResultSummary);
-            var error = default(Exception);
-
-            var session = NewSession(AccessMode.Write, context);
+            var txc = await BeginTransaction(session, context);
             try
             {
-                var txc = await BeginTransaction(session, context);
-                try
-                {
-                    var cursor = await txc.RunAsync("CREATE ()");
-                    summary = await cursor.ConsumeAsync();
+                var cursor = await txc.RunAsync("CREATE ()");
+                summary = await cursor.ConsumeAsync();
 
-                    await txc.CommitAsync();
-                }
-                catch
-                {
-                    await txc.RollbackAsync();
-                    throw;
-                }
-
-                context.Bookmarks = session.LastBookmarks;
+                await txc.CommitAsync();
             }
-            catch (Exception exc)
+            catch
             {
-                error = exc;
-                if (!_test.HandleWriteFailure(error, context))
-                {
-                    throw;
-                }
-            }
-            finally
-            {
-                await session.CloseAsync();
+                await txc.RollbackAsync();
+                throw;
             }
 
-            if (error == null && summary != null)
+            context.Bookmarks = session.LastBookmarks;
+        }
+        catch (Exception exc)
+        {
+            error = exc;
+            if (!_test.HandleWriteFailure(error, context))
             {
-                summary.Counters.NodesCreated.Should().Be(1);
-                context.NodeCreated();
+                throw;
             }
+        }
+        finally
+        {
+            await session.CloseAsync();
+        }
+
+        if (error == null && summary != null)
+        {
+            summary.Counters.NodesCreated.Should().Be(1);
+            context.NodeCreated();
         }
     }
 }

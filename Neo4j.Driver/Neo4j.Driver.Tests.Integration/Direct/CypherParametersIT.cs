@@ -21,250 +21,262 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Xunit.Abstractions;
 
-namespace Neo4j.Driver.IntegrationTests.Direct
+namespace Neo4j.Driver.IntegrationTests.Direct;
+
+public class CypherParametersIT : DirectDriverTestBase
 {
-    public class CypherParametersIT : DirectDriverTestBase
+    public CypherParametersIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+        : base(output, fixture)
     {
-        private IDriver Driver => Server.Driver;
+    }
 
-        public CypherParametersIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
-            : base(output, fixture)
+    private IDriver Driver => Server.Driver;
+
+    [RequireServerFact]
+    public async Task ShouldHandleStringLiteral()
+    {
+        var session = Driver.AsyncSession();
+        try
         {
+            var cursor = await session.RunAsync("CREATE (n:Person { name: 'Johan' })");
+            var summary = await cursor.ConsumeAsync();
+            summary.Counters.NodesCreated.Should().Be(1);
+
+            cursor = await session.RunAsync("MATCH (n:Person) WHERE n.name = $name RETURN n", new { name = "Johan" });
+            var list = await cursor.ToListAsync(x => x["n"].As<INode>());
+            list.Should().HaveCount(1);
+
+            var node = list.First();
+            node.Should().NotBeNull();
+            node.Labels.Should().Contain("Person");
+            node.Properties.Should().HaveCount(1);
+            node.Properties.Should().Contain(new KeyValuePair<string, object>("name", "Johan"));
         }
-
-        [RequireServerFact]
-        public async Task ShouldHandleStringLiteral()
+        finally
         {
-            var session = Driver.AsyncSession();
-            try
-            {
-                var cursor = await session.RunAsync("CREATE (n:Person { name: 'Johan' })");
-                var summary = await cursor.ConsumeAsync();
-                summary.Counters.NodesCreated.Should().Be(1);
-
-                cursor = await session.RunAsync("MATCH (n:Person) WHERE n.name = $name RETURN n", new {name = "Johan"});
-                var list = await cursor.ToListAsync(x => x["n"].As<INode>());
-                list.Should().HaveCount(1);
-
-                var node = list.First();
-                node.Should().NotBeNull();
-                node.Labels.Should().Contain("Person");
-                node.Properties.Should().HaveCount(1);
-                node.Properties.Should().Contain(new KeyValuePair<string, object>("name", "Johan"));
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
+            await session.CloseAsync();
         }
+    }
 
-        [RequireServerFact]
-        public async Task ShouldHandleRegularExpression()
+    [RequireServerFact]
+    public async Task ShouldHandleRegularExpression()
+    {
+        var session = Driver.AsyncSession();
+        try
         {
-            var session = Driver.AsyncSession();
-            try
-            {
-                var cursor = await session.RunAsync("CREATE (n:Person { name: 'Johan' })");
-                var summary = await cursor.ConsumeAsync();
-                summary.Counters.NodesCreated.Should().Be(1);
+            var cursor = await session.RunAsync("CREATE (n:Person { name: 'Johan' })");
+            var summary = await cursor.ConsumeAsync();
+            summary.Counters.NodesCreated.Should().Be(1);
 
-                cursor = await session.RunAsync("MATCH (n:Person) WHERE n.name =~ $regex RETURN n.name",
-                    new {regex = ".*h.*"});
-                var list = await cursor.ToListAsync(r => r[0].As<string>());
-                list.Should().BeEquivalentTo("Johan");
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
+            cursor = await session.RunAsync(
+                "MATCH (n:Person) WHERE n.name =~ $regex RETURN n.name",
+                new { regex = ".*h.*" });
+
+            var list = await cursor.ToListAsync(r => r[0].As<string>());
+            list.Should().BeEquivalentTo("Johan");
         }
-
-        [RequireServerFact]
-        public async Task ShouldHandleCaseSensitiveStringPatternMatching()
+        finally
         {
-            var session = Driver.AsyncSession();
-            try
-            {
-                var cursor = await session.RunAsync("CREATE (n:Person { name: 'Michael' })");
-                var summary = await cursor.ConsumeAsync();
-                summary.Counters.NodesCreated.Should().Be(1);
-
-                cursor = await session.RunAsync("CREATE (n:Person { name: 'michael' })");
-                summary = await cursor.ConsumeAsync();
-                summary.Counters.NodesCreated.Should().Be(1);
-
-                cursor = await session.RunAsync("MATCH (n:Person) WHERE n.name STARTS WITH $name RETURN n.name",
-                    new {name = "Michael"});
-                var list = await cursor.ToListAsync(r => r[0].As<string>());
-                list.Should().BeEquivalentTo("Michael");
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
+            await session.CloseAsync();
         }
+    }
 
-        [RequireServerFact]
-        public async Task ShouldHandleCreateNodeWithProperties()
+    [RequireServerFact]
+    public async Task ShouldHandleCaseSensitiveStringPatternMatching()
+    {
+        var session = Driver.AsyncSession();
+        try
         {
-            var session = Driver.AsyncSession();
-            try
-            {
-                var cursor = await session.RunAsync("CREATE ($props)",
-                    new {props = new {name = "Andres", position = "Developer"}});
-                var summary = await cursor.ConsumeAsync();
-                summary.Counters.NodesCreated.Should().Be(1);
+            var cursor = await session.RunAsync("CREATE (n:Person { name: 'Michael' })");
+            var summary = await cursor.ConsumeAsync();
+            summary.Counters.NodesCreated.Should().Be(1);
 
-                cursor = await session.RunAsync("MATCH (n) WHERE n.position = 'Developer' RETURN n.name");
-                var list = await cursor.ToListAsync(r => r[0].As<string>());
-                list.Should().BeEquivalentTo("Andres");
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
+            cursor = await session.RunAsync("CREATE (n:Person { name: 'michael' })");
+            summary = await cursor.ConsumeAsync();
+            summary.Counters.NodesCreated.Should().Be(1);
+
+            cursor = await session.RunAsync(
+                "MATCH (n:Person) WHERE n.name STARTS WITH $name RETURN n.name",
+                new { name = "Michael" });
+
+            var list = await cursor.ToListAsync(r => r[0].As<string>());
+            list.Should().BeEquivalentTo("Michael");
         }
-
-        [RequireServerFact]
-        public async Task ShouldHandleCreateMultipleNodesWithProperties()
+        finally
         {
-            var session = Driver.AsyncSession();
-            try
-            {
-                var cursor = await session.RunAsync("UNWIND $props AS properties CREATE(n:Person) SET n = properties",
-                    new
+            await session.CloseAsync();
+        }
+    }
+
+    [RequireServerFact]
+    public async Task ShouldHandleCreateNodeWithProperties()
+    {
+        var session = Driver.AsyncSession();
+        try
+        {
+            var cursor = await session.RunAsync(
+                "CREATE ($props)",
+                new { props = new { name = "Andres", position = "Developer" } });
+
+            var summary = await cursor.ConsumeAsync();
+            summary.Counters.NodesCreated.Should().Be(1);
+
+            cursor = await session.RunAsync("MATCH (n) WHERE n.position = 'Developer' RETURN n.name");
+            var list = await cursor.ToListAsync(r => r[0].As<string>());
+            list.Should().BeEquivalentTo("Andres");
+        }
+        finally
+        {
+            await session.CloseAsync();
+        }
+    }
+
+    [RequireServerFact]
+    public async Task ShouldHandleCreateMultipleNodesWithProperties()
+    {
+        var session = Driver.AsyncSession();
+        try
+        {
+            var cursor = await session.RunAsync(
+                "UNWIND $props AS properties CREATE(n:Person) SET n = properties",
+                new
+                {
+                    props = new object[]
                     {
-                        props = new object[]
-                        {
-                            new {awesome = true, name = "Andres", position = "Developer"},
-                            new {children = 3, name = "Michael", position = "Developer"}
-                        }
-                    });
-                var summary = await cursor.ConsumeAsync();
-                summary.Counters.NodesCreated.Should().Be(2);
+                        new { awesome = true, name = "Andres", position = "Developer" },
+                        new { children = 3, name = "Michael", position = "Developer" }
+                    }
+                });
 
-                cursor = await session.RunAsync("MATCH (n) WHERE n.position = 'Developer' RETURN n.name");
-                var list = await cursor.ToListAsync(r => r[0].As<string>());
-                list.Should().BeEquivalentTo("Andres", "Michael");
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
+            var summary = await cursor.ConsumeAsync();
+            summary.Counters.NodesCreated.Should().Be(2);
+
+            cursor = await session.RunAsync("MATCH (n) WHERE n.position = 'Developer' RETURN n.name");
+            var list = await cursor.ToListAsync(r => r[0].As<string>());
+            list.Should().BeEquivalentTo("Andres", "Michael");
         }
-
-        [RequireServerFact]
-        public async Task ShouldHandleSettingAllPropertiesOnANode()
+        finally
         {
-            var session = Driver.AsyncSession();
-            try
-            {
-                var cursor = await session.RunAsync("CREATE (n:Person { name: 'Michaela' })");
-                var summary = await cursor.ConsumeAsync();
-                summary.Counters.NodesCreated.Should().Be(1);
-
-                cursor = await session.RunAsync("MATCH (n:Person) WHERE n.name = 'Michaela' SET n = $props",
-                    new {props = new {name = "Andres", position = "Developer"}});
-                summary = await cursor.ConsumeAsync();
-                summary.Counters.PropertiesSet.Should().Be(2);
-
-                cursor = await session.RunAsync("MATCH (n:Person) WHERE n.name = $name RETURN n.position",
-                    new {name = "Andres"});
-                var list = await cursor.ToListAsync(r => r[0].As<string>());
-                list.Should().BeEquivalentTo("Developer");
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
+            await session.CloseAsync();
         }
+    }
 
-        [RequireServerFact]
-        public async Task ShouldHandleSkipAndLimit()
+    [RequireServerFact]
+    public async Task ShouldHandleSettingAllPropertiesOnANode()
+    {
+        var session = Driver.AsyncSession();
+        try
         {
-            var session = Driver.AsyncSession();
-            try
-            {
-                var cursor = await session.RunAsync(
-                    "UNWIND range(1,1000) as number RETURN number SKIP $skip LIMIT $limit",
-                    new {skip = 100, limit = 1});
+            var cursor = await session.RunAsync("CREATE (n:Person { name: 'Michaela' })");
+            var summary = await cursor.ConsumeAsync();
+            summary.Counters.NodesCreated.Should().Be(1);
 
-                var list = await cursor.ToListAsync(r => r[0].As<long>());
-                list.Should().AllBeEquivalentTo(101);
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
+            cursor = await session.RunAsync(
+                "MATCH (n:Person) WHERE n.name = 'Michaela' SET n = $props",
+                new { props = new { name = "Andres", position = "Developer" } });
+
+            summary = await cursor.ConsumeAsync();
+            summary.Counters.PropertiesSet.Should().Be(2);
+
+            cursor = await session.RunAsync(
+                "MATCH (n:Person) WHERE n.name = $name RETURN n.position",
+                new { name = "Andres" });
+
+            var list = await cursor.ToListAsync(r => r[0].As<string>());
+            list.Should().BeEquivalentTo("Developer");
         }
-
-        [RequireServerFact]
-        public async Task ShouldHandleNodeId()
+        finally
         {
-            var session = Driver.AsyncSession();
-            try
-            {
-                var cursor = await session.RunAsync("CREATE (n:Person { name: 'Michaela' }) RETURN id(n)");
-                var id = await cursor.SingleAsync(r => r[0].As<int>());
-                var summary = await cursor.ConsumeAsync();
-                summary.Counters.NodesCreated.Should().Be(1);
-
-                cursor = await session.RunAsync("MATCH (n) WHERE id(n) = $id RETURN n.name", new {id});
-                var list = await cursor.ToListAsync(r => r[0].As<string>());
-                list.Should().BeEquivalentTo("Michaela");
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
+            await session.CloseAsync();
         }
+    }
 
-        [RequireServerFact]
-        public async Task ShouldHandleMultipleNodeIds()
+    [RequireServerFact]
+    public async Task ShouldHandleSkipAndLimit()
+    {
+        var session = Driver.AsyncSession();
+        try
         {
-            var session = Driver.AsyncSession();
-            try
-            {
-                var cursor = await session.RunAsync(
-                    "UNWIND $props AS properties CREATE(n:Person) SET n = properties RETURN id(n)",
-                    new
+            var cursor = await session.RunAsync(
+                "UNWIND range(1,1000) as number RETURN number SKIP $skip LIMIT $limit",
+                new { skip = 100, limit = 1 });
+
+            var list = await cursor.ToListAsync(r => r[0].As<long>());
+            list.Should().AllBeEquivalentTo(101);
+        }
+        finally
+        {
+            await session.CloseAsync();
+        }
+    }
+
+    [RequireServerFact]
+    public async Task ShouldHandleNodeId()
+    {
+        var session = Driver.AsyncSession();
+        try
+        {
+            var cursor = await session.RunAsync("CREATE (n:Person { name: 'Michaela' }) RETURN id(n)");
+            var id = await cursor.SingleAsync(r => r[0].As<int>());
+            var summary = await cursor.ConsumeAsync();
+            summary.Counters.NodesCreated.Should().Be(1);
+
+            cursor = await session.RunAsync("MATCH (n) WHERE id(n) = $id RETURN n.name", new { id });
+            var list = await cursor.ToListAsync(r => r[0].As<string>());
+            list.Should().BeEquivalentTo("Michaela");
+        }
+        finally
+        {
+            await session.CloseAsync();
+        }
+    }
+
+    [RequireServerFact]
+    public async Task ShouldHandleMultipleNodeIds()
+    {
+        var session = Driver.AsyncSession();
+        try
+        {
+            var cursor = await session.RunAsync(
+                "UNWIND $props AS properties CREATE(n:Person) SET n = properties RETURN id(n)",
+                new
+                {
+                    props = new List<object>
                     {
-                        props = new List<object>()
-                        {
-                            new {name = "Johan"},
-                            new {name = "Michaela"},
-                            new {name = "Andres"}
-                        }
-                    });
-                var ids = await cursor.ToListAsync(r => r[0].As<long>());
-                var summary = await cursor.ConsumeAsync();
-                summary.Counters.NodesCreated.Should().Be(3);
+                        new { name = "Johan" },
+                        new { name = "Michaela" },
+                        new { name = "Andres" }
+                    }
+                });
 
-                cursor = await session.RunAsync("MATCH (n) WHERE id(n) IN $idList RETURN n.name", new {idList = ids});
-                var list = await cursor.ToListAsync(r => r[0].As<string>());
-                list.Should().BeEquivalentTo("Johan", "Michaela", "Andres");
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
+            var ids = await cursor.ToListAsync(r => r[0].As<long>());
+            var summary = await cursor.ConsumeAsync();
+            summary.Counters.NodesCreated.Should().Be(3);
+
+            cursor = await session.RunAsync("MATCH (n) WHERE id(n) IN $idList RETURN n.name", new { idList = ids });
+            var list = await cursor.ToListAsync(r => r[0].As<string>());
+            list.Should().BeEquivalentTo("Johan", "Michaela", "Andres");
         }
-
-        [RequireServerFact]
-        public async Task ShouldHandleCallingProcedures()
+        finally
         {
-            var session = Driver.AsyncSession();
-            try
-            {
-                var cursor = await session.RunAsync("CALL dbms.queryJmx($query) yield name", new {query = "*:*"});
-                var names = await cursor.ToListAsync(r => r[0].As<string>());
+            await session.CloseAsync();
+        }
+    }
 
-                names.Should().HaveCount(c => c > 0);
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
+    [RequireServerFact]
+    public async Task ShouldHandleCallingProcedures()
+    {
+        var session = Driver.AsyncSession();
+        try
+        {
+            var cursor = await session.RunAsync("CALL dbms.queryJmx($query) yield name", new { query = "*:*" });
+            var names = await cursor.ToListAsync(r => r[0].As<string>());
+
+            names.Should().HaveCount(c => c > 0);
+        }
+        finally
+        {
+            await session.CloseAsync();
         }
     }
 }

@@ -15,47 +15,46 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
+namespace Neo4j.Driver.IntegrationTests.Stress;
+
+public class RxWriteCommandUsingReadSessionInTx<TContext> : RxCommand<TContext>
+    where TContext : StressTestContext
 {
-    public class RxWriteCommandUsingReadSessionInTx<TContext> : RxCommand<TContext>
-        where TContext : StressTestContext
+    public RxWriteCommandUsingReadSessionInTx(IDriver driver, bool useBookmark)
+        : base(driver, useBookmark)
     {
-        public RxWriteCommandUsingReadSessionInTx(IDriver driver, bool useBookmark)
-            : base(driver, useBookmark)
-        {
-        }
+    }
 
-        public override async Task ExecuteAsync(TContext context)
-        {
-            var session = NewSession(AccessMode.Read, context);
-            var result = default(IRxResult);
+    public override async Task ExecuteAsync(TContext context)
+    {
+        var session = NewSession(AccessMode.Read, context);
+        var result = default(IRxResult);
 
-            var exc = await Record.ExceptionAsync(async () => await BeginTransaction(session, context)
-                .SelectMany(txc =>
-                {
-                    result = txc.Run("CREATE ()");
+        var exc = await Record.ExceptionAsync(
+            async () => await BeginTransaction(session, context)
+                .SelectMany(
+                    txc =>
+                    {
+                        result = txc.Run("CREATE ()");
 
-                    return result
-                        .Records()
-                        .CatchAndThrow(_ => txc.Rollback<IRecord>())
-                        .Concat(txc.Commit<IRecord>());
-                })
+                        return result
+                            .Records()
+                            .CatchAndThrow(_ => txc.Rollback<IRecord>())
+                            .Concat(txc.Commit<IRecord>());
+                    })
                 .CatchAndThrow(_ => session.Close<IRecord>())
-                .Concat(session.Close<IRecord>())
-            );
-            exc.Should().BeOfType<ClientException>();
+                .Concat(session.Close<IRecord>()));
 
-            result.Should().NotBeNull();
-            var summary = await result.Consume();
-            summary.Counters.NodesCreated.Should().Be(0);
-        }
+        exc.Should().BeOfType<ClientException>();
+
+        result.Should().NotBeNull();
+        var summary = await result.Consume();
+        summary.Counters.NodesCreated.Should().Be(0);
     }
 }

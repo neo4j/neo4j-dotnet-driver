@@ -21,222 +21,267 @@ using Neo4j.Driver.Internal.Result;
 using Xunit;
 using Record = Xunit.Record;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata
+namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
+
+public class PlanCollectorTests
 {
-    public class PlanCollectorTests
+    public const string Key = PlanCollector.PlanKey;
+
+    internal static KeyValuePair<string, object> TestMetadata =>
+        new(
+            Key,
+            new Dictionary<string, object>
+            {
+                { "operatorType", "opType" },
+                { "args", new Dictionary<string, object> { { "a", 1L } } },
+                {
+                    "identifiers", new List<object>
+                    {
+                        "a", "b", "c"
+                    }
+                }
+            });
+
+    internal static IPlan TestMetadataCollected => new Plan(
+        "opType",
+        new Dictionary<string, object> { { "a", 1L } },
+        new List<string> { "a", "b", "c" },
+        new List<IPlan>());
+
+    [Fact]
+    public void ShouldNotCollectIfMetadataIsNull()
     {
-        public const string Key = PlanCollector.PlanKey;
+        var collector = new PlanCollector();
 
-        [Fact]
-        public void ShouldNotCollectIfMetadataIsNull()
+        collector.Collect(null);
+
+        collector.Collected.Should().BeNull();
+    }
+
+    [Fact]
+    public void ShouldNotCollectIfNoValueIsGiven()
+    {
+        var collector = new PlanCollector();
+
+        collector.Collect(new Dictionary<string, object>());
+
+        collector.Collected.Should().BeNull();
+    }
+
+    [Fact]
+    public void ShouldNotCollectIfValueIsNull()
+    {
+        var collector = new PlanCollector();
+
+        collector.Collect(new Dictionary<string, object> { { Key, null } });
+
+        collector.Collected.Should().BeNull();
+    }
+
+    [Fact]
+    public void ShouldNotCollectIfValueIsEmpty()
+    {
+        var collector = new PlanCollector();
+
+        collector.Collect(new Dictionary<string, object> { { Key, new Dictionary<string, object>() } });
+
+        collector.Collected.Should().BeNull();
+    }
+
+    [Fact]
+    public void ShouldThrowIfValueIsOfWrongType()
+    {
+        var metadata = new Dictionary<string, object> { { Key, true } };
+        var collector = new PlanCollector();
+
+        var ex = Record.Exception(() => collector.Collect(metadata));
+
+        ex.Should()
+            .BeOfType<ProtocolException>()
+            .Which
+            .Message.Should()
+            .Contain($"Expected '{Key}' metadata to be of type 'IDictionary<String,Object>', but got 'Boolean'.");
+    }
+
+    [Fact]
+    public void ShouldThrowIfOperatorTypeIsMissing()
+    {
+        var metadata = new Dictionary<string, object>
         {
-            var collector = new PlanCollector();
-
-            collector.Collect(null);
-
-            collector.Collected.Should().BeNull();
-        }
-
-        [Fact]
-        public void ShouldNotCollectIfNoValueIsGiven()
-        {
-            var collector = new PlanCollector();
-
-            collector.Collect(new Dictionary<string, object>());
-
-            collector.Collected.Should().BeNull();
-        }
-
-        [Fact]
-        public void ShouldNotCollectIfValueIsNull()
-        {
-            var collector = new PlanCollector();
-
-            collector.Collect(new Dictionary<string, object> {{Key, null}});
-
-            collector.Collected.Should().BeNull();
-        }
-
-        [Fact]
-        public void ShouldNotCollectIfValueIsEmpty()
-        {
-            var collector = new PlanCollector();
-
-            collector.Collect(new Dictionary<string, object> {{Key, new Dictionary<string, object>()}});
-
-            collector.Collected.Should().BeNull();
-        }
-
-        [Fact]
-        public void ShouldThrowIfValueIsOfWrongType()
-        {
-            var metadata = new Dictionary<string, object> {{Key, true}};
-            var collector = new PlanCollector();
-
-            var ex = Record.Exception(() => collector.Collect(metadata));
-
-            ex.Should().BeOfType<ProtocolException>().Which
-                .Message.Should()
-                .Contain($"Expected '{Key}' metadata to be of type 'IDictionary<String,Object>', but got 'Boolean'.");
-        }
-
-        [Fact]
-        public void ShouldThrowIfOperatorTypeIsMissing()
-        {
-            var metadata = new Dictionary<string, object>
             {
+                Key, new Dictionary<string, object>
                 {
-                    Key, new Dictionary<string, object>
-                    {
-                        {"args", new Dictionary<string, object>()}
-                    }
+                    { "args", new Dictionary<string, object>() }
                 }
-            };
-            var collector = new PlanCollector();
+            }
+        };
 
-            var ex = Record.Exception(() => collector.Collect(metadata));
+        var collector = new PlanCollector();
 
-            ex.Should().BeOfType<ProtocolException>().Which
-                .Message.Should()
-                .Be("Expected key 'operatorType' to be present in the dictionary, but could not find.");
-        }
+        var ex = Record.Exception(() => collector.Collect(metadata));
 
-        [Fact]
-        public void ShouldCollectWithDefaultValues()
+        ex.Should()
+            .BeOfType<ProtocolException>()
+            .Which
+            .Message.Should()
+            .Be("Expected key 'operatorType' to be present in the dictionary, but could not find.");
+    }
+
+    [Fact]
+    public void ShouldCollectWithDefaultValues()
+    {
+        var metadata = new Dictionary<string, object>
         {
-            var metadata = new Dictionary<string, object>
             {
+                Key, new Dictionary<string, object>
                 {
-                    Key, new Dictionary<string, object>
-                    {
-                        {"operatorType", "opType"}
-                    }
+                    { "operatorType", "opType" }
                 }
-            };
-            var collector = new PlanCollector();
+            }
+        };
 
-            collector.Collect(metadata);
+        var collector = new PlanCollector();
 
-            collector.Collected.Should().BeEquivalentTo(new Plan("opType", new Dictionary<string, object>(),
-                new List<string>(), new List<IPlan>()));
-        }
+        collector.Collect(metadata);
 
-        [Fact]
-        public void ShouldCollectWithoutChildPlans()
+        collector.Collected.Should()
+            .BeEquivalentTo(
+                new Plan(
+                    "opType",
+                    new Dictionary<string, object>(),
+                    new List<string>(),
+                    new List<IPlan>()));
+    }
+
+    [Fact]
+    public void ShouldCollectWithoutChildPlans()
+    {
+        var metadata = new Dictionary<string, object>
         {
-            var metadata = new Dictionary<string, object>
             {
+                Key, new Dictionary<string, object>
                 {
-                    Key, new Dictionary<string, object>
+                    { "operatorType", "opType" },
+                    { "args", new Dictionary<string, object> { { "a", 1L } } },
                     {
-                        {"operatorType", "opType"},
-                        {"args", new Dictionary<string, object> {{"a", 1L}}},
+                        "identifiers", new List<object>
                         {
-                            "identifiers", new List<object>
-                            {
-                                "a", "b", "c"
-                            }
+                            "a", "b", "c"
                         }
                     }
                 }
-            };
-            var collector = new PlanCollector();
+            }
+        };
 
-            collector.Collect(metadata);
+        var collector = new PlanCollector();
 
-            collector.Collected.Should().BeEquivalentTo(new Plan("opType", new Dictionary<string, object> {{"a", 1L}},
-                new List<string> {"a", "b", "c"}, new List<IPlan>()));
-        }
+        collector.Collect(metadata);
 
-        [Fact]
-        public void ShouldCollectWithChildPlans()
+        collector.Collected.Should()
+            .BeEquivalentTo(
+                new Plan(
+                    "opType",
+                    new Dictionary<string, object> { { "a", 1L } },
+                    new List<string> { "a", "b", "c" },
+                    new List<IPlan>()));
+    }
+
+    [Fact]
+    public void ShouldCollectWithChildPlans()
+    {
+        var metadata = new Dictionary<string, object>
         {
-            var metadata = new Dictionary<string, object>
             {
+                Key, new Dictionary<string, object>
                 {
-                    Key, new Dictionary<string, object>
+                    { "operatorType", "opType" },
+                    { "args", new Dictionary<string, object> { { "a", 1L } } },
                     {
-                        {"operatorType", "opType"},
-                        {"args", new Dictionary<string, object> {{"a", 1L}}},
+                        "identifiers", new List<object>
                         {
-                            "identifiers", new List<object>
-                            {
-                                "a", "b", "c"
-                            }
-                        },
+                            "a", "b", "c"
+                        }
+                    },
+                    {
+                        "children", new List<object>
                         {
-                            "children", new List<object>
+                            new Dictionary<string, object>
                             {
-                                new Dictionary<string, object>
+                                { "operatorType", "childOpType" },
+                                { "args", new Dictionary<string, object> { { "b", 2L } } },
                                 {
-                                    {"operatorType", "childOpType"},
-                                    {"args", new Dictionary<string, object> {{"b", 2L}}},
+                                    "identifiers", new List<object>
                                     {
-                                        "identifiers", new List<object>
-                                        {
-                                            "d", "e"
-                                        }
+                                        "d", "e"
                                     }
                                 }
                             }
                         }
                     }
                 }
-            };
-            var collector = new PlanCollector();
+            }
+        };
 
-            collector.Collect(metadata);
+        var collector = new PlanCollector();
 
-            collector.Collected.Should().BeEquivalentTo(new Plan("opType", new Dictionary<string, object> {{"a", 1L}},
-                new List<string> {"a", "b", "c"},
-                new List<IPlan>
-                {
-                    new Plan("childOpType", new Dictionary<string, object> {{"b", 2L}}, new List<string> {"d", "e"},
-                        new List<IPlan>())
-                }));
-        }
+        collector.Collect(metadata);
 
-        [Fact]
-        public void ShouldCollectWithNestedChildPlans()
-        {
-            var metadata = new Dictionary<string, object>
-            {
-                {
-                    Key, new Dictionary<string, object>
+        collector.Collected.Should()
+            .BeEquivalentTo(
+                new Plan(
+                    "opType",
+                    new Dictionary<string, object> { { "a", 1L } },
+                    new List<string> { "a", "b", "c" },
+                    new List<IPlan>
                     {
-                        {"operatorType", "opType"},
-                        {"args", new Dictionary<string, object> {{"a", 1L}}},
+                        new Plan(
+                            "childOpType",
+                            new Dictionary<string, object> { { "b", 2L } },
+                            new List<string> { "d", "e" },
+                            new List<IPlan>())
+                    }));
+    }
+
+    [Fact]
+    public void ShouldCollectWithNestedChildPlans()
+    {
+        var metadata = new Dictionary<string, object>
+        {
+            {
+                Key, new Dictionary<string, object>
+                {
+                    { "operatorType", "opType" },
+                    { "args", new Dictionary<string, object> { { "a", 1L } } },
+                    {
+                        "identifiers", new List<object>
                         {
-                            "identifiers", new List<object>
-                            {
-                                "a", "b", "c"
-                            }
-                        },
+                            "a", "b", "c"
+                        }
+                    },
+                    {
+                        "children", new List<object>
                         {
-                            "children", new List<object>
+                            new Dictionary<string, object>
                             {
-                                new Dictionary<string, object>
+                                { "operatorType", "childOpType" },
+                                { "args", new Dictionary<string, object> { { "b", 2L } } },
                                 {
-                                    {"operatorType", "childOpType"},
-                                    {"args", new Dictionary<string, object> {{"b", 2L}}},
+                                    "identifiers", new List<object>
                                     {
-                                        "identifiers", new List<object>
-                                        {
-                                            "d", "e"
-                                        }
-                                    },
+                                        "d", "e"
+                                    }
+                                },
+                                {
+                                    "children", new List<object>
                                     {
-                                        "children", new List<object>
+                                        new Dictionary<string, object>
                                         {
-                                            new Dictionary<string, object>
+                                            { "operatorType", "childChildOpType" },
+                                            { "args", new Dictionary<string, object> { { "c", 3L } } },
                                             {
-                                                {"operatorType", "childChildOpType"},
-                                                {"args", new Dictionary<string, object> {{"c", 3L}}},
+                                                "identifiers", new List<object>
                                                 {
-                                                    "identifiers", new List<object>
-                                                    {
-                                                        "f"
-                                                    }
+                                                    "f"
                                                 }
                                             }
                                         }
@@ -246,58 +291,53 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                         }
                     }
                 }
-            };
-            var collector = new PlanCollector();
+            }
+        };
 
-            collector.Collect(metadata);
+        var collector = new PlanCollector();
 
-            collector.Collected.Should().BeEquivalentTo(new Plan("opType", new Dictionary<string, object> {{"a", 1L}},
-                new List<string> {"a", "b", "c"},
-                new List<IPlan>
-                {
-                    new Plan("childOpType", new Dictionary<string, object> {{"b", 2L}}, new List<string> {"d", "e"},
-                        new List<IPlan>
-                        {
-                            new Plan("childChildOpType", new Dictionary<string, object> {{"c", 3L}},
-                                new List<string> {"f"},
-                                new List<IPlan>())
-                        })
-                }));
-        }
+        collector.Collect(metadata);
 
-        [Fact]
-        public void ShouldReturnSameCollected()
+        collector.Collected.Should()
+            .BeEquivalentTo(
+                new Plan(
+                    "opType",
+                    new Dictionary<string, object> { { "a", 1L } },
+                    new List<string> { "a", "b", "c" },
+                    new List<IPlan>
+                    {
+                        new Plan(
+                            "childOpType",
+                            new Dictionary<string, object> { { "b", 2L } },
+                            new List<string> { "d", "e" },
+                            new List<IPlan>
+                            {
+                                new Plan(
+                                    "childChildOpType",
+                                    new Dictionary<string, object> { { "c", 3L } },
+                                    new List<string> { "f" },
+                                    new List<IPlan>())
+                            })
+                    }));
+    }
+
+    [Fact]
+    public void ShouldReturnSameCollected()
+    {
+        var metadata = new Dictionary<string, object>
         {
-            var metadata = new Dictionary<string, object>
             {
+                Key, new Dictionary<string, object>
                 {
-                    Key, new Dictionary<string, object>
-                    {
-                        {"operatorType", "opType"}
-                    }
+                    { "operatorType", "opType" }
                 }
-            };
-            var collector = new PlanCollector();
+            }
+        };
 
-            collector.Collect(metadata);
+        var collector = new PlanCollector();
 
-            ((IMetadataCollector) collector).Collected.Should().BeSameAs(collector.Collected);
-        }
+        collector.Collect(metadata);
 
-        internal static KeyValuePair<string, object> TestMetadata =>
-            new KeyValuePair<string, object>(Key, new Dictionary<string, object>
-            {
-                {"operatorType", "opType"},
-                {"args", new Dictionary<string, object> {{"a", 1L}}},
-                {
-                    "identifiers", new List<object>
-                    {
-                        "a", "b", "c"
-                    }
-                }
-            });
-
-        internal static IPlan TestMetadataCollected => new Plan("opType", new Dictionary<string, object> {{"a", 1L}},
-            new List<string> {"a", "b", "c"}, new List<IPlan>());
+        ((IMetadataCollector)collector).Collected.Should().BeSameAs(collector.Collected);
     }
 }

@@ -15,29 +15,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Linq;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
-{
-    public class BlockingWrongCommandInTx<TContext> : BlockingCommand<TContext>
-        where TContext : StressTestContext
-    {
-        public BlockingWrongCommandInTx(IDriver driver)
-            : base(driver, false)
-        {
-        }
+namespace Neo4j.Driver.IntegrationTests.Stress;
 
-        public override void Execute(TContext context)
+public class BlockingWrongCommandInTx<TContext> : BlockingCommand<TContext>
+    where TContext : StressTestContext
+{
+    public BlockingWrongCommandInTx(IDriver driver)
+        : base(driver, false)
+    {
+    }
+
+    public override void Execute(TContext context)
+    {
+        using (var session = NewSession(AccessMode.Read, context))
+        using (var txc = BeginTransaction(session, context))
         {
-            using (var session = NewSession(AccessMode.Read, context))
-            using (var txc = BeginTransaction(session, context))
-            {
-                var exc = Record.Exception(() => txc.Run("RETURN").Consume());
-                exc.Should().BeOfType<ClientException>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
-            }
+            var exc = Record.Exception(() => txc.Run("RETURN").Consume());
+            exc.Should().BeOfType<ClientException>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
         }
     }
 }

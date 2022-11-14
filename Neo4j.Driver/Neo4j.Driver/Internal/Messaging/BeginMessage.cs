@@ -25,9 +25,19 @@ namespace Neo4j.Driver.Internal.Messaging;
 internal sealed class BeginMessage : TransactionStartingMessage
 {
     public BeginMessage(
-        BoltProtocolVersion version, string database, Bookmarks bookmarks, TransactionConfig configBuilder,
-        AccessMode mode, string impersonatedUser)
-        : this(version, database, bookmarks, configBuilder?.Timeout, configBuilder?.Metadata, mode,
+        BoltProtocolVersion version,
+        string database,
+        Bookmarks bookmarks,
+        TransactionConfig configBuilder,
+        AccessMode mode,
+        string impersonatedUser)
+        : this(
+            version,
+            database,
+            bookmarks,
+            configBuilder?.Timeout,
+            configBuilder?.Metadata,
+            mode,
             impersonatedUser)
     {
     }
@@ -38,17 +48,20 @@ internal sealed class BeginMessage : TransactionStartingMessage
         Bookmarks bookmarks,
         TimeSpan? txTimeout,
         IDictionary<string, object> txMetadata,
-        AccessMode mode, string impersonatedUser)
+        AccessMode mode,
+        string impersonatedUser)
         : base(database, bookmarks, txTimeout, txMetadata, mode)
     {
         if (!string.IsNullOrEmpty(impersonatedUser) && version >= BoltProtocolVersion.V4_4)
+        {
             Metadata.Add("imp_user", impersonatedUser);
+        }
     }
+
+    public override IPackStreamSerializer Serializer => BeginMessageSerializer.Instance;
 
     public override string ToString()
     {
         return $"BEGIN {Metadata.ToContentString()}";
     }
-
-    public override IPackStreamSerializer Serializer => BeginMessageSerializer.Instance;
 }

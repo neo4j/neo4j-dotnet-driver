@@ -25,10 +25,6 @@ namespace Neo4j.Driver.Internal.IO;
 
 internal sealed class ChunkReader : IChunkReader
 {
-    private Stream InputStream { get; }
-    private MemoryStream ChunkBuffer { get; set; }
-    private long ChunkBufferRemaining => ChunkBuffer.Length - ChunkBuffer.Position;
-
     private const int ChunkHeaderSize = 2;
     private readonly int _readTimeoutMs = -1;
 
@@ -37,7 +33,11 @@ internal sealed class ChunkReader : IChunkReader
         InputStream = downStream ?? throw new ArgumentNullException(nameof(downStream));
         Throw.ArgumentOutOfRangeException.IfFalse(downStream.CanRead, nameof(downStream.CanRead));
     }
-    
+
+    private Stream InputStream { get; }
+    private MemoryStream ChunkBuffer { get; set; }
+    private long ChunkBufferRemaining => ChunkBuffer.Length - ChunkBuffer.Position;
+
     public async Task<int> ReadMessageChunksToBufferStreamAsync(Stream bufferStream)
     {
         var messageCount = 0;
@@ -47,9 +47,11 @@ internal sealed class ChunkReader : IChunkReader
 
         using (ChunkBuffer = new MemoryStream())
         {
-            long chunkBufferPosition = -1;   //Use this as we need an initial state < ChunkBuffer.Length
+            long chunkBufferPosition = -1; //Use this as we need an initial state < ChunkBuffer.Length
 
-            while (chunkBufferPosition < ChunkBuffer.Length)   //We have not finished parsing the chunk buffer, so further messages to de-chunk
+            while
+                (chunkBufferPosition <
+                 ChunkBuffer.Length) //We have not finished parsing the chunk buffer, so further messages to de-chunk
             {
                 if (await ConstructMessageAsync(bufferStream).ConfigureAwait(false))
                 {
@@ -77,7 +79,9 @@ internal sealed class ChunkReader : IChunkReader
     private async Task PopulateChunkBufferAsync(int requiredSize = Constants.ChunkBufferSize)
     {
         if (ChunkBufferRemaining >= requiredSize)
+        {
             return;
+        }
 
         ChunkBufferTrimUsedData();
 
@@ -95,15 +99,17 @@ internal sealed class ChunkReader : IChunkReader
                 .ConfigureAwait(false);
 
             if (numBytesRead <= 0)
+            {
                 break;
+            }
 
             ChunkBuffer.Write(data, 0, numBytesRead);
             requiredSize -= numBytesRead;
         }
 
-        ChunkBuffer.Position = storedPosition;  //Restore the chunk buffer state so that any reads can continue
+        ChunkBuffer.Position = storedPosition; //Restore the chunk buffer state so that any reads can continue
 
-        if (ChunkBuffer.Length == 0)  //No data so stop
+        if (ChunkBuffer.Length == 0) //No data so stop
         {
             throw new IOException("Unexpected end of stream, unable to read expected data from the network connection");
         }
@@ -117,7 +123,9 @@ internal sealed class ChunkReader : IChunkReader
         var readSize = ChunkBuffer.Read(data, 0, requiredSize);
 
         if (readSize != requiredSize)
+        {
             throw new IOException("Unexpected end of stream, unable to read required data size");
+        }
 
         return data;
     }
@@ -136,7 +144,9 @@ internal sealed class ChunkReader : IChunkReader
                 //We have been reading data so this is the end of a message zero chunk
                 //Or there is no data remaining after this NOOP
                 if (dataRead || ChunkBufferRemaining <= 0)
+                {
                     break;
+                }
 
                 //Its a NOOP so skip it
                 continue;
@@ -144,10 +154,9 @@ internal sealed class ChunkReader : IChunkReader
 
             var rawChunkData = await ReadDataOfSizeAsync(chunkSize).ConfigureAwait(false);
             dataRead = true;
-            outputMessageStream.Write(rawChunkData, 0, chunkSize);    //Put the raw chunk data into the output stream
+            outputMessageStream.Write(rawChunkData, 0, chunkSize); //Put the raw chunk data into the output stream
         }
 
-        return dataRead;    //Return if a message was constructed
-
+        return dataRead; //Return if a message was constructed
     }
 }

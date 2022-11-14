@@ -18,10 +18,13 @@
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 
-namespace Neo4j.Driver.Internal.Routing
+namespace Neo4j.Driver.Internal.Routing;
+
+internal interface IDiscovery
 {
-    internal interface IDiscovery
-    {
-        Task<IRoutingTable> DiscoverAsync(IConnection connection, string database,  string impersonatedUser, Bookmarks bookmarks);
-    }
+    Task<IRoutingTable> DiscoverAsync(
+        IConnection connection,
+        string database,
+        string impersonatedUser,
+        Bookmarks bookmarks);
 }

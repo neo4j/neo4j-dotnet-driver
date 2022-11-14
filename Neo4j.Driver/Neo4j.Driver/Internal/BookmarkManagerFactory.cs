@@ -21,6 +21,7 @@ internal class BookmarkManagerFactory : IBookmarkManagerFactory
 {
     public IBookmarkManager NewBookmarkManager(BookmarkManagerConfig config = null)
     {
-        return new DefaultBookmarkManager(config ?? new());
+        return new DefaultBookmarkManager(config ?? new BookmarkManagerConfig());
     }
 }
+

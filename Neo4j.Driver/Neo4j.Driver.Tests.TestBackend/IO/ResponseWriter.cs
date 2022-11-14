@@ -1,45 +1,45 @@
-﻿using System;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
-using System.Diagnostics;
 
-namespace Neo4j.Driver.Tests.TestBackend
+namespace Neo4j.Driver.Tests.TestBackend;
+
+internal class ResponseWriter
 {
-    internal class ResponseWriter
+    private const string OpenTag = "#response begin";
+    private const string CloseTag = "#response end";
+
+    public ResponseWriter(StreamWriter writer)
     {
-        const string OpenTag = "#response begin";
-        const string CloseTag = "#response end";
-        private StreamWriter WriterTarget { get; set; }
+        WriterTarget = writer;
+    }
 
+    private StreamWriter WriterTarget { get; }
 
-        public ResponseWriter(StreamWriter writer)
+    public async Task<string> WriteResponseAsync(IProtocolObject protocolObject)
+    {
+        return await WriteResponseAsync(protocolObject.Respond());
+    }
+
+    public async Task<string> WriteResponseAsync(ProtocolResponse response)
+    {
+        return await WriteResponseAsync(response.Encode());
+    }
+
+    public async Task<string> WriteResponseAsync(string response)
+    {
+        if (string.IsNullOrEmpty(response))
         {
-            WriterTarget = writer;
+            return string.Empty;
         }
 
-        public async Task<string> WriteResponseAsync(IProtocolObject protocolObject)
-        {
-            return await WriteResponseAsync(protocolObject.Respond());
-        }
+        Trace.WriteLine($"Sending response: {response}\n");
 
-        public async Task<string> WriteResponseAsync(ProtocolResponse response)
-        {
-            return await WriteResponseAsync(response.Encode());
-        }
+        await WriterTarget.WriteLineAsync(OpenTag);
+        await WriterTarget.WriteLineAsync(response);
+        await WriterTarget.WriteLineAsync(CloseTag);
+        await WriterTarget.FlushAsync();
 
-        public async Task<string> WriteResponseAsync(string response)
-        {
-            if (string.IsNullOrEmpty(response))
-                return string.Empty;
-
-            Trace.WriteLine($"Sending response: {response}\n");
-
-            await WriterTarget.WriteLineAsync(OpenTag);
-            await WriterTarget.WriteLineAsync(response);
-            await WriterTarget.WriteLineAsync(CloseTag);
-            await WriterTarget.FlushAsync();
-
-            return response;
-        }
+        return response;
     }
 }

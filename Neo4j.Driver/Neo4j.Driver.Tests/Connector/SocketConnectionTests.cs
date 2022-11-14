@@ -24,295 +24,310 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver.Internal.MessageHandling;
 using Xunit;
 using Record = Xunit.Record;
 
-namespace Neo4j.Driver.Tests
+namespace Neo4j.Driver.Tests;
+
+public class SocketConnectionTests
 {
-    public class SocketConnectionTests
+    private static readonly IResponseHandler NoOpHandler = NoOpResponseHandler.Instance;
+    private static IAuthToken AuthToken => AuthTokens.None;
+    private static string UserAgent => ConnectionSettings.DefaultUserAgent;
+    private static ILogger Logger => new Mock<ILogger>().Object;
+    private static Uri uri => new("http://neo4j.com");
+    private static ServerInfo Server => new(uri);
+    private static ISocketClient SocketClient => new Mock<ISocketClient>().Object;
+
+    internal static SocketConnection NewSocketConnection(
+        ISocketClient socketClient = null,
+        IResponsePipeline pipeline = null,
+        ServerInfo server = null,
+        ILogger logger = null)
     {
-        private static readonly IResponseHandler NoOpHandler = NoOpResponseHandler.Instance;
-        private static IAuthToken AuthToken => AuthTokens.None;
-        private static string UserAgent => ConnectionSettings.DefaultUserAgent;
-        private static ILogger Logger => new Mock<ILogger>().Object;
-        private static Uri uri => new Uri("http://neo4j.com");
-        private static ServerInfo Server => new ServerInfo(uri);
-        private static ISocketClient SocketClient => new Mock<ISocketClient>().Object;
+        socketClient ??= SocketClient;
+        server ??= Server;
+        return new SocketConnection(socketClient, AuthToken, UserAgent, logger ?? Logger, server, pipeline);
+    }
 
-        internal static SocketConnection NewSocketConnection(ISocketClient socketClient = null,
-            IResponsePipeline pipeline = null, ServerInfo server = null, ILogger logger = null)
+    public class InitMethod
+    {
+        [Fact]
+        public async Task ShouldConnectClient()
         {
-            socketClient ??= SocketClient;
-            server ??= Server;
-            return new SocketConnection(socketClient, AuthToken, UserAgent, logger ?? Logger, server, pipeline);
+            // Given
+            var mockClient = new Mock<ISocketClient>();
+            var mockProtocol = new Mock<IBoltProtocol>();
+            mockClient.Setup(x => x.ConnectAsync(null, CancellationToken.None));
+            var conn = NewSocketConnection(mockClient.Object);
+
+            // When
+            await conn.InitAsync();
+
+            // Then
+            mockClient.Verify(c => c.ConnectAsync(null, CancellationToken.None), Times.Once);
+            mockProtocol.Verify(p => p.LoginAsync(conn, It.IsAny<string>(), It.IsAny<IAuthToken>()));
         }
 
-        public class InitMethod
+        [Fact]
+        public async Task ShouldThrowClientErrorIfFailedToConnectToServerWithinTimeout()
         {
-            [Fact]
-            public async Task ShouldConnectClient()
-            {
-                // Given
-                var mockClient = new Mock<ISocketClient>();
-                var mockProtocol = new Mock<IBoltProtocol>();
-                mockClient.Setup(x => x.ConnectAsync(null, CancellationToken.None));
-                var conn = NewSocketConnection(mockClient.Object);
+            // Given
+            var mockClient = new Mock<ISocketClient>();
+            mockClient.Setup(x => x.ConnectAsync(null, CancellationToken.None))
+                .Throws(new IOException("I will stop socket conn from initialization"));
 
-                // When
-                await conn.InitAsync();
+            // ReSharper disable once ObjectCreationAsStatement
+            var conn = new SocketConnection(mockClient.Object, AuthToken, UserAgent, Logger, Server);
+            // When
+            var error = await Record.ExceptionAsync(() => conn.InitAsync());
+            // Then
+            error.Should().BeOfType<IOException>();
+            error.Message.Should().Be("I will stop socket conn from initialization");
+        }
+    }
 
-                // Then
-                mockClient.Verify(c => c.ConnectAsync(null, CancellationToken.None), Times.Once);
-                mockProtocol.Verify(p => p.LoginAsync(conn, It.IsAny<string>(), It.IsAny<IAuthToken>()));
-            }
+    public class DisposeMethod
+    {
+        [Fact]
+        public async Task StopsTheClient()
+        {
+            var mock = new Mock<ISocketClient>();
+            var con = NewSocketConnection(mock.Object);
 
-            [Fact]
-            public async Task ShouldThrowClientErrorIfFailedToConnectToServerWithinTimeout()
-            {
-                // Given
-                var mockClient = new Mock<ISocketClient>();
-                mockClient.Setup(x => x.ConnectAsync(null, CancellationToken.None))
-                    .Throws(new IOException("I will stop socket conn from initialization"));
-                // ReSharper disable once ObjectCreationAsStatement
-                var conn = new SocketConnection(mockClient.Object, AuthToken, UserAgent, Logger, Server);
-                // When
-                var error = await Record.ExceptionAsync(() => conn.InitAsync());
-                // Then
-                error.Should().BeOfType<IOException>();
-                error.Message.Should().Be("I will stop socket conn from initialization");
-            }
+            await con.DestroyAsync();
+
+            mock.Verify(c => c.DisposeAsync(), Times.Once);
+        }
+    }
+
+    public class SyncMethod
+    {
+        [Fact]
+        public async Task DoesNothing_IfMessagesEmpty()
+        {
+            var mock = new Mock<ISocketClient>();
+            var con = NewSocketConnection(mock.Object);
+
+            await con.SyncAsync();
+
+            mock.Verify(c => c.SendAsync(It.IsAny<IEnumerable<IRequestMessage>>()), Times.Never);
         }
 
-        public class DisposeMethod
+        [Fact]
+        public async Task SendsMessageAndClearsQueue_WhenMessageOnQueue()
         {
-            [Fact]
-            public async Task StopsTheClient()
-            {
-                var mock = new Mock<ISocketClient>();
-                var con = NewSocketConnection(mock.Object);
+            var mock = new Mock<ISocketClient>();
+            var con = NewSocketConnection(mock.Object);
 
-                await con.DestroyAsync();
+            await con.EnqueueAsync(
+                new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("A query"), mode: AccessMode.Read),
+                NoOpHandler);
 
-                mock.Verify(c => c.DisposeAsync(), Times.Once);
-            }
+            await con.SyncAsync();
+
+            mock.Verify(c => c.SendAsync(It.IsAny<IEnumerable<IRequestMessage>>()), Times.Once);
+            con.Messages.Count.Should().Be(0);
+        }
+    }
+
+    public class EnqueueMethod
+    {
+        [Fact]
+        public async Task ShouldEnqueueOneMessage()
+        {
+            // Given
+            var con = NewSocketConnection();
+
+            // When
+            await con.EnqueueAsync(
+                new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("a query"), mode: AccessMode.Write),
+                NoOpHandler);
+
+            // Then
+            con.Messages.Count.Should().Be(1); // Run
+            con.Messages[0].Should().BeAssignableTo<RunWithMetadataMessage>();
         }
 
-        public class SyncMethod
+        [Fact]
+        public async Task ShouldEnqueueResultBuilderOnResponseHandler()
         {
-            [Fact]
-            public async Task DoesNothing_IfMessagesEmpty()
-            {
-                var mock = new Mock<ISocketClient>();
-                var con = NewSocketConnection(mock.Object);
+            var pipeline = new Mock<IResponsePipeline>();
+            var con = NewSocketConnection(pipeline: pipeline.Object);
 
-                await con.SyncAsync();
+            await con.EnqueueAsync(
+                new RunWithMetadataMessage(BoltProtocolVersion.V4_0, new Query("query"), mode: AccessMode.Read),
+                NoOpHandler);
 
-                mock.Verify(c => c.SendAsync(It.IsAny<IEnumerable<IRequestMessage>>()), Times.Never);
-            }
-
-            [Fact]
-            public async Task SendsMessageAndClearsQueue_WhenMessageOnQueue()
-            {
-                var mock = new Mock<ISocketClient>();
-                var con = NewSocketConnection(mock.Object);
-
-                await con.EnqueueAsync(new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("A query"), mode: AccessMode.Read),
-                    NoOpHandler);
-                await con.SyncAsync();
-
-                mock.Verify(c => c.SendAsync(It.IsAny<IEnumerable<IRequestMessage>>()), Times.Once);
-                con.Messages.Count.Should().Be(0);
-            }
+            pipeline.Verify(h => h.Enqueue(NoOpHandler), Times.Once);
         }
 
-        public class EnqueueMethod
+        [Fact]
+        public async Task ShouldEnqueueTwoMessages()
         {
-            [Fact]
-            public async Task ShouldEnqueueOneMessage()
-            {
-                // Given
-                var con = NewSocketConnection();
+            // Given
+            var con = NewSocketConnection();
 
-                // When
-                await con.EnqueueAsync(new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("a query"), mode: AccessMode.Write),
-                    NoOpHandler);
+            // When
+            await con.EnqueueAsync(
+                new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("a query"), mode: AccessMode.Read),
+                NoOpHandler,
+                PullAll,
+                NoOpHandler);
 
-                // Then
-                con.Messages.Count.Should().Be(1); // Run
-                con.Messages[0].Should().BeAssignableTo<RunWithMetadataMessage>();
-            }
-
-            [Fact]
-            public async Task ShouldEnqueueResultBuilderOnResponseHandler()
-            {
-                var pipeline = new Mock<IResponsePipeline>();
-                var con = NewSocketConnection(pipeline: pipeline.Object);
-
-                await con.EnqueueAsync(new RunWithMetadataMessage(BoltProtocolVersion.V4_0, new Query("query"), mode: AccessMode.Read),
-                    NoOpHandler);
-
-                pipeline.Verify(h => h.Enqueue(NoOpHandler), Times.Once);
-            }
-
-            [Fact]
-            public async Task ShouldEnqueueTwoMessages()
-            {
-                // Given
-                var con = NewSocketConnection();
-
-                // When
-                await con.EnqueueAsync(new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("a query"), mode: AccessMode.Read),
-                    NoOpHandler, PullAll, NoOpHandler);
-
-                // Then
-                con.Messages.Count.Should().Be(2); // Run + PullAll
-                con.Messages[0].Should().BeAssignableTo<RunWithMetadataMessage>();
-                con.Messages[1].Should().BeAssignableTo<PullAllMessage>();
-            }
-
-            [Fact]
-            public async Task ShouldEnqueueResultBuildersOnResponseHandler()
-            {
-                var pipeline = new Mock<IResponsePipeline>();
-                var con = NewSocketConnection(pipeline: pipeline.Object);
-
-                await con.EnqueueAsync(new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("query"), mode: AccessMode.Read),
-                    NoOpHandler, PullAll, NoOpHandler);
-
-                pipeline.Verify(h => h.Enqueue(NoOpHandler), Times.Once);
-                pipeline.Verify(h => h.Enqueue(NoOpHandler), Times.Once);
-            }
+            // Then
+            con.Messages.Count.Should().Be(2); // Run + PullAll
+            con.Messages[0].Should().BeAssignableTo<RunWithMetadataMessage>();
+            con.Messages[1].Should().BeAssignableTo<PullAllMessage>();
         }
 
-        public class ResetMethod
+        [Fact]
+        public async Task ShouldEnqueueResultBuildersOnResponseHandler()
         {
-            [Fact]
-            public async Task ShouldDelegateToBoltProtocol()
-            {
-                var mockClient = new Mock<ISocketClient>();
-                var mockProtocol = new Mock<IBoltProtocol>();
-                mockClient.Setup(x => x.ConnectAsync(null, CancellationToken.None));
+            var pipeline = new Mock<IResponsePipeline>();
+            var con = NewSocketConnection(pipeline: pipeline.Object);
 
-                var con = NewSocketConnection(mockClient.Object);
+            await con.EnqueueAsync(
+                new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("query"), mode: AccessMode.Read),
+                NoOpHandler,
+                PullAll,
+                NoOpHandler);
 
-                // Should not be done outside of tests.
-                con.BoltProtocol = mockProtocol.Object;
-                
-                await con.ResetAsync();
+            pipeline.Verify(h => h.Enqueue(NoOpHandler), Times.Once);
+            pipeline.Verify(h => h.Enqueue(NoOpHandler), Times.Once);
+        }
+    }
 
-                mockProtocol.Verify(x => x.ResetAsync(con), Times.Once);
-            }
+    public class ResetMethod
+    {
+        [Fact]
+        public async Task ShouldDelegateToBoltProtocol()
+        {
+            var mockClient = new Mock<ISocketClient>();
+            var mockProtocol = new Mock<IBoltProtocol>();
+            mockClient.Setup(x => x.ConnectAsync(null, CancellationToken.None));
+
+            var con = NewSocketConnection(mockClient.Object);
+
+            // Should not be done outside of tests.
+            con.BoltProtocol = mockProtocol.Object;
+
+            await con.ResetAsync();
+
+            mockProtocol.Verify(x => x.ResetAsync(con), Times.Once);
+        }
+    }
+
+    public class CloseMethod
+    {
+        [Fact]
+        public async Task ShouldLogoutAndStopAsync()
+        {
+            // Given
+            var mockClient = new Mock<ISocketClient>();
+            var conn = NewSocketConnection(mockClient.Object);
+
+            var mockProtocol = new Mock<IBoltProtocol>();
+            conn.BoltProtocol = mockProtocol.Object;
+
+            // When
+            await conn.CloseAsync();
+
+            // Then
+            mockProtocol.Verify(p => p.LogoutAsync(conn));
+            mockClient.Verify(c => c.DisposeAsync());
         }
 
-        public class CloseMethod
+        [Fact]
+        public async Task ShouldStopEvenIfFailedToLogoutAsync()
         {
-            [Fact]
-            public async Task ShouldLogoutAndStopAsync()
+            // Given
+            var mockClient = new Mock<ISocketClient>();
+            var conn = NewSocketConnection(mockClient.Object);
+
+            var mockProtocol = new Mock<IBoltProtocol>();
+            mockProtocol.Setup(x => x.LogoutAsync(It.IsAny<SocketConnection>()))
+                .Throws<InvalidOperationException>();
+
+            conn.BoltProtocol = mockProtocol.Object;
+
+            // When
+            await conn.CloseAsync();
+
+            // Then
+            mockClient.Verify(c => c.DisposeAsync());
+        }
+
+        [Fact]
+        public async Task ShouldNotThrowExceptionAsync()
+        {
+            // Given
+            var mockClient = new Mock<ISocketClient>();
+            mockClient.Setup(x => x.DisposeAsync()).Throws<InvalidOperationException>();
+
+            var mockProtocol = new Mock<IBoltProtocol>();
+            mockProtocol.Setup(x => x.LogoutAsync(It.IsAny<SocketConnection>()))
+                .Throws<InvalidOperationException>();
+
+            var conn = NewSocketConnection(mockClient.Object);
+            conn.BoltProtocol = mockProtocol.Object;
+
+            // When
+            await conn.CloseAsync();
+
+            // Then
+            mockClient.Verify(c => c.DisposeAsync());
+            mockProtocol.Verify(c => c.LogoutAsync(It.IsAny<SocketConnection>()));
+        }
+
+        [Fact]
+        public async void ShouldNotThrowIfBoltProtocolIsNullAsync()
+        {
+            // Given
+            var mockClient = new Mock<ISocketClient>();
+            var conn = NewSocketConnection(mockClient.Object);
+
+            conn.BoltProtocol.Should().BeNull();
+
+            var ex = await Record.ExceptionAsync(() => conn.CloseAsync());
+
+            ex.Should().BeNull();
+        }
+
+        [Theory]
+        [MemberData(nameof(GenerateObjectDisposedExceptions))]
+        public async void ShouldNotThrowAndLogIfSocketDisposedAsync(Exception exc)
+        {
+            // Given
+            var logger = new Mock<ILogger>();
+
+            var protocol = new Mock<IBoltProtocol>();
+            protocol.Setup(x => x.LogoutAsync(It.IsAny<IConnection>())).ThrowsAsync(exc);
+
+            var mockClient = new Mock<ISocketClient>();
+            var conn = NewSocketConnection(mockClient.Object, logger: logger.Object);
+            conn.BoltProtocol = protocol.Object;
+
+            var ex = await Record.ExceptionAsync(() => conn.CloseAsync());
+
+            ex.Should().BeNull();
+            logger.Verify(x => x.Debug(It.IsAny<string>(), It.IsAny<object[]>()), Times.Never);
+            logger.Verify(
+                x => x.Warn(It.IsAny<Exception>(), It.IsAny<string>(), It.IsAny<object[]>()),
+                Times.Never);
+        }
+
+        public static TheoryData<Exception> GenerateObjectDisposedExceptions()
+        {
+            return new TheoryData<Exception>
             {
-                // Given
-                var mockClient = new Mock<ISocketClient>();
-                var conn = NewSocketConnection(mockClient.Object);
-
-                var mockProtocol = new Mock<IBoltProtocol>();
-                conn.BoltProtocol = mockProtocol.Object;
-
-                // When
-                await conn.CloseAsync();
-
-                // Then
-                mockProtocol.Verify(p => p.LogoutAsync(conn));
-                mockClient.Verify(c => c.DisposeAsync());
-            }
-
-            [Fact]
-            public async Task ShouldStopEvenIfFailedToLogoutAsync()
-            {
-                // Given
-                var mockClient = new Mock<ISocketClient>();
-                var conn = NewSocketConnection(mockClient.Object);
-
-                var mockProtocol = new Mock<IBoltProtocol>();
-                mockProtocol.Setup(x => x.LogoutAsync(It.IsAny<SocketConnection>()))
-                    .Throws<InvalidOperationException>();
-                conn.BoltProtocol = mockProtocol.Object;
-
-                // When
-                await conn.CloseAsync();
-
-                // Then
-                mockClient.Verify(c => c.DisposeAsync());
-            }
-
-            [Fact]
-            public async Task ShouldNotThrowExceptionAsync()
-            {
-                // Given
-                var mockClient = new Mock<ISocketClient>();
-                mockClient.Setup(x => x.DisposeAsync()).Throws<InvalidOperationException>();
-
-                var mockProtocol = new Mock<IBoltProtocol>();
-                mockProtocol.Setup(x => x.LogoutAsync(It.IsAny<SocketConnection>()))
-                    .Throws<InvalidOperationException>();
-
-                var conn = NewSocketConnection(mockClient.Object);
-                conn.BoltProtocol = mockProtocol.Object;
-
-                // When
-                await conn.CloseAsync();
-
-                // Then
-                mockClient.Verify(c => c.DisposeAsync());
-                mockProtocol.Verify(c => c.LogoutAsync(It.IsAny<SocketConnection>()));
-            }
-
-            [Fact]
-            public async void ShouldNotThrowIfBoltProtocolIsNullAsync()
-            {
-                // Given
-                var mockClient = new Mock<ISocketClient>();
-                var conn = NewSocketConnection(mockClient.Object);
-
-                conn.BoltProtocol.Should().BeNull();
-
-                var ex = await Xunit.Record.ExceptionAsync(() => conn.CloseAsync());
-
-                ex.Should().BeNull();
-            }
-
-            [Theory]
-            [MemberData(nameof(GenerateObjectDisposedExceptions))]
-            public async void ShouldNotThrowAndLogIfSocketDisposedAsync(Exception exc)
-            {
-                // Given
-                var logger = new Mock<ILogger>();
-
-                var protocol = new Mock<IBoltProtocol>();
-                protocol.Setup(x => x.LogoutAsync(It.IsAny<IConnection>())).ThrowsAsync(exc);
-
-                var mockClient = new Mock<ISocketClient>();
-                var conn = NewSocketConnection(mockClient.Object, logger: logger.Object);
-                conn.BoltProtocol = protocol.Object;
-
-                var ex = await Xunit.Record.ExceptionAsync(() => conn.CloseAsync());
-
-                ex.Should().BeNull();
-                logger.Verify(x => x.Debug(It.IsAny<string>(), It.IsAny<object[]>()), Times.Never);
-                logger.Verify(x => x.Warn(It.IsAny<Exception>(), It.IsAny<string>(), It.IsAny<object[]>()),
-                    Times.Never);
-            }
-
-            public static TheoryData<Exception> GenerateObjectDisposedExceptions()
-            {
-                return new TheoryData<Exception>()
-                {
-                    new ObjectDisposedException("socket"),
-                    new IOException("io", new ObjectDisposedException("socket")),
-                    new AggregateException(new IOException("io", new ObjectDisposedException("socket")))
-                };
-            }
+                new ObjectDisposedException("socket"),
+                new IOException("io", new ObjectDisposedException("socket")),
+                new AggregateException(new IOException("io", new ObjectDisposedException("socket")))
+            };
         }
     }
 }

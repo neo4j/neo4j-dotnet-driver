@@ -22,9 +22,8 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers;
 
 internal sealed class ElementRelationshipSerializer : ReadOnlySerializer
 {
-    internal static readonly ElementRelationshipSerializer Instance = new();
-
     public const byte Relationship = (byte)'R';
+    internal static readonly ElementRelationshipSerializer Instance = new();
     public override IEnumerable<byte> ReadableStructs => new[] { Relationship };
 
     public override object Deserialize(PackStreamReader reader, byte signature, long size)
@@ -35,7 +34,7 @@ internal sealed class ElementRelationshipSerializer : ReadOnlySerializer
 
         var relType = reader.ReadString();
         var props = reader.ReadMap();
-            
+
         var urn = reader.ReadString();
         var startUrn = reader.ReadString();
         var endUrn = reader.ReadString();

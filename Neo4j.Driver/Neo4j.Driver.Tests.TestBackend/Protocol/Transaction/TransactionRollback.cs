@@ -1,26 +1,24 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Tests.TestBackend
+namespace Neo4j.Driver.Tests.TestBackend;
+
+internal class TransactionRollback : IProtocolObject
 {
-    class TransactionRollback : IProtocolObject
+    public TransactionRollbackType data { get; set; } = new();
+
+    public override async Task Process(Controller controller)
     {
-        public TransactionRollbackType data { get; set; } = new TransactionRollbackType();
+        var transactionWrapper = controller.TransactionManager.FindTransaction(data.txId);
+        await transactionWrapper.Transaction.RollbackAsync();
+    }
 
-        public class TransactionRollbackType
-        {
-            public string txId { get; set; }
-        }
+    public override string Respond()
+    {
+        return new ProtocolResponse("Transaction", uniqueId).Encode();
+    }
 
-        public override async Task Process(Controller controller)
-        {
-            var transactionWrapper = controller.TransactionManager.FindTransaction(data.txId);
-            await transactionWrapper.Transaction.RollbackAsync();
-        }
-
-        public override string Respond()
-        {
-            return new ProtocolResponse("Transaction", uniqueId).Encode();
-        }
+    public class TransactionRollbackType
+    {
+        public string txId { get; set; }
     }
 }

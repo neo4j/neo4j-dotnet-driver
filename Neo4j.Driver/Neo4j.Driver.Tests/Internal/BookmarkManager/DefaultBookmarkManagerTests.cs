@@ -30,14 +30,15 @@ public class DefaultBookmarkManagerTests
     [Fact]
     public async Task ShouldReturnBookmarks()
     {
-        var initialBookmarks = new Dictionary<string, IEnumerable<string>>()
+        var initialBookmarks = new Dictionary<string, IEnumerable<string>>
         {
-            ["example"] = new[] {"eg1", "eg2"}
+            ["example"] = new[] { "eg1", "eg2" }
         };
+
         var config = new BookmarkManagerConfig(
             initialBookmarks,
-            (_,_) => Task.FromResult(Array.Empty<string>()),
-            (_,_,_) => Task.CompletedTask);
+            (_, _) => Task.FromResult(Array.Empty<string>()),
+            (_, _, _) => Task.CompletedTask);
 
         var bookmarkManager = new DefaultBookmarkManager(config);
 
@@ -49,10 +50,11 @@ public class DefaultBookmarkManagerTests
     [Fact]
     public async Task ShouldReplaceBookmarks()
     {
-        var initialBookmarks = new Dictionary<string, IEnumerable<string>>()
+        var initialBookmarks = new Dictionary<string, IEnumerable<string>>
         {
-            ["example"] = new[] {"eg1", "eg2"}
+            ["example"] = new[] { "eg1", "eg2" }
         };
+
         var config = new BookmarkManagerConfig(
             initialBookmarks,
             (_, _) => Task.FromResult(Array.Empty<string>()),
@@ -60,7 +62,7 @@ public class DefaultBookmarkManagerTests
 
         var bookmarkManager = new DefaultBookmarkManager(config);
 
-        await bookmarkManager.UpdateBookmarksAsync("example", new[] {"eg1", "eg2"}, new[] {"eg3", "eg4"});
+        await bookmarkManager.UpdateBookmarksAsync("example", new[] { "eg1", "eg2" }, new[] { "eg3", "eg4" });
 
         var bookmarks = await bookmarkManager.GetBookmarksAsync("example");
 
@@ -70,10 +72,11 @@ public class DefaultBookmarkManagerTests
     [Fact]
     public async Task ShouldOnlyReplaceReturnedBookmarks()
     {
-        var initialBookmarks = new Dictionary<string, IEnumerable<string>>()
+        var initialBookmarks = new Dictionary<string, IEnumerable<string>>
         {
-            ["example"] = new[] {"eg1", "eg2"}
+            ["example"] = new[] { "eg1", "eg2" }
         };
+
         var config = new BookmarkManagerConfig(
             initialBookmarks,
             (_, _) => Task.FromResult(Array.Empty<string>()),
@@ -81,7 +84,7 @@ public class DefaultBookmarkManagerTests
 
         var bookmarkManager = new DefaultBookmarkManager(config);
 
-        await bookmarkManager.UpdateBookmarksAsync("example", new[] {"eg1"}, new[] {"eg3", "eg4"});
+        await bookmarkManager.UpdateBookmarksAsync("example", new[] { "eg1" }, new[] { "eg3", "eg4" });
 
         var bookmarks = await bookmarkManager.GetBookmarksAsync("example");
 
@@ -98,20 +101,20 @@ public class DefaultBookmarkManagerTests
 
         var config = new BookmarkManagerConfig(
             new Dictionary<string, IEnumerable<string>>(),
-            (_,_) => Task.FromResult(Array.Empty<string>()),
+            (_, _) => Task.FromResult(Array.Empty<string>()),
             notify.Object);
 
         var bookmarkManager = new DefaultBookmarkManager(config);
 
-        await bookmarkManager.UpdateBookmarksAsync("example", Array.Empty<string>(), new[] {"eg3", "eg4"});
+        await bookmarkManager.UpdateBookmarksAsync("example", Array.Empty<string>(), new[] { "eg3", "eg4" });
 
-        notify.Verify(x => x("example", new[] {"eg3", "eg4"}, CancellationToken.None), Times.Once);
+        notify.Verify(x => x("example", new[] { "eg3", "eg4" }, CancellationToken.None), Times.Once);
     }
 
     [Fact]
     public async Task ShouldReturnEmptyIfDatabaseNotSet()
     {
-        var initialBookmarks = new Dictionary<string, IEnumerable<string>>()
+        var initialBookmarks = new Dictionary<string, IEnumerable<string>>
         {
             ["notReturned"] = new[] { "eg1", "eg2" }
         };
@@ -130,10 +133,11 @@ public class DefaultBookmarkManagerTests
     [Fact]
     public async Task ShouldAddBookmarksWithNoDatabase()
     {
-        var initialBookmarks = new Dictionary<string, IEnumerable<string>>()
+        var initialBookmarks = new Dictionary<string, IEnumerable<string>>
         {
             ["notReturned"] = new[] { "eg1", "eg2" }
         };
+
         var config = new BookmarkManagerConfig(
             initialBookmarks,
             (_, _) => Task.FromResult(Array.Empty<string>()),
@@ -144,7 +148,7 @@ public class DefaultBookmarkManagerTests
         var exists = await bookmarkManager.GetBookmarksAsync("example");
         exists.Should().BeEquivalentTo(Array.Empty<string>());
 
-        await bookmarkManager.UpdateBookmarksAsync("example", new []{"eg1", "eg2"}, new[] {"eg3"});
+        await bookmarkManager.UpdateBookmarksAsync("example", new[] { "eg1", "eg2" }, new[] { "eg3" });
 
         var updated = await bookmarkManager.GetBookmarksAsync("example");
         updated.Should().BeEquivalentTo("eg3");
@@ -157,7 +161,7 @@ public class DefaultBookmarkManagerTests
     [Fact]
     public async Task ShouldReturnUnionOfProviderAndStoredValue()
     {
-        var initialBookmarks = new Dictionary<string, IEnumerable<string>>()
+        var initialBookmarks = new Dictionary<string, IEnumerable<string>>
         {
             ["example"] = new[] { "eg1" }
         };
@@ -190,7 +194,7 @@ public class DefaultBookmarkManagerTests
     [Fact]
     public async Task ShouldReturnDistinctUnionOfProviderAndStoredValue()
     {
-        var initialBookmarks = new Dictionary<string, IEnumerable<string>>()
+        var initialBookmarks = new Dictionary<string, IEnumerable<string>>
         {
             ["example"] = new[] { "eg1" }
         };
@@ -209,7 +213,7 @@ public class DefaultBookmarkManagerTests
     [Fact]
     public async Task ShouldReturnDistinctUnionOfAllBookmarksForKnownDatabasesNoSpecifiedDb()
     {
-        var initialBookmarks = new Dictionary<string, IEnumerable<string>>()
+        var initialBookmarks = new Dictionary<string, IEnumerable<string>>
         {
             ["example"] = new[] { "eg1" },
             ["example2"] = new[] { "eg2" }
@@ -229,14 +233,14 @@ public class DefaultBookmarkManagerTests
         var exists = await bookmarkManager.GetAllBookmarksAsync();
 
         mock.Verify(x => x.Invoke(null, It.IsAny<CancellationToken>()), Times.Once);
-        
+
         exists.Should().BeEquivalentTo("eg1", "provider2", "eg2");
     }
 
     [Fact]
     public async Task ShouldReturnDistinctUnionOfAllBookmarksForKnownDatabasesWithSpecifiedDb()
     {
-        var initialBookmarks = new Dictionary<string, IEnumerable<string>>()
+        var initialBookmarks = new Dictionary<string, IEnumerable<string>>
         {
             ["INC"] = new[] { "eg1" },
             ["EXC"] = new[] { "eg2" }
@@ -249,7 +253,7 @@ public class DefaultBookmarkManagerTests
         var config = new BookmarkManagerConfig(
             initialBookmarks,
             mock.Object,
-            (_,_,_) => Task.CompletedTask);
+            (_, _, _) => Task.CompletedTask);
 
         var bookmarkManager = new DefaultBookmarkManager(config);
 
@@ -262,11 +266,11 @@ public class DefaultBookmarkManagerTests
     {
         var initial = new Dictionary<string, IEnumerable<string>>
         {
-            ["a"] = new[] {"eg1"},
-            ["b"] = new[] {"eg2"}
+            ["a"] = new[] { "eg1" },
+            ["b"] = new[] { "eg2" }
         };
 
-        var bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig(initial, null, null));
+        var bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig(initial));
 
         await bookmarkManager.ForgetAsync();
 
@@ -283,9 +287,9 @@ public class DefaultBookmarkManagerTests
             ["b"] = new[] { "eg2" }
         };
 
-        var bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig(initial, null, null));
+        var bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig(initial));
 
-        await bookmarkManager.ForgetAsync(new []{"a"});
+        await bookmarkManager.ForgetAsync(new[] { "a" });
 
         var exists = await bookmarkManager.GetAllBookmarksAsync();
         exists.Should().BeEquivalentTo("eg2");
@@ -301,7 +305,7 @@ public class DefaultBookmarkManagerTests
             ["c"] = new[] { "eg3" }
         };
 
-        var bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig(initial, null, null));
+        var bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig(initial));
 
         await bookmarkManager.ForgetAsync(new[] { "a", "b" });
 

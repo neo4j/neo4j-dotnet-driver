@@ -18,16 +18,11 @@
 using System;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver;
+
+/// <summary>Represents a <c>Node</c> in the Neo4j graph database.</summary>
+public interface INode : IEntity, IEquatable<INode>
 {
-    /// <summary>
-    /// Represents a <c>Node</c> in the Neo4j graph database.
-    /// </summary>
-    public interface INode : IEntity, IEquatable<INode>
-    {
-        /// <summary>
-        /// Gets the lables of the node.
-        /// </summary>
-        IReadOnlyList<string> Labels { get; }
-    }
+    /// <summary>Gets the lables of the node.</summary>
+    IReadOnlyList<string> Labels { get; }
 }

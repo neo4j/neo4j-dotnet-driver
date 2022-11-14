@@ -32,9 +32,11 @@ internal static class NetworkExtensions
             case "neo4j+s":
             case "neo4j+ssc":
                 return false;
+
             case "bolt":
             case "neo4j":
                 return true;
+
             default:
                 throw new NotSupportedException($"Unsupported URI scheme: {scheme}");
         }
@@ -49,10 +51,12 @@ internal static class NetworkExtensions
             case "bolt+s":
             case "bolt+ssc":
                 return false;
+
             case "neo4j":
             case "neo4j+s":
             case "neo4j+ssc":
                 return true;
+
             default:
                 throw new NotSupportedException($"Unsupported URI scheme: {scheme}");
         }
@@ -67,13 +71,16 @@ internal static class NetworkExtensions
             case "neo4j":
                 // no encryption, no trust
                 return new EncryptionManager(false, null);
+
             case "bolt+s":
             case "neo4j+s":
                 // encryption with chain trust
                 return new EncryptionManager(true, EncryptionManager.CreateSecureTrustManager(logger));
+
             case "bolt+ssc":
             case "neo4j+ssc":
                 return new EncryptionManager(true, EncryptionManager.CreateInsecureTrustManager(logger));
+
             default:
                 throw new NotSupportedException($"Unsupported URI scheme: {scheme}");
         }
@@ -82,7 +89,11 @@ internal static class NetworkExtensions
     public static Uri ParseBoltUri(this Uri uri, int defaultPort)
     {
         var port = defaultPort;
-        if (uri.Port != -1) port = uri.Port;
+        if (uri.Port != -1)
+        {
+            port = uri.Port;
+        }
+
         var builder = new UriBuilder(uri.Scheme, uri.Host, port);
         return builder.Uri;
     }
@@ -90,7 +101,9 @@ internal static class NetworkExtensions
     public static IDictionary<string, string> ParseRoutingContext(this Uri uri, int defaultPort)
     {
         if (!uri.IsRoutingUri())
+        {
             return new Dictionary<string, string>();
+        }
 
         var query = uri.Query;
         IDictionary<string, string> context = new Dictionary<string, string>();
@@ -100,19 +113,23 @@ internal static class NetworkExtensions
         var addressValue = uri.Port == -1 ? uri.Authority + ":" + defaultPort : uri.Authority;
         context.Add(addressKey, addressValue);
 
-        foreach (var pair in query.Split(new[] {'?', '&'}, StringSplitOptions.RemoveEmptyEntries))
+        foreach (var pair in query.Split(new[] { '?', '&' }, StringSplitOptions.RemoveEmptyEntries))
         {
-            var keyValue = pair.Split(new[] {'='}, StringSplitOptions.RemoveEmptyEntries);
+            var keyValue = pair.Split(new[] { '=' }, StringSplitOptions.RemoveEmptyEntries);
             if (keyValue.Length != 2)
-                throw new ArgumentException(
-                    $"Invalid parameters: '{pair}' in URI '{uri}'.", pair);
+            {
+                throw new ArgumentException($"Invalid parameters: '{pair}' in URI '{uri}'.", pair);
+            }
 
             var key = keyValue[0];
             var value = keyValue[1];
             if (context.ContainsKey(key))
             {
                 if (key == addressKey)
+                {
                     throw new ArgumentException($"The key {addressKey} is reserved for routing context.");
+                }
+
                 throw new ArgumentException($"Duplicated query parameters with key '{key}' in URI '{uri}'.", key);
             }
 

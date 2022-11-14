@@ -17,15 +17,14 @@
 
 using System.Threading;
 
-namespace Neo4j.Driver.Internal
-{
-    internal static class UniqueIdGenerator
-    {
-        private static long _count = 0;
+namespace Neo4j.Driver.Internal;
 
-        public static long GetId()
-        {
-            return Interlocked.Increment(ref _count);
-        }
+internal static class UniqueIdGenerator
+{
+    private static long _count;
+
+    public static long GetId()
+    {
+        return Interlocked.Increment(ref _count);
     }
 }

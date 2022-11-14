@@ -15,11 +15,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.IntegrationTests.Stress
+namespace Neo4j.Driver.IntegrationTests.Stress;
+
+public interface IBlockingCommand<in TContext>
+    where TContext : StressTestContext
 {
-    public interface IBlockingCommand<in TContext>
-        where TContext : StressTestContext
-    {
-        void Execute(TContext context);
-    }
+    void Execute(TContext context);
 }

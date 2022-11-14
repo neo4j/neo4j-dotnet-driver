@@ -26,7 +26,7 @@ public class PooledConnectionTests
         var connection = new Mock<IConnection>().Object;
         var releaseManager = new Mock<IConnectionReleaseManager>().Object;
         var pooledConnection = new PooledConnection(connection, releaseManager);
-        var exception = (Exception) Activator.CreateInstance(exceptionType, "Testing exception");
+        var exception = (Exception)Activator.CreateInstance(exceptionType, "Testing exception");
 
         var resultingException = await Record.ExceptionAsync(() => pooledConnection.OnErrorAsync(exception));
         Assert.Equal(resultingException.GetType(), exceptionType);
@@ -41,7 +41,7 @@ public class PooledConnectionTests
         var connection = new Mock<IConnection>().Object;
         var releaseManager = new Mock<IConnectionReleaseManager>().Object;
         var pooledConnection = new PooledConnection(connection, releaseManager);
-        var exception = (Exception) Activator.CreateInstance(exceptionType);
+        var exception = (Exception)Activator.CreateInstance(exceptionType);
 
         var resultingException = await Record.ExceptionAsync(() => pooledConnection.OnErrorAsync(exception));
         Assert.Equal(resultingException.GetType(), typeof(ServiceUnavailableException));
@@ -54,8 +54,9 @@ public class PooledConnectionTests
         var releaseManager = new Mock<IConnectionReleaseManager>();
         var pooledConnection = new PooledConnection(connection.Object, releaseManager.Object);
 
-        var resultException = await Record.ExceptionAsync(() =>
-            pooledConnection.OnErrorAsync(new AuthorizationException("Authorization error")));
+        var resultException = await Record.ExceptionAsync(
+            () =>
+                pooledConnection.OnErrorAsync(new AuthorizationException("Authorization error")));
 
         releaseManager.Verify(rm => rm.MarkConnectionsForReauthorization(pooledConnection), Times.Once());
     }

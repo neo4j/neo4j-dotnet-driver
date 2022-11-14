@@ -28,10 +28,10 @@ internal sealed class RollbackMessage : IRequestMessage
     {
     }
 
+    public IPackStreamSerializer Serializer => RollbackMessageSerializer.Instance;
+
     public override string ToString()
     {
         return "ROLLBACK";
     }
-
-    public IPackStreamSerializer Serializer => RollbackMessageSerializer.Instance;
 }

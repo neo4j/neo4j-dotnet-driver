@@ -25,7 +25,12 @@ namespace Neo4j.Driver.Internal.Routing;
 internal interface IClusterConnectionPool : IAsyncDisposable
 {
     // Try to acquire a connection with the server specified by the uri
-    Task<IConnection> AcquireAsync(Uri uri, AccessMode mode, string database, string impersonatedUser, Bookmarks bookmarks);
+    Task<IConnection> AcquireAsync(
+        Uri uri,
+        AccessMode mode,
+        string database,
+        string impersonatedUser,
+        Bookmarks bookmarks);
 
     // Add a set of uri to this pool
     Task AddAsync(IEnumerable<Uri> uris);

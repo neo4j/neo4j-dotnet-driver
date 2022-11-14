@@ -33,6 +33,6 @@ internal sealed class PullMessage : ResultHandleMessage
     }
 
     protected override string Name => "PULL";
-    
+
     public override IPackStreamSerializer Serializer => PullMessageSerializer.Instance;
 }

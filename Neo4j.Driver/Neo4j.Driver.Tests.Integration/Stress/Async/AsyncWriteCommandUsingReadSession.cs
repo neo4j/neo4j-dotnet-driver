@@ -15,45 +15,43 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
+namespace Neo4j.Driver.IntegrationTests.Stress;
+
+public class AsyncWriteCommandUsingReadSession<TContext> : AsyncCommand<TContext>
+    where TContext : StressTestContext
 {
-    public class AsyncWriteCommandUsingReadSession<TContext> : AsyncCommand<TContext>
-        where TContext : StressTestContext
+    public AsyncWriteCommandUsingReadSession(IDriver driver, bool useBookmark)
+        : base(driver, useBookmark)
     {
-        public AsyncWriteCommandUsingReadSession(IDriver driver, bool useBookmark)
-            : base(driver, useBookmark)
-        {
-        }
+    }
 
-        public override async Task ExecuteAsync(TContext context)
-        {
-            var cursor = default(IResultCursor);
+    public override async Task ExecuteAsync(TContext context)
+    {
+        var cursor = default(IResultCursor);
 
-            var session = NewSession(AccessMode.Read, context);
-            try
-            {
-                var exc = await Record.ExceptionAsync(async () =>
+        var session = NewSession(AccessMode.Read, context);
+        try
+        {
+            var exc = await Record.ExceptionAsync(
+                async () =>
                 {
                     cursor = await session.RunAsync("CREATE ()");
                     await cursor.ConsumeAsync();
                 });
 
-                exc.Should().BeOfType<ClientException>();
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-
-            cursor.Should().NotBeNull();
-            var summary = await cursor.ConsumeAsync();
-            summary.Counters.NodesCreated.Should().Be(0);
+            exc.Should().BeOfType<ClientException>();
         }
+        finally
+        {
+            await session.CloseAsync();
+        }
+
+        cursor.Should().NotBeNull();
+        var summary = await cursor.ConsumeAsync();
+        summary.Counters.NodesCreated.Should().Be(0);
     }
 }

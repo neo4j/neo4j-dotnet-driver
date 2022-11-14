@@ -33,13 +33,17 @@ internal sealed class ResponsePipelineError : IResponsePipelineError
     public void EnsureThrown()
     {
         if (_thrown)
+        {
             return;
+        }
 
         lock (this)
         {
             if (_thrown)
+            {
                 return;
-            
+            }
+
             _thrown = true;
             throw _exception;
         }
@@ -48,13 +52,17 @@ internal sealed class ResponsePipelineError : IResponsePipelineError
     public void EnsureThrownIf<T>()
     {
         if (_thrown || _exception is not T)
+        {
             return;
+        }
 
         lock (this)
         {
             if (_thrown)
+            {
                 return;
-            
+            }
+
             _thrown = true;
             throw _exception;
         }

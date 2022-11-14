@@ -21,88 +21,97 @@ using FluentAssertions;
 using Neo4j.Driver.Internal.Types;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers
+namespace Neo4j.Driver.Internal.IO.ValueSerializers;
+
+public class NodeSerializerTests : PackStreamSerializerTests
 {
-    public class NodeSerializerTests : PackStreamSerializerTests
+    internal override IPackStreamSerializer SerializerUnderTest => new NodeSerializer();
+
+    [Fact]
+    public void ShouldDeserialize()
     {
-        internal override IPackStreamSerializer SerializerUnderTest => new NodeSerializer();
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
 
-        [Fact]
-        public void ShouldDeserialize()
-        {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+        SerializeNode(writer);
 
-            SerializeNode(writer);
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var value = readerMachine.Reader().Read();
 
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var value = readerMachine.Reader().Read();
+        VerifySerializedNode(value);
+    }
 
-            VerifySerializedNode(value);
-        }
+    [Fact]
+    public void ShouldDeserializeWhenInList()
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
 
-        [Fact]
-        public void ShouldDeserializeWhenInList()
-        {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+        writer.WriteListHeader(1);
+        SerializeNode(writer);
 
-            writer.WriteListHeader(1);
-            SerializeNode(writer);
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var value = readerMachine.Reader().Read();
 
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var value = readerMachine.Reader().Read();
+        value.Should().NotBeNull();
+        value.Should().BeAssignableTo<IList>().Which.Should().HaveCount(1);
 
-            value.Should().NotBeNull();
-            value.Should().BeAssignableTo<IList>().Which.Should().HaveCount(1);
+        VerifySerializedNode(value.Should().BeAssignableTo<IList>().Which[0]);
+    }
 
-            VerifySerializedNode(value.Should().BeAssignableTo<IList>().Which[0]);
-        }
+    [Fact]
+    public void ShouldDeserializeWhenInMap()
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
 
-        [Fact]
-        public void ShouldDeserializeWhenInMap()
-        {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+        writer.WriteMapHeader(1);
+        writer.Write("x");
+        SerializeNode(writer);
 
-            writer.WriteMapHeader(1);
-            writer.Write("x");
-            SerializeNode(writer);
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var value = readerMachine.Reader().Read();
 
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var value = readerMachine.Reader().Read();
+        value.Should().NotBeNull();
+        value.Should()
+            .BeAssignableTo<IDictionary<string, object>>()
+            .Which.Should()
+            .HaveCount(1)
+            .And
+            .ContainKey("x");
 
-            value.Should().NotBeNull();
-            value.Should().BeAssignableTo<IDictionary<string, object>>().Which.Should().HaveCount(1).And
-                .ContainKey("x");
+        VerifySerializedNode(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
+    }
 
-            VerifySerializedNode(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
-        }
-
-        private static void SerializeNode(PackStreamWriter writer)
-        {
-            writer.WriteStructHeader(3, NodeSerializer.Node);
-            writer.Write(1);
-            writer.Write(new List<string> {"Label1", "Label2"});
-            writer.Write(new Dictionary<string, object>
+    private static void SerializeNode(PackStreamWriter writer)
+    {
+        writer.WriteStructHeader(3, NodeSerializer.Node);
+        writer.Write(1);
+        writer.Write(new List<string> { "Label1", "Label2" });
+        writer.Write(
+            new Dictionary<string, object>
             {
-                {"prop1", "something"},
-                {"prop2", 15},
-                {"prop3", true}
+                { "prop1", "something" },
+                { "prop2", 15 },
+                { "prop3", true }
             });
-        }
+    }
 
-        private static void VerifySerializedNode(object value)
-        {
-            value.Should().NotBeNull();
-            value.Should().BeOfType<Node>().Which.Id.Should().Be(1L);
-            value.Should().BeOfType<Node>().Which.Labels.Should().Equal(new[] { "Label1", "Label2" });
-            value.Should().BeOfType<Node>().Which.Properties.Should().HaveCount(3).And.Contain(new[]
-            {
-                new KeyValuePair<string, object>("prop1", "something"),
-                new KeyValuePair<string, object>("prop2", 15L),
-                new KeyValuePair<string, object>("prop3", true),
-            });
-        }
+    private static void VerifySerializedNode(object value)
+    {
+        value.Should().NotBeNull();
+        value.Should().BeOfType<Node>().Which.Id.Should().Be(1L);
+        value.Should().BeOfType<Node>().Which.Labels.Should().Equal("Label1", "Label2");
+        value.Should()
+            .BeOfType<Node>()
+            .Which.Properties.Should()
+            .HaveCount(3)
+            .And.Contain(
+                new[]
+                {
+                    new KeyValuePair<string, object>("prop1", "something"),
+                    new KeyValuePair<string, object>("prop2", 15L),
+                    new KeyValuePair<string, object>("prop3", true)
+                });
     }
 }

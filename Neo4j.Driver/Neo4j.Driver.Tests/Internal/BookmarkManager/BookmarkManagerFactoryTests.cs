@@ -18,8 +18,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Xunit;
 using FluentAssertions;
+using Xunit;
 
 namespace Neo4j.Driver.Internal.BookmarkManager;
 
@@ -39,6 +39,7 @@ public class BookmarkManagerFactoryTests
 
         bookmarkManager.Should().BeAssignableTo<DefaultBookmarkManager>();
     }
+
     [Fact]
     public void ShouldReturnDefaultBookmarkManagerWhenNoConfigSupplied()
     {
@@ -49,3 +50,4 @@ public class BookmarkManagerFactoryTests
         bookmarkManager.Should().BeAssignableTo<DefaultBookmarkManager>();
     }
 }
+

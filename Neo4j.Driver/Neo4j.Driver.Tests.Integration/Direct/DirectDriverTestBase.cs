@@ -20,47 +20,52 @@ using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Neo4j.Driver.IntegrationTests.Direct
+namespace Neo4j.Driver.IntegrationTests.Direct;
+
+[Collection(SAIntegrationCollection.CollectionName)]
+public abstract class DirectDriverTestBase : IDisposable
 {
-    [Collection(SAIntegrationCollection.CollectionName)]
-    public abstract class DirectDriverTestBase : IDisposable
+    private bool _disposed;
+
+    protected DirectDriverTestBase(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
     {
-        protected ITestOutputHelper Output { get; }
-        protected IStandAlone Server { get; }
-        protected Uri ServerEndPoint { get; }
-        protected IAuthToken AuthToken { get; }
+        Output = output;
+        Server = fixture.StandAloneSharedInstance;
+        ServerEndPoint = Server.BoltUri;
+        AuthToken = Server.AuthToken;
+    }
 
-        ~DirectDriverTestBase() => Dispose(false);
+    protected ITestOutputHelper Output { get; }
+    protected IStandAlone Server { get; }
+    protected Uri ServerEndPoint { get; }
+    protected IAuthToken AuthToken { get; }
 
-        protected DirectDriverTestBase(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    ~DirectDriverTestBase()
+    {
+        Dispose(false);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed)
         {
-            Output = output;
-            Server = fixture.StandAloneSharedInstance;
-            ServerEndPoint = Server.BoltUri;
-            AuthToken = Server.AuthToken;
+            return;
         }
 
-        private bool _disposed = false;
-        public void Dispose()
+        if (disposing)
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_disposed)
-                return;
-
-            if (disposing)
-            {   
-                using (var session = Server.Driver.Session())
-                {
-                    session.Run("MATCH (n) DETACH DELETE n").Consume();
-                }
+            using (var session = Server.Driver.Session())
+            {
+                session.Run("MATCH (n) DETACH DELETE n").Consume();
             }
-
-            _disposed = true;
         }
+
+        _disposed = true;
     }
 }

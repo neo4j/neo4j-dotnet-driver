@@ -19,18 +19,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
-using System.Reactive.Concurrency;
 using System.Reactive.Linq;
-using System.Threading;
 using Microsoft.Reactive.Testing;
 
-namespace Neo4j.Driver.Reactive
+namespace Neo4j.Driver.Reactive;
+
+public static class Extensions
 {
-    public static class Extensions
+    public static IEnumerable<Recorded<Notification<T>>> WaitForCompletion<T>(this IObservable<T> observable)
     {
-        public static IEnumerable<Recorded<Notification<T>>> WaitForCompletion<T>(this IObservable<T> observable)
-        {
-            return observable.Materialize().Select(n => new Recorded<Notification<T>>(0, n)).ToEnumerable().ToList();
-        }
+        return observable.Materialize().Select(n => new Recorded<Notification<T>>(0, n)).ToEnumerable().ToList();
     }
 }

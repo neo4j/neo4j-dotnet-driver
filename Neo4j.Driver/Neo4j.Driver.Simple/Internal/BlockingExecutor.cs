@@ -19,33 +19,35 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal class BlockingExecutor
 {
-    internal class BlockingExecutor
+    private readonly TaskFactory _taskFactory;
+
+    public BlockingExecutor()
+        : this(TaskScheduler.Default)
     {
-        private readonly TaskFactory _taskFactory;
+    }
 
-        public BlockingExecutor()
-            : this(TaskScheduler.Default)
-        {
-        }
+    public BlockingExecutor(TaskScheduler scheduler)
+    {
+        scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
 
-        public BlockingExecutor(TaskScheduler scheduler)
-        {
-            scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
+        _taskFactory = new TaskFactory(
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            TaskContinuationOptions.None,
+            scheduler);
+    }
 
-            _taskFactory = new TaskFactory(CancellationToken.None, TaskCreationOptions.None,
-                TaskContinuationOptions.None, scheduler);
-        }
+    public void RunSync(Func<Task> task)
+    {
+        _taskFactory.StartNew(task).Unwrap().GetAwaiter().GetResult();
+    }
 
-        public void RunSync(Func<Task> task)
-        {
-            _taskFactory.StartNew(task).Unwrap().GetAwaiter().GetResult();
-        }
-
-        public T RunSync<T>(Func<Task<T>> task)
-        {
-            return _taskFactory.StartNew(task).Unwrap().GetAwaiter().GetResult();
-        }
+    public T RunSync<T>(Func<Task<T>> task)
+    {
+        return _taskFactory.StartNew(task).Unwrap().GetAwaiter().GetResult();
     }
 }

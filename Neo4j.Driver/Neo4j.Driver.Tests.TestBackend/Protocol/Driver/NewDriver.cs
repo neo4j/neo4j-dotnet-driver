@@ -4,137 +4,161 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend
+namespace Neo4j.Driver.Tests.TestBackend;
+
+internal class NewDriver : IProtocolObject
 {
-    internal class NewDriver : IProtocolObject
+    public NewDriverType data { get; set; } = new();
+
+    [JsonIgnore] public IDriver Driver { get; set; }
+
+    [JsonIgnore] private Controller Control { get; set; }
+
+    public override async Task Process(Controller controller)
     {
-        public NewDriverType data { get; set; } = new NewDriverType();
-        [JsonIgnore]
-        public IDriver Driver { get; set; }
-        [JsonIgnore]
-        private Controller Control { get; set; }
+        Control = controller;
+        var authTokenData = data.authorizationToken.data;
 
-        [JsonConverter(typeof(NewDriverConverter))]
-        public class NewDriverType
+        IAuthToken authToken;
+
+        switch (authTokenData.scheme)
         {
-            private string[] _trustedCertificates = new string[]{};
-            public string uri { get; set; }
-            public AuthorizationToken authorizationToken { get; set; } = new AuthorizationToken();
-            public string userAgent { get; set; }
-            public bool resolverRegistered { get; set; } = false;
-            public bool domainNameResolverRegistered { get; set; } = false;
-            public int connectionTimeoutMs { get; set; } = -1;
-            public int? maxConnectionPoolSize { get; set; }
-            public int? connectionAcquisitionTimeoutMs { get; set; }
-            [JsonIgnore]
-            public bool ModifiedTrustedCertificates = false;
+            case "bearer":
+                authToken = AuthTokens.Bearer(authTokenData.credentials);
+                break;
 
-            public long? fetchSize;
-            public long? maxTxRetryTimeMs;
+            case "kerberos":
+                authToken = AuthTokens.Kerberos(authTokenData.credentials);
+                break;
 
-            public string[] trustedCertificates
-            {
-                get => _trustedCertificates;
-                set
-                {
-                    ModifiedTrustedCertificates = true;
-                    _trustedCertificates = value;
-                }
-            }
+            default:
+                authToken = AuthTokens.Custom(
+                    authTokenData.principal,
+                    authTokenData.credentials,
+                    authTokenData.realm,
+                    authTokenData.scheme,
+                    authTokenData.parameters);
 
-            public bool? encrypted { get; set; }
+                break;
         }
 
-        public override async Task Process(Controller controller)
+        Driver = GraphDatabase.Driver(data.uri, authToken, DriverConfig);
+
+        await Task.CompletedTask;
+    }
+
+    public override string Respond()
+    {
+        return new ProtocolResponse("Driver", uniqueId).Encode();
+    }
+
+    private void DriverConfig(ConfigBuilder configBuilder)
+    {
+        if (!string.IsNullOrEmpty(data.userAgent))
         {
-            Control = controller;
-            var authTokenData = data.authorizationToken.data;
-
-            IAuthToken authToken;
-
-            switch (authTokenData.scheme)
-            {
-                case "bearer":
-                    authToken = AuthTokens.Bearer(authTokenData.credentials);
-                    break;
-                case "kerberos":
-                    authToken = AuthTokens.Kerberos(authTokenData.credentials);
-                    break;
-
-                default:
-                    authToken = AuthTokens.Custom(authTokenData.principal,
-                                                  authTokenData.credentials,
-                                                  authTokenData.realm,
-                                                  authTokenData.scheme,
-                                                  authTokenData.parameters);
-                    break;
-
-            }
-
-            Driver = GraphDatabase.Driver(data.uri, authToken, DriverConfig);
-
-            await Task.CompletedTask;
+            configBuilder.WithUserAgent(data.userAgent);
         }
 
-        public override string Respond()
+        if (data.resolverRegistered)
         {
-            return new ProtocolResponse("Driver", uniqueId).Encode();
+            configBuilder.WithResolver(new ListAddressResolver(Control, data.uri));
         }
 
-        private void DriverConfig(ConfigBuilder configBuilder)
+        if (data.connectionTimeoutMs > 0)
         {
-            if (!string.IsNullOrEmpty(data.userAgent))
-                configBuilder.WithUserAgent(data.userAgent);
+            configBuilder.WithConnectionTimeout(TimeSpan.FromMilliseconds(data.connectionTimeoutMs));
+        }
 
-            if (data.resolverRegistered)
-                configBuilder.WithResolver(new ListAddressResolver(Control, data.uri));
+        if (data.maxConnectionPoolSize.HasValue)
+        {
+            configBuilder.WithMaxConnectionPoolSize(data.maxConnectionPoolSize.Value);
+        }
 
-            if (data.connectionTimeoutMs > 0)
-                configBuilder.WithConnectionTimeout(TimeSpan.FromMilliseconds(data.connectionTimeoutMs));
+        if (data.connectionAcquisitionTimeoutMs.HasValue)
+        {
+            configBuilder.WithConnectionAcquisitionTimeout(
+                TimeSpan.FromMilliseconds(data.connectionAcquisitionTimeoutMs.Value));
+        }
 
-            if (data.maxConnectionPoolSize.HasValue)
-                configBuilder.WithMaxConnectionPoolSize(data.maxConnectionPoolSize.Value);
-
-            if (data.connectionAcquisitionTimeoutMs.HasValue)
-                configBuilder.WithConnectionAcquisitionTimeout(
-                    TimeSpan.FromMilliseconds(data.connectionAcquisitionTimeoutMs.Value));
-
-            if (data.ModifiedTrustedCertificates)
+        if (data.ModifiedTrustedCertificates)
+        {
+            var certificateTrustStrategy = data?.trustedCertificates switch
             {
-                var certificateTrustStrategy = data?.trustedCertificates switch
+                null => CertificateTrustRule.TrustSystem,
+                { Length: 0 } => CertificateTrustRule.TrustAny,
+                _ => CertificateTrustRule.TrustList
+            };
+
+            List<string> GetPaths()
+            {
+                var env = Environment.GetEnvironmentVariables();
+                if (!env.Contains("TK_CUSTOM_CA_PATH"))
                 {
-                    null => CertificateTrustRule.TrustSystem,
-                    { Length: 0 } => CertificateTrustRule.TrustAny,
-                    _ => CertificateTrustRule.TrustList
-                };
-                
-                List<string> GetPaths()
-                {
-                    var env = Environment.GetEnvironmentVariables();
-                    if (!env.Contains("TK_CUSTOM_CA_PATH"))
-                        throw new Exception("Need to define path to custom CAs");
-                    var path = env["TK_CUSTOM_CA_PATH"].ToString();
-                    return data?.trustedCertificates?.Select(x => $"{path}{x}").ToList();
+                    throw new Exception("Need to define path to custom CAs");
                 }
 
-                configBuilder.WithCertificateTrustRule(certificateTrustStrategy, certificateTrustStrategy == CertificateTrustRule.TrustList ? GetPaths() : null);
+                var path = env["TK_CUSTOM_CA_PATH"].ToString();
+                return data?.trustedCertificates?.Select(x => $"{path}{x}").ToList();
             }
 
-            if (data.maxTxRetryTimeMs.HasValue)
-                configBuilder.WithMaxTransactionRetryTime(
-                    TimeSpan.FromMilliseconds(data.maxTxRetryTimeMs.Value));
+            configBuilder.WithCertificateTrustRule(
+                certificateTrustStrategy,
+                certificateTrustStrategy == CertificateTrustRule.TrustList ? GetPaths() : null);
+        }
 
-            if (data.encrypted.HasValue)
-                configBuilder.WithEncryptionLevel(data.encrypted.Value 
-                    ? EncryptionLevel.Encrypted 
+        if (data.maxTxRetryTimeMs.HasValue)
+        {
+            configBuilder.WithMaxTransactionRetryTime(TimeSpan.FromMilliseconds(data.maxTxRetryTimeMs.Value));
+        }
+
+        if (data.encrypted.HasValue)
+        {
+            configBuilder.WithEncryptionLevel(
+                data.encrypted.Value
+                    ? EncryptionLevel.Encrypted
                     : EncryptionLevel.None);
-
-            if (data.fetchSize.HasValue)
-                configBuilder.WithFetchSize(data.fetchSize.Value);
-
-            var logger = new SimpleLogger();
-
-            configBuilder.WithLogger(logger);
         }
+
+        if (data.fetchSize.HasValue)
+        {
+            configBuilder.WithFetchSize(data.fetchSize.Value);
+        }
+
+        var logger = new SimpleLogger();
+
+        configBuilder.WithLogger(logger);
+    }
+
+    [JsonConverter(typeof(NewDriverConverter))]
+    public class NewDriverType
+    {
+        private string[] _trustedCertificates = {};
+
+        public long? fetchSize;
+        public long? maxTxRetryTimeMs;
+
+        [JsonIgnore]
+        public bool ModifiedTrustedCertificates;
+
+        public string uri { get; set; }
+        public AuthorizationToken authorizationToken { get; set; } = new();
+        public string userAgent { get; set; }
+        public bool resolverRegistered { get; set; } = false;
+        public bool domainNameResolverRegistered { get; set; } = false;
+        public int connectionTimeoutMs { get; set; } = -1;
+        public int? maxConnectionPoolSize { get; set; }
+        public int? connectionAcquisitionTimeoutMs { get; set; }
+
+        public string[] trustedCertificates
+        {
+            get => _trustedCertificates;
+            set
+            {
+                ModifiedTrustedCertificates = true;
+                _trustedCertificates = value;
+            }
+        }
+
+        public bool? encrypted { get; set; }
     }
 }

@@ -1,25 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Newtonsoft.Json;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend
-{   
-    class ProtocolException  : IProtocolObject
+namespace Neo4j.Driver.Tests.TestBackend;
+
+internal class ProtocolException : IProtocolObject
+{
+    public ProtocolExceptionType data { get; set; } = new();
+
+    [JsonIgnore] public Exception ExceptionObj { get; set; }
+
+    public override async Task Process()
     {
-        public ProtocolExceptionType data { get; set; } = new ProtocolExceptionType();
-        [JsonIgnore]
-        public Exception ExceptionObj { get; set; }
+        await Task.CompletedTask;
+    }
 
-        public class ProtocolExceptionType
-        {   
-            public string msg { get; set; }
-        }
-
-        public override async Task Process()
-        {
-            await Task.CompletedTask;
-        }
+    public class ProtocolExceptionType
+    {
+        public string msg { get; set; }
     }
 }

@@ -16,9 +16,7 @@
 // limitations under the License.
 
 using System;
-using System.Reactive;
 using System.Reactive.Linq;
-using System.Reactive.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal
 {
@@ -34,6 +32,16 @@ namespace Neo4j.Driver.Internal
         public bool IsOpen => _transaction.IsOpen;
         public TransactionConfig TransactionConfig => _transaction.TransactionConfig;
 
+        public IObservable<T> Commit<T>()
+        {
+            return Observable.FromAsync(() => _transaction.CommitAsync()).SelectMany(x => Observable.Empty<T>());
+        }
+
+        public IObservable<T> Rollback<T>()
+        {
+            return Observable.FromAsync(() => _transaction.RollbackAsync()).SelectMany(x => Observable.Empty<T>());
+        }
+
         #region Run Methods
 
         public IRxResult Run(string query)
@@ -48,20 +56,11 @@ namespace Neo4j.Driver.Internal
 
         public IRxResult Run(Query query)
         {
-            return new RxResult(Observable.FromAsync(() => _transaction.RunAsync(query))
-                .Cast<IInternalResultCursor>());
+            return new RxResult(
+                Observable.FromAsync(() => _transaction.RunAsync(query))
+                    .Cast<IInternalResultCursor>());
         }
 
         #endregion
-
-        public IObservable<T> Commit<T>()
-        {
-            return Observable.FromAsync(() => _transaction.CommitAsync()).SelectMany(x => Observable.Empty<T>());
-        }
-
-        public IObservable<T> Rollback<T>()
-        {
-            return Observable.FromAsync(() => _transaction.RollbackAsync()).SelectMany(x => Observable.Empty<T>());
-        }
     }
 }

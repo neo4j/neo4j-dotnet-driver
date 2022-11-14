@@ -2,81 +2,87 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Neo4j.Driver.Tests.TestBackend
+namespace Neo4j.Driver.Tests.TestBackend;
+
+internal static class ProtocolObjectFactory
 {
-    internal static class ProtocolObjectFactory
+    public static ProtocolObjectManager ObjManager { get; set; }
+
+    public static IProtocolObject CreateObject(string jsonString)
     {
-        
-        public static ProtocolObjectManager ObjManager { get; set; }
+        var type = GetObjectType(jsonString);
+        Protocol.ValidateType(type);
+        return CreateObject(type, jsonString);
+    }
 
-		public static IProtocolObject CreateObject(string jsonString)
-		{
-			Type type = GetObjectType(jsonString);
-			Protocol.ValidateType(type);
-			return CreateObject(type, jsonString);
-		}
+    public static T CreateObject<T>() where T : IProtocolObject
+    {
+        Protocol.ValidateType(typeof(T));
+        return (T)CreateObject(typeof(T));
+    }
 
-		public static T CreateObject<T>() where T : IProtocolObject
-		{
-			Protocol.ValidateType(typeof(T));
-			return (T)CreateObject(typeof(T));
-		}
+    private static IProtocolObject CreateObject(Type type, string jsonString = null)
+    {
+        try
+        {
+            var newObject = (IProtocolObject)CreateNewObjectOfType(
+                type,
+                jsonString,
+                new JsonSerializerSettings
+                {
+                    NullValueHandling = NullValueHandling.Ignore,
+                    MissingMemberHandling = MissingMemberHandling.Error
+                });
 
-		private static IProtocolObject CreateObject(Type type, string jsonString = null)
-		{
-			try
-			{
-				var newObject = (IProtocolObject)CreateNewObjectOfType(type, jsonString, new JsonSerializerSettings
-				{
-					NullValueHandling = NullValueHandling.Ignore,
-					MissingMemberHandling = MissingMemberHandling.Error
-				});
-				ProcessNewObject(newObject);
+            ProcessNewObject(newObject);
 
-				return newObject;
-			}
-			catch(JsonException ex)
-			{
-				throw new Exception($"Json protocol Error: {ex.Message}");
-			}
-		}
-
-		public static Type GetObjectType(string jsonString)
-		{
-			var objectTypeName = GetObjectTypeName(jsonString) ;
-			Protocol.ValidateType(objectTypeName);
-			return Type.GetType(typeof(ProtocolObjectFactory).Namespace + "." + objectTypeName, true);
-		}
-
-		private static string GetObjectTypeName(string jsonString)
-		{
-			JObject jsonObject = JObject.Parse(jsonString);
-			return (string)jsonObject["name"];
-		}
-
-
-		public static T CreateObject<T>(string jsonString = null) where T : IProtocolObject, new()
-		{
-			return (T)CreateObject(jsonString);			
-		}
-
-
-        private static object CreateNewObjectOfType(Type newType, string jsonString, JsonSerializerSettings jsonSettings = null)
-		{
-            var settings = jsonSettings ?? new JsonSerializerSettings();
-            return string.IsNullOrEmpty(jsonString) ? Activator.CreateInstance(newType) : JsonConvert.DeserializeObject(jsonString, newType, jsonSettings);
+            return newObject;
         }
+        catch (JsonException ex)
+        {
+            throw new Exception($"Json protocol Error: {ex.Message}");
+        }
+    }
 
-        private static T CreateNewObjectOfType<T>(string jsonString, JsonSerializerSettings jsonSettings = null) where T : new()
-		{
-            var settings = jsonSettings ?? new JsonSerializerSettings();  
-            return string.IsNullOrEmpty(jsonString) ? new T() : JsonConvert.DeserializeObject<T>(jsonString, settings);
-		}
+    public static Type GetObjectType(string jsonString)
+    {
+        var objectTypeName = GetObjectTypeName(jsonString);
+        Protocol.ValidateType(objectTypeName);
+        return Type.GetType(typeof(ProtocolObjectFactory).Namespace + "." + objectTypeName, true);
+    }
 
-		private static void ProcessNewObject(IProtocolObject newObject)
-		{
-			newObject.SetObjectManager(ObjManager);
-			ObjManager.AddProtocolObject(newObject);
-		}
+    private static string GetObjectTypeName(string jsonString)
+    {
+        var jsonObject = JObject.Parse(jsonString);
+        return (string)jsonObject["name"];
+    }
+
+    public static T CreateObject<T>(string jsonString = null) where T : IProtocolObject, new()
+    {
+        return (T)CreateObject(jsonString);
+    }
+
+    private static object CreateNewObjectOfType(
+        Type newType,
+        string jsonString,
+        JsonSerializerSettings jsonSettings = null)
+    {
+        var settings = jsonSettings ?? new JsonSerializerSettings();
+        return string.IsNullOrEmpty(jsonString)
+            ? Activator.CreateInstance(newType)
+            : JsonConvert.DeserializeObject(jsonString, newType, jsonSettings);
+    }
+
+    private static T CreateNewObjectOfType<T>(string jsonString, JsonSerializerSettings jsonSettings = null)
+        where T : new()
+    {
+        var settings = jsonSettings ?? new JsonSerializerSettings();
+        return string.IsNullOrEmpty(jsonString) ? new T() : JsonConvert.DeserializeObject<T>(jsonString, settings);
+    }
+
+    private static void ProcessNewObject(IProtocolObject newObject)
+    {
+        newObject.SetObjectManager(ObjManager);
+        ObjManager.AddProtocolObject(newObject);
     }
 }

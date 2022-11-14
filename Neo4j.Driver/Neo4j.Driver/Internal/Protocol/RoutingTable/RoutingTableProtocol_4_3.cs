@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling.V4_3;
+using Neo4j.Driver.Internal.Messaging.V4_3;
 
 namespace Neo4j.Driver.Internal;
 
@@ -26,13 +27,16 @@ internal sealed class RoutingTableProtocol43 : IRoutingTableProtocol
 {
     private const string RoutingTableDbKey = "db";
 
-    public async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, 
-        string database, string impersonatedUser, Bookmarks bookmarks)
+    public async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(
+        IConnection connection,
+        string database,
+        string impersonatedUser,
+        Bookmarks bookmarks)
     {
         connection = connection ??
-                     throw new ProtocolException("Attempting to get a routing table on a null connection");
+            throw new ProtocolException("Attempting to get a routing table on a null connection");
 
-        var message = new Messaging.V4_3.RouteMessage(connection.RoutingContext, bookmarks, database);
+        var message = new RouteMessage(connection.RoutingContext, bookmarks, database);
         var responseHandler = new RouteResponseHandler();
 
         await connection.EnqueueAsync(message, responseHandler).ConfigureAwait(false);

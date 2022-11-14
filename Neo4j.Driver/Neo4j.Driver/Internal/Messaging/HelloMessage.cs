@@ -23,15 +23,17 @@ namespace Neo4j.Driver.Internal.Messaging;
 
 internal sealed class HelloMessage : IRequestMessage
 {
-    public IDictionary<string, object> MetaData { get; }
     private const string UserAgentMetadataKey = "user_agent";
 
-    public HelloMessage(BoltProtocolVersion version, string userAgent, IDictionary<string, object> authToken, 
+    public HelloMessage(
+        BoltProtocolVersion version,
+        string userAgent,
+        IDictionary<string, object> authToken,
         IDictionary<string, string> routingContext)
     {
         if (authToken == null || authToken.Count == 0)
         {
-            MetaData = new Dictionary<string, object> { [UserAgentMetadataKey] = userAgent  };
+            MetaData = new Dictionary<string, object> { [UserAgentMetadataKey] = userAgent };
         }
         else
         {
@@ -40,11 +42,19 @@ internal sealed class HelloMessage : IRequestMessage
 
         // Routing added in 4.1, subsequent hellos should include it.
         if (version >= BoltProtocolVersion.V4_1)
+        {
             MetaData.Add("routing", routingContext);
+        }
 
         if (version >= BoltProtocolVersion.V4_3 && version < BoltProtocolVersion.V5_0)
+        {
             MetaData.Add("patch_bolt", new[] { "utc" });
+        }
     }
+
+    public IDictionary<string, object> MetaData { get; }
+
+    public IPackStreamSerializer Serializer => HelloMessageSerializer.Instance;
 
     public override string ToString()
     {
@@ -53,8 +63,7 @@ internal sealed class HelloMessage : IRequestMessage
         {
             metadataCopy[AuthToken.CredentialsKey] = "******";
         }
+
         return "HELLO " + metadataCopy.ToContentString();
     }
-
-    public IPackStreamSerializer Serializer => HelloMessageSerializer.Instance;
 }

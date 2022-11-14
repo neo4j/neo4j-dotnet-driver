@@ -18,50 +18,48 @@
 using System;
 using System.IO;
 
-namespace Neo4j.Driver.Internal.IO.Utils
+namespace Neo4j.Driver.Internal.IO.Utils;
+
+public class PackStreamWriterMachine
 {
-    public class PackStreamWriterMachine
+    private readonly MemoryStream _output;
+    private readonly PackStreamWriter _writer;
+
+    internal PackStreamWriterMachine(Func<Stream, PackStreamWriter> writerFactory)
     {
-        private readonly MemoryStream _output;
-        private readonly PackStreamWriter _writer;
-
-        internal PackStreamWriterMachine(Func<Stream, PackStreamWriter> writerFactory)
-        {
-            _output = new MemoryStream();
-            _writer = writerFactory(_output);
-        }
-
-        public void Reset()
-        {
-            _output.SetLength(0);
-        }
-
-        public byte[] GetOutput()
-        {
-            return _output.ToArray();
-        }
-
-        internal PackStreamWriter Writer()
-        {
-            return _writer;
-        }
-
+        _output = new MemoryStream();
+        _writer = writerFactory(_output);
     }
 
-    public class PackStreamReaderMachine
+    public void Reset()
     {
-        private readonly MemoryStream _input;
-        private readonly PackStreamReader _reader;
+        _output.SetLength(0);
+    }
 
-        internal PackStreamReaderMachine(byte[] bytes, Func<MemoryStream, PackStreamReader> readerFactory)
-        {
-            _input = new MemoryStream(bytes);
-            _reader = readerFactory(_input);
-        }
+    public byte[] GetOutput()
+    {
+        return _output.ToArray();
+    }
 
-        internal PackStreamReader Reader()
-        {
-            return _reader;
-        }
+    internal PackStreamWriter Writer()
+    {
+        return _writer;
+    }
+}
+
+public class PackStreamReaderMachine
+{
+    private readonly MemoryStream _input;
+    private readonly PackStreamReader _reader;
+
+    internal PackStreamReaderMachine(byte[] bytes, Func<MemoryStream, PackStreamReader> readerFactory)
+    {
+        _input = new MemoryStream(bytes);
+        _reader = readerFactory(_input);
+    }
+
+    internal PackStreamReader Reader()
+    {
+        return _reader;
     }
 }

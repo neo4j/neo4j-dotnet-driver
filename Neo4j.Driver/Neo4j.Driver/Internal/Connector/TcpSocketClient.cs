@@ -15,6 +15,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if NET6_0_OR_GREATER
+#else
+using Neo4j.Driver.Internal.Extensions;
+#endif
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -24,10 +28,6 @@ using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-#if NET6_0_OR_GREATER
-#else
-using Neo4j.Driver.Internal.Extensions;
-#endif
 using static System.Security.Authentication.SslProtocols;
 
 namespace Neo4j.Driver.Internal.Connector;
@@ -46,41 +46,46 @@ internal sealed class TcpSocketClient : ITcpSocketClient
     public TcpSocketClient(SocketSettings socketSettings, ILogger logger = null)
     {
         if (socketSettings == null)
+        {
             throw new ArgumentNullException(nameof(socketSettings));
-        
+        }
+
         _resolver = socketSettings.HostResolver;
         _encryptionManager = socketSettings.EncryptionManager;
-        
+
         _ipv6Enabled = socketSettings.Ipv6Enabled;
         _connectionTimeout = socketSettings.ConnectionTimeout;
         _socketKeepAliveEnabled = socketSettings.SocketKeepAliveEnabled;
-        
-        _logger = logger;
 
+        _logger = logger;
     }
-    private Stream _stream;
-    public Stream ReaderStream => _stream;
-    public Stream WriterStream => _stream;
+
+    public Stream ReaderStream { get; private set; }
+
+    public Stream WriterStream => ReaderStream;
 
     public async Task ConnectAsync(Uri uri, CancellationToken cancellationToken = default)
     {
         await ConnectSocketAsync(uri, cancellationToken).ConfigureAwait(false);
 
-        _stream = new NetworkStream(_client);
+        ReaderStream = new NetworkStream(_client);
         if (_encryptionManager.UseTls)
+        {
             try
             {
                 var sslStream = CreateSecureStream(uri);
 
                 await sslStream
-                    .AuthenticateAsClientAsync(uri.Host, null, Tls12, false).ConfigureAwait(false);
+                    .AuthenticateAsClientAsync(uri.Host, null, Tls12, false)
+                    .ConfigureAwait(false);
 
-                _stream = sslStream;
+                ReaderStream = sslStream;
             }
             catch (Exception e)
             {
                 throw new SecurityException($"Failed to establish encrypted connection with server {uri}.", e);
             }
+        }
     }
 
     public ValueTask DisposeAsync()
@@ -88,19 +93,21 @@ internal sealed class TcpSocketClient : ITcpSocketClient
         if (_client != null)
         {
             if (_client.Connected)
+            {
                 _client.Shutdown(SocketShutdown.Both);
+            }
 
             _client.Dispose();
 
             _client = null;
-            _stream = null;
+            ReaderStream = null;
         }
 
-#if NET6_0_OR_GREATER
+        #if NET6_0_OR_GREATER
         return ValueTask.CompletedTask;
-#else
+        #else
         return default;
-#endif
+        #endif
     }
 
     private async Task ConnectSocketAsync(Uri uri, CancellationToken cancellationToken = default)
@@ -119,9 +126,10 @@ internal sealed class TcpSocketClient : ITcpSocketClient
             {
                 var exception = e is AggregateException ? e.GetBaseException() : e;
 
-                innerErrors.Add(new IOException(
-                    $"Failed to connect to server '{uri}' via IP address '{address}': {exception.Message}",
-                    exception));
+                innerErrors.Add(
+                    new IOException(
+                        $"Failed to connect to server '{uri}' via IP address '{address}': {exception.Message}",
+                        exception));
             }
         }
 
@@ -146,9 +154,11 @@ internal sealed class TcpSocketClient : ITcpSocketClient
             await TryCleanUpAsync(address, port).ConfigureAwait(false);
 
             if (cancellationToken.IsCancellationRequested)
+            {
                 throw new OperationCanceledException(
                     $"Failed to connect to server {address}:{port} due to acquisition timeout",
                     cancellationToken);
+            }
 
             throw new OperationCanceledException(
                 $"Failed to connect to server {address}:{port} within {_connectionTimeout.TotalMilliseconds}ms.");
@@ -163,10 +173,10 @@ internal sealed class TcpSocketClient : ITcpSocketClient
     private async Task ConnectAsync(IPAddress address, int port, CancellationToken cancellationToken)
     {
         var ctr = cancellationToken.Register(_client.Close);
-#if NET6_0_OR_GREATER
+        #if NET6_0_OR_GREATER
         await using var _ = ctr.ConfigureAwait(false);
         await _client.ConnectAsync(new IPEndPoint(address, port), cancellationToken).ConfigureAwait(false);
-#else
+        #else
         try
         {
             await _client.ConnectAsync(new IPEndPoint(address, port))
@@ -177,7 +187,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
         {
             ctr.Dispose();
         }
-#endif
+        #endif
     }
 
     private async Task TryCleanUpAsync(IPAddress address, int port)
@@ -189,8 +199,10 @@ internal sealed class TcpSocketClient : ITcpSocketClient
         }
         catch (Exception e)
         {
-            _logger?.Error(e, $"Failed to close connect to the server {address}:{port}" +
-                              $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms.");
+            _logger?.Error(
+                e,
+                $"Failed to close connect to the server {address}:{port}" +
+                $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms.");
         }
     }
 
@@ -204,30 +216,42 @@ internal sealed class TcpSocketClient : ITcpSocketClient
         };
 
         if (_ipv6Enabled)
+        {
             _client.DualMode = true;
+        }
 
         _client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, _socketKeepAliveEnabled);
     }
 
     private SslStream CreateSecureStream(Uri uri)
     {
-        return new SslStream(ReaderStream, true, (_, certificate, chain, errors) =>
-        {
-            if (errors.HasFlag(SslPolicyErrors.RemoteCertificateNotAvailable))
+        return new SslStream(
+            ReaderStream,
+            true,
+            (_, certificate, chain, errors) =>
             {
-                _logger?.Error(null, $"{GetType().Name}: Certificate not available.");
-                return false;
-            }
+                if (errors.HasFlag(SslPolicyErrors.RemoteCertificateNotAvailable))
+                {
+                    _logger?.Error(null, $"{GetType().Name}: Certificate not available.");
+                    return false;
+                }
 
-            var trust = _encryptionManager.TrustManager.ValidateServerCertificate(uri,
-                new X509Certificate2(certificate.Export(X509ContentType.Cert)), chain, errors);
+                var trust = _encryptionManager.TrustManager.ValidateServerCertificate(
+                    uri,
+                    new X509Certificate2(certificate.Export(X509ContentType.Cert)),
+                    chain,
+                    errors);
 
-            if (trust)
-                _logger?.Debug("Trust is established, resuming connection.");
-            else
-                _logger?.Error(null, "Trust not established, aborting communication.");
+                if (trust)
+                {
+                    _logger?.Debug("Trust is established, resuming connection.");
+                }
+                else
+                {
+                    _logger?.Error(null, "Trust not established, aborting communication.");
+                }
 
-            return trust;
-        });
+                return trust;
+            });
     }
 }

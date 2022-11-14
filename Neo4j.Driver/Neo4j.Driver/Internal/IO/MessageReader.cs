@@ -16,16 +16,16 @@
 // limitations under the License.
 
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.IO;
 
 internal sealed class MessageReader : IMessageReader
 {
     private readonly IChunkReader _chunkReader;
-    private readonly ILogger _logger;
     private readonly int _defaultBufferSize;
+    private readonly ILogger _logger;
     private readonly int _maxBufferSize;
     private int _shrinkCounter;
 
@@ -55,13 +55,17 @@ internal sealed class MessageReader : IMessageReader
 
         // Check whether we have incomplete message in the buffers
         if (packStreamReader.Stream.Length != packStreamReader.Stream.Position)
+        {
             return;
+        }
 
         packStreamReader.Stream.SetLength(0);
 
         if (packStreamReader.Stream.Capacity <= _maxBufferSize)
+        {
             return;
-            
+        }
+
         _logger?.Info(
             $@"Shrinking read buffers to the default read buffer size {
                 _defaultBufferSize

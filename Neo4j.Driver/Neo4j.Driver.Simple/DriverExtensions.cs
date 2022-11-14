@@ -18,40 +18,39 @@
 using System;
 using Neo4j.Driver.Internal;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver;
+
+/// <summary>Provides extension methods on <see cref="Neo4j.Driver.IDriver" /> for acquiring synchronous session instances.</summary>
+public static class DriverExtensions
 {
     /// <summary>
-    /// Provides extension methods on <see cref="Neo4j.Driver.IDriver"/> for acquiring synchronous
-    /// session instances.
+    /// Obtain a session which is designed to be used synchronously, which is built on top of the default asynchronous
+    /// <see cref="IAsyncSession" /> with default <see cref="SessionConfig" />.
     /// </summary>
-    public static class DriverExtensions
+    /// <param name="driver">driver instance</param>
+    /// <returns>A simple session instance</returns>
+    public static ISession Session(this IDriver driver)
     {
-        /// <summary>
-        /// Obtain a session which is designed to be used synchronously, which is built on top of the default
-        /// asynchronous <see cref="IAsyncSession"/> with default <see cref="SessionConfig"/>.
-        /// </summary>
-        /// <param name="driver">driver instance</param>
-        /// <returns>A simple session instance</returns>
-        public static ISession Session(this IDriver driver)
-        {
-            return Session(driver, null);
-        }
+        return Session(driver, null);
+    }
 
-        /// <summary>
-        /// Obtain a session which is designed to be used synchronously, which is built on top of the default
-        /// asynchronous <see cref="IAsyncSession"/> with the customized <see cref="SessionConfig"/>.
-        /// </summary>
-        /// <param name="driver">driver instance</param>
-        /// <param name="action">An action, provided with a <see cref="SessionConfigBuilder"/> instance, that should populate
-        /// the provided instance with desired session configurations <see cref="SessionConfig"/>.</param>
-        /// <returns>A simple session instance</returns>
-        public static ISession Session(this IDriver driver, Action<SessionConfigBuilder> action)
-        {
-            var asyncDriver = driver.CastOrThrow<IInternalDriver>();
+    /// <summary>
+    /// Obtain a session which is designed to be used synchronously, which is built on top of the default asynchronous
+    /// <see cref="IAsyncSession" /> with the customized <see cref="SessionConfig" />.
+    /// </summary>
+    /// <param name="driver">driver instance</param>
+    /// <param name="action">
+    /// An action, provided with a <see cref="SessionConfigBuilder" /> instance, that should populate the
+    /// provided instance with desired session configurations <see cref="SessionConfig" />.
+    /// </param>
+    /// <returns>A simple session instance</returns>
+    public static ISession Session(this IDriver driver, Action<SessionConfigBuilder> action)
+    {
+        var asyncDriver = driver.CastOrThrow<IInternalDriver>();
 
-            return new InternalSession(driver.AsyncSession(action).CastOrThrow<IInternalAsyncSession>(),
-                new RetryLogic(asyncDriver.Config.MaxTransactionRetryTime, asyncDriver.Config.Logger),
-                new BlockingExecutor());
-        }
+        return new InternalSession(
+            driver.AsyncSession(action).CastOrThrow<IInternalAsyncSession>(),
+            new RetryLogic(asyncDriver.Config.MaxTransactionRetryTime, asyncDriver.Config.Logger),
+            new BlockingExecutor());
     }
 }

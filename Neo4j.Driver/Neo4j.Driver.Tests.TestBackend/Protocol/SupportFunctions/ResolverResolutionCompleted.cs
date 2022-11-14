@@ -1,25 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend
+namespace Neo4j.Driver.Tests.TestBackend;
+
+internal class ResolverResolutionCompleted : IProtocolObject
 {
-	class ResolverResolutionCompleted : IProtocolObject
-	{
-		public ResolverResolutionCompletedType data { get; set; } = new ResolverResolutionCompletedType();
-		[JsonIgnore]
-		public ListAddressResolver Resolver { get; private set; }
+    public ResolverResolutionCompletedType data { get; set; } = new();
 
-		public class ResolverResolutionCompletedType
-		{
-			public string requestId { get; set; }
-			public List<string> addresses { get; set; } = new List<string>();
-		}
+    [JsonIgnore] public ListAddressResolver Resolver { get; private set; }
 
-		public override async Task Process()
-		{	
-			await Task.CompletedTask;
-		}
-	}
+    public override async Task Process()
+    {
+        await Task.CompletedTask;
+    }
+
+    public class ResolverResolutionCompletedType
+    {
+        public string requestId { get; set; }
+        public List<string> addresses { get; set; } = new();
+    }
 }

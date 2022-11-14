@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -32,10 +31,14 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
     public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
     {
         await connection.EnqueueAsync(
-                new HelloMessage(connection.Version, userAgent, authToken.AsDictionary(),
+                new HelloMessage(
+                    connection.Version,
+                    userAgent,
+                    authToken.AsDictionary(),
                     connection.RoutingContext),
                 new HelloResponseHandler(connection))
             .ConfigureAwait(false);
+
         await connection.SyncAsync().ConfigureAwait(false);
     }
 
@@ -50,12 +53,15 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
         return connection.EnqueueAsync(ResetMessage.Instance, NoOpResponseHandler.Instance);
     }
 
-    public async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection,
-        string database, string impersonatedUser, Bookmarks bookmarks)
+    public async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(
+        IConnection connection,
+        string database,
+        string impersonatedUser,
+        Bookmarks bookmarks)
     {
         ValidateImpersonatedUserForVersion(connection, impersonatedUser);
         connection = connection ??
-                     throw new ProtocolException("Attempting to get a routing table on a null connection");
+            throw new ProtocolException("Attempting to get a routing table on a null connection");
 
         //TODO: Proper message
         bookmarks = connection.Version.MajorVersion > 3
@@ -93,21 +99,26 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
         return (IReadOnlyDictionary<string, object>)finalDictionary;
     }
 
-    public async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection,
+    public async Task<IResultCursor> RunInAutoCommitTransactionAsync(
+        IConnection connection,
         AutoCommitParams autoCommitParams)
     {
         ValidateImpersonatedUserForVersion(connection, autoCommitParams.ImpersonatedUser);
         ValidateDatabase(connection, autoCommitParams.Database);
 
         var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
-        var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null,
+        var streamBuilder = new ResultCursorBuilder(
+            summaryBuilder,
+            connection.ReceiveOneAsync,
+            null,
+            null,
             autoCommitParams.ResultResourceHandler);
 
         var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
         var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, autoCommitParams.BookmarksTracker);
-        
+
         var autoCommitMessage = new RunWithMetadataMessage(
-            connection.Version, 
+            connection.Version,
             autoCommitParams.Query,
             autoCommitParams.Bookmarks,
             autoCommitParams.Config,
@@ -117,30 +128,44 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
 
         await connection.EnqueueAsync(autoCommitMessage, runHandler, PullAllMessage.Instance, pullAllHandler)
             .ConfigureAwait(false);
+
         await connection.SendAsync().ConfigureAwait(false);
         return streamBuilder.CreateCursor();
     }
 
-    public async Task BeginTransactionAsync(IConnection connection, string database, Bookmarks bookmarks,
-        TransactionConfig config, string impersonatedUser)
+    public async Task BeginTransactionAsync(
+        IConnection connection,
+        string database,
+        Bookmarks bookmarks,
+        TransactionConfig config,
+        string impersonatedUser)
     {
         ValidateImpersonatedUserForVersion(connection, impersonatedUser);
         ValidateDatabase(connection, database);
 
         await connection.EnqueueAsync(
-                new BeginMessage(connection.Version, database, bookmarks, config, connection.GetEnforcedAccessMode(),
-                    impersonatedUser), NoOpResponseHandler.Instance)
+                new BeginMessage(
+                    connection.Version,
+                    database,
+                    bookmarks,
+                    config,
+                    connection.GetEnforcedAccessMode(),
+                    impersonatedUser),
+                NoOpResponseHandler.Instance)
             .ConfigureAwait(false);
 
         await connection.SyncAsync().ConfigureAwait(false);
     }
 
-    public async Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection, Query query,
-        bool reactive, long fetchSize = Config.Infinite)
+    public async Task<IResultCursor> RunInExplicitTransactionAsync(
+        IConnection connection,
+        Query query,
+        bool reactive,
+        long fetchSize = Config.Infinite)
     {
         var summaryBuilder = new SummaryBuilder(query, connection.Server);
         var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, null);
-        
+
         var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
         var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, null);
 
@@ -148,8 +173,9 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
 
         await connection.EnqueueAsync(message, runHandler, PullAllMessage.Instance, pullAllHandler)
             .ConfigureAwait(false);
+
         await connection.SendAsync().ConfigureAwait(false);
-        
+
         return streamBuilder.CreateCursor();
     }
 
@@ -157,6 +183,7 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
     {
         await connection.EnqueueAsync(CommitMessage.Instance, new CommitResponseHandler(bookmarksTracker))
             .ConfigureAwait(false);
+
         await connection.SyncAsync().ConfigureAwait(false);
     }
 
@@ -164,18 +191,23 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
     {
         await connection.EnqueueAsync(RollbackMessage.Instance, NoOpResponseHandler.Instance)
             .ConfigureAwait(false);
+
         await connection.SyncAsync().ConfigureAwait(false);
     }
 
     private static void ValidateDatabase(IConnection connection, string database)
     {
         if (connection.Version.MajorVersion >= 4)
+        {
             return;
+        }
 
         if (!string.IsNullOrEmpty(database))
+        {
             throw new ClientException(
-                "Driver is connected to a server that does not support multiple databases. "+
+                "Driver is connected to a server that does not support multiple databases. " +
                 "Please upgrade to neo4j 4.0.0 or later in order to use this functionality");
+        }
     }
 
     private static Query GetRoutingTableQuery(IConnection connection, string database)
@@ -183,13 +215,16 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
         var procedure = connection.Version.MajorVersion == 3
             ? "CALL dbms.cluster.routing.getRoutingTable($context)"
             : "CALL dbms.routing.getRoutingTable($context, $database)";
+
         var parameters = new Dictionary<string, object>
         {
             ["context"] = connection.RoutingContext
         };
 
         if (connection.Version.MajorVersion > 3)
+        {
             parameters.Add(database, string.IsNullOrWhiteSpace(database) ? null : database);
+        }
 
         return new Query(procedure, parameters);
     }
@@ -197,11 +232,15 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
     private static void ValidateImpersonatedUserForVersion(IConnection conn, string impersonatedUser)
     {
         if (conn.Version >= BoltProtocolVersion.V4_4)
+        {
             return;
+        }
 
         if (impersonatedUser is not null)
+        {
             throw new ArgumentException(
-                "Bolt Protocol 3.0 does not support impersonatedUser, "+
+                "Bolt Protocol 3.0 does not support impersonatedUser, " +
                 "yet has been passed a non null impersonated user string");
+        }
     }
 }

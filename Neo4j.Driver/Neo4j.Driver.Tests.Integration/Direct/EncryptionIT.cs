@@ -16,59 +16,57 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.Internal;
-using Xunit;
 using Xunit.Abstractions;
 
-namespace Neo4j.Driver.IntegrationTests.Direct
+namespace Neo4j.Driver.IntegrationTests.Direct;
+
+public class EncryptionIT : DirectDriverTestBase
 {
-    public class EncryptionIT : DirectDriverTestBase
+    public EncryptionIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+        : base(output, fixture)
     {
-        public EncryptionIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
-            : base(output, fixture)
+    }
+
+    [ShouldNotRunInTestKit_RequireServerFactAttribute]
+    public async Task ShouldBeAbleToConnectWithInsecureConfig()
+    {
+        using (var driver = GraphDatabase.Driver(
+                   ServerEndPoint,
+                   AuthToken,
+                   o => o
+                       .WithEncryptionLevel(EncryptionLevel.Encrypted)
+                       .WithTrustManager(TrustManager.CreateInsecure())))
         {
+            await VerifyConnectivity(driver);
         }
+    }
 
-        [ShouldNotRunInTestKit_RequireServerFactAttribute]
-        public async Task ShouldBeAbleToConnectWithInsecureConfig()
+    [ShouldNotRunInTestKit_RequireServerFactAttribute]
+    public async Task ShouldBeAbleToConnectUsingInsecureUri()
+    {
+        var builder = new UriBuilder("bolt+ssc", ServerEndPoint.Host, ServerEndPoint.Port);
+        using (var driver = GraphDatabase.Driver(builder.Uri, AuthToken))
         {
-            using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken,
-                o => o
-                    .WithEncryptionLevel(EncryptionLevel.Encrypted)
-                    .WithTrustManager(TrustManager.CreateInsecure())))
-            {
-                await VerifyConnectivity(driver);
-            }
+            await VerifyConnectivity(driver);
         }
+    }
 
-        [ShouldNotRunInTestKit_RequireServerFactAttribute]
-        public async Task ShouldBeAbleToConnectUsingInsecureUri()
+    private static async Task VerifyConnectivity(IDriver driver)
+    {
+        var session = driver.AsyncSession();
+
+        try
         {
-            var builder = new UriBuilder("bolt+ssc", ServerEndPoint.Host, ServerEndPoint.Port);
-            using (var driver = GraphDatabase.Driver(builder.Uri, AuthToken))
-            {
-                await VerifyConnectivity(driver);
-            }
+            var cursor = await session.RunAsync("RETURN 2 as Number");
+            var records = await cursor.ToListAsync(r => r["Number"].As<int>());
+
+            records.Should().BeEquivalentTo(2);
         }
-
-        private static async Task VerifyConnectivity(IDriver driver)
+        finally
         {
-            var session = driver.AsyncSession();
-
-            try
-            {
-                var cursor = await session.RunAsync("RETURN 2 as Number");
-                var records = await cursor.ToListAsync(r => r["Number"].As<int>());
-
-                records.Should().BeEquivalentTo(2);
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
+            await session.CloseAsync();
         }
     }
 }

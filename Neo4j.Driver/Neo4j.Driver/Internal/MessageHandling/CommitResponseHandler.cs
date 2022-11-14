@@ -37,7 +37,8 @@ internal sealed class CommitResponseHandler : MetadataCollectingResponseHandler
     {
         base.OnSuccess(metadata);
 
-        _tracker.UpdateBookmarks(GetMetadata<BookmarksCollector, Bookmarks>(), 
+        _tracker.UpdateBookmarks(
+            GetMetadata<BookmarksCollector, Bookmarks>(),
             GetMetadata<DatabaseInfoCollector, IDatabaseInfo>());
     }
 }

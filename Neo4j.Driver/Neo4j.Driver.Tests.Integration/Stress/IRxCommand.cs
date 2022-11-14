@@ -15,12 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Threading.Tasks;
+namespace Neo4j.Driver.IntegrationTests.Stress;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
+public interface IRxCommand<in TContext> : IAsyncCommand<TContext>
+    where TContext : StressTestContext
 {
-    public interface IRxCommand<in TContext> : IAsyncCommand<TContext>
-        where TContext : StressTestContext
-    {
-    }
 }

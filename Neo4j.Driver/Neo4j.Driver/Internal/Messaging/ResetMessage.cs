@@ -28,10 +28,10 @@ internal sealed class ResetMessage : IRequestMessage
     {
     }
 
+    public IPackStreamSerializer Serializer => ResetMessageSerializer.Instance;
+
     public override string ToString()
     {
         return "RESET";
     }
-
-    public IPackStreamSerializer Serializer => ResetMessageSerializer.Instance;
 }

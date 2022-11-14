@@ -17,16 +17,12 @@
 
 namespace Neo4j.Driver;
 
-/// <summary>
-/// Factory for <see cref="IBookmarkManager"/>.
-/// </summary>
+/// <summary>Factory for <see cref="IBookmarkManager" />.</summary>
 public interface IBookmarkManagerFactory
 {
-    /// <summary>
-    /// Create an <see cref="IBookmarkManager"/> with specified configuration.
-    /// </summary>
-    /// <param name="config">Configuration object. If this is null or not specified,
-    /// default configuration is used.</param>
-    /// <returns>New configured instance of <see cref="IBookmarkManager"/>.</returns>
+    /// <summary>Create an <see cref="IBookmarkManager" /> with specified configuration.</summary>
+    /// <param name="config">Configuration object. If this is null or not specified, default configuration is used.</param>
+    /// <returns>New configured instance of <see cref="IBookmarkManager" />.</returns>
     IBookmarkManager NewBookmarkManager(BookmarkManagerConfig config = null);
 }
+

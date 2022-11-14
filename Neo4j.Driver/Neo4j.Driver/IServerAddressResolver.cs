@@ -15,27 +15,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver;
+
+/// <summary>
+/// Used by routing driver to resolve the initial address used to create the driver. Such resolution happens: 1)
+/// during the very first rediscovery when driver is created. 2) when all the known routers from the current routing table
+/// have failed and driver needs to fallback to the initial address.
+/// </summary>
+public interface IServerAddressResolver
 {
     /// <summary>
-    /// Used by routing driver to resolve the initial address used to create the driver.
-    /// Such resolution happens: 1) during the very first rediscovery when driver is created.
-    /// 2) when all the known routers from the current routing table have failed and driver needs to fallback to the initial address.
+    /// Given a server address with host name and port defined in <see cref="ServerAddress" />, returns the resolved
+    /// server addresses with host name and port saved in a set of <see cref="ServerAddress" />.
     /// </summary>
-    public interface IServerAddressResolver
-    {
-        /// <summary>
-        /// Given a server address with host name and port defined in <see cref="ServerAddress"/>,
-        /// returns the resolved server addresses with host name and port saved in a set of <see cref="ServerAddress"/>.
-        /// </summary>
-        /// <param name="address">The server address to resolve.</param>
-        /// <returns>Resolved server addresses in a set.</returns>
-        ISet<ServerAddress> Resolve(ServerAddress address);
-    }
-    
-   
+    /// <param name="address">The server address to resolve.</param>
+    /// <returns>Resolved server addresses in a set.</returns>
+    ISet<ServerAddress> Resolve(ServerAddress address);
 }

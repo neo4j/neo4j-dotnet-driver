@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 
 namespace Neo4j.Driver.Internal;
@@ -23,7 +24,9 @@ internal static class ByteExtensions
     public static string ToHexString(this byte[] bytes, string separator, int start = 0, int size = -1)
     {
         if (bytes == null)
+        {
             return "NULL";
+        }
 
         if (size < 0)
         {

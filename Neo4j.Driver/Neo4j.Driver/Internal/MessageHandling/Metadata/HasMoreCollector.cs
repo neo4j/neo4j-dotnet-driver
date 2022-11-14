@@ -16,33 +16,29 @@
 // limitations under the License.
 
 using System.Collections.Generic;
-using System.Linq;
-using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.Result;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata
+namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
+
+internal class HasMoreCollector : IMetadataCollector<bool>
 {
-    internal class HasMoreCollector : IMetadataCollector<bool>
+    internal const string HasMoreKey = "has_more";
+
+    object IMetadataCollector.Collected => Collected;
+
+    public bool Collected { get; private set; }
+
+    public void Collect(IDictionary<string, object> metadata)
     {
-        internal const string HasMoreKey = "has_more";
-
-        object IMetadataCollector.Collected => Collected;
-
-        public bool Collected { get; private set; }
-
-        public void Collect(IDictionary<string, object> metadata)
+        if (metadata != null && metadata.TryGetValue(HasMoreKey, out var hasMoreValue))
         {
-            if (metadata != null && metadata.TryGetValue(HasMoreKey, out var hasMoreValue))
+            if (hasMoreValue is bool hasMore)
             {
-                if (hasMoreValue is bool hasMore)
-                {
-                    Collected = hasMore;
-                }
-                else
-                {
-                    throw new ProtocolException(
-                        $"Expected '{HasMoreKey}' metadata to be of type 'Boolean', but got '{hasMoreValue?.GetType().Name}'.");
-                }
+                Collected = hasMore;
+            }
+            else
+            {
+                throw new ProtocolException(
+                    $"Expected '{HasMoreKey}' metadata to be of type 'Boolean', but got '{hasMoreValue?.GetType().Name}'.");
             }
         }
     }

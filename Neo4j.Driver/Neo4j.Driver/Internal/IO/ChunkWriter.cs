@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.IO;
 using System.Threading;
@@ -22,30 +23,32 @@ using System.Threading.Tasks;
 namespace Neo4j.Driver.Internal.IO;
 
 //TODO: .NET6+ Span/memory optimize
-internal sealed class ChunkWriter: Stream
+internal sealed class ChunkWriter : Stream
 {
-    private static readonly byte[] ZeroChunkSizeBuffer = PackStreamBitConverter.GetBytes((ushort) 0);
+    private static readonly byte[] ZeroChunkSizeBuffer = PackStreamBitConverter.GetBytes((ushort)0);
 
     private readonly int _chunkSize;
-    private readonly Stream _downStream;
     private readonly MemoryStream _chunkStream;
-    private readonly ILogger _logger;
     private readonly int _defaultBufferSize;
+    private readonly Stream _downStream;
+    private readonly ILogger _logger;
     private readonly int _maxBufferSize;
-    private int _shrinkCounter = 0;
+    private long _dataPos = -1;
+    private int _shrinkCounter;
 
     private long _startPos = -1;
-    private long _dataPos = -1;
 
     //TODO: ArrayPool avoid creating a new array for each chunk writer
     public ChunkWriter(Stream downStream, BufferSettings settings, ILogger logger)
     {
         _downStream = downStream ?? throw new ArgumentNullException(nameof(downStream));
-        
+
         if (!_downStream.CanWrite)
+        {
             throw new ArgumentOutOfRangeException(
                 $"Parameter {nameof(downStream)} is invalid. Property:{nameof(downStream.CanWrite)} is false but should be true");
-        
+        }
+
         _chunkSize = Constants.MaxChunkSize;
         _logger = logger;
         _defaultBufferSize = settings.DefaultWriteBufferSize;
@@ -62,7 +65,7 @@ internal sealed class ChunkWriter: Stream
         _dataPos = _chunkStream.Position;
         _startPos = _dataPos - ZeroChunkSizeBuffer.Length;
     }
-    
+
     public override void Write(byte[] buffer, int offset, int count)
     {
         var currentLength = _chunkStream.Position - _dataPos;
@@ -80,7 +83,7 @@ internal sealed class ChunkWriter: Stream
 
         while (leftToChunk > 0)
         {
-            var thisChunkSize = (int) Math.Min(leftToChunk, _chunkSize - currentLength);
+            var thisChunkSize = (int)Math.Min(leftToChunk, _chunkSize - currentLength);
 
             _chunkStream.Write(buffer, thisChunkIndex, thisChunkSize);
 
@@ -90,7 +93,9 @@ internal sealed class ChunkWriter: Stream
             currentLength = 0;
 
             if (leftToChunk <= 0)
+            {
                 continue;
+            }
 
             // If there's still more data, then close existing chunk and open a new one.
             CloseChunk();
@@ -104,7 +109,9 @@ internal sealed class ChunkWriter: Stream
         var count = _chunkStream.Position - _dataPos;
 
         if (count <= 0)
+        {
             return;
+        }
 
         var chunkSize = PackStreamBitConverter.GetBytes((ushort)count);
 
@@ -203,5 +210,5 @@ internal sealed class ChunkWriter: Stream
     }
 
     #endregion
-
 }
+

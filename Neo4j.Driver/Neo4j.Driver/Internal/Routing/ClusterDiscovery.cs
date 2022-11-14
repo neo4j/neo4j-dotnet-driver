@@ -21,73 +21,80 @@ using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 
-namespace Neo4j.Driver.Internal.Routing
+namespace Neo4j.Driver.Internal.Routing;
+
+internal class ClusterDiscovery : IDiscovery
 {
-    internal class ClusterDiscovery : IDiscovery
+    /// <remarks>Throws <see cref="ProtocolException" /> if the discovery result is invalid.</remarks>
+    /// <remarks>Throws <see cref="ServiceUnavailableException" /> if the no discovery procedure could be found in the server.</remarks>
+    public async Task<IRoutingTable> DiscoverAsync(
+        IConnection connection,
+        string database,
+        string impersonatedUser,
+        Bookmarks bookmarks)
     {
-        /// <remarks>Throws <see cref="ProtocolException"/> if the discovery result is invalid.</remarks>
-        /// <remarks>Throws <see cref="ServiceUnavailableException"/> if the no discovery procedure could be found in the server.</remarks>
-        public async Task<IRoutingTable> DiscoverAsync(IConnection connection, string database, string impersonatedUser, Bookmarks bookmarks)
+        var routingTable = await connection.GetRoutingTable(database, impersonatedUser, bookmarks)
+            .ConfigureAwait(
+                false); //Not ideal passing the connection in... but protocol currently doesn't know what connection it is on. Needs some though...
+
+        return ParseDiscoveryResult(routingTable);
+    }
+
+    private static RoutingTable ParseDiscoveryResult(IReadOnlyDictionary<string, object> routingTable)
+    {
+        var routers = default(Uri[]);
+        var readers = default(Uri[]);
+        var writers = default(Uri[]);
+
+        foreach (var servers in routingTable["servers"].As<List<Dictionary<string, object>>>())
         {
-            var routingTable = await connection.GetRoutingTable(database, impersonatedUser, bookmarks)
-                .ConfigureAwait(false);  //Not ideal passing the connection in... but protocol currently doesn't know what connection it is on. Needs some though...
-
-            return ParseDiscoveryResult(routingTable);
-        }
-
-        private static RoutingTable ParseDiscoveryResult(IReadOnlyDictionary<string, object> routingTable)
-        {
-            var routers = default(Uri[]);
-            var readers = default(Uri[]);
-            var writers = default(Uri[]);
-
-            foreach (var servers in routingTable["servers"].As<List<Dictionary<string, object>>>())
+            var addresses = servers["addresses"].As<List<string>>();
+            var role = servers["role"].As<string>();
+            switch (role)
             {
-                var addresses = servers["addresses"].As<List<string>>();
-                var role = servers["role"].As<string>();
-                switch (role)
-                {
-                    case "READ":
-                        readers = addresses.Select(BoltRoutingUri).ToArray();
-                        break;
-                    case "WRITE":
-                        writers = addresses.Select(BoltRoutingUri).ToArray();
-                        break;
-                    case "ROUTE":
-                        routers = addresses.Select(BoltRoutingUri).ToArray();
-                        break;
-                    default:
-                        throw new ProtocolException(
-                            $"Role '{role}' returned from discovery procedure is not recognized by the driver");
-                }
-            }
+                case "READ":
+                    readers = addresses.Select(BoltRoutingUri).ToArray();
+                    break;
 
-            if (IsInvalidDiscoveryResult(readers, routers))
-            {
-                throw new ProtocolException(
-                    $"Invalid discovery result: discovered {routers?.Length ?? 0} routers, {writers?.Length ?? 0} writers and {readers?.Length ?? 0} readers.");
-            }
+                case "WRITE":
+                    writers = addresses.Select(BoltRoutingUri).ToArray();
+                    break;
 
-            routingTable.TryGetValue("db", out var db);
-            return new RoutingTable((string)db, routers, readers, writers, routingTable["ttl"].As<long>());
+                case "ROUTE":
+                    routers = addresses.Select(BoltRoutingUri).ToArray();
+                    break;
+
+                default:
+                    throw new ProtocolException(
+                        $"Role '{role}' returned from discovery procedure is not recognized by the driver");
+            }
         }
 
-        private static bool IsInvalidDiscoveryResult(Uri[] readers, Uri[] routers)
+        if (IsInvalidDiscoveryResult(readers, routers))
         {
-            return readers?.Length == 0 || routers.Length == 0;
+            throw new ProtocolException(
+                $"Invalid discovery result: discovered {routers?.Length ?? 0} routers, {writers?.Length ?? 0} writers and {readers?.Length ?? 0} readers.");
         }
 
-        public static Uri BoltRoutingUri(string address)
+        routingTable.TryGetValue("db", out var db);
+        return new RoutingTable((string)db, routers, readers, writers, routingTable["ttl"].As<long>());
+    }
+
+    private static bool IsInvalidDiscoveryResult(Uri[] readers, Uri[] routers)
+    {
+        return readers?.Length == 0 || routers.Length == 0;
+    }
+
+    public static Uri BoltRoutingUri(string address)
+    {
+        var builder = new UriBuilder("neo4j://" + address);
+
+        // If scheme is not registered and no port is specified, then the port is assigned as -1
+        if (builder.Port == -1)
         {
-            UriBuilder builder = new UriBuilder("neo4j://" + address);
-
-            // If scheme is not registered and no port is specified, then the port is assigned as -1
-            if (builder.Port == -1)
-            {
-                builder.Port = GraphDatabase.DefaultBoltPort;
-            }
-
-            return builder.Uri;
+            builder.Port = GraphDatabase.DefaultBoltPort;
         }
+
+        return builder.Uri;
     }
 }

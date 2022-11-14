@@ -15,58 +15,56 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata
+namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
+
+internal abstract class DurationCollector : IMetadataCollector<long>
 {
-    internal abstract class DurationCollector : IMetadataCollector<long>
+    private readonly string _key;
+
+    protected DurationCollector(string key)
     {
-        private readonly string _key;
+        _key = key;
+    }
 
-        protected DurationCollector(string key)
+    object IMetadataCollector.Collected => Collected;
+
+    public long Collected { get; private set; } = -1;
+
+    public void Collect(IDictionary<string, object> metadata)
+    {
+        if (metadata != null && metadata.TryGetValue(_key, out var durationValue))
         {
-            _key = key;
-        }
-
-        object IMetadataCollector.Collected => Collected;
-
-        public long Collected { get; private set; } = -1;
-
-        public void Collect(IDictionary<string, object> metadata)
-        {
-            if (metadata != null && metadata.TryGetValue(_key, out var durationValue))
+            if (durationValue is long duration)
             {
-                if (durationValue is long duration)
-                {
-                    Collected = duration;
-                }
-                else
-                {
-                    throw new ProtocolException(
-                        $"Expected '{_key}' metadata to be of type 'Int64', but got '{durationValue?.GetType().Name}'.");
-                }
+                Collected = duration;
+            }
+            else
+            {
+                throw new ProtocolException(
+                    $"Expected '{_key}' metadata to be of type 'Int64', but got '{durationValue?.GetType().Name}'.");
             }
         }
     }
+}
 
-    internal class TimeToFirstCollector : DurationCollector
+internal class TimeToFirstCollector : DurationCollector
+{
+    internal const string TimeToFirstKey = "t_first";
+
+    public TimeToFirstCollector()
+        : base(TimeToFirstKey)
     {
-        internal const string TimeToFirstKey = "t_first";
-
-        public TimeToFirstCollector()
-            : base(TimeToFirstKey)
-        {
-        }
     }
+}
 
-    internal class TimeToLastCollector : DurationCollector
+internal class TimeToLastCollector : DurationCollector
+{
+    internal const string TimeToLastKey = "t_last";
+
+    public TimeToLastCollector()
+        : base(TimeToLastKey)
     {
-        internal const string TimeToLastKey = "t_last";
-
-        public TimeToLastCollector()
-            : base(TimeToLastKey)
-        {
-        }
     }
 }

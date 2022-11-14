@@ -15,57 +15,61 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO.Utils;
 
-namespace Neo4j.Driver.Internal.IO
+namespace Neo4j.Driver.Internal.IO;
+
+public abstract class PackStreamSerializerTests
 {
-    public abstract class PackStreamSerializerTests
+    internal abstract IPackStreamSerializer SerializerUnderTest { get; }
+
+    internal virtual IEnumerable<IPackStreamSerializer> SerializersNeeded =>
+        Enumerable.Empty<IPackStreamSerializer>();
+
+    protected virtual PackStreamWriterMachine CreateWriterMachine()
     {
-        internal abstract IPackStreamSerializer SerializerUnderTest { get; }
+        var format = new MessageFormat(SerializerUnderTest, SerializersNeeded);
 
-        internal virtual IEnumerable<IPackStreamSerializer> SerializersNeeded =>
-            Enumerable.Empty<IPackStreamSerializer>();
+        var settings = new BufferSettings(Config.Default);
+        var logger = new Mock<ILogger>().Object;
 
-        protected virtual PackStreamWriterMachine CreateWriterMachine()
-        {
-            var format = new MessageFormat(SerializerUnderTest, SerializersNeeded);
-            
-            var settings = new BufferSettings(Config.Default);
-            var logger = new Mock<ILogger>().Object;
-            
-            return new PackStreamWriterMachine(stream => 
+        return new PackStreamWriterMachine(
+            stream =>
                 new PackStreamWriter(format, new ChunkWriter(stream, settings, logger)));
-        }
+    }
 
-        protected virtual PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
-        {
-            var format = new MessageFormat(SerializerUnderTest, SerializersNeeded);
-            
-            return new PackStreamReaderMachine(bytes, stream =>
+    protected virtual PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
+    {
+        var format = new MessageFormat(SerializerUnderTest, SerializersNeeded);
+
+        return new PackStreamReaderMachine(
+            bytes,
+            stream =>
                 new PackStreamReader(stream, format, new ByteBuffers()));
-        }
-        
-        protected PackStreamWriterMachine CreateWriterMachine(BoltProtocolVersion version)
-        {
-            var format = new MessageFormat(version);
-            
-            var settings = new BufferSettings(Config.Default);
-            var logger = new Mock<ILogger>().Object;
-            
-            return new PackStreamWriterMachine(stream => 
+    }
+
+    protected PackStreamWriterMachine CreateWriterMachine(BoltProtocolVersion version)
+    {
+        var format = new MessageFormat(version);
+
+        var settings = new BufferSettings(Config.Default);
+        var logger = new Mock<ILogger>().Object;
+
+        return new PackStreamWriterMachine(
+            stream =>
                 new PackStreamWriter(format, new ChunkWriter(stream, settings, logger)));
-        }
+    }
 
-        protected PackStreamReaderMachine CreateReaderMachine(BoltProtocolVersion version, byte[] bytes)
-        {
-            var format = new MessageFormat(version);
-            return new PackStreamReaderMachine(bytes, stream =>
+    protected PackStreamReaderMachine CreateReaderMachine(BoltProtocolVersion version, byte[] bytes)
+    {
+        var format = new MessageFormat(version);
+        return new PackStreamReaderMachine(
+            bytes,
+            stream =>
                 new PackStreamReader(stream, format, new ByteBuffers()));
-        }
     }
 }

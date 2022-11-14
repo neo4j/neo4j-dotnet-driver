@@ -1,6 +1,7 @@
 ﻿using System;
 
 namespace Neo4j.Driver.Internal;
+
 //TODO: Consider converting to struct.
 public sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
 {
@@ -17,12 +18,18 @@ public sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
     public static readonly BoltProtocolVersion V4_3 = new(4, 3);
     public static readonly BoltProtocolVersion V4_4 = new(4, 4);
     public static readonly BoltProtocolVersion V5_0 = new(5, 0);
+    private readonly int _compValue;
 
     public BoltProtocolVersion(int majorVersion, int minorVersion)
     {
         if (majorVersion > MaxMajorVersion || minorVersion > MaxMinorVersion || majorVersion < 0 || minorVersion < 0)
-            throw new NotSupportedException("Attempting to create a BoltProtocolVersion with out of bounds major: " +
-                                            majorVersion + " or minor: " + minorVersion);
+        {
+            throw new NotSupportedException(
+                "Attempting to create a BoltProtocolVersion with out of bounds major: " +
+                majorVersion +
+                " or minor: " +
+                minorVersion);
+        }
 
         MajorVersion = majorVersion;
         MinorVersion = minorVersion;
@@ -37,23 +44,35 @@ public sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
         _compValue = MajorVersion * 1000000 + MinorVersion;
 
         if (MajorVersion is < MaxMajorVersion and >= 0 && MinorVersion is < MaxMinorVersion and >= 0)
+        {
             throw new NotSupportedException(
                 "Attempting to create a BoltProtocolVersion with a large (error code) version number.  " +
-                "Resulting Major and Minor are in range of valid versions, which is not allowed: " + MajorVersion +
-                " or minor: " + MinorVersion);
+                "Resulting Major and Minor are in range of valid versions, which is not allowed: " +
+                MajorVersion +
+                " or minor: " +
+                MinorVersion);
+        }
     }
 
     public int MajorVersion { get; }
     public int MinorVersion { get; }
-    private readonly int _compValue;
 
     public bool Equals(BoltProtocolVersion rhs)
     {
-        if (rhs is null) return false;
+        if (rhs is null)
+        {
+            return false;
+        }
 
-        if (ReferenceEquals(this, rhs)) return true;
+        if (ReferenceEquals(this, rhs))
+        {
+            return true;
+        }
 
-        if (GetType() != rhs.GetType()) return false;
+        if (GetType() != rhs.GetType())
+        {
+            return false;
+        }
 
         //Return if the fields match
         return _compValue == rhs._compValue;
@@ -77,9 +96,14 @@ public sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
     public void CheckVersionRange(BoltProtocolVersion minVersion)
     {
         if (MajorVersion != minVersion.MajorVersion)
+        {
             throw new NotSupportedException("Versions should be from same major version");
+        }
+
         if (MinorVersion < minVersion.MinorVersion)
+        {
             throw new NotSupportedException("Max version should be newer than minimum version");
+        }
     }
 
     public int PackToIntRange(BoltProtocolVersion minVersion)

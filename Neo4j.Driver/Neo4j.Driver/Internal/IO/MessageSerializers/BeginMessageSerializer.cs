@@ -21,19 +21,21 @@ using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers;
 
-internal sealed class BeginMessageSerializer: WriteOnlySerializer
+internal sealed class BeginMessageSerializer : WriteOnlySerializer
 {
     internal static BeginMessageSerializer Instance = new();
-    
-    private static readonly Type[] Types = {typeof(BeginMessage)};
+
+    private static readonly Type[] Types = { typeof(BeginMessage) };
     public override IEnumerable<Type> WritableTypes => Types;
 
     public override void Serialize(PackStreamWriter writer, object value)
     {
         if (value is not BeginMessage msg)
+        {
             throw new ArgumentOutOfRangeException(
                 $"Encountered {value?.GetType().Name} where {nameof(BeginMessage)} was expected");
-        
+        }
+
         writer.WriteStructHeader(1, MessageFormat.MsgBegin);
         writer.WriteDictionary(msg.Metadata);
     }

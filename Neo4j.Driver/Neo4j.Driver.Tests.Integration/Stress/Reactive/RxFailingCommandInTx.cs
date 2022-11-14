@@ -15,48 +15,43 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Linq;
-using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
-using FluentAssertions;
 using Microsoft.Reactive.Testing;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Reactive;
-using Xunit;
 using static Neo4j.Driver.Reactive.Utils;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
+namespace Neo4j.Driver.IntegrationTests.Stress;
+
+public class RxFailingCommandInTx<TContext> : RxCommand<TContext>
+    where TContext : StressTestContext
 {
-    public class RxFailingCommandInTx<TContext> : RxCommand<TContext>
-        where TContext : StressTestContext
+    public RxFailingCommandInTx(IDriver driver)
+        : base(driver, false)
     {
-        public RxFailingCommandInTx(IDriver driver)
-            : base(driver, false)
-        {
-        }
+    }
 
-        public override Task ExecuteAsync(TContext context)
-        {
-            var session = NewSession(AccessMode.Read, context);
+    public override Task ExecuteAsync(TContext context)
+    {
+        var session = NewSession(AccessMode.Read, context);
 
-            BeginTransaction(session, context).SelectMany(txc => txc
+        BeginTransaction(session, context)
+            .SelectMany(
+                txc => txc
                     .Run("UNWIND [10, 5, 0] AS x RETURN 10 / x")
                     .Records()
                     .Select(r => r[0].As<int>())
                     .CatchAndThrow(exc => txc.Rollback<int>())
                     .Concat(txc.Commit<int>()))
-                .CatchAndThrow(_ => session.Close<int>())
-                .Concat(session.Close<int>())
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnNext(0, 1),
-                    OnNext(0, 2),
-                    OnError<int>(0, MatchesException<ClientException>(exc => exc.Message.Contains("/ by zero")))
-                );
+            .CatchAndThrow(_ => session.Close<int>())
+            .Concat(session.Close<int>())
+            .WaitForCompletion()
+            .AssertEqual(
+                OnNext(0, 1),
+                OnNext(0, 2),
+                OnError<int>(0, MatchesException<ClientException>(exc => exc.Message.Contains("/ by zero"))));
 
-            return Task.CompletedTask;
-        }
+        return Task.CompletedTask;
     }
 }

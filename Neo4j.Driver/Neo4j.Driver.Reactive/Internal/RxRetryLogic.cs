@@ -29,16 +29,16 @@ namespace Neo4j.Driver.Internal
 
     internal class RxRetryLogic : IRxRetryLogic
     {
-        private readonly int _maxRetryTimeout;
-        private readonly double _initialDelay;
-        private readonly double _delayMultiplier;
         private readonly double _delayJitter;
-        private readonly Random _random;
+        private readonly double _delayMultiplier;
+        private readonly double _initialDelay;
         private readonly ILogger _logger;
+        private readonly int _maxRetryTimeout;
+        private readonly Random _random;
 
         public RxRetryLogic(TimeSpan maxRetryTimeout, ILogger logger)
         {
-            _maxRetryTimeout = (int) maxRetryTimeout.TotalMilliseconds;
+            _maxRetryTimeout = (int)maxRetryTimeout.TotalMilliseconds;
             _initialDelay = TimeSpan.FromSeconds(1).TotalMilliseconds;
             _delayMultiplier = 2.0;
             _delayJitter = 0.2;
@@ -48,43 +48,46 @@ namespace Neo4j.Driver.Internal
 
         public IObservable<T> Retry<T>(IObservable<T> work)
         {
-            return work.RetryWhen(failedWork =>
-            {
-                var handledExceptions = new List<Exception>();
-                var timer = Stopwatch.StartNew();
-                var delay = _initialDelay;
-                var retryCount = 1;
-
-                return failedWork.SelectMany(exc =>
+            return work.RetryWhen(
+                failedWork =>
                 {
-                    if (!exc.CanBeRetried())
-                    {
-                        return Observable.Throw<int>(exc);
-                    }
+                    var handledExceptions = new List<Exception>();
+                    var timer = Stopwatch.StartNew();
+                    var delay = _initialDelay;
+                    var retryCount = 1;
 
-                    handledExceptions.Add(exc);
+                    return failedWork.SelectMany(
+                        exc =>
+                        {
+                            if (!exc.CanBeRetried())
+                            {
+                                return Observable.Throw<int>(exc);
+                            }
 
-                    if (retryCount >= 2 && timer.ElapsedMilliseconds >= _maxRetryTimeout)
-                    {
-                        return Observable.Throw<int>(new ServiceUnavailableException(
-                            $"Failed after retried for {retryCount} times in {_maxRetryTimeout} ms. " +
-                            "Make sure that your database is online and retry again.",
-                            new AggregateException(handledExceptions)));
-                    }
+                            handledExceptions.Add(exc);
 
-                    var delayDuration = TimeSpan.FromMilliseconds(ComputeNextDelay(delay));
-                    delay *= _delayMultiplier;
-                    retryCount++;
-                    _logger?.Warn(exc, $"Transaction failed and will be retried in {delay} ms.");
-                    return Observable.Return(1).Delay(delayDuration);
+                            if (retryCount >= 2 && timer.ElapsedMilliseconds >= _maxRetryTimeout)
+                            {
+                                return Observable.Throw<int>(
+                                    new ServiceUnavailableException(
+                                        $"Failed after retried for {retryCount} times in {_maxRetryTimeout} ms. " +
+                                        "Make sure that your database is online and retry again.",
+                                        new AggregateException(handledExceptions)));
+                            }
+
+                            var delayDuration = TimeSpan.FromMilliseconds(ComputeNextDelay(delay));
+                            delay *= _delayMultiplier;
+                            retryCount++;
+                            _logger?.Warn(exc, $"Transaction failed and will be retried in {delay} ms.");
+                            return Observable.Return(1).Delay(delayDuration);
+                        });
                 });
-            });
         }
 
         private double ComputeNextDelay(double delay)
         {
             var jitter = delay * _delayJitter;
-            return delay - jitter + (2 * jitter * _random.NextDouble());
+            return delay - jitter + 2 * jitter * _random.NextDouble();
         }
     }
 }

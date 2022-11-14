@@ -28,8 +28,11 @@ internal class SocketClientIoFactory : IConnectionIoFactory
     }
 
     public (MessageFormat Format, ChunkWriter ChunkWriter, MemoryStream readBuffer, IMessageReader
-        MessageReader, IMessageWriter MessageWriter) Build(ITcpSocketClient socketClient, BufferSettings bufferSettings,
-            ILogger logger, BoltProtocolVersion version)
+        MessageReader, IMessageWriter MessageWriter) Build(
+            ITcpSocketClient socketClient,
+            BufferSettings bufferSettings,
+            ILogger logger,
+            BoltProtocolVersion version)
     {
         var format = new MessageFormat(version);
         var chunkReader = new ChunkReader(socketClient.ReaderStream);
@@ -37,7 +40,7 @@ internal class SocketClientIoFactory : IConnectionIoFactory
         var readBuffer = new MemoryStream(bufferSettings.MaxReadBufferSize);
         var messageReader = new MessageReader(chunkReader, bufferSettings, logger);
         var messageWriter = new MessageWriter(chunkWriter);
-        
+
         return (format, chunkWriter, readBuffer, messageReader, messageWriter);
     }
 }

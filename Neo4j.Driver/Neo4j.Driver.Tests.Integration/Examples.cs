@@ -15,24 +15,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//The only imported needed for using this driver
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using FluentAssertions;
-//The only imported needed for using this driver
 using Neo4j.Driver.IntegrationTests;
 using Neo4j.Driver.IntegrationTests.Internals;
-using static Neo4j.Driver.IntegrationTests.DatabaseExtensions;
 using Xunit;
 using Xunit.Abstractions;
+using static Neo4j.Driver.IntegrationTests.DatabaseExtensions;
 
 // ReSharper disable once CheckNamespace
 namespace Neo4j.Driver.Examples;
 
-/// <summary>
-/// The driver examples since 1.2 driver
-/// </summary>
+/// <summary>The driver examples since 1.2 driver</summary>
 public class Examples
 {
     [SuppressMessage("ReSharper", "xUnit1013")]
@@ -48,7 +46,7 @@ public class Examples
         {
             using (var session = Driver.Session())
             {
-                session.Run("CREATE (a:Person {name: $name})", new {name});
+                session.Run("CREATE (a:Person {name: $name})", new { name });
             }
         }
         // end::autocommit-transaction[]
@@ -100,7 +98,9 @@ public class Examples
         // tag::config-connection-pool[]
         public IDriver CreateDriverWithCustomizedConnectionPool(string uri, string user, string password)
         {
-            return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
+            return GraphDatabase.Driver(
+                uri,
+                AuthTokens.Basic(user, password),
                 o => o.WithMaxConnectionLifetime(TimeSpan.FromMinutes(30))
                     .WithMaxConnectionPoolSize(50)
                     .WithConnectionAcquisitionTimeout(TimeSpan.FromMinutes(2)));
@@ -130,7 +130,9 @@ public class Examples
         // tag::config-connection-timeout[]
         public IDriver CreateDriverWithCustomizedConnectionTimeout(string uri, string user, string password)
         {
-            return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
+            return GraphDatabase.Driver(
+                uri,
+                AuthTokens.Basic(user, password),
                 o => o.WithConnectionTimeout(TimeSpan.FromSeconds(15)));
         }
         // end::config-connection-timeout[]
@@ -158,7 +160,9 @@ public class Examples
         // tag::config-max-retry-time[]
         public IDriver CreateDriverWithCustomizedMaxRetryTime(string uri, string user, string password)
         {
-            return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
+            return GraphDatabase.Driver(
+                uri,
+                AuthTokens.Basic(user, password),
                 o => o.WithMaxTransactionRetryTime(TimeSpan.FromSeconds(15)));
         }
         // end::config-max-retry-time[]
@@ -186,7 +190,9 @@ public class Examples
         // tag::config-trust[]
         public IDriver CreateDriverWithCustomizedTrustStrategy(string uri, string user, string password)
         {
-            return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
+            return GraphDatabase.Driver(
+                uri,
+                AuthTokens.Basic(user, password),
                 o => o.WithTrustManager(TrustManager.CreateInsecure()));
         }
         // end::config-trust[]
@@ -214,7 +220,9 @@ public class Examples
         // tag::config-unencrypted[]
         public IDriver CreateDriverWithCustomizedSecurityStrategy(string uri, string user, string password)
         {
-            return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
+            return GraphDatabase.Driver(
+                uri,
+                AuthTokens.Basic(user, password),
                 o => o.WithEncryptionLevel(EncryptionLevel.None));
         }
         // end::config-unencrypted[]
@@ -239,25 +247,47 @@ public class Examples
         private const string Password = "some password";
 
         // tag::config-custom-resolver[]
-        private IDriver CreateDriverWithCustomResolver(string virtualUri, IAuthToken token,
+        private IDriver CreateDriverWithCustomResolver(
+            string virtualUri,
+            IAuthToken token,
             params ServerAddress[] addresses)
         {
-            return GraphDatabase.Driver(virtualUri, token,
+            return GraphDatabase.Driver(
+                virtualUri,
+                token,
                 o => o.WithResolver(new ListAddressResolver(addresses)).WithEncryptionLevel(EncryptionLevel.None));
         }
 
         public void AddPerson(string name)
         {
-            using (var driver = CreateDriverWithCustomResolver("neo4j://x.example.com",
+            using (var driver = CreateDriverWithCustomResolver(
+                       "neo4j://x.example.com",
                        AuthTokens.Basic(Username, Password),
-                       ServerAddress.From("a.example.com", 7687), ServerAddress.From("b.example.com", 7877),
+                       ServerAddress.From("a.example.com", 7687),
+                       ServerAddress.From("b.example.com", 7877),
                        ServerAddress.From("c.example.com", 9092)))
             {
                 using (var session = driver.Session())
                 {
-                    session.Run("CREATE (a:Person {name: $name})", new {name});
+                    session.Run("CREATE (a:Person {name: $name})", new { name });
                 }
             }
+        }
+        // end::config-custom-resolver[]
+
+        [RequireBoltStubServerFact]
+        public void TestCustomResolverExample()
+        {
+            using var server1 = BoltStubServer.Start("V4/get_routing_table_only", 9001);
+            using var server2 = BoltStubServer.Start("V4/return_1", 9002);
+            using var driver = CreateDriverWithCustomResolver(
+                "neo4j://x.example.com",
+                AuthTokens.None,
+                ServerAddress.From("127.0.0.1", 9001));
+
+            using var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Read));
+            // When & Then
+            session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
         }
 
         private class ListAddressResolver : IServerAddressResolver
@@ -274,19 +304,6 @@ public class Examples
                 return new HashSet<ServerAddress>(_servers);
             }
         }
-        // end::config-custom-resolver[]
-
-        [RequireBoltStubServerFact]
-        public void TestCustomResolverExample()
-        {
-            using var server1 = BoltStubServer.Start("V4/get_routing_table_only", 9001);
-            using var server2 = BoltStubServer.Start("V4/return_1", 9002);
-            using var driver = CreateDriverWithCustomResolver("neo4j://x.example.com", AuthTokens.None,
-                ServerAddress.From("127.0.0.1", 9001));
-            using var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Read));
-            // When & Then
-            session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
-        }
     }
 
     public class CustomAuthExample : BaseExample
@@ -297,11 +314,17 @@ public class Examples
         }
 
         // tag::custom-auth[]
-        public IDriver CreateDriverWithCustomizedAuth(string uri,
-            string principal, string credentials, string realm, string scheme,
+        public IDriver CreateDriverWithCustomizedAuth(
+            string uri,
+            string principal,
+            string credentials,
+            string realm,
+            string scheme,
             Dictionary<string, object> parameters)
         {
-            return GraphDatabase.Driver(uri, AuthTokens.Custom(principal, credentials, realm, scheme, parameters),
+            return GraphDatabase.Driver(
+                uri,
+                AuthTokens.Custom(principal, credentials, realm, scheme, parameters),
                 o => o.WithEncryptionLevel(EncryptionLevel.None));
         }
         // end::custom-auth[]
@@ -327,7 +350,9 @@ public class Examples
         // tag::kerberos-auth[]
         public IDriver CreateDriverWithKerberosAuth(string uri, string ticket)
         {
-            return GraphDatabase.Driver(uri, AuthTokens.Kerberos(ticket),
+            return GraphDatabase.Driver(
+                uri,
+                AuthTokens.Kerberos(ticket),
                 o => o.WithEncryptionLevel(EncryptionLevel.None));
         }
         // end::kerberos-auth[]
@@ -354,7 +379,9 @@ public class Examples
         // tag::bearer-auth[]
         public IDriver CreateDriverWithBearerAuth(string uri, string bearerToken)
         {
-            return GraphDatabase.Driver(uri, AuthTokens.Bearer(bearerToken),
+            return GraphDatabase.Driver(
+                uri,
+                AuthTokens.Bearer(bearerToken),
                 o => o.WithEncryptionLevel(EncryptionLevel.None));
         }
         // end::bearer-auth[]
@@ -387,7 +414,7 @@ public class Examples
         {
             try
             {
-                var result = tx.Run("SELECT * FROM Employees WHERE name = $name", new {name});
+                var result = tx.Run("SELECT * FROM Employees WHERE name = $name", new { name });
                 return result.Single()["employee_number"].As<int>();
             }
             catch (ClientException ex)
@@ -412,39 +439,6 @@ public class Examples
             : base(output, fixture)
         {
         }
-
-        // tag::driver-lifecycle[]
-        public class DriverLifecycleExample : IDisposable
-        {
-            private bool _disposed;
-            public IDriver Driver { get; }
-
-            ~DriverLifecycleExample() => Dispose(false);
-
-            public DriverLifecycleExample(string uri, string user, string password)
-            {
-                Driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
-            }
-
-            public void Dispose()
-            {
-                Dispose(true);
-                GC.SuppressFinalize(this);
-            }
-
-            protected virtual void Dispose(bool disposing)
-            {
-                if (_disposed)
-                    return;
-
-                if (disposing)
-                {
-                    Driver?.Dispose();
-                }
-
-                _disposed = true;
-            }
-        }
         // end::driver-lifecycle[]
 
         [RequireServerFact]
@@ -456,6 +450,45 @@ public class Examples
             {
                 // When & Then
                 session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
+            }
+        }
+
+        // tag::driver-lifecycle[]
+        public class DriverLifecycleExample : IDisposable
+        {
+            private bool _disposed;
+
+            public DriverLifecycleExample(string uri, string user, string password)
+            {
+                Driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
+            }
+
+            public IDriver Driver { get; }
+
+            public void Dispose()
+            {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+
+            ~DriverLifecycleExample()
+            {
+                Dispose(false);
+            }
+
+            protected virtual void Dispose(bool disposing)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                if (disposing)
+                {
+                    Driver?.Dispose();
+                }
+
+                _disposed = true;
             }
         }
     }
@@ -479,28 +512,12 @@ public class Examples
         // tag::hello-world[]
         public class HelloWorldExample : IDisposable
         {
-            private bool _disposed;
             private readonly IDriver _driver;
-
-            ~HelloWorldExample() => Dispose(false);
+            private bool _disposed;
 
             public HelloWorldExample(string uri, string user, string password)
             {
                 _driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
-            }
-
-            public void PrintGreeting(string message)
-            {
-                using var session = _driver.Session();
-                var greeting = session.ExecuteWrite(tx =>
-                {
-                    var result = tx.Run("CREATE (a:Greeting) " +
-                                        "SET a.message = $message " +
-                                        "RETURN a.message + ', from node ' + id(a)",
-                        new {message});
-                    return result.Single()[0].As<string>();
-                });
-                Console.WriteLine(greeting);
             }
 
             public void Dispose()
@@ -509,10 +526,35 @@ public class Examples
                 GC.SuppressFinalize(this);
             }
 
+            ~HelloWorldExample()
+            {
+                Dispose(false);
+            }
+
+            public void PrintGreeting(string message)
+            {
+                using var session = _driver.Session();
+                var greeting = session.ExecuteWrite(
+                    tx =>
+                    {
+                        var result = tx.Run(
+                            "CREATE (a:Greeting) " +
+                            "SET a.message = $message " +
+                            "RETURN a.message + ', from node ' + id(a)",
+                            new { message });
+
+                        return result.Single()[0].As<string>();
+                    });
+
+                Console.WriteLine(greeting);
+            }
+
             protected virtual void Dispose(bool disposing)
             {
                 if (_disposed)
+                {
                     return;
+                }
 
                 if (disposing)
                 {
@@ -556,12 +598,12 @@ public class Examples
 
         private static IResultSummary CreatePersonNode(IQueryRunner tx, string name)
         {
-            return tx.Run("CREATE (a:Person {name: $name})", new {name}).Consume();
+            return tx.Run("CREATE (a:Person {name: $name})", new { name }).Consume();
         }
 
         private static long MatchPersonNode(IQueryRunner tx, string name)
         {
-            var result = tx.Run("MATCH (a:Person {name: $name}) RETURN id(a)", new {name});
+            var result = tx.Run("MATCH (a:Person {name: $name}) RETURN id(a)", new { name });
             return result.Single()[0].As<long>();
         }
 
@@ -579,11 +621,12 @@ public class Examples
         public List<string> GetPeople()
         {
             using var session = Driver.Session();
-            return session.ExecuteRead(tx =>
-            {
-                var result = tx.Run("MATCH (a:Person) RETURN a.name ORDER BY a.name");
-                return result.Select(record => record[0].As<string>()).ToList();
-            });
+            return session.ExecuteRead(
+                tx =>
+                {
+                    var result = tx.Run("MATCH (a:Person) RETURN a.name ORDER BY a.name");
+                    return result.Select(record => record[0].As<string>()).ToList();
+                });
         }
         // end::result-consume[]
 
@@ -594,7 +637,7 @@ public class Examples
             Write("CREATE (a:Person {name: 'Alice'})");
             Write("CREATE (a:Person {name: 'Bob'})");
             // When & Then
-            GetPeople().Should().Contain(new[] {"Alice", "Bob"});
+            GetPeople().Should().Contain(new[] { "Alice", "Bob" });
         }
     }
 
@@ -610,15 +653,19 @@ public class Examples
         {
             using var session = Driver.Session();
             var persons = session.ExecuteRead(tx => tx.Run("MATCH (a:Person) RETURN a.name AS name").ToList());
-            return persons.Sum(person => session.ExecuteWrite(tx =>
-            {
-                var result = tx.Run("MATCH (emp:Person {name: $person_name}) " +
-                                    "MERGE (com:Company {name: $company_name}) " +
-                                    "MERGE (emp)-[:WORKS_FOR]->(com)",
-                    new {person_name = person["name"].As<string>(), company_name = companyName});
-                result.Consume();
-                return 1;
-            }));
+            return persons.Sum(
+                person => session.ExecuteWrite(
+                    tx =>
+                    {
+                        var result = tx.Run(
+                            "MATCH (emp:Person {name: $person_name}) " +
+                            "MERGE (com:Company {name: $company_name}) " +
+                            "MERGE (emp)-[:WORKS_FOR]->(com)",
+                            new { person_name = person["name"].As<string>(), company_name = companyName });
+
+                        result.Consume();
+                        return 1;
+                    }));
         }
         // end::result-retain[]
 
@@ -631,7 +678,10 @@ public class Examples
             // When & Then
             AddEmployees("Example").Should().Be(2);
             Read("MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Example' RETURN count(emp)")
-                .Single()[0].As<int>().Should().Be(2);
+                .Single()[0]
+                .As<int>()
+                .Should()
+                .Be(2);
         }
     }
 
@@ -643,14 +693,18 @@ public class Examples
             : base(output, fixture)
         {
             _baseDriver = Driver;
-            Driver = GraphDatabase.Driver("bolt://localhost:8080", AuthTokens.Basic(User, Password),
+            Driver = GraphDatabase.Driver(
+                "bolt://localhost:8080",
+                AuthTokens.Basic(User, Password),
                 o => o.WithMaxTransactionRetryTime(TimeSpan.FromSeconds(3)));
         }
 
         protected override void Dispose(bool isDisposing)
         {
             if (!isDisposing)
+            {
                 return;
+            }
 
             Driver = _baseDriver;
             base.Dispose(true);
@@ -667,8 +721,7 @@ public class Examples
                     {
                         tx.Run("CREATE (a:Item)").Consume();
                         return true;
-                    }
-                );
+                    });
             }
             catch (ServiceUnavailableException)
             {
@@ -696,7 +749,7 @@ public class Examples
         public void AddPerson(string name)
         {
             using var session = Driver.Session();
-            session.Run("CREATE (a:Person {name: $name})", new {name});
+            session.Run("CREATE (a:Person {name: $name})", new { name });
         }
         // end::session[]
 
@@ -722,7 +775,7 @@ public class Examples
         public void AddPerson(string name)
         {
             using var session = Driver.Session();
-            session.ExecuteWrite(tx => tx.Run("CREATE (a:Person {name: $name})", new {name}).Consume());
+            session.ExecuteWrite(tx => tx.Run("CREATE (a:Person {name: $name})", new { name }).Consume());
         }
         // end::transaction-function[]
 
@@ -748,7 +801,8 @@ public class Examples
         public void AddPerson(string name)
         {
             using var session = Driver.Session();
-            session.ExecuteWrite(tx => tx.Run("CREATE (a:Person {name: $name})", new {name}).Consume(),
+            session.ExecuteWrite(
+                tx => tx.Run("CREATE (a:Person {name: $name})", new { name }).Consume(),
                 txConfig => txConfig.WithTimeout(TimeSpan.FromSeconds(5)));
         }
         // end::transaction-timeout-config[]
@@ -763,7 +817,6 @@ public class Examples
         }
     }
 
-
     [SuppressMessage("ReSharper", "xUnit1013")]
     public class TransactionMetadataConfigExample : BaseExample
     {
@@ -776,9 +829,10 @@ public class Examples
         public void AddPerson(string name)
         {
             using var session = Driver.Session();
-            var txMetadata = new Dictionary<string, object> {{"applicationId", "123"}};
+            var txMetadata = new Dictionary<string, object> { { "applicationId", "123" } };
 
-            session.ExecuteWrite(tx => tx.Run("CREATE (a:Person {name: $name})", new {name}).Consume(),
+            session.ExecuteWrite(
+                tx => tx.Run("CREATE (a:Person {name: $name})", new { name }).Consume(),
                 txConfig => txConfig.WithMetadata(txMetadata));
         }
         // end::transaction-metadata-config[]
@@ -856,14 +910,23 @@ public class Examples
 
         private class DatabaseSelectionExample : IDisposable
         {
-            private bool _disposed;
             private readonly IDriver _driver;
-
-            ~DatabaseSelectionExample() => Dispose(false);
+            private bool _disposed;
 
             public DatabaseSelectionExample(string uri, string user, string password)
             {
                 _driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
+            }
+
+            public void Dispose()
+            {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+
+            ~DatabaseSelectionExample()
+            {
+                Dispose(false);
             }
 
             public void UseAnotherDatabaseExample()
@@ -874,10 +937,12 @@ public class Examples
                     session.Run("CREATE (a:Greeting {message: 'Hello, Example-Database'}) RETURN a").Consume();
                 }
 
-                void SessionConfig(SessionConfigBuilder configBuilder) =>
+                void SessionConfig(SessionConfigBuilder configBuilder)
+                {
                     configBuilder.WithDatabase("examples")
                         .WithDefaultAccessMode(AccessMode.Read)
                         .Build();
+                }
 
                 using (var session = _driver.Session(SessionConfig))
                 {
@@ -888,16 +953,12 @@ public class Examples
                 // end::database-selection[]
             }
 
-            public void Dispose()
-            {
-                Dispose(true);
-                GC.SuppressFinalize(this);
-            }
-
             private void Dispose(bool disposing)
             {
                 if (_disposed)
+                {
                     return;
+                }
 
                 if (disposing)
                 {
@@ -921,30 +982,36 @@ public class Examples
         // Create a company node
         private IResultSummary AddCompany(IQueryRunner tx, string name)
         {
-            return tx.Run("CREATE (a:Company {name: $name})", new {name}).Consume();
+            return tx.Run("CREATE (a:Company {name: $name})", new { name }).Consume();
         }
 
         // Create a person node
         private IResultSummary AddPerson(IQueryRunner tx, string name)
         {
-            return tx.Run("CREATE (a:Person {name: $name})", new {name}).Consume();
+            return tx.Run("CREATE (a:Person {name: $name})", new { name }).Consume();
         }
 
         // Create an employment relationship to a pre-existing company node.
         // This relies on the person first having been created.
         private IResultSummary Employ(IQueryRunner tx, string personName, string companyName)
         {
-            return tx.Run(@"MATCH (person:Person {name: $personName}) 
+            return tx.Run(
+                    @"MATCH (person:Person {name: $personName}) 
                          MATCH (company:Company {name: $companyName}) 
-                         CREATE (person)-[:WORKS_FOR]->(company)", new {personName, companyName}).Consume();
+                         CREATE (person)-[:WORKS_FOR]->(company)",
+                    new { personName, companyName })
+                .Consume();
         }
 
         // Create a friendship between two people.
         private IResultSummary MakeFriends(IQueryRunner tx, string name1, string name2)
         {
-            return tx.Run(@"MATCH (a:Person {name: $name1}) 
+            return tx.Run(
+                    @"MATCH (a:Person {name: $name1}) 
                          MATCH (b:Person {name: $name2})
-                         MERGE (a)-[:KNOWS]->(b)", new {name1, name2}).Consume();
+                         MERGE (a)-[:KNOWS]->(b)",
+                    new { name1, name2 })
+                .Consume();
         }
 
         // Match and display all friendships.
@@ -988,8 +1055,9 @@ public class Examples
             }
 
             // Create a friendship between the two people created above.
-            using (var session3 = Driver.Session(o =>
-                       o.WithDefaultAccessMode(AccessMode.Write).WithBookmarks(savedBookmarks.ToArray())))
+            using (var session3 = Driver.Session(
+                       o =>
+                           o.WithDefaultAccessMode(AccessMode.Write).WithBookmarks(savedBookmarks.ToArray())))
             {
                 session3.ExecuteWrite(tx => MakeFriends(tx, "Alice", "Bob"));
 
@@ -1013,17 +1081,20 @@ public class Examples
 
             var works1 = Read(
                 "MATCH (a:Person {name: $person})-[:WORKS_FOR]->(b:Company {name: $company}) RETURN count(a)",
-                new {person = "Alice", company = "Wayne Enterprises"});
+                new { person = "Alice", company = "Wayne Enterprises" });
+
             works1.Count().Should().Be(1);
 
             var works2 = Read(
                 "MATCH (a:Person {name: $person})-[:WORKS_FOR]->(b:Company {name: $company}) RETURN count(a)",
-                new {person = "Bob", company = "LexCorp"});
+                new { person = "Bob", company = "LexCorp" });
+
             works2.Count().Should().Be(1);
 
             var friends = Read(
                 "MATCH (a:Person {name: $person1})-[:KNOWS]->(b:Person {name: $person2}) RETURN count(a)",
-                new {person1 = "Alice", person2 = "Bob"});
+                new { person1 = "Alice", person2 = "Bob" });
+
             friends.Count().Should().Be(1);
         }
     }
@@ -1033,13 +1104,9 @@ public class Examples
 public abstract class BaseExample : IDisposable
 {
     private bool _disposed;
-    protected ITestOutputHelper Output { get; }
-    protected IDriver Driver { set; get; }
+    protected string Password = Neo4jDefaultInstallation.Password;
     protected string Uri = Neo4jDefaultInstallation.BoltUri;
     protected string User = Neo4jDefaultInstallation.User;
-    protected string Password = Neo4jDefaultInstallation.Password;
-
-    ~BaseExample() => Dispose(false);
 
     protected BaseExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
     {
@@ -1047,16 +1114,26 @@ public abstract class BaseExample : IDisposable
         Driver = fixture.StandAloneSharedInstance.Driver;
     }
 
+    protected ITestOutputHelper Output { get; }
+    protected IDriver Driver { set; get; }
+
     public void Dispose()
     {
         Dispose(true);
         GC.SuppressFinalize(this);
     }
 
+    ~BaseExample()
+    {
+        Dispose(false);
+    }
+
     protected virtual void Dispose(bool disposing)
     {
         if (_disposed)
+        {
             return;
+        }
 
         if (disposing)
         {
@@ -1073,8 +1150,11 @@ public abstract class BaseExample : IDisposable
     {
         using var session = Driver.Session();
         return session.ExecuteRead(
-            tx => tx.Run($"MATCH (a:{label} {{{property}: $value}}) RETURN count(a)",
-                new {value}).Single()[0].As<int>());
+            tx => tx.Run(
+                    $"MATCH (a:{label} {{{property}: $value}}) RETURN count(a)",
+                    new { value })
+                .Single()[0]
+                .As<int>());
     }
 
     protected int CountPerson(string name)
@@ -1085,8 +1165,9 @@ public abstract class BaseExample : IDisposable
     protected void Write(string query, object parameters = null)
     {
         using var session = Driver.Session();
-        session.ExecuteWrite(tx =>
-            tx.Run(query, parameters).Consume());
+        session.ExecuteWrite(
+            tx =>
+                tx.Run(query, parameters).Consume());
     }
 
     protected List<IRecord> Read(string query, object parameters = null)

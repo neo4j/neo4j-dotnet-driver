@@ -28,246 +28,265 @@ using Xunit;
 using static Microsoft.Reactive.Testing.ReactiveAssert;
 using static Neo4j.Driver.Tests.Assertions;
 
-namespace Neo4j.Driver.Reactive.Internal
+namespace Neo4j.Driver.Reactive.Internal;
+
+public static class InternalRxSessionTests
 {
-    public static class InternalRxSessionTests
+    public class Run : AbstractRxTest
     {
-        public class Run : AbstractRxTest
+        [Fact]
+        public void ShouldReturnInternalRxResult()
         {
-            [Fact]
-            public void ShouldReturnInternalRxResult()
-            {
-                var rxSession = new InternalRxSession(Mock.Of<IInternalAsyncSession>(), Mock.Of<IRxRetryLogic>());
+            var rxSession = new InternalRxSession(Mock.Of<IInternalAsyncSession>(), Mock.Of<IRxRetryLogic>());
 
-                rxSession.Run("RETURN 1").Should().BeOfType<RxResult>();
-            }
+            rxSession.Run("RETURN 1").Should().BeOfType<RxResult>();
+        }
 
-            [Fact]
-            public void ShouldInvokeSessionRunAsyncOnKeys()
-            {
-                VerifyLazyRunAsync(r => r.Keys().WaitForCompletion());
-            }
+        [Fact]
+        public void ShouldInvokeSessionRunAsyncOnKeys()
+        {
+            VerifyLazyRunAsync(r => r.Keys().WaitForCompletion());
+        }
 
-            [Fact]
-            public void ShouldInvokeSessionRunAsyncOnRecords()
-            {
-                VerifyLazyRunAsync(r => r.Records().WaitForCompletion());
-            }
+        [Fact]
+        public void ShouldInvokeSessionRunAsyncOnRecords()
+        {
+            VerifyLazyRunAsync(r => r.Records().WaitForCompletion());
+        }
 
-            [Fact]
-            public void ShouldInvokeSessionRunAsyncOnSummary()
-            {
-                VerifyLazyRunAsync(r => r.Consume().WaitForCompletion());
-            }
+        [Fact]
+        public void ShouldInvokeSessionRunAsyncOnSummary()
+        {
+            VerifyLazyRunAsync(r => r.Consume().WaitForCompletion());
+        }
 
-            [Fact]
-            public void ShouldInvokeSessionRunAsyncOnlyOnce()
-            {
-                VerifyLazyRunAsync(r =>
+        [Fact]
+        public void ShouldInvokeSessionRunAsyncOnlyOnce()
+        {
+            VerifyLazyRunAsync(
+                r =>
                 {
                     r.Keys().WaitForCompletion();
                     r.Records().WaitForCompletion();
                     r.Consume().WaitForCompletion();
                 });
-            }
+        }
 
-            private static void VerifyLazyRunAsync(Action<IRxResult> action)
-            {
-                var asyncSession = new Mock<IInternalAsyncSession>();
-                asyncSession.Setup(x => x.RunAsync(It.IsAny<Query>(), It.IsAny<Action<TransactionConfigBuilder>>(),
+        private static void VerifyLazyRunAsync(Action<IRxResult> action)
+        {
+            var asyncSession = new Mock<IInternalAsyncSession>();
+            asyncSession.Setup(
+                    x => x.RunAsync(
+                        It.IsAny<Query>(),
+                        It.IsAny<Action<TransactionConfigBuilder>>(),
                         It.IsAny<bool>()))
-                    .ReturnsAsync(new ListBasedRecordCursor(new[] {"x"}, Enumerable.Empty<IRecord>,
+                .ReturnsAsync(
+                    new ListBasedRecordCursor(
+                        new[] { "x" },
+                        Enumerable.Empty<IRecord>,
                         Mock.Of<IResultSummary>));
-                var session = new InternalRxSession(asyncSession.Object, Mock.Of<IRxRetryLogic>());
-                var result = session.Run("RETURN 1");
 
-                asyncSession.Verify(
-                    x => x.RunAsync(It.IsAny<Query>(), It.IsAny<Action<TransactionConfigBuilder>>(),
-                        It.IsAny<bool>()), Times.Never);
+            var session = new InternalRxSession(asyncSession.Object, Mock.Of<IRxRetryLogic>());
+            var result = session.Run("RETURN 1");
 
-                action(result);
+            asyncSession.Verify(
+                x => x.RunAsync(
+                    It.IsAny<Query>(),
+                    It.IsAny<Action<TransactionConfigBuilder>>(),
+                    It.IsAny<bool>()),
+                Times.Never);
 
-                asyncSession.Verify(
-                    x => x.RunAsync(It.IsAny<Query>(), It.IsAny<Action<TransactionConfigBuilder>>(),
-                        It.IsAny<bool>()), Times.Once);
-            }
+            action(result);
+
+            asyncSession.Verify(
+                x => x.RunAsync(
+                    It.IsAny<Query>(),
+                    It.IsAny<Action<TransactionConfigBuilder>>(),
+                    It.IsAny<bool>()),
+                Times.Once);
+        }
+    }
+
+    public class BeginTransaction : AbstractRxTest
+    {
+        [Fact]
+        public void ShouldReturnObservable()
+        {
+            var session = new Mock<IInternalAsyncSession>();
+            session.Setup(x => x.BeginTransactionAsync(It.IsAny<Action<TransactionConfigBuilder>>(), It.IsAny<bool>()))
+                .ReturnsAsync(Mock.Of<IInternalAsyncTransaction>());
+
+            var rxSession = new InternalRxSession(session.Object, Mock.Of<IRxRetryLogic>());
+
+            rxSession.BeginTransaction()
+                .WaitForCompletion()
+                .AssertEqual(
+                    OnNext(0, Matches<IRxTransaction>(t => t.Should().BeOfType<InternalRxTransaction>())),
+                    OnCompleted<IRxTransaction>(0));
+
+            session.Verify(
+                x => x.BeginTransactionAsync(It.IsAny<Action<TransactionConfigBuilder>>(), It.IsAny<bool>()),
+                Times.Once);
+        }
+    }
+
+    public class TransactionFunctions : AbstractRxTest
+    {
+        [Theory]
+        [MemberData(nameof(AccessModes))]
+        public void ShouldBeginTransactionAndCommit(AccessMode mode)
+        {
+            var rxSession = CreateSession(mode, null, out var session, out var txc);
+
+            rxSession
+                .RunTransaction(mode, t => Observable.Return(1), null)
+                .WaitForCompletion()
+                .AssertEqual(
+                    OnNext(0, 1),
+                    OnCompleted<int>(0));
+
+            session.Verify(x => x.BeginTransactionAsync(mode, null, false), Times.Once);
+            session.VerifyNoOtherCalls();
+
+            txc.Verify(x => x.CommitAsync(), Times.Once);
+            txc.VerifyGet(x => x.IsOpen);
+            txc.VerifyNoOtherCalls();
         }
 
-        public class BeginTransaction : AbstractRxTest
+        [Theory]
+        [MemberData(nameof(AccessModes))]
+        public void ShouldBeginTransactionAndRollback(AccessMode mode)
         {
-            [Fact]
-            public void ShouldReturnObservable()
-            {
-                var session = new Mock<IInternalAsyncSession>();
-                session.Setup(x => x.BeginTransactionAsync(It.IsAny<Action<TransactionConfigBuilder>>(), It.IsAny<bool>()))
-                    .ReturnsAsync(Mock.Of<IInternalAsyncTransaction>());
+            var error = new ClientException();
+            var rxSession = CreateSession(mode, null, out var session, out var txc);
 
-                var rxSession = new InternalRxSession(session.Object, Mock.Of<IRxRetryLogic>());
+            rxSession
+                .RunTransaction(mode, t => Observable.Throw<int>(error), null)
+                .WaitForCompletion()
+                .AssertEqual(OnError<int>(0, error));
 
-                rxSession.BeginTransaction().WaitForCompletion()
-                    .AssertEqual(
-                        OnNext(0, Matches<IRxTransaction>(t => t.Should().BeOfType<InternalRxTransaction>())),
-                        OnCompleted<IRxTransaction>(0));
-                session.Verify(x => x.BeginTransactionAsync(It.IsAny<Action<TransactionConfigBuilder>>(), It.IsAny<bool>()), Times.Once);
-            }
+            session.Verify(x => x.BeginTransactionAsync(mode, null, false), Times.Once);
+            session.VerifyNoOtherCalls();
+
+            txc.Verify(x => x.RollbackAsync(), Times.Once);
+            txc.VerifyGet(x => x.IsOpen);
+            txc.VerifyNoOtherCalls();
         }
 
-        public class TransactionFunctions : AbstractRxTest
+        [Theory]
+        [MemberData(nameof(AccessModes))]
+        public void ShouldBeginTransactionAndRollbackOnSynchronousException(AccessMode mode)
         {
-            [Theory]
-            [MemberData(nameof(AccessModes))]
-            public void ShouldBeginTransactionAndCommit(AccessMode mode)
-            {
-                var rxSession = CreateSession(mode, null, out var session, out var txc);
+            var error = new ClientException();
+            var rxSession = CreateSession(mode, null, out var session, out var txc);
 
-                rxSession
-                    .RunTransaction(mode, t => Observable.Return(1), null)
-                    .WaitForCompletion()
-                    .AssertEqual(
-                        OnNext(0, 1),
-                        OnCompleted<int>(0));
+            rxSession
+                .RunTransaction<int>(mode, t => throw error, null)
+                .WaitForCompletion()
+                .AssertEqual(OnError<int>(0, error));
 
-                session.Verify(x => x.BeginTransactionAsync(mode, null, false), Times.Once);
-                session.VerifyNoOtherCalls();
+            session.Verify(x => x.BeginTransactionAsync(mode, null, false), Times.Once);
+            session.VerifyNoOtherCalls();
 
-                txc.Verify(x => x.CommitAsync(), Times.Once);
-                txc.VerifyGet(x => x.IsOpen);
-                txc.VerifyNoOtherCalls();
-            }
-
-            [Theory]
-            [MemberData(nameof(AccessModes))]
-            public void ShouldBeginTransactionAndRollback(AccessMode mode)
-            {
-                var error = new ClientException();
-                var rxSession = CreateSession(mode, null, out var session, out var txc);
-
-                rxSession
-                    .RunTransaction(mode, t => Observable.Throw<int>(error), null)
-                    .WaitForCompletion()
-                    .AssertEqual(
-                        OnError<int>(0, error));
-
-                session.Verify(x => x.BeginTransactionAsync(mode, null,false), Times.Once);
-                session.VerifyNoOtherCalls();
-
-                txc.Verify(x => x.RollbackAsync(), Times.Once);
-                txc.VerifyGet(x => x.IsOpen);
-                txc.VerifyNoOtherCalls();
-            }
-
-            [Theory]
-            [MemberData(nameof(AccessModes))]
-            public void ShouldBeginTransactionAndRollbackOnSynchronousException(AccessMode mode)
-            {
-                var error = new ClientException();
-                var rxSession = CreateSession(mode, null, out var session, out var txc);
-
-                rxSession
-                    .RunTransaction<int>(mode, t => throw error, null)
-                    .WaitForCompletion()
-                    .AssertEqual(
-                        OnError<int>(0, error));
-
-                session.Verify(x => x.BeginTransactionAsync(mode, null,false), Times.Once);
-                session.VerifyNoOtherCalls();
-
-                txc.Verify(x => x.RollbackAsync(), Times.Once);
-                txc.VerifyGet(x => x.IsOpen);
-                txc.VerifyNoOtherCalls();
-            }
-
-            private static InternalRxSession CreateSession(AccessMode mode, Action<TransactionConfigBuilder> action,
-                out Mock<IInternalAsyncSession> session, out Mock<IInternalAsyncTransaction> txc)
-            {
-                var isOpen = true;
-
-                txc = new Mock<IInternalAsyncTransaction>();
-                txc.Setup(x => x.CommitAsync()).Returns(Task.CompletedTask).Callback(() => isOpen = false);
-                txc.Setup(x => x.RollbackAsync()).Returns(Task.CompletedTask).Callback(() => isOpen = false);
-                txc.SetupGet(x => x.IsOpen).Returns(() => isOpen);
-
-                session = new Mock<IInternalAsyncSession>();
-                session.Setup(x => x.BeginTransactionAsync(mode, action, false)).ReturnsAsync(txc.Object);
-
-                return new InternalRxSession(session.Object, new SingleRetryLogic());
-            }
-
-            public static TheoryData<AccessMode> AccessModes()
-            {
-                return new TheoryData<AccessMode>
-                {
-                    AccessMode.Read,
-                    AccessMode.Write
-                };
-            }
-
-
-            private class SingleRetryLogic : IRxRetryLogic
-            {
-                public IObservable<T> Retry<T>(IObservable<T> work)
-                {
-                    return work;
-                }
-            }
+            txc.Verify(x => x.RollbackAsync(), Times.Once);
+            txc.VerifyGet(x => x.IsOpen);
+            txc.VerifyNoOtherCalls();
         }
 
-        public class Close : AbstractRxTest
+        private static InternalRxSession CreateSession(
+            AccessMode mode,
+            Action<TransactionConfigBuilder> action,
+            out Mock<IInternalAsyncSession> session,
+            out Mock<IInternalAsyncTransaction> txc)
         {
-            [Fact]
-            public void ShouldInvokeSessionCloseAsync()
-            {
-                var asyncSession = new Mock<IInternalAsyncSession>();
-                var rxSession = new InternalRxSession(asyncSession.Object, Mock.Of<IRxRetryLogic>());
+            var isOpen = true;
 
-                var close = rxSession.Close<Unit>();
+            txc = new Mock<IInternalAsyncTransaction>();
+            txc.Setup(x => x.CommitAsync()).Returns(Task.CompletedTask).Callback(() => isOpen = false);
+            txc.Setup(x => x.RollbackAsync()).Returns(Task.CompletedTask).Callback(() => isOpen = false);
+            txc.SetupGet(x => x.IsOpen).Returns(() => isOpen);
 
-                asyncSession.Verify(x => x.CloseAsync(), Times.Never);
+            session = new Mock<IInternalAsyncSession>();
+            session.Setup(x => x.BeginTransactionAsync(mode, action, false)).ReturnsAsync(txc.Object);
 
-                close.WaitForCompletion();
-
-                asyncSession.Verify(x => x.CloseAsync(), Times.Once);
-            }
+            return new InternalRxSession(session.Object, new SingleRetryLogic());
         }
 
-        public class LastBookmarks
+        public static TheoryData<AccessMode> AccessModes()
         {
-            [Fact]
-            public void ShouldDelegateToAsyncSession()
+            return new TheoryData<AccessMode>
             {
-                var asyncSession = new Mock<IInternalAsyncSession>();
-                var rxSession = new InternalRxSession(asyncSession.Object, Mock.Of<IRxRetryLogic>());
+                AccessMode.Read,
+                AccessMode.Write
+            };
+        }
 
-                var bookmark = rxSession.LastBookmarks;
-
-                asyncSession.Verify(x => x.LastBookmarks, Times.Once);
+        private class SingleRetryLogic : IRxRetryLogic
+        {
+            public IObservable<T> Retry<T>(IObservable<T> work)
+            {
+                return work;
             }
         }
-        public class LastBookmark
+    }
+
+    public class Close : AbstractRxTest
+    {
+        [Fact]
+        public void ShouldInvokeSessionCloseAsync()
         {
-            [Fact]
-            public void ShouldDelegateToAsyncSession()
-            {
-                var asyncSession = new Mock<IInternalAsyncSession>();
-                var rxSession = new InternalRxSession(asyncSession.Object, Mock.Of<IRxRetryLogic>());
+            var asyncSession = new Mock<IInternalAsyncSession>();
+            var rxSession = new InternalRxSession(asyncSession.Object, Mock.Of<IRxRetryLogic>());
 
-                var bookmark = rxSession.LastBookmark;
+            var close = rxSession.Close<Unit>();
 
-                asyncSession.Verify(x => x.LastBookmark, Times.Once);
-            }
+            asyncSession.Verify(x => x.CloseAsync(), Times.Never);
+
+            close.WaitForCompletion();
+
+            asyncSession.Verify(x => x.CloseAsync(), Times.Once);
         }
-        public class SessionConfig
+    }
+
+    public class LastBookmarks
+    {
+        [Fact]
+        public void ShouldDelegateToAsyncSession()
         {
-            [Fact]
-            public void ShouldDelegateToAsyncSession()
-            {
-                var asyncSession = new Mock<IInternalAsyncSession>();
-                var rxSession = new InternalRxSession(asyncSession.Object, Mock.Of<IRxRetryLogic>());
+            var asyncSession = new Mock<IInternalAsyncSession>();
+            var rxSession = new InternalRxSession(asyncSession.Object, Mock.Of<IRxRetryLogic>());
 
-                var bookmark = rxSession.SessionConfig;
+            var bookmark = rxSession.LastBookmarks;
 
-                asyncSession.Verify(x => x.SessionConfig, Times.Once);
-            }
+            asyncSession.Verify(x => x.LastBookmarks, Times.Once);
+        }
+    }
+
+    public class LastBookmark
+    {
+        [Fact]
+        public void ShouldDelegateToAsyncSession()
+        {
+            var asyncSession = new Mock<IInternalAsyncSession>();
+            var rxSession = new InternalRxSession(asyncSession.Object, Mock.Of<IRxRetryLogic>());
+
+            var bookmark = rxSession.LastBookmark;
+
+            asyncSession.Verify(x => x.LastBookmark, Times.Once);
+        }
+    }
+
+    public class SessionConfig
+    {
+        [Fact]
+        public void ShouldDelegateToAsyncSession()
+        {
+            var asyncSession = new Mock<IInternalAsyncSession>();
+            var rxSession = new InternalRxSession(asyncSession.Object, Mock.Of<IRxRetryLogic>());
+
+            var bookmark = rxSession.SessionConfig;
+
+            asyncSession.Verify(x => x.SessionConfig, Times.Once);
         }
     }
 }

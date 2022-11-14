@@ -1,25 +1,24 @@
 ﻿using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Tests.TestBackend
-{ 
-    internal class DriverClose : IProtocolObject
+namespace Neo4j.Driver.Tests.TestBackend;
+
+internal class DriverClose : IProtocolObject
+{
+    public DriverCloseType data { get; set; } = new();
+
+    public override async Task Process()
     {
-        public DriverCloseType data { get; set; } = new DriverCloseType();
-        
-        public class DriverCloseType
-        {
-            public string driverId { get; set; }
-        }
+        var driver = ((NewDriver)ObjManager.GetObject(data.driverId)).Driver;
+        await driver.CloseAsync();
+    }
 
-        public override async Task Process()
-        {
-            IDriver driver = ((NewDriver)ObjManager.GetObject(data.driverId)).Driver;
-            await driver.CloseAsync();                            
-        }
+    public override string Respond()
+    {
+        return new ProtocolResponse("Driver", uniqueId).Encode();
+    }
 
-        public override string Respond()
-        {   
-            return new ProtocolResponse("Driver", uniqueId).Encode();
-        }
+    public class DriverCloseType
+    {
+        public string driverId { get; set; }
     }
 }

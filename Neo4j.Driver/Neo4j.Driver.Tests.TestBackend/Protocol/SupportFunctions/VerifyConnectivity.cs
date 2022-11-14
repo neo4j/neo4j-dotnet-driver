@@ -1,25 +1,24 @@
 ﻿using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Tests.TestBackend
+namespace Neo4j.Driver.Tests.TestBackend;
+
+internal class VerifyConnectivity : IProtocolObject
 {
-	internal class VerifyConnectivity : IProtocolObject
-	{
-		public VerifyConnectivityType Data { get; set; } = new VerifyConnectivityType();
+    public VerifyConnectivityType Data { get; set; } = new();
 
-		public class VerifyConnectivityType
-		{
-			public string driverId { get; set; }
-		}
+    public override async Task Process()
+    {
+        var driver = ObjManager.GetObject<NewDriver>(Data.driverId).Driver;
+        await driver.VerifyConnectivityAsync();
+    }
 
-		public override async Task Process()
-		{
-			var driver = ObjManager.GetObject<NewDriver>(Data.driverId).Driver;
-			await driver.VerifyConnectivityAsync();			
-		}
+    public override string Respond()
+    {
+        return new ProtocolResponse("Driver", uniqueId).Encode();
+    }
 
-		public override string Respond()
-		{
-			return new ProtocolResponse("Driver", uniqueId).Encode();
-		}
-	}
+    public class VerifyConnectivityType
+    {
+        public string driverId { get; set; }
+    }
 }

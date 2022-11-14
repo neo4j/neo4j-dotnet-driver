@@ -24,54 +24,65 @@ namespace Neo4j.Driver.Internal;
 
 internal static class BoltProtocolFactory
 {
-    private const int BoltHttpIdentifier = 1213486160;  // 0x‭48 54 54 50 - or HTTP ascii codes...
-    static readonly string HttpErrorMessage = "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
-                                              $"(HTTP defaults to port 7474 whereas BOLT defaults to port {GraphDatabase.DefaultBoltPort})";
+    private const int BoltHttpIdentifier = 1213486160; // 0x‭48 54 54 50 - or HTTP ascii codes...
+
+    private static readonly string HttpErrorMessage =
+        "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
+        $"(HTTP defaults to port 7474 whereas BOLT defaults to port {GraphDatabase.DefaultBoltPort})";
+
     private static readonly string NoAgreedVersion =
         "The Neo4j server does not support any of the protocol versions supported by this client. " +
         "Ensure that you are using driver and server versions that are compatible with one another.";
 
-    private static readonly Lazy<byte[]> HandshakeBytesLazy = 
-        new(() =>
-        {
-            const int goGoBolt = 0x6060B017; 
-
-            var versions = new int[]
+    private static readonly Lazy<byte[]> HandshakeBytesLazy =
+        new(
+            () =>
             {
-                //This is a 'magic' handshake identifier to indicate we're using 'BOLT' ('GOGOBOLT')
-                goGoBolt,
-                // 4 versions max.
-                BoltProtocolVersion.V5_0.PackToInt(),
-                BoltProtocolVersion.V4_4.PackToIntRange(BoltProtocolVersion.V4_2),
-                BoltProtocolVersion.V4_1.PackToInt(),
-                BoltProtocolVersion.V30.PackToInt()
-            };
-            return versions.SelectMany(PackStreamBitConverter.GetBytes).ToArray();
-        }, LazyThreadSafetyMode.PublicationOnly);
+                const int goGoBolt = 0x6060B017;
+
+                var versions = new[]
+                {
+                    //This is a 'magic' handshake identifier to indicate we're using 'BOLT' ('GOGOBOLT')
+                    goGoBolt,
+                    // 4 versions max.
+                    BoltProtocolVersion.V5_0.PackToInt(),
+                    BoltProtocolVersion.V4_4.PackToIntRange(BoltProtocolVersion.V4_2),
+                    BoltProtocolVersion.V4_1.PackToInt(),
+                    BoltProtocolVersion.V30.PackToInt()
+                };
+
+                return versions.SelectMany(PackStreamBitConverter.GetBytes).ToArray();
+            },
+            LazyThreadSafetyMode.PublicationOnly);
 
     public static IBoltProtocol ForVersion(BoltProtocolVersion version)
     {
         return version switch
         {
-            {MajorVersion: 3, MinorVersion: 0} => new LegacyBoltProtocol(),
-            {MajorVersion: 4, MinorVersion: 1} => new BoltProtocol(null),
-            {MajorVersion: 4, MinorVersion: 2} => new BoltProtocol(null),
-            {MajorVersion: 4, MinorVersion: 3} => new BoltProtocol(new RoutingTableProtocol43()),
-            {MajorVersion: 4, MinorVersion: 4} => new BoltProtocol(new RoutingTableProtocol44()),
-            {MajorVersion: 5, MinorVersion: 0} => new BoltProtocol(new RoutingTableProtocol44()),
+            { MajorVersion: 3, MinorVersion: 0 } => new LegacyBoltProtocol(),
+            { MajorVersion: 4, MinorVersion: 1 } => new BoltProtocol(null),
+            { MajorVersion: 4, MinorVersion: 2 } => new BoltProtocol(null),
+            { MajorVersion: 4, MinorVersion: 3 } => new BoltProtocol(new RoutingTableProtocol43()),
+            { MajorVersion: 4, MinorVersion: 4 } => new BoltProtocol(new RoutingTableProtocol44()),
+            { MajorVersion: 5, MinorVersion: 0 } => new BoltProtocol(new RoutingTableProtocol44()),
             // no matching versions
-            {MajorVersion: 0, MinorVersion: 0} => throw new NotSupportedException(NoAgreedVersion),
+            { MajorVersion: 0, MinorVersion: 0 } => throw new NotSupportedException(NoAgreedVersion),
             // http response
-            _ when version == new BoltProtocolVersion(BoltHttpIdentifier) => throw new NotSupportedException(HttpErrorMessage),
+            _ when version == new BoltProtocolVersion(BoltHttpIdentifier) => throw new NotSupportedException(
+                HttpErrorMessage),
             // undefined
-            _ => throw new NotSupportedException($"Protocol error, server suggested unexpected protocol version: {version}")
+            _ => throw new NotSupportedException(
+                $"Protocol error, server suggested unexpected protocol version: {version}")
         };
     }
-        
+
     public static BoltProtocolVersion UnpackAgreedVersion(byte[] data)
-    {            
+    {
         return BoltProtocolVersion.FromPackedInt(PackStreamBitConverter.ToInt32(data));
     }
 
-    public static byte[] PackSupportedVersions() => HandshakeBytesLazy.Value;
+    public static byte[] PackSupportedVersions()
+    {
+        return HandshakeBytesLazy.Value;
+    }
 }

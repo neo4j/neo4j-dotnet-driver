@@ -17,17 +17,20 @@
 
 using System;
 using System.Threading.Tasks;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.Internal.Routing
+namespace Neo4j.Driver.Internal.Routing;
+
+internal interface IRoutingTableManager
 {
-    internal interface IRoutingTableManager
-    {
-        Task<IRoutingTable> EnsureRoutingTableForModeAsync(AccessMode mode, string database, string impersonatedUser, Bookmarks bookmark);
-        Task<IServerInfo> GetServerInfoAsync(Uri uri, string database);
-        void Clear();
-        void ForgetServer(Uri uri, string database);
-        void ForgetWriter(Uri uri, string database);
-        IRoutingTable RoutingTableFor(string database);
-    }
+    Task<IRoutingTable> EnsureRoutingTableForModeAsync(
+        AccessMode mode,
+        string database,
+        string impersonatedUser,
+        Bookmarks bookmark);
+
+    Task<IServerInfo> GetServerInfoAsync(Uri uri, string database);
+    void Clear();
+    void ForgetServer(Uri uri, string database);
+    void ForgetWriter(Uri uri, string database);
+    IRoutingTable RoutingTableFor(string database);
 }

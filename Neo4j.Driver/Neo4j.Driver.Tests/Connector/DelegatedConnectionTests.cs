@@ -20,103 +20,101 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.Connector
+namespace Neo4j.Driver.Tests.Connector;
+
+public class DelegatedConnectionTests
 {
-    public class DelegatedConnectionTests
+    internal class TestDelegatedConnection : DelegatedConnection
     {
-        internal class TestDelegatedConnection : DelegatedConnection
+        public TestDelegatedConnection(IConnection connection) : base(connection)
         {
-            public IList<Exception> ErrorList { get; } = new List<Exception>();
-
-            public TestDelegatedConnection(IConnection connection) : base(connection)
-            {
-            }
-
-            internal override Task OnErrorAsync(Exception error)
-            {
-                ErrorList.Add(error);
-                return Task.FromException(error);
-            }
         }
 
-        public class TaskWithErrorHandlingMethod
+        public IList<Exception> ErrorList { get; } = new List<Exception>();
+
+        internal override Task OnErrorAsync(Exception error)
         {
-            private static Task FaultedTask()
-            {
-                // as it is marked with async, therefore the result will be wrapped in task
-                return Task.FromException(new InvalidOperationException("Molly ate too much today!"));
-            }
+            ErrorList.Add(error);
+            return Task.FromException(error);
+        }
+    }
 
-            private static Task FaultedOutsideTask()
-            {
-                // Though this method return is a task, but this error throws before return a task
-                // Therefore there is no task created in this method
-                throw new InvalidOperationException("Molly ate too much today!");
-            }
-
-            [Fact]
-            public async void ShouldHandleBaseErrorForFaultedTask()
-            {
-                var connMock = new Mock<IConnection>();
-                var conn = new TestDelegatedConnection(connMock.Object);
-
-                await Record.ExceptionAsync(() => conn.TaskWithErrorHandling(FaultedTask));
-
-                conn.ErrorList.Count.Should().Be(1);
-                conn.ErrorList[0].Should().BeOfType<InvalidOperationException>();
-                conn.ErrorList[0].Message.Should().Be("Molly ate too much today!");
-            }
-
-            [Fact]
-            public async void ShouldHandleBaseErrorForFaultedOutsideTask()
-            {
-                var connMock = new Mock<IConnection>();
-                var conn = new TestDelegatedConnection(connMock.Object);
-
-                FaultedTask().IsFaulted.Should().BeTrue();
-                await Record.ExceptionAsync(() => conn.TaskWithErrorHandling(FaultedOutsideTask));
-
-                conn.ErrorList.Count.Should().Be(1);
-                conn.ErrorList[0].Should().BeOfType<InvalidOperationException>();
-                conn.ErrorList[0].Message.Should().Be("Molly ate too much today!");
-            }
+    public class TaskWithErrorHandlingMethod
+    {
+        private static Task FaultedTask()
+        {
+            // as it is marked with async, therefore the result will be wrapped in task
+            return Task.FromException(new InvalidOperationException("Molly ate too much today!"));
         }
 
-        public class ModeProperty
+        private static Task FaultedOutsideTask()
         {
-            [Theory]
-            [InlineData(AccessMode.Read)]
-            [InlineData(AccessMode.Write)]
-            public void ShouldGetModeFromDelegate(AccessMode mode)
-            {
-                var connMock = new Mock<IConnection>();
-                connMock.Setup(x => x.Mode).Returns(mode);
-
-                var delegateConnection = new TestDelegatedConnection(connMock.Object);
-
-                delegateConnection.Mode.Should().Be(mode);
-
-                connMock.VerifyGet(x => x.Mode);
-            }
-            //
-            // [Theory]
-            // [InlineData(AccessMode.Read)]
-            // [InlineData(AccessMode.Write)]
-            // public void ShouldSetModeOnDelegate(AccessMode mode)
-            // {
-            //     var connMock = new Mock<IConnection>();
-            //     connMock.Setup(x => x.Mode).Returns(mode);
-            //
-            //     var delegateConnection = new TestDelegatedConnection(connMock.Object);
-            //
-            //     delegateConnection.Mode = mode;
-            //
-            //     connMock.VerifySet(c => c.Mode = mode);
-            // }
+            // Though this method return is a task, but this error throws before return a task
+            // Therefore there is no task created in this method
+            throw new InvalidOperationException("Molly ate too much today!");
         }
+
+        [Fact]
+        public async void ShouldHandleBaseErrorForFaultedTask()
+        {
+            var connMock = new Mock<IConnection>();
+            var conn = new TestDelegatedConnection(connMock.Object);
+
+            await Record.ExceptionAsync(() => conn.TaskWithErrorHandling(FaultedTask));
+
+            conn.ErrorList.Count.Should().Be(1);
+            conn.ErrorList[0].Should().BeOfType<InvalidOperationException>();
+            conn.ErrorList[0].Message.Should().Be("Molly ate too much today!");
+        }
+
+        [Fact]
+        public async void ShouldHandleBaseErrorForFaultedOutsideTask()
+        {
+            var connMock = new Mock<IConnection>();
+            var conn = new TestDelegatedConnection(connMock.Object);
+
+            FaultedTask().IsFaulted.Should().BeTrue();
+            await Record.ExceptionAsync(() => conn.TaskWithErrorHandling(FaultedOutsideTask));
+
+            conn.ErrorList.Count.Should().Be(1);
+            conn.ErrorList[0].Should().BeOfType<InvalidOperationException>();
+            conn.ErrorList[0].Message.Should().Be("Molly ate too much today!");
+        }
+    }
+
+    public class ModeProperty
+    {
+        [Theory]
+        [InlineData(AccessMode.Read)]
+        [InlineData(AccessMode.Write)]
+        public void ShouldGetModeFromDelegate(AccessMode mode)
+        {
+            var connMock = new Mock<IConnection>();
+            connMock.Setup(x => x.Mode).Returns(mode);
+
+            var delegateConnection = new TestDelegatedConnection(connMock.Object);
+
+            delegateConnection.Mode.Should().Be(mode);
+
+            connMock.VerifyGet(x => x.Mode);
+        }
+        //
+        // [Theory]
+        // [InlineData(AccessMode.Read)]
+        // [InlineData(AccessMode.Write)]
+        // public void ShouldSetModeOnDelegate(AccessMode mode)
+        // {
+        //     var connMock = new Mock<IConnection>();
+        //     connMock.Setup(x => x.Mode).Returns(mode);
+        //
+        //     var delegateConnection = new TestDelegatedConnection(connMock.Object);
+        //
+        //     delegateConnection.Mode = mode;
+        //
+        //     connMock.VerifySet(c => c.Mode = mode);
+        // }
     }
 }

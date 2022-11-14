@@ -16,54 +16,53 @@
 // limitations under the License.
 
 using System;
-using System.Linq;
 using FluentAssertions;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
+namespace Neo4j.Driver.IntegrationTests.Stress;
+
+public class BlockingWriteCommandTxFunc<TContext> : BlockingCommand<TContext>
+    where TContext : StressTestContext
 {
-	public class BlockingWriteCommandTxFunc<TContext> : BlockingCommand<TContext>
-		where TContext : StressTestContext
-	{
-		private readonly StressTest<TContext> _test;
+    private readonly StressTest<TContext> _test;
 
-		public BlockingWriteCommandTxFunc(StressTest<TContext> test, IDriver driver, bool useBookmark)
-			: base(driver, useBookmark)
-		{
-			_test = test ?? throw new ArgumentNullException(nameof(test));
-		}
+    public BlockingWriteCommandTxFunc(StressTest<TContext> test, IDriver driver, bool useBookmark)
+        : base(driver, useBookmark)
+    {
+        _test = test ?? throw new ArgumentNullException(nameof(test));
+    }
 
-		public override void Execute(TContext context)
-		{
-			var summary = default(IResultSummary);
-			var error = default(Exception);
+    public override void Execute(TContext context)
+    {
+        var summary = default(IResultSummary);
+        var error = default(Exception);
 
-			try
-			{
-				using var session = NewSession(AccessMode.Write, context);
-				session.WriteTransaction(txc =>
-				{
-					summary = txc.Run("CREATE ()").Consume();
-					txc.Commit();
+        try
+        {
+            using var session = NewSession(AccessMode.Write, context);
+            session.WriteTransaction(
+                txc =>
+                {
+                    summary = txc.Run("CREATE ()").Consume();
+                    txc.Commit();
 
-					return summary;
-				});
+                    return summary;
+                });
 
-				context.Bookmarks = session.LastBookmarks;
-			}
-			catch (Exception exc)
-			{
-				error = exc;
-				if (!_test.HandleWriteFailure(error, context))
-				{
-					throw;
-				}
-			}
+            context.Bookmarks = session.LastBookmarks;
+        }
+        catch (Exception exc)
+        {
+            error = exc;
+            if (!_test.HandleWriteFailure(error, context))
+            {
+                throw;
+            }
+        }
 
-			if (error == null && summary != null)
-			{
-				summary.Counters.NodesCreated.Should().Be(1);
-				context.NodeCreated();
-			}
-		}
-	}
+        if (error == null && summary != null)
+        {
+            summary.Counters.NodesCreated.Should().Be(1);
+            context.NodeCreated();
+        }
+    }
 }

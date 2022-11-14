@@ -16,55 +16,56 @@
 // limitations under the License.
 
 using System;
-using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
+namespace Neo4j.Driver.IntegrationTests.Stress;
+
+public class RxWriteCommandInTx<TContext> : RxCommand<TContext>
+    where TContext : StressTestContext
 {
-    public class RxWriteCommandInTx<TContext> : RxCommand<TContext>
-        where TContext : StressTestContext
+    private readonly StressTest<TContext> _test;
+
+    public RxWriteCommandInTx(StressTest<TContext> test, IDriver driver, bool useBookmark)
+        : base(driver, useBookmark)
     {
-        private readonly StressTest<TContext> _test;
+        _test = test ?? throw new ArgumentNullException(nameof(test));
+    }
 
-        public RxWriteCommandInTx(StressTest<TContext> test, IDriver driver, bool useBookmark)
-            : base(driver, useBookmark)
-        {
-            _test = test ?? throw new ArgumentNullException(nameof(test));
-        }
+    public override async Task ExecuteAsync(TContext context)
+    {
+        var session = NewSession(AccessMode.Write, context);
 
-        public override async Task ExecuteAsync(TContext context)
-        {
-            var session = NewSession(AccessMode.Write, context);
-
-            await BeginTransaction(session, context)
-                .SelectMany(txc => txc
+        await BeginTransaction(session, context)
+            .SelectMany(
+                txc => txc
                     .Run("CREATE ()")
                     .Consume()
-                    .Catch((Exception error) =>
-                        !_test.HandleWriteFailure(error, context)
-                            ? txc.Rollback<IResultSummary>().Concat(Observable.Throw<IResultSummary>(error))
-                            : txc.Rollback<IResultSummary>()
-                    )
+                    .Catch(
+                        (Exception error) =>
+                            !_test.HandleWriteFailure(error, context)
+                                ? txc.Rollback<IResultSummary>().Concat(Observable.Throw<IResultSummary>(error))
+                                : txc.Rollback<IResultSummary>())
                     .Concat(txc.Commit<IResultSummary>())
-                    .Select(summary =>
-                    {
-                        summary.Counters.NodesCreated.Should().Be(1);
-                        context.NodeCreated();
-                        return summary;
-                    })
-                    .Finally(() =>
-                    {
-                        if (session.LastBookmarks != null)
+                    .Select(
+                        summary =>
                         {
-                            context.Bookmarks = session.LastBookmarks;
-                        }
-                    })
-                ).SingleOrDefaultAsync()
-                .CatchAndThrow(_ => session.Close<IResultSummary>())
-                .Concat(session.Close<IResultSummary>());
-        }
+                            summary.Counters.NodesCreated.Should().Be(1);
+                            context.NodeCreated();
+                            return summary;
+                        })
+                    .Finally(
+                        () =>
+                        {
+                            if (session.LastBookmarks != null)
+                            {
+                                context.Bookmarks = session.LastBookmarks;
+                            }
+                        }))
+            .SingleOrDefaultAsync()
+            .CatchAndThrow(_ => session.Close<IResultSummary>())
+            .Concat(session.Close<IResultSummary>());
     }
 }

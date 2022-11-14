@@ -27,9 +27,9 @@ namespace Neo4j.Driver.Internal.IO;
 
 internal sealed class PackStreamWriter
 {
-    private readonly Stream _stream;
     private readonly MessageFormat _format;
-    
+    private readonly Stream _stream;
+
     public PackStreamWriter(MessageFormat format, ChunkWriter stream)
     {
         _format = format;
@@ -43,60 +43,82 @@ internal sealed class PackStreamWriter
             case null:
                 WriteNull();
                 break;
+
             case bool boolValue:
                 WriteBool(boolValue);
                 break;
+
             case sbyte sbyteValue:
                 WriteLong(Convert.ToInt64(sbyteValue));
                 break;
+
             case byte byteValue:
                 WriteLong(Convert.ToInt64(byteValue));
                 break;
+
             case short shortValue:
                 WriteLong(Convert.ToInt64(shortValue));
                 break;
+
             case int intValue:
                 WriteLong(Convert.ToInt64(intValue));
                 break;
+
             case long longValue:
                 WriteLong(longValue);
                 break;
+
             case byte[] bytes:
                 WriteByteArray(bytes);
                 break;
+
             case double doubleValue:
                 WriteDouble(doubleValue);
                 break;
+
             case float floatValue:
                 WriteDouble(Convert.ToDouble(floatValue, CultureInfo.InvariantCulture));
                 break;
+
             case decimal decimalValue:
                 WriteDouble(Convert.ToDouble(decimalValue, CultureInfo.InvariantCulture));
                 break;
+
             case char charValue:
                 WriteChar(charValue);
                 break;
+
             case string stringValue:
                 WriteString(stringValue);
                 break;
+
             case IList list:
                 WriteList(list);
                 break;
+
             case IDictionary dictionary:
                 WriteDictionary(dictionary);
                 break;
+
             case IEnumerable enumerable:
                 WriteEnumerable(enumerable);
                 break;
+
             case IMessage message:
                 WriteMessage(message);
-                break;  
+                break;
+
             default:
                 if (_format.WriteStructHandlers.TryGetValue(value.GetType(), out var structHandler))
+                {
                     structHandler.Serialize(_format.Version, this, value);
+                }
                 else
+                {
                     throw new ProtocolException(
                         $"Cannot understand {nameof(value)} with type {value.GetType().FullName}");
+                }
+
                 break;
         }
     }
@@ -115,7 +137,10 @@ internal sealed class PackStreamWriter
     {
         var list = new List<object>();
         foreach (var item in value)
+        {
             list.Add(item);
+        }
+
         WriteList(list);
     }
 
@@ -123,22 +148,22 @@ internal sealed class PackStreamWriter
     {
         if (value >= Minus2ToThe4 && value < Plus2ToThe7)
         {
-            _stream.WriteByte((byte) value);
+            _stream.WriteByte((byte)value);
         }
         else if (value is >= Minus2ToThe7 and < Minus2ToThe4)
         {
             _stream.WriteByte(Int8);
-            _stream.Write(PackStreamBitConverter.GetBytes((byte) value));
+            _stream.Write(PackStreamBitConverter.GetBytes((byte)value));
         }
         else if (value >= Minus2ToThe15 && value < Plus2ToThe15)
         {
             _stream.WriteByte(PackStream.Int16);
-            _stream.Write(PackStreamBitConverter.GetBytes((short) value));
+            _stream.Write(PackStreamBitConverter.GetBytes((short)value));
         }
         else if (value >= Minus2ToThe31 && value < Plus2ToThe31)
         {
             _stream.WriteByte(PackStream.Int32);
-            _stream.Write(PackStreamBitConverter.GetBytes((int) value));
+            _stream.Write(PackStreamBitConverter.GetBytes((int)value));
         }
         else
         {
@@ -200,7 +225,9 @@ internal sealed class PackStreamWriter
         {
             WriteListHeader(value.Count);
             foreach (var item in value)
+            {
                 Write(item);
+            }
         }
     }
 
@@ -220,7 +247,7 @@ internal sealed class PackStreamWriter
             }
         }
     }
-    
+
     public void WriteDictionary(IDictionary<string, string> values)
     {
         if (values == null)
@@ -270,12 +297,12 @@ internal sealed class PackStreamWriter
         if (size <= byte.MaxValue)
         {
             _stream.WriteByte(Bytes8);
-            _stream.Write(new[] {(byte) size});
+            _stream.Write(new[] { (byte)size });
         }
         else if (size <= short.MaxValue)
         {
             _stream.WriteByte(Bytes16);
-            _stream.Write(PackStreamBitConverter.GetBytes((short) size));
+            _stream.Write(PackStreamBitConverter.GetBytes((short)size));
         }
         else
         {
@@ -288,18 +315,18 @@ internal sealed class PackStreamWriter
     {
         if (size < 0x10)
         {
-            _stream.WriteByte((byte) (TinyList | size));
+            _stream.WriteByte((byte)(TinyList | size));
             _stream.Write(new byte[0]);
         }
         else if (size <= byte.MaxValue)
         {
             _stream.WriteByte(List8);
-            _stream.Write(new[] {(byte) size});
+            _stream.Write(new[] { (byte)size });
         }
         else if (size <= short.MaxValue)
         {
             _stream.WriteByte(List16);
-            _stream.Write(PackStreamBitConverter.GetBytes((short) size));
+            _stream.Write(PackStreamBitConverter.GetBytes((short)size));
         }
         else
         {
@@ -312,18 +339,18 @@ internal sealed class PackStreamWriter
     {
         if (size < 0x10)
         {
-            _stream.WriteByte((byte) (TinyMap | size));
+            _stream.WriteByte((byte)(TinyMap | size));
             _stream.Write(new byte[0]);
         }
         else if (size <= byte.MaxValue)
         {
             _stream.WriteByte(Map8);
-            _stream.Write(new[] {(byte) size});
+            _stream.Write(new[] { (byte)size });
         }
         else if (size <= short.MaxValue)
         {
             _stream.WriteByte(Map16);
-            _stream.Write(PackStreamBitConverter.GetBytes((short) size));
+            _stream.Write(PackStreamBitConverter.GetBytes((short)size));
         }
         else
         {
@@ -336,17 +363,17 @@ internal sealed class PackStreamWriter
     {
         if (size < 0x10)
         {
-            _stream.WriteByte((byte) (TinyString | size));
+            _stream.WriteByte((byte)(TinyString | size));
         }
         else if (size <= byte.MaxValue)
         {
             _stream.WriteByte(String8);
-            _stream.Write(new[] {(byte) size});
+            _stream.Write(new[] { (byte)size });
         }
         else if (size <= short.MaxValue)
         {
             _stream.WriteByte(String16);
-            _stream.Write(PackStreamBitConverter.GetBytes((short) size));
+            _stream.Write(PackStreamBitConverter.GetBytes((short)size));
         }
         else
         {
@@ -359,24 +386,23 @@ internal sealed class PackStreamWriter
     {
         if (size < 0x10)
         {
-            _stream.WriteByte((byte) (TinyStruct | size));
-            _stream.Write(new[] {signature});
+            _stream.WriteByte((byte)(TinyStruct | size));
+            _stream.Write(new[] { signature });
         }
         else if (size <= byte.MaxValue)
         {
             _stream.WriteByte(Struct8);
-            _stream.Write(new[] {(byte) size, signature});
+            _stream.Write(new[] { (byte)size, signature });
         }
         else if (size <= short.MaxValue)
         {
             _stream.WriteByte(Struct16);
-            _stream.Write(PackStreamBitConverter.GetBytes((short) size));
+            _stream.Write(PackStreamBitConverter.GetBytes((short)size));
             _stream.WriteByte(signature);
         }
         else
         {
-            throw new ProtocolException(
-                $"Structures cannot have more than {short.MaxValue} fields");
+            throw new ProtocolException($"Structures cannot have more than {short.MaxValue} fields");
         }
     }
 }

@@ -17,63 +17,62 @@
 
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.Result
+namespace Neo4j.Driver.Internal.Result;
+
+internal class ConsumableResultCursor : IInternalResultCursor
 {
-    internal class ConsumableResultCursor : IInternalResultCursor
+    private readonly IInternalResultCursor _cursor;
+    private bool _isConsumed;
+
+    public ConsumableResultCursor(IInternalResultCursor cursor)
     {
-        private readonly IInternalResultCursor _cursor;
-        private bool _isConsumed;
+        _cursor = cursor;
+    }
 
-        public ConsumableResultCursor(IInternalResultCursor cursor)
-        {
-            _cursor = cursor;
-        }
+    public Task<string[]> KeysAsync()
+    {
+        return _cursor.KeysAsync();
+    }
 
-        public Task<string[]> KeysAsync()
-        {
-            return _cursor.KeysAsync();
-        }
+    public Task<IResultSummary> ConsumeAsync()
+    {
+        _isConsumed = true;
+        return _cursor.ConsumeAsync();
+    }
 
-        public Task<IResultSummary> ConsumeAsync()
-        {
-            _isConsumed = true;
-            return _cursor.ConsumeAsync();
-        }
+    public Task<IRecord> PeekAsync()
+    {
+        AssertNotConsumed();
+        return _cursor.PeekAsync();
+    }
 
-        public Task<IRecord> PeekAsync()
+    public Task<bool> FetchAsync()
+    {
+        AssertNotConsumed();
+        return _cursor.FetchAsync();
+    }
+
+    public IRecord Current
+    {
+        get
         {
             AssertNotConsumed();
-            return _cursor.PeekAsync();
+            return _cursor.Current;
         }
+    }
 
-        public Task<bool> FetchAsync()
+    public bool IsOpen => !_isConsumed;
+
+    public void Cancel()
+    {
+        _cursor.Cancel();
+    }
+
+    private void AssertNotConsumed()
+    {
+        if (_isConsumed)
         {
-            AssertNotConsumed();
-            return _cursor.FetchAsync();
-        }
-
-        public IRecord Current
-        {
-            get
-            {
-                AssertNotConsumed();
-                return _cursor.Current;
-            }
-        }
-
-        public bool IsOpen => !_isConsumed;
-
-        public void Cancel()
-        {
-            _cursor.Cancel();
-        }
-
-        private void AssertNotConsumed()
-        {
-            if (_isConsumed)
-            {
-                throw ErrorExtensions.NewResultConsumedException();
-            }
+            throw ErrorExtensions.NewResultConsumedException();
         }
     }
 }

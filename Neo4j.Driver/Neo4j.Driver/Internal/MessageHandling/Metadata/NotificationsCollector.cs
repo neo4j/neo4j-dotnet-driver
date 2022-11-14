@@ -15,60 +15,61 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Result;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata
+namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
+
+internal class NotificationsCollector : IMetadataCollector<IList<INotification>>
 {
-    internal class NotificationsCollector : IMetadataCollector<IList<INotification>>
+    internal const string NotificationsKey = "notifications";
+
+    object IMetadataCollector.Collected => Collected;
+
+    public IList<INotification> Collected { get; private set; }
+
+    public void Collect(IDictionary<string, object> metadata)
     {
-        internal const string NotificationsKey = "notifications";
-
-        object IMetadataCollector.Collected => Collected;
-
-        public IList<INotification> Collected { get; private set; }
-
-        public void Collect(IDictionary<string, object> metadata)
+        if (metadata != null && metadata.TryGetValue(NotificationsKey, out var notificationsValue))
         {
-            if (metadata != null && metadata.TryGetValue(NotificationsKey, out var notificationsValue))
+            switch (notificationsValue)
             {
-                switch (notificationsValue)
-                {
-                    case null:
-                        Collected = null;
-                        break;
-                    case List<object> notificationsList:
-                        Collected = notificationsList.Cast<IDictionary<string, object>>().Select(CollectNotification)
-                            .ToList();
-                        break;
-                    default:
-                        throw new ProtocolException(
-                            $"Expected '{NotificationsKey}' metadata to be of type 'List<Object>', but got '{notificationsValue?.GetType().Name}'.");
-                }
+                case null:
+                    Collected = null;
+                    break;
+
+                case List<object> notificationsList:
+                    Collected = notificationsList.Cast<IDictionary<string, object>>()
+                        .Select(CollectNotification)
+                        .ToList();
+
+                    break;
+
+                default:
+                    throw new ProtocolException(
+                        $"Expected '{NotificationsKey}' metadata to be of type 'List<Object>', but got '{notificationsValue?.GetType().Name}'.");
             }
         }
+    }
 
-        private static INotification CollectNotification(IDictionary<string, object> notificationDict)
+    private static INotification CollectNotification(IDictionary<string, object> notificationDict)
+    {
+        var code = notificationDict.GetValue("code", string.Empty);
+        var title = notificationDict.GetValue("title", string.Empty);
+        var description = notificationDict.GetValue("description", string.Empty);
+        var posValue = notificationDict.GetValue("position", new Dictionary<string, object>());
+        var severity = notificationDict.GetValue("severity", string.Empty);
+        var foundOffset = posValue.TryGetValue("offset", 0L, out var offset);
+        var foundLine = posValue.TryGetValue("line", 0L, out var line);
+        var foundColumn = posValue.TryGetValue("column", 0L, out var column);
+
+        if (foundOffset || foundLine || foundColumn)
         {
-            var code = notificationDict.GetValue("code", string.Empty);
-            var title = notificationDict.GetValue("title", string.Empty);
-            var description = notificationDict.GetValue("description", string.Empty);
-            var posValue = notificationDict.GetValue("position", new Dictionary<string, object>());
-            var severity = notificationDict.GetValue("severity", string.Empty);
-            var foundOffset = posValue.TryGetValue("offset", 0L, out var offset);
-            var foundLine = posValue.TryGetValue("line", 0L, out var line);
-            var foundColumn = posValue.TryGetValue("column", 0L, out var column);
-
-            if (foundOffset || foundLine || foundColumn)
-            {
-                var position = new InputPosition((int) offset, (int) line, (int) column);
-                return new Notification(code, title, description, position, severity);
-            }
-
-            return new Notification(code, title, description, null, severity);
+            var position = new InputPosition((int)offset, (int)line, (int)column);
+            return new Notification(code, title, description, position, severity);
         }
+
+        return new Notification(code, title, description, null, severity);
     }
 }

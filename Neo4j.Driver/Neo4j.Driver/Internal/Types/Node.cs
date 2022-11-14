@@ -18,53 +18,56 @@
 using System;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.Types
+namespace Neo4j.Driver.Internal.Types;
+
+internal class Node : INode
 {
-    internal class Node : INode
+    public Node(long id, IReadOnlyList<string> labels, IReadOnlyDictionary<string, object> prop)
     {
-        [Obsolete("Replaced with ElementId, Will be removed in 6.0")]
-        public long Id { get; set; }
+        Id = id;
+        ElementId = id.ToString();
+        Labels = labels;
+        Properties = prop;
+    }
 
-        public string ElementId { get; }
-        public IReadOnlyList<string> Labels { get; }
-        public IReadOnlyDictionary<string, object> Properties { get; }
-        public object this[string key] => Properties[key];
+    public Node(long id, string elementId, IReadOnlyList<string> labels, IReadOnlyDictionary<string, object> prop)
+    {
+        Id = id;
+        ElementId = elementId;
+        Labels = labels;
+        Properties = prop;
+    }
 
-        public Node(long id, IReadOnlyList<string> labels, IReadOnlyDictionary<string, object> prop)
+    [Obsolete("Replaced with ElementId, Will be removed in 6.0")]
+    public long Id { get; set; }
+
+    public string ElementId { get; }
+    public IReadOnlyList<string> Labels { get; }
+    public IReadOnlyDictionary<string, object> Properties { get; }
+    public object this[string key] => Properties[key];
+
+    public bool Equals(INode other)
+    {
+        if (other == null)
         {
-            Id = id;
-            ElementId = id.ToString();
-            Labels = labels;
-            Properties = prop;
+            return false;
         }
 
-        public Node(long id, string elementId, IReadOnlyList<string> labels, IReadOnlyDictionary<string, object> prop)
+        if (ReferenceEquals(this, other))
         {
-            Id = id;
-            ElementId = elementId;
-            Labels = labels;
-            Properties = prop;
+            return true;
         }
 
-        public bool Equals(INode other)
-        {
-            if (other == null)
-                return false;
-            
-            if (ReferenceEquals(this, other))
-                return true;
-            
-            return Equals(ElementId, other.ElementId);
-        }
+        return Equals(ElementId, other.ElementId);
+    }
 
-        public override bool Equals(object obj)
-        {
-            return Equals(obj as INode);
-        }
+    public override bool Equals(object obj)
+    {
+        return Equals(obj as INode);
+    }
 
-        public override int GetHashCode()
-        {
-            return ElementId.GetHashCode();
-        }
+    public override int GetHashCode()
+    {
+        return ElementId.GetHashCode();
     }
 }

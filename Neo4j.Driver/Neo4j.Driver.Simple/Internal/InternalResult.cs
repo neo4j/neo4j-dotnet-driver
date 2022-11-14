@@ -19,45 +19,45 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal class InternalResult : IResult
 {
-    internal class InternalResult : IResult
+    private readonly IResultCursor _cursor;
+    private readonly BlockingExecutor _executor;
+    private readonly IRecordSet _recordSet;
+
+    public InternalResult(IResultCursor cursor, BlockingExecutor executor)
     {
-        private readonly IResultCursor _cursor;
-        private readonly IRecordSet _recordSet;
-        private readonly BlockingExecutor _executor;
+        _cursor = cursor ?? throw new ArgumentNullException(nameof(cursor));
+        _executor = executor ?? throw new ArgumentNullException(nameof(executor));
 
-        public InternalResult(IResultCursor cursor, BlockingExecutor executor)
-        {
-            _cursor = cursor ?? throw new ArgumentNullException(nameof(cursor));
-            _executor = executor ?? throw new ArgumentNullException(nameof(executor));
+        _cursor = cursor;
+        _recordSet = new RecordSet(cursor, executor);
+        _executor = executor;
+    }
 
-            _cursor = cursor;
-            _recordSet = new RecordSet(cursor, executor);
-            _executor = executor;
-        }
+    public IReadOnlyList<string> Keys => _executor.RunSync(() => _cursor.KeysAsync());
 
-        public IReadOnlyList<string> Keys => _executor.RunSync(() => _cursor.KeysAsync());
+    public IRecord Peek()
+    {
+        return _recordSet.Peek();
+    }
 
-        public IRecord Peek()
-        {
-            return _recordSet.Peek();
-        }
-        public IResultSummary Consume()
-        {
-            return _executor.RunSync(() => _cursor.ConsumeAsync());
-        }
+    public IResultSummary Consume()
+    {
+        return _executor.RunSync(() => _cursor.ConsumeAsync());
+    }
 
-        public bool IsOpen => _cursor.IsOpen;
+    public bool IsOpen => _cursor.IsOpen;
 
-        public IEnumerator<IRecord> GetEnumerator()
-        {
-            return _recordSet.Records().GetEnumerator();
-        }
+    public IEnumerator<IRecord> GetEnumerator()
+    {
+        return _recordSet.Records().GetEnumerator();
+    }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }

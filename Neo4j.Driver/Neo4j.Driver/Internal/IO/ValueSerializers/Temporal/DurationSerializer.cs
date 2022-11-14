@@ -22,14 +22,13 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 
 internal sealed class DurationSerializer : IPackStreamSerializer
 {
-    internal static readonly DurationSerializer Instance = new();
-    
-    public const byte StructType = (byte) 'E';
+    public const byte StructType = (byte)'E';
     public const int StructSize = 4;
+    internal static readonly DurationSerializer Instance = new();
 
-    public IEnumerable<byte> ReadableStructs => new[] {StructType};
+    public IEnumerable<byte> ReadableStructs => new[] { StructType };
 
-    public IEnumerable<Type> WritableTypes => new[] {typeof(Duration)};
+    public IEnumerable<Type> WritableTypes => new[] { typeof(Duration) };
 
     public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
     {

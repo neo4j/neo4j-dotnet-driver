@@ -18,11 +18,10 @@
 using System.Net;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.Connector
+namespace Neo4j.Driver.Internal.Connector;
+
+internal interface IHostResolver
 {
-    internal interface IHostResolver
-    {
-        IPAddress[] Resolve(string hostname);
-        Task<IPAddress[]> ResolveAsync(string hostname);
-    }
+    IPAddress[] Resolve(string hostname);
+    Task<IPAddress[]> ResolveAsync(string hostname);
 }

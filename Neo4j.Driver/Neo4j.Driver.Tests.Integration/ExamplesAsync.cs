@@ -51,13 +51,15 @@ public class ExamplesAsync
             // family of methods instead and provides async capable methods. 
             var reader = await session.RunAsync(
                 "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher query
-                new {id = 0} // Parameters in the query, if any
+                new { id = 0 } // Parameters in the query, if any
             );
 
             // Loop through the records asynchronously
             while (await reader.FetchAsync())
                 // Each current read in buffer can be reached via Current
+            {
                 records.Add(reader.Current[0].ToString());
+            }
 
             return records;
         }
@@ -69,23 +71,26 @@ public class ExamplesAsync
             await using var session = Driver.AsyncSession();
             // Wrap whole operation into an managed transaction and
             // get the results back.
-            return await session.ExecuteReadAsync(async tx =>
-            {
-                var products = new List<string>();
+            return await session.ExecuteReadAsync(
+                async tx =>
+                {
+                    var products = new List<string>();
 
-                // Send cypher query to the database
-                var reader = await tx.RunAsync(
-                    "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher query
-                    new {id = 0} // Parameters in the query, if any
-                );
+                    // Send cypher query to the database
+                    var reader = await tx.RunAsync(
+                        "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher query
+                        new { id = 0 } // Parameters in the query, if any
+                    );
 
-                // Loop through the records asynchronously
-                while (await reader.FetchAsync())
-                    // Each current read in buffer can be reached via Current
-                    products.Add(reader.Current[0].ToString());
+                    // Loop through the records asynchronously
+                    while (await reader.FetchAsync())
+                        // Each current read in buffer can be reached via Current
+                    {
+                        products.Add(reader.Current[0].ToString());
+                    }
 
-                return products;
-            });
+                    return products;
+                });
         }
         // end::async-transaction-function[]
 
@@ -101,7 +106,7 @@ public class ExamplesAsync
             // transaction acquired
             var reader = await tx.RunAsync(
                 "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher query
-                new {id = 0} // Parameters in the query, if any
+                new { id = 0 } // Parameters in the query, if any
             );
 
             // Loop through the records asynchronously
@@ -120,43 +125,46 @@ public class ExamplesAsync
         {
             await using var session = Driver.AsyncSession();
 
-            var names = await session.ExecuteReadAsync(async tx =>
-            {
-                var cursor = await tx.RunAsync("MATCH (a:Person) RETURN a.name AS name");
-                var people = await cursor.ToListAsync();
-                return people.Select(person => person["name"].As<string>());
-            });
-
-            return await session.ExecuteWriteAsync(async tx =>
-            {
-                var relationshipsCreated = new List<int>();
-                foreach (var personName in names)
+            var names = await session.ExecuteReadAsync(
+                async tx =>
                 {
-                    var cursor = await tx.RunAsync(
-                        "MATCH (emp:Person {name: $person_name}) " +
-                        "MERGE (com:Company {name: $company_name}) " +
-                        "MERGE (emp)-[:WORKS_FOR]->(com)",
-                        new
-                        {
-                            person_name = personName,
-                            company_name = companyName
-                        });
+                    var cursor = await tx.RunAsync("MATCH (a:Person) RETURN a.name AS name");
+                    var people = await cursor.ToListAsync();
+                    return people.Select(person => person["name"].As<string>());
+                });
 
-                    var summary = await cursor.ConsumeAsync();
+            return await session.ExecuteWriteAsync(
+                async tx =>
+                {
+                    var relationshipsCreated = new List<int>();
+                    foreach (var personName in names)
+                    {
+                        var cursor = await tx.RunAsync(
+                            "MATCH (emp:Person {name: $person_name}) " +
+                            "MERGE (com:Company {name: $company_name}) " +
+                            "MERGE (emp)-[:WORKS_FOR]->(com)",
+                            new
+                            {
+                                person_name = personName,
+                                company_name = companyName
+                            });
 
-                    relationshipsCreated.Add(summary.Counters.RelationshipsCreated);
-                }
+                        var summary = await cursor.ConsumeAsync();
 
-                return relationshipsCreated.Sum();
-            });
+                        relationshipsCreated.Add(summary.Counters.RelationshipsCreated);
+                    }
+
+                    return relationshipsCreated.Sum();
+                });
         }
         // end::async-multiple-tx[]
 
         [RequireServerFact]
         public async void TestAutocommitTransactionExample()
         {
-            await WriteAsync("CREATE (p:Product) SET p.id = $id, p.title = $title",
-                new {id = 0, title = "Product-0"});
+            await WriteAsync(
+                "CREATE (p:Product) SET p.id = $id, p.title = $title",
+                new { id = 0, title = "Product-0" });
 
             var results = await ReadProductTitles();
 
@@ -168,8 +176,9 @@ public class ExamplesAsync
         [RequireServerFact]
         public async void TestTransactionFunctionExample()
         {
-            await WriteAsync("CREATE (p:Product) SET p.id = $id, p.title = $title",
-                new {id = 0, title = "Product-0"});
+            await WriteAsync(
+                "CREATE (p:Product) SET p.id = $id, p.title = $title",
+                new { id = 0, title = "Product-0" });
 
             var results = await PrintAllProducts();
 
@@ -181,8 +190,9 @@ public class ExamplesAsync
         [RequireServerFact]
         public async void TestExplicitTransactionExample()
         {
-            await WriteAsync("CREATE (p:Product) SET p.id = $id, p.title = $title",
-                new {id = 0, title = "Product-0"});
+            await WriteAsync(
+                "CREATE (p:Product) SET p.id = $id, p.title = $title",
+                new { id = 0, title = "Product-0" });
 
             var result = await PrintSingleProduct();
 
@@ -193,8 +203,9 @@ public class ExamplesAsync
         [RequireServerFact]
         public async void TestAsyncMultipleTxExample()
         {
-            await WriteAsync("CREATE (a:Person {name: $nameA}), (b:Person {name: $nameB})",
-                new {nameA = "Alice", nameB = "Bob"});
+            await WriteAsync(
+                "CREATE (a:Person {name: $nameA}), (b:Person {name: $nameB})",
+                new { nameA = "Alice", nameB = "Bob" });
 
             var result = await EmployEveryoneInCompany("Acme");
 
@@ -214,7 +225,7 @@ public class ExamplesAsync
         public async Task AddPersonAsync(string name)
         {
             await using var session = Driver.AsyncSession();
-            await session.RunAsync("CREATE (a:Person {name: $name})", new {name});
+            await session.RunAsync("CREATE (a:Person {name: $name})", new { name });
         }
 
         [RequireServerFact]
@@ -266,7 +277,9 @@ public class ExamplesAsync
 
         public IDriver CreateDriverWithCustomizedConnectionTimeout(string uri, string user, string password)
         {
-            return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
+            return GraphDatabase.Driver(
+                uri,
+                AuthTokens.Basic(user, password),
                 o => o.WithConnectionTimeout(TimeSpan.FromSeconds(15)));
         }
 
@@ -295,7 +308,9 @@ public class ExamplesAsync
 
         public IDriver CreateDriverWithCustomizedMaxRetryTime(string uri, string user, string password)
         {
-            return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
+            return GraphDatabase.Driver(
+                uri,
+                AuthTokens.Basic(user, password),
                 o => o.WithMaxTransactionRetryTime(TimeSpan.FromSeconds(15)));
         }
 
@@ -324,7 +339,9 @@ public class ExamplesAsync
 
         public IDriver CreateDriverWithCustomizedTrustStrategy(string uri, string user, string password)
         {
-            return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
+            return GraphDatabase.Driver(
+                uri,
+                AuthTokens.Basic(user, password),
                 o => o.WithTrustManager(TrustManager.CreateInsecure()));
         }
 
@@ -353,7 +370,9 @@ public class ExamplesAsync
 
         public IDriver CreateDriverWithCustomizedSecurityStrategy(string uri, string user, string password)
         {
-            return GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
+            return GraphDatabase.Driver(
+                uri,
+                AuthTokens.Basic(user, password),
                 o => o.WithEncryptionLevel(EncryptionLevel.None));
         }
 
@@ -380,11 +399,17 @@ public class ExamplesAsync
         {
         }
 
-        public IDriver CreateDriverWithCustomizedAuth(string uri,
-            string principal, string credentials, string realm, string scheme,
+        public IDriver CreateDriverWithCustomizedAuth(
+            string uri,
+            string principal,
+            string credentials,
+            string realm,
+            string scheme,
             Dictionary<string, object> parameters)
         {
-            return GraphDatabase.Driver(uri, AuthTokens.Custom(principal, credentials, realm, scheme, parameters),
+            return GraphDatabase.Driver(
+                uri,
+                AuthTokens.Custom(principal, credentials, realm, scheme, parameters),
                 o => o.WithEncryptionLevel(EncryptionLevel.None));
         }
 
@@ -413,12 +438,12 @@ public class ExamplesAsync
 
         public IDriver CreateDriverWithBearerAuth(string uri, string bearerToken)
         {
-            return GraphDatabase.Driver(uri,
+            return GraphDatabase.Driver(
+                uri,
                 AuthTokens.Bearer(bearerToken),
                 o => o.WithEncryptionLevel(EncryptionLevel.None));
         }
     }
-
 
     public class CypherErrorExample : BaseAsyncExample
     {
@@ -437,7 +462,7 @@ public class ExamplesAsync
         {
             try
             {
-                var result = await tx.RunAsync("SELECT * FROM Employees WHERE name = $name", new {name});
+                var result = await tx.RunAsync("SELECT * FROM Employees WHERE name = $name", new { name });
                 return (await result.SingleAsync())["employee_number"].As<int>();
             }
             catch (ClientException ex)
@@ -504,9 +529,14 @@ public class ExamplesAsync
             protected virtual void Dispose(bool disposing)
             {
                 if (_disposed)
+                {
                     return;
+                }
 
-                if (disposing) Driver?.Dispose();
+                if (disposing)
+                {
+                    Driver?.Dispose();
+                }
 
                 _disposed = true;
             }
@@ -528,7 +558,6 @@ public class ExamplesAsync
             // When & Then
             await example.PrintGreetingAsync("Hello, world");
         }
-
 
         public class HelloWorldExample : IDisposable
         {
@@ -554,16 +583,17 @@ public class ExamplesAsync
             public async Task PrintGreetingAsync(string message)
             {
                 await using var session = _driver.AsyncSession();
-                var greeting = await session.ExecuteWriteAsync(async tx =>
-                {
-                    var result = await tx.RunAsync(
-                        "CREATE (a:Greeting) " +
-                        "SET a.message = $message " +
-                        "RETURN a.message + ', from node ' + id(a)",
-                        new {message});
+                var greeting = await session.ExecuteWriteAsync(
+                    async tx =>
+                    {
+                        var result = await tx.RunAsync(
+                            "CREATE (a:Greeting) " +
+                            "SET a.message = $message " +
+                            "RETURN a.message + ', from node ' + id(a)",
+                            new { message });
 
-                    return (await result.SingleAsync())[0].As<string>();
-                });
+                        return (await result.SingleAsync())[0].As<string>();
+                    });
 
                 Console.WriteLine(greeting);
             }
@@ -571,10 +601,14 @@ public class ExamplesAsync
             protected virtual void Dispose(bool disposing)
             {
                 if (_disposed)
+                {
                     return;
+                }
 
                 if (disposing)
+                {
                     _driver?.Dispose();
+                }
 
                 _disposed = true;
             }
@@ -606,7 +640,9 @@ public class ExamplesAsync
 
             public DriverIntroductionExample(string uri, string user, string password)
             {
-                _driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password),
+                _driver = GraphDatabase.Driver(
+                    uri,
+                    AuthTokens.Basic(user, password),
                     configBuilder => configBuilder.WithLogger(new SimpleLogger()));
             }
 
@@ -635,11 +671,12 @@ public class ExamplesAsync
                 try
                 {
                     // Write transactions allow the driver to handle retries and transient error
-                    var writeResults = await session.ExecuteWriteAsync(async tx =>
-                    {
-                        var result = await tx.RunAsync(query, new {person1Name, person2Name, knowsFrom});
-                        return await result.ToListAsync();
-                    });
+                    var writeResults = await session.ExecuteWriteAsync(
+                        async tx =>
+                        {
+                            var result = await tx.RunAsync(query, new { person1Name, person2Name, knowsFrom });
+                            return await result.ToListAsync();
+                        });
 
                     foreach (var result in writeResults)
                     {
@@ -667,14 +704,17 @@ public class ExamplesAsync
                 await using var session = _driver.AsyncSession();
                 try
                 {
-                    var readResults = await session.ExecuteReadAsync(async tx =>
-                    {
-                        var result = await tx.RunAsync(query, new {name = personName});
-                        return await result.ToListAsync();
-                    });
+                    var readResults = await session.ExecuteReadAsync(
+                        async tx =>
+                        {
+                            var result = await tx.RunAsync(query, new { name = personName });
+                            return await result.ToListAsync();
+                        });
 
                     foreach (var result in readResults)
+                    {
                         Console.WriteLine($"Found person: {result["p.name"].As<string>()}");
+                    }
                 }
                 // Capture any errors along with the query and data for traceability
                 catch (Neo4jException ex)
@@ -687,9 +727,14 @@ public class ExamplesAsync
             protected virtual void Dispose(bool disposing)
             {
                 if (_disposed)
+                {
                     return;
+                }
 
-                if (disposing) _driver?.Dispose();
+                if (disposing)
+                {
+                    _driver?.Dispose();
+                }
 
                 _disposed = true;
             }
@@ -748,7 +793,6 @@ public class ExamplesAsync
         // end::driver-introduction-example[]
     }
 
-
     public class ReadWriteTransactionExample : BaseAsyncExample
     {
         public ReadWriteTransactionExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
@@ -774,12 +818,12 @@ public class ExamplesAsync
 
         private static Task CreatePersonNodeAsync(IAsyncQueryRunner tx, string name)
         {
-            return tx.RunAsync("CREATE (a:Person {name: $name})", new {name});
+            return tx.RunAsync("CREATE (a:Person {name: $name})", new { name });
         }
 
         private static async Task<long> MatchPersonNodeAsync(IAsyncQueryRunner tx, string name)
         {
-            var result = await tx.RunAsync("MATCH (a:Person {name: $name}) RETURN id(a)", new {name});
+            var result = await tx.RunAsync("MATCH (a:Person {name: $name}) RETURN id(a)", new { name });
             return (await result.SingleAsync())[0].As<long>();
         }
     }
@@ -795,11 +839,12 @@ public class ExamplesAsync
         public async Task<List<string>> GetPeopleAsync()
         {
             await using var session = Driver.AsyncSession();
-            return await session.ExecuteReadAsync(async tx =>
-            {
-                var result = await tx.RunAsync("MATCH (a:Person) RETURN a.name ORDER BY a.name");
-                return await result.ToListAsync(r => r[0].As<string>());
-            });
+            return await session.ExecuteReadAsync(
+                async tx =>
+                {
+                    var result = await tx.RunAsync("MATCH (a:Person) RETURN a.name ORDER BY a.name");
+                    return await result.ToListAsync(r => r[0].As<string>());
+                });
         }
         // end::async-result-consume[]
 
@@ -812,7 +857,7 @@ public class ExamplesAsync
             // When & Then
             var people = await GetPeopleAsync();
 
-            people.Should().Contain(new[] {"Alice", "Bob"});
+            people.Should().Contain(new[] { "Alice", "Bob" });
         }
     }
 
@@ -826,30 +871,33 @@ public class ExamplesAsync
         public async Task<int> AddEmployeesAsync(string companyName)
         {
             await using var session = Driver.AsyncSession();
-            var persons = await session.ExecuteReadAsync(async tx =>
-            {
-                var cursor = await tx.RunAsync("MATCH (a:Person) RETURN a.name AS name");
-                return await cursor.ToListAsync();
-            });
+            var persons = await session.ExecuteReadAsync(
+                async tx =>
+                {
+                    var cursor = await tx.RunAsync("MATCH (a:Person) RETURN a.name AS name");
+                    return await cursor.ToListAsync();
+                });
 
             var personSums = new List<int>();
             foreach (var person in persons)
             {
-                var result = await session.ExecuteWriteAsync(async tx =>
-                {
-                    var cursor = await tx.RunAsync(
-                        "MATCH (emp:Person {name: $person_name}) " +
-                        "MERGE (com:Company {name: $company_name}) " +
-                        "MERGE (emp)-[:WORKS_FOR]->(com)",
-                        new
-                        {
-                            person_name = person["name"].As<string>(),
-                            company_name = companyName
-                        });
-                    await cursor.ConsumeAsync();
+                var result = await session.ExecuteWriteAsync(
+                    async tx =>
+                    {
+                        var cursor = await tx.RunAsync(
+                            "MATCH (emp:Person {name: $person_name}) " +
+                            "MERGE (com:Company {name: $company_name}) " +
+                            "MERGE (emp)-[:WORKS_FOR]->(com)",
+                            new
+                            {
+                                person_name = person["name"].As<string>(),
+                                company_name = companyName
+                            });
 
-                    return 1;
-                });
+                        await cursor.ConsumeAsync();
+
+                        return 1;
+                    });
 
                 personSums.Add(result);
             }
@@ -883,14 +931,18 @@ public class ExamplesAsync
             : base(output, fixture)
         {
             _baseDriver = Driver;
-            Driver = GraphDatabase.Driver("bolt://localhost:8080", AuthTokens.Basic(User, Password),
+            Driver = GraphDatabase.Driver(
+                "bolt://localhost:8080",
+                AuthTokens.Basic(User, Password),
                 o => o.WithMaxTransactionRetryTime(TimeSpan.FromSeconds(3)));
         }
 
         protected override void Dispose(bool isDisposing)
         {
             if (!isDisposing)
+            {
                 return;
+            }
 
             Driver = _baseDriver;
             base.Dispose(true);
@@ -906,8 +958,7 @@ public class ExamplesAsync
                     {
                         await tx.RunAsync("CREATE (a:Item)");
                         return true;
-                    }
-                );
+                    });
             }
             catch (ServiceUnavailableException)
             {
@@ -935,7 +986,7 @@ public class ExamplesAsync
         public async Task AddPersonAsync(string name)
         {
             await using var session = Driver.AsyncSession();
-            await session.RunAsync("CREATE (a:Person {name: $name})", new {name});
+            await session.RunAsync("CREATE (a:Person {name: $name})", new { name });
         }
 
         [RequireServerFact]
@@ -960,7 +1011,7 @@ public class ExamplesAsync
         public async Task AddPersonAsync(string name)
         {
             await using var session = Driver.AsyncSession();
-            await session.ExecuteWriteAsync(tx => tx.RunAsync("CREATE (a:Person {name: $name})", new {name}));
+            await session.ExecuteWriteAsync(tx => tx.RunAsync("CREATE (a:Person {name: $name})", new { name }));
         }
 
         [RequireServerFact]
@@ -1007,7 +1058,9 @@ public abstract class BaseAsyncExample : IDisposable
     protected virtual void Dispose(bool disposing)
     {
         if (_disposed)
+        {
             return;
+        }
 
         if (disposing)
         {
@@ -1023,12 +1076,13 @@ public abstract class BaseAsyncExample : IDisposable
         var session = Driver.AsyncSession();
         try
         {
-            return await session.ExecuteReadAsync(async tx =>
-            {
-                var result = await tx.RunAsync("MATCH (a:Person {name: $name}) RETURN count(a)", new {name});
+            return await session.ExecuteReadAsync(
+                async tx =>
+                {
+                    var result = await tx.RunAsync("MATCH (a:Person {name: $name}) RETURN count(a)", new { name });
 
-                return (await result.SingleAsync())[0].As<int>();
-            });
+                    return (await result.SingleAsync())[0].As<int>();
+                });
         }
         finally
         {
@@ -1048,14 +1102,16 @@ public abstract class BaseAsyncExample : IDisposable
         await session.ExecuteWriteAsync(async tx => await tx.RunAsync(query, parameters));
     }
 
-    protected async Task<List<IRecord>> ReadAsync(string query,
+    protected async Task<List<IRecord>> ReadAsync(
+        string query,
         IDictionary<string, object> parameters = null)
     {
         await using var session = Driver.AsyncSession();
-        return await session.ExecuteReadAsync(async tx =>
-        {
-            var cursor = await tx.RunAsync(query, parameters);
-            return await cursor.ToListAsync();
-        });
+        return await session.ExecuteReadAsync(
+            async tx =>
+            {
+                var cursor = await tx.RunAsync(query, parameters);
+                return await cursor.ToListAsync();
+            });
     }
 }

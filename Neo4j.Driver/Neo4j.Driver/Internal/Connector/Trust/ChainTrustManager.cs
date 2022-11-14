@@ -19,60 +19,75 @@ using System;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 
-namespace Neo4j.Driver.Internal.Connector.Trust
+namespace Neo4j.Driver.Internal.Connector.Trust;
+
+internal class ChainTrustManager : TrustManager
 {
-    internal class ChainTrustManager: TrustManager
+    private static readonly TimeSpan OnlineTimeout = new(0, 0, 1, 0);
+    private readonly X509RevocationMode _revocationMode;
+    private readonly X509RevocationFlag _revocationScope;
+
+    private readonly bool _useMachineCtx;
+    private readonly bool _verifyHostname;
+
+    public ChainTrustManager(
+        bool useMachineCtx,
+        bool verifyHostname,
+        X509RevocationMode revocationMode,
+        X509RevocationFlag revocationScope)
     {
-        private static readonly TimeSpan OnlineTimeout = new TimeSpan(0, 0, 1, 0);
+        _useMachineCtx = useMachineCtx;
+        _verifyHostname = verifyHostname;
+        _revocationMode = revocationMode;
+        _revocationScope = revocationScope;
+    }
 
-        private readonly bool _useMachineCtx;
-        private readonly bool _verifyHostname;
-        private readonly X509RevocationMode _revocationMode;
-        private readonly X509RevocationFlag _revocationScope;
-
-        public ChainTrustManager(bool useMachineCtx, bool verifyHostname, X509RevocationMode revocationMode,
-            X509RevocationFlag revocationScope)
+    public override bool ValidateServerCertificate(
+        Uri uri,
+        X509Certificate2 certificate,
+        X509Chain chain,
+        SslPolicyErrors sslPolicyErrors)
+    {
+        if (_verifyHostname)
         {
-            _useMachineCtx = useMachineCtx;
-            _verifyHostname = verifyHostname;
-            _revocationMode = revocationMode;
-            _revocationScope = revocationScope;
+            if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch))
+            {
+                Logger?.Error(
+                    null,
+                    $"{GetType().Name}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
+
+                return false;
+            }
         }
 
-        public override bool ValidateServerCertificate(Uri uri, X509Certificate2 certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        var result = !sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateChainErrors);
+        if (_useMachineCtx ||
+            chain.ChainPolicy.RevocationFlag != _revocationScope ||
+            chain.ChainPolicy.RevocationMode != _revocationMode)
         {
-            if (_verifyHostname)
+            result = BuildChain(certificate, chain.ChainPolicy.ExtraStore, out var newChain);
+            if (!result)
             {
-                if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch))
-                {
-                    Logger?.Error(null, $"{GetType().Name}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
-                    return false;
-                }
+                Logger?.Error(
+                    null,
+                    $"{GetType().Name}: Certificate '{certificate.Subject}' failed validation. Reason: {CertHelper.ChainStatusToText(newChain.ChainStatus)}");
             }
-
-            var result = !sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateChainErrors);
-            if (_useMachineCtx || chain.ChainPolicy.RevocationFlag != _revocationScope ||
-                chain.ChainPolicy.RevocationMode != _revocationMode)
-            {
-                result = BuildChain(certificate, chain.ChainPolicy.ExtraStore, out var newChain);
-                if (!result)
-                {
-                    Logger?.Error(null,
-                        $"{GetType().Name}: Certificate '{certificate.Subject}' failed validation. Reason: {CertHelper.ChainStatusToText(newChain.ChainStatus)}");
-                }
-            }
-
-            return result;
         }
 
-        protected bool BuildChain(X509Certificate2 certificate, X509Certificate2Collection additionalCerts, out X509Chain chain)
-        {
-            var time = DateTime.Now;
-#if NET452
+        return result;
+    }
+
+    protected bool BuildChain(
+        X509Certificate2 certificate,
+        X509Certificate2Collection additionalCerts,
+        out X509Chain chain)
+    {
+        var time = DateTime.Now;
+        #if NET452
             var newChain = new X509Chain(_useMachineCtx)
-#else
-            var newChain = new X509Chain()
-#endif
+        #else
+        var newChain = new X509Chain()
+            #endif
             {
                 ChainPolicy =
                 {
@@ -83,12 +98,10 @@ namespace Neo4j.Driver.Internal.Connector.Trust
                 }
             };
 
-            newChain.ChainPolicy.ExtraStore.AddRange(additionalCerts);
+        newChain.ChainPolicy.ExtraStore.AddRange(additionalCerts);
 
-            var result = newChain.Build(certificate);
-            chain = newChain;
-            return result;
-        }
-
+        var result = newChain.Build(certificate);
+        chain = newChain;
+        return result;
     }
 }

@@ -15,54 +15,58 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Types;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers
+namespace Neo4j.Driver.Internal.IO.ValueSerializers;
+
+public class ElementRelationshipSerializerTests : PackStreamSerializerTests
 {
-    public class ElementRelationshipSerializerTests : PackStreamSerializerTests
+    internal override IPackStreamSerializer SerializerUnderTest => new ElementRelationshipSerializer();
+
+    [Fact]
+    public void ShouldDeserialize()
     {
-        internal override IPackStreamSerializer SerializerUnderTest => new ElementRelationshipSerializer();
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
 
-        [Fact]
-        public void ShouldDeserialize()
-        {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
-
-            writer.WriteStructHeader(3, ElementRelationshipSerializer.Relationship);
-            writer.Write(1);
-            writer.Write(2);
-            writer.Write(3);
-            writer.Write("RELATES_TO");
-            writer.Write(new Dictionary<string, object>
+        writer.WriteStructHeader(3, ElementRelationshipSerializer.Relationship);
+        writer.Write(1);
+        writer.Write(2);
+        writer.Write(3);
+        writer.Write("RELATES_TO");
+        writer.Write(
+            new Dictionary<string, object>
             {
-                {"prop3", true}
+                { "prop3", true }
             });
-            writer.Write("r1");
-            writer.Write("n1");
-            writer.Write("n2");
 
+        writer.Write("r1");
+        writer.Write("n1");
+        writer.Write("n2");
 
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var value = readerMachine.Reader().Read();
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var value = readerMachine.Reader().Read();
 
-            value.Should().NotBeNull();
-            value.Should().BeOfType<Relationship>().Which.Id.Should().Be(1L);
-            value.Should().BeOfType<Relationship>().Which.StartNodeId.Should().Be(2L);  
-            value.Should().BeOfType<Relationship>().Which.EndNodeId.Should().Be(3L);
-            value.Should().BeOfType<Relationship>().Which.Type.Should().Be("RELATES_TO");
-            value.Should().BeOfType<Relationship>().Which.Properties.Should()
-                .HaveCount(1).And.Contain(new[]
-            {
-                new KeyValuePair<string, object>("prop3", true),
-            });
-            value.Should().BeOfType<Relationship>().Which.ElementId.Should().Be("r1");
-            value.Should().BeOfType<Relationship>().Which.StartNodeElementId.Should().Be("n1");
-            value.Should().BeOfType<Relationship>().Which.EndNodeElementId.Should().Be("n2");
-        }
+        value.Should().NotBeNull();
+        value.Should().BeOfType<Relationship>().Which.Id.Should().Be(1L);
+        value.Should().BeOfType<Relationship>().Which.StartNodeId.Should().Be(2L);
+        value.Should().BeOfType<Relationship>().Which.EndNodeId.Should().Be(3L);
+        value.Should().BeOfType<Relationship>().Which.Type.Should().Be("RELATES_TO");
+        value.Should()
+            .BeOfType<Relationship>()
+            .Which.Properties.Should()
+            .HaveCount(1)
+            .And.Contain(
+                new[]
+                {
+                    new KeyValuePair<string, object>("prop3", true)
+                });
+
+        value.Should().BeOfType<Relationship>().Which.ElementId.Should().Be("r1");
+        value.Should().BeOfType<Relationship>().Which.StartNodeElementId.Should().Be("n1");
+        value.Should().BeOfType<Relationship>().Which.EndNodeElementId.Should().Be("n2");
     }
 }

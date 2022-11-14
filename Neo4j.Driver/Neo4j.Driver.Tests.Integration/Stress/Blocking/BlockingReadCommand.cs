@@ -18,25 +18,24 @@
 using System.Linq;
 using FluentAssertions;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
-{
-    public class BlockingReadCommand<TContext> : BlockingCommand<TContext>
-        where TContext : StressTestContext
-    {
-        public BlockingReadCommand(IDriver driver, bool useBookmark)
-            : base(driver, useBookmark)
-        {
-        }
+namespace Neo4j.Driver.IntegrationTests.Stress;
 
-        public override void Execute(TContext context)
+public class BlockingReadCommand<TContext> : BlockingCommand<TContext>
+    where TContext : StressTestContext
+{
+    public BlockingReadCommand(IDriver driver, bool useBookmark)
+        : base(driver, useBookmark)
+    {
+    }
+
+    public override void Execute(TContext context)
+    {
+        using (var session = NewSession(AccessMode.Read, context))
         {
-            using (var session = NewSession(AccessMode.Read, context))
-            {
-                var result = session.Run("MATCH (n) RETURN n LIMIT 1");
-                var record = result.SingleOrDefault();
-                record?[0].Should().BeAssignableTo<INode>();
-                context.NodeRead(result.Consume());
-            }
+            var result = session.Run("MATCH (n) RETURN n LIMIT 1");
+            var record = result.SingleOrDefault();
+            record?[0].Should().BeAssignableTo<INode>();
+            context.NodeRead(result.Consume());
         }
     }
 }

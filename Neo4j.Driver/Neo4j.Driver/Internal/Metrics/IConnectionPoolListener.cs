@@ -17,22 +17,21 @@
 
 using System;
 
-namespace Neo4j.Driver.Internal.Metrics
-{
-    internal interface IConnectionPoolListener: IDisposable
-    {
-        void ConnectionCreating();
-        void ConnectionCreated();
-        void ConnectionFailedToCreate();
-        void ConnectionClosing();
-        void ConnectionClosed();
-        void PoolAcquiring();
-        void PoolAcquired();
-        void PoolFailedToAcquire();
-        void PoolTimedOutToAcquire();
-    }
+namespace Neo4j.Driver.Internal.Metrics;
 
-    internal interface IInternalConnectionPoolMetrics : IConnectionPoolMetrics, IConnectionPoolListener
-    {
-    }
+internal interface IConnectionPoolListener : IDisposable
+{
+    void ConnectionCreating();
+    void ConnectionCreated();
+    void ConnectionFailedToCreate();
+    void ConnectionClosing();
+    void ConnectionClosed();
+    void PoolAcquiring();
+    void PoolAcquired();
+    void PoolFailedToAcquire();
+    void PoolTimedOutToAcquire();
+}
+
+internal interface IInternalConnectionPoolMetrics : IConnectionPoolMetrics, IConnectionPoolListener
+{
 }

@@ -21,301 +21,394 @@ using Neo4j.Driver.Internal.Result;
 using Xunit;
 using Record = Xunit.Record;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata
+namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
+
+public class ProfiledPlanCollectorTests
 {
-    public class ProfiledPlanCollectorTests
+    public const string Key = ProfiledPlanCollector.ProfiledPlanKey;
+
+    internal static KeyValuePair<string, object> TestMetadata =>
+        new(
+            Key,
+            new Dictionary<string, object>
+            {
+                { "operatorType", "opType" },
+                { "dbHits", 5L },
+                { "rows", 10L },
+                { "args", new Dictionary<string, object> { { "a", 1L } } },
+                {
+                    "identifiers", new List<object>
+                    {
+                        "a", "b", "c"
+                    }
+                }
+            });
+
+    internal static IProfiledPlan TestMetadataCollected => new ProfiledPlan(
+        "opType",
+        new Dictionary<string, object> { { "a", 1L } },
+        new List<string> { "a", "b", "c" },
+        new List<IProfiledPlan>(),
+        5,
+        10,
+        0,
+        0,
+        0,
+        0,
+        false);
+
+    [Fact]
+    public void ShouldNotCollectIfMetadataIsNull()
     {
-        public const string Key = ProfiledPlanCollector.ProfiledPlanKey;
+        var collector = new ProfiledPlanCollector();
 
-        [Fact]
-        public void ShouldNotCollectIfMetadataIsNull()
+        collector.Collect(null);
+
+        collector.Collected.Should().BeNull();
+    }
+
+    [Fact]
+    public void ShouldNotCollectIfNoValueIsGiven()
+    {
+        var collector = new ProfiledPlanCollector();
+
+        collector.Collect(new Dictionary<string, object>());
+
+        collector.Collected.Should().BeNull();
+    }
+
+    [Fact]
+    public void ShouldNotCollectIfValueIsNull()
+    {
+        var collector = new ProfiledPlanCollector();
+
+        collector.Collect(new Dictionary<string, object> { { Key, null } });
+
+        collector.Collected.Should().BeNull();
+    }
+
+    [Fact]
+    public void ShouldNotCollectIfValueIsEmpty()
+    {
+        var collector = new ProfiledPlanCollector();
+
+        collector.Collect(new Dictionary<string, object> { { Key, new Dictionary<string, object>() } });
+
+        collector.Collected.Should().BeNull();
+    }
+
+    [Fact]
+    public void ShouldThrowIfValueIsOfWrongType()
+    {
+        var metadata = new Dictionary<string, object> { { Key, true } };
+        var collector = new ProfiledPlanCollector();
+
+        var ex = Record.Exception(() => collector.Collect(metadata));
+
+        ex.Should()
+            .BeOfType<ProtocolException>()
+            .Which
+            .Message.Should()
+            .Contain($"Expected '{Key}' metadata to be of type 'IDictionary<String,Object>', but got 'Boolean'.");
+    }
+
+    [Fact]
+    public void ShouldThrowIfOperatorTypeIsMissing()
+    {
+        var metadata = new Dictionary<string, object>
         {
-            var collector = new ProfiledPlanCollector();
-
-            collector.Collect(null);
-
-            collector.Collected.Should().BeNull();
-        }
-
-        [Fact]
-        public void ShouldNotCollectIfNoValueIsGiven()
-        {
-            var collector = new ProfiledPlanCollector();
-
-            collector.Collect(new Dictionary<string, object>());
-
-            collector.Collected.Should().BeNull();
-        }
-
-        [Fact]
-        public void ShouldNotCollectIfValueIsNull()
-        {
-            var collector = new ProfiledPlanCollector();
-
-            collector.Collect(new Dictionary<string, object> {{Key, null}});
-
-            collector.Collected.Should().BeNull();
-        }
-
-        [Fact]
-        public void ShouldNotCollectIfValueIsEmpty()
-        {
-            var collector = new ProfiledPlanCollector();
-
-            collector.Collect(new Dictionary<string, object> {{Key, new Dictionary<string, object>()}});
-
-            collector.Collected.Should().BeNull();
-        }
-
-
-        [Fact]
-        public void ShouldThrowIfValueIsOfWrongType()
-        {
-            var metadata = new Dictionary<string, object> {{Key, true}};
-            var collector = new ProfiledPlanCollector();
-
-            var ex = Record.Exception(() => collector.Collect(metadata));
-
-            ex.Should().BeOfType<ProtocolException>().Which
-                .Message.Should()
-                .Contain($"Expected '{Key}' metadata to be of type 'IDictionary<String,Object>', but got 'Boolean'.");
-        }
-
-        [Fact]
-        public void ShouldThrowIfOperatorTypeIsMissing()
-        {
-            var metadata = new Dictionary<string, object>
             {
+                Key, new Dictionary<string, object>
                 {
-                    Key, new Dictionary<string, object>
-                    {
-                        {"args", new Dictionary<string, object>()}
-                    }
+                    { "args", new Dictionary<string, object>() }
                 }
-            };
-            var collector = new ProfiledPlanCollector();
+            }
+        };
 
-            var ex = Record.Exception(() => collector.Collect(metadata));
+        var collector = new ProfiledPlanCollector();
 
-            ex.Should().BeOfType<ProtocolException>().Which
-                .Message.Should()
-                .Be("Expected key 'operatorType' to be present in the dictionary, but could not find.");
-        }
+        var ex = Record.Exception(() => collector.Collect(metadata));
 
-        [Fact]
-        public void ShouldNotThrowIfDbHitsIsMissing()
+        ex.Should()
+            .BeOfType<ProtocolException>()
+            .Which
+            .Message.Should()
+            .Be("Expected key 'operatorType' to be present in the dictionary, but could not find.");
+    }
+
+    [Fact]
+    public void ShouldNotThrowIfDbHitsIsMissing()
+    {
+        var metadata = new Dictionary<string, object>
         {
-            var metadata = new Dictionary<string, object>
             {
+                Key, new Dictionary<string, object>
                 {
-                    Key, new Dictionary<string, object>
-                    {
-                        {"operatorType", "opType"}
-                    }
+                    { "operatorType", "opType" }
                 }
-            };
-            var collector = new ProfiledPlanCollector();
+            }
+        };
 
-            collector.Collect(metadata);
-        }
+        var collector = new ProfiledPlanCollector();
 
-        [Fact]
-        public void ShouldNotThrowIfRowsIsMissing()
+        collector.Collect(metadata);
+    }
+
+    [Fact]
+    public void ShouldNotThrowIfRowsIsMissing()
+    {
+        var metadata = new Dictionary<string, object>
         {
-            var metadata = new Dictionary<string, object>
             {
+                Key, new Dictionary<string, object>
                 {
-                    Key, new Dictionary<string, object>
-                    {
-                        {"operatorType", "opType"},
-                        {"dbHits", 5L}
-                    }
+                    { "operatorType", "opType" },
+                    { "dbHits", 5L }
                 }
-            };
-            var collector = new ProfiledPlanCollector();
+            }
+        };
 
-            collector.Collect(metadata);
-        }
+        var collector = new ProfiledPlanCollector();
 
-        [Fact]
-        public void ShouldCollectWithDefaultValues()
+        collector.Collect(metadata);
+    }
+
+    [Fact]
+    public void ShouldCollectWithDefaultValues()
+    {
+        var metadata = new Dictionary<string, object>
         {
-            var metadata = new Dictionary<string, object>
             {
+                Key, new Dictionary<string, object>
                 {
-                    Key, new Dictionary<string, object>
-                    {
-                        {"operatorType", "opType"},
-                        {"dbHits", 5L},
-                        {"rows", 10L}
-                    }
+                    { "operatorType", "opType" },
+                    { "dbHits", 5L },
+                    { "rows", 10L }
                 }
-            };
-            var collector = new ProfiledPlanCollector();
+            }
+        };
 
-            collector.Collect(metadata);
+        var collector = new ProfiledPlanCollector();
 
-            collector.Collected.Should().BeEquivalentTo(new ProfiledPlan("opType", new Dictionary<string, object>(),
-                new List<string>(), new List<IProfiledPlan>(), 5, 10, 0, 0, 0, 0, false));
-        }
+        collector.Collect(metadata);
 
-        [Fact]
-        public void ShouldCollectWithSpecifiedValues()
+        collector.Collected.Should()
+            .BeEquivalentTo(
+                new ProfiledPlan(
+                    "opType",
+                    new Dictionary<string, object>(),
+                    new List<string>(),
+                    new List<IProfiledPlan>(),
+                    5,
+                    10,
+                    0,
+                    0,
+                    0,
+                    0,
+                    false));
+    }
+
+    [Fact]
+    public void ShouldCollectWithSpecifiedValues()
+    {
+        var metadata = new Dictionary<string, object>
         {
-            var metadata = new Dictionary<string, object>
             {
+                Key, new Dictionary<string, object>
                 {
-                    Key, new Dictionary<string, object>
-                    {
-                        {"operatorType", "opType"},
-                        {"dbHits", 5L},
-                        {"rows", 10L},
-                        {"pageCacheHits", 1L},
-                        {"pageCacheMisses", 2L},
-                        {"pageCacheHitRatio", 3.0},
-                        {"time", 4L}
-                    }
+                    { "operatorType", "opType" },
+                    { "dbHits", 5L },
+                    { "rows", 10L },
+                    { "pageCacheHits", 1L },
+                    { "pageCacheMisses", 2L },
+                    { "pageCacheHitRatio", 3.0 },
+                    { "time", 4L }
                 }
-            };
-            var collector = new ProfiledPlanCollector();
+            }
+        };
 
-            collector.Collect(metadata);
+        var collector = new ProfiledPlanCollector();
 
-            collector.Collected.Should().BeEquivalentTo(new ProfiledPlan("opType", new Dictionary<string, object>(),
-                new List<string>(), new List<IProfiledPlan>(), 5, 10, 1, 2, 3, 4, true));
-        }
+        collector.Collect(metadata);
 
-        [Fact]
-        public void ShouldCollectWithoutChildPlans()
+        collector.Collected.Should()
+            .BeEquivalentTo(
+                new ProfiledPlan(
+                    "opType",
+                    new Dictionary<string, object>(),
+                    new List<string>(),
+                    new List<IProfiledPlan>(),
+                    5,
+                    10,
+                    1,
+                    2,
+                    3,
+                    4,
+                    true));
+    }
+
+    [Fact]
+    public void ShouldCollectWithoutChildPlans()
+    {
+        var metadata = new Dictionary<string, object>
         {
-            var metadata = new Dictionary<string, object>
             {
+                Key, new Dictionary<string, object>
                 {
-                    Key, new Dictionary<string, object>
+                    { "operatorType", "opType" },
+                    { "dbHits", 5L },
+                    { "rows", 10L },
+                    { "args", new Dictionary<string, object> { { "a", 1L } } },
                     {
-                        {"operatorType", "opType"},
-                        {"dbHits", 5L},
-                        {"rows", 10L},
-                        {"args", new Dictionary<string, object> {{"a", 1L}}},
+                        "identifiers", new List<object>
                         {
-                            "identifiers", new List<object>
-                            {
-                                "a", "b", "c"
-                            }
+                            "a", "b", "c"
                         }
                     }
                 }
-            };
-            var collector = new ProfiledPlanCollector();
+            }
+        };
 
-            collector.Collect(metadata);
+        var collector = new ProfiledPlanCollector();
 
-            collector.Collected.Should().BeEquivalentTo(new ProfiledPlan("opType",
-                new Dictionary<string, object> {{"a", 1L}},
-                new List<string> {"a", "b", "c"}, new List<IProfiledPlan>(), 5, 10, 0, 0, 0, 0, false));
-        }
+        collector.Collect(metadata);
 
-        [Fact]
-        public void ShouldCollectWithChildPlans()
+        collector.Collected.Should()
+            .BeEquivalentTo(
+                new ProfiledPlan(
+                    "opType",
+                    new Dictionary<string, object> { { "a", 1L } },
+                    new List<string> { "a", "b", "c" },
+                    new List<IProfiledPlan>(),
+                    5,
+                    10,
+                    0,
+                    0,
+                    0,
+                    0,
+                    false));
+    }
+
+    [Fact]
+    public void ShouldCollectWithChildPlans()
+    {
+        var metadata = new Dictionary<string, object>
         {
-            var metadata = new Dictionary<string, object>
             {
+                Key, new Dictionary<string, object>
                 {
-                    Key, new Dictionary<string, object>
+                    { "operatorType", "opType" },
+                    { "dbHits", 5L },
+                    { "rows", 10L },
+                    { "args", new Dictionary<string, object> { { "a", 1L } } },
                     {
-                        {"operatorType", "opType"},
-                        {"dbHits", 5L},
-                        {"rows", 10L},
-                        {"args", new Dictionary<string, object> {{"a", 1L}}},
+                        "identifiers", new List<object>
                         {
-                            "identifiers", new List<object>
-                            {
-                                "a", "b", "c"
-                            }
-                        },
+                            "a", "b", "c"
+                        }
+                    },
+                    {
+                        "children", new List<object>
                         {
-                            "children", new List<object>
+                            new Dictionary<string, object>
                             {
-                                new Dictionary<string, object>
+                                { "operatorType", "childOpType" },
+                                { "dbHits", 15L },
+                                { "rows", 20L },
+                                { "args", new Dictionary<string, object> { { "b", 2L } } },
                                 {
-                                    {"operatorType", "childOpType"},
-                                    {"dbHits", 15L},
-                                    {"rows", 20L},
-                                    {"args", new Dictionary<string, object> {{"b", 2L}}},
+                                    "identifiers", new List<object>
                                     {
-                                        "identifiers", new List<object>
-                                        {
-                                            "d", "e"
-                                        }
+                                        "d", "e"
                                     }
                                 }
                             }
                         }
                     }
                 }
-            };
-            var collector = new ProfiledPlanCollector();
+            }
+        };
 
-            collector.Collect(metadata);
+        var collector = new ProfiledPlanCollector();
 
-            collector.Collected.Should().BeEquivalentTo(new ProfiledPlan("opType",
-                new Dictionary<string, object> {{"a", 1L}},
-                new List<string> {"a", "b", "c"},
-                new List<IProfiledPlan>
-                {
-                    new ProfiledPlan("childOpType", new Dictionary<string, object> {{"b", 2L}},
-                        new List<string> {"d", "e"},
-                        new List<IProfiledPlan>(), 15, 20, 0, 0, 0, 0, false)
-                }, 5, 10, 0, 0, 0, 0, false));
-        }
+        collector.Collect(metadata);
 
-        [Fact]
-        public void ShouldCollectWithNestedChildPlans()
-        {
-            var metadata = new Dictionary<string, object>
-            {
-                {
-                    Key, new Dictionary<string, object>
+        collector.Collected.Should()
+            .BeEquivalentTo(
+                new ProfiledPlan(
+                    "opType",
+                    new Dictionary<string, object> { { "a", 1L } },
+                    new List<string> { "a", "b", "c" },
+                    new List<IProfiledPlan>
                     {
-                        {"operatorType", "opType"},
-                        {"dbHits", 5L},
-                        {"rows", 10L},
-                        {"args", new Dictionary<string, object> {{"a", 1L}}},
+                        new ProfiledPlan(
+                            "childOpType",
+                            new Dictionary<string, object> { { "b", 2L } },
+                            new List<string> { "d", "e" },
+                            new List<IProfiledPlan>(),
+                            15,
+                            20,
+                            0,
+                            0,
+                            0,
+                            0,
+                            false)
+                    },
+                    5,
+                    10,
+                    0,
+                    0,
+                    0,
+                    0,
+                    false));
+    }
+
+    [Fact]
+    public void ShouldCollectWithNestedChildPlans()
+    {
+        var metadata = new Dictionary<string, object>
+        {
+            {
+                Key, new Dictionary<string, object>
+                {
+                    { "operatorType", "opType" },
+                    { "dbHits", 5L },
+                    { "rows", 10L },
+                    { "args", new Dictionary<string, object> { { "a", 1L } } },
+                    {
+                        "identifiers", new List<object>
                         {
-                            "identifiers", new List<object>
-                            {
-                                "a", "b", "c"
-                            }
-                        },
+                            "a", "b", "c"
+                        }
+                    },
+                    {
+                        "children", new List<object>
                         {
-                            "children", new List<object>
+                            new Dictionary<string, object>
                             {
-                                new Dictionary<string, object>
+                                { "operatorType", "childOpType" },
+                                { "dbHits", 15L },
+                                { "rows", 20L },
+                                { "args", new Dictionary<string, object> { { "b", 2L } } },
                                 {
-                                    {"operatorType", "childOpType"},
-                                    {"dbHits", 15L},
-                                    {"rows", 20L},
-                                    {"args", new Dictionary<string, object> {{"b", 2L}}},
+                                    "identifiers", new List<object>
                                     {
-                                        "identifiers", new List<object>
-                                        {
-                                            "d", "e"
-                                        }
-                                    },
+                                        "d", "e"
+                                    }
+                                },
+                                {
+                                    "children", new List<object>
                                     {
-                                        "children", new List<object>
+                                        new Dictionary<string, object>
                                         {
-                                            new Dictionary<string, object>
+                                            { "operatorType", "childChildOpType" },
+                                            { "dbHits", 25L },
+                                            { "rows", 30L },
+                                            { "args", new Dictionary<string, object> { { "c", 3L } } },
                                             {
-                                                {"operatorType", "childChildOpType"},
-                                                {"dbHits", 25L},
-                                                {"rows", 30L},
-                                                {"args", new Dictionary<string, object> {{"c", 3L}}},
+                                                "identifiers", new List<object>
                                                 {
-                                                    "identifiers", new List<object>
-                                                    {
-                                                        "f"
-                                                    }
+                                                    "f"
                                                 }
                                             }
                                         }
@@ -325,65 +418,76 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                         }
                     }
                 }
-            };
-            var collector = new ProfiledPlanCollector();
+            }
+        };
 
-            collector.Collect(metadata);
+        var collector = new ProfiledPlanCollector();
 
-            collector.Collected.Should().BeEquivalentTo(new ProfiledPlan("opType",
-                new Dictionary<string, object> {{"a", 1L}},
-                new List<string> {"a", "b", "c"},
-                new List<IProfiledPlan>
-                {
-                    new ProfiledPlan("childOpType", new Dictionary<string, object> {{"b", 2L}},
-                        new List<string> {"d", "e"},
-                        new List<IProfiledPlan>
-                        {
-                            new ProfiledPlan("childChildOpType", new Dictionary<string, object> {{"c", 3L}},
-                                new List<string> {"f"},
-                                new List<IProfiledPlan>(), 25, 30, 0, 0, 0, 0, false)
-                        }, 15, 20, 0, 0, 0, 0, false)
-                }, 5, 10, 0, 0, 0, 0, false));
-        }
+        collector.Collect(metadata);
 
-        [Fact]
-        public void ShouldReturnSameCollected()
+        collector.Collected.Should()
+            .BeEquivalentTo(
+                new ProfiledPlan(
+                    "opType",
+                    new Dictionary<string, object> { { "a", 1L } },
+                    new List<string> { "a", "b", "c" },
+                    new List<IProfiledPlan>
+                    {
+                        new ProfiledPlan(
+                            "childOpType",
+                            new Dictionary<string, object> { { "b", 2L } },
+                            new List<string> { "d", "e" },
+                            new List<IProfiledPlan>
+                            {
+                                new ProfiledPlan(
+                                    "childChildOpType",
+                                    new Dictionary<string, object> { { "c", 3L } },
+                                    new List<string> { "f" },
+                                    new List<IProfiledPlan>(),
+                                    25,
+                                    30,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    false)
+                            },
+                            15,
+                            20,
+                            0,
+                            0,
+                            0,
+                            0,
+                            false)
+                    },
+                    5,
+                    10,
+                    0,
+                    0,
+                    0,
+                    0,
+                    false));
+    }
+
+    [Fact]
+    public void ShouldReturnSameCollected()
+    {
+        var metadata = new Dictionary<string, object>
         {
-            var metadata = new Dictionary<string, object>
             {
+                Key, new Dictionary<string, object>
                 {
-                    Key, new Dictionary<string, object>
-                    {
-                        {"operatorType", "opType"},
-                        {"dbHits", 5L},
-                        {"rows", 10L}
-                    }
+                    { "operatorType", "opType" },
+                    { "dbHits", 5L },
+                    { "rows", 10L }
                 }
-            };
-            var collector = new ProfiledPlanCollector();
+            }
+        };
 
-            collector.Collect(metadata);
+        var collector = new ProfiledPlanCollector();
 
-            ((IMetadataCollector) collector).Collected.Should().BeSameAs(collector.Collected);
-        }
+        collector.Collect(metadata);
 
-        internal static KeyValuePair<string, object> TestMetadata =>
-            new KeyValuePair<string, object>(Key, new Dictionary<string, object>
-            {
-                {"operatorType", "opType"},
-                {"dbHits", 5L},
-                {"rows", 10L},
-                {"args", new Dictionary<string, object> {{"a", 1L}}},
-                {
-                    "identifiers", new List<object>
-                    {
-                        "a", "b", "c"
-                    }
-                }
-            });
-
-        internal static IProfiledPlan TestMetadataCollected => new ProfiledPlan("opType",
-            new Dictionary<string, object> {{"a", 1L}},
-            new List<string> {"a", "b", "c"}, new List<IProfiledPlan>(), 5, 10, 0, 0, 0, 0, false);
+        ((IMetadataCollector)collector).Collected.Should().BeSameAs(collector.Collected);
     }
 }

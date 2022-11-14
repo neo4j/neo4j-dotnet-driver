@@ -15,22 +15,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using Xunit;
+namespace Neo4j.Driver.IntegrationTests.Internals;
 
-namespace Neo4j.Driver.IntegrationTests.Internals
+public class ShellCommandRunnerTests
 {
-    public class ShellCommandRunnerTests
+    public class RunCommandMethod
     {
-        public class RunCommandMethod
+        [ShouldNotRunInTestKitFact]
+        public void ShouldRunCommand()
         {
-            [ShouldNotRunInTestKitFact]
-            public void ShouldRunCommand()
-            {
-                // first we got a local command runner
-                var runner = ShellCommandRunnerFactory.Create();
-                runner.RunCommand("neoctrl-install", "-h");
-            }
+            // first we got a local command runner
+            var runner = ShellCommandRunnerFactory.Create();
+            runner.RunCommand("neoctrl-install", "-h");
         }
     }
 }

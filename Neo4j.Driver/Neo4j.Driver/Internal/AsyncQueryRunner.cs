@@ -23,6 +23,7 @@ namespace Neo4j.Driver.Internal;
 
 internal abstract class AsyncQueryRunner : IAsyncQueryRunner
 {
+    private bool _disposed;
     public abstract Task<IResultCursor> RunAsync(Query query);
 
     public Task<IResultCursor> RunAsync(string query)
@@ -40,24 +41,34 @@ internal abstract class AsyncQueryRunner : IAsyncQueryRunner
         return RunAsync(new Query(query, parameters.ToDictionary()));
     }
 
-
-    private bool _disposed = false;
-
-    ~AsyncQueryRunner() => Dispose(false);
-
     public void Dispose()
     {
         Dispose(true);
         GC.SuppressFinalize(this);
     }
 
+    public async ValueTask DisposeAsync()
+    {
+        await DisposeAsyncCore().ConfigureAwait(false);
+
+        Dispose(false);
+        GC.SuppressFinalize(this);
+    }
+
+    ~AsyncQueryRunner()
+    {
+        Dispose(false);
+    }
+
     protected virtual void Dispose(bool disposing)
     {
         if (_disposed)
+        {
             return;
+        }
 
         //No resources to clean up
-        if(disposing)
+        if (disposing)
         {
             //Dispose of resources here				
         }
@@ -65,14 +76,6 @@ internal abstract class AsyncQueryRunner : IAsyncQueryRunner
         //Set disposed resources to null
 
         _disposed = true;
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        await DisposeAsyncCore().ConfigureAwait(false);
-
-        Dispose(disposing: false);
-        GC.SuppressFinalize(this);
     }
 
     protected virtual ValueTask DisposeAsyncCore()

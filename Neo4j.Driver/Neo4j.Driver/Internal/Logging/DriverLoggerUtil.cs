@@ -17,36 +17,34 @@
 
 using System;
 using System.Threading.Tasks;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.Internal.Logging
+namespace Neo4j.Driver.Internal.Logging;
+
+internal static class DriverLoggerUtil
 {
-    internal static class DriverLoggerUtil
+    public static async Task TryExecuteAsync(ILogger logger, Func<Task> func, string message = null)
     {
-        public static async Task TryExecuteAsync(ILogger logger, Func<Task> func, string message = null)
+        try
         {
-            try
-            {
-                await func().ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                logger?.Error(ex, message);
-                throw;
-            }
+            await func().ConfigureAwait(false);
         }
-
-        public static async Task<T> TryExecuteAsync<T>(ILogger logger, Func<Task<T>> func, string message = null)
+        catch (Exception ex)
         {
-            try
-            {
-                return await func().ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                logger?.Error(ex, message);
-                throw;
-            }
+            logger?.Error(ex, message);
+            throw;
+        }
+    }
+
+    public static async Task<T> TryExecuteAsync<T>(ILogger logger, Func<Task<T>> func, string message = null)
+    {
+        try
+        {
+            return await func().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            logger?.Error(ex, message);
+            throw;
         }
     }
 }

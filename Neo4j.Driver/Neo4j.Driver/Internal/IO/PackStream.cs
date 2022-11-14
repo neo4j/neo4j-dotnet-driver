@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.IO;
@@ -21,6 +22,7 @@ namespace Neo4j.Driver.Internal.IO;
 internal static class PackStream
 {
     #region PackStream Constants
+
     public const byte TinyString = 0x80;
     public const byte TinyList = 0x90;
     public const byte TinyMap = 0xA0;
@@ -81,17 +83,19 @@ internal static class PackStream
     public const long Minus2ToThe7 = -128L;
     public const long Minus2ToThe15 = -32768L;
     public const long Minus2ToThe31 = -2147483648L;
+
     #endregion
 
-    #region Helper Methods 
+    #region Helper Methods
 
-    public static readonly Dictionary<string, object> EmptyDictionary = new Dictionary<string, object>();
+    public static readonly Dictionary<string, object> EmptyDictionary = new();
 
     public static void EnsureStructSize(string structName, int expected, long actual)
     {
         if (expected != actual)
         {
-            throw new ClientException($"{structName} structures should have {expected} fields, however received {actual} fields.");
+            throw new ClientException(
+                $"{structName} structures should have {expected} fields, however received {actual} fields.");
         }
     }
 

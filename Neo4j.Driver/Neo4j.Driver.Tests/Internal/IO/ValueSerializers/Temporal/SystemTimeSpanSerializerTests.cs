@@ -20,57 +20,56 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
+
+public class SystemTimeSpanSerializerTests : PackStreamSerializerTests
 {
-    public class SystemTimeSpanSerializerTests : PackStreamSerializerTests
+    internal override IPackStreamSerializer SerializerUnderTest => new SystemTimeSpanSerializer();
+
+    internal override IEnumerable<IPackStreamSerializer> SerializersNeeded => new IPackStreamSerializer[]
     {
-        internal override IPackStreamSerializer SerializerUnderTest => new SystemTimeSpanSerializer();
+        new LocalTimeSerializer()
+    };
 
-        internal override IEnumerable<IPackStreamSerializer> SerializersNeeded => new IPackStreamSerializer[]
-        {
-            new LocalTimeSerializer()
-        };
-        
-        [Fact]
-        public void ShouldSerializeTime()
-        {
-            var time = new TimeSpan(0, 12, 35, 59, 999);
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+    [Fact]
+    public void ShouldSerializeTime()
+    {
+        var time = new TimeSpan(0, 12, 35, 59, 999);
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
 
-            writer.Write(time);
+        writer.Write(time);
 
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var reader = readerMachine.Reader();
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStreamType.Struct);
-            reader.ReadStructHeader().Should().Be(1);
-            reader.ReadStructSignature().Should().Be((byte)'t');
-            reader.Read().Should().Be(45359999000000L);
-        }
+        reader.PeekNextType().Should().Be(PackStreamType.Struct);
+        reader.ReadStructHeader().Should().Be(1);
+        reader.ReadStructSignature().Should().Be((byte)'t');
+        reader.Read().Should().Be(45359999000000L);
+    }
 
-        [Fact]
-        public void ShouldNotWriteNegativeTime()
-        {
-            var time = new TimeSpan(0, 0, 0, 0, -999);
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+    [Fact]
+    public void ShouldNotWriteNegativeTime()
+    {
+        var time = new TimeSpan(0, 0, 0, 0, -999);
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
 
-            var ex = Record.Exception(() => writer.Write(time));
+        var ex = Record.Exception(() => writer.Write(time));
 
-            ex.Should().NotBeNull().And.BeOfType<ProtocolException>();
-        }
+        ex.Should().NotBeNull().And.BeOfType<ProtocolException>();
+    }
 
-        [Fact]
-        public void ShouldNotWriteTimeLargerThanDay()
-        {
-            var time = new TimeSpan(0, 24, 0, 0, 0);
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+    [Fact]
+    public void ShouldNotWriteTimeLargerThanDay()
+    {
+        var time = new TimeSpan(0, 24, 0, 0, 0);
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
 
-            var ex = Record.Exception(() => writer.Write(time));
+        var ex = Record.Exception(() => writer.Write(time));
 
-            ex.Should().NotBeNull().And.BeOfType<ProtocolException>();
-        }
+        ex.Should().NotBeNull().And.BeOfType<ProtocolException>();
     }
 }

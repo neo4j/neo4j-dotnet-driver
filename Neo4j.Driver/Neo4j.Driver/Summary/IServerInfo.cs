@@ -14,26 +14,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-namespace Neo4j.Driver
+
+namespace Neo4j.Driver;
+
+/// <summary>Provides basic information of the server where the cypher query was executed.</summary>
+public interface IServerInfo
 {
-    /// <summary>
-    /// Provides basic information of the server where the cypher query was executed.
-    /// </summary>
-    public interface IServerInfo
-    {
-        /// <summary>
-        /// Get the address of the server
-        /// </summary>
-        string Address { get; }
+	/// <summary>Get the address of the server</summary>
+	string Address { get; }
 
-		/// <summary>
-		/// Get the protocol version
-		/// </summary>
-		string ProtocolVersion { get; }
+	/// <summary>Get the protocol version</summary>
+	string ProtocolVersion { get; }
 
-		/// <summary>
-		/// Get the entire server agent string
-		/// </summary>
-		string Agent { get; }
-    }
+	/// <summary>Get the entire server agent string</summary>
+	string Agent { get; }
 }

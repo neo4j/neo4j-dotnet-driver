@@ -17,13 +17,12 @@
 
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.Result
+namespace Neo4j.Driver.Internal.Result;
+
+internal interface IResultStream
 {
-    internal interface IResultStream
-    {
-        Task<string[]> GetKeysAsync();
-        Task<IRecord> NextRecordAsync();
-        void Cancel();
-        Task<IResultSummary> ConsumeAsync();
-    }
+    Task<string[]> GetKeysAsync();
+    Task<IRecord> NextRecordAsync();
+    void Cancel();
+    Task<IResultSummary> ConsumeAsync();
 }

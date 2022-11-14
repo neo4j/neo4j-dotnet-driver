@@ -45,9 +45,15 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
     private bool _disposed;
     private IState _state = Active;
 
-    public AsyncTransaction(IConnection connection, ITransactionResourceHandler resourceHandler,
-        ILogger logger = null, string database = null, Bookmarks bookmark = null, bool reactive = false,
-        long fetchSize = Config.Infinite, string impersonatedUser = null)
+    public AsyncTransaction(
+        IConnection connection,
+        ITransactionResourceHandler resourceHandler,
+        ILogger logger = null,
+        string database = null,
+        Bookmarks bookmark = null,
+        bool reactive = false,
+        long fetchSize = Config.Infinite,
+        string impersonatedUser = null)
     {
         _connection = new TransactionConnection(this, connection);
         _resourceHandler = resourceHandler ?? throw new ArgumentNullException(nameof(resourceHandler));
@@ -64,7 +70,10 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
     public void UpdateBookmarks(Bookmarks bookmarks, IDatabaseInfo dbInfo = null)
     {
         if (dbInfo != null && dbInfo.Name != Database)
+        {
             Database = dbInfo.Name;
+        }
+
         _bookmarks = bookmarks;
     }
 
@@ -134,7 +143,9 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
     protected override async ValueTask DisposeAsyncCore()
     {
         if (IsOpen)
+        {
             await RollbackAsync().ConfigureAwait(false);
+        }
     }
 
     private async Task DiscardUnconsumed()
@@ -152,7 +163,9 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             }
 
             if (cursor != null)
+            {
                 await cursor.ConsumeAsync().ConfigureAwait(false);
+            }
         }
     }
 
@@ -183,34 +196,51 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
     private interface IState
     {
-        Task<IResultCursor> RunAsync(Query query, IConnection connection,
-            ILogger logger, bool reactive, long fetchSize, out IState nextState);
-
-        Task CommitAsync(IConnection connection, IBookmarksTracker tracker,
+        Task<IResultCursor> RunAsync(
+            Query query,
+            IConnection connection,
+            ILogger logger,
+            bool reactive,
+            long fetchSize,
             out IState nextState);
 
-        Task RollbackAsync(IConnection connection, IBookmarksTracker tracker,
+        Task CommitAsync(
+            IConnection connection,
+            IBookmarksTracker tracker,
+            out IState nextState);
+
+        Task RollbackAsync(
+            IConnection connection,
+            IBookmarksTracker tracker,
             out IState nextState);
     }
 
     private class ActiveState : IState
     {
-        public Task<IResultCursor> RunAsync(Query query, IConnection connection,
-            ILogger logger, bool reactive, long fetchSize,
+        public Task<IResultCursor> RunAsync(
+            Query query,
+            IConnection connection,
+            ILogger logger,
+            bool reactive,
+            long fetchSize,
             out IState nextState)
         {
             nextState = Active;
             return connection.RunInExplicitTransactionAsync(query, reactive, fetchSize);
         }
 
-        public Task CommitAsync(IConnection connection, IBookmarksTracker tracker,
+        public Task CommitAsync(
+            IConnection connection,
+            IBookmarksTracker tracker,
             out IState nextState)
         {
             nextState = Committed;
             return connection.CommitTransactionAsync(tracker);
         }
 
-        public Task RollbackAsync(IConnection connection, IBookmarksTracker tracker,
+        public Task RollbackAsync(
+            IConnection connection,
+            IBookmarksTracker tracker,
             out IState nextState)
         {
             nextState = RolledBack;
@@ -220,21 +250,30 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
     private class CommittedState : IState
     {
-        public Task<IResultCursor> RunAsync(Query query, IConnection connection,
-            ILogger logger, bool reactive, long fetchSize, out IState nextState)
+        public Task<IResultCursor> RunAsync(
+            Query query,
+            IConnection connection,
+            ILogger logger,
+            bool reactive,
+            long fetchSize,
+            out IState nextState)
         {
             throw new TransactionClosedException(
                 "Cannot run query in this transaction, because it has already been committed.");
         }
 
-        public Task CommitAsync(IConnection connection, IBookmarksTracker tracker,
+        public Task CommitAsync(
+            IConnection connection,
+            IBookmarksTracker tracker,
             out IState nextState)
         {
             throw new TransactionClosedException(
                 "Cannot commit this transaction, because it has already been committed.");
         }
 
-        public Task RollbackAsync(IConnection connection, IBookmarksTracker tracker,
+        public Task RollbackAsync(
+            IConnection connection,
+            IBookmarksTracker tracker,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -244,8 +283,11 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
     private class RolledBackState : IState
     {
-        public Task<IResultCursor> RunAsync(Query query, IConnection connection,
-            ILogger logger, bool reactive,
+        public Task<IResultCursor> RunAsync(
+            Query query,
+            IConnection connection,
+            ILogger logger,
+            bool reactive,
             long fetchSize,
             out IState nextState)
         {
@@ -253,14 +295,18 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
                 "Cannot run query in this transaction, because it has already been rolled back.");
         }
 
-        public Task CommitAsync(IConnection connection, IBookmarksTracker tracker,
+        public Task CommitAsync(
+            IConnection connection,
+            IBookmarksTracker tracker,
             out IState nextState)
         {
             throw new TransactionClosedException(
                 "Cannot commit this transaction, because it has already been rolled back.");
         }
 
-        public Task RollbackAsync(IConnection connection, IBookmarksTracker tracker,
+        public Task RollbackAsync(
+            IConnection connection,
+            IBookmarksTracker tracker,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -270,8 +316,11 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
     private class FailedState : IState
     {
-        public Task<IResultCursor> RunAsync(Query query, IConnection connection,
-            ILogger logger, bool reactive,
+        public Task<IResultCursor> RunAsync(
+            Query query,
+            IConnection connection,
+            ILogger logger,
+            bool reactive,
             long fetchSize,
             out IState nextState)
         {
@@ -279,14 +328,18 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
                 "Cannot run query in this transaction, because it has been rolled back either because of an error or explicit termination.");
         }
 
-        public Task CommitAsync(IConnection connection, IBookmarksTracker tracker,
+        public Task CommitAsync(
+            IConnection connection,
+            IBookmarksTracker tracker,
             out IState nextState)
         {
             throw new TransactionClosedException(
                 "Cannot commit this transaction, because it has been rolled back either because of an error or explicit termination.");
         }
 
-        public Task RollbackAsync(IConnection connection, IBookmarksTracker tracker,
+        public Task RollbackAsync(
+            IConnection connection,
+            IBookmarksTracker tracker,
             out IState nextState)
         {
             nextState = Failed;

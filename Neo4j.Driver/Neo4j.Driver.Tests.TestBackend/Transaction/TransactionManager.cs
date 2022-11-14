@@ -1,50 +1,45 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Linq;
-using System.Text;
 
-namespace Neo4j.Driver.Tests.TestBackend
+namespace Neo4j.Driver.Tests.TestBackend;
+
+internal class TransactionWrapper
 {
-    internal class TransactionWrapper
+    private readonly Func<IResultCursor, Task<string>> ResultHandler;
+
+    public TransactionWrapper(IAsyncTransaction transaction, Func<IResultCursor, Task<string>> resultHandler)
     {
-        public IAsyncTransaction Transaction { get; private set; }
-        private Func<IResultCursor, Task<string>> ResultHandler;
-
-        public TransactionWrapper(IAsyncTransaction transaction, Func<IResultCursor, Task<string>>resultHandler)
-        {
-            Transaction = transaction;
-            ResultHandler = resultHandler;
-        }
-
-        public async Task<string> ProcessResults(IResultCursor cursor)
-        {
-            return await ResultHandler(cursor);
-        }
-
+        Transaction = transaction;
+        ResultHandler = resultHandler;
     }
 
+    public IAsyncTransaction Transaction { get; }
 
-    internal class TransactionManager
+    public async Task<string> ProcessResults(IResultCursor cursor)
     {
-        private Dictionary<string, TransactionWrapper> Transactions { get; set; } = new Dictionary<string, TransactionWrapper>();
+        return await ResultHandler(cursor);
+    }
+}
 
-        public string AddTransaction(TransactionWrapper transation)
-        {
-            var key = ProtocolObjectManager.GenerateUniqueIdString();
-            Transactions.Add(key, transation);
-            return key;
-        }
+internal class TransactionManager
+{
+    private Dictionary<string, TransactionWrapper> Transactions { get; } = new();
 
-        public void RemoveTransaction(string key)
-        {
-            Transactions.Remove(key);
-        }
+    public string AddTransaction(TransactionWrapper transation)
+    {
+        var key = ProtocolObjectManager.GenerateUniqueIdString();
+        Transactions.Add(key, transation);
+        return key;
+    }
 
-        public TransactionWrapper FindTransaction(string key)
-        {
-            return Transactions[key];
-        }
+    public void RemoveTransaction(string key)
+    {
+        Transactions.Remove(key);
+    }
 
+    public TransactionWrapper FindTransaction(string key)
+    {
+        return Transactions[key];
     }
 }

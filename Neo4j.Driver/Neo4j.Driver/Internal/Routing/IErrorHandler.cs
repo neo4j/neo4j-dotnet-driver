@@ -17,13 +17,11 @@
 
 using System;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Connector;
 
-namespace Neo4j.Driver.Internal.Routing
+namespace Neo4j.Driver.Internal.Routing;
+
+internal interface IErrorHandler
 {
-    internal interface IErrorHandler
-    {
-        Task OnConnectionErrorAsync(Uri uri, string database, Exception e);
-        void OnWriteError(Uri uri, string database);
-	}
+    Task OnConnectionErrorAsync(Uri uri, string database, Exception e);
+    void OnWriteError(Uri uri, string database);
 }

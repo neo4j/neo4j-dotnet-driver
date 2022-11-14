@@ -14,34 +14,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.Internal.Types
+using System;
+
+namespace Neo4j.Driver.Internal.Types;
+
+/// <summary>
+/// A <c>Segment</c> combines a relationship in a path with a start and end node that describe the traversal
+/// direction for that relationship. This exists because the relationship has a direction between the two nodes that is
+/// separate and potentially different from the direction of the path.
+/// </summary>
+internal interface ISegment : IEquatable<ISegment>
 {
-    /// <summary>
-    ///    
-    /// A <c>Segment</c> combines a relationship in a path with a start and end node that describe the traversal direction
-    /// for that relationship. This exists because the relationship has a direction between the two nodes that is
-    /// separate and potentially different from the direction of the path.
-    /// </summary>
-    internal interface ISegment : IEquatable<ISegment>
-    {
-        /// <summary>
-        /// Gets the start node underlying this path segment.
-        /// </summary>
-        INode Start { get; }
-        /// <summary>
-        /// Gets the end node underlying this path segment.
-        /// </summary>
-        INode End { get; }
-        /// <summary>
-        /// Gets the relationship underlying this path segment.
-        /// </summary>
-        IRelationship Relationship { get; }
-    }
+    /// <summary>Gets the start node underlying this path segment.</summary>
+    INode Start { get; }
+
+    /// <summary>Gets the end node underlying this path segment.</summary>
+    INode End { get; }
+
+    /// <summary>Gets the relationship underlying this path segment.</summary>
+    IRelationship Relationship { get; }
 }

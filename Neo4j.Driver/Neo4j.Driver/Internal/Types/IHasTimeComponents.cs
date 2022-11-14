@@ -15,18 +15,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Internal.Types
+namespace Neo4j.Driver.Internal.Types;
+
+internal interface IHasTimeComponents
 {
-    internal interface IHasTimeComponents
-    {
-        
-        int Hour { get; }
+    int Hour { get; }
 
-        int Minute { get; }
+    int Minute { get; }
 
-        int Second { get; }
+    int Second { get; }
 
-        int Nanosecond { get; }
-
-    }
+    int Nanosecond { get; }
 }

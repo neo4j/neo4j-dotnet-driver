@@ -15,52 +15,54 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
+namespace Neo4j.Driver.IntegrationTests.Stress;
+
+public class AsyncWrongCommandTxFunc<TContext> : AsyncCommand<TContext>
+    where TContext : StressTestContext
 {
-	public class AsyncWrongCommandTxFunc<TContext> : AsyncCommand<TContext>
-		where TContext : StressTestContext
-	{
-		public AsyncWrongCommandTxFunc(IDriver driver)
-			: base(driver, false)
-		{
-		}
+    public AsyncWrongCommandTxFunc(IDriver driver)
+        : base(driver, false)
+    {
+    }
 
-		public override async Task ExecuteAsync(TContext context)
-		{
-			var session = NewSession(AccessMode.Read, context);
+    public override async Task ExecuteAsync(TContext context)
+    {
+        var session = NewSession(AccessMode.Read, context);
 
-			try
-			{
-				await session.ReadTransactionAsync(async tx =>
-				{
-					try
-					{
-						var exc = await Record.ExceptionAsync(async () =>
-						{
-							var cursor = await tx.RunAsync("RETURN").ConfigureAwait(false);
-							await cursor.ConsumeAsync();
-						}).ConfigureAwait(false);
-          
-						exc.Should().BeOfType<ClientException>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
-					}
-					finally
-					{
-						await tx.RollbackAsync().ConfigureAwait(false);
-					}
+        try
+        {
+            await session.ReadTransactionAsync(
+                    async tx =>
+                    {
+                        try
+                        {
+                            var exc = await Record.ExceptionAsync(
+                                    async () =>
+                                    {
+                                        var cursor = await tx.RunAsync("RETURN").ConfigureAwait(false);
+                                        await cursor.ConsumeAsync();
+                                    })
+                                .ConfigureAwait(false);
 
-				}).ConfigureAwait(false);
-			}
-			finally
-			{
-				await session.CloseAsync().ConfigureAwait(false);
-			}
-		}
-	}
+                            exc.Should()
+                                .BeOfType<ClientException>()
+                                .Which.Code.Should()
+                                .Be("Neo.ClientError.Statement.SyntaxError");
+                        }
+                        finally
+                        {
+                            await tx.RollbackAsync().ConfigureAwait(false);
+                        }
+                    })
+                .ConfigureAwait(false);
+        }
+        finally
+        {
+            await session.CloseAsync().ConfigureAwait(false);
+        }
+    }
 }
-

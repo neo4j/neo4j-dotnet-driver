@@ -55,26 +55,6 @@ internal sealed class ResponsePipeline : IResponsePipeline
         _error?.EnsureThrownIf<ProtocolException>();
     }
 
-    public IResponseHandler Dequeue()
-    {
-        if (_handlers.TryDequeue(out var handler))
-        {
-            return handler;
-        }
-
-        throw new InvalidOperationException("No handlers registered");
-    }
-
-    internal IResponseHandler Peek()
-    {
-        if (_handlers.TryPeek(out var handler))
-        {
-            return handler;
-        }
-
-        throw new InvalidOperationException("No handlers registered");
-    }
-
     public void OnSuccess(IDictionary<string, object> metadata)
     {
         LogSuccess(metadata);
@@ -110,6 +90,26 @@ internal sealed class ResponsePipeline : IResponsePipeline
         {
             handler.OnIgnored();
         }
+    }
+
+    public IResponseHandler Dequeue()
+    {
+        if (_handlers.TryDequeue(out var handler))
+        {
+            return handler;
+        }
+
+        throw new InvalidOperationException("No handlers registered");
+    }
+
+    internal IResponseHandler Peek()
+    {
+        if (_handlers.TryPeek(out var handler))
+        {
+            return handler;
+        }
+
+        throw new InvalidOperationException("No handlers registered");
     }
 
     private void LogSuccess(IDictionary<string, object> meta)

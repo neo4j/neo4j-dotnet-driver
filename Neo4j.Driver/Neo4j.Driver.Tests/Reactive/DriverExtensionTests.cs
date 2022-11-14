@@ -16,37 +16,35 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal;
 using Xunit;
 
-namespace Neo4j.Driver.Reactive
+namespace Neo4j.Driver.Reactive;
+
+public class DriverExtensionsTests
 {
-    public class DriverExtensionsTests
+    [Fact]
+    public void ShouldThrowIfDriverIsNotOfExpectedType()
     {
-        [Fact]
-        public void ShouldThrowIfDriverIsNotOfExpectedType()
-        {
-            Action act = () => NewSession(Mock.Of<IDriver>());
+        Action act = () => NewSession(Mock.Of<IDriver>());
 
-            act.Should().Throw<ArgumentOutOfRangeException>();
-        }
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
 
-        [Fact]
-        public void ShouldReturnRxSession()
-        {
-            var driver = GraphDatabase.Driver("bolt://localhost");
+    [Fact]
+    public void ShouldReturnRxSession()
+    {
+        var driver = GraphDatabase.Driver("bolt://localhost");
 
-            NewSession(driver).Should().BeOfType<InternalRxSession>();
-        }
+        NewSession(driver).Should().BeOfType<InternalRxSession>();
+    }
 
-        private static IRxSession NewSession(IDriver driver)
-        {
-            return driver.RxSession(o =>
+    private static IRxSession NewSession(IDriver driver)
+    {
+        return driver.RxSession(
+            o =>
                 o.WithDefaultAccessMode(AccessMode.Write).WithBookmarks(Bookmarks.From("1", "3")));
-        }
     }
 }

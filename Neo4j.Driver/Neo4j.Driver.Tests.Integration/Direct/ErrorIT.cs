@@ -22,111 +22,119 @@ using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Neo4j.Driver.IntegrationTests.Direct
+namespace Neo4j.Driver.IntegrationTests.Direct;
+
+public class ErrorIT : DirectDriverTestBase
 {
-    public class ErrorIT : DirectDriverTestBase
+    public ErrorIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
     {
-        private IDriver Driver => Server.Driver;
+    }
 
-        public ErrorIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
-        {
-        }
+    private IDriver Driver => Server.Driver;
 
-        [RequireServerFact]
-        public async Task ErrorToRunSessionInTransaction()
+    [RequireServerFact]
+    public async Task ErrorToRunSessionInTransaction()
+    {
+        var session = Driver.AsyncSession();
+        try
         {
-            var session = Driver.AsyncSession();
+            var tx = await session.BeginTransactionAsync();
             try
             {
-                var tx = await session.BeginTransactionAsync();
-                try
-                {
-                    var ex = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
+                var ex = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
 
-                    ex.Should().BeOfType<TransactionNestingException>().Which
-                        .Message.Should().StartWith("Attempting to nest transactions");
-                }
-                finally
-                {
-                    await tx.RollbackAsync();
-                }
+                ex.Should()
+                    .BeOfType<TransactionNestingException>()
+                    .Which
+                    .Message.Should()
+                    .StartWith("Attempting to nest transactions");
+            }
+            finally
+            {
+                await tx.RollbackAsync();
+            }
+        }
+        finally
+        {
+            await session.CloseAsync();
+        }
+    }
+
+    [RequireServerFact]
+    public async Task ErrorToRunTransactionInTransaction()
+    {
+        var session = Driver.AsyncSession();
+        try
+        {
+            var tx = await session.BeginTransactionAsync();
+            try
+            {
+                var ex = await Record.ExceptionAsync(() => session.BeginTransactionAsync());
+
+                ex.Should()
+                    .BeOfType<TransactionNestingException>()
+                    .Which
+                    .Message.Should()
+                    .StartWith("Attempting to nest transactions");
+            }
+            finally
+            {
+                await tx.RollbackAsync();
+            }
+        }
+        finally
+        {
+            await session.CloseAsync();
+        }
+    }
+
+    [RequireServerFact]
+    public async Task ErrorToRunInvalidCypher()
+    {
+        var session = Driver.AsyncSession();
+        try
+        {
+            var result = await session.RunAsync("Invalid Cypher");
+            var ex = await Record.ExceptionAsync(() => result.ConsumeAsync());
+
+            ex.Should().BeOfType<ClientException>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
+        }
+        finally
+        {
+            await session.CloseAsync();
+        }
+    }
+
+    [RequireServerFact]
+    public async Task ShouldFailToConnectIncorrectPort()
+    {
+        var uri = Neo4jDefaultInstallation.BoltUri.Replace(Neo4jDefaultInstallation.BoltPort, "1234");
+
+        using (var driver = GraphDatabase.Driver(uri))
+        {
+            var session = driver.AsyncSession();
+            try
+            {
+                var ex = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
+
+                ex.Should().BeOfType<ServiceUnavailableException>();
             }
             finally
             {
                 await session.CloseAsync();
             }
         }
+    }
 
-        [RequireServerFact]
-        public async Task ErrorToRunTransactionInTransaction()
-        {
-            var session = Driver.AsyncSession();
-            try
-            {
-                var tx = await session.BeginTransactionAsync();
-                try
-                {
-                    var ex = await Record.ExceptionAsync(() => session.BeginTransactionAsync());
+    [RequireServerFact]
+    public void ShouldReportWrongScheme()
+    {
+        var ex = Record.Exception(() => GraphDatabase.Driver("http://localhost"));
 
-                    ex.Should().BeOfType<TransactionNestingException>().Which
-                        .Message.Should().StartWith("Attempting to nest transactions");
-                }
-                finally
-                {
-                    await tx.RollbackAsync();
-                }
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
-
-        [RequireServerFact]
-        public async Task ErrorToRunInvalidCypher()
-        {
-            var session = Driver.AsyncSession();
-            try
-            {
-                var result = await session.RunAsync("Invalid Cypher");
-                var ex = await Record.ExceptionAsync(() => result.ConsumeAsync());
-
-				ex.Should().BeOfType<ClientException>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
-			}
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
-
-        [RequireServerFact]
-        public async Task ShouldFailToConnectIncorrectPort()
-        {
-            var uri = Neo4jDefaultInstallation.BoltUri.Replace(Neo4jDefaultInstallation.BoltPort, "1234");
-
-            using (var driver = GraphDatabase.Driver(uri))
-            {
-                var session = driver.AsyncSession();
-                try
-                {
-                    var ex = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
-
-                    ex.Should().BeOfType<ServiceUnavailableException>();
-                }
-                finally
-                {
-                    await session.CloseAsync();
-                }
-            }
-        }
-
-        [RequireServerFact]
-        public void ShouldReportWrongScheme()
-        {
-            var ex = Record.Exception(() => GraphDatabase.Driver("http://localhost"));
-
-            ex.Should().BeOfType<NotSupportedException>().Which
-                .Message.Should().Be("Unsupported URI scheme: http");
-        }
+        ex.Should()
+            .BeOfType<NotSupportedException>()
+            .Which
+            .Message.Should()
+            .Be("Unsupported URI scheme: http");
     }
 }

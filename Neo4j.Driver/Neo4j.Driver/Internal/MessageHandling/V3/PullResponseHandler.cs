@@ -24,11 +24,13 @@ namespace Neo4j.Driver.Internal.MessageHandling.V3;
 
 internal sealed class PullResponseHandler : MetadataCollectingResponseHandler
 {
+    private readonly IBookmarksTracker _bookmarksTracker;
     private readonly IResultStreamBuilder _streamBuilder;
     private readonly SummaryBuilder _summaryBuilder;
-    private readonly IBookmarksTracker _bookmarksTracker;
 
-    public PullResponseHandler(IResultStreamBuilder streamBuilder, SummaryBuilder summaryBuilder,
+    public PullResponseHandler(
+        IResultStreamBuilder streamBuilder,
+        SummaryBuilder summaryBuilder,
         IBookmarksTracker bookmarksTracker)
     {
         _streamBuilder = streamBuilder ?? throw new ArgumentNullException(nameof(streamBuilder));
@@ -47,7 +49,8 @@ internal sealed class PullResponseHandler : MetadataCollectingResponseHandler
     public override void OnSuccess(IDictionary<string, object> metadata)
     {
         base.OnSuccess(metadata);
-        _bookmarksTracker?.UpdateBookmarks(GetMetadata<BookmarksCollector, Bookmarks>(),
+        _bookmarksTracker?.UpdateBookmarks(
+            GetMetadata<BookmarksCollector, Bookmarks>(),
             GetMetadata<DatabaseInfoCollector, IDatabaseInfo>());
 
         _summaryBuilder.ResultConsumedAfter = GetMetadata<TimeToLastCollector, long>();

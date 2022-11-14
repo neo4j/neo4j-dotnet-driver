@@ -16,18 +16,14 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Reactive;
 using System.Reactive.Linq;
 
 namespace Neo4j.Driver.Internal
 {
     internal class InternalRxSession : IRxSession
     {
-        private readonly IInternalAsyncSession _session;
         private readonly IRxRetryLogic _retryLogic;
+        private readonly IInternalAsyncSession _session;
 
         public InternalRxSession(IInternalAsyncSession session, IRxRetryLogic retryLogic)
         {
@@ -39,6 +35,18 @@ namespace Neo4j.Driver.Internal
         public Bookmarks LastBookmarks => _session.LastBookmarks;
 
         public SessionConfig SessionConfig => _session.SessionConfig;
+
+        #region Cleanup
+
+        public IObservable<T> Close<T>()
+        {
+            return Observable.FromAsync(
+                    () =>
+                        _session.CloseAsync())
+                .SelectMany(x => Observable.Empty<T>());
+        }
+
+        #endregion
 
         #region Run Methods
 
@@ -69,8 +77,9 @@ namespace Neo4j.Driver.Internal
 
         public IRxResult Run(Query query, Action<TransactionConfigBuilder> action)
         {
-            return new RxResult(Observable.FromAsync(() => _session.RunAsync(query, action, false))
-                .Cast<IInternalResultCursor>());
+            return new RxResult(
+                Observable.FromAsync(() => _session.RunAsync(query, action, false))
+                    .Cast<IInternalResultCursor>());
         }
 
         #endregion
@@ -85,15 +94,19 @@ namespace Neo4j.Driver.Internal
         public IObservable<IRxTransaction> BeginTransaction(Action<TransactionConfigBuilder> action)
         {
             return Observable.FromAsync(() => _session.BeginTransactionAsync(action, false))
-                .Select(tx =>
-                    new InternalRxTransaction(tx.CastOrThrow<IInternalAsyncTransaction>()));
+                .Select(
+                    tx =>
+                        new InternalRxTransaction(tx.CastOrThrow<IInternalAsyncTransaction>()));
         }
 
-        private IObservable<InternalRxTransaction> BeginTransaction(AccessMode mode, Action<TransactionConfigBuilder> action)
+        private IObservable<InternalRxTransaction> BeginTransaction(
+            AccessMode mode,
+            Action<TransactionConfigBuilder> action)
         {
             return Observable.FromAsync(() => _session.BeginTransactionAsync(mode, action, false))
-                .Select(tx =>
-                    new InternalRxTransaction(tx.CastOrThrow<IInternalAsyncTransaction>()));
+                .Select(
+                    tx =>
+                        new InternalRxTransaction(tx.CastOrThrow<IInternalAsyncTransaction>()));
         }
 
         #endregion
@@ -105,7 +118,8 @@ namespace Neo4j.Driver.Internal
             return ReadTransaction(work, null);
         }
 
-        public IObservable<T> ReadTransaction<T>(Func<IRxTransaction, IObservable<T>> work,
+        public IObservable<T> ReadTransaction<T>(
+            Func<IRxTransaction, IObservable<T>> work,
             Action<TransactionConfigBuilder> action)
         {
             return RunTransaction(AccessMode.Read, work, action);
@@ -116,7 +130,8 @@ namespace Neo4j.Driver.Internal
             return WriteTransaction(work, null);
         }
 
-        public IObservable<T> WriteTransaction<T>(Func<IRxTransaction, IObservable<T>> work,
+        public IObservable<T> WriteTransaction<T>(
+            Func<IRxTransaction, IObservable<T>> work,
             Action<TransactionConfigBuilder> action)
         {
             return RunTransaction(AccessMode.Write, work, action);
@@ -127,7 +142,9 @@ namespace Neo4j.Driver.Internal
             return ReadTransaction(work, null);
         }
 
-        public IObservable<T> ExecuteRead<T>(Func<IRxRunnable, IObservable<T>> work, Action<TransactionConfigBuilder> action)
+        public IObservable<T> ExecuteRead<T>(
+            Func<IRxRunnable, IObservable<T>> work,
+            Action<TransactionConfigBuilder> action)
         {
             return RunTransaction(AccessMode.Read, work, action);
         }
@@ -137,43 +154,36 @@ namespace Neo4j.Driver.Internal
             return WriteTransaction(work, null);
         }
 
-        public IObservable<T> ExecuteWrite<T>(Func<IRxRunnable, IObservable<T>> work, Action<TransactionConfigBuilder> action)
+        public IObservable<T> ExecuteWrite<T>(
+            Func<IRxRunnable, IObservable<T>> work,
+            Action<TransactionConfigBuilder> action)
         {
             return RunTransaction(AccessMode.Write, work, action);
         }
 
-        internal IObservable<T> RunTransaction<T>(AccessMode mode,
+        internal IObservable<T> RunTransaction<T>(
+            AccessMode mode,
             Func<IRxTransaction, IObservable<T>> work,
             Action<TransactionConfigBuilder> action)
         {
             return _retryLogic.Retry(
                 BeginTransaction(mode, action)
-                    .SelectMany(txc =>
-                        Observable.Defer(() =>
-                            {
-                                try
-                                {
-                                    return work(txc);
-                                }
-                                catch (Exception exc)
-                                {
-                                    return Observable.Throw<T>(exc);
-                                }
-                            })
-                            .CatchAndThrow(exc => txc.IsOpen ? txc.Rollback<T>() : Observable.Empty<T>())
-                            .Concat(txc.IsOpen ? txc.Commit<T>() : Observable.Empty<T>()))
-            );
-        }
-
-        #endregion
-
-        #region Cleanup
-
-        public IObservable<T> Close<T>()
-        {
-            return Observable.FromAsync(
-                () =>
-                    _session.CloseAsync()).SelectMany(x => Observable.Empty<T>());
+                    .SelectMany(
+                        txc =>
+                            Observable.Defer(
+                                    () =>
+                                    {
+                                        try
+                                        {
+                                            return work(txc);
+                                        }
+                                        catch (Exception exc)
+                                        {
+                                            return Observable.Throw<T>(exc);
+                                        }
+                                    })
+                                .CatchAndThrow(exc => txc.IsOpen ? txc.Rollback<T>() : Observable.Empty<T>())
+                                .Concat(txc.IsOpen ? txc.Commit<T>() : Observable.Empty<T>())));
         }
 
         #endregion

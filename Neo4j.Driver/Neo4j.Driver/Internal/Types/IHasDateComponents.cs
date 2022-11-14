@@ -15,16 +15,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Internal.Types
+namespace Neo4j.Driver.Internal.Types;
+
+internal interface IHasDateComponents
 {
-    internal interface IHasDateComponents
-    {
+    int Year { get; }
 
-        int Year { get; }
+    int Month { get; }
 
-        int Month { get; }
-
-        int Day { get; }
-
-    }
+    int Day { get; }
 }

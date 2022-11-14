@@ -34,11 +34,14 @@ public class BasePackStreamTests : PackStreamTestSpecs
         return CreateReaderMachine(bytes, null);
     }
 
-    internal virtual PackStreamReaderMachine CreateReaderMachine(byte[] bytes,
+    internal virtual PackStreamReaderMachine CreateReaderMachine(
+        byte[] bytes,
         IDictionary<byte, IPackStreamSerializer> structHandlers)
     {
-        return new PackStreamReaderMachine(bytes, s =>
-            new PackStreamReader(s, new MessageFormat(null, structHandlers.Values), new ByteBuffers()));
+        return new PackStreamReaderMachine(
+            bytes,
+            s =>
+                new PackStreamReader(s, new MessageFormat(null, structHandlers.Values), new ByteBuffers()));
     }
 
     internal override PackStreamWriterMachine CreateWriterMachine()
@@ -49,10 +52,11 @@ public class BasePackStreamTests : PackStreamTestSpecs
     internal virtual PackStreamWriterMachine CreateWriterMachine(
         IDictionary<Type, IPackStreamSerializer> structHandlers)
     {
-        return new PackStreamWriterMachine(s =>
-            new PackStreamWriter(
-                new MessageFormat(null, structHandlers.Values),
-                new ChunkWriter(s, new BufferSettings(Config.Default), new Mock<ILogger>().Object)));
+        return new PackStreamWriterMachine(
+            s =>
+                new PackStreamWriter(
+                    new MessageFormat(null, structHandlers.Values),
+                    new ChunkWriter(s, new BufferSettings(Config.Default), new Mock<ILogger>().Object)));
     }
 
     [Fact]
@@ -61,7 +65,7 @@ public class BasePackStreamTests : PackStreamTestSpecs
         var structHandler = new StructTypeSerializer();
         var structSignature = structHandler.ReadableStructs.First();
         var structHandlerDict =
-            new Dictionary<byte, IPackStreamSerializer> {{structSignature, structHandler}};
+            new Dictionary<byte, IPackStreamSerializer> { { structSignature, structHandler } };
 
         var writerMachine = CreateWriterMachine();
         writerMachine.Writer().WriteStructHeader(5, structSignature);
@@ -77,7 +81,7 @@ public class BasePackStreamTests : PackStreamTestSpecs
         value.Should().NotBeNull();
         value.Should().BeOfType<StructType>();
 
-        var structValue = (StructType) value;
+        var structValue = (StructType)value;
         structValue.Values.Should().NotBeNull();
         structValue.Values.Should().HaveCount(5);
         structValue.Values.Should().Equal(1L, 2L, true, 3.0, "something");
@@ -89,16 +93,16 @@ public class BasePackStreamTests : PackStreamTestSpecs
         var structHandler = new StructTypeSerializer();
         var structType = structHandler.WritableTypes.First();
         var structHandlerDict =
-            new Dictionary<Type, IPackStreamSerializer> {{structType, structHandler}};
+            new Dictionary<Type, IPackStreamSerializer> { { structType, structHandler } };
 
         var writerMachine = CreateWriterMachine(structHandlerDict);
-        writerMachine.Writer().Write(new StructType(new List<object> {1L, 2L, true, 3.0, "something"}));
+        writerMachine.Writer().Write(new StructType(new List<object> { 1L, 2L, true, 3.0, "something" }));
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
         var reader = readerMachine.Reader();
 
         reader.ReadStructHeader().Should().Be(5);
-        reader.ReadStructSignature().Should().Be((byte) 'S');
+        reader.ReadStructSignature().Should().Be((byte)'S');
         reader.Read().Should().Be(1L);
         reader.Read().Should().Be(2L);
         reader.Read().Should().Be(true);
@@ -118,24 +122,30 @@ public class BasePackStreamTests : PackStreamTestSpecs
 
     private class StructTypeSerializer : IPackStreamSerializer
     {
-        public IEnumerable<byte> ReadableStructs => new[] {(byte) 'S'};
+        public IEnumerable<byte> ReadableStructs => new[] { (byte)'S' };
 
-        public IEnumerable<Type> WritableTypes => new[] {typeof(StructType)};
+        public IEnumerable<Type> WritableTypes => new[] { typeof(StructType) };
 
         public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
         {
             var values = new List<object>();
-            for (var i = 0; i < size; i++) values.Add(reader.Read());
+            for (var i = 0; i < size; i++)
+            {
+                values.Add(reader.Read());
+            }
 
             return new StructType(values);
         }
 
         public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
         {
-            var structValue = (StructType) value;
+            var structValue = (StructType)value;
 
-            writer.WriteStructHeader(structValue.Values.Count, (byte) 'S');
-            foreach (var innerValue in structValue.Values) writer.Write(innerValue);
+            writer.WriteStructHeader(structValue.Values.Count, (byte)'S');
+            foreach (var innerValue in structValue.Values)
+            {
+                writer.Write(innerValue);
+            }
         }
     }
 }

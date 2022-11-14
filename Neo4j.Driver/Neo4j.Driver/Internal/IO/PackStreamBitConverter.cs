@@ -19,23 +19,20 @@ using System;
 using System.Text;
 
 namespace Neo4j.Driver.Internal.IO;
+
 //TODO: .NET6 Span/Memory optimisation.
 internal static class PackStreamBitConverter
 {
-    /// <summary>
-    ///     Converts a byte to bytes.
-    /// </summary>
+    /// <summary>Converts a byte to bytes.</summary>
     /// <param name="value">The byte value to convert.</param>
     /// <returns>The specified byte value as an array of bytes.</returns>
     public static byte[] GetBytes(byte value)
     {
-        var bytes = new[]{value};
+        var bytes = new[] { value };
         return bytes;
     }
 
-    /// <summary>
-    ///     Converts a short (Int16) to bytes.
-    /// </summary>
+    /// <summary>Converts a short (Int16) to bytes.</summary>
     /// <param name="value">The short (Int16) value to convert.</param>
     /// <returns>The specified short (Int16) value as an array of bytes.</returns>
     public static byte[] GetBytes(short value)
@@ -44,9 +41,7 @@ internal static class PackStreamBitConverter
         return ToTargetEndian(bytes);
     }
 
-    /// <summary>
-    ///     Converts a short (UInt16) to bytes.
-    /// </summary>
+    /// <summary>Converts a short (UInt16) to bytes.</summary>
     /// <param name="value">The short (UInt16) value to convert.</param>
     /// <returns>The specified short (UInt16) value as an array of bytes.</returns>
     public static byte[] GetBytes(ushort value)
@@ -55,9 +50,7 @@ internal static class PackStreamBitConverter
         return ToTargetEndian(bytes);
     }
 
-    /// <summary>
-    ///     Converts an int (Int32) to bytes.
-    /// </summary>
+    /// <summary>Converts an int (Int32) to bytes.</summary>
     /// <param name="value">The int (Int32) value to convert.</param>
     /// <returns>The specified int (Int32) value as an array of bytes.</returns>
     public static byte[] GetBytes(int value)
@@ -66,9 +59,7 @@ internal static class PackStreamBitConverter
         return ToTargetEndian(bytes);
     }
 
-    /// <summary>
-    ///     Converts an uint (UInt32) to bytes.
-    /// </summary>
+    /// <summary>Converts an uint (UInt32) to bytes.</summary>
     /// <param name="value">The uint (UInt32) value to convert.</param>
     /// <returns>The specified uint (UInt32) value as an array of bytes.</returns>
     public static byte[] GetBytes(uint value)
@@ -77,9 +68,7 @@ internal static class PackStreamBitConverter
         return ToTargetEndian(bytes);
     }
 
-    /// <summary>
-    ///     Converts an int (Int64) to bytes.
-    /// </summary>
+    /// <summary>Converts an int (Int64) to bytes.</summary>
     /// <param name="value">The int (Int64) value to convert.</param>
     /// <returns>The specified int (Int64) value as an array of bytes.</returns>
     public static byte[] GetBytes(long value)
@@ -88,9 +77,7 @@ internal static class PackStreamBitConverter
         return ToTargetEndian(bytes);
     }
 
-    /// <summary>
-    ///     Converts an int (double) to bytes.
-    /// </summary>
+    /// <summary>Converts an int (double) to bytes.</summary>
     /// <param name="value">The int (double) value to convert.</param>
     /// <returns>The specified int (double) value as an array of bytes.</returns>
     public static byte[] GetBytes(double value)
@@ -99,9 +86,7 @@ internal static class PackStreamBitConverter
         return ToTargetEndian(bytes);
     }
 
-    /// <summary>
-    ///     Converts an string to bytes.
-    /// </summary>
+    /// <summary>Converts an string to bytes.</summary>
     /// <param name="value">The string value to convert.</param>
     /// <returns>The specified string value as an array of bytes.</returns>
     public static byte[] GetBytes(string value)
@@ -109,9 +94,7 @@ internal static class PackStreamBitConverter
         return Encoding.UTF8.GetBytes(value);
     }
 
-    /// <summary>
-    ///     Converts an byte array to a short.
-    /// </summary>
+    /// <summary>Converts an byte array to a short.</summary>
     /// <param name="bytes">The byte array to convert.</param>
     /// <returns>A short converted from the byte array.</returns>
     public static short ToInt16(byte[] bytes)
@@ -120,9 +103,7 @@ internal static class PackStreamBitConverter
         return BitConverter.ToInt16(bytes, 0);
     }
 
-    /// <summary>
-    ///     Converts an byte array to a unsigned short.
-    /// </summary>
+    /// <summary>Converts an byte array to a unsigned short.</summary>
     /// <param name="bytes">The byte array to convert.</param>
     /// <returns>A unsigned short converted from the byte array.</returns>
     public static ushort ToUInt16(byte[] bytes)
@@ -131,9 +112,7 @@ internal static class PackStreamBitConverter
         return BitConverter.ToUInt16(bytes, 0);
     }
 
-    /// <summary>
-    ///     Converts an byte array to a int (Int32).
-    /// </summary>
+    /// <summary>Converts an byte array to a int (Int32).</summary>
     /// <param name="bytes">The byte array to convert.</param>
     /// <returns>A int (Int32) converted from the byte array.</returns>
     public static int ToInt32(byte[] bytes)
@@ -142,9 +121,7 @@ internal static class PackStreamBitConverter
         return BitConverter.ToInt32(bytes, 0);
     }
 
-    /// <summary>
-    ///     Converts an byte array to a int (Int64).
-    /// </summary>
+    /// <summary>Converts an byte array to a int (Int64).</summary>
     /// <param name="bytes">The byte array to convert.</param>
     /// <returns>A int (Int64) converted from the byte array.</returns>
     public static long ToInt64(byte[] bytes)
@@ -153,9 +130,7 @@ internal static class PackStreamBitConverter
         return BitConverter.ToInt64(bytes, 0);
     }
 
-    /// <summary>
-    ///     Converts an byte array to a int (double).
-    /// </summary>
+    /// <summary>Converts an byte array to a int (double).</summary>
     /// <param name="bytes">The byte array to convert.</param>
     /// <returns>A int (double) converted from the byte array.</returns>
     public static double ToDouble(byte[] bytes)
@@ -164,9 +139,7 @@ internal static class PackStreamBitConverter
         return BitConverter.ToDouble(bytes, 0);
     }
 
-    /// <summary>
-    ///     Converts an byte array of a UTF8 encoded string to a string
-    /// </summary>
+    /// <summary>Converts an byte array of a UTF8 encoded string to a string</summary>
     /// <param name="bytes">The byte array to convert.</param>
     /// <returns>A string converted from the byte array</returns>
     public static string ToString(byte[] bytes)
@@ -174,27 +147,29 @@ internal static class PackStreamBitConverter
         return Encoding.UTF8.GetString(bytes, 0, bytes.Length);
     }
 
-    /// <summary>
-    ///     Converts the bytes to big endian.
-    /// </summary>
+    /// <summary>Converts the bytes to big endian.</summary>
     /// <param name="bytes">The bytes to convert.</param>
     /// <returns>The bytes converted to big endian.</returns>
     private static byte[] ToTargetEndian(byte[] bytes)
     {
         if (BitConverter.IsLittleEndian)
+        {
             Array.Reverse(bytes);
+        }
+
         return bytes;
     }
 
-    /// <summary>
-    ///     Converts the bytes to the platform endian type.
-    /// </summary>
+    /// <summary>Converts the bytes to the platform endian type.</summary>
     /// <param name="bytes">The bytes to convert.</param>
     /// <returns>The bytes converted to the platform endian type.</returns>
     private static byte[] ToPlatformEndian(byte[] bytes)
     {
         if (BitConverter.IsLittleEndian)
+        {
             Array.Reverse(bytes);
+        }
+
         return bytes;
     }
 }

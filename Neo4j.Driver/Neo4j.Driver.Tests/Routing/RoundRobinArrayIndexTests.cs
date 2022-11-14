@@ -15,54 +15,52 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Routing;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.Routing
+namespace Neo4j.Driver.Tests.Routing;
+
+public class RoundRobinArrayIndexTests
 {
-    public class RoundRobinArrayIndexTests
+    [Fact]
+    public void ShouldHandleZeroLength()
     {
-        [Fact]
-        public void ShouldHandleZeroLength()
+        var roundRobinIndex = new RoundRobinArrayIndex();
+
+        var index = roundRobinIndex.Next(0);
+
+        index.Should().Be(-1);
+    }
+
+    [Fact]
+    public void ShouldReturnIndexesInRoundRobinOrder()
+    {
+        var roundRobinIndex = new RoundRobinArrayIndex();
+
+        for (var i = 0; i < 10; i++)
         {
-            var roundRobinIndex = new RoundRobinArrayIndex();
-
-            int index = roundRobinIndex.Next(0);
-
-            index.Should().Be(-1);
+            var index = roundRobinIndex.Next(10);
+            index.Should().Be(i);
         }
 
-        [Fact]
-        public void ShouldReturnIndexesInRoundRobinOrder()
+        for (var i = 0; i < 5; i++)
         {
-            RoundRobinArrayIndex roundRobinIndex = new RoundRobinArrayIndex();
-
-            for (int i = 0; i < 10; i++)
-            {
-                int index = roundRobinIndex.Next(10);
-                index.Should().Be(i);
-            }
-
-            for (int i = 0; i < 5; i++)
-            {
-                int index = roundRobinIndex.Next(5);
-                index.Should().Be(i);
-            }
+            var index = roundRobinIndex.Next(5);
+            index.Should().Be(i);
         }
+    }
 
-        [Fact]
-        public void ShouldHandleOverflow()
-        {
-            int arrayLength = 10;
-            RoundRobinArrayIndex roundRobinIndex = new RoundRobinArrayIndex(Int32.MaxValue - 2);
+    [Fact]
+    public void ShouldHandleOverflow()
+    {
+        var arrayLength = 10;
+        var roundRobinIndex = new RoundRobinArrayIndex(int.MaxValue - 2);
 
-            roundRobinIndex.Next(arrayLength).Should().Be((Int32.MaxValue - 1) % arrayLength);
-            roundRobinIndex.Next(arrayLength).Should().Be(Int32.MaxValue % arrayLength);
-            roundRobinIndex.Next(arrayLength).Should().Be(0);
-            roundRobinIndex.Next(arrayLength).Should().Be(1);
-            roundRobinIndex.Next(arrayLength).Should().Be(2);
-        }
+        roundRobinIndex.Next(arrayLength).Should().Be((int.MaxValue - 1) % arrayLength);
+        roundRobinIndex.Next(arrayLength).Should().Be(int.MaxValue % arrayLength);
+        roundRobinIndex.Next(arrayLength).Should().Be(0);
+        roundRobinIndex.Next(arrayLength).Should().Be(1);
+        roundRobinIndex.Next(arrayLength).Should().Be(2);
     }
 }

@@ -1,137 +1,145 @@
 ﻿using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
-using System.Linq;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend
+namespace Neo4j.Driver.Tests.TestBackend;
+
+public class TestKitProtocolException : Exception
 {
-	public class TestKitProtocolException : Exception
-	{
-		public TestKitProtocolException(string message) : base(message)
-		{
-
-		}
-	}
-
-	public class TestKitClientException : Exception
-	{
-		public TestKitClientException(string message) : base(message)
-		{
-
-		}
-	}
-
-
-    public static class Protocol
+    public TestKitProtocolException(string message) : base(message)
     {
-		public static readonly HashSet<Type> ProtocolTypes =
-				new HashSet<Type> { typeof(NewDriver),
-									typeof(DriverClose),
-									typeof(NewSession),
-									typeof(SessionClose),
-									typeof(AuthorizationToken),
-									typeof(SessionRun),
-									typeof(TransactionRun),
-									typeof(TransactionCommit),
-									typeof(TransactionRollback),
-									typeof(TransactionClose),
-									typeof(SessionReadTransaction),
-									typeof(SessionWriteTransaction),
-									typeof(SessionBeginTransaction),
-									typeof(Result),
-									typeof(ResultNext),
-									typeof(ResultPeek),
-                                    typeof(ResultList),
-                                    typeof(ResultSingle),
-									typeof(ResultConsume),
-									typeof(RetryablePositive),
-									typeof(RetryableNegative),
-									typeof(ProtocolException),
-									typeof(SessionLastBookmarks),
-									typeof(VerifyConnectivity),
-                                    typeof(GetServerInfo),
-									typeof(CheckMultiDBSupport),
-                                    typeof(CheckDriverIsEncrypted),
-									typeof(ResolverResolutionCompleted),
-									typeof(StartTest),
-									typeof(GetFeatures),
-									typeof(GetRoutingTable),
-                                    typeof(CypherTypeField),
-                                    typeof(NewBookmarkManager),
-                                    typeof(BookmarkManagerClose),
-                                    typeof(BookmarkManagerConsumerRequest),
-                                    typeof(BookmarkManagerSupplierRequest),
-                                    typeof(BookmarksConsumerCompleted),
-                                    typeof(BookmarksSupplierCompleted),
-                };
+    }
+}
 
+public class TestKitClientException : Exception
+{
+    public TestKitClientException(string message) : base(message)
+    {
+    }
+}
 
-		static Protocol()
+public static class Protocol
+{
+    public static readonly HashSet<Type> ProtocolTypes =
+        new()
         {
+            typeof(NewDriver),
+            typeof(DriverClose),
+            typeof(NewSession),
+            typeof(SessionClose),
+            typeof(AuthorizationToken),
+            typeof(SessionRun),
+            typeof(TransactionRun),
+            typeof(TransactionCommit),
+            typeof(TransactionRollback),
+            typeof(TransactionClose),
+            typeof(SessionReadTransaction),
+            typeof(SessionWriteTransaction),
+            typeof(SessionBeginTransaction),
+            typeof(Result),
+            typeof(ResultNext),
+            typeof(ResultPeek),
+            typeof(ResultList),
+            typeof(ResultSingle),
+            typeof(ResultConsume),
+            typeof(RetryablePositive),
+            typeof(RetryableNegative),
+            typeof(ProtocolException),
+            typeof(SessionLastBookmarks),
+            typeof(VerifyConnectivity),
+            typeof(GetServerInfo),
+            typeof(CheckMultiDBSupport),
+            typeof(CheckDriverIsEncrypted),
+            typeof(ResolverResolutionCompleted),
+            typeof(StartTest),
+            typeof(GetFeatures),
+            typeof(GetRoutingTable),
+            typeof(CypherTypeField),
+            typeof(NewBookmarkManager),
+            typeof(BookmarkManagerClose),
+            typeof(BookmarkManagerConsumerRequest),
+            typeof(BookmarkManagerSupplierRequest),
+            typeof(BookmarksConsumerCompleted),
+            typeof(BookmarksSupplierCompleted)
+        };
 
-        }
-
-        public static void ValidateType(string typeName)
-        {
-			try
-			{
-				var objectType = Type.GetType(typeof(Protocol).Namespace + "." + typeName, true);
-				ValidateType(objectType);
-			}
-			catch
-			{
-				throw new TestKitProtocolException($"Attempting to use an unrecognized protocol type: {typeName}");
-			}
-        }
-
-		public static void ValidateType(Type objectType)
-		{
-			if (!ProtocolTypes.Contains(objectType)) throw new TestKitProtocolException($"Attempting to use an unrecognized protocol type: {objectType}");
-		}
+    static Protocol()
+    {
     }
 
-
-    internal abstract class IProtocolObject
+    public static void ValidateType(string typeName)
     {
-        public string name { get; set; }
-        [JsonProperty("id")]
-        public string uniqueId { get; internal set; }    //Only exposes the get option so that the serializer will output it.  Don't want to read in on deserialization.
-        [JsonIgnore]
-        protected ProtocolObjectManager ObjManager { get; set; }
-        public event EventHandler ProtocolEvent;
-
-        public void SetObjectManager(ProtocolObjectManager objManager)
+        try
         {
-            ObjManager = objManager;
+            var objectType = Type.GetType(typeof(Protocol).Namespace + "." + typeName, true);
+            ValidateType(objectType);
         }
-
-        public void SetUniqueId(string id) { uniqueId = id; }
-
-
-        public virtual async Task Process()
-		{
-            await Task.CompletedTask;
-        }
-
-        public virtual async Task Process(Controller controller)    //Default is to not use the controller object. But option to override this method and use it if necessary.
-		{
-            await Process();
-        }
-
-        public string Encode()
+        catch
         {
-            return JsonConvert.SerializeObject(this, Formatting.Indented);
+            throw new TestKitProtocolException($"Attempting to use an unrecognized protocol type: {typeName}");
         }
+    }
 
-        public virtual string Respond()
+    public static void ValidateType(Type objectType)
+    {
+        if (!ProtocolTypes.Contains(objectType))
         {
-            return Encode();
+            throw new TestKitProtocolException($"Attempting to use an unrecognized protocol type: {objectType}");
         }
+    }
+}
 
-        protected void TriggerEvent()
-		{
-            ProtocolEvent?.Invoke(this, EventArgs.Empty);
-        }
+internal abstract class IProtocolObject
+{
+    public string name { get; set; }
+
+    [JsonProperty("id")]
+    public string
+        uniqueId
+    {
+        get;
+        internal set;
+    } //Only exposes the get option so that the serializer will output it.  Don't want to read in on deserialization.
+
+    [JsonIgnore] protected ProtocolObjectManager ObjManager { get; set; }
+
+    public event EventHandler ProtocolEvent;
+
+    public void SetObjectManager(ProtocolObjectManager objManager)
+    {
+        ObjManager = objManager;
+    }
+
+    public void SetUniqueId(string id)
+    {
+        uniqueId = id;
+    }
+
+    public virtual async Task Process()
+    {
+        await Task.CompletedTask;
+    }
+
+    public virtual async Task
+        Process(
+            Controller controller) //Default is to not use the controller object. But option to override this method and use it if necessary.
+    {
+        await Process();
+    }
+
+    public string Encode()
+    {
+        return JsonConvert.SerializeObject(this, Formatting.Indented);
+    }
+
+    public virtual string Respond()
+    {
+        return Encode();
+    }
+
+    protected void TriggerEvent()
+    {
+        ProtocolEvent?.Invoke(this, EventArgs.Empty);
     }
 }

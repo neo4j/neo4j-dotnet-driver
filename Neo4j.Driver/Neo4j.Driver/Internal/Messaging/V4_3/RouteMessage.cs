@@ -36,35 +36,46 @@ internal sealed class RouteMessage : IRequestMessage
     public Bookmarks Bookmarks { get; }
     public string DatabaseParam { get; }
 
+    public IPackStreamSerializer Serializer => RouteMessageSerializer.Instance;
+
     public override string ToString()
     {
         var stringBuilder = new StringBuilder(50);
 
         stringBuilder.Append("ROUTE {");
         foreach (var data in Routing)
+        {
             stringBuilder.Append(" '")
                 .Append(data.Key)
                 .Append("':'")
                 .Append(data.Value)
                 .Append("'");
+        }
+
         stringBuilder.Append(" } ");
 
         if (Bookmarks?.Values.Length > 0)
+        {
             stringBuilder.Append("{ bookmarks, ")
                 .Append(Bookmarks.Values.ToContentString())
                 .Append(" }");
+        }
         else
+        {
             stringBuilder.Append("[]");
+        }
 
         if (!string.IsNullOrEmpty(DatabaseParam))
+        {
             stringBuilder.Append(" '")
                 .Append(DatabaseParam)
                 .Append("'");
+        }
         else
+        {
             stringBuilder.Append(" None");
+        }
 
         return stringBuilder.ToString();
     }
-
-    public IPackStreamSerializer Serializer => RouteMessageSerializer.Instance;
 }

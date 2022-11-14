@@ -18,30 +18,30 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata
+namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
+
+internal class BoltPatchCollector : IMetadataCollector<string[]>
 {
-    internal class BoltPatchCollector : IMetadataCollector<string[]>
+    public const string BoltPatchKey = "patch_bolt";
+    object IMetadataCollector.Collected => Collected;
+
+    public string[] Collected { get; private set; }
+
+    public void Collect(IDictionary<string, object> metadata)
     {
-        object IMetadataCollector.Collected => Collected;
-        public const string BoltPatchKey = "patch_bolt";
-
-        public string[] Collected { get; private set; }
-
-        public void Collect(IDictionary<string, object> metadata)
+        if (metadata == null || !metadata.TryGetValue(BoltPatchKey, out var value))
         {
-            if (metadata == null || !metadata.TryGetValue(BoltPatchKey, out var value))
-                return;
+            return;
+        }
 
-            if (value is List<object> values)
-            {
-                Collected = values.OfType<string>().ToArray();
-            }
-            else
-            {
-                throw new ProtocolException(
-                    $"Expected '{BoltPatchKey}' metadata to be of type 'List<object>', but got '{value?.GetType().Name}'.");
-            }
-
+        if (value is List<object> values)
+        {
+            Collected = values.OfType<string>().ToArray();
+        }
+        else
+        {
+            throw new ProtocolException(
+                $"Expected '{BoltPatchKey}' metadata to be of type 'List<object>', but got '{value?.GetType().Name}'.");
         }
     }
 }

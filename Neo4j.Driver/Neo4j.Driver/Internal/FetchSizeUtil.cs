@@ -17,28 +17,23 @@
 
 using System;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+/// <summary>A util class for handling fetch size.</summary>
+internal static class FetchSizeUtil
 {
-    /// <summary>
-    /// A util class for handling fetch size.
-    /// </summary>
-    internal static class FetchSizeUtil
+    /// <summary>Validate the fetch size. A valid fetch size can be a positive number, or -1.</summary>
+    /// <param name="size">The fetch size.</param>
+    /// <returns>A valid fetch size.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">If the input value is null, 0, or unsupported negative numbers.</exception>
+    public static long AssertValidFetchSize(long? size)
     {
-        /// <summary>
-        /// Validate the fetch size.
-        /// A valid fetch size can be a positive number, or -1.
-        /// </summary>
-        /// <param name="size">The fetch size.</param>
-        /// <returns>A valid fetch size.</returns>
-        /// <exception cref="ArgumentOutOfRangeException">If the input value is null, 0, or unsupported negative numbers.</exception>
-        public static long AssertValidFetchSize(long? size)
+        if (!size.HasValue || (size <= 0 && size != Config.Infinite))
         {
-            if (!size.HasValue || size <= 0 && size != Config.Infinite)
-            {
-                throw new ArgumentOutOfRangeException(
-                    $"The record fetch size may not be null, 0 or negative. Illegal record fetch size: {size}.");
-            }
-            return size.Value;
+            throw new ArgumentOutOfRangeException(
+                $"The record fetch size may not be null, 0 or negative. Illegal record fetch size: {size}.");
         }
+
+        return size.Value;
     }
 }

@@ -21,11 +21,11 @@ using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers;
 
-internal sealed class CommitMessageSerializer: WriteOnlySerializer
+internal sealed class CommitMessageSerializer : WriteOnlySerializer
 {
     internal static CommitMessageSerializer Instance = new();
-    
-    private static readonly Type[] Types = {typeof(CommitMessage)};
+
+    private static readonly Type[] Types = { typeof(CommitMessage) };
     public override IEnumerable<Type> WritableTypes => Types;
 
     public override void Serialize(PackStreamWriter writer, object _)

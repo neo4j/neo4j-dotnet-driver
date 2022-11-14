@@ -22,172 +22,177 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.Logging;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.Internal.Routing
+namespace Neo4j.Driver.Internal.Routing;
+
+internal class ClusterConnectionPool : IClusterConnectionPool
 {
-    internal class ClusterConnectionPool : IClusterConnectionPool
+    private readonly ILogger _logger;
+    private readonly IConnectionPoolFactory _poolFactory;
+
+    private readonly ConcurrentDictionary<Uri, IConnectionPool> _pools = new();
+
+    private int _closedMarker;
+
+    public ClusterConnectionPool(
+        IEnumerable<Uri> initUris,
+        IPooledConnectionFactory connectionFactory,
+        RoutingSettings routingSetting,
+        ConnectionPoolSettings poolSettings,
+        ILogger logger
+    ) : this(
+        initUris,
+        new ConnectionPoolFactory(connectionFactory, poolSettings, routingSetting.RoutingContext, logger),
+        logger)
     {
-        private readonly IConnectionPoolFactory _poolFactory;
+    }
 
-        private readonly ConcurrentDictionary<Uri, IConnectionPool> _pools =
-            new ConcurrentDictionary<Uri, IConnectionPool>();
+    // test only
+    internal ClusterConnectionPool(
+        IConnectionPoolFactory poolFactory,
+        ConcurrentDictionary<Uri, IConnectionPool> clusterPool,
+        ILogger logger = null
+    ) :
+        this(Enumerable.Empty<Uri>(), poolFactory, logger)
+    {
+        _pools = clusterPool;
+    }
 
-        private int _closedMarker = 0;
+    private ClusterConnectionPool(
+        IEnumerable<Uri> initUris,
+        IConnectionPoolFactory poolFactory,
+        ILogger logger)
+    {
+        _logger = logger;
+        _poolFactory = poolFactory;
+        Add(initUris);
+    }
 
-        private readonly ILogger _logger;
+    private bool IsClosed => _closedMarker > 0;
 
-        public ClusterConnectionPool(
-            IEnumerable<Uri> initUris,
-            IPooledConnectionFactory connectionFactory,
-            RoutingSettings routingSetting,
-            ConnectionPoolSettings poolSettings,
-            ILogger logger
-        ) : this(initUris, new ConnectionPoolFactory(connectionFactory, poolSettings, routingSetting.RoutingContext, logger), logger)
+    public Task<IConnection> AcquireAsync(
+        Uri uri,
+        AccessMode mode,
+        string database,
+        string impersonatedUser,
+        Bookmarks bookmarks)
+    {
+        if (!_pools.TryGetValue(uri, out var pool))
         {
+            return Task.FromResult((IConnection)null);
         }
 
-        // test only
-        internal ClusterConnectionPool(
-            IConnectionPoolFactory poolFactory,
-            ConcurrentDictionary<Uri, IConnectionPool> clusterPool,
-            ILogger logger = null
-        ) :
-            this(Enumerable.Empty<Uri>(), poolFactory, logger)
+        return pool.AcquireAsync(mode, database, impersonatedUser, bookmarks);
+    }
+
+    public async Task AddAsync(IEnumerable<Uri> servers)
+    {
+        foreach (var uri in servers)
         {
-            _pools = clusterPool;
+            _pools.AddOrUpdate(uri, _poolFactory.Create, ActivateConnectionPool);
         }
 
-
-        private ClusterConnectionPool(IEnumerable<Uri> initUris,
-            IConnectionPoolFactory poolFactory, ILogger logger)
+        if (IsClosed)
         {
-            _logger = logger;
-            _poolFactory = poolFactory;
-            Add(initUris);
+            // Anything added after dispose should be directly cleaned.
+            await ClearAsync().ConfigureAwait(false);
+            throw new ObjectDisposedException(
+                GetType().Name,
+                $"Failed to create connections with servers {servers.ToContentString()} as the driver has already started to dispose.");
         }
+    }
 
-        private bool IsClosed => _closedMarker > 0;
-
-        public Task<IConnection> AcquireAsync(Uri uri, AccessMode mode, string database, string impersonatedUser, Bookmarks bookmarks)
+    public async Task UpdateAsync(IEnumerable<Uri> added, IEnumerable<Uri> removed)
+    {
+        await AddAsync(added).ConfigureAwait(false);
+        foreach (var uri in removed)
         {
-            if (!_pools.TryGetValue(uri, out var pool))
+            if (_pools.TryGetValue(uri, out var pool))
             {
-                return Task.FromResult((IConnection) null);
-            }
-
-            return pool.AcquireAsync(mode, database, impersonatedUser, bookmarks);
-        }
-
-        private void Add(IEnumerable<Uri> servers)
-        {
-            foreach (var uri in servers)
-            {
-                _pools.AddOrUpdate(uri, _poolFactory.Create, ActivateConnectionPool);
-            }
-        }
-
-        public async Task AddAsync(IEnumerable<Uri> servers)
-        {
-            foreach (var uri in servers)
-            {
-                _pools.AddOrUpdate(uri, _poolFactory.Create, ActivateConnectionPool);
-            }
-
-            if (IsClosed)
-            {
-                // Anything added after dispose should be directly cleaned.
-                await ClearAsync().ConfigureAwait(false);
-                throw new ObjectDisposedException(GetType().Name,
-                    $"Failed to create connections with servers {servers.ToContentString()} as the driver has already started to dispose.");
-            }
-        }
-
-        public async Task UpdateAsync(IEnumerable<Uri> added, IEnumerable<Uri> removed)
-        {
-            await AddAsync(added).ConfigureAwait(false);
-            foreach (var uri in removed)
-            {
-                if (_pools.TryGetValue(uri, out var pool))
+                await pool.DeactivateAsync().ConfigureAwait(false);
+                if (pool.NumberOfInUseConnections == 0)
                 {
-                    await pool.DeactivateAsync().ConfigureAwait(false);
-                    if (pool.NumberOfInUseConnections == 0)
-                    {
-                        await PurgeAsync(uri).ConfigureAwait(false);
-                    }
+                    await PurgeAsync(uri).ConfigureAwait(false);
                 }
             }
         }
+    }
 
-        public Task DeactivateAsync(Uri uri)
+    public Task DeactivateAsync(Uri uri)
+    {
+        if (_pools.TryGetValue(uri, out var pool))
         {
-            if (_pools.TryGetValue(uri, out var pool))
-            {
-                return pool.DeactivateAsync();
-            }
-
-            return Task.CompletedTask;
+            return pool.DeactivateAsync();
         }
 
-        public int NumberOfInUseConnections(Uri uri)
-        {
-            if (_pools.TryGetValue(uri, out var pool))
-            {
-                return pool.NumberOfInUseConnections;
-            }
+        return Task.CompletedTask;
+    }
 
-            return 0;
+    public int NumberOfInUseConnections(Uri uri)
+    {
+        if (_pools.TryGetValue(uri, out var pool))
+        {
+            return pool.NumberOfInUseConnections;
         }
 
-        internal Task CloseAsync()
-        {
-            if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
-            {
-                return ClearAsync();
-            }
+        return 0;
+    }
 
-            return Task.CompletedTask;
+    public ValueTask DisposeAsync()
+    {
+        return new ValueTask(CloseAsync());
+    }
+
+    private void Add(IEnumerable<Uri> servers)
+    {
+        foreach (var uri in servers)
+        {
+            _pools.AddOrUpdate(uri, _poolFactory.Create, ActivateConnectionPool);
+        }
+    }
+
+    internal Task CloseAsync()
+    {
+        if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
+        {
+            return ClearAsync();
         }
 
-        private Task ClearAsync()
+        return Task.CompletedTask;
+    }
+
+    private Task ClearAsync()
+    {
+        var clearTasks = new List<Task>();
+
+        var uris = _pools.Keys;
+        foreach (var uri in uris)
         {
-            var clearTasks = new List<Task>();
-
-            var uris = _pools.Keys;
-            foreach (var uri in uris)
-            {
-                clearTasks.Add(PurgeAsync(uri));
-            }
-
-            return Task.WhenAll(clearTasks);
+            clearTasks.Add(PurgeAsync(uri));
         }
 
-        private Task PurgeAsync(Uri uri)
-        {
-            var removed = _pools.TryRemove(uri, out var toRemove);
-            if (removed)
-            {
-                return toRemove.DisposeAsync().AsTask();
-            }
+        return Task.WhenAll(clearTasks);
+    }
 
-            return Task.CompletedTask;
+    private Task PurgeAsync(Uri uri)
+    {
+        var removed = _pools.TryRemove(uri, out var toRemove);
+        if (removed)
+        {
+            return toRemove.DisposeAsync().AsTask();
         }
 
-        public override string ToString()
-        {
-            return _pools.ToContentString();
-        }
+        return Task.CompletedTask;
+    }
 
-        public ValueTask DisposeAsync()
-        {
-            return new ValueTask(CloseAsync());
-        }
+    public override string ToString()
+    {
+        return _pools.ToContentString();
+    }
 
-        private static IConnectionPool ActivateConnectionPool(Uri uri, IConnectionPool pool)
-        {
-            pool.Activate();
-            return pool;
-        }
+    private static IConnectionPool ActivateConnectionPool(Uri uri, IConnectionPool pool)
+    {
+        pool.Activate();
+        return pool;
     }
 }

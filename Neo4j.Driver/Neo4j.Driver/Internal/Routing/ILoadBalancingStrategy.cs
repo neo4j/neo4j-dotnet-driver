@@ -17,13 +17,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 
-namespace Neo4j.Driver.Internal.Routing
+namespace Neo4j.Driver.Internal.Routing;
+
+internal interface ILoadBalancingStrategy
 {
-    internal interface ILoadBalancingStrategy
-    {
-        Uri SelectReader(IList<Uri> knownReaders, string forDatabase);
-        Uri SelectWriter(IList<Uri> knownWriters, string forDatabase);
-    }
+    Uri SelectReader(IList<Uri> knownReaders, string forDatabase);
+    Uri SelectWriter(IList<Uri> knownWriters, string forDatabase);
 }

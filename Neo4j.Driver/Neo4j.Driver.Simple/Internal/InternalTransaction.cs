@@ -18,66 +18,68 @@
 using System;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal class InternalTransaction : ITransaction
 {
-    internal class InternalTransaction : ITransaction
+    private readonly BlockingExecutor _executor;
+    private readonly IInternalAsyncTransaction _txc;
+
+    public InternalTransaction(IInternalAsyncTransaction txc, BlockingExecutor executor)
     {
-        private readonly IInternalAsyncTransaction _txc;
-        private readonly BlockingExecutor _executor;
+        _txc = txc ?? throw new ArgumentNullException(nameof(txc));
+        _executor = executor ?? throw new ArgumentNullException(nameof(executor));
+    }
 
-        ~InternalTransaction() => Dispose(false);
+    public bool IsOpen => _txc.IsOpen;
+    public TransactionConfig TransactionConfig => _txc.TransactionConfig;
 
-        public InternalTransaction(IInternalAsyncTransaction txc, BlockingExecutor executor)
+    public IResult Run(string query)
+    {
+        return Run(new Query(query));
+    }
+
+    public IResult Run(string query, object parameters)
+    {
+        return Run(new Query(query, parameters.ToDictionary()));
+    }
+
+    public IResult Run(string query, IDictionary<string, object> parameters)
+    {
+        return Run(new Query(query, parameters));
+    }
+
+    public IResult Run(Query query)
+    {
+        return new InternalResult(_executor.RunSync(() => _txc.RunAsync(query)), _executor);
+    }
+
+    public void Commit()
+    {
+        _executor.RunSync(() => _txc.CommitAsync());
+    }
+
+    public void Rollback()
+    {
+        _executor.RunSync(() => _txc.RollbackAsync());
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    ~InternalTransaction()
+    {
+        Dispose(false);
+    }
+
+    private void Dispose(bool disposing)
+    {
+        if (disposing && IsOpen)
         {
-            _txc = txc ?? throw new ArgumentNullException(nameof(txc));
-            _executor = executor ?? throw new ArgumentNullException(nameof(executor));
-        }
-
-        public bool IsOpen => _txc.IsOpen;
-        public TransactionConfig TransactionConfig => _txc.TransactionConfig;
-
-        public IResult Run(string query)
-        {
-            return Run(new Query(query));
-        }
-
-        public IResult Run(string query, object parameters)
-        {
-            return Run(new Query(query, parameters.ToDictionary()));
-        }
-
-        public IResult Run(string query, IDictionary<string, object> parameters)
-        {
-            return Run(new Query(query, parameters));
-        }
-
-        public IResult Run(Query query)
-        {
-            return new InternalResult(_executor.RunSync(() => _txc.RunAsync(query)), _executor);
-        }
-
-        public void Commit()
-        {
-            _executor.RunSync(() => _txc.CommitAsync());
-        }
-
-        public void Rollback()
-        {
-            _executor.RunSync(() => _txc.RollbackAsync());
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        private void Dispose(bool disposing)
-        {
-            if (disposing && IsOpen)
-            {
-                Rollback();
-            }
+            Rollback();
         }
     }
 }

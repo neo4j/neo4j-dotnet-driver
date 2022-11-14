@@ -15,14 +15,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal interface IConnectionReleaseManager
 {
-    internal interface IConnectionReleaseManager
-    {
-        Task ReleaseAsync(IPooledConnection connection);
-		void MarkConnectionsForReauthorization(IPooledConnection connection);
-    }
+    Task ReleaseAsync(IPooledConnection connection);
+    void MarkConnectionsForReauthorization(IPooledConnection connection);
 }

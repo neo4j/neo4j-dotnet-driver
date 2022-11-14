@@ -30,15 +30,15 @@ internal sealed class RecordMessage : IResponseMessage
 
     public object[] Fields { get; }
 
-    public override string ToString()
-    {
-        return $"RECORD {Fields.ToContentString()}";
-    }
-
     public void Dispatch(IResponsePipeline pipeline)
     {
         pipeline.OnRecord(Fields);
     }
 
     public IPackStreamSerializer Serializer => RecordMessageSerializer.Instance;
+
+    public override string ToString()
+    {
+        return $"RECORD {Fields.ToContentString()}";
+    }
 }

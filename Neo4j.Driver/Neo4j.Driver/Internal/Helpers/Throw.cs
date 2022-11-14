@@ -14,66 +14,88 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal static class Throw
 {
-    internal static class Throw
+    public static class ObjectDisposedException
     {
-        public static class ObjectDisposedException
+        public static System.ObjectDisposedException GetDriverDisposedException(string typeName)
         {
-            public static System.ObjectDisposedException GetDriverDisposedException(string typeName) => new(
-                typeName, "Failed to acquire a new connection as the driver has already been disposed.");
+            return new(typeName, "Failed to acquire a new connection as the driver has already been disposed.");
+        }
+    }
+
+    public static class ProtocolException
+    {
+        public static void IfNotEqual(int first, int second, string firstParam, string secondParam)
+        {
+            If(() => first != second, first, second, firstParam, secondParam);
         }
 
-        public static class ProtocolException
+        internal static void IfNotEqual(object first, object second, string firstParam, string secondParam)
         {
-            public static void IfNotEqual(int first, int second, string firstParam, string secondParam)
+            if (first == null && second == null)
             {
-                If(() => first != second, first, second, firstParam, secondParam);
+                return;
             }
 
-            internal static void IfNotEqual(object first, object second, string firstParam, string secondParam)
-            {
-                if (first == null && second == null)
-                    return;
+            If(() => first == null || second == null || !first.Equals(second), first, second, firstParam, secondParam);
+        }
 
-                If( () => first == null || second == null || !first.Equals(second), first, second, firstParam,secondParam);
-            }
-
-            public static void If(Func<bool> func, object first, object second, string firstParam, string secondParam)
+        public static void If(Func<bool> func, object first, object second, string firstParam, string secondParam)
+        {
+            if (func())
             {
-                if(func())
-                    throw new Neo4j.Driver.ProtocolException($"{firstParam} ({first}) does not equal to {secondParam} ({second})");
-            }
-
-            public static void IfFalse(bool value, string nameofValue)
-            {
-                if(!value)
-                    throw new Neo4j.Driver.ProtocolException($"Expecting {nameofValue} to be true, however the value is false");
+                throw new Neo4j.Driver.ProtocolException(
+                    $"{firstParam} ({first}) does not equal to {secondParam} ({second})");
             }
         }
 
-        public static class ArgumentOutOfRangeException
+        public static void IfFalse(bool value, string nameofValue)
         {
-            public static void IfValueLessThan(long value, long limit, string parameterName)
+            if (!value)
             {
-                if(value < limit)
-                    throw new System.ArgumentOutOfRangeException(parameterName, value, $"Value given ({value}) cannot be less than {limit}.");
+                throw new Neo4j.Driver.ProtocolException(
+                    $"Expecting {nameofValue} to be true, however the value is false");
             }
+        }
+    }
 
-            public static void IfFalse(bool value, string nameofValue)
+    public static class ArgumentOutOfRangeException
+    {
+        public static void IfValueLessThan(long value, long limit, string parameterName)
+        {
+            if (value < limit)
             {
-                if (!value)
-                    throw new System.ArgumentOutOfRangeException($"Expecting {nameofValue} to be true, however the value is false");
+                throw new System.ArgumentOutOfRangeException(
+                    parameterName,
+                    value,
+                    $"Value given ({value}) cannot be less than {limit}.");
             }
+        }
 
-            public static void IfValueNotBetween(long value, long minInclusive, long maxInclusive, string parameterName)
+        public static void IfFalse(bool value, string nameofValue)
+        {
+            if (!value)
             {
-                if (value < minInclusive || value > maxInclusive)
-                    throw new System.ArgumentOutOfRangeException(parameterName, value, $"Value given ({value}) must be between {minInclusive} and {maxInclusive}.");
+                throw new System.ArgumentOutOfRangeException(
+                    $"Expecting {nameofValue} to be true, however the value is false");
             }
+        }
 
+        public static void IfValueNotBetween(long value, long minInclusive, long maxInclusive, string parameterName)
+        {
+            if (value < minInclusive || value > maxInclusive)
+            {
+                throw new System.ArgumentOutOfRangeException(
+                    parameterName,
+                    value,
+                    $"Value given ({value}) must be between {minInclusive} and {maxInclusive}.");
+            }
         }
     }
 }

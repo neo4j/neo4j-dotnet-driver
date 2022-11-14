@@ -14,33 +14,32 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend
+namespace Neo4j.Driver.Tests.TestBackend;
+
+internal class CheckDriverIsEncrypted : IProtocolObject
 {
-    class CheckDriverIsEncrypted : IProtocolObject
+    public DriverIsEncryptedType data { get; set; } = new();
+
+    [JsonIgnore] private bool Encrypted { get; set; }
+
+    public override Task Process()
     {
-        public DriverIsEncryptedType data { get; set; } = new DriverIsEncryptedType();
+        var driver = ((NewDriver)ObjManager.GetObject(data.driverId)).Driver;
+        Encrypted = driver.Encrypted;
+        return Task.CompletedTask;
+    }
 
-        [JsonIgnore]
-        private bool Encrypted { get; set; }
+    public override string Respond()
+    {
+        return new ProtocolResponse("DriverIsEncrypted", new { encrypted = Encrypted }).Encode();
+    }
 
-        public class DriverIsEncryptedType
-        {
-            public string driverId { get; set; }
-        }
-
-        public override Task Process()
-        {
-            var driver = ((NewDriver)ObjManager.GetObject(data.driverId)).Driver;
-            Encrypted = driver.Encrypted;
-            return Task.CompletedTask;
-        }
-
-        public override string Respond()
-        {
-            return new ProtocolResponse("DriverIsEncrypted", new { encrypted = Encrypted }).Encode();
-        }
+    public class DriverIsEncryptedType
+    {
+        public string driverId { get; set; }
     }
 }

@@ -21,32 +21,36 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.Connector;
 
 internal sealed class SocketClient : ISocketClient
 {
     private const string MessagePattern = "C: {0}";
-    private readonly Uri _uri;
     private readonly BufferSettings _bufferSettings;
+    private readonly IConnectionIoFactory _connectionIoFactory;
+
+    private readonly ILogger _logger;
     private readonly ByteBuffers _readerBuffers = new();
 
     private readonly ITcpSocketClient _tcpSocketClient;
+    private readonly Uri _uri;
+    private ChunkWriter _chunkWriter;
 
     private int _closedMarker = -1;
 
-    private readonly ILogger _logger;
-    private readonly IConnectionIoFactory _connectionIoFactory;
-
     private MessageFormat _format;
-    private MemoryStream _readBufferStream;
     private IMessageReader _messageReader;
     private IMessageWriter _messageWriter;
-    private ChunkWriter _chunkWriter;
+    private MemoryStream _readBufferStream;
 
-    public SocketClient(Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings, ILogger logger, 
+    public SocketClient(
+        Uri uri,
+        SocketSettings socketSettings,
+        BufferSettings bufferSettings,
+        ILogger logger,
         IConnectionIoFactory connectionIoFactory)
     {
         _uri = uri;
@@ -58,7 +62,8 @@ internal sealed class SocketClient : ISocketClient
 
     public bool IsOpen => _closedMarker == 0;
 
-    public async Task ConnectAsync(IDictionary<string, string> routingContext, 
+    public async Task ConnectAsync(
+        IDictionary<string, string> routingContext,
         CancellationToken cancellationToken = default)
     {
         await _tcpSocketClient.ConnectAsync(_uri, cancellationToken).ConfigureAwait(false);
@@ -68,7 +73,7 @@ internal sealed class SocketClient : ISocketClient
 
         (_format, _chunkWriter, _readBufferStream, _messageReader, _messageWriter) =
             _connectionIoFactory.Build(_tcpSocketClient, _bufferSettings, _logger, Version);
-        
+
         SetOpened();
     }
 
@@ -106,7 +111,7 @@ internal sealed class SocketClient : ISocketClient
     {
         try
         {
-            var packStreamReader = new PackStreamReader(_readBufferStream, _format,  _readerBuffers);
+            var packStreamReader = new PackStreamReader(_readBufferStream, _format, _readerBuffers);
             await _messageReader.ReadAsync(responsePipeline, packStreamReader).ConfigureAwait(false);
         }
         catch (Exception ex)
@@ -123,49 +128,20 @@ internal sealed class SocketClient : ISocketClient
         }
         catch (ProtocolException exc)
         {
-            _logger?.Warn(exc, "A bolt protocol error has occurred with server {0}, connection will be terminated.",
+            _logger?.Warn(
+                exc,
+                "A bolt protocol error has occurred with server {0}, connection will be terminated.",
                 _uri.ToString());
+
             await DisposeAsync().ConfigureAwait(false);
             throw;
         }
-    }
-
-    /// <summary>
-    /// Internal for testing, not for use outside of SocketClient.
-    /// </summary>
-    internal void SetOpened()
-    {
-        Interlocked.CompareExchange(ref _closedMarker, 0, -1);
-    }
-
-    private async Task<BoltProtocolVersion> DoHandshakeAsync(CancellationToken cancellationToken = default)
-    {
-        var data = BoltProtocolFactory.PackSupportedVersions();
-        await _tcpSocketClient.WriterStream.WriteAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(false);
-        await _tcpSocketClient.WriterStream.FlushAsync(cancellationToken).ConfigureAwait(false);
-        
-        _logger?.Debug("C: [HANDSHAKE] {0}", data.ToHexString());
-        
-        var responseBytes = new byte[4];
-        var read = await _tcpSocketClient.ReaderStream
-            .ReadAsync(responseBytes, 0, responseBytes.Length, cancellationToken)
-            .ConfigureAwait(false);
-
-        if (read < responseBytes.Length)
-            throw new IOException($"Unexpected end of stream when performing handshake, read returned {read}");
-            
-        var agreedVersion = BoltProtocolFactory.UnpackAgreedVersion(responseBytes);
-        
-        _logger?.Debug("S: [HANDSHAKE] {0}.{1}", agreedVersion.MajorVersion, agreedVersion.MinorVersion);
-        
-        return agreedVersion;
     }
 
     public void SetReadTimeoutInSeconds(int seconds)
     {
         _tcpSocketClient.ReaderStream.ReadTimeout = seconds * 1000;
     }
-
 
     public void UseUtcEncoded()
     {
@@ -179,5 +155,36 @@ internal sealed class SocketClient : ISocketClient
             _readBufferStream.Dispose();
             await _tcpSocketClient.DisposeAsync().ConfigureAwait(false);
         }
+    }
+
+    /// <summary>Internal for testing, not for use outside of SocketClient.</summary>
+    internal void SetOpened()
+    {
+        Interlocked.CompareExchange(ref _closedMarker, 0, -1);
+    }
+
+    private async Task<BoltProtocolVersion> DoHandshakeAsync(CancellationToken cancellationToken = default)
+    {
+        var data = BoltProtocolFactory.PackSupportedVersions();
+        await _tcpSocketClient.WriterStream.WriteAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(false);
+        await _tcpSocketClient.WriterStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+        _logger?.Debug("C: [HANDSHAKE] {0}", data.ToHexString());
+
+        var responseBytes = new byte[4];
+        var read = await _tcpSocketClient.ReaderStream
+            .ReadAsync(responseBytes, 0, responseBytes.Length, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (read < responseBytes.Length)
+        {
+            throw new IOException($"Unexpected end of stream when performing handshake, read returned {read}");
+        }
+
+        var agreedVersion = BoltProtocolFactory.UnpackAgreedVersion(responseBytes);
+
+        _logger?.Debug("S: [HANDSHAKE] {0}.{1}", agreedVersion.MajorVersion, agreedVersion.MinorVersion);
+
+        return agreedVersion;
     }
 }

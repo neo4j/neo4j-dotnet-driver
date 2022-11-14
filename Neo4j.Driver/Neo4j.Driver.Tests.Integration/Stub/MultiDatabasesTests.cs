@@ -23,255 +23,269 @@ using Neo4j.Driver.TestUtil;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Neo4j.Driver.IntegrationTests.Stub
+namespace Neo4j.Driver.IntegrationTests.Stub;
+
+public class MultiDatabasesTests
 {
-    public class MultiDatabasesTests
+    private readonly ITestOutputHelper _output;
+    private readonly Action<ConfigBuilder> _setupConfig;
+
+    public MultiDatabasesTests(ITestOutputHelper output)
     {
-        private readonly ITestOutputHelper _output;
-        private readonly Action<ConfigBuilder> _setupConfig;
+        _output = output;
 
-        public MultiDatabasesTests(ITestOutputHelper output)
+        _setupConfig = o => o.WithLogger(TestLogger.Create(output));
+    }
+
+    [Fact]
+    public async Task ShouldDiscoverEndpointsForADatabaseAndRead()
+    {
+        using (BoltStubServer.Start("V4/acquire_endpoints_aDatabase", 9001))
         {
-            _output = output;
-
-            _setupConfig = o => o.WithLogger(TestLogger.Create(output));
-        }
-
-        [Fact]
-        public async Task ShouldDiscoverEndpointsForADatabaseAndRead()
-        {
-            using (BoltStubServer.Start("V4/acquire_endpoints_aDatabase", 9001))
+            using (BoltStubServer.Start("V4/read_from_aDatabase", 9005))
             {
-                using (BoltStubServer.Start("V4/read_from_aDatabase", 9005))
+                using (var driver =
+                       GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, _setupConfig))
                 {
-                    using (var driver =
-                        GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, _setupConfig))
-                    {
-                        var session = driver.AsyncSession(o =>
+                    var session = driver.AsyncSession(
+                        o =>
                             o.WithDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Read));
-                        try
-                        {
-                            var cursor =
-                                await session.RunAsync("MATCH (n) RETURN n.name");
-                            var result = await cursor.ToListAsync(r => r[0].As<string>());
 
-                            result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
-                        }
-                        finally
-                        {
-                            await session.CloseAsync();
-                        }
+                    try
+                    {
+                        var cursor =
+                            await session.RunAsync("MATCH (n) RETURN n.name");
+
+                        var result = await cursor.ToListAsync(r => r[0].As<string>());
+
+                        result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
+                    }
+                    finally
+                    {
+                        await session.CloseAsync();
                     }
                 }
             }
         }
+    }
 
-        [Fact]
-        public async Task ShouldDiscoverEndpointsForADatabaseAndWrite()
+    [Fact]
+    public async Task ShouldDiscoverEndpointsForADatabaseAndWrite()
+    {
+        using (BoltStubServer.Start("V4/acquire_endpoints_aDatabase", 9001))
         {
-            using (BoltStubServer.Start("V4/acquire_endpoints_aDatabase", 9001))
+            using (BoltStubServer.Start("V4/write_to_aDatabase", 9007))
             {
-                using (BoltStubServer.Start("V4/write_to_aDatabase", 9007))
+                using (var driver =
+                       GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, _setupConfig))
                 {
-                    using (var driver =
-                        GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, _setupConfig))
-                    {
-                        var session = driver.AsyncSession(o =>
+                    var session = driver.AsyncSession(
+                        o =>
                             o.WithDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Write));
-                        try
-                        {
-                            await session.RunAndConsumeAsync("CREATE (n {name:'Bob'})");
-                        }
-                        finally
-                        {
-                            await session.CloseAsync();
-                        }
+
+                    try
+                    {
+                        await session.RunAndConsumeAsync("CREATE (n {name:'Bob'})");
+                    }
+                    finally
+                    {
+                        await session.CloseAsync();
                     }
                 }
             }
         }
+    }
 
-
-        [Fact]
-        public async Task ShouldDiscoverEndpointsForDefaultDatabase()
+    [Fact]
+    public async Task ShouldDiscoverEndpointsForDefaultDatabase()
+    {
+        using (BoltStubServer.Start("V4/acquire_endpoints_default_database", 9001))
         {
-            using (BoltStubServer.Start("V4/acquire_endpoints_default_database", 9001))
+            using (BoltStubServer.Start("V4/read", 9005))
             {
-                using (BoltStubServer.Start("V4/read", 9005))
+                using (var driver =
+                       GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, _setupConfig))
                 {
-                    using (var driver =
-                        GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, _setupConfig))
+                    var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
+                    try
                     {
-                        var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
-                        try
-                        {
-                            var cursor =
-                                await session.RunAsync("MATCH (n) RETURN n.name");
-                            var result = await cursor.ToListAsync(r => r[0].As<string>());
+                        var cursor =
+                            await session.RunAsync("MATCH (n) RETURN n.name");
 
-                            result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
-                        }
-                        finally
-                        {
-                            await session.CloseAsync();
-                        }
+                        var result = await cursor.ToListAsync(r => r[0].As<string>());
+
+                        result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
+                    }
+                    finally
+                    {
+                        await session.CloseAsync();
                     }
                 }
             }
         }
+    }
 
-        [Fact]
-        public void ShouldThrowOnInvalidRoutingTable()
+    [Fact]
+    public void ShouldThrowOnInvalidRoutingTable()
+    {
+        using (BoltStubServer.Start("V4/acquire_endpoints_aDatabase_no_servers", 9001))
         {
-            using (BoltStubServer.Start("V4/acquire_endpoints_aDatabase_no_servers", 9001))
+            using (var driver =
+                   GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, _setupConfig))
             {
-                using (var driver =
-                    GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, _setupConfig))
+                Func<MultiDatabasesTests, Task> p = async _ =>
                 {
-                    Func<MultiDatabasesTests, Task> p = async _ =>
-                    {
-                        var session = driver.AsyncSession(o =>
+                    var session = driver.AsyncSession(
+                        o =>
                             o.WithDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Read));
-                        try
-                        {
-                            var cursor =
-                                await session.RunAsync("MATCH (n) RETURN n.name");
-                            var result = await cursor.ToListAsync(r => r[0].As<string>());
 
-                            result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
-                        }
-                        finally
-                        {
-                            await session.CloseAsync();
-                        }
-                    };
+                    try
+                    {
+                        var cursor =
+                            await session.RunAsync("MATCH (n) RETURN n.name");
 
-                    this.Awaiting(p)
-                        .Should()
-                        .Throw<ServiceUnavailableException>()
-                        .WithMessage("Failed to connect to any routing server.*");
-                }
+                        var result = await cursor.ToListAsync(r => r[0].As<string>());
+
+                        result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
+                    }
+                    finally
+                    {
+                        await session.CloseAsync();
+                    }
+                };
+
+                this.Awaiting(p)
+                    .Should()
+                    .Throw<ServiceUnavailableException>()
+                    .WithMessage("Failed to connect to any routing server.*");
             }
         }
+    }
 
-        [Fact]
-        public void ShouldThrowOnProcedureNotFound()
+    [Fact]
+    public void ShouldThrowOnProcedureNotFound()
+    {
+        using (BoltStubServer.Start("V4/acquire_endpoints_db_not_found", 9001))
         {
-            using (BoltStubServer.Start("V4/acquire_endpoints_db_not_found", 9001))
+            using (var driver =
+                   GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, _setupConfig))
             {
-                using (var driver =
-                    GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, _setupConfig))
+                Func<MultiDatabasesTests, Task> p = async _ =>
                 {
-                    Func<MultiDatabasesTests, Task> p = async _ =>
-                    {
-                        var session = driver.AsyncSession(o =>
+                    var session = driver.AsyncSession(
+                        o =>
                             o.WithDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Read));
-                        try
-                        {
-                            var cursor =
-                                await session.RunAsync("MATCH (n) RETURN n.name");
-                            var result = await cursor.ToListAsync(r => r[0].As<string>());
 
-                            result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
-                        }
-                        finally
-                        {
-                            await session.CloseAsync();
-                        }
-                    };
+                    try
+                    {
+                        var cursor =
+                            await session.RunAsync("MATCH (n) RETURN n.name");
 
-                    this.Awaiting(p)
-                        .Should()
-                        .Throw<FatalDiscoveryException>()
-                        .WithMessage("database not found");
-                }
+                        var result = await cursor.ToListAsync(r => r[0].As<string>());
+
+                        result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
+                    }
+                    finally
+                    {
+                        await session.CloseAsync();
+                    }
+                };
+
+                this.Awaiting(p)
+                    .Should()
+                    .Throw<FatalDiscoveryException>()
+                    .WithMessage("database not found");
             }
         }
+    }
 
-        [Fact]
-        public async Task ShouldDiscoverEndpointsForADatabaseWithBookmarks()
+    [Fact]
+    public async Task ShouldDiscoverEndpointsForADatabaseWithBookmarks()
+    {
+        using (BoltStubServer.Start("V4/acquire_endpoints_aDatabase_with_bookmark", 9001))
         {
-            using (BoltStubServer.Start("V4/acquire_endpoints_aDatabase_with_bookmark", 9001))
+            using (BoltStubServer.Start("V4/read_from_aDatabase_with_bookmark", 9005))
             {
-                using (BoltStubServer.Start("V4/read_from_aDatabase_with_bookmark", 9005))
-                {
-                    var bookmark1 = Bookmarks.From("system:1111");
-                    var bookmark2 = Bookmarks.From("aDatabase:5555");
+                var bookmark1 = Bookmarks.From("system:1111");
+                var bookmark2 = Bookmarks.From("aDatabase:5555");
 
-                    using (var driver =
-                        GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, _setupConfig))
-                    {
-                        var session = driver.AsyncSession(o =>
-                            o.WithDatabase("aDatabase").WithDefaultAccessMode(AccessMode.Read)
+                using (var driver =
+                       GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, _setupConfig))
+                {
+                    var session = driver.AsyncSession(
+                        o =>
+                            o.WithDatabase("aDatabase")
+                                .WithDefaultAccessMode(AccessMode.Read)
                                 .WithBookmarks(bookmark1, bookmark2));
-                        try
-                        {
-                            var cursor =
-                                await session.RunAsync("MATCH (n) RETURN n.name");
-                            var result = await cursor.ToListAsync(r => r[0].As<string>());
 
-                            result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
-                        }
-                        finally
-                        {
-                            await session.CloseAsync();
-                        }
+                    try
+                    {
+                        var cursor =
+                            await session.RunAsync("MATCH (n) RETURN n.name");
+
+                        var result = await cursor.ToListAsync(r => r[0].As<string>());
+
+                        result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
+                    }
+                    finally
+                    {
+                        await session.CloseAsync();
                     }
                 }
             }
         }
+    }
 
-        [RequireBoltStubServerTheory]
-        [InlineData("V3", "neo4j")]
-        [InlineData("V3", "bolt")]
-        [InlineData("V4", "neo4j")]
-        [InlineData("V4", "bolt")]
-        public async Task ShouldDetectMultiDatabasesFeature(string boltVersion, string scheme)
+    [RequireBoltStubServerTheory]
+    [InlineData("V3", "neo4j")]
+    [InlineData("V3", "bolt")]
+    [InlineData("V4", "neo4j")]
+    [InlineData("V4", "bolt")]
+    public async Task ShouldDetectMultiDatabasesFeature(string boltVersion, string scheme)
+    {
+        using (BoltStubServer.Start($"{boltVersion}/supports_multidb", 9001))
         {
-            using (BoltStubServer.Start($"{boltVersion}/supports_multidb", 9001))
+            using (var driver = GraphDatabase.Driver($"{scheme}://127.0.0.1:9001", AuthTokens.None, _setupConfig))
             {
-                using (var driver = GraphDatabase.Driver($"{scheme}://127.0.0.1:9001", AuthTokens.None, _setupConfig))
+                var support = await driver.SupportsMultiDbAsync();
+                if (boltVersion.Equals("V3"))
                 {
-                    var support = await driver.SupportsMultiDbAsync();
-                    if (boltVersion.Equals("V3"))
-                    {
-                        support.Should().BeFalse();
-                    }
-                    else
-                    {
-                        support.Should().BeTrue();
-                    }
+                    support.Should().BeFalse();
+                }
+                else
+                {
+                    support.Should().BeTrue();
                 }
             }
         }
+    }
 
-        [RequireBoltStubServerTheory]
-        [InlineData("neo4j")]
-        [InlineData("bolt")]
-        public async Task ShouldFailToDetectMultiDatabasesFeature(string scheme)
+    [RequireBoltStubServerTheory]
+    [InlineData("neo4j")]
+    [InlineData("bolt")]
+    public async Task ShouldFailToDetectMultiDatabasesFeature(string scheme)
+    {
+        using (var driver = GraphDatabase.Driver($"{scheme}://127.0.0.1:9099", AuthTokens.None, _setupConfig))
         {
-            using (var driver = GraphDatabase.Driver($"{scheme}://127.0.0.1:9099", AuthTokens.None, _setupConfig))
+            var error = await Record.ExceptionAsync(() => driver.SupportsMultiDbAsync());
+            error.Should().BeOfType<ServiceUnavailableException>();
+        }
+    }
+
+    [RequireBoltStubServerTheory]
+    [InlineData("V3", "neo4j")]
+    [InlineData("V3", "bolt")]
+    [InlineData("V4", "neo4j")]
+    [InlineData("V4", "bolt")]
+    public async Task ShouldThrowSecurityErrorWhenFailToHello(string boltVersion, string scheme)
+    {
+        using (BoltStubServer.Start($"{boltVersion}/fail_to_auth", 9001))
+        {
+            using (var driver = GraphDatabase.Driver($"{scheme}://127.0.0.1:9001", AuthTokens.None, _setupConfig))
             {
                 var error = await Record.ExceptionAsync(() => driver.SupportsMultiDbAsync());
-                error.Should().BeOfType<ServiceUnavailableException>();
-            }
-        }
-
-        [RequireBoltStubServerTheory]
-        [InlineData("V3", "neo4j")]
-        [InlineData("V3", "bolt")]
-        [InlineData("V4", "neo4j")]
-        [InlineData("V4", "bolt")]
-        public async Task ShouldThrowSecurityErrorWhenFailToHello(string boltVersion, string scheme)
-        {
-            using (BoltStubServer.Start($"{boltVersion}/fail_to_auth", 9001))
-            {
-                using (var driver = GraphDatabase.Driver($"{scheme}://127.0.0.1:9001", AuthTokens.None, _setupConfig))
-                {
-                    var error = await Record.ExceptionAsync(() => driver.SupportsMultiDbAsync());
-                    error.Should().BeOfType<AuthenticationException>();
-                    error.Message.Should().StartWith("blabla");
-                }
+                error.Should().BeOfType<AuthenticationException>();
+                error.Message.Should().StartWith("blabla");
             }
         }
     }

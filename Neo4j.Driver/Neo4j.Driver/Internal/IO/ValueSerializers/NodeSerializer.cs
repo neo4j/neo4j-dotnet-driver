@@ -22,23 +22,22 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers;
 
 internal sealed class NodeSerializer : ReadOnlySerializer
 {
-    internal static readonly NodeSerializer Instance = new();
-    
     public const byte Node = (byte)'N';
-    public override IEnumerable<byte> ReadableStructs => new[] {Node};
+    internal static readonly NodeSerializer Instance = new();
+    public override IEnumerable<byte> ReadableStructs => new[] { Node };
 
     public override object Deserialize(PackStreamReader reader, byte signature, long size)
     {
         var urn = reader.ReadLong();
 
-        var numLabels = (int) reader.ReadListHeader();
+        var numLabels = (int)reader.ReadListHeader();
         var labels = new List<string>(numLabels);
         for (var i = 0; i < numLabels; i++)
         {
             labels.Add(reader.ReadString());
         }
 
-        var numProps = (int) reader.ReadMapHeader();
+        var numProps = (int)reader.ReadMapHeader();
         var props = new Dictionary<string, object>(numProps);
         for (var j = 0; j < numProps; j++)
         {

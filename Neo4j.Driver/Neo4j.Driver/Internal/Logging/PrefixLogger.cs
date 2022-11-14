@@ -15,22 +15,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver;
+namespace Neo4j.Driver.Internal.Logging;
 
-namespace Neo4j.Driver.Internal.Logging
+internal class PrefixLogger : ReformattedLogger
 {
-    internal class PrefixLogger : ReformattedLogger
+    public PrefixLogger(ILogger logger, string prefix = null) : base(logger)
     {
-        public PrefixLogger(ILogger logger, string prefix = null) : base(logger)
-        {
-            Prefix = prefix;
-        }
+        Prefix = prefix;
+    }
 
-        protected override string Reformat(string message)
-        {
-            return Prefix == null ? message : $"{Prefix} {message}";
-        }
+    public string Prefix { private get; set; }
 
-        public string Prefix { private get; set; }
+    protected override string Reformat(string message)
+    {
+        return Prefix == null ? message : $"{Prefix} {message}";
     }
 }

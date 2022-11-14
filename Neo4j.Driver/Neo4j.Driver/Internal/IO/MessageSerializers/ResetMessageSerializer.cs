@@ -26,7 +26,7 @@ internal sealed class ResetMessageSerializer : WriteOnlySerializer
 {
     internal static ResetMessageSerializer Instance = new();
 
-    private static readonly Type[] Types = {typeof(ResetMessage)};
+    private static readonly Type[] Types = { typeof(ResetMessage) };
     public override IEnumerable<Type> WritableTypes => Types;
 
     public override void Serialize(PackStreamWriter writer, object value)

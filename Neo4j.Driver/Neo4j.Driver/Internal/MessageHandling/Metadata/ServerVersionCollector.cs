@@ -16,32 +16,30 @@
 // limitations under the License.
 
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata
+namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
+
+internal class ServerVersionCollector : IMetadataCollector<ServerVersion>
 {
-    internal class ServerVersionCollector : IMetadataCollector<ServerVersion>
+    internal const string ServerKey = "server";
+
+    object IMetadataCollector.Collected => Collected;
+
+    public ServerVersion Collected { get; private set; }
+
+    public void Collect(IDictionary<string, object> metadata)
     {
-        internal const string ServerKey = "server";
-
-        object IMetadataCollector.Collected => Collected;
-
-        public ServerVersion Collected { get; private set; }
-
-        public void Collect(IDictionary<string, object> metadata)
+        if (metadata != null && metadata.TryGetValue(ServerKey, out var serverValue))
         {
-            if (metadata != null && metadata.TryGetValue(ServerKey, out var serverValue))
+            if (serverValue is string serverAgent)
             {
-                if (serverValue is string serverAgent)
-                {
-                    Collected = ServerVersion.From(serverAgent);
-                }
-                else
-                {
-                    throw new ProtocolException(
-                        $"Expected '{ServerKey}' metadata to be of type 'String', but got '{serverValue?.GetType().Name}'.");
-                }
+                Collected = ServerVersion.From(serverAgent);
+            }
+            else
+            {
+                throw new ProtocolException(
+                    $"Expected '{ServerKey}' metadata to be of type 'String', but got '{serverValue?.GetType().Name}'.");
             }
         }
     }

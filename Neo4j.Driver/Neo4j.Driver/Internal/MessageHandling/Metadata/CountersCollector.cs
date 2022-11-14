@@ -31,13 +31,16 @@ internal class CountersCollector : IMetadataCollector<ICounters>
     public void Collect(IDictionary<string, object> metadata)
     {
         if (metadata == null || !metadata.TryGetValue(CountersKey, out var countersValue))
+        {
             return;
+        }
 
         switch (countersValue)
         {
             case null:
                 Collected = null;
                 break;
+
             case IDictionary<string, object> countersDict:
                 Collected = new Counters(
                     CountersValue(countersDict, "nodes-created"),
@@ -53,9 +56,10 @@ internal class CountersCollector : IMetadataCollector<ICounters>
                     CountersValue(countersDict, "constraints-removed"),
                     CountersValue(countersDict, "system-updates"),
                     countersDict.GetValue<bool?>("contains-system-updates", null),
-                    countersDict.GetValue<bool?>("contains-updates", null)
-                );
+                    countersDict.GetValue<bool?>("contains-updates", null));
+
                 break;
+
             default:
                 throw new ProtocolException(
                     $"Expected '{CountersKey}' metadata to be of type 'IDictionary<String,Object>', but got '{countersValue?.GetType().Name}'.");
@@ -64,6 +68,6 @@ internal class CountersCollector : IMetadataCollector<ICounters>
 
     private static int CountersValue(IDictionary<string, object> counters, string name)
     {
-        return (int) counters.GetValue(name, 0L);
+        return (int)counters.GetValue(name, 0L);
     }
 }

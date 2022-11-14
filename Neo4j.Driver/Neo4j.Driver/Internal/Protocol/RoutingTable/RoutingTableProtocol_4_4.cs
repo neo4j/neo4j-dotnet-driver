@@ -25,14 +25,17 @@ namespace Neo4j.Driver.Internal;
 
 internal sealed class RoutingTableProtocol44 : IRoutingTableProtocol
 {
-    public async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection,
-        string database, string impersonatedUser, Bookmarks bookmarks)
+    public async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(
+        IConnection connection,
+        string database,
+        string impersonatedUser,
+        Bookmarks bookmarks)
     {
         connection = connection ??
-                     throw new ProtocolException("Attempting to get a routing table on a null connection");
-        
+            throw new ProtocolException("Attempting to get a routing table on a null connection");
+
         var message = new RouteMessage(connection.RoutingContext, bookmarks, database, impersonatedUser);
-        
+
         var responseHandler = new RouteResponseHandler();
 
         await connection.EnqueueAsync(message, responseHandler).ConfigureAwait(false);

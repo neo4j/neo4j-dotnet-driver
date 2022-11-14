@@ -22,10 +22,9 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers;
 
 internal sealed class RelationshipSerializer : ReadOnlySerializer
 {
-    internal static readonly RelationshipSerializer Instance = new();
-    
     public const byte Relationship = (byte)'R';
-    public override IEnumerable<byte> ReadableStructs => new[] {Relationship};
+    internal static readonly RelationshipSerializer Instance = new();
+    public override IEnumerable<byte> ReadableStructs => new[] { Relationship };
 
     public override object Deserialize(PackStreamReader reader, byte signature, long size)
     {

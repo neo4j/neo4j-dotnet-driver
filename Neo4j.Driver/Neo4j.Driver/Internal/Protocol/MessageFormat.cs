@@ -26,23 +26,6 @@ namespace Neo4j.Driver.Internal;
 
 internal sealed class MessageFormat
 {
-    private readonly Dictionary<byte, IPackStreamSerializer> _readerStructHandlers = new();
-    private readonly Dictionary<Type, IPackStreamSerializer> _writerStructHandlers = new();
-
-    private void AddHandler<T>(T instance) where T : IPackStreamSerializer
-    {
-        foreach (var readableStruct in instance.ReadableStructs)
-            _readerStructHandlers.Add(readableStruct, instance);
-
-        foreach (var writableType in instance.WritableTypes)
-            _writerStructHandlers.Add(writableType, instance);
-    }
-
-    public IReadOnlyDictionary<byte, IPackStreamSerializer> ReaderStructHandlers => _readerStructHandlers;
-    public IReadOnlyDictionary<Type, IPackStreamSerializer> WriteStructHandlers => _writerStructHandlers;
-
-    public BoltProtocolVersion Version { get; }
-
     // Message Constants Inherited Over Older Versions
     public const byte MsgReset = 0x0F;
     public const byte MsgRun = 0x10;
@@ -65,6 +48,8 @@ internal sealed class MessageFormat
 
     //4.3+
     public const byte MsgRoute = 0x66;
+    private readonly Dictionary<byte, IPackStreamSerializer> _readerStructHandlers = new();
+    private readonly Dictionary<Type, IPackStreamSerializer> _writerStructHandlers = new();
 
     internal MessageFormat(BoltProtocolVersion version)
     {
@@ -77,21 +62,20 @@ internal sealed class MessageFormat
 
         // Add V2 Spatial Types
         AddHandler(PointSerializer.Instance);
-        
+
         // Add V2 Temporal Types
         AddHandler(LocalDateSerializer.Instance);
         AddHandler(LocalTimeSerializer.Instance);
         AddHandler(LocalDateTimeSerializer.Instance);
         AddHandler(OffsetTimeSerializer.Instance);
-        
+
         AddHandler(DurationSerializer.Instance);
 
-        
         // Add BCL Handlers
         AddHandler(SystemDateTimeSerializer.Instance);
         AddHandler(SystemDateTimeOffsetHandler.Instance);
         AddHandler(SystemTimeSpanSerializer.Instance);
-        
+
         AddHandler(PathSerializer.Instance);
         // Struct Data Types
         if (Version < BoltProtocolVersion.V5_0)
@@ -105,16 +89,14 @@ internal sealed class MessageFormat
         else
         {
             AddHandler(UtcZonedDateTimeSerializer.Instance);
-            
+
             AddHandler(ElementNodeSerializer.Instance);
             AddHandler(ElementRelationshipSerializer.Instance);
             AddHandler(ElementUnboundRelationshipSerializer.Instance);
         }
     }
 
-    /// <summary>
-    /// Only for use in tests, consider refactoring.
-    /// </summary>
+    /// <summary>Only for use in tests, consider refactoring.</summary>
     /// <param name="serializer"></param>
     internal MessageFormat(IPackStreamSerializer serializer, IEnumerable<IPackStreamSerializer> needed)
     {
@@ -122,15 +104,38 @@ internal sealed class MessageFormat
         {
             AddHandler(packStreamSerializer);
         }
+
         if (serializer != null)
+        {
             AddHandler(serializer);
+        }
     }
-    
+
+    public IReadOnlyDictionary<byte, IPackStreamSerializer> ReaderStructHandlers => _readerStructHandlers;
+    public IReadOnlyDictionary<Type, IPackStreamSerializer> WriteStructHandlers => _writerStructHandlers;
+
+    public BoltProtocolVersion Version { get; }
+
+    private void AddHandler<T>(T instance) where T : IPackStreamSerializer
+    {
+        foreach (var readableStruct in instance.ReadableStructs)
+        {
+            _readerStructHandlers.Add(readableStruct, instance);
+        }
+
+        foreach (var writableType in instance.WritableTypes)
+        {
+            _writerStructHandlers.Add(writableType, instance);
+        }
+    }
+
     public void UseUtcEncoder()
     {
         if (Version > BoltProtocolVersion.V4_4 || Version <= BoltProtocolVersion.V4_3)
+        {
             return;
-        
+        }
+
         AddHandler(UtcZonedDateTimeSerializer.Instance);
     }
 }

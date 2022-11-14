@@ -19,165 +19,167 @@ using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Types;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver;
+
+/// <summary>Base class for temporal values</summary>
+public abstract class TemporalValue : IValue, IConvertible
 {
-    /// <summary>
-    /// Base class for temporal values
-    /// </summary>
-    public abstract class TemporalValue: IValue, IConvertible
+    TypeCode IConvertible.GetTypeCode()
     {
-        /// <summary>
-        /// Converts this <see cref="TemporalValue"/> instance to a <see cref="DateTime"/> instance.
-        /// </summary>
-        /// <returns>A <see cref="DateTime"/> value</returns>
-        /// <exception cref="InvalidCastException">If conversion is not possible</exception>
-        /// <exception cref="ValueTruncationException">If conversion results in a truncation under ms precision</exception>
-        /// <exception cref="OverflowException">If the value falls beyond valid range of target type</exception>
-        protected virtual DateTime ConvertToDateTime()
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to {nameof(DateTime)} is not supported.");
-        }
+        return TypeCode.Object;
+    }
 
-        /// <summary>
-        /// Converts this <see cref="TemporalValue"/> instance to a <see cref="DateTimeOffset"/> instance.
-        /// </summary>
-        /// <returns>A <see cref="DateTime"/> value</returns>
-        /// <exception cref="InvalidCastException">If conversion is not possible</exception>
-        /// <exception cref="ValueTruncationException">If conversion results in a truncation under ms precision</exception>
-        /// <exception cref="OverflowException">If the value falls beyond valid range of target type</exception>
-        protected virtual DateTimeOffset ConvertToDateTimeOffset()
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to {nameof(DateTimeOffset)} is not supported.");
-        }
+    bool IConvertible.ToBoolean(IFormatProvider provider)
+    {
+        throw new InvalidCastException($"Conversion of {GetType().Name} to boolean is not supported.");
+    }
 
-        /// <summary>
-        /// Converts this <see cref="TemporalValue"/> instance to a <see cref="TimeSpan"/> instance.
-        /// </summary>
-        /// <returns>A <see cref="DateTime"/> value</returns>
-        /// <exception cref="InvalidCastException">If conversion is not possible</exception>
-        /// <exception cref="ValueTruncationException">If conversion results in a truncation under ms precision</exception>
-        /// <exception cref="OverflowException">If the value falls beyond valid range of target type</exception>
-        protected virtual TimeSpan ConvertToTimeSpan()
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to {nameof(TimeSpan)} is not supported.");
-        }
+    char IConvertible.ToChar(IFormatProvider provider)
+    {
+        throw new InvalidCastException($"Conversion of {GetType().Name} to char is not supported.");
+    }
 
-        TypeCode IConvertible.GetTypeCode()
-        {
-            return TypeCode.Object;
-        }
+    sbyte IConvertible.ToSByte(IFormatProvider provider)
+    {
+        throw new InvalidCastException($"Conversion of {GetType().Name} to sbyte is not supported.");
+    }
 
-        bool IConvertible.ToBoolean(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to boolean is not supported.");
-        }
+    byte IConvertible.ToByte(IFormatProvider provider)
+    {
+        throw new InvalidCastException($"Conversion of {GetType().Name} to byte is not supported.");
+    }
 
-        char IConvertible.ToChar(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to char is not supported.");
-        }
+    short IConvertible.ToInt16(IFormatProvider provider)
+    {
+        throw new InvalidCastException($"Conversion of {GetType().Name} to short is not supported.");
+    }
 
-        sbyte IConvertible.ToSByte(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to sbyte is not supported.");
-        }
+    ushort IConvertible.ToUInt16(IFormatProvider provider)
+    {
+        throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned short is not supported.");
+    }
 
-        byte IConvertible.ToByte(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to byte is not supported.");
-        }
+    int IConvertible.ToInt32(IFormatProvider provider)
+    {
+        throw new InvalidCastException($"Conversion of {GetType().Name} to int is not supported.");
+    }
 
-        short IConvertible.ToInt16(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to short is not supported.");
-        }
+    uint IConvertible.ToUInt32(IFormatProvider provider)
+    {
+        throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned int is not supported.");
+    }
 
-        ushort IConvertible.ToUInt16(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned short is not supported.");
-        }
+    long IConvertible.ToInt64(IFormatProvider provider)
+    {
+        throw new InvalidCastException($"Conversion of {GetType().Name} to long is not supported.");
+    }
 
-        int IConvertible.ToInt32(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to int is not supported.");
-        }
+    ulong IConvertible.ToUInt64(IFormatProvider provider)
+    {
+        throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned long is not supported.");
+    }
 
-        uint IConvertible.ToUInt32(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned int is not supported.");
-        }
+    float IConvertible.ToSingle(IFormatProvider provider)
+    {
+        throw new InvalidCastException($"Conversion of {GetType().Name} to single is not supported.");
+    }
 
-        long IConvertible.ToInt64(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to long is not supported.");
-        }
+    double IConvertible.ToDouble(IFormatProvider provider)
+    {
+        throw new InvalidCastException($"Conversion of {GetType().Name} to double is not supported.");
+    }
 
-        ulong IConvertible.ToUInt64(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to unsigned long is not supported.");
-        }
+    decimal IConvertible.ToDecimal(IFormatProvider provider)
+    {
+        throw new InvalidCastException($"Conversion of {GetType().Name} to decimal is not supported.");
+    }
 
-        float IConvertible.ToSingle(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to single is not supported.");
-        }
+    DateTime IConvertible.ToDateTime(IFormatProvider provider)
+    {
+        return ConvertToDateTime();
+    }
 
-        double IConvertible.ToDouble(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to double is not supported.");
-        }
+    string IConvertible.ToString(IFormatProvider provider)
+    {
+        return ToString();
+    }
 
-        decimal IConvertible.ToDecimal(IFormatProvider provider)
-        {
-            throw new InvalidCastException($"Conversion of {GetType().Name} to decimal is not supported.");
-        }
-
-        DateTime IConvertible.ToDateTime(IFormatProvider provider)
+    object IConvertible.ToType(Type conversionType, IFormatProvider provider)
+    {
+        if (conversionType == typeof(DateTime))
         {
             return ConvertToDateTime();
         }
 
-        string IConvertible.ToString(IFormatProvider provider)
+        if (conversionType == typeof(DateTimeOffset))
+        {
+            return ConvertToDateTimeOffset();
+        }
+
+        if (conversionType == typeof(TimeSpan))
+        {
+            return ConvertToTimeSpan();
+        }
+
+        if (conversionType == typeof(string))
         {
             return ToString();
         }
 
-        object IConvertible.ToType(Type conversionType, IFormatProvider provider)
+        throw new InvalidCastException($"Conversion of {GetType().Name} to {conversionType.Name} is not supported.");
+    }
+
+    /// <summary>Converts this <see cref="TemporalValue" /> instance to a <see cref="DateTime" /> instance.</summary>
+    /// <returns>A <see cref="DateTime" /> value</returns>
+    /// <exception cref="InvalidCastException">If conversion is not possible</exception>
+    /// <exception cref="ValueTruncationException">If conversion results in a truncation under ms precision</exception>
+    /// <exception cref="OverflowException">If the value falls beyond valid range of target type</exception>
+    protected virtual DateTime ConvertToDateTime()
+    {
+        throw new InvalidCastException($"Conversion of {GetType().Name} to {nameof(DateTime)} is not supported.");
+    }
+
+    /// <summary>Converts this <see cref="TemporalValue" /> instance to a <see cref="DateTimeOffset" /> instance.</summary>
+    /// <returns>A <see cref="DateTime" /> value</returns>
+    /// <exception cref="InvalidCastException">If conversion is not possible</exception>
+    /// <exception cref="ValueTruncationException">If conversion results in a truncation under ms precision</exception>
+    /// <exception cref="OverflowException">If the value falls beyond valid range of target type</exception>
+    protected virtual DateTimeOffset ConvertToDateTimeOffset()
+    {
+        throw new InvalidCastException($"Conversion of {GetType().Name} to {nameof(DateTimeOffset)} is not supported.");
+    }
+
+    /// <summary>Converts this <see cref="TemporalValue" /> instance to a <see cref="TimeSpan" /> instance.</summary>
+    /// <returns>A <see cref="DateTime" /> value</returns>
+    /// <exception cref="InvalidCastException">If conversion is not possible</exception>
+    /// <exception cref="ValueTruncationException">If conversion results in a truncation under ms precision</exception>
+    /// <exception cref="OverflowException">If the value falls beyond valid range of target type</exception>
+    protected virtual TimeSpan ConvertToTimeSpan()
+    {
+        throw new InvalidCastException($"Conversion of {GetType().Name} to {nameof(TimeSpan)} is not supported.");
+    }
+
+    internal class TemporalValueComparer<T> : IComparer<T>
+        where T : TemporalValue, IComparable<T>
+    {
+        public int Compare(T x, T y)
         {
-            if (conversionType == typeof(DateTime))
+            if (ReferenceEquals(x, y))
             {
-                return ConvertToDateTime();
+                return 0;
             }
 
-            if (conversionType == typeof(DateTimeOffset))
+            if (y is null)
             {
-                return ConvertToDateTimeOffset();
+                return 1;
             }
 
-            if (conversionType == typeof(TimeSpan))
+            if (x is null)
             {
-                return ConvertToTimeSpan();
+                return -1;
             }
 
-            if (conversionType == typeof(string))
-            {
-                return ToString();
-            }
-
-            throw new InvalidCastException($"Conversion of {GetType().Name} to {conversionType.Name} is not supported.");
+            return x.CompareTo(y);
         }
-
-        internal class TemporalValueComparer<T> : IComparer<T>
-        where T: TemporalValue, IComparable<T>
-        {
-            public int Compare(T x, T y)
-            {
-                if (ReferenceEquals(x, y)) return 0;
-                if (y is null) return 1;
-                if (x is null) return -1;
-                return x.CompareTo(y);
-            }
-        }
-
     }
 }

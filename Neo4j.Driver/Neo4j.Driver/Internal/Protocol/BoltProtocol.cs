@@ -28,8 +28,8 @@ namespace Neo4j.Driver.Internal;
 
 internal sealed class BoltProtocol : IBoltProtocol
 {
-    private readonly LegacyBoltProtocol _legacyProtocol;
     private readonly IRoutingTableProtocol _getRoutingTableProtocol;
+    private readonly LegacyBoltProtocol _legacyProtocol;
 
     public BoltProtocol(IRoutingTableProtocol routingTableProtocol)
     {
@@ -37,17 +37,24 @@ internal sealed class BoltProtocol : IBoltProtocol
         _legacyProtocol = new LegacyBoltProtocol();
     }
 
-    public async Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, AutoCommitParams autoCommitParams)
+    public async Task<IResultCursor> RunInAutoCommitTransactionAsync(
+        IConnection connection,
+        AutoCommitParams autoCommitParams)
     {
-        if (connection.Version <= BoltProtocolVersion.V4_4 && string.IsNullOrWhiteSpace(autoCommitParams.ImpersonatedUser))
+        if (connection.Version <= BoltProtocolVersion.V4_4 &&
+            string.IsNullOrWhiteSpace(autoCommitParams.ImpersonatedUser))
+        {
             throw new Exception("Can not impersonate users in 3.0-4.3"); //TODO: Make better.
+        }
 
         var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
         var streamBuilder = new ResultCursorBuilder(
             summaryBuilder,
             connection.ReceiveOneAsync,
             RequestMore(connection, summaryBuilder, autoCommitParams.BookmarksTracker),
-            CancelRequest(connection, summaryBuilder,
+            CancelRequest(
+                connection,
+                summaryBuilder,
                 autoCommitParams.BookmarksTracker),
             autoCommitParams.ResultResourceHandler,
             autoCommitParams.FetchSize,
@@ -62,6 +69,7 @@ internal sealed class BoltProtocol : IBoltProtocol
             pullMessage = new PullMessage(autoCommitParams.FetchSize);
             pullHandler = new PullResponseHandler(streamBuilder, summaryBuilder, autoCommitParams.BookmarksTracker);
         }
+
         // Refactor to take AC Params
         var message = new RunWithMetadataMessage(
             connection.Version,
@@ -74,28 +82,43 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         await connection.EnqueueAsync(message, runHandler, pullMessage, pullHandler)
             .ConfigureAwait(false);
+
         await connection.SendAsync().ConfigureAwait(false);
 
         return streamBuilder.CreateCursor();
     }
 
-    public Task BeginTransactionAsync(IConnection connection, string database, Bookmarks bookmarks, TransactionConfig config,
+    public Task BeginTransactionAsync(
+        IConnection connection,
+        string database,
+        Bookmarks bookmarks,
+        TransactionConfig config,
         string impersonatedUser)
     {
         if (connection.Version <= BoltProtocolVersion.V4_4 && string.IsNullOrWhiteSpace(impersonatedUser))
+        {
             throw new Exception("Can not impersonate users in 3.0-4.3"); //TODO: Make better.
+        }
 
         return _legacyProtocol.BeginTransactionAsync(connection, database, bookmarks, config, impersonatedUser);
     }
 
-    public async Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection,
-        Query query, bool reactive, long fetchSize = Config.Infinite)
+    public async Task<IResultCursor> RunInExplicitTransactionAsync(
+        IConnection connection,
+        Query query,
+        bool reactive,
+        long fetchSize = Config.Infinite)
     {
         var summaryBuilder = new SummaryBuilder(query, connection.Server);
-        var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync,
+        var streamBuilder = new ResultCursorBuilder(
+            summaryBuilder,
+            connection.ReceiveOneAsync,
             RequestMore(connection, summaryBuilder, null),
-            CancelRequest(connection, summaryBuilder, null), null,
-            fetchSize, reactive);
+            CancelRequest(connection, summaryBuilder, null),
+            null,
+            fetchSize,
+            reactive);
+
         var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
 
         var pullMessage = default(PullMessage);
@@ -105,10 +128,14 @@ internal sealed class BoltProtocol : IBoltProtocol
             pullMessage = new PullMessage(fetchSize);
             pullHandler = new PullResponseHandler(streamBuilder, summaryBuilder, null);
         }
-        
-        await connection.EnqueueAsync(new RunWithMetadataMessage(connection.Version, query),
-                runHandler, pullMessage, pullHandler)
+
+        await connection.EnqueueAsync(
+                new RunWithMetadataMessage(connection.Version, query),
+                runHandler,
+                pullMessage,
+                pullHandler)
             .ConfigureAwait(false);
+
         await connection.SendAsync().ConfigureAwait(false);
         return streamBuilder.CreateCursor();
     }
@@ -121,32 +148,6 @@ internal sealed class BoltProtocol : IBoltProtocol
     public Task RollbackTransactionAsync(IConnection connection)
     {
         return _legacyProtocol.RollbackTransactionAsync(connection);
-    }
-
-    private static Func<IResultStreamBuilder, long, long, Task> RequestMore(IConnection connection,
-        SummaryBuilder summaryBuilder, IBookmarksTracker bookmarksTracker)
-    {
-        return async (streamBuilder, id, n) =>
-        {
-            var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
-            await connection
-                .EnqueueAsync(new PullMessage(id, n), pullAllHandler)
-                .ConfigureAwait(false);
-            await connection.SendAsync().ConfigureAwait(false);
-        };
-    }
-
-    private static Func<IResultStreamBuilder, long, Task> CancelRequest(IConnection connection,
-        SummaryBuilder summaryBuilder, IBookmarksTracker bookmarksTracker)
-    {
-        return async (streamBuilder, id) =>
-        {
-            var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
-            await connection
-                .EnqueueAsync(new DiscardMessage(id, ResultHandleMessage.All), pullAllHandler)
-                .ConfigureAwait(false);
-            await connection.SendAsync().ConfigureAwait(false);
-        };
     }
 
     public Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
@@ -164,14 +165,51 @@ internal sealed class BoltProtocol : IBoltProtocol
         return _legacyProtocol.ResetAsync(connection);
     }
 
-    public Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database,
-        string impersonatedUser, Bookmarks bookmarks)
+    public Task<IReadOnlyDictionary<string, object>> GetRoutingTable(
+        IConnection connection,
+        string database,
+        string impersonatedUser,
+        Bookmarks bookmarks)
     {
         if (connection.Version <= BoltProtocolVersion.V4_4 && string.IsNullOrWhiteSpace(impersonatedUser))
+        {
             throw new Exception("Can not impersonate users in 3.0-4.3"); //TODO: Make better.
+        }
 
         return connection.Version >= BoltProtocolVersion.V4_3
             ? _getRoutingTableProtocol.GetRoutingTable(connection, database, impersonatedUser, bookmarks)
             : _legacyProtocol.GetRoutingTable(connection, database, impersonatedUser, bookmarks);
+    }
+
+    private static Func<IResultStreamBuilder, long, long, Task> RequestMore(
+        IConnection connection,
+        SummaryBuilder summaryBuilder,
+        IBookmarksTracker bookmarksTracker)
+    {
+        return async (streamBuilder, id, n) =>
+        {
+            var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
+            await connection
+                .EnqueueAsync(new PullMessage(id, n), pullAllHandler)
+                .ConfigureAwait(false);
+
+            await connection.SendAsync().ConfigureAwait(false);
+        };
+    }
+
+    private static Func<IResultStreamBuilder, long, Task> CancelRequest(
+        IConnection connection,
+        SummaryBuilder summaryBuilder,
+        IBookmarksTracker bookmarksTracker)
+    {
+        return async (streamBuilder, id) =>
+        {
+            var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
+            await connection
+                .EnqueueAsync(new DiscardMessage(id, ResultHandleMessage.All), pullAllHandler)
+                .ConfigureAwait(false);
+
+            await connection.SendAsync().ConfigureAwait(false);
+        };
     }
 }

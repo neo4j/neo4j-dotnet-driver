@@ -21,11 +21,11 @@ using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers;
 
-internal sealed class RollbackMessageSerializer: WriteOnlySerializer
+internal sealed class RollbackMessageSerializer : WriteOnlySerializer
 {
     internal static RollbackMessageSerializer Instance = new();
-    
-    private static readonly Type[] Types = {typeof(RollbackMessage)};
+
+    private static readonly Type[] Types = { typeof(RollbackMessage) };
     public override IEnumerable<Type> WritableTypes => Types;
 
     public override void Serialize(PackStreamWriter writer, object value)

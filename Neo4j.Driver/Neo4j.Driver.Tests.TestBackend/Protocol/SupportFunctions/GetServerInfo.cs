@@ -17,33 +17,33 @@
 
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Tests.TestBackend
+namespace Neo4j.Driver.Tests.TestBackend;
+
+internal class GetServerInfo : IProtocolObject
 {
-    internal class GetServerInfo : IProtocolObject
+    public GetServerInfoType Data { get; set; } = new();
+    public IServerInfo ServerInfo { get; set; }
+
+    public override async Task Process()
     {
-        public GetServerInfoType Data { get; set; } = new GetServerInfoType();
-        public IServerInfo ServerInfo { get; set; }
+        var driver = ObjManager.GetObject<NewDriver>(Data.driverId).Driver;
+        ServerInfo = await driver.GetServerInfoAsync();
+    }
 
-        public class GetServerInfoType
+    public override string Respond()
+    {
+        var data = new
         {
-            public string driverId { get; set; }
-        }
+            address = ServerInfo.Address,
+            agent = ServerInfo.Agent,
+            protocolVersion = ServerInfo.ProtocolVersion
+        };
 
-        public override async Task Process()
-        {
-            var driver = ObjManager.GetObject<NewDriver>(Data.driverId).Driver;
-            ServerInfo = await driver.GetServerInfoAsync();
-        }
+        return new ProtocolResponse("ServerInfo", data).Encode();
+    }
 
-        public override string Respond()
-        {
-            var data = new
-            {
-                address = ServerInfo.Address,
-                agent = ServerInfo.Agent,
-                protocolVersion = ServerInfo.ProtocolVersion
-            };
-            return new ProtocolResponse("ServerInfo", data).Encode();
-        }
+    public class GetServerInfoType
+    {
+        public string driverId { get; set; }
     }
 }

@@ -18,8 +18,8 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.Connector;
@@ -41,20 +41,19 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
     // receive one
     Task ReceiveOneAsync();
 
-    Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1, IRequestMessage message2 = null,
+    Task EnqueueAsync(
+        IRequestMessage message1,
+        IResponseHandler handler1,
+        IRequestMessage message2 = null,
         IResponseHandler handler2 = null);
 
     // Enqueue a reset message
     Task ResetAsync();
 
-    /// <summary>
-    /// Close and release related resources
-    /// </summary>
+    /// <summary>Close and release related resources</summary>
     Task DestroyAsync();
 
-    /// <summary>
-    /// Close connection
-    /// </summary>
+    /// <summary>Close connection</summary>
     Task CloseAsync();
 
     void UpdateId(string newConnId);
@@ -66,11 +65,16 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
     void SetUseUtcEncodedDateTime();
 }
 
-interface IConnectionRunner
+internal interface IConnectionRunner
 {
     Task LoginAsync(string userAgent, IAuthToken authToken);
     Task LogoutAsync();
-    Task<IReadOnlyDictionary<string, object>> GetRoutingTable(string database, string impersonatedUser, Bookmarks bookmarks);
+
+    Task<IReadOnlyDictionary<string, object>> GetRoutingTable(
+        string database,
+        string impersonatedUser,
+        Bookmarks bookmarks);
+
     Task<IResultCursor> RunInAutoCommitTransactionAsync(AutoCommitParams autoCommitParams);
     Task BeginTransactionAsync(string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser);
     Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize);

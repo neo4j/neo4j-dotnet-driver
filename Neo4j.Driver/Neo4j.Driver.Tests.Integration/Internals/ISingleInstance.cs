@@ -14,17 +14,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-using System;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.IntegrationTests.Internals
+using System;
+
+namespace Neo4j.Driver.IntegrationTests.Internals;
+
+public interface ISingleInstance
 {
-    public interface ISingleInstance
-    {
-        Uri HttpUri { get; }
-        Uri BoltUri { get; }
-        Uri BoltRoutingUri { get; }
-        string HomePath { get; }
-        IAuthToken AuthToken { get; }
-    }
+    Uri HttpUri { get; }
+    Uri BoltUri { get; }
+    Uri BoltRoutingUri { get; }
+    string HomePath { get; }
+    IAuthToken AuthToken { get; }
 }

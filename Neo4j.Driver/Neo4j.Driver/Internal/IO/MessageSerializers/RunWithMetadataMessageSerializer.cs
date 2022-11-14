@@ -24,16 +24,18 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers;
 internal sealed class RunWithMetadataMessageSerializer : WriteOnlySerializer
 {
     internal static RunWithMetadataMessageSerializer Instance = new();
-    
-    private static readonly Type[] Types = {typeof(RunWithMetadataMessage)};
+
+    private static readonly Type[] Types = { typeof(RunWithMetadataMessage) };
     public override IEnumerable<Type> WritableTypes => Types;
 
     public override void Serialize(PackStreamWriter writer, object value)
     {
         if (value is not RunWithMetadataMessage msg)
+        {
             throw new ArgumentOutOfRangeException(
                 $"Encountered {value?.GetType().Name} where {nameof(RunWithMetadataMessage)} was expected");
-        
+        }
+
         writer.WriteStructHeader(3, MessageFormat.MsgRun);
         writer.WriteString(msg.Query.Text);
         writer.WriteDictionary(msg.Query.Parameters);

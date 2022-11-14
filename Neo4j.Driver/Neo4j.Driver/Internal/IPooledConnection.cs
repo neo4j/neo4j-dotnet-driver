@@ -14,34 +14,34 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal interface IPooledConnection : IConnection
 {
-    internal interface IPooledConnection : IConnection
-    {
-        /// <summary>
-        /// Try to reset the connection to a clean state.
-        /// </summary>
-        Task ClearConnectionAsync();
-        ITimer IdleTimer { get; }
+    ITimer IdleTimer { get; }
 
-        ITimer LifetimeTimer { get; }
+    ITimer LifetimeTimer { get; }
 
-		bool ReAuthorizationRequired { get; set; }
-    }
+    bool ReAuthorizationRequired { get; set; }
 
-    internal interface ITimer
-    {
-        /// <summary>Gets the total elapsed time measured by the current instance, in milliseconds.</summary>
-        /// <returns>A read-only long integer representing the total number of milliseconds measured by the current instance.</returns>
-        /// <filterpriority>1</filterpriority>
-        long ElapsedMilliseconds { get; }
+    /// <summary>Try to reset the connection to a clean state.</summary>
+    Task ClearConnectionAsync();
+}
 
-        /// <summary>Stops time interval measurement and resets the elapsed time to zero.</summary>
-        void Reset();
-        /// <summary>Starts, or resumes, measuring elapsed time for an interval.</summary>
-        void Start();
-    }
+internal interface ITimer
+{
+    /// <summary>Gets the total elapsed time measured by the current instance, in milliseconds.</summary>
+    /// <returns>A read-only long integer representing the total number of milliseconds measured by the current instance.</returns>
+    /// <filterpriority>1</filterpriority>
+    long ElapsedMilliseconds { get; }
+
+    /// <summary>Stops time interval measurement and resets the elapsed time to zero.</summary>
+    void Reset();
+
+    /// <summary>Starts, or resumes, measuring elapsed time for an interval.</summary>
+    void Start();
 }

@@ -67,8 +67,11 @@ internal abstract class DelegatedConnection : IConnection
         return TaskWithErrorHandling(() => Delegate.InitAsync(cancellationToken));
     }
 
-    public Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1,
-        IRequestMessage message2 = null, IResponseHandler handler2 = null)
+    public Task EnqueueAsync(
+        IRequestMessage message1,
+        IResponseHandler handler1,
+        IRequestMessage message2 = null,
+        IResponseHandler handler2 = null)
     {
         return TaskWithErrorHandling(() => Delegate.EnqueueAsync(message1, handler1, message2, handler2));
     }
@@ -125,7 +128,9 @@ internal abstract class DelegatedConnection : IConnection
         return Delegate.LogoutAsync();
     }
 
-    public Task<IReadOnlyDictionary<string, object>> GetRoutingTable(string database, string impersonatedUser,
+    public Task<IReadOnlyDictionary<string, object>> GetRoutingTable(
+        string database,
+        string impersonatedUser,
         Bookmarks bookmarks)
     {
         return Delegate.GetRoutingTable(database, impersonatedUser, bookmarks);
@@ -136,7 +141,10 @@ internal abstract class DelegatedConnection : IConnection
         return Delegate.RunInAutoCommitTransactionAsync(autoCommitParams);
     }
 
-    public Task BeginTransactionAsync(string database, Bookmarks bookmarks, TransactionConfig config,
+    public Task BeginTransactionAsync(
+        string database,
+        Bookmarks bookmarks,
+        TransactionConfig config,
         string impersonatedUser)
     {
         return Delegate.BeginTransactionAsync(database, bookmarks, config, impersonatedUser);

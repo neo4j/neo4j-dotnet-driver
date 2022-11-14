@@ -32,6 +32,8 @@ internal sealed class BookmarksTracker : IBookmarksTracker
     public void UpdateBookmarks(Bookmarks bookmarks, IDatabaseInfo dbInfo = null)
     {
         if (InternalBookmarks != null && InternalBookmarks.Values.Any())
+        {
             InternalBookmarks = bookmarks;
+        }
     }
 }

@@ -43,16 +43,17 @@ internal static class StreamExtensions
         } while (toRead > 0 && hasRead > 0);
 
         if (hasRead <= 0)
+        {
             throw new IOException(
                 $"Failed to read more from input stream. Expected {bytes.Length} bytes, received {offset}.");
+        }
 
         return offset;
     }
 
     /// <summary>
-    ///     The standard ReadAsync in .Net does not honor the CancellationToken even if supplied. This method wraps a call to
-    ///     ReadAsync in a task that
-    ///     monitors the token, and when detected calls the streams close method.
+    /// The standard ReadAsync in .Net does not honor the CancellationToken even if supplied. This method wraps a call
+    /// to ReadAsync in a task that monitors the token, and when detected calls the streams close method.
     /// </summary>
     /// <param name="stream">Stream instance that is being extended</param>
     /// <param name="buffer">Target buffer to write into</param>
@@ -60,7 +61,11 @@ internal static class StreamExtensions
     /// <param name="count">The maximum number of bytes to read</param>
     /// <param name="timeoutMs">The timeout in milliseconds that the stream will close after if there is no activity.</param>
     /// <returns>The number of bytes read</returns>
-    public static async Task<int> ReadWithTimeoutAsync(this Stream stream, byte[] buffer, int offset, int count,
+    public static async Task<int> ReadWithTimeoutAsync(
+        this Stream stream,
+        byte[] buffer,
+        int offset,
+        int count,
         int timeoutMs)
     {
         var timeout = timeoutMs <= 0 ? TimeSpan.FromMilliseconds(-1) : TimeSpan.FromMilliseconds(timeoutMs);
@@ -68,20 +73,21 @@ internal static class StreamExtensions
 
         try
         {
-#if NET6_0_OR_GREATER
+            #if NET6_0_OR_GREATER
             var ctr = source.Token.Register(stream.Close);
             await using var _ = ctr.ConfigureAwait(false);
             return await stream.ReadAsync(buffer.AsMemory(offset, count), source.Token).ConfigureAwait(false);
-#else
+            #else
                 using var _ = source.Token.Register(stream.Close);
                 return await stream.ReadAsync(buffer, offset, count, source.Token).ConfigureAwait(false);
-#endif
+            #endif
         }
         catch (Exception ex) when (source.IsCancellationRequested)
         {
             stream.Close();
             throw new ConnectionReadTimeoutException(
-                $"Socket/Stream timed out after {timeoutMs}ms, socket closed.", ex);
+                $"Socket/Stream timed out after {timeoutMs}ms, socket closed.",
+                ex);
         }
         catch
         {

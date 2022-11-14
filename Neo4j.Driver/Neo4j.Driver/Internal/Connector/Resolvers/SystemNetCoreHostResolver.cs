@@ -21,60 +21,58 @@ using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.Connector
+namespace Neo4j.Driver.Internal.Connector;
+
+internal class SystemNetCoreHostResolver : IHostResolver
 {
-    internal class SystemNetCoreHostResolver: IHostResolver
+    private readonly IHostResolver _fallBackResolver;
+    private readonly MethodInfo _getHostByNameMethod;
+
+    public SystemNetCoreHostResolver()
+        : this(new SystemHostResolver())
     {
-        private readonly IHostResolver _fallBackResolver;
-        private readonly MethodInfo _getHostByNameMethod;
+    }
 
-        public SystemNetCoreHostResolver()
-            : this(new SystemHostResolver())
+    public SystemNetCoreHostResolver(IHostResolver fallBackResolver)
+    {
+        // Force native socket library initialization
+        Dns.GetHostName();
+
+        _fallBackResolver = fallBackResolver;
+        var dnsType = typeof(Dns).GetTypeInfo();
+        _getHostByNameMethod =
+            DiscoverMethod(dnsType, "InternalGetHostByName", new[] { typeof(string), typeof(bool) });
+    }
+
+    public IPAddress[] Resolve(string hostname)
+    {
+        if (_getHostByNameMethod != null)
         {
+            var result = _getHostByNameMethod.Invoke(null, new object[] { hostname, true });
 
-        }
-
-        public SystemNetCoreHostResolver(IHostResolver fallBackResolver)
-        {
-            // Force native socket library initialization
-            Dns.GetHostName();
-
-            _fallBackResolver = fallBackResolver;
-            var dnsType = typeof(Dns).GetTypeInfo();
-            _getHostByNameMethod =
-                DiscoverMethod(dnsType, "InternalGetHostByName", new[] { typeof(string), typeof(bool) });
-        }
-
-        private static MethodInfo DiscoverMethod(TypeInfo type, string name, Type[] parameters)
-        {
-            return type
-                .GetDeclaredMethods(name)
-                .SingleOrDefault(m => parameters.SequenceEqual(m.GetParameters().Select(p => p.ParameterType)));
-        }
-
-        public IPAddress[] Resolve(string hostname)
-        {
-            if (_getHostByNameMethod != null)
+            if (result is IPHostEntry resolved)
             {
-                var result = _getHostByNameMethod.Invoke(null, new object[] { hostname, true });
-
-                if (result is IPHostEntry resolved)
-                {
-                    return resolved.AddressList;
-                }
+                return resolved.AddressList;
             }
-
-            return _fallBackResolver.Resolve(hostname);
         }
 
-        public Task<IPAddress[]> ResolveAsync(string hostname)
+        return _fallBackResolver.Resolve(hostname);
+    }
+
+    public Task<IPAddress[]> ResolveAsync(string hostname)
+    {
+        if (_getHostByNameMethod != null)
         {
-            if (_getHostByNameMethod != null)
-            {
-                return Task.FromResult(Resolve(hostname));
-            }
-
-            return _fallBackResolver.ResolveAsync(hostname);
+            return Task.FromResult(Resolve(hostname));
         }
+
+        return _fallBackResolver.ResolveAsync(hostname);
+    }
+
+    private static MethodInfo DiscoverMethod(TypeInfo type, string name, Type[] parameters)
+    {
+        return type
+            .GetDeclaredMethods(name)
+            .SingleOrDefault(m => parameters.SequenceEqual(m.GetParameters().Select(p => p.ParameterType)));
     }
 }

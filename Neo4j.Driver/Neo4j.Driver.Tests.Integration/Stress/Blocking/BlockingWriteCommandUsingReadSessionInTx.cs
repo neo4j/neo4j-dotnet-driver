@@ -15,40 +15,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Linq;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
+namespace Neo4j.Driver.IntegrationTests.Stress;
+
+public class BlockingWriteCommandUsingReadSessionInTx<TContext> : BlockingCommand<TContext>
+    where TContext : StressTestContext
 {
-    public class BlockingWriteCommandUsingReadSessionInTx<TContext> : BlockingCommand<TContext>
-        where TContext : StressTestContext
+    public BlockingWriteCommandUsingReadSessionInTx(IDriver driver, bool useBookmark)
+        : base(driver, useBookmark)
     {
-        public BlockingWriteCommandUsingReadSessionInTx(IDriver driver, bool useBookmark)
-            : base(driver, useBookmark)
-        {
-        }
+    }
 
-        public override void Execute(TContext context)
-        {
-            var result = default(IResult);
+    public override void Execute(TContext context)
+    {
+        var result = default(IResult);
 
-            using (var session = NewSession(AccessMode.Read, context))
-            using (var txc = BeginTransaction(session, context))
-            {
-                var exc = Record.Exception(() =>
+        using (var session = NewSession(AccessMode.Read, context))
+        using (var txc = BeginTransaction(session, context))
+        {
+            var exc = Record.Exception(
+                () =>
                 {
                     result = txc.Run("CREATE ()");
                     result.Consume();
                     return result;
                 });
 
-                exc.Should().BeOfType<ClientException>();
-            }
-
-            result.Should().NotBeNull();
-            result.Consume().Counters.NodesCreated.Should().Be(0);
+            exc.Should().BeOfType<ClientException>();
         }
+
+        result.Should().NotBeNull();
+        result.Consume().Counters.NodesCreated.Should().Be(0);
     }
 }

@@ -18,39 +18,52 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal class InternalBookmarks : Bookmarks
 {
-    internal class InternalBookmarks : Bookmarks
+    internal InternalBookmarks(params string[] values)
     {
-        internal InternalBookmarks(params string[] values)
-        {
-            Values = values.Where(v => !string.IsNullOrEmpty(v)).Distinct().ToArray();
-        }
-        internal InternalBookmarks(IEnumerable<string> values)
-        {
-            Values = values.Where(v => !string.IsNullOrEmpty(v)).Distinct().ToArray();
-        }
-        private bool Equals(InternalBookmarks other)
-        {
-            if (Values.Length != other.Values.Length)
-            {
-                return false;
-            }
+        Values = values.Where(v => !string.IsNullOrEmpty(v)).Distinct().ToArray();
+    }
 
-            return Values.Except(other.Values).Any() == false;
+    internal InternalBookmarks(IEnumerable<string> values)
+    {
+        Values = values.Where(v => !string.IsNullOrEmpty(v)).Distinct().ToArray();
+    }
+
+    private bool Equals(InternalBookmarks other)
+    {
+        if (Values.Length != other.Values.Length)
+        {
+            return false;
         }
 
-        public override bool Equals(object obj)
+        return Values.Except(other.Values).Any() == false;
+    }
+
+    public override bool Equals(object obj)
+    {
+        if (ReferenceEquals(null, obj))
         {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
-            return Equals((InternalBookmarks) obj);
+            return false;
         }
 
-        public override int GetHashCode()
+        if (ReferenceEquals(this, obj))
         {
-            return (Values != null ? Values.GetHashCode() : 0);
+            return true;
         }
+
+        if (obj.GetType() != GetType())
+        {
+            return false;
+        }
+
+        return Equals((InternalBookmarks)obj);
+    }
+
+    public override int GetHashCode()
+    {
+        return Values != null ? Values.GetHashCode() : 0;
     }
 }

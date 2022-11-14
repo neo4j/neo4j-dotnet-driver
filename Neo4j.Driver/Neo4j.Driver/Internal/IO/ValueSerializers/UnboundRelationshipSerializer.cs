@@ -22,10 +22,9 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers;
 
 internal sealed class UnboundRelationshipSerializer : ReadOnlySerializer
 {
+    public const byte UnboundRelationship = (byte)'r';
     internal static readonly UnboundRelationshipSerializer Instance = new();
-    
-    public const byte UnboundRelationship = (byte) 'r';
-    public override IEnumerable<byte> ReadableStructs => new[] {UnboundRelationship};
+    public override IEnumerable<byte> ReadableStructs => new[] { UnboundRelationship };
 
     public override object Deserialize(PackStreamReader reader, byte signature, long size)
     {

@@ -1,25 +1,24 @@
 ﻿using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Tests.TestBackend
+namespace Neo4j.Driver.Tests.TestBackend;
+
+internal class BookmarkManagerClose : IProtocolObject
 {
-    internal class BookmarkManagerClose : IProtocolObject
+    public BookmarkManagerCloseDto data;
+
+    public override Task Process()
     {
-        public BookmarkManagerCloseDto data;
+        var bookmarkManager = ObjManager.GetObject<NewBookmarkManager>(data.id).BookmarkManager;
+        return bookmarkManager.ForgetAsync();
+    }
 
-        public class BookmarkManagerCloseDto
-        {
-            public string id { get; set; }
-        }
+    public override string Respond()
+    {
+        return new ProtocolResponse("BookmarkManager", new { data.id }).Encode();
+    }
 
-        public override Task Process()
-        {
-            var bookmarkManager = ObjManager.GetObject<NewBookmarkManager>(data.id).BookmarkManager;
-            return bookmarkManager.ForgetAsync();
-        }
-
-        public override string Respond()
-        {
-            return new ProtocolResponse("BookmarkManager", new {data.id}).Encode();
-        }
+    public class BookmarkManagerCloseDto
+    {
+        public string id { get; set; }
     }
 }

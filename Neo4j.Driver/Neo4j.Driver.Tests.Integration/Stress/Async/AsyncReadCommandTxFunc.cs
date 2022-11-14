@@ -15,42 +15,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
+namespace Neo4j.Driver.IntegrationTests.Stress;
+
+public class AsyncReadCommandTxFunc<TContext> : AsyncCommand<TContext>
+    where TContext : StressTestContext
 {
-	public class AsyncReadCommandTxFunc<TContext> : AsyncCommand<TContext>
-		where TContext : StressTestContext
-	{
-		public AsyncReadCommandTxFunc(IDriver driver, bool useBookmark)
-			: base(driver, useBookmark)
-		{
-		}
+    public AsyncReadCommandTxFunc(IDriver driver, bool useBookmark)
+        : base(driver, useBookmark)
+    {
+    }
 
-		public override async Task ExecuteAsync(TContext context)
-		{
-			var session = NewSession(AccessMode.Read, context);
+    public override async Task ExecuteAsync(TContext context)
+    {
+        var session = NewSession(AccessMode.Read, context);
 
-			try
-			{
-				await session.ReadTransactionAsync(async tx =>
-				{
-					var cursor = await tx.RunAsync("MATCH (n) RETURN n LIMIT 1").ConfigureAwait(false);
-					var records = await cursor.ToListAsync().ConfigureAwait(false);
-					
-					if (records.Count > 0)
-					{
-						records[0][0].Should().BeAssignableTo<INode>();
-						context.NodeRead(await cursor.ConsumeAsync());
-					}
-				}).ConfigureAwait(false);
-			}
-			finally
-			{
-				await session.CloseAsync();
-			}
-		}
-	}
+        try
+        {
+            await session.ReadTransactionAsync(
+                    async tx =>
+                    {
+                        var cursor = await tx.RunAsync("MATCH (n) RETURN n LIMIT 1").ConfigureAwait(false);
+                        var records = await cursor.ToListAsync().ConfigureAwait(false);
+
+                        if (records.Count > 0)
+                        {
+                            records[0][0].Should().BeAssignableTo<INode>();
+                            context.NodeRead(await cursor.ConsumeAsync());
+                        }
+                    })
+                .ConfigureAwait(false);
+        }
+        finally
+        {
+            await session.CloseAsync();
+        }
+    }
 }

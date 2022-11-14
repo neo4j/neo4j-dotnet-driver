@@ -15,109 +15,104 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Schema;
 
-namespace Neo4j.Driver.Internal.Connector
+namespace Neo4j.Driver.Internal.Connector;
+
+internal class CachingHostResolver : IHostResolver
 {
-    internal class CachingHostResolver: IHostResolver
+    private readonly ConcurrentDictionary<string, CacheEntry> _cache = new();
+
+    private readonly SemaphoreSlim _lock = new(1, 1);
+    private readonly IHostResolver _resolver;
+    private readonly int _ttl;
+
+    public CachingHostResolver(IHostResolver resolver, int ttl)
     {
-        private readonly IHostResolver _resolver;
-        private readonly int _ttl;
+        _resolver = resolver;
+        _ttl = ttl;
+    }
 
-        private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
-        private readonly ConcurrentDictionary<string, CacheEntry> _cache = new ConcurrentDictionary<string, CacheEntry>();
-        
-        public CachingHostResolver(IHostResolver resolver, int ttl)
+    public IPAddress[] Resolve(string hostname)
+    {
+        if (!TryGetCached(hostname, out var entry))
         {
-            _resolver = resolver;
-            _ttl = ttl;
-        }
-        
-        public IPAddress[] Resolve(string hostname)
-        {
-            if (!TryGetCached(hostname, out var entry))
+            _lock.Wait();
+            try
             {
-                _lock.Wait();
-                try
+                if (!TryGetCached(hostname, out entry))
                 {
-                    if (!TryGetCached(hostname, out entry))
+                    var resolved = _resolver.Resolve(hostname);
+
+                    entry = new CacheEntry
                     {
-                        var resolved = _resolver.Resolve(hostname);
+                        Timer = Stopwatch.StartNew(),
+                        Addresses = resolved
+                    };
 
-                        entry = new CacheEntry()
-                        {
-                            Timer = Stopwatch.StartNew(),
-                            Addresses = resolved
-                        };
-                        entry = _cache.AddOrUpdate(hostname, entry, (key, existingEntry) => entry);
-                    }
-                }
-                finally
-                {
-                    _lock.Release();
+                    entry = _cache.AddOrUpdate(hostname, entry, (key, existingEntry) => entry);
                 }
             }
-            
-            return entry.Addresses;
+            finally
+            {
+                _lock.Release();
+            }
         }
 
-        public async Task<IPAddress[]> ResolveAsync(string hostname)
+        return entry.Addresses;
+    }
+
+    public async Task<IPAddress[]> ResolveAsync(string hostname)
+    {
+        if (!TryGetCached(hostname, out var entry))
         {
-            if (!TryGetCached(hostname, out var entry))
+            await _lock.WaitAsync().ConfigureAwait(false);
+            try
             {
-                await _lock.WaitAsync().ConfigureAwait(false);
-                try
+                if (!TryGetCached(hostname, out entry))
                 {
-                    if (!TryGetCached(hostname, out entry))
+                    var resolved = await _resolver.ResolveAsync(hostname).ConfigureAwait(false);
+
+                    entry = new CacheEntry
                     {
-                        var resolved = await _resolver.ResolveAsync(hostname).ConfigureAwait(false);
+                        Timer = Stopwatch.StartNew(),
+                        Addresses = resolved
+                    };
 
-                        entry = new CacheEntry()
-                        {
-                            Timer = Stopwatch.StartNew(),
-                            Addresses = resolved
-                        };
-                        entry = _cache.AddOrUpdate(hostname, entry, (key, existingEntry) => entry);
-                    }
-                }
-                finally
-                {
-                    _lock.Release();
+                    entry = _cache.AddOrUpdate(hostname, entry, (key, existingEntry) => entry);
                 }
             }
-
-            return entry.Addresses;
-        }
-
-        private bool TryGetCached(string hostname, out CacheEntry entry)
-        {
-            if (_cache.TryGetValue(hostname, out entry))
+            finally
             {
-                if (entry.Timer == null || entry.Timer.ElapsedMilliseconds <= _ttl)
-                {
-                    return true;
-                }
+                _lock.Release();
             }
-
-            entry = null;
-
-            return false;
         }
-        
-        private class CacheEntry
+
+        return entry.Addresses;
+    }
+
+    private bool TryGetCached(string hostname, out CacheEntry entry)
+    {
+        if (_cache.TryGetValue(hostname, out entry))
         {
-            public Stopwatch Timer { get; set; }
-            public IPAddress[] Addresses { get; set; }
+            if (entry.Timer == null || entry.Timer.ElapsedMilliseconds <= _ttl)
+            {
+                return true;
+            }
         }
-        
+
+        entry = null;
+
+        return false;
+    }
+
+    private class CacheEntry
+    {
+        public Stopwatch Timer { get; set; }
+        public IPAddress[] Addresses { get; set; }
     }
 }

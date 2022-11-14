@@ -20,594 +20,600 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Reactive.Testing;
 using Neo4j.Driver.Reactive;
-using Xunit;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
 using static Neo4j.Driver.Reactive.Utils;
 using static Neo4j.Driver.Tests.Assertions;
 
-namespace Neo4j.Driver.IntegrationTests.Reactive
+namespace Neo4j.Driver.IntegrationTests.Reactive;
+
+public class TransactionIT : AbstractRxIT
 {
-    public class TransactionIT : AbstractRxIT
+    private const string BehaviourDifferenceWJavaDriver = "TODO: Behaviour Difference w/Java Driver";
+
+    private readonly IRxSession session;
+
+    public TransactionIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+        : base(output, fixture)
     {
-        private const string BehaviourDifferenceWJavaDriver = "TODO: Behaviour Difference w/Java Driver";
-
-        private readonly IRxSession session;
-
-        public TransactionIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
-            : base(output, fixture)
+        // clean database after each test run
+        using (var tmpSession = Server.Driver.Session())
         {
-            // clean database after each test run
-            using (var tmpSession = Server.Driver.Session())
-            {
-                tmpSession.Run("MATCH (n) DETACH DELETE n").Consume();
-            }
-
-            session = NewSession();           
+            tmpSession.Run("MATCH (n) DETACH DELETE n").Consume();
         }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public void ShouldCommitEmptyTx()
-        {
-            var bookmarkBefore = session.LastBookmarks;
+        session = NewSession();
+    }
 
-            session.BeginTransaction()
-                .SelectMany(tx => tx.Commit<int>())
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnCompleted<int>(0));
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public void ShouldCommitEmptyTx()
+    {
+        var bookmarkBefore = session.LastBookmarks;
 
-            var bookmarkAfter = session.LastBookmarks;
+        session.BeginTransaction()
+            .SelectMany(tx => tx.Commit<int>())
+            .WaitForCompletion()
+            .AssertEqual(OnCompleted<int>(0));
 
-            bookmarkBefore.Should().BeNull();
-            bookmarkAfter.Should().NotBe(bookmarkBefore);
-        }
+        var bookmarkAfter = session.LastBookmarks;
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public void ShouldRollbackEmptyTx()
-        {
-            var bookmarkBefore = session.LastBookmarks;
+        bookmarkBefore.Should().BeNull();
+        bookmarkAfter.Should().NotBe(bookmarkBefore);
+    }
 
-            session.BeginTransaction()
-                .SelectMany(tx => tx.Rollback<int>())
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnCompleted<int>(0));
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public void ShouldRollbackEmptyTx()
+    {
+        var bookmarkBefore = session.LastBookmarks;
 
-            var bookmarkAfter = session.LastBookmarks;
+        session.BeginTransaction()
+            .SelectMany(tx => tx.Rollback<int>())
+            .WaitForCompletion()
+            .AssertEqual(OnCompleted<int>(0));
 
-            bookmarkBefore.Should().BeNull();
-            bookmarkAfter.Should().Be(bookmarkBefore);
-        }
+        var bookmarkAfter = session.LastBookmarks;
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public void ShouldRunQueryAndCommit()
-        {
-            session.BeginTransaction()
-                .SelectMany(txc =>
+        bookmarkBefore.Should().BeNull();
+        bookmarkAfter.Should().Be(bookmarkBefore);
+    }
+
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public void ShouldRunQueryAndCommit()
+    {
+        session.BeginTransaction()
+            .SelectMany(
+                txc =>
                     txc.Run("CREATE (n:Node {id: 42}) RETURN n")
                         .Records()
                         .Select(r => r["n"].As<INode>()["id"].As<int>())
                         .Concat(txc.Commit<int>())
                         .Catch(txc.Rollback<int>()))
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnNext(0, 42),
-                    OnCompleted<int>(0));
+            .WaitForCompletion()
+            .AssertEqual(
+                OnNext(0, 42),
+                OnCompleted<int>(0));
 
-            CountNodes(42).Should().Be(1);
-        }
+        CountNodes(42).Should().Be(1);
+    }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public async Task ShouldRunQueryAndRollback()
-        {
-            var txc = await session.BeginTransaction().SingleAsync();
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public async Task ShouldRunQueryAndRollback()
+    {
+        var txc = await session.BeginTransaction().SingleAsync();
 
-            VerifyCanCreateNode(txc, 4242);
-            VerifyCanRollback(txc);
+        VerifyCanCreateNode(txc, 4242);
+        VerifyCanRollback(txc);
 
-            CountNodes(4242).Should().Be(0);
-        }
+        CountNodes(4242).Should().Be(0);
+    }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public Task ShouldRunMultipleQuerysAndCommit()
-        {
-            return VerifyRunMultipleQuerys(true);
-        }
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public Task ShouldRunMultipleQuerysAndCommit()
+    {
+        return VerifyRunMultipleQuerys(true);
+    }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public Task ShouldRunMultipleQuerysAndRollback()
-        {
-            return VerifyRunMultipleQuerys(false);
-        }
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public Task ShouldRunMultipleQuerysAndRollback()
+    {
+        return VerifyRunMultipleQuerys(false);
+    }
 
-        private async Task VerifyRunMultipleQuerys(bool commit)
-        {
-            var txc = await session.BeginTransaction().SingleAsync();
+    private async Task VerifyRunMultipleQuerys(bool commit)
+    {
+        var txc = await session.BeginTransaction().SingleAsync();
 
-            var result1 = txc.Run("CREATE (n:Node {id : 1})");
-            await result1.Records().SingleOrDefaultAsync();
+        var result1 = txc.Run("CREATE (n:Node {id : 1})");
+        await result1.Records().SingleOrDefaultAsync();
 
-            var result2 = txc.Run("CREATE (n:Node {id : 2})");
-            await result2.Records().SingleOrDefaultAsync();
+        var result2 = txc.Run("CREATE (n:Node {id : 2})");
+        await result2.Records().SingleOrDefaultAsync();
 
-            var result3 = txc.Run("CREATE (n:Node {id : 1})");
-            await result3.Records().SingleOrDefaultAsync();
+        var result3 = txc.Run("CREATE (n:Node {id : 1})");
+        await result3.Records().SingleOrDefaultAsync();
 
-            VerifyCanCommitOrRollback(txc, commit);
+        VerifyCanCommitOrRollback(txc, commit);
 
-            VerifyCommittedOrRollbacked(commit);
-        }
+        VerifyCommittedOrRollbacked(commit);
+    }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public Task ShouldRunMultipleQuerysWithoutWaitingAndCommit()
-        {
-            return VerifyRunMultipleQuerysWithoutWaiting(true);
-        }
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public Task ShouldRunMultipleQuerysWithoutWaitingAndCommit()
+    {
+        return VerifyRunMultipleQuerysWithoutWaiting(true);
+    }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public Task ShouldRunMultipleQuerysWithoutWaitingAndRollback()
-        {
-            return VerifyRunMultipleQuerysWithoutWaiting(false);
-        }
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public Task ShouldRunMultipleQuerysWithoutWaitingAndRollback()
+    {
+        return VerifyRunMultipleQuerysWithoutWaiting(false);
+    }
 
-        private async Task VerifyRunMultipleQuerysWithoutWaiting(bool commit)
-        {
-            var txc = await session.BeginTransaction().SingleAsync();
+    private async Task VerifyRunMultipleQuerysWithoutWaiting(bool commit)
+    {
+        var txc = await session.BeginTransaction().SingleAsync();
 
-            var result1 = txc.Run("CREATE (n:Node {id : 1})");
-            var result2 = txc.Run("CREATE (n:Node {id : 2})");
-            var result3 = txc.Run("CREATE (n:Node {id : 1})");
+        var result1 = txc.Run("CREATE (n:Node {id : 1})");
+        var result2 = txc.Run("CREATE (n:Node {id : 2})");
+        var result3 = txc.Run("CREATE (n:Node {id : 1})");
 
-            await result1.Records().Concat(result2.Records()).Concat(result3.Records()).SingleOrDefaultAsync();
+        await result1.Records().Concat(result2.Records()).Concat(result3.Records()).SingleOrDefaultAsync();
 
-            VerifyCanCommitOrRollback(txc, commit);
+        VerifyCanCommitOrRollback(txc, commit);
 
-            VerifyCommittedOrRollbacked(commit);
-        }
+        VerifyCommittedOrRollbacked(commit);
+    }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public Task ShouldRunMultipleQuerysWithoutStreamingAndCommit()
-        {
-            return VerifyRunMultipleQuerysWithoutStreaming(true);
-        }
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public Task ShouldRunMultipleQuerysWithoutStreamingAndCommit()
+    {
+        return VerifyRunMultipleQuerysWithoutStreaming(true);
+    }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public Task ShouldRunMultipleQuerysWithoutStreamingAndRollback()
-        {
-            return VerifyRunMultipleQuerysWithoutStreaming(false);
-        }
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public Task ShouldRunMultipleQuerysWithoutStreamingAndRollback()
+    {
+        return VerifyRunMultipleQuerysWithoutStreaming(false);
+    }
 
-        private async Task VerifyRunMultipleQuerysWithoutStreaming(bool commit)
-        {
-            var txc = await session.BeginTransaction().SingleAsync();
+    private async Task VerifyRunMultipleQuerysWithoutStreaming(bool commit)
+    {
+        var txc = await session.BeginTransaction().SingleAsync();
 
-            var result1 = txc.Run("CREATE (n:Node {id : 1})");
-            var result2 = txc.Run("CREATE (n:Node {id : 2})");
-            var result3 = txc.Run("CREATE (n:Node {id : 1})");
+        var result1 = txc.Run("CREATE (n:Node {id : 1})");
+        var result2 = txc.Run("CREATE (n:Node {id : 2})");
+        var result3 = txc.Run("CREATE (n:Node {id : 1})");
 
-            await result1.Keys().Concat(result2.Keys()).Concat(result3.Keys());
+        await result1.Keys().Concat(result2.Keys()).Concat(result3.Keys());
 
-            VerifyCanCommitOrRollback(txc, commit);
+        VerifyCanCommitOrRollback(txc, commit);
 
-            VerifyCommittedOrRollbacked(commit);
-        }
+        VerifyCommittedOrRollbacked(commit);
+    }
 
-        [RequireServerFact]
-        public async Task ShouldFailToCommitAfterAFailedQuery()
-        {
-            var txc = await session.BeginTransaction().SingleAsync();
+    [RequireServerFact]
+    public async Task ShouldFailToCommitAfterAFailedQuery()
+    {
+        var txc = await session.BeginTransaction().SingleAsync();
 
-            VerifyFailsWithWrongQuery(txc);
+        VerifyFailsWithWrongQuery(txc);
 
-            txc.Commit<int>()
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnError<int>(0, MatchesException<ClientException>()));
-        }
+        txc.Commit<int>()
+            .WaitForCompletion()
+            .AssertEqual(OnError<int>(0, MatchesException<ClientException>()));
+    }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public async Task ShouldSucceedToRollbackAfterAFailedQuery()
-        {
-            var txc = await session.BeginTransaction().SingleAsync();
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public async Task ShouldSucceedToRollbackAfterAFailedQuery()
+    {
+        var txc = await session.BeginTransaction().SingleAsync();
 
-            VerifyFailsWithWrongQuery(txc);
+        VerifyFailsWithWrongQuery(txc);
 
-            txc.Rollback<int>()
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnCompleted<int>(0));
-        }
+        txc.Rollback<int>()
+            .WaitForCompletion()
+            .AssertEqual(OnCompleted<int>(0));
+    }
 
-        [RequireServerFact]
-        public async Task ShouldFailToCommitAfterSuccessfulAndFailedQuerys()
-        {
-            var txc = await session.BeginTransaction().SingleAsync();
+    [RequireServerFact]
+    public async Task ShouldFailToCommitAfterSuccessfulAndFailedQuerys()
+    {
+        var txc = await session.BeginTransaction().SingleAsync();
 
-            VerifyCanCreateNode(txc, 5);
-            VerifyCanReturnOne(txc);
-            VerifyFailsWithWrongQuery(txc);
+        VerifyCanCreateNode(txc, 5);
+        VerifyCanReturnOne(txc);
+        VerifyFailsWithWrongQuery(txc);
 
-            txc.Commit<int>()
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnError<int>(0, MatchesException<ClientException>()));
-        }
+        txc.Commit<int>()
+            .WaitForCompletion()
+            .AssertEqual(OnError<int>(0, MatchesException<ClientException>()));
+    }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public async Task ShouldSucceedToRollbackAfterSuccessfulAndFailedQuerys()
-        {
-            var txc = await session.BeginTransaction().SingleAsync();
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public async Task ShouldSucceedToRollbackAfterSuccessfulAndFailedQuerys()
+    {
+        var txc = await session.BeginTransaction().SingleAsync();
 
-            VerifyCanCreateNode(txc, 5);
-            VerifyCanReturnOne(txc);
-            VerifyFailsWithWrongQuery(txc);
+        VerifyCanCreateNode(txc, 5);
+        VerifyCanReturnOne(txc);
+        VerifyFailsWithWrongQuery(txc);
 
-            txc.Rollback<int>()
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnCompleted<int>(0));
-        }
+        txc.Rollback<int>()
+            .WaitForCompletion()
+            .AssertEqual(OnCompleted<int>(0));
+    }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public async Task ShouldFailToRunAnotherQueryAfterAFailedOne()
-        {
-            var txc = await session.BeginTransaction().SingleAsync();
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public async Task ShouldFailToRunAnotherQueryAfterAFailedOne()
+    {
+        var txc = await session.BeginTransaction().SingleAsync();
 
-            VerifyFailsWithWrongQuery(txc);
+        VerifyFailsWithWrongQuery(txc);
 
-            txc.Run("CREATE ()")
-                .Records()
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnError<IRecord>(0,
-                        Matches<Exception>(exc =>
+        txc.Run("CREATE ()")
+            .Records()
+            .WaitForCompletion()
+            .AssertEqual(
+                OnError<IRecord>(
+                    0,
+                    Matches<Exception>(
+                        exc =>
                             exc.Message.Should().Contain("Cannot run query in this transaction"))));
 
-            VerifyCanRollback(txc);
-        }
+        VerifyCanRollback(txc);
+    }
 
-        [RequireServerFact]
-        public void ShouldFailToBeginTxcWithInvalidBookmark()
-        {
-            Server.Driver
-                .RxSession(
-                    o => o.WithDefaultAccessMode(AccessMode.Read).WithBookmarks(Bookmarks.From("InvalidBookmark")))
-                .BeginTransaction()
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnError<IRxTransaction>(0,
-                        Matches<Exception>(exc => exc.Message.Should().Contain("InvalidBookmark"))));
-        }
+    [RequireServerFact]
+    public void ShouldFailToBeginTxcWithInvalidBookmark()
+    {
+        Server.Driver
+            .RxSession(o => o.WithDefaultAccessMode(AccessMode.Read).WithBookmarks(Bookmarks.From("InvalidBookmark")))
+            .BeginTransaction()
+            .WaitForCompletion()
+            .AssertEqual(
+                OnError<IRxTransaction>(
+                    0,
+                    Matches<Exception>(exc => exc.Message.Should().Contain("InvalidBookmark"))));
+    }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public async Task ShouldNotAllowCommitAfterCommit()
-        {
-            var txc = await session.BeginTransaction().SingleAsync();
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public async Task ShouldNotAllowCommitAfterCommit()
+    {
+        var txc = await session.BeginTransaction().SingleAsync();
 
-            VerifyCanCreateNode(txc, 6);
-            VerifyCanCommit(txc);
+        VerifyCanCreateNode(txc, 6);
+        VerifyCanCommit(txc);
 
-            txc.Commit<int>()
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnError<int>(0,
-                        Matches<Exception>(exc =>
+        txc.Commit<int>()
+            .WaitForCompletion()
+            .AssertEqual(
+                OnError<int>(
+                    0,
+                    Matches<Exception>(
+                        exc =>
                             exc.Message.Should()
                                 .Be("Cannot commit this transaction, because it has already been committed."))));
-        }
+    }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public async Task ShouldNotAllowRollbackAfterRollback()
-        {
-            var txc = await session.BeginTransaction().SingleAsync();
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public async Task ShouldNotAllowRollbackAfterRollback()
+    {
+        var txc = await session.BeginTransaction().SingleAsync();
 
-            VerifyCanCreateNode(txc, 6);
-            VerifyCanRollback(txc);
+        VerifyCanCreateNode(txc, 6);
+        VerifyCanRollback(txc);
 
-            txc.Rollback<int>()
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnError<int>(0,
-                        Matches<Exception>(exc =>
+        txc.Rollback<int>()
+            .WaitForCompletion()
+            .AssertEqual(
+                OnError<int>(
+                    0,
+                    Matches<Exception>(
+                        exc =>
                             exc.Message.Should()
                                 .Be("Cannot rollback this transaction, because it has already been rolled back."))));
-        }
+    }
 
-        [RequireServerFact]
-        public async Task ShouldFailToCommitAfterRollback()
-        {
-            var txc = await session.BeginTransaction().SingleAsync();
+    [RequireServerFact]
+    public async Task ShouldFailToCommitAfterRollback()
+    {
+        var txc = await session.BeginTransaction().SingleAsync();
 
-            VerifyCanCreateNode(txc, 6);
-            VerifyCanRollback(txc);
+        VerifyCanCreateNode(txc, 6);
+        VerifyCanRollback(txc);
 
-            txc.Commit<int>()
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnError<int>(0,
-                        Matches<Exception>(exc =>
+        txc.Commit<int>()
+            .WaitForCompletion()
+            .AssertEqual(
+                OnError<int>(
+                    0,
+                    Matches<Exception>(
+                        exc =>
                             exc.Message.Should()
                                 .Be("Cannot commit this transaction, because it has already been rolled back."))));
-        }
+    }
 
-        [RequireServerFact]
-        public async Task ShouldFailToRollbackAfterCommit()
-        {
-            var txc = await session.BeginTransaction().SingleAsync();
+    [RequireServerFact]
+    public async Task ShouldFailToRollbackAfterCommit()
+    {
+        var txc = await session.BeginTransaction().SingleAsync();
 
-            VerifyCanCreateNode(txc, 6);
-            VerifyCanCommit(txc);
+        VerifyCanCreateNode(txc, 6);
+        VerifyCanCommit(txc);
 
-            txc.Rollback<string>()
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnError<string>(0,
-                        Matches<Exception>(exc =>
+        txc.Rollback<string>()
+            .WaitForCompletion()
+            .AssertEqual(
+                OnError<string>(
+                    0,
+                    Matches<Exception>(
+                        exc =>
                             exc.Message.Should()
                                 .Be("Cannot rollback this transaction, because it has already been committed."))));
-        }
+    }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public Task ShouldFailToRunQueryAfterCompletedTxcAndCommit()
-        {
-            return VerifyFailToRunQueryAfterCompletedTxc(true);
-        }
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public Task ShouldFailToRunQueryAfterCompletedTxcAndCommit()
+    {
+        return VerifyFailToRunQueryAfterCompletedTxc(true);
+    }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public Task ShouldFailToRunQueryAfterCompletedTxcAndRollback()
-        {
-            return VerifyFailToRunQueryAfterCompletedTxc(false);
-        }
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public Task ShouldFailToRunQueryAfterCompletedTxcAndRollback()
+    {
+        return VerifyFailToRunQueryAfterCompletedTxc(false);
+    }
 
-        private async Task VerifyFailToRunQueryAfterCompletedTxc(bool commit)
-        {
-            var txc = await session.BeginTransaction().SingleAsync();
+    private async Task VerifyFailToRunQueryAfterCompletedTxc(bool commit)
+    {
+        var txc = await session.BeginTransaction().SingleAsync();
 
-            VerifyCanCreateNode(txc, 15);
-            VerifyCanCommitOrRollback(txc, commit);
+        VerifyCanCreateNode(txc, 15);
+        VerifyCanCommitOrRollback(txc, commit);
 
-            CountNodes(15).Should().Be(commit ? 1 : 0);
+        CountNodes(15).Should().Be(commit ? 1 : 0);
 
-            txc.Run("CREATE ()")
-                .Records()
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnError<IRecord>(0,
-                        Matches<Exception>(exc => exc.Message.Should().Contain("Cannot run query in this"))));
-        }
+        txc.Run("CREATE ()")
+            .Records()
+            .WaitForCompletion()
+            .AssertEqual(
+                OnError<IRecord>(
+                    0,
+                    Matches<Exception>(exc => exc.Message.Should().Contain("Cannot run query in this"))));
+    }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public async Task ShouldUpdateBookmark()
-        {
-            var bookmark1 = session.LastBookmarks;
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public async Task ShouldUpdateBookmark()
+    {
+        var bookmark1 = session.LastBookmarks;
 
-            var txc1 = await session.BeginTransaction().SingleAsync();
-            VerifyCanCreateNode(txc1, 20);
-            VerifyCanCommit(txc1);
+        var txc1 = await session.BeginTransaction().SingleAsync();
+        VerifyCanCreateNode(txc1, 20);
+        VerifyCanCommit(txc1);
 
-            var bookmark2 = session.LastBookmarks;
+        var bookmark2 = session.LastBookmarks;
 
-            var txc2 = await session.BeginTransaction().SingleAsync();
-            VerifyCanCreateNode(txc2, 20);
-            VerifyCanCommit(txc2);
+        var txc2 = await session.BeginTransaction().SingleAsync();
+        VerifyCanCreateNode(txc2, 20);
+        VerifyCanCommit(txc2);
 
-            var bookmark3 = session.LastBookmarks;
+        var bookmark3 = session.LastBookmarks;
 
-            bookmark1.Should().BeNull();
-            bookmark2.Should().NotBe(bookmark1);
-            bookmark3.Should().NotBe(bookmark1).And.NotBe(bookmark2);
-        }
+        bookmark1.Should().BeNull();
+        bookmark2.Should().NotBe(bookmark1);
+        bookmark3.Should().NotBe(bookmark1).And.NotBe(bookmark2);
+    }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public async Task ShouldPropagateFailuresFromQuerys()
-        {
-            var txc = await session.BeginTransaction().SingleAsync();
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public async Task ShouldPropagateFailuresFromQuerys()
+    {
+        var txc = await session.BeginTransaction().SingleAsync();
 
-            var result1 = txc.Run("CREATE (:TestNode) RETURN 1 as n");
-            var result2 = txc.Run("CREATE (:TestNode) RETURN 2 as n");
-            var result3 = txc.Run("RETURN 10 / 0 as n");
-            var result4 = txc.Run("CREATE (:TestNode) RETURN 3 as n");
+        var result1 = txc.Run("CREATE (:TestNode) RETURN 1 as n");
+        var result2 = txc.Run("CREATE (:TestNode) RETURN 2 as n");
+        var result3 = txc.Run("RETURN 10 / 0 as n");
+        var result4 = txc.Run("CREATE (:TestNode) RETURN 3 as n");
 
-            Observable.Concat(
-                    result1.Records(),
-                    result2.Records(),
-                    result3.Records(),
-                    result4.Records())
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnNext(0, MatchesRecord(new[] {"n"}, 1)),
-                    OnNext(0, MatchesRecord(new[] {"n"}, 2)),
-                    OnError<IRecord>(0, Matches<Exception>(exc => exc.Message.Should().Contain("/ by zero"))));
+        Observable.Concat(
+                result1.Records(),
+                result2.Records(),
+                result3.Records(),
+                result4.Records())
+            .WaitForCompletion()
+            .AssertEqual(
+                OnNext(0, MatchesRecord(new[] { "n" }, 1)),
+                OnNext(0, MatchesRecord(new[] { "n" }, 2)),
+                OnError<IRecord>(0, Matches<Exception>(exc => exc.Message.Should().Contain("/ by zero"))));
 
-            VerifyCanRollback(txc);
-        }
+        VerifyCanRollback(txc);
+    }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public async Task ShouldNotRunUntilSubscribed()
-        {
-            var txc = await session.BeginTransaction().SingleAsync();
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public async Task ShouldNotRunUntilSubscribed()
+    {
+        var txc = await session.BeginTransaction().SingleAsync();
 
-            var result1 = txc.Run("RETURN 1");
-            var result2 = txc.Run("RETURN 2");
-            var result3 = txc.Run("RETURN 3");
-            var result4 = txc.Run("RETURN 4");
+        var result1 = txc.Run("RETURN 1");
+        var result2 = txc.Run("RETURN 2");
+        var result3 = txc.Run("RETURN 3");
+        var result4 = txc.Run("RETURN 4");
 
-            Observable.Concat(
-                    result4.Records(),
-                    result3.Records(),
-                    result2.Records(),
-                    result1.Records())
-                .Select(r => r[0].As<int>())
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnNext(0, 4),
-                    OnNext(0, 3),
-                    OnNext(0, 2),
-                    OnNext(0, 1),
-                    OnCompleted<int>(0));
-        }
+        Observable.Concat(
+                result4.Records(),
+                result3.Records(),
+                result2.Records(),
+                result1.Records())
+            .Select(r => r[0].As<int>())
+            .WaitForCompletion()
+            .AssertEqual(
+                OnNext(0, 4),
+                OnNext(0, 3),
+                OnNext(0, 2),
+                OnNext(0, 1),
+                OnCompleted<int>(0));
+    }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public Task ShouldNotPropagateFailureIfNotExecutedAndCommitted()
-        {
-            return VerifyNotPropagateFailureIfNotExecuted(true);
-        }
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public Task ShouldNotPropagateFailureIfNotExecutedAndCommitted()
+    {
+        return VerifyNotPropagateFailureIfNotExecuted(true);
+    }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public Task ShouldNotPropagateFailureIfNotExecutedAndRollBacked()
-        {
-            return VerifyNotPropagateFailureIfNotExecuted(false);
-        }
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public Task ShouldNotPropagateFailureIfNotExecutedAndRollBacked()
+    {
+        return VerifyNotPropagateFailureIfNotExecuted(false);
+    }
 
-        private async Task VerifyNotPropagateFailureIfNotExecuted(bool commit)
-        {
-            var txc = await session.BeginTransaction().SingleAsync();
+    private async Task VerifyNotPropagateFailureIfNotExecuted(bool commit)
+    {
+        var txc = await session.BeginTransaction().SingleAsync();
 
-            txc.Run("RETURN ILLEGAL");
+        txc.Run("RETURN ILLEGAL");
 
-            VerifyCanCommitOrRollback(txc, commit);
-        }
+        VerifyCanCommitOrRollback(txc, commit);
+    }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public async Task ShouldNotPropagateRunFailureFromSummary()
-        {
-            var txc = await session.BeginTransaction().SingleAsync();
-            var result = txc.Run("RETURN Wrong");
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public async Task ShouldNotPropagateRunFailureFromSummary()
+    {
+        var txc = await session.BeginTransaction().SingleAsync();
+        var result = txc.Run("RETURN Wrong");
 
-            result.Records()
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnError<IRecord>(0, MatchesException<ClientException>()));
+        result.Records()
+            .WaitForCompletion()
+            .AssertEqual(OnError<IRecord>(0, MatchesException<ClientException>()));
 
-            result.Consume()
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnNext(0, Matches<IResultSummary>(x => x.Should().NotBeNull())),
-                    OnCompleted<IResultSummary>(0));
+        result.Consume()
+            .WaitForCompletion()
+            .AssertEqual(
+                OnNext(0, Matches<IResultSummary>(x => x.Should().NotBeNull())),
+                OnCompleted<IResultSummary>(0));
 
-            VerifyCanRollback(txc);
-        }
+        VerifyCanRollback(txc);
+    }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-        public void ShouldHandleNestedQueries()
-        {
-            const int size = 1024;
+    [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+    public void ShouldHandleNestedQueries()
+    {
+        const int size = 1024;
 
-            var messages = session.BeginTransaction()
-                .SelectMany(txc =>
-                    txc.Run("UNWIND range(1, $size) AS x RETURN x", new {size})
+        var messages = session.BeginTransaction()
+            .SelectMany(
+                txc =>
+                    txc.Run("UNWIND range(1, $size) AS x RETURN x", new { size })
                         .Records()
                         .Select(r => r[0].As<int>())
                         .Buffer(50)
-                        .SelectMany(x =>
-                            txc.Run("UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id", new {x}).Records())
+                        .SelectMany(
+                            x =>
+                                txc.Run("UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id", new { x }).Records())
                         .Select(r => r[0].As<int>())
                         .Concat(txc.Commit<int>())
                         .Catch((Exception exc) => txc.Rollback<int>().Concat(Observable.Throw<int>(exc))))
-                .WaitForCompletion()
-                .ToList();
+            .WaitForCompletion()
+            .ToList();
 
-            messages.Should()
-                .HaveCount(size + 1).And
-                .NotContain(n => n.Value.Kind == NotificationKind.OnError);
-        }
+        messages.Should()
+            .HaveCount(size + 1)
+            .And
+            .NotContain(n => n.Value.Kind == NotificationKind.OnError);
+    }
 
+    private static void VerifyCanCommit(IRxTransaction txc)
+    {
+        txc.Commit<int>()
+            .WaitForCompletion()
+            .AssertEqual(OnCompleted<int>(0));
+    }
 
-        private static void VerifyCanCommit(IRxTransaction txc)
+    private static void VerifyCanRollback(IRxTransaction txc)
+    {
+        txc.Rollback<int>()
+            .WaitForCompletion()
+            .AssertEqual(OnCompleted<int>(0));
+    }
+
+    private static void VerifyCanCommitOrRollback(IRxTransaction txc, bool commit)
+    {
+        if (commit)
         {
-            txc.Commit<int>()
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnCompleted<int>(0));
+            VerifyCanCommit(txc);
         }
-
-        private static void VerifyCanRollback(IRxTransaction txc)
+        else
         {
-            txc.Rollback<int>()
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnCompleted<int>(0));
+            VerifyCanRollback(txc);
         }
+    }
 
-        private static void VerifyCanCommitOrRollback(IRxTransaction txc, bool commit)
-        {
-            if (commit)
-            {
-                VerifyCanCommit(txc);
-            }
-            else
-            {
-                VerifyCanRollback(txc);
-            }
-        }
+    private static void VerifyCanCreateNode(IRxTransaction txc, int id)
+    {
+        txc.Run("CREATE (n:Node {id: $id}) RETURN n", new { id })
+            .Records()
+            .Select(r => r["n"].As<INode>())
+            .SingleAsync()
+            .WaitForCompletion()
+            .AssertEqual(
+                OnNext(
+                    0,
+                    Matches<INode>(
+                        node => node.Should()
+                            .BeEquivalentTo(
+                                new
+                                {
+                                    Labels = new[] { "Node" },
+                                    Properties = new Dictionary<string, object>
+                                    {
+                                        { "id", (long)id }
+                                    }
+                                }))),
+                OnCompleted<INode>(0));
+    }
 
-        private static void VerifyCanCreateNode(IRxTransaction txc, int id)
-        {
-            txc.Run("CREATE (n:Node {id: $id}) RETURN n", new {id})
-                .Records()
-                .Select(r => r["n"].As<INode>())
-                .SingleAsync()
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnNext(0, Matches<INode>(node => node.Should().BeEquivalentTo(new
-                    {
-                        Labels = new[] {"Node"},
-                        Properties = new Dictionary<string, object>
-                        {
-                            {"id", (long) id}
-                        }
-                    }))),
-                    OnCompleted<INode>(0));
-        }
+    private static void VerifyCanReturnOne(IRxTransaction txc)
+    {
+        txc.Run("RETURN 1")
+            .Records()
+            .Select(r => r[0].As<int>())
+            .WaitForCompletion()
+            .AssertEqual(
+                OnNext(0, 1),
+                OnCompleted<int>(0));
+    }
 
-        private static void VerifyCanReturnOne(IRxTransaction txc)
-        {
-            txc.Run("RETURN 1")
-                .Records()
-                .Select(r => r[0].As<int>())
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnNext(0, 1),
-                    OnCompleted<int>(0));
-        }
+    private static void VerifyFailsWithWrongQuery(IRxTransaction txc)
+    {
+        txc.Run("RETURN")
+            .Records()
+            .WaitForCompletion()
+            .AssertEqual(OnError<IRecord>(0, MatchesException<ClientException>(e => e.Code.Contains("SyntaxError"))));
+    }
 
-        private static void VerifyFailsWithWrongQuery(IRxTransaction txc)
+    private void VerifyCommittedOrRollbacked(bool commit)
+    {
+        if (commit)
         {
-            txc.Run("RETURN")
-                .Records()
-                .WaitForCompletion()
-                .AssertEqual(
-                    OnError<IRecord>(0, MatchesException<ClientException>(e => e.Code.Contains("SyntaxError"))));
+            CountNodes(1).Should().Be(2);
+            CountNodes(2).Should().Be(1);
         }
+        else
+        {
+            CountNodes(1).Should().Be(0);
+            CountNodes(2).Should().Be(0);
+        }
+    }
 
-        private void VerifyCommittedOrRollbacked(bool commit)
-        {
-            if (commit)
-            {
-                CountNodes(1).Should().Be(2);
-                CountNodes(2).Should().Be(1);
-            }
-            else
-            {
-                CountNodes(1).Should().Be(0);
-                CountNodes(2).Should().Be(0);
-            }
-        }
-
-        private int CountNodes(int id)
-        {
-            return NewSession()
-                .Run("MATCH (n:Node {id: $id}) RETURN count(n)", new {id})
-                .Records()
-                .Select(r => r[0].As<int>())
-                .SingleAsync()
-                .Wait();
-        }
+    private int CountNodes(int id)
+    {
+        return NewSession()
+            .Run("MATCH (n:Node {id: $id}) RETURN count(n)", new { id })
+            .Records()
+            .Select(r => r[0].As<int>())
+            .SingleAsync()
+            .Wait();
     }
 }

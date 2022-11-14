@@ -6,6 +6,11 @@ namespace Neo4j.Driver.Internal;
 
 internal interface IRoutingTableProtocol
 {
-    Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database, string impersonatedUser, Bookmarks bookmarks);
+    Task<IReadOnlyDictionary<string, object>> GetRoutingTable(
+        IConnection connection,
+        string database,
+        string impersonatedUser,
+        Bookmarks bookmarks);
 }
+
 

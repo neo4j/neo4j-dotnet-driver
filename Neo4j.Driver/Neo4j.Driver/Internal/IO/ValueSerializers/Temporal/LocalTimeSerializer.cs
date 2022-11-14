@@ -24,15 +24,15 @@ internal sealed class LocalTimeSerializer : IPackStreamSerializer
 {
     internal static readonly LocalTimeSerializer Instance = new();
 
-    public const byte StructType = (byte) 't';
+    public const byte StructType = (byte)'t';
     public const int StructSize = 1;
 
-    public IEnumerable<byte> ReadableStructs => new[] {StructType};
-#if NET6_0_OR_GREATER
-    public IEnumerable<Type> WritableTypes => new[] {typeof(LocalTime), typeof(TimeOnly)};
-#else
+    public IEnumerable<byte> ReadableStructs => new[] { StructType };
+    #if NET6_0_OR_GREATER
+    public IEnumerable<Type> WritableTypes => new[] { typeof(LocalTime), typeof(TimeOnly) };
+    #else
         public IEnumerable<Type> WritableTypes => new[] {typeof(LocalTime)};
-#endif
+    #endif
 
     public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
     {
@@ -45,23 +45,23 @@ internal sealed class LocalTimeSerializer : IPackStreamSerializer
 
     public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
     {
-#if NET6_0_OR_GREATER
+        #if NET6_0_OR_GREATER
         if (value is TimeOnly time)
         {
             WriteTimeOnly(writer, time);
             return;
         }
-#endif
+        #endif
         WriteLocalTime(writer, value);
     }
 
-#if NET6_0_OR_GREATER
+    #if NET6_0_OR_GREATER
     private void WriteTimeOnly(PackStreamWriter writer, TimeOnly time)
     {
         writer.WriteStructHeader(StructSize, StructType);
         writer.WriteLong(time.ToNanoOfDay());
     }
-#endif
+    #endif
 
     private static void WriteLocalTime(PackStreamWriter writer, object value)
     {

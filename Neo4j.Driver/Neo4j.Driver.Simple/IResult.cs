@@ -18,42 +18,39 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver;
+
+/// <summary>
+/// Provides access to the result as an <see cref="IEnumerable{T}" /> of <see cref="IRecord" />s. The records in
+/// the result is lazily retrieved and could only be visited once.
+/// </summary>
+/// <remarks> Calling <see cref="Enumerable.ToList{TSource}" /> will enumerate the entire stream.</remarks>
+public interface IResult : IEnumerable<IRecord>
 {
+    /// <summary>Gets the keys in the result.</summary>
+    IReadOnlyList<string> Keys { get; }
+
     /// <summary>
-    /// Provides access to the result as an <see cref="IEnumerable{T}"/> of <see cref="IRecord"/>s.
-    /// The records in the result is lazily retrieved and could only be visited once.
+    /// Get whether the underlying cursor is open to read records, a cursor will be considered open if
+    /// <see cref="Consume" /> has not been called.<br /> Attempting to read records from a closed cursor will throw
+    /// <see cref="ResultConsumedException" />.<br /> Cursors can also be closed if its session is disposed or its session runs
+    /// a query.
     /// </summary>
-    /// <remarks> Calling <see cref="Enumerable.ToList{TSource}"/> will enumerate the entire stream.</remarks>
-    public interface IResult : IEnumerable<IRecord>
-    {
-        /// <summary>
-        /// Gets the keys in the result.
-        /// </summary>
-        IReadOnlyList<string> Keys { get; }
+    bool IsOpen { get; }
 
-        /// <summary>
-        /// Investigate the next upcoming record without changing the current position in the result.
-        /// </summary>
-        /// <returns>The next record, or null if there is no next record.</returns>
-        IRecord Peek();
+    /// <summary>Investigate the next upcoming record without changing the current position in the result.</summary>
+    /// <returns>The next record, or null if there is no next record.</returns>
+    IRecord Peek();
 
-        /// <summary>
-        /// Consume the entire result, yielding a summary of it.
-        /// Calling this method exhausts the result.
-        /// If you want to obtain the summary without discarding the records,
-        /// use <see cref="Enumerable.ToList{TSource}"/> to buffer all unconsumed records into memory instead.
-        /// </summary>
-        /// <returns>A summary for running the query.</returns>
-        /// <remarks>This method could be called multiple times.
-        /// If all records in the records stream are already consumed, then this method will return the summary directly.</remarks>
-        IResultSummary Consume();
-
-        /// <summary>
-        /// Get whether the underlying cursor is open to read records, a cursor will be considered open if <see cref="Consume"/> has not been called.<br/>
-        /// Attempting to read records from a closed cursor will throw <see cref="ResultConsumedException"/>.<br/>
-        /// Cursors can also be closed if its session is disposed or its session runs a query.
-        /// </summary>
-        bool IsOpen { get; }
-    }
+    /// <summary>
+    /// Consume the entire result, yielding a summary of it. Calling this method exhausts the result. If you want to
+    /// obtain the summary without discarding the records, use <see cref="Enumerable.ToList{TSource}" /> to buffer all
+    /// unconsumed records into memory instead.
+    /// </summary>
+    /// <returns>A summary for running the query.</returns>
+    /// <remarks>
+    /// This method could be called multiple times. If all records in the records stream are already consumed, then
+    /// this method will return the summary directly.
+    /// </remarks>
+    IResultSummary Consume();
 }

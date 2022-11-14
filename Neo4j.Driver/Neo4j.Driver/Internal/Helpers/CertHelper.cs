@@ -37,8 +37,11 @@ internal static class CertHelper
 
     public static bool FindCertificate(X509Certificate2Collection store, X509Certificate certificate)
     {
-        var matches = store.Find(X509FindType.FindByThumbprint,
-            string.Concat(certificate.GetCertHash().Select(b => b.ToString("X2"))), false);
+        var matches = store.Find(
+            X509FindType.FindByThumbprint,
+            string.Concat(certificate.GetCertHash().Select(b => b.ToString("X2"))),
+            false);
+
         return matches.Count > 0;
     }
 
@@ -49,9 +52,8 @@ internal static class CertHelper
 
     public static string ChainStatusToText(X509ChainStatus status)
     {
-        return string.IsNullOrEmpty(status.StatusInformation) 
-            ? $"[{status.Status}]" 
+        return string.IsNullOrEmpty(status.StatusInformation)
+            ? $"[{status.Status}]"
             : $"[{status.Status}]: {status.StatusInformation}";
     }
-
 }

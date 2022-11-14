@@ -15,21 +15,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver
-{
-    /// <summary>
-    /// Control the level of encryption to require.
-    /// </summary>
-    public enum EncryptionLevel
-    {
-        /// <summary>
-        /// No encryption at all.
-        /// </summary>
-        None,
+namespace Neo4j.Driver;
 
-        /// <summary>
-        /// Always encrypted.
-        /// </summary>
-        Encrypted
-    }
+/// <summary>Control the level of encryption to require.</summary>
+public enum EncryptionLevel
+{
+    /// <summary>No encryption at all.</summary>
+    None,
+
+    /// <summary>Always encrypted.</summary>
+    Encrypted
 }

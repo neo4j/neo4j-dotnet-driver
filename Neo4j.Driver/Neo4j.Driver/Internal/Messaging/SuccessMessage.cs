@@ -16,7 +16,6 @@
 // limitations under the License.
 
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -32,15 +31,15 @@ internal sealed class SuccessMessage : IResponseMessage
 
     public IDictionary<string, object> Meta { get; }
 
-    public override string ToString()
-    {
-        return $"SUCCESS {Meta.ToContentString()}";
-    }
-
     public void Dispatch(IResponsePipeline pipeline)
     {
         pipeline.OnSuccess(Meta);
     }
 
     public IPackStreamSerializer Serializer => SuccessMessageSerializer.Instance;
+
+    public override string ToString()
+    {
+        return $"SUCCESS {Meta.ToContentString()}";
+    }
 }

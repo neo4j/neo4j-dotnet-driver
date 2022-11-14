@@ -3,67 +3,68 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
+namespace Neo4j.Driver.Tests.TestBackend;
 
-namespace Neo4j.Driver.Tests.TestBackend
+internal class TransactionRun : IProtocolObject
 {
-    internal class TransactionRun : IProtocolObject
+    public TransactionRunType data { get; set; } = new();
+
+    [JsonIgnore] private string ResultId { get; set; }
+
+    private Dictionary<string, object> ConvertParameters(Dictionary<string, CypherToNativeObject> source)
     {
-        public TransactionRunType data { get; set; } = new TransactionRunType();
-        [JsonIgnore]
-        private string ResultId { get; set; }
-
-        public class TransactionRunType
+        if (data.parameters == null)
         {
-            public string txId { get; set; }
-            public string cypher { get; set; }
-            [JsonProperty("params")]
-            [JsonConverter(typeof(QueryParameterConverter))]
-            public Dictionary<string, CypherToNativeObject> parameters { get; set; } = new Dictionary<string, CypherToNativeObject>();
+            return null;
         }
 
-        private Dictionary<string, object> ConvertParameters(Dictionary<string, CypherToNativeObject> source)
+        var newParams = new Dictionary<string, object>();
+
+        foreach (var element in source)
         {
-            if (data.parameters == null)
-                return null;
-
-            Dictionary<string, object> newParams = new Dictionary<string, object>();
-
-            foreach(KeyValuePair<string, CypherToNativeObject> element in source)
-            {
-                newParams.Add(element.Key, CypherToNative.Convert(element.Value));
-            }
-
-            return newParams;
+            newParams.Add(element.Key, CypherToNative.Convert(element.Value));
         }
 
-        public override async Task Process(Controller controller)
+        return newParams;
+    }
+
+    public override async Task Process(Controller controller)
+    {
+        try
         {
-            try
-            {
-                var transactionWrapper = controller.TransactionManager.FindTransaction(data.txId);
+            var transactionWrapper = controller.TransactionManager.FindTransaction(data.txId);
 
-                IResultCursor cursor = await transactionWrapper.Transaction
-                    .RunAsync(data.cypher, ConvertParameters(data.parameters)).ConfigureAwait(false);
+            var cursor = await transactionWrapper.Transaction
+                .RunAsync(data.cypher, ConvertParameters(data.parameters))
+                .ConfigureAwait(false);
 
-                ResultId = await transactionWrapper.ProcessResults(cursor);
-
-            }
-            catch (TimeZoneNotFoundException tz)
-            {
-                throw new DriverExceptionWrapper(tz);
-            }
+            ResultId = await transactionWrapper.ProcessResults(cursor);
         }
-
-        public override string Respond()
+        catch (TimeZoneNotFoundException tz)
         {
-            try
-            {
-                return ((Result)ObjManager.GetObject(ResultId)).Respond();
-            }
-            catch (TimeZoneNotFoundException tz)
-            {
-                throw new DriverExceptionWrapper(tz);
-            }
+            throw new DriverExceptionWrapper(tz);
         }
+    }
+
+    public override string Respond()
+    {
+        try
+        {
+            return ((Result)ObjManager.GetObject(ResultId)).Respond();
+        }
+        catch (TimeZoneNotFoundException tz)
+        {
+            throw new DriverExceptionWrapper(tz);
+        }
+    }
+
+    public class TransactionRunType
+    {
+        public string txId { get; set; }
+        public string cypher { get; set; }
+
+        [JsonProperty("params")]
+        [JsonConverter(typeof(QueryParameterConverter))]
+        public Dictionary<string, CypherToNativeObject> parameters { get; set; } = new();
     }
 }

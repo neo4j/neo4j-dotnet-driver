@@ -25,7 +25,7 @@ internal sealed class GoodbyeMessageSerializer : WriteOnlySerializer
 {
     internal static GoodbyeMessageSerializer Instance = new();
 
-    private static readonly Type[] Types = {typeof(GoodbyeMessage)};
+    private static readonly Type[] Types = { typeof(GoodbyeMessage) };
     public override IEnumerable<Type> WritableTypes => Types;
 
     public override void Serialize(PackStreamWriter writer, object _)

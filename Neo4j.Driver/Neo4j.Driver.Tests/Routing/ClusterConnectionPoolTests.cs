@@ -26,338 +26,347 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Routing;
-using Neo4j.Driver;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.Routing
+namespace Neo4j.Driver.Tests.Routing;
+
+public class ClusterConnectionPoolTests
 {
-    public class ClusterConnectionPoolTests
+    private static Uri ServerUri { get; } = new("neo4j://1234:5678");
+
+    public class Constructor
     {
-        public class Constructor
+        [Fact]
+        public void ShouldEnsureInitialRouter()
         {
-            [Fact]
-            public void ShouldEnsureInitialRouter()
-            {
-                var uri = new Uri("bolt://123:456");
-                var uris = new HashSet<Uri> {uri};
-                var connFactory = new Mock<IPooledConnectionFactory>().Object;
-                var poolSettings = new ConnectionPoolSettings(Config.Default);
-                var routingSetting = new RoutingSettings(uri, new Dictionary<string, string>(), Config.Default);
-                var pool = new ClusterConnectionPool(uris, connFactory, routingSetting, poolSettings, null);
+            var uri = new Uri("bolt://123:456");
+            var uris = new HashSet<Uri> { uri };
+            var connFactory = new Mock<IPooledConnectionFactory>().Object;
+            var poolSettings = new ConnectionPoolSettings(Config.Default);
+            var routingSetting = new RoutingSettings(uri, new Dictionary<string, string>(), Config.Default);
+            var pool = new ClusterConnectionPool(uris, connFactory, routingSetting, poolSettings, null);
 
-                pool.ToString().Should().Contain(
-                    "bolt://123:456/");
+            pool.ToString().Should().Contain("bolt://123:456/");
 
-                pool.ToString().Should().Contain(
-                    "_idleConnections: {[]}, _inUseConnections: {[]}");
-            }
+            pool.ToString().Should().Contain("_idleConnections: {[]}, _inUseConnections: {[]}");
+        }
+    }
+
+    public class AcquireMethod
+    {
+        [Fact]
+        public async Task ShouldNotCreateNewConnectionPoolIfUriDoesNotExist()
+        {
+            // Given
+            var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
+            var pool = new ClusterConnectionPool(new MockedPoolFactory(), connectionPoolDict);
+
+            connectionPoolDict.Count.Should().Be(0);
+
+            // When
+            var connection = await pool.AcquireAsync(ServerUri, AccessMode.Write, null, null, Bookmarks.Empty);
+
+            // Then
+            connection.Should().BeNull();
+            connectionPoolDict.Count.Should().Be(0);
         }
 
-        public class AcquireMethod
+        [Fact]
+        public async Task ShouldReturnExistingConnectionPoolIfUriAlreadyExist()
         {
-            [Fact]
-            public async Task ShouldNotCreateNewConnectionPoolIfUriDoesNotExist()
-            {
-                // Given
-                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
-                var pool = new ClusterConnectionPool(new MockedPoolFactory(), connectionPoolDict);
+            // Given
+            var mockedConnectionPool = new Mock<IConnectionPool>();
+            var mockedConnection = new Mock<IPooledConnection>();
+            mockedConnection.Setup(c => c.InitAsync(CancellationToken.None))
+                .Returns(Task.FromException(new InvalidOperationException("An exception")));
 
-                connectionPoolDict.Count.Should().Be(0);
-
-                // When
-                var connection = await pool.AcquireAsync(ServerUri, AccessMode.Write, null, null, Bookmarks.Empty);
-
-                // Then
-                connection.Should().BeNull();
-                connectionPoolDict.Count.Should().Be(0);
-            }
-
-            [Fact]
-            public async Task ShouldReturnExistingConnectionPoolIfUriAlreadyExist()
-            {
-                // Given
-                var mockedConnectionPool = new Mock<IConnectionPool>();
-                var mockedConnection = new Mock<IPooledConnection>();
-                mockedConnection.Setup(c => c.InitAsync(CancellationToken.None))
-                    .Returns(Task.FromException(new InvalidOperationException("An exception")));
-                mockedConnectionPool.Setup(x =>
+            mockedConnectionPool.Setup(
+                    x =>
                         x.AcquireAsync(It.IsAny<AccessMode>(), It.IsAny<string>(), null, It.IsAny<Bookmarks>()))
-                    .ReturnsAsync(mockedConnection.Object);
+                .ReturnsAsync(mockedConnection.Object);
 
-                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
-                connectionPoolDict.GetOrAdd(ServerUri, mockedConnectionPool.Object);
+            var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
+            connectionPoolDict.GetOrAdd(ServerUri, mockedConnectionPool.Object);
 
-                var pool = new ClusterConnectionPool(null, connectionPoolDict);
+            var pool = new ClusterConnectionPool(null, connectionPoolDict);
 
-                connectionPoolDict.Count.Should().Be(1);
-                connectionPoolDict.Keys.Single().Should().Be(ServerUri);
-                connectionPoolDict[ServerUri].Should().Be(mockedConnectionPool.Object);
+            connectionPoolDict.Count.Should().Be(1);
+            connectionPoolDict.Keys.Single().Should().Be(ServerUri);
+            connectionPoolDict[ServerUri].Should().Be(mockedConnectionPool.Object);
 
-                // When
-                var connection = await pool.AcquireAsync(ServerUri, AccessMode.Write, null, null, Bookmarks.Empty);
+            // When
+            var connection = await pool.AcquireAsync(ServerUri, AccessMode.Write, null, null, Bookmarks.Empty);
 
-                // Then
+            // Then
+            connection.Should().NotBeNull();
+            var exception = await Record.ExceptionAsync(() => connection.InitAsync());
+            mockedConnection.Verify(c => c.InitAsync(CancellationToken.None), Times.Once);
+            exception.Should().BeOfType<InvalidOperationException>();
+            exception.Message.Should().Be("An exception");
+        }
+
+        [Theory]
+        [InlineData("neo4j://localhost:7687", "neo4j://127.0.0.1:7687", false)]
+        [InlineData("neo4j://127.0.0.1:7687", "neo4j://127.0.0.1:7687", true)]
+        [InlineData("neo4j://localhost:7687", "neo4j://localhost:7687", true)]
+        [InlineData("neo4j://LOCALHOST:7687", "neo4j://localhost:7687", true)]
+        public async Task AddressMatchTest(string first, string second, bool expectedResult)
+        {
+            // Given
+            var mockedConnectionPool = new Mock<IConnectionPool>();
+            var mockedConnection = new Mock<IConnection>();
+            mockedConnectionPool.Setup(
+                    x =>
+                        x.AcquireAsync(
+                            It.IsAny<AccessMode>(),
+                            It.IsAny<string>(),
+                            It.IsAny<string>(),
+                            It.IsAny<Bookmarks>()))
+                .ReturnsAsync(mockedConnection.Object);
+
+            var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
+            connectionPoolDict.GetOrAdd(new Uri(first), mockedConnectionPool.Object);
+
+            var pool = new ClusterConnectionPool(null, connectionPoolDict);
+            var connection = await pool.AcquireAsync(new Uri(second), AccessMode.Write, null, null, Bookmarks.Empty);
+
+            if (expectedResult)
+            {
                 connection.Should().NotBeNull();
-                var exception = await Record.ExceptionAsync(() => connection.InitAsync());
-                mockedConnection.Verify(c => c.InitAsync(CancellationToken.None), Times.Once);
-                exception.Should().BeOfType<InvalidOperationException>();
-                exception.Message.Should().Be("An exception");
             }
-
-            [Theory]
-            [InlineData("neo4j://localhost:7687", "neo4j://127.0.0.1:7687", false)]
-            [InlineData("neo4j://127.0.0.1:7687", "neo4j://127.0.0.1:7687", true)]
-            [InlineData("neo4j://localhost:7687", "neo4j://localhost:7687", true)]
-            [InlineData("neo4j://LOCALHOST:7687", "neo4j://localhost:7687", true)]
-            public async Task AddressMatchTest(string first, string second, bool expectedResult)
+            else
             {
-                // Given
-                var mockedConnectionPool = new Mock<IConnectionPool>();
-                var mockedConnection = new Mock<IConnection>();
-                mockedConnectionPool.Setup(x =>
-                        x.AcquireAsync(It.IsAny<AccessMode>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Bookmarks>()))
-                    .ReturnsAsync(mockedConnection.Object);
-                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
-                connectionPoolDict.GetOrAdd(new Uri(first), mockedConnectionPool.Object);
-
-                var pool = new ClusterConnectionPool(null, connectionPoolDict);
-                var connection = await pool.AcquireAsync(new Uri(second), AccessMode.Write, null, null, Bookmarks.Empty);
-
-                if (expectedResult)
-                {
-                    connection.Should().NotBeNull();
-                }
-                else
-                {
-                    connection.Should().BeNull();
-                }
+                connection.Should().BeNull();
             }
         }
+    }
 
-        public class UpdateMethod
+    public class UpdateMethod
+    {
+        [Fact]
+        public async Task ShouldAddNewConnectionPoolIfDoesNotExist()
         {
-            [Fact]
-            public async Task ShouldAddNewConnectionPoolIfDoesNotExist()
-            {
-                // Given
-                var mockedConnectionPool = new Mock<IConnectionPool>();
-                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
-                var pool = new ClusterConnectionPool(new MockedPoolFactory(mockedConnectionPool.Object),
-                    connectionPoolDict);
+            // Given
+            var mockedConnectionPool = new Mock<IConnectionPool>();
+            var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
+            var pool = new ClusterConnectionPool(
+                new MockedPoolFactory(mockedConnectionPool.Object),
+                connectionPoolDict);
 
-                // When
-                await pool.UpdateAsync(new[] {ServerUri}, new Uri[0]);
+            // When
+            await pool.UpdateAsync(new[] { ServerUri }, new Uri[0]);
 
-                // Then
-                connectionPoolDict.Count.Should().Be(1);
-                connectionPoolDict.ContainsKey(ServerUri).Should().BeTrue();
-                connectionPoolDict[ServerUri].Should().Be(mockedConnectionPool.Object);
-            }
-
-            [Fact]
-            public async Task ShouldRemoveNewlyCreatedPoolIfCloseAlreadyCalled()
-            {
-                // Given
-                var mockedConnectionPool = new Mock<IConnectionPool>();
-                var mockedConnectionPoolDict = new Mock<ConcurrentDictionary<Uri, IConnectionPool>>();
-                var pool = new ClusterConnectionPool(new MockedPoolFactory(mockedConnectionPool.Object),
-                    mockedConnectionPoolDict.Object);
-
-                // When
-                await pool.CloseAsync();
-                var exception = await Record.ExceptionAsync(() => pool.UpdateAsync(new[] {ServerUri}, new Uri[0]));
-
-                // Then
-                mockedConnectionPool.Verify(x => x.DisposeAsync());
-
-                exception.Should().BeOfType<ObjectDisposedException>();
-                exception.Message.Should().Contain("Failed to create connections with server");
-            }
-
-            [Fact]
-            public async Task ShouldRemoveServerPoolIfNotPresentInNewServers()
-            {
-                // Given
-                var mockedConnectionPool = new Mock<IConnectionPool>();
-                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
-                connectionPoolDict.GetOrAdd(ServerUri, mockedConnectionPool.Object);
-                mockedConnectionPool.Setup(x => x.NumberOfInUseConnections)
-                    .Returns(0); // no need to explicitly config this
-                var pool = new ClusterConnectionPool(new MockedPoolFactory(mockedConnectionPool.Object),
-                    connectionPoolDict);
-
-                // When
-                await pool.UpdateAsync(new Uri[0], new[] {ServerUri});
-
-                // Then
-                mockedConnectionPool.Verify(x => x.DeactivateAsync(), Times.Once); // first deactivate then remove
-                connectionPoolDict.Count.Should().Be(0);
-            }
-
-            [Fact]
-            public async Task ShouldDeactivateServerPoolIfNotPresentInNewServersButHasInUseConnections()
-            {
-                // Given
-                var mockedConnectionPool = new Mock<IConnectionPool>();
-                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
-                connectionPoolDict.GetOrAdd(ServerUri, mockedConnectionPool.Object);
-                mockedConnectionPool.Setup(x => x.NumberOfInUseConnections).Returns(10); // non-zero number
-                var pool = new ClusterConnectionPool(new MockedPoolFactory(mockedConnectionPool.Object),
-                    connectionPoolDict);
-
-                // When
-                await pool.UpdateAsync(new Uri[0], new[] {ServerUri});
-
-                // Then
-                mockedConnectionPool.Verify(x => x.DeactivateAsync(), Times.Once);
-                connectionPoolDict.Count.Should().Be(1);
-            }
+            // Then
+            connectionPoolDict.Count.Should().Be(1);
+            connectionPoolDict.ContainsKey(ServerUri).Should().BeTrue();
+            connectionPoolDict[ServerUri].Should().Be(mockedConnectionPool.Object);
         }
 
-        public class AddMethod
+        [Fact]
+        public async Task ShouldRemoveNewlyCreatedPoolIfCloseAlreadyCalled()
         {
-            [Fact]
-            public async Task ShouldActivateIfExist()
-            {
-                // Given
-                var mockedConnectionPool = new Mock<IConnectionPool>();
-                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
-                connectionPoolDict.GetOrAdd(ServerUri, mockedConnectionPool.Object);
+            // Given
+            var mockedConnectionPool = new Mock<IConnectionPool>();
+            var mockedConnectionPoolDict = new Mock<ConcurrentDictionary<Uri, IConnectionPool>>();
+            var pool = new ClusterConnectionPool(
+                new MockedPoolFactory(mockedConnectionPool.Object),
+                mockedConnectionPoolDict.Object);
 
-                var pool = new ClusterConnectionPool(new MockedPoolFactory(), connectionPoolDict);
+            // When
+            await pool.CloseAsync();
+            var exception = await Record.ExceptionAsync(() => pool.UpdateAsync(new[] { ServerUri }, new Uri[0]));
 
-                // When
-                await pool.AddAsync(new[] {ServerUri});
+            // Then
+            mockedConnectionPool.Verify(x => x.DisposeAsync());
 
-                // Then
-                mockedConnectionPool.Verify(x => x.Activate(), Times.Once);
-                connectionPoolDict.Count.Should().Be(1);
-                connectionPoolDict.ContainsKey(ServerUri).Should().BeTrue();
-            }
-
-            [Fact]
-            public async Task ShouldAddIfNotFound()
-            {
-                // Given
-                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
-                var fakePoolMock = new Mock<IConnectionPool>();
-
-                var pool = new ClusterConnectionPool(new MockedPoolFactory(fakePoolMock.Object), connectionPoolDict);
-
-                // When
-                await pool.AddAsync(new[] {ServerUri});
-
-                // Then
-                connectionPoolDict.Count.Should().Be(1);
-                connectionPoolDict.ContainsKey(ServerUri).Should().BeTrue();
-                connectionPoolDict[ServerUri].Should().Be(fakePoolMock.Object);
-            }
+            exception.Should().BeOfType<ObjectDisposedException>();
+            exception.Message.Should().Contain("Failed to create connections with server");
         }
 
-        public class DeactivateMethod
+        [Fact]
+        public async Task ShouldRemoveServerPoolIfNotPresentInNewServers()
         {
-            [Fact]
-            public async Task ShouldDeactivateIfExist()
-            {
-                // Given
-                var mockedConnectionPool = new Mock<IConnectionPool>();
-                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
-                connectionPoolDict.GetOrAdd(ServerUri, mockedConnectionPool.Object);
+            // Given
+            var mockedConnectionPool = new Mock<IConnectionPool>();
+            var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
+            connectionPoolDict.GetOrAdd(ServerUri, mockedConnectionPool.Object);
+            mockedConnectionPool.Setup(x => x.NumberOfInUseConnections)
+                .Returns(0); // no need to explicitly config this
 
-                var pool = new ClusterConnectionPool(null, connectionPoolDict);
+            var pool = new ClusterConnectionPool(
+                new MockedPoolFactory(mockedConnectionPool.Object),
+                connectionPoolDict);
 
-                // When
-                await pool.DeactivateAsync(ServerUri);
+            // When
+            await pool.UpdateAsync(new Uri[0], new[] { ServerUri });
 
-                // Then
-                mockedConnectionPool.Verify(x => x.DeactivateAsync(), Times.Once);
-                connectionPoolDict.Count.Should().Be(1);
-                connectionPoolDict.ContainsKey(ServerUri).Should().BeTrue();
-            }
-
-            [Fact]
-            public async Task ShouldDeactivateNothingIfNotFound()
-            {
-                // Given
-                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
-
-                var pool = new ClusterConnectionPool(null, connectionPoolDict);
-
-                // When
-                await pool.DeactivateAsync(ServerUri);
-
-                // Then
-                connectionPoolDict.Count.Should().Be(0);
-                connectionPoolDict.ContainsKey(ServerUri).Should().BeFalse();
-            }
+            // Then
+            mockedConnectionPool.Verify(x => x.DeactivateAsync(), Times.Once); // first deactivate then remove
+            connectionPoolDict.Count.Should().Be(0);
         }
 
-        public class CloseMethod
+        [Fact]
+        public async Task ShouldDeactivateServerPoolIfNotPresentInNewServersButHasInUseConnections()
         {
-            [Fact]
-            public async Task ShouldRemoveAllAfterClose()
-            {
-                // Given
-                var mockedConnectionPool = new Mock<IConnectionPool>();
-                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
-                connectionPoolDict.GetOrAdd(ServerUri, mockedConnectionPool.Object);
+            // Given
+            var mockedConnectionPool = new Mock<IConnectionPool>();
+            var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
+            connectionPoolDict.GetOrAdd(ServerUri, mockedConnectionPool.Object);
+            mockedConnectionPool.Setup(x => x.NumberOfInUseConnections).Returns(10); // non-zero number
+            var pool = new ClusterConnectionPool(
+                new MockedPoolFactory(mockedConnectionPool.Object),
+                connectionPoolDict);
 
-                var pool = new ClusterConnectionPool(null, connectionPoolDict);
+            // When
+            await pool.UpdateAsync(new Uri[0], new[] { ServerUri });
 
-                await pool.DisposeAsync();
+            // Then
+            mockedConnectionPool.Verify(x => x.DeactivateAsync(), Times.Once);
+            connectionPoolDict.Count.Should().Be(1);
+        }
+    }
 
-                // Then
-                mockedConnectionPool.Verify(x => x.DisposeAsync(), Times.Once);
-                connectionPoolDict.Count.Should().Be(0);
-                connectionPoolDict.ContainsKey(ServerUri).Should().BeFalse();
-            }
+    public class AddMethod
+    {
+        [Fact]
+        public async Task ShouldActivateIfExist()
+        {
+            // Given
+            var mockedConnectionPool = new Mock<IConnectionPool>();
+            var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
+            connectionPoolDict.GetOrAdd(ServerUri, mockedConnectionPool.Object);
+
+            var pool = new ClusterConnectionPool(new MockedPoolFactory(), connectionPoolDict);
+
+            // When
+            await pool.AddAsync(new[] { ServerUri });
+
+            // Then
+            mockedConnectionPool.Verify(x => x.Activate(), Times.Once);
+            connectionPoolDict.Count.Should().Be(1);
+            connectionPoolDict.ContainsKey(ServerUri).Should().BeTrue();
         }
 
-        public class NumberOfInUseConnectionsMethod
+        [Fact]
+        public async Task ShouldAddIfNotFound()
         {
-            [Fact]
-            public void ShouldReturnZeroForMissingAddress()
-            {
-                var missingAddress = new Uri("localhost:1");
-                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
-                var pool = new ClusterConnectionPool(null, connectionPoolDict);
+            // Given
+            var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
+            var fakePoolMock = new Mock<IConnectionPool>();
 
-                var numberOfInUseConnections = pool.NumberOfInUseConnections(missingAddress);
+            var pool = new ClusterConnectionPool(new MockedPoolFactory(fakePoolMock.Object), connectionPoolDict);
 
-                numberOfInUseConnections.Should().Be(0);
-            }
+            // When
+            await pool.AddAsync(new[] { ServerUri });
 
-            [Fact]
-            public void ShouldReturnCorrectCountForPresentAddress()
-            {
-                var presentAddress = new Uri("localhost:1");
-                var mockedConnectionPool = new Mock<IConnectionPool>();
-                mockedConnectionPool.Setup(x => x.NumberOfInUseConnections).Returns(42);
-                var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
-                connectionPoolDict.TryAdd(presentAddress, mockedConnectionPool.Object);
-                var pool = new ClusterConnectionPool(null, connectionPoolDict);
+            // Then
+            connectionPoolDict.Count.Should().Be(1);
+            connectionPoolDict.ContainsKey(ServerUri).Should().BeTrue();
+            connectionPoolDict[ServerUri].Should().Be(fakePoolMock.Object);
+        }
+    }
 
-                var numberOfInUseConnections = pool.NumberOfInUseConnections(presentAddress);
+    public class DeactivateMethod
+    {
+        [Fact]
+        public async Task ShouldDeactivateIfExist()
+        {
+            // Given
+            var mockedConnectionPool = new Mock<IConnectionPool>();
+            var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
+            connectionPoolDict.GetOrAdd(ServerUri, mockedConnectionPool.Object);
 
-                numberOfInUseConnections.Should().Be(42);
-            }
+            var pool = new ClusterConnectionPool(null, connectionPoolDict);
+
+            // When
+            await pool.DeactivateAsync(ServerUri);
+
+            // Then
+            mockedConnectionPool.Verify(x => x.DeactivateAsync(), Times.Once);
+            connectionPoolDict.Count.Should().Be(1);
+            connectionPoolDict.ContainsKey(ServerUri).Should().BeTrue();
         }
 
-        private static Uri ServerUri { get; } = new Uri("neo4j://1234:5678");
-
-        private class MockedPoolFactory : IConnectionPoolFactory
+        [Fact]
+        public async Task ShouldDeactivateNothingIfNotFound()
         {
-            private readonly IConnectionPool _pool;
+            // Given
+            var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
 
-            public MockedPoolFactory(IConnectionPool pool = null)
-            {
-                _pool = pool ?? new Mock<IConnectionPool>().Object;
-            }
+            var pool = new ClusterConnectionPool(null, connectionPoolDict);
 
-            public IConnectionPool Create(Uri uri)
-            {
-                return _pool;
-            }
+            // When
+            await pool.DeactivateAsync(ServerUri);
+
+            // Then
+            connectionPoolDict.Count.Should().Be(0);
+            connectionPoolDict.ContainsKey(ServerUri).Should().BeFalse();
+        }
+    }
+
+    public class CloseMethod
+    {
+        [Fact]
+        public async Task ShouldRemoveAllAfterClose()
+        {
+            // Given
+            var mockedConnectionPool = new Mock<IConnectionPool>();
+            var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
+            connectionPoolDict.GetOrAdd(ServerUri, mockedConnectionPool.Object);
+
+            var pool = new ClusterConnectionPool(null, connectionPoolDict);
+
+            await pool.DisposeAsync();
+
+            // Then
+            mockedConnectionPool.Verify(x => x.DisposeAsync(), Times.Once);
+            connectionPoolDict.Count.Should().Be(0);
+            connectionPoolDict.ContainsKey(ServerUri).Should().BeFalse();
+        }
+    }
+
+    public class NumberOfInUseConnectionsMethod
+    {
+        [Fact]
+        public void ShouldReturnZeroForMissingAddress()
+        {
+            var missingAddress = new Uri("localhost:1");
+            var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
+            var pool = new ClusterConnectionPool(null, connectionPoolDict);
+
+            var numberOfInUseConnections = pool.NumberOfInUseConnections(missingAddress);
+
+            numberOfInUseConnections.Should().Be(0);
+        }
+
+        [Fact]
+        public void ShouldReturnCorrectCountForPresentAddress()
+        {
+            var presentAddress = new Uri("localhost:1");
+            var mockedConnectionPool = new Mock<IConnectionPool>();
+            mockedConnectionPool.Setup(x => x.NumberOfInUseConnections).Returns(42);
+            var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
+            connectionPoolDict.TryAdd(presentAddress, mockedConnectionPool.Object);
+            var pool = new ClusterConnectionPool(null, connectionPoolDict);
+
+            var numberOfInUseConnections = pool.NumberOfInUseConnections(presentAddress);
+
+            numberOfInUseConnections.Should().Be(42);
+        }
+    }
+
+    private class MockedPoolFactory : IConnectionPoolFactory
+    {
+        private readonly IConnectionPool _pool;
+
+        public MockedPoolFactory(IConnectionPool pool = null)
+        {
+            _pool = pool ?? new Mock<IConnectionPool>().Object;
+        }
+
+        public IConnectionPool Create(Uri uri)
+        {
+            return _pool;
         }
     }
 }

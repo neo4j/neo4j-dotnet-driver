@@ -25,21 +25,26 @@ namespace Neo4j.Driver.Internal;
 
 internal class DefaultBookmarkManager : IBookmarkManager
 {
-    private Dictionary<string, HashSet<string>> _bookmarkSets;
     private readonly Func<string, CancellationToken, Task<string[]>> _bookmarkSupplier;
-    private readonly Func<string, string[], CancellationToken, Task> _onBookmarks;
     private readonly SemaphoreSlim _lock;
+    private readonly Func<string, string[], CancellationToken, Task> _onBookmarks;
+    private Dictionary<string, HashSet<string>> _bookmarkSets;
 
     public DefaultBookmarkManager(BookmarkManagerConfig config)
     {
-        _bookmarkSets = config.InitialBookmarks?.ToDictionary(x => x.Key, x => new HashSet<string>(x.Value)) 
-                        ?? new Dictionary<string, HashSet<string>>();
+        _bookmarkSets = config.InitialBookmarks?.ToDictionary(x => x.Key, x => new HashSet<string>(x.Value)) ??
+            new Dictionary<string, HashSet<string>>();
+
         _bookmarkSupplier = config.BookmarkSupplierAsync;
         _onBookmarks = config.NotifyBookmarksAsync;
         _lock = new SemaphoreSlim(1, 1);
     }
 
-    public async Task UpdateBookmarksAsync(string database, string[] previousBookmarks, string[] newBookmarks, CancellationToken cancellationToken = default)
+    public async Task UpdateBookmarksAsync(
+        string database,
+        string[] previousBookmarks,
+        string[] newBookmarks,
+        CancellationToken cancellationToken = default)
     {
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
@@ -48,21 +53,29 @@ internal class DefaultBookmarkManager : IBookmarkManager
             {
                 previousBookmarks ??= Array.Empty<string>();
                 foreach (var bookmarkToRemove in previousBookmarks)
+                {
                     set.Remove(bookmarkToRemove);
+                }
 
                 foreach (var newBookmark in newBookmarks)
+                {
                     set.Add(newBookmark);
+                }
             }
             else
+            {
                 _bookmarkSets.Add(database, new HashSet<string>(newBookmarks));
+            }
         }
         finally
         {
             _lock.Release();
         }
-        
-        if(_onBookmarks != null) 
+
+        if (_onBookmarks != null)
+        {
             await _onBookmarks.Invoke(database, newBookmarks, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     public async Task<string[]> GetBookmarksAsync(string database, CancellationToken cancellationToken = default)
@@ -75,7 +88,9 @@ internal class DefaultBookmarkManager : IBookmarkManager
             set = BookmarksFor(database);
 
             if (_bookmarkSupplier == null)
+            {
                 return set.ToArray();
+            }
         }
         finally
         {
@@ -86,11 +101,6 @@ internal class DefaultBookmarkManager : IBookmarkManager
 
         return set.Union(supplied).ToArray();
     }
-
-    private HashSet<string> BookmarksFor(string database) =>
-        _bookmarkSets.TryGetValue(database, out var dbBookmarks) 
-            ? dbBookmarks
-            : new HashSet<string>();
 
     public async Task<string[]> GetAllBookmarksAsync(CancellationToken cancellationToken = default)
     {
@@ -103,7 +113,9 @@ internal class DefaultBookmarkManager : IBookmarkManager
             var keys = _bookmarkSets.Keys.ToArray();
 
             foreach (var key in keys)
+            {
                 set.UnionWith(BookmarksFor(key));
+            }
         }
         finally
         {
@@ -111,7 +123,9 @@ internal class DefaultBookmarkManager : IBookmarkManager
         }
 
         if (_bookmarkSupplier == null)
+        {
             return set.ToArray();
+        }
 
         set.UnionWith(await _bookmarkSupplier(null, cancellationToken).ConfigureAwait(false));
 
@@ -127,7 +141,9 @@ internal class DefaultBookmarkManager : IBookmarkManager
             if (databases != null && databases.Any())
             {
                 foreach (var database in databases)
+                {
                     _bookmarkSets.Remove(database);
+                }
             }
             else
             {
@@ -138,5 +154,12 @@ internal class DefaultBookmarkManager : IBookmarkManager
         {
             _lock.Release();
         }
+    }
+
+    private HashSet<string> BookmarksFor(string database)
+    {
+        return _bookmarkSets.TryGetValue(database, out var dbBookmarks)
+            ? dbBookmarks
+            : new HashSet<string>();
     }
 }

@@ -32,8 +32,11 @@ internal class ConnectionPoolFactory : IConnectionPoolFactory
     private readonly ConnectionPoolSettings _poolSettings;
     private readonly IDictionary<string, string> _routingContext;
 
-    public ConnectionPoolFactory(IPooledConnectionFactory connectionFactory, ConnectionPoolSettings poolSettings,
-        IDictionary<string, string> routingContext, ILogger logger)
+    public ConnectionPoolFactory(
+        IPooledConnectionFactory connectionFactory,
+        ConnectionPoolSettings poolSettings,
+        IDictionary<string, string> routingContext,
+        ILogger logger)
     {
         _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
         _poolSettings = poolSettings ?? throw new ArgumentNullException(nameof(poolSettings));

@@ -38,7 +38,9 @@ internal class ResultCursor : IInternalResultCursor
     public Task<string[]> KeysAsync()
     {
         if (_keys == null)
+        {
             _keys = _resultStream.GetKeysAsync();
+        }
 
         return _keys;
     }
@@ -52,7 +54,10 @@ internal class ResultCursor : IInternalResultCursor
         }
         else
         {
-            if (_summary.IsFaulted) _summary = _resultStream.ConsumeAsync();
+            if (_summary.IsFaulted)
+            {
+                _summary = _resultStream.ConsumeAsync();
+            }
         }
 
         return _summary;
@@ -60,9 +65,15 @@ internal class ResultCursor : IInternalResultCursor
 
     public async Task<IRecord> PeekAsync()
     {
-        if (_peeked != null) return _peeked;
+        if (_peeked != null)
+        {
+            return _peeked;
+        }
 
-        if (_atEnd) return null;
+        if (_atEnd)
+        {
+            return null;
+        }
 
         _peeked = await _resultStream.NextRecordAsync().ConfigureAwait(false);
         if (_peeked == null)
@@ -90,7 +101,10 @@ internal class ResultCursor : IInternalResultCursor
             }
             finally
             {
-                if (_current == null) _atEnd = true;
+                if (_current == null)
+                {
+                    _atEnd = true;
+                }
             }
         }
 
@@ -102,7 +116,9 @@ internal class ResultCursor : IInternalResultCursor
         get
         {
             if (!_atEnd && _current == null && _peeked == null)
+            {
                 throw new InvalidOperationException("Tried to access Current without calling FetchAsync.");
+            }
 
             return _current;
         }

@@ -23,8 +23,8 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 internal sealed class SystemTimeSpanSerializer : WriteOnlySerializer
 {
     internal static readonly SystemTimeSpanSerializer Instance = new();
-    
-    public override IEnumerable<Type> WritableTypes => new[] {typeof(TimeSpan)};
+
+    public override IEnumerable<Type> WritableTypes => new[] { typeof(TimeSpan) };
 
     public override void Serialize(PackStreamWriter writer, object value)
     {

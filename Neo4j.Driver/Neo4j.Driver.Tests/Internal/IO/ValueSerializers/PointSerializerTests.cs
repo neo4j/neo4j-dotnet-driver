@@ -18,94 +18,93 @@
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers
+namespace Neo4j.Driver.Internal.IO.ValueSerializers;
+
+public class PointSerializerTests : PackStreamSerializerTests
 {
-    public class PointSerializerTests : PackStreamSerializerTests
+    internal override IPackStreamSerializer SerializerUnderTest => new PointSerializer();
+
+    [Fact]
+    public void ShouldSerializePoint2D()
     {
-        internal override IPackStreamSerializer SerializerUnderTest => new PointSerializer();
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
 
-        [Fact]
-        public void ShouldSerializePoint2D()
-        {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+        writer.Write(new Point(7203, 51.5044585, -0.105658));
 
-            writer.Write(new Point(7203, 51.5044585, -0.105658));
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
 
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var reader = readerMachine.Reader();
+        reader.PeekNextType().Should().Be(PackStreamType.Struct);
+        reader.ReadStructHeader().Should().Be(3);
+        reader.ReadStructSignature().Should().Be((byte)'X');
+        reader.Read().Should().Be(7203L);
+        reader.Read().Should().Be(51.5044585);
+        reader.Read().Should().Be(-0.105658);
+    }
 
-            reader.PeekNextType().Should().Be(PackStreamType.Struct);
-            reader.ReadStructHeader().Should().Be(3);
-            reader.ReadStructSignature().Should().Be((byte) 'X');
-            reader.Read().Should().Be(7203L);
-            reader.Read().Should().Be(51.5044585);
-            reader.Read().Should().Be(-0.105658);
-        }
+    [Fact]
+    public void ShouldSerializePoint3D()
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
 
-        [Fact]
-        public void ShouldSerializePoint3D()
-        {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+        writer.Write(new Point(7203, 51.5044585, -0.105658, 35.25));
 
-            writer.Write(new Point(7203, 51.5044585, -0.105658, 35.25));
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
 
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var reader = readerMachine.Reader();
+        reader.PeekNextType().Should().Be(PackStreamType.Struct);
+        reader.ReadStructHeader().Should().Be(4);
+        reader.ReadStructSignature().Should().Be((byte)'Y');
+        reader.Read().Should().Be(7203L);
+        reader.Read().Should().Be(51.5044585);
+        reader.Read().Should().Be(-0.105658);
+        reader.Read().Should().Be(35.25);
+    }
 
-            reader.PeekNextType().Should().Be(PackStreamType.Struct);
-            reader.ReadStructHeader().Should().Be(4);
-            reader.ReadStructSignature().Should().Be((byte) 'Y');
-            reader.Read().Should().Be(7203L);
-            reader.Read().Should().Be(51.5044585);
-            reader.Read().Should().Be(-0.105658);
-            reader.Read().Should().Be(35.25);
-        }
+    [Fact]
+    public void ShouldDeserializePoint2D()
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
 
-        [Fact]
-        public void ShouldDeserializePoint2D()
-        {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+        writer.WriteStructHeader(PointSerializer.Point2DStructSize, PointSerializer.Point2DStructType);
+        writer.Write(7203);
+        writer.Write(51.5044585);
+        writer.Write(-0.105658);
 
-            writer.WriteStructHeader(PointSerializer.Point2DStructSize, PointSerializer.Point2DStructType);
-            writer.Write(7203);
-            writer.Write(51.5044585);
-            writer.Write(-0.105658);
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
+        var value = reader.Read();
 
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var reader = readerMachine.Reader();
-            var value = reader.Read();
+        value.Should().NotBeNull();
+        value.Should().BeOfType<Point>().Which.SrId.Should().Be(7203);
+        value.Should().BeOfType<Point>().Which.X.Should().Be(51.5044585);
+        value.Should().BeOfType<Point>().Which.Y.Should().Be(-0.105658);
+        value.Should().BeOfType<Point>().Which.Z.Should().Be(double.NaN);
+    }
 
-            value.Should().NotBeNull();
-            value.Should().BeOfType<Point>().Which.SrId.Should().Be(7203);
-            value.Should().BeOfType<Point>().Which.X.Should().Be(51.5044585);
-            value.Should().BeOfType<Point>().Which.Y.Should().Be(-0.105658);
-            value.Should().BeOfType<Point>().Which.Z.Should().Be(double.NaN);
-        }
+    [Fact]
+    public void ShouldDeserializePoint3D()
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer();
 
-        [Fact]
-        public void ShouldDeserializePoint3D()
-        {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+        writer.WriteStructHeader(PointSerializer.Point3DStructSize, PointSerializer.Point3DStructType);
+        writer.Write(7203);
+        writer.Write(51.5044585);
+        writer.Write(-0.105658);
+        writer.Write(35.25);
 
-            writer.WriteStructHeader(PointSerializer.Point3DStructSize, PointSerializer.Point3DStructType);
-            writer.Write(7203);
-            writer.Write(51.5044585);
-            writer.Write(-0.105658);
-            writer.Write(35.25);
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
+        var value = reader.Read();
 
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var reader = readerMachine.Reader();
-            var value = reader.Read();
-
-            value.Should().NotBeNull();
-            value.Should().BeOfType<Point>().Which.SrId.Should().Be(7203);
-            value.Should().BeOfType<Point>().Which.X.Should().Be(51.5044585);
-            value.Should().BeOfType<Point>().Which.Y.Should().Be(-0.105658);
-            value.Should().BeOfType<Point>().Which.Z.Should().Be(35.25);
-        }
+        value.Should().NotBeNull();
+        value.Should().BeOfType<Point>().Which.SrId.Should().Be(7203);
+        value.Should().BeOfType<Point>().Which.X.Should().Be(51.5044585);
+        value.Should().BeOfType<Point>().Which.Y.Should().Be(-0.105658);
+        value.Should().BeOfType<Point>().Which.Z.Should().Be(35.25);
     }
 }

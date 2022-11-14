@@ -18,18 +18,17 @@
 using System.Net;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.Connector
-{
-    internal class SystemHostResolver: IHostResolver
-    {
-        public IPAddress[] Resolve(string hostname)
-        {
-            return Dns.GetHostAddressesAsync(hostname).GetAwaiter().GetResult();
-        }
+namespace Neo4j.Driver.Internal.Connector;
 
-        public Task<IPAddress[]> ResolveAsync(string hostname)
-        {
-            return Dns.GetHostAddressesAsync(hostname);
-        }
+internal class SystemHostResolver : IHostResolver
+{
+    public IPAddress[] Resolve(string hostname)
+    {
+        return Dns.GetHostAddressesAsync(hostname).GetAwaiter().GetResult();
+    }
+
+    public Task<IPAddress[]> ResolveAsync(string hostname)
+    {
+        return Dns.GetHostAddressesAsync(hostname);
     }
 }

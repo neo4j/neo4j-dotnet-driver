@@ -15,19 +15,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal sealed class ConnectionPoolStatus
 {
-    internal sealed class ConnectionPoolStatus
+    public static readonly ConnectionPoolStatus Active = new(PoolStatus.Open);
+    public static readonly ConnectionPoolStatus Closed = new(PoolStatus.Closed);
+    public static readonly ConnectionPoolStatus Inactive = new(PoolStatus.Inactive);
+
+    private readonly PoolStatus _code;
+
+    private ConnectionPoolStatus(PoolStatus code)
     {
-        public static readonly ConnectionPoolStatus Active = new ConnectionPoolStatus(PoolStatus.Open);
-        public static readonly ConnectionPoolStatus Closed = new ConnectionPoolStatus(PoolStatus.Closed);
-        public static readonly ConnectionPoolStatus Inactive = new ConnectionPoolStatus(PoolStatus.Inactive);
-
-        private readonly PoolStatus _code;
-
-        private ConnectionPoolStatus(PoolStatus code)
-        {
-            _code = code;
-        }
+        _code = code;
     }
 }

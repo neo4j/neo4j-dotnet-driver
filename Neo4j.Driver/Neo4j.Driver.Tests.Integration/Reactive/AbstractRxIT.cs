@@ -16,66 +16,65 @@
 // limitations under the License.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reactive;
-using Microsoft.Reactive.Testing;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Reactive;
 using Xunit;
 using Xunit.Abstractions;
-using static Microsoft.Reactive.Testing.ReactiveAssert;
-using static Neo4j.Driver.Reactive.Utils;
 
-namespace Neo4j.Driver.IntegrationTests.Reactive
+namespace Neo4j.Driver.IntegrationTests.Reactive;
+
+[Collection(SAIntegrationCollection.CollectionName)]
+public abstract class AbstractRxIT : AbstractRxTest, IDisposable
 {
-    [Collection(SAIntegrationCollection.CollectionName)]
-    public abstract class AbstractRxIT : AbstractRxTest, IDisposable
+    private readonly List<IRxSession> _sessions = new();
+    private bool _disposed;
+
+    protected AbstractRxIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+        : base(output)
     {
-        private bool _disposed = false;
-        private readonly List<IRxSession> _sessions = new List<IRxSession>();
+        Server = fixture.StandAloneSharedInstance;
+        ServerEndPoint = Server.BoltUri;
+        AuthToken = Server.AuthToken;
+    }
 
-        protected IStandAlone Server { get; }
-        protected Uri ServerEndPoint { get; }
-        protected IAuthToken AuthToken { get; }
+    protected IStandAlone Server { get; }
+    protected Uri ServerEndPoint { get; }
+    protected IAuthToken AuthToken { get; }
 
-        ~AbstractRxIT() => Dispose(false);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
-        protected AbstractRxIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
-            : base(output)
+    ~AbstractRxIT()
+    {
+        Dispose(false);
+    }
+
+    protected IRxSession NewSession()
+    {
+        var session = Server.Driver.RxSession();
+        _sessions.Add(session);
+        return session;
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed)
         {
-            Server = fixture.StandAloneSharedInstance;
-            ServerEndPoint = Server.BoltUri;
-            AuthToken = Server.AuthToken;
+            return;
         }
 
-        protected IRxSession NewSession()
+        if (disposing)
         {
-            var session = Server.Driver.RxSession();
-            _sessions.Add(session);
-            return session;
+            _sessions.ForEach(x => x.Close<Unit>().WaitForCompletion());
+            _sessions.Clear();
         }
 
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-		{
-            if (_disposed)
-                return;
-
-            if(disposing)
-			{  
-                _sessions.ForEach(x => x.Close<Unit>().WaitForCompletion());
-                _sessions.Clear();
-            }
-
-            //Mark as disposed
-            _disposed = true;
-        }
+        //Mark as disposed
+        _disposed = true;
     }
 }

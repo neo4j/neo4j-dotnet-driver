@@ -19,70 +19,70 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata
+namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
+
+public class HasMoreCollectorTests
 {
-    public class HasMoreCollectorTests
+    private const string Key = HasMoreCollector.HasMoreKey;
+
+    internal static KeyValuePair<string, object> TestMetadata => new(Key, true);
+
+    internal static bool TestMetadataCollected => true;
+
+    [Fact]
+    public void ShouldCollectFalseIfMetadataIsNull()
     {
-        private const string Key = HasMoreCollector.HasMoreKey;
+        var collector = new HasMoreCollector();
 
-        [Fact]
-        public void ShouldCollectFalseIfMetadataIsNull()
-        {
-            var collector = new HasMoreCollector();
+        collector.Collect(null);
 
-            collector.Collect(null);
+        collector.Collected.Should().BeFalse();
+    }
 
-            collector.Collected.Should().BeFalse();
-        }
+    [Fact]
+    public void ShouldCollectFalseIfNoValueIsGiven()
+    {
+        var collector = new HasMoreCollector();
 
-        [Fact]
-        public void ShouldCollectFalseIfNoValueIsGiven()
-        {
-            var collector = new HasMoreCollector();
+        collector.Collect(new Dictionary<string, object>());
 
-            collector.Collect(new Dictionary<string, object>());
+        collector.Collected.Should().BeFalse();
+    }
 
-            collector.Collected.Should().BeFalse();
-        }
+    [Fact]
+    public void ShouldThrowIfValueIsOfWrongType()
+    {
+        var metadata = new Dictionary<string, object> { { Key, "some string" } };
+        var collector = new HasMoreCollector();
 
-        [Fact]
-        public void ShouldThrowIfValueIsOfWrongType()
-        {
-            var metadata = new Dictionary<string, object> {{Key, "some string"}};
-            var collector = new HasMoreCollector();
+        var ex = Record.Exception(() => collector.Collect(metadata));
 
-            var ex = Record.Exception(() => collector.Collect(metadata));
+        ex.Should()
+            .BeOfType<ProtocolException>()
+            .Which
+            .Message.Should()
+            .Contain($"Expected '{Key}' metadata to be of type 'Boolean', but got 'String'.");
+    }
 
-            ex.Should().BeOfType<ProtocolException>().Which
-                .Message.Should()
-                .Contain($"Expected '{Key}' metadata to be of type 'Boolean', but got 'String'.");
-        }
+    [Fact]
+    public void ShouldCollect()
+    {
+        var metadata = new Dictionary<string, object> { { Key, true } };
+        var collector = new HasMoreCollector();
 
-        [Fact]
-        public void ShouldCollect()
-        {
-            var metadata = new Dictionary<string, object> {{Key, true}};
-            var collector = new HasMoreCollector();
+        collector.Collect(metadata);
 
-            collector.Collect(metadata);
+        collector.Collected.Should().BeTrue();
+    }
 
-            collector.Collected.Should().BeTrue();
-        }
+    [Fact]
+    public void ShouldReturnSameCollected()
+    {
+        var metadata = new Dictionary<string, object> { { Key, true } };
+        var collector = new HasMoreCollector();
 
-        [Fact]
-        public void ShouldReturnSameCollected()
-        {
-            var metadata = new Dictionary<string, object> {{Key, true}};
-            var collector = new HasMoreCollector();
+        collector.Collect(metadata);
 
-            collector.Collect(metadata);
-
-            ((IMetadataCollector) collector).Collected.Should().Be(collector.Collected);
-        }
-
-        internal static KeyValuePair<string, object> TestMetadata =>
-            new KeyValuePair<string, object>(Key, true);
-
-        internal static bool TestMetadataCollected => true;
+        ((IMetadataCollector)collector).Collected.Should().Be(collector.Collected);
     }
 }

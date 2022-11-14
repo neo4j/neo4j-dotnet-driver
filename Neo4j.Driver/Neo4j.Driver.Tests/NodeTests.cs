@@ -21,37 +21,38 @@ using Moq;
 using Neo4j.Driver.Internal.Types;
 using Xunit;
 
-namespace Neo4j.Driver.Tests
+namespace Neo4j.Driver.Tests;
+
+public class NodeTests
 {
-    public class NodeTests
+    [Fact]
+    public void ShouldEqualIfIdEquals()
     {
-        [Fact]
-        public void ShouldEqualIfIdEquals()
-        {
-            var node1 = new Node(123, new[] { "buibui" }, null);
-            var node2 = new Node(123, new[] { "lala" }, null);
+        var node1 = new Node(123, new[] { "buibui" }, null);
+        var node2 = new Node(123, new[] { "lala" }, null);
 
-            node1.Equals(node2).Should().BeTrue();
-            Equals(node1, node2).Should().BeTrue();
+        node1.Equals(node2).Should().BeTrue();
+        Equals(node1, node2).Should().BeTrue();
 
-            Dictionary<Node, int> nodes = new Dictionary<Node, int>();
-            nodes.Add(node1, 123);
+        var nodes = new Dictionary<Node, int>();
+        nodes.Add(node1, 123);
 
-            nodes.TryGetValue(node2, out var value).Should().BeTrue();
-            value.Should().Be(123);
+        nodes.TryGetValue(node2, out var value).Should().BeTrue();
+        value.Should().Be(123);
 
-            var node3Mock = new Mock<INode>();
-            node3Mock.Setup(f => f.Id).Returns(123);
-            node3Mock.Setup(f => f.ElementId).Returns("123");
-            node3Mock.Setup(f => f.Labels)
-                .Returns(new[]
+        var node3Mock = new Mock<INode>();
+        node3Mock.Setup(f => f.Id).Returns(123);
+        node3Mock.Setup(f => f.ElementId).Returns("123");
+        node3Mock.Setup(f => f.Labels)
+            .Returns(
+                new[]
                 {
                     "same interface, different implementation"
                 });
-            var node3 = node3Mock.Object;
 
-            node1.Equals(node3).Should().BeTrue();
-            Equals(node1, node3).Should().BeTrue();
-        }
+        var node3 = node3Mock.Object;
+
+        node1.Equals(node3).Should().BeTrue();
+        Equals(node1, node3).Should().BeTrue();
     }
 }

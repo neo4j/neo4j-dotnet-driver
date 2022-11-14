@@ -19,71 +19,74 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata
+namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
+
+public class FieldsCollectorTests
 {
-    public class FieldsCollectorTests
+    private const string Key = FieldsCollector.FieldsKey;
+
+    internal static KeyValuePair<string, object> TestMetadata =>
+        new(Key, new List<object> { "field-1", "field-2", "field-3", "field-4" });
+
+    internal static string[] TestMetadataCollected => new[] { "field-1", "field-2", "field-3", "field-4" };
+
+    [Fact]
+    public void ShouldNotCollectIfMetadataIsNull()
     {
-        private const string Key = FieldsCollector.FieldsKey;
+        var collector = new FieldsCollector();
 
-        [Fact]
-        public void ShouldNotCollectIfMetadataIsNull()
-        {
-            var collector = new FieldsCollector();
+        collector.Collect(null);
 
-            collector.Collect(null);
+        collector.Collected.Should().BeNull();
+    }
 
-            collector.Collected.Should().BeNull();
-        }
+    [Fact]
+    public void ShouldNotCollectIfNoValueIsGiven()
+    {
+        var collector = new FieldsCollector();
 
-        [Fact]
-        public void ShouldNotCollectIfNoValueIsGiven()
-        {
-            var collector = new FieldsCollector();
+        collector.Collect(new Dictionary<string, object>());
 
-            collector.Collect(new Dictionary<string, object>());
+        collector.Collected.Should().BeNull();
+    }
 
-            collector.Collected.Should().BeNull();
-        }
+    [Fact]
+    public void ShouldThrowIfValueIsOfWrongType()
+    {
+        var metadata = new Dictionary<string, object> { { Key, "some string" } };
+        var collector = new FieldsCollector();
 
-        [Fact]
-        public void ShouldThrowIfValueIsOfWrongType()
-        {
-            var metadata = new Dictionary<string, object> {{Key, "some string"}};
-            var collector = new FieldsCollector();
+        var ex = Record.Exception(() => collector.Collect(metadata));
 
-            var ex = Record.Exception(() => collector.Collect(metadata));
+        ex.Should()
+            .BeOfType<ProtocolException>()
+            .Which
+            .Message.Should()
+            .Contain($"Expected '{Key}' metadata to be of type 'List<Object>', but got 'String'.");
+    }
 
-            ex.Should().BeOfType<ProtocolException>().Which
-                .Message.Should()
-                .Contain($"Expected '{Key}' metadata to be of type 'List<Object>', but got 'String'.");
-        }
+    [Fact]
+    public void ShouldCollect()
+    {
+        var metadata = new Dictionary<string, object> { { Key, new List<object> { "field-1", "field-2", "field-3" } } };
+        var collector = new FieldsCollector();
 
-        [Fact]
-        public void ShouldCollect()
-        {
-            var metadata = new Dictionary<string, object> {{Key, new List<object> {"field-1", "field-2", "field-3"}}};
-            var collector = new FieldsCollector();
+        collector.Collect(metadata);
 
-            collector.Collect(metadata);
+        collector.Collected.Should()
+            .HaveCount(3)
+            .And
+            .ContainInOrder("field-1", "field-2", "field-3");
+    }
 
-            collector.Collected.Should().HaveCount(3).And
-                .ContainInOrder("field-1", "field-2", "field-3");
-        }
+    [Fact]
+    public void ShouldReturnSameCollected()
+    {
+        var metadata = new Dictionary<string, object> { { Key, new List<object> { "field-1", "field-2", "field-3" } } };
+        var collector = new FieldsCollector();
 
-        [Fact]
-        public void ShouldReturnSameCollected()
-        {
-            var metadata = new Dictionary<string, object> {{Key, new List<object> {"field-1", "field-2", "field-3"}}};
-            var collector = new FieldsCollector();
+        collector.Collect(metadata);
 
-            collector.Collect(metadata);
-
-            ((IMetadataCollector) collector).Collected.Should().BeSameAs(collector.Collected);
-        }
-
-        internal static KeyValuePair<string, object> TestMetadata =>
-            new KeyValuePair<string, object>(Key, new List<object> {"field-1", "field-2", "field-3", "field-4"});
-
-        internal static string[] TestMetadataCollected => new[] {"field-1", "field-2", "field-3", "field-4"};
+        ((IMetadataCollector)collector).Collected.Should().BeSameAs(collector.Collected);
     }
 }

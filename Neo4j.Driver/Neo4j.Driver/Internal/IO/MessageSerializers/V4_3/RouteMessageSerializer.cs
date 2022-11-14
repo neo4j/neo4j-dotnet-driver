@@ -24,15 +24,17 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3;
 internal class RouteMessageSerializer : WriteOnlySerializer
 {
     internal static RouteMessageSerializer Instance = new();
-    
-    private static readonly Type[] Types = {typeof(RouteMessage)};
+
+    private static readonly Type[] Types = { typeof(RouteMessage) };
     public override IEnumerable<Type> WritableTypes => Types;
 
     public override void Serialize(PackStreamWriter writer, object value)
     {
         if (value is not RouteMessage msg)
+        {
             throw new ArgumentOutOfRangeException(
                 $"Encountered {value?.GetType().Name} where {nameof(RouteMessage)} was expected");
+        }
 
         writer.WriteStructHeader(3, MessageFormat.MsgRoute);
         writer.WriteDictionary(msg.Routing);

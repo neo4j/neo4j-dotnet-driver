@@ -15,44 +15,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
-using FluentAssertions;
 using Microsoft.Reactive.Testing;
 using Neo4j.Driver.Internal;
-using Xunit;
 using static Neo4j.Driver.Reactive.Utils;
-using Record = Xunit.Record;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
+namespace Neo4j.Driver.IntegrationTests.Stress;
+
+public class RxWrongCommand<TContext> : RxCommand<TContext>
+    where TContext : StressTestContext
 {
-    public class RxWrongCommand<TContext> : RxCommand<TContext>
-        where TContext : StressTestContext
+    public RxWrongCommand(IDriver driver)
+        : base(driver, false)
     {
-        public RxWrongCommand(IDriver driver)
-            : base(driver, false)
-        {
-        }
+    }
 
-        public override async Task ExecuteAsync(TContext context)
-        {
-            var session = NewSession(AccessMode.Read, context);
+    public override async Task ExecuteAsync(TContext context)
+    {
+        var session = NewSession(AccessMode.Read, context);
 
-            var result = await session
-                .Run("RETURN")
-                .Records()
-                .CatchAndThrow(_ => session.Close<IRecord>())
-                .Concat(session.Close<IRecord>())
-                .Materialize()
-                .Select(r => new Recorded<Notification<IRecord>>(0, r))
-                .ToList();
+        var result = await session
+            .Run("RETURN")
+            .Records()
+            .CatchAndThrow(_ => session.Close<IRecord>())
+            .Concat(session.Close<IRecord>())
+            .Materialize()
+            .Select(r => new Recorded<Notification<IRecord>>(0, r))
+            .ToList();
 
-            result.AssertEqual(
-                OnError<IRecord>(0,
-                    MatchesException<ClientException>(exc => exc.Code.Equals("Neo.ClientError.Statement.SyntaxError"))));
-        }
+        result.AssertEqual(
+            OnError<IRecord>(
+                0,
+                MatchesException<ClientException>(exc => exc.Code.Equals("Neo.ClientError.Statement.SyntaxError"))));
     }
 }

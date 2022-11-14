@@ -15,31 +15,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Linq;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
+namespace Neo4j.Driver.IntegrationTests.Stress;
+
+public class BlockingFailingCommandInTx<TContext> : BlockingCommand<TContext>
+    where TContext : StressTestContext
 {
-    public class BlockingFailingCommandInTx<TContext> : BlockingCommand<TContext>
-        where TContext : StressTestContext
+    public BlockingFailingCommandInTx(IDriver driver)
+        : base(driver, false)
     {
-        public BlockingFailingCommandInTx(IDriver driver)
-            : base(driver, false)
-        {
-        }
+    }
 
-        public override void Execute(TContext context)
+    public override void Execute(TContext context)
+    {
+        using (var session = NewSession(AccessMode.Read, context))
+        using (var txc = BeginTransaction(session, context))
         {
-            using (var session = NewSession(AccessMode.Read, context))
-            using (var txc = BeginTransaction(session, context))
-            {
-                var result = txc.Run("UNWIND [10, 5, 0] AS x RETURN 10 / x");
-                var exc = Record.Exception(() => result.Consume());
+            var result = txc.Run("UNWIND [10, 5, 0] AS x RETURN 10 / x");
+            var exc = Record.Exception(() => result.Consume());
 
-                exc.Should().BeOfType<ClientException>().Which.Message.Should().Contain("/ by zero");
-            }
+            exc.Should().BeOfType<ClientException>().Which.Message.Should().Contain("/ by zero");
         }
     }
 }

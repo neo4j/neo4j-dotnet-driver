@@ -15,36 +15,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Linq;
-using System.Reactive;
-using System.Reactive.Linq;
-using System.Threading.Tasks;
-using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Reactive;
-using Neo4j.Driver.Tests;
 using Xunit;
-using static Microsoft.Reactive.Testing.ReactiveAssert;
-using static Neo4j.Driver.Tests.Assertions;
 
-namespace Neo4j.Driver.Simple.Internal
+namespace Neo4j.Driver.Simple.Internal;
+
+public static class InternalTransactionTests
 {
-    public static class InternalTransactionTests
+    public class TransactionConfig
     {
-        public class TransactionConfig
+        [Fact]
+        public void ShouldDelegateToAsyncTransaction()
         {
-            [Fact]
-            public void ShouldDelegateToAsyncTransaction()
-            {
-                var asyncTx = new Mock<IInternalAsyncTransaction>();
-                var tx = new InternalTransaction(asyncTx.Object, Mock.Of<BlockingExecutor>());
+            var asyncTx = new Mock<IInternalAsyncTransaction>();
+            var tx = new InternalTransaction(asyncTx.Object, Mock.Of<BlockingExecutor>());
 
-                var config = tx.TransactionConfig;
+            var config = tx.TransactionConfig;
 
-                asyncTx.Verify(x => x.TransactionConfig, Times.Once);
-            }
+            asyncTx.Verify(x => x.TransactionConfig, Times.Once);
         }
     }
 }

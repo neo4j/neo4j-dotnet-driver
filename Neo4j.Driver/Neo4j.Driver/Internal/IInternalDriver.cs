@@ -17,10 +17,9 @@
 
 using System;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal interface IInternalDriver : IDriver
 {
-    internal interface IInternalDriver : IDriver
-    {
-        IInternalAsyncSession Session(Action<SessionConfigBuilder> action, bool reactive);
-    }
+    IInternalAsyncSession Session(Action<SessionConfigBuilder> action, bool reactive);
 }

@@ -23,12 +23,12 @@ namespace Neo4j.Driver.Internal.IO;
 
 internal sealed class MessageWriter : IMessageWriter
 {
+    private readonly ChunkWriter _chunkWriter;
+
     public MessageWriter(ChunkWriter chunkWriter)
     {
         _chunkWriter = chunkWriter;
     }
-
-    private readonly ChunkWriter _chunkWriter;
 
     public void Write(IRequestMessage message, PackStreamWriter writer)
     {

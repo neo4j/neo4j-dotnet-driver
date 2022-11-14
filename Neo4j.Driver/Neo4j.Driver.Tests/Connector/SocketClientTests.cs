@@ -22,21 +22,22 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Messaging;
 using Xunit;
 
 namespace Neo4j.Driver.Tests;
 
 public class SocketClientTests
 {
-    private static Uri FakeUri => new Uri("bolt://foo.bar:7878");
+    private static Uri FakeUri => new("bolt://foo.bar:7878");
 
     private static (Mock<IConnectionIoFactory>, Mock<ITcpSocketClient>) CreatMockIoFactory(
-        Action<Mock<ITcpSocketClient>> configureMock, Action<Mock<IConnectionIoFactory>> configureFactory = null)
+        Action<Mock<ITcpSocketClient>> configureMock,
+        Action<Mock<IConnectionIoFactory>> configureFactory = null)
     {
         var connMock = new Mock<ITcpSocketClient>();
         configureMock?.Invoke(connMock);
@@ -44,12 +45,12 @@ public class SocketClientTests
         mockIoFactory
             .Setup(x => x.TcpSocketClient(It.IsAny<SocketSettings>(), It.IsAny<ILogger>()))
             .Returns(connMock.Object);
-        
+
         configureFactory?.Invoke(mockIoFactory);
-        
+
         return (mockIoFactory, connMock);
     }
-    
+
     public class ConnectMethod
     {
         [Fact]
@@ -57,20 +58,21 @@ public class SocketClientTests
         {
             var bufferSettings = new BufferSettings(Config.Default);
 
-            var (mockIoFactory, _) = CreatMockIoFactory(connMock =>
-            {
-                TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
-            });
+            var (mockIoFactory, _) = CreatMockIoFactory(
+                connMock =>
+                {
+                    TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
+                    TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
+                });
 
             var client = new SocketClient(FakeUri, null, bufferSettings, Mock.Of<ILogger>(), mockIoFactory.Object);
 
-            var ex = await Record.ExceptionAsync(() => 
-                client.ConnectAsync(new Dictionary<string, string>(), CancellationToken.None));
+            var ex = await Record.ExceptionAsync(
+                () =>
+                    client.ConnectAsync(new Dictionary<string, string>(), CancellationToken.None));
 
             ex.Should().NotBeNull().And.BeOfType<IOException>();
         }
-
     }
 
     public class StartMethod
@@ -81,13 +83,16 @@ public class SocketClientTests
             var bufferSettings = new BufferSettings(Config.Default);
             var version = new BoltProtocolVersion(4, 1);
 
-            var (factory, connMock) = CreatMockIoFactory(x =>
-            {
-                TcpSocketClientTestSetup.CreateReadStreamMock(x,
-                    PackStreamBitConverter.GetBytes(version.PackToInt()));
-                TcpSocketClientTestSetup.CreateWriteStreamMock(x);
-            });
-            
+            var (factory, connMock) = CreatMockIoFactory(
+                x =>
+                {
+                    TcpSocketClientTestSetup.CreateReadStreamMock(
+                        x,
+                        PackStreamBitConverter.GetBytes(version.PackToInt()));
+
+                    TcpSocketClientTestSetup.CreateWriteStreamMock(x);
+                });
+
             var client = new SocketClient(FakeUri, null, bufferSettings, Mock.Of<ILogger>(), factory.Object);
 
             await client.ConnectAsync(new Dictionary<string, string>());
@@ -105,22 +110,34 @@ public class SocketClientTests
             // Given
             var writerMock = new Mock<IMessageWriter>();
 
-            var (factory, _) = CreatMockIoFactory(null, factoryMock =>
-            {
-                factoryMock.Setup(y => y.Build(
-                        It.IsAny<ITcpSocketClient>(), It.IsAny<BufferSettings>(), It.IsAny<ILogger>(),
-                        It.IsAny<BoltProtocolVersion>()))
-                    .Returns((new MessageFormat(BoltProtocolVersion.V30),
-                        new ChunkWriter(new MemoryStream(), new BufferSettings(Config.Default), Mock.Of<ILogger>()),
-                        new MemoryStream(), Mock.Of<IMessageReader>(), writerMock.Object));
-            });
-            
-            
+            var (factory, _) = CreatMockIoFactory(
+                null,
+                factoryMock =>
+                {
+                    factoryMock.Setup(
+                            y => y.Build(
+                                It.IsAny<ITcpSocketClient>(),
+                                It.IsAny<BufferSettings>(),
+                                It.IsAny<ILogger>(),
+                                It.IsAny<BoltProtocolVersion>()))
+                        .Returns(
+                            (new MessageFormat(BoltProtocolVersion.V30),
+                                new ChunkWriter(
+                                    new MemoryStream(),
+                                    new BufferSettings(Config.Default),
+                                    Mock.Of<ILogger>()),
+                                new MemoryStream(), Mock.Of<IMessageReader>(), writerMock.Object));
+                });
+
             var m1 = new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("Run message 1"));
             var m2 = new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("Run message 2"));
-            var messages = new IRequestMessage[] {m1, m2};
-            
-            var client = new SocketClient(null, SocketSetting(), new BufferSettings(Config.Default), Mock.Of<ILogger>(), 
+            var messages = new IRequestMessage[] { m1, m2 };
+
+            var client = new SocketClient(
+                null,
+                SocketSetting(),
+                new BufferSettings(Config.Default),
+                Mock.Of<ILogger>(),
                 factory.Object);
 
             // When
@@ -134,7 +151,9 @@ public class SocketClientTests
 
         private static SocketSettings SocketSetting()
         {
-            return new SocketSettings(Mock.Of<IHostResolver>(), new EncryptionManager(false, TrustManager.CreateInsecure()));
+            return new SocketSettings(
+                Mock.Of<IHostResolver>(),
+                new EncryptionManager(false, TrustManager.CreateInsecure()));
         }
 
         [Fact]
@@ -243,7 +262,7 @@ public class SocketClientTests
         public async Task ShouldCallDisconnectAsyncOnTheTcpSocketClientWhenStoppedAsync()
         {
             var connMock = new Mock<ITcpSocketClient>();
-            
+
             var client = new SocketClient(null, null, null, socketClient: connMock.Object);
             client.SetOpened();
 

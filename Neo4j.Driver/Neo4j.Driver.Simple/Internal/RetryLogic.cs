@@ -20,75 +20,75 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal interface IRetryLogic
 {
-    internal interface IRetryLogic
+    T Retry<T>(Func<T> work);
+}
+
+internal class RetryLogic : IRetryLogic
+{
+    private readonly double _delayJitter;
+    private readonly double _delayMultiplier;
+    private readonly double _initialDelay;
+    private readonly ILogger _logger;
+    private readonly int _maxRetryTimeout;
+    private readonly Random _random;
+
+    public RetryLogic(TimeSpan maxRetryTimeout, ILogger logger)
     {
-        T Retry<T>(Func<T> work);
+        _maxRetryTimeout = (int)maxRetryTimeout.TotalMilliseconds;
+        _initialDelay = TimeSpan.FromSeconds(1).TotalMilliseconds;
+        _delayMultiplier = 2.0;
+        _delayJitter = 0.2;
+        _random = new Random(Guid.NewGuid().GetHashCode());
+        _logger = logger;
     }
 
-    internal class RetryLogic : IRetryLogic
+    public T Retry<T>(Func<T> work)
     {
-        private readonly int _maxRetryTimeout;
-        private readonly double _initialDelay;
-        private readonly double _delayMultiplier;
-        private readonly double _delayJitter;
-        private readonly Random _random;
-        private readonly ILogger _logger;
+        var exceptions = new List<Exception>();
+        var delay = TimeSpan.Zero;
+        var delayMs = _initialDelay;
+        var retryCount = 0;
+        var shouldRetry = false;
 
-        public RetryLogic(TimeSpan maxRetryTimeout, ILogger logger)
+        var timer = Stopwatch.StartNew();
+        do
         {
-            _maxRetryTimeout = (int) maxRetryTimeout.TotalMilliseconds;
-            _initialDelay = TimeSpan.FromSeconds(1).TotalMilliseconds;
-            _delayMultiplier = 2.0;
-            _delayJitter = 0.2;
-            _random = new Random(Guid.NewGuid().GetHashCode());
-            _logger = logger;
-        }
-
-        public T Retry<T>(Func<T> work)
-        {
-            var exceptions = new List<Exception>();
-            var delay = TimeSpan.Zero;
-            var delayMs = _initialDelay;
-            var retryCount = 0;
-            var shouldRetry = false;
-
-            var timer = Stopwatch.StartNew();
-            do
+            retryCount++;
+            try
             {
-                retryCount++;
-                try
+                return work();
+            }
+            catch (Exception e) when (e.CanBeRetried())
+            {
+                exceptions.Add(e);
+
+                // we want the retry to happen at least twice and as much as the max retry time allows 
+                shouldRetry = retryCount < 2 || timer.ElapsedMilliseconds < _maxRetryTimeout;
+
+                if (shouldRetry)
                 {
-                    return work();
+                    delay = TimeSpan.FromMilliseconds(ComputeNextDelay(delayMs));
+                    _logger?.Warn(e, $"Transaction failed and will be retried in {delay}ms.");
+                    Thread.Sleep(delay);
+                    delayMs *= _delayMultiplier;
                 }
-                catch (Exception e) when (e.CanBeRetried())
-                {
-                    exceptions.Add(e);
+            }
+        } while (shouldRetry);
 
-                    // we want the retry to happen at least twice and as much as the max retry time allows 
-                    shouldRetry = retryCount < 2 || timer.ElapsedMilliseconds < _maxRetryTimeout;
+        timer.Stop();
+        throw new ServiceUnavailableException(
+            $"Failed after retried for {retryCount} times in {_maxRetryTimeout}ms. " +
+            "Make sure that your database is online and retry again.",
+            new AggregateException(exceptions));
+    }
 
-                    if (shouldRetry)
-                    {
-                        delay = TimeSpan.FromMilliseconds(ComputeNextDelay(delayMs));
-                        _logger?.Warn(e, $"Transaction failed and will be retried in {delay}ms.");
-                        Thread.Sleep(delay);
-                        delayMs *= _delayMultiplier;
-                    }
-                }
-            } while (shouldRetry);
-
-            timer.Stop();
-            throw new ServiceUnavailableException(
-                $"Failed after retried for {retryCount} times in {_maxRetryTimeout}ms. " +
-                "Make sure that your database is online and retry again.", new AggregateException(exceptions));
-        }
-
-        private double ComputeNextDelay(double delay)
-        {
-            var jitter = delay * _delayJitter;
-            return delay - jitter + (2 * jitter * _random.NextDouble());
-        }
+    private double ComputeNextDelay(double delay)
+    {
+        var jitter = delay * _delayJitter;
+        return delay - jitter + 2 * jitter * _random.NextDouble();
     }
 }

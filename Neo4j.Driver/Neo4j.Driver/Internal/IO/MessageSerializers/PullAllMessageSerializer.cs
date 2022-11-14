@@ -26,7 +26,7 @@ internal sealed class PullAllMessageSerializer : WriteOnlySerializer
 {
     internal static PullAllMessageSerializer Instance = new();
 
-    private static readonly Type[] Types = {typeof(PullAllMessage)};
+    private static readonly Type[] Types = { typeof(PullAllMessage) };
     public override IEnumerable<Type> WritableTypes => Types;
 
     public override void Serialize(PackStreamWriter writer, object _)

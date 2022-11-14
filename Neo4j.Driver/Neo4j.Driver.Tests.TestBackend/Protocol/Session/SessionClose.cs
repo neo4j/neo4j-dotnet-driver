@@ -1,27 +1,24 @@
-﻿using System;
-using System.Threading.Tasks;
-using Neo4j.Driver;
+﻿using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Tests.TestBackend
+namespace Neo4j.Driver.Tests.TestBackend;
+
+internal class SessionClose : IProtocolObject
 {
-    internal class SessionClose : IProtocolObject
+    public SessionCloseType data { get; set; } = new();
+
+    public override async Task Process()
     {
-        public SessionCloseType data { get; set; } = new SessionCloseType();
-       
-        public class SessionCloseType
-        {
-            public string sessionId { get; set; }
-        }
+        var session = ((NewSession)ObjManager.GetObject(data.sessionId)).Session;
+        await session.CloseAsync();
+    }
 
-        public override async Task Process()
-        {   
-            IAsyncSession session = ((NewSession)ObjManager.GetObject(data.sessionId)).Session;
-            await session.CloseAsync();
-        }
+    public override string Respond()
+    {
+        return new ProtocolResponse("Session", uniqueId).Encode();
+    }
 
-        public override string Respond()
-        {  
-            return new ProtocolResponse("Session", uniqueId).Encode();
-        }
+    public class SessionCloseType
+    {
+        public string sessionId { get; set; }
     }
 }

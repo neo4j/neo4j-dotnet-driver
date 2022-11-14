@@ -1,36 +1,31 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+﻿using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Tests.TestBackend
+namespace Neo4j.Driver.Tests.TestBackend;
+
+internal class RetryablePositive : IProtocolObject
 {
-    internal class RetryablePositive : IProtocolObject
+    public RetryablePositiveType data { get; set; } = new();
+
+    public override async Task Process()
     {
-        public RetryablePositiveType data { get; set; } = new RetryablePositiveType();
+        var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
+        sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAblePositive);
 
-        public class RetryablePositiveType
-        {
-            public string sessionId { get; set; }
-        }
+        //Client succeded and wants to commit. 
+        //Notify any subscribers.
 
-        public override async Task Process()
-        {
-			var sessionContainer = ((NewSession)ObjManager.GetObject(data.sessionId));
-			sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAblePositive);
+        TriggerEvent();
 
-			//Client succeded and wants to commit. 
-			//Notify any subscribers.
+        await Task.CompletedTask;
+    }
 
-			TriggerEvent();			
+    public override string Respond()
+    {
+        return string.Empty;
+    }
 
-			await Task.CompletedTask;
-        }
-
-        public override string Respond()
-        {
-            return string.Empty;            
-        }
+    public class RetryablePositiveType
+    {
+        public string sessionId { get; set; }
     }
 }

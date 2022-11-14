@@ -16,51 +16,56 @@
 // limitations under the License.
 
 using System;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.IntegrationTests.Internals
+namespace Neo4j.Driver.IntegrationTests.Internals;
+
+public class LocalStandAloneInstance : SingleInstance, IStandAlone
 {
-    public class LocalStandAloneInstance : SingleInstance, IStandAlone
+    private const string UsingLocalServer = "DOTNET_DRIVER_USING_LOCAL_SERVER";
+    private bool _disposed;
+
+    public LocalStandAloneInstance() :
+        base(
+            Neo4jDefaultInstallation.HttpUri,
+            Neo4jDefaultInstallation.BoltUri,
+            null,
+            Neo4jDefaultInstallation.Password)
     {
-        private bool _disposed = false;
-        private const string UsingLocalServer = "DOTNET_DRIVER_USING_LOCAL_SERVER";
+        Driver = Neo4jDefaultInstallation.NewBoltDriver(BoltUri, AuthToken);
+    }
 
-        ~LocalStandAloneInstance() => Dispose(false);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
-        public LocalStandAloneInstance() :
-            base(Neo4jDefaultInstallation.HttpUri, Neo4jDefaultInstallation.BoltUri, null,
-                Neo4jDefaultInstallation.Password)
+    public IDriver Driver { get; }
+
+    ~LocalStandAloneInstance()
+    {
+        Dispose(false);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed)
         {
-            Driver = Neo4jDefaultInstallation.NewBoltDriver(BoltUri, AuthToken);
+            return;
         }
 
-        public void Dispose()
+        if (disposing)
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            Driver.Dispose();
         }
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_disposed)
-                return;
+        _disposed = true;
+    }
 
-            if (disposing)
-            {
-                Driver.Dispose();
-            }
-
-            _disposed = true;
-        }
-
-
-        public IDriver Driver { get; }
-
-        public static bool IsServerProvided()
-        {
-            // If a system flag is set, then we use the local single server instead
-            return bool.TryParse(Environment.GetEnvironmentVariable(UsingLocalServer), out var usingLocalServer) &&
-                   usingLocalServer;
-        }
+    public static bool IsServerProvided()
+    {
+        // If a system flag is set, then we use the local single server instead
+        return bool.TryParse(Environment.GetEnvironmentVariable(UsingLocalServer), out var usingLocalServer) &&
+            usingLocalServer;
     }
 }

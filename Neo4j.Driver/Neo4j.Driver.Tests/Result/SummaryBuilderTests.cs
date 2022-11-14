@@ -21,33 +21,41 @@ using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Result;
 using Xunit;
 
-namespace Neo4j.Driver.Tests
+namespace Neo4j.Driver.Tests;
+
+public class SummaryBuilderTests
 {
-    public class SummaryBuilderTests
+    [Theory]
+    [InlineData(
+        "bolt://localhost:7687",
+        "1.2.3",
+        "ServerInfo{Address=localhost:7687, Agent=1.2.3, ProtocolVersion=1.2}")]
+    [InlineData(
+        "bolt://127.0.0.1:7687",
+        "1.2.3",
+        "ServerInfo{Address=127.0.0.1:7687, Agent=1.2.3, ProtocolVersion=1.2}")]
+    // If no port provided, it will be port=-1. This should never happen as we always default to 7687 if no port provided.
+    [InlineData("bolt://localhost", "1.2.3", "ServerInfo{Address=localhost:-1, Agent=1.2.3, ProtocolVersion=1.2}")]
+    [InlineData(
+        "https://neo4j.com:9999",
+        "1.2.3",
+        "ServerInfo{Address=neo4j.com:9999, Agent=1.2.3, ProtocolVersion=1.2}")]
+    public void CreateServerInfoCorrectly(string uriStr, string version, string expected)
     {
-        [Theory]
-        [InlineData("bolt://localhost:7687", "1.2.3", "ServerInfo{Address=localhost:7687, Agent=1.2.3, ProtocolVersion=1.2}")]
-        [InlineData("bolt://127.0.0.1:7687", "1.2.3", "ServerInfo{Address=127.0.0.1:7687, Agent=1.2.3, ProtocolVersion=1.2}")]
-        // If no port provided, it will be port=-1. This should never happen as we always default to 7687 if no port provided.
-        [InlineData("bolt://localhost", "1.2.3", "ServerInfo{Address=localhost:-1, Agent=1.2.3, ProtocolVersion=1.2}")]
-        [InlineData("https://neo4j.com:9999", "1.2.3", "ServerInfo{Address=neo4j.com:9999, Agent=1.2.3, ProtocolVersion=1.2}")]
-        public void CreateServerInfoCorrectly(string uriStr, string version, string expected)
-        {
-            var uri = new Uri(uriStr);
-            var serverInfo = new ServerInfo(uri);
-            serverInfo.Update(new BoltProtocolVersion(1, 2), version);
+        var uri = new Uri(uriStr);
+        var serverInfo = new ServerInfo(uri);
+        serverInfo.Update(new BoltProtocolVersion(1, 2), version);
 
-            serverInfo.ToString().Should().Be(expected);
-        }
+        serverInfo.ToString().Should().Be(expected);
+    }
 
-        [Fact]
-        public void ShouldReturnEmptyDatabaseInfoIfNotSet()
-        {
-            var builder = new SummaryBuilder(new Query("RETURN 1"), new ServerInfo(new Uri("bolt://localhost")));
-            var summary = builder.Build();
+    [Fact]
+    public void ShouldReturnEmptyDatabaseInfoIfNotSet()
+    {
+        var builder = new SummaryBuilder(new Query("RETURN 1"), new ServerInfo(new Uri("bolt://localhost")));
+        var summary = builder.Build();
 
-            summary.Database.Should().NotBeNull();
-            summary.Database.Name.Should().BeNull();
-        }
+        summary.Database.Should().NotBeNull();
+        summary.Database.Name.Should().BeNull();
     }
 }

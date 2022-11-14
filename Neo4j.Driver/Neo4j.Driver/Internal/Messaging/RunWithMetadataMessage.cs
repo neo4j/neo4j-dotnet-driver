@@ -36,15 +36,17 @@ internal sealed class RunWithMetadataMessage : TransactionStartingMessage
 
         if (version >= BoltProtocolVersion.V4_4 &&
             !string.IsNullOrEmpty(impersonatedUser))
+        {
             Metadata.Add("imp_user", impersonatedUser);
+        }
     }
 
     public Query Query { get; }
+
+    public override IPackStreamSerializer Serializer => RunWithMetadataMessageSerializer.Instance;
 
     public override string ToString()
     {
         return $"RUN {Query} {Metadata.ToContentString()}";
     }
-
-    public override IPackStreamSerializer Serializer => RunWithMetadataMessageSerializer.Instance;
 }

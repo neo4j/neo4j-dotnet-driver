@@ -18,29 +18,33 @@
 using System;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.IntegrationTests
+namespace Neo4j.Driver.IntegrationTests;
+
+public static class SessionExtensions
 {
-    public static class SessionExtensions
+    public static async Task<IResultSummary> RunAndConsumeAsync(
+        this IAsyncQueryRunner runner,
+        string query,
+        object parameters = null)
     {
-        public static async Task<IResultSummary> RunAndConsumeAsync(this IAsyncQueryRunner runner, string query,
-            object parameters = null)
-        {
-            var cursor = await runner.RunAsync(query, parameters);
-            var summary = await cursor.ConsumeAsync();
-            return summary;
-        }
+        var cursor = await runner.RunAsync(query, parameters);
+        var summary = await cursor.ConsumeAsync();
+        return summary;
+    }
 
-        public static Task<IRecord> RunAndSingleAsync(this IAsyncQueryRunner runner, string query, object parameters)
-        {
-            return RunAndSingleAsync(runner, query, parameters, r => r);
-        }
+    public static Task<IRecord> RunAndSingleAsync(this IAsyncQueryRunner runner, string query, object parameters)
+    {
+        return RunAndSingleAsync(runner, query, parameters, r => r);
+    }
 
-        public static async Task<T> RunAndSingleAsync<T>(this IAsyncQueryRunner runner, string query,
-            object parameters, Func<IRecord, T> operation)
-        {
-            var cursor = await runner.RunAsync(query, parameters);
-            var result = await cursor.SingleAsync(operation);
-            return result;
-        }
+    public static async Task<T> RunAndSingleAsync<T>(
+        this IAsyncQueryRunner runner,
+        string query,
+        object parameters,
+        Func<IRecord, T> operation)
+    {
+        var cursor = await runner.RunAsync(query, parameters);
+        var result = await cursor.SingleAsync(operation);
+        return result;
     }
 }

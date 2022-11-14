@@ -27,11 +27,11 @@ internal sealed class GoodbyeMessage : IRequestMessage
     private GoodbyeMessage()
     {
     }
-        
+
+    public IPackStreamSerializer Serializer => GoodbyeMessageSerializer.Instance;
+
     public override string ToString()
     {
         return "GOODBYE";
     }
-
-    public IPackStreamSerializer Serializer => GoodbyeMessageSerializer.Instance;
 }

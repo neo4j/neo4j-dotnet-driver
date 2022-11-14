@@ -18,33 +18,37 @@
 using System;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.Internal.Connector.Trust
+namespace Neo4j.Driver.Internal.Connector.Trust;
+
+internal sealed class InsecureTrustManager : TrustManager
 {
-    internal sealed class InsecureTrustManager : TrustManager
+    public InsecureTrustManager(bool verifyHostname)
     {
-        private readonly bool _verifyHostname;
-        public bool VerifyHostName { get{return _verifyHostname;} }
+        VerifyHostName = verifyHostname;
+    }
 
-        public InsecureTrustManager(bool verifyHostname)
-        {
-            _verifyHostname = verifyHostname;
-        }
+    public bool VerifyHostName { get; }
 
-        public override bool ValidateServerCertificate(Uri uri, X509Certificate2 certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+    public override bool ValidateServerCertificate(
+        Uri uri,
+        X509Certificate2 certificate,
+        X509Chain chain,
+        SslPolicyErrors sslPolicyErrors)
+    {
+        if (VerifyHostName)
         {
-            if (_verifyHostname)
+            if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch))
             {
-                if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch))
-                {
-                    Logger?.Error(null, $"{GetType().Name}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
-                    return false;
-                }
-            }
+                Logger?.Error(
+                    null,
+                    $"{GetType().Name}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
 
-            Logger?.Info($"{GetType().Name}: Trusting {uri} with provided certificate '{certificate.Subject}'.");
-            return true;
+                return false;
+            }
         }
+
+        Logger?.Info($"{GetType().Name}: Trusting {uri} with provided certificate '{certificate.Subject}'.");
+        return true;
     }
 }

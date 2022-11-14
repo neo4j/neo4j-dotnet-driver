@@ -23,8 +23,8 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers;
 internal sealed class IgnoredMessageSerializer : ReadOnlySerializer
 {
     internal static IgnoredMessageSerializer Instance = new();
-    
-    private static readonly byte[] StructTags = {MessageFormat.MsgIgnored};
+
+    private static readonly byte[] StructTags = { MessageFormat.MsgIgnored };
     public override IEnumerable<byte> ReadableStructs => StructTags;
 
     public override object Deserialize(PackStreamReader _, byte __, long ___)

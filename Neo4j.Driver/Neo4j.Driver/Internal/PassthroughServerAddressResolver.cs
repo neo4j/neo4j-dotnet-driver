@@ -17,14 +17,13 @@
 
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+// simply pass through the server address as it is in the return resolved address set.
+internal class PassThroughServerAddressResolver : IServerAddressResolver
 {
-    // simply pass through the server address as it is in the return resolved address set.
-    internal class PassThroughServerAddressResolver : IServerAddressResolver
+    public ISet<ServerAddress> Resolve(ServerAddress address)
     {
-        public ISet<ServerAddress> Resolve(ServerAddress address)
-        {
-            return new HashSet<ServerAddress> {address};
-        }
+        return new HashSet<ServerAddress> { address };
     }
 }

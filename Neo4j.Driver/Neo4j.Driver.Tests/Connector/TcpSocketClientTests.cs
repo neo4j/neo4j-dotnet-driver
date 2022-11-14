@@ -19,96 +19,95 @@ using System;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.Connector
+namespace Neo4j.Driver.Tests.Connector;
+
+public class TcpSocketClientTests
 {
-    public class TcpSocketClientTests
+    public class ConnectSocketAsyncMethod
     {
-        public class ConnectSocketAsyncMethod
+        [Fact]
+        public async Task ShouldThrowExceptionIfConnectionTimedOut()
         {
-            [Fact]
-            public async Task ShouldThrowExceptionIfConnectionTimedOut()
-            {
-                var client = new TcpSocketClient(
-                    new SocketSettings(new SystemHostResolver(), new EncryptionManager(false, null))
-                    {
-                        ConnectionTimeout = TimeSpan.FromSeconds(1),
-                    });
-
-                // use non-routable IP address to mimic a connect timeout
-                // https://stackoverflow.com/questions/100841/artificially-create-a-connection-timeout-error
-                var exception = await Record.ExceptionAsync(() => client.ConnectAsync(new Uri("192.168.0.0:9999")));
-                exception.Should().NotBeNull();
-                exception.Should().BeOfType<OperationCanceledException>(exception.ToString());
-                exception.Message.Should().Be("Failed to connect to server 192.168.0.0:9999 within 1000ms.");
-
-                var disposed = await Record.ExceptionAsync(() => client.ConnectAsync(new Uri("192.168.0.0:9999")));
-                disposed.Should().BeOfType<ObjectDisposedException>();
-            }
-
-            [Fact]
-            public async Task ShouldBeAbleToConnectAgainIfFirstFailed()
-            {
-                var socketSettings = new SocketSettings(new SystemHostResolver(), new EncryptionManager(false, null))
+            var client = new TcpSocketClient(
+                new SocketSettings(new SystemHostResolver(), new EncryptionManager(false, null))
                 {
-                    ConnectionTimeout = TimeSpan.FromSeconds(10),
-                };
-                var client = new TcpSocketClient(socketSettings);
-
-                // We fail to connect the first time as there is no server to connect to
-                // ReSharper disable once PossibleNullReferenceException
-                var exception = await Record.ExceptionAsync(
-                    async () => await client.ConnectSocketAsync(IPAddress.Parse("127.0.0.1"), 54321));
-                // start a server on port 20003
-
-                var serverSocket = new TcpListener(new IPEndPoint(IPAddress.Loopback, 54321));
-                try
-                {
-                    serverSocket.Start();
-
-                    // We should not get any error this time as server in online now.
-                    await client.ConnectSocketAsync(IPAddress.Parse("127.0.0.1"), 54321);
-                }
-                finally
-                {
-                    serverSocket.Stop();
-                }
-            }
-        }
-
-        public class ConnectAsyncMethod
-        {
-            [Fact]
-            public async Task ShouldThrowExceptionIfConnectionTimedOut()
-            {
-                var client = new TcpSocketClient(new SocketSettings(
-                    new SystemHostResolver(), 
-                    new EncryptionManager(false, null))
-                {
-                    ConnectionTimeout = TimeSpan.FromSeconds(1),
+                    ConnectionTimeout = TimeSpan.FromSeconds(1)
                 });
 
-                // ReSharper disable once PossibleNullReferenceException
-                // use non-routable IP address to mimic a connect timeout
-                // https://stackoverflow.com/questions/100841/artificially-create-a-connection-timeout-error
-                var exception = await Record.ExceptionAsync(
-                    () => client.ConnectAsync(new Uri("bolt://192.168.0.0:9998")));
-                exception.Should().NotBeNull();
-                exception.Should().BeOfType<IOException>();
-                exception.Message.Should().Be(
+            // use non-routable IP address to mimic a connect timeout
+            // https://stackoverflow.com/questions/100841/artificially-create-a-connection-timeout-error
+            var exception = await Record.ExceptionAsync(() => client.ConnectAsync(new Uri("192.168.0.0:9999")));
+            exception.Should().NotBeNull();
+            exception.Should().BeOfType<OperationCanceledException>(exception.ToString());
+            exception.Message.Should().Be("Failed to connect to server 192.168.0.0:9999 within 1000ms.");
+
+            var disposed = await Record.ExceptionAsync(() => client.ConnectAsync(new Uri("192.168.0.0:9999")));
+            disposed.Should().BeOfType<ObjectDisposedException>();
+        }
+
+        [Fact]
+        public async Task ShouldBeAbleToConnectAgainIfFirstFailed()
+        {
+            var socketSettings = new SocketSettings(new SystemHostResolver(), new EncryptionManager(false, null))
+            {
+                ConnectionTimeout = TimeSpan.FromSeconds(10)
+            };
+
+            var client = new TcpSocketClient(socketSettings);
+
+            // We fail to connect the first time as there is no server to connect to
+            // ReSharper disable once PossibleNullReferenceException
+            var exception = await Record.ExceptionAsync(
+                async () => await client.ConnectSocketAsync(IPAddress.Parse("127.0.0.1"), 54321));
+            // start a server on port 20003
+
+            var serverSocket = new TcpListener(new IPEndPoint(IPAddress.Loopback, 54321));
+            try
+            {
+                serverSocket.Start();
+
+                // We should not get any error this time as server in online now.
+                await client.ConnectSocketAsync(IPAddress.Parse("127.0.0.1"), 54321);
+            }
+            finally
+            {
+                serverSocket.Stop();
+            }
+        }
+    }
+
+    public class ConnectAsyncMethod
+    {
+        [Fact]
+        public async Task ShouldThrowExceptionIfConnectionTimedOut()
+        {
+            var client = new TcpSocketClient(
+                new SocketSettings(
+                    new SystemHostResolver(),
+                    new EncryptionManager(false, null))
+                {
+                    ConnectionTimeout = TimeSpan.FromSeconds(1)
+                });
+
+            // ReSharper disable once PossibleNullReferenceException
+            // use non-routable IP address to mimic a connect timeout
+            // https://stackoverflow.com/questions/100841/artificially-create-a-connection-timeout-error
+            var exception = await Record.ExceptionAsync(() => client.ConnectAsync(new Uri("bolt://192.168.0.0:9998")));
+            exception.Should().NotBeNull();
+            exception.Should().BeOfType<IOException>();
+            exception.Message.Should()
+                .Be(
                     "Failed to connect to server 'bolt://192.168.0.0:9998/' via IP addresses'[192.168.0.0]' at port '9998'.");
 
-                var baseException = exception.GetBaseException();
-                baseException.Should().BeOfType<OperationCanceledException>(exception.ToString());
-                baseException.Message.Should().Be("Failed to connect to server 192.168.0.0:9998 within 1000ms.");
-            }
+            var baseException = exception.GetBaseException();
+            baseException.Should().BeOfType<OperationCanceledException>(exception.ToString());
+            baseException.Message.Should().Be("Failed to connect to server 192.168.0.0:9998 within 1000ms.");
         }
     }
 }

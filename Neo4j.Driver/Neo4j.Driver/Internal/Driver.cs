@@ -19,25 +19,21 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Metrics;
-using Neo4j.Driver.Internal.Util;
 using Neo4j.Driver.Internal.Routing;
+using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal;
 
 internal sealed class Driver : IInternalDriver
 {
-    private int _closedMarker = 0;
-
     private readonly IConnectionProvider _connectionProvider;
-    private readonly IAsyncRetryLogic _retryLogic;
     private readonly ILogger _logger;
     private readonly IMetrics _metrics;
-    private readonly Config _config;
+    private readonly IAsyncRetryLogic _retryLogic;
+    private int _closedMarker;
 
-    public Uri Uri { get; }
-    public bool Encrypted { get; }
-
-    internal Driver(Uri uri,
+    internal Driver(
+        Uri uri,
         bool encrypted,
         IConnectionProvider connectionProvider,
         IAsyncRetryLogic retryLogic,
@@ -51,12 +47,15 @@ internal sealed class Driver : IInternalDriver
         _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
         _retryLogic = retryLogic;
         _metrics = metrics;
-        _config = config;
+        Config = config;
     }
 
-    private bool IsClosed => _closedMarker > 0;
+    public Uri Uri { get; }
 
-    public Config Config => _config;
+    private bool IsClosed => _closedMarker > 0;
+    public bool Encrypted { get; }
+
+    public Config Config { get; }
 
     public IAsyncSession AsyncSession()
     {
@@ -77,10 +76,11 @@ internal sealed class Driver : IInternalDriver
 
         var sessionConfig = ConfigBuilders.BuildSessionConfig(action);
 
-        var session = new AsyncSession(_connectionProvider, 
+        var session = new AsyncSession(
+            _connectionProvider,
             _logger,
             _retryLogic,
-            _config.FetchSize,
+            Config.FetchSize,
             sessionConfig,
             reactive);
 
@@ -94,23 +94,40 @@ internal sealed class Driver : IInternalDriver
 
     public Task CloseAsync()
     {
-       return DisposeAsync().AsTask();
+        return DisposeAsync().AsTask();
     }
 
     public async ValueTask DisposeAsync()
     {
         if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
+        {
             await _connectionProvider.DisposeAsync().ConfigureAwait(false);
+        }
     }
 
-    public Task<IServerInfo> GetServerInfoAsync() =>
-        _connectionProvider.VerifyConnectivityAndGetInfoAsync();
+    public Task<IServerInfo> GetServerInfoAsync()
+    {
+        return _connectionProvider.VerifyConnectivityAndGetInfoAsync();
+    }
 
-    public Task VerifyConnectivityAsync() => GetServerInfoAsync();
+    public Task VerifyConnectivityAsync()
+    {
+        return GetServerInfoAsync();
+    }
 
     public Task<bool> SupportsMultiDbAsync()
     {
         return _connectionProvider.SupportsMultiDbAsync();
+    }
+
+    public void Dispose()
+    {
+        if (IsClosed)
+        {
+            return;
+        }
+
+        DisposeAsync().GetAwaiter().GetResult();
     }
 
     //Non public facing api. Used for testing with testkit only
@@ -119,17 +136,10 @@ internal sealed class Driver : IInternalDriver
         return _connectionProvider.GetRoutingTable(database);
     }
 
-    public void Dispose()
-    {
-        if (IsClosed)
-            return;
-
-        DisposeAsync().GetAwaiter().GetResult();
-    }
-
     private void ThrowDriverClosedException()
     {
-        throw new ObjectDisposedException(GetType().Name,
+        throw new ObjectDisposedException(
+            GetType().Name,
             "Cannot open a new session on a driver that is already disposed.");
     }
 

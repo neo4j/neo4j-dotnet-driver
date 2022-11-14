@@ -20,20 +20,26 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Neo4j.Driver.Tests.TestBackend
-{
-    internal class QueryParameterConverter : JsonConverter<Dictionary<string, CypherToNativeObject>>
-    {
-        public override void WriteJson(JsonWriter writer, Dictionary<string, CypherToNativeObject> value, JsonSerializer serializer)
-        {
-            throw new NotImplementedException();
-        }
+namespace Neo4j.Driver.Tests.TestBackend;
 
-        public override Dictionary<string, CypherToNativeObject> ReadJson(JsonReader reader, Type objectType, Dictionary<string, CypherToNativeObject> existingValue, bool hasExistingValue,
-            JsonSerializer serializer)
-        {
-            var token = JObject.Load(reader);
-            return JsonCypherParameterParser.ParseParameters(token);
-        }
+internal class QueryParameterConverter : JsonConverter<Dictionary<string, CypherToNativeObject>>
+{
+    public override void WriteJson(
+        JsonWriter writer,
+        Dictionary<string, CypherToNativeObject> value,
+        JsonSerializer serializer)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override Dictionary<string, CypherToNativeObject> ReadJson(
+        JsonReader reader,
+        Type objectType,
+        Dictionary<string, CypherToNativeObject> existingValue,
+        bool hasExistingValue,
+        JsonSerializer serializer)
+    {
+        var token = JObject.Load(reader);
+        return JsonCypherParameterParser.ParseParameters(token);
     }
 }

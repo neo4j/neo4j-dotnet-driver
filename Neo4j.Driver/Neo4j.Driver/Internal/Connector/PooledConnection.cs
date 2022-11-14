@@ -37,9 +37,8 @@ internal class PooledConnection : DelegatedConnection, IPooledConnection
     }
 
     /// <summary>
-    /// Return true if unrecoverable error has been received on this connection, otherwise false.
-    /// The connection that has been marked as has unrecoverable errors will be eventually closed when returning back to
-    /// the pool. <br/><br/>
+    /// Return true if unrecoverable error has been received on this connection, otherwise false. The connection that
+    /// has been marked as has unrecoverable errors will be eventually closed when returning back to the pool. <br /><br />
     /// </summary>
     internal bool HasUnrecoverableError { get; private set; }
 
@@ -65,8 +64,10 @@ internal class PooledConnection : DelegatedConnection, IPooledConnection
     public override Task CloseAsync()
     {
         if (_releaseManager == null)
+        {
             return Task.CompletedTask;
-        
+        }
+
         return _releaseManager.ReleaseAsync(this);
     }
 
@@ -75,21 +76,31 @@ internal class PooledConnection : DelegatedConnection, IPooledConnection
 
     internal override Task OnErrorAsync(Exception error)
     {
-        if (!error.IsRecoverableError()) HasUnrecoverableError = true;
+        if (!error.IsRecoverableError())
+        {
+            HasUnrecoverableError = true;
+        }
 
         if (error is Neo4jException)
         {
-            if (error.IsAuthorizationError()) _releaseManager.MarkConnectionsForReauthorization(this);
+            if (error.IsAuthorizationError())
+            {
+                _releaseManager.MarkConnectionsForReauthorization(this);
+            }
 
             throw error;
         }
 
         if (error.IsConnectionError())
+        {
             throw new ServiceUnavailableException(
                 $"Connection with the server breaks due to {error.GetType().Name}: {error.Message} " +
                 "Please ensure that your database is listening on the correct host and port " +
                 "and that you have compatible encryption settings both on Neo4j server and driver. " +
-                "Note that the default encryption setting has changed in Neo4j 4.0.", error);
+                "Note that the default encryption setting has changed in Neo4j 4.0.",
+                error);
+        }
+
         throw error;
     }
 }

@@ -15,18 +15,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Threading.Tasks;
 using Neo4j.Driver.Internal.MessageHandling;
 
-namespace Neo4j.Driver.Internal.Result
+namespace Neo4j.Driver.Internal.Result;
+
+internal interface IResultStreamBuilder
 {
-    internal interface IResultStreamBuilder
-    {
-        void RunCompleted(long queryId, string[] fields, IResponsePipelineError error);
+    void RunCompleted(long queryId, string[] fields, IResponsePipelineError error);
 
-        void PullCompleted(bool hasMore, IResponsePipelineError error);
+    void PullCompleted(bool hasMore, IResponsePipelineError error);
 
-        void PushRecord(object[] fieldValues);
-    }
+    void PushRecord(object[] fieldValues);
 }

@@ -33,6 +33,6 @@ internal sealed class DiscardMessage : ResultHandleMessage
     }
 
     protected override string Name => "DISCARD";
-    
+
     public override IPackStreamSerializer Serializer => DiscardMessageSerializer.Instance;
 }

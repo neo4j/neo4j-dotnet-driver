@@ -24,16 +24,18 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers;
 internal sealed class DiscardMessageSerializer : WriteOnlySerializer
 {
     internal static DiscardMessageSerializer Instance = new();
-    
-    private static readonly Type[] Types = {typeof(DiscardMessage)};
+
+    private static readonly Type[] Types = { typeof(DiscardMessage) };
     public override IEnumerable<Type> WritableTypes => Types;
 
     public override void Serialize(PackStreamWriter writer, object value)
     {
         if (value is not DiscardMessage msg)
+        {
             throw new ArgumentOutOfRangeException(
                 $"Encountered {value?.GetType().Name} where {nameof(DiscardMessage)} was expected");
-        
+        }
+
         writer.WriteStructHeader(1, MessageFormat.MsgDiscard);
         writer.WriteDictionary(msg.Metadata);
     }

@@ -18,118 +18,162 @@
 using System;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal class InternalSession : ISession
 {
-    internal class InternalSession : ISession
+    private readonly BlockingExecutor _executor;
+    private readonly IRetryLogic _retryLogic;
+    private readonly IInternalAsyncSession _session;
+
+    private bool _disposed;
+
+    public InternalSession(IInternalAsyncSession session, IRetryLogic retryLogic, BlockingExecutor executor)
     {
-        private readonly IInternalAsyncSession _session;
-        private readonly IRetryLogic _retryLogic;
-        private readonly BlockingExecutor _executor;
+        _session = session ?? throw new ArgumentNullException(nameof(session));
+        _retryLogic = retryLogic ?? throw new ArgumentNullException(nameof(retryLogic));
+        _executor = executor ?? throw new ArgumentNullException(nameof(executor));
+    }
 
-        private bool _disposed;
+    public Bookmark LastBookmark => _session.LastBookmark;
+    public Bookmarks LastBookmarks => _session.LastBookmarks;
+    public SessionConfig SessionConfig => _session.SessionConfig;
 
-        ~InternalSession() => Dispose(false);
+    public IResult Run(string Query)
+    {
+        return Run(new Query(Query));
+    }
 
-        public InternalSession(IInternalAsyncSession session, IRetryLogic retryLogic, BlockingExecutor executor)
+    public IResult Run(string Query, object parameters)
+    {
+        return Run(new Query(Query, parameters.ToDictionary()));
+    }
+
+    public IResult Run(string Query, IDictionary<string, object> parameters)
+    {
+        return Run(new Query(Query, parameters));
+    }
+
+    public IResult Run(Query query)
+    {
+        return Run(query, null);
+    }
+
+    public IResult Run(string Query, Action<TransactionConfigBuilder> action)
+    {
+        return Run(new Query(Query), action);
+    }
+
+    public IResult Run(
+        string Query,
+        IDictionary<string, object> parameters,
+        Action<TransactionConfigBuilder> action)
+    {
+        return Run(new Query(Query, parameters), action);
+    }
+
+    public IResult Run(Query query, Action<TransactionConfigBuilder> action)
+    {
+        return new InternalResult(
+            _executor.RunSync(() => _session.RunAsync(query, action, true)),
+            _executor);
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    ~InternalSession()
+    {
+        Dispose(false);
+    }
+
+    private void Dispose(bool disposing)
+    {
+        if (!_disposed)
         {
-            _session = session ?? throw new ArgumentNullException(nameof(session));
-            _retryLogic = retryLogic ?? throw new ArgumentNullException(nameof(retryLogic));
-            _executor = executor ?? throw new ArgumentNullException(nameof(executor));
+            if (disposing)
+            {
+                _executor.RunSync(() => _session.CloseAsync());
+            }
         }
 
-        public Bookmark LastBookmark => _session.LastBookmark;
-        public Bookmarks LastBookmarks => _session.LastBookmarks;
-        public SessionConfig SessionConfig => _session.SessionConfig;
+        _disposed = true;
+    }
 
-        public IResult Run(string Query)
-        {
-            return Run(new Query(Query));
-        }
+    #region BeginTransaction Methods
 
-        public IResult Run(string Query, object parameters)
-        {
-            return Run(new Query(Query, parameters.ToDictionary()));
-        }
+    public ITransaction BeginTransaction()
+    {
+        return BeginTransaction(null);
+    }
 
-        public IResult Run(string Query, IDictionary<string, object> parameters)
-        {
-            return Run(new Query(Query, parameters));
-        }
+    public ITransaction BeginTransaction(Action<TransactionConfigBuilder> action)
+    {
+        return new InternalTransaction(
+            _executor.RunSync(() => _session.BeginTransactionAsync(action, true))
+                .CastOrThrow<IInternalAsyncTransaction>(),
+            _executor);
+    }
 
-        public IResult Run(Query query)
-        {
-            return Run(query, null);
-        }
+    private InternalTransaction BeginTransaction(AccessMode mode, Action<TransactionConfigBuilder> action)
+    {
+        return new InternalTransaction(
+            _executor.RunSync(() => _session.BeginTransactionAsync(mode, action, true))
+                .CastOrThrow<IInternalAsyncTransaction>(),
+            _executor);
+    }
 
-        #region BeginTransaction Methods
+    #endregion
 
-        public ITransaction BeginTransaction()
-        {
-            return BeginTransaction(null);
-        }
+    #region Transaction Methods
 
-        public ITransaction BeginTransaction(Action<TransactionConfigBuilder> action)
-        {
-            return new InternalTransaction(
-                _executor.RunSync(() => _session.BeginTransactionAsync(action, true))
-                    .CastOrThrow<IInternalAsyncTransaction>(), _executor);
-        }
+    public T ReadTransaction<T>(Func<ITransaction, T> work)
+    {
+        return ReadTransaction(work, null);
+    }
 
-        private InternalTransaction BeginTransaction(AccessMode mode, Action<TransactionConfigBuilder> action)
-        {
-            return new InternalTransaction(
-                _executor.RunSync(() => _session.BeginTransactionAsync(mode, action, true))
-                    .CastOrThrow<IInternalAsyncTransaction>(), _executor);
-        }
+    public T ReadTransaction<T>(Func<ITransaction, T> work, Action<TransactionConfigBuilder> action)
+    {
+        return RunTransaction(AccessMode.Read, work, action);
+    }
 
-        #endregion
+    public T WriteTransaction<T>(Func<ITransaction, T> work)
+    {
+        return WriteTransaction(work, null);
+    }
 
-        #region Transaction Methods
+    public T WriteTransaction<T>(Func<ITransaction, T> work, Action<TransactionConfigBuilder> action)
+    {
+        return RunTransaction(AccessMode.Write, work, action);
+    }
 
-        public T ReadTransaction<T>(Func<ITransaction, T> work)
-        {
-            return ReadTransaction(work, null);
-        }
+    public T ExecuteRead<T>(Func<IQueryRunner, T> work)
+    {
+        return ReadTransaction(work, null);
+    }
 
-        public T ReadTransaction<T>(Func<ITransaction, T> work, Action<TransactionConfigBuilder> action)
-        {
-            return RunTransaction(AccessMode.Read, work, action);
-        }
+    public T ExecuteRead<T>(Func<IQueryRunner, T> work, Action<TransactionConfigBuilder> action)
+    {
+        return RunTransaction(AccessMode.Read, work, action);
+    }
 
-        public T WriteTransaction<T>(Func<ITransaction, T> work)
-        {
-            return WriteTransaction(work, null);
-        }
+    public T ExecuteWrite<T>(Func<IQueryRunner, T> work)
+    {
+        return WriteTransaction(work, null);
+    }
 
-        public T WriteTransaction<T>(Func<ITransaction, T> work, Action<TransactionConfigBuilder> action)
-        {
-            return RunTransaction(AccessMode.Write, work, action);
-        }
+    public T ExecuteWrite<T>(Func<IQueryRunner, T> work, Action<TransactionConfigBuilder> action)
+    {
+        return RunTransaction(AccessMode.Write, work, action);
+    }
 
-        public T ExecuteRead<T>(Func<IQueryRunner, T> work)
-        {
-            return ReadTransaction(work, null);
-        }
-
-        public T ExecuteRead<T>(Func<IQueryRunner, T> work, Action<TransactionConfigBuilder> action)
-        {
-            return RunTransaction(AccessMode.Read, work, action);
-        }
-
-        public T ExecuteWrite<T>(Func<IQueryRunner, T> work)
-        {
-            return WriteTransaction(work, null);
-        }
-
-        public T ExecuteWrite<T>(Func<IQueryRunner, T> work, Action<TransactionConfigBuilder> action)
-        {
-            return RunTransaction(AccessMode.Write, work, action);
-        }
-
-
-        internal T RunTransaction<T>(AccessMode mode, Func<ITransaction, T> work, Action<TransactionConfigBuilder> action)
-        {
-            return _retryLogic.Retry(() =>
+    internal T RunTransaction<T>(AccessMode mode, Func<ITransaction, T> work, Action<TransactionConfigBuilder> action)
+    {
+        return _retryLogic.Retry(
+            () =>
             {
                 using (var txc = BeginTransaction(mode, action))
                 {
@@ -154,44 +198,7 @@ namespace Neo4j.Driver.Internal
                     }
                 }
             });
-        }
-
-        #endregion
-
-        public IResult Run(string Query, Action<TransactionConfigBuilder> action)
-        {
-            return Run(new Query(Query), action);
-        }
-
-        public IResult Run(string Query, IDictionary<string, object> parameters,
-            Action<TransactionConfigBuilder> action)
-        {
-            return Run(new Query(Query, parameters), action);
-        }
-
-        public IResult Run(Query query, Action<TransactionConfigBuilder> action)
-        {
-            return new InternalResult(_executor.RunSync(() => _session.RunAsync(query, action, true)),
-                _executor);
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        private void Dispose(bool disposing)
-        {
-            if (!_disposed)
-            {
-                if (disposing)
-                {
-                    _executor.RunSync(() => _session.CloseAsync());
-                }
-            }
-
-            _disposed = true;
-        }
     }
+
+    #endregion
 }

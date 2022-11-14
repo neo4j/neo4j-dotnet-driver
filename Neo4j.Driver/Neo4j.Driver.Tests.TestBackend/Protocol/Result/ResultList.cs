@@ -20,41 +20,42 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend
+namespace Neo4j.Driver.Tests.TestBackend;
+
+internal class ResultList : IProtocolObject
 {
-    internal class ResultList : IProtocolObject
+    public ResultListType data { get; set; } = new();
+
+    [JsonIgnore] public List<IRecord> Records { get; set; }
+
+    public override async Task Process()
     {
-        public ResultListType data { get; set; } = new ResultListType();
+        var result = (Result)ObjManager.GetObject(data.resultId);
+        Records = await result.ToListAsync();
+    }
 
-        [JsonIgnore]
-        public List<IRecord> Records { get; set; }
-
-        public class ResultListType
+    public override string Respond()
+    {
+        if (Records == null)
         {
-            public string resultId { get; set; }
+            return new ProtocolResponse("NullRecord", (object)null).Encode();
         }
 
-        public override async Task Process()
-        {
-            var result = (Result)ObjManager.GetObject(data.resultId);
-            Records = await result.ToListAsync();
-        }
-
-        public override string Respond()
-        {
-            if (Records == null) 
-                return new ProtocolResponse("NullRecord", (object) null).Encode();
-
-            var mappedList = Records
-                .Select(x => new
+        var mappedList = Records
+            .Select(
+                x => new
                 {
                     values = x.Values
                         .Select(y => NativeToCypher.Convert(y.Value))
                         .ToList()
                 })
-                .ToList();
+            .ToList();
 
-            return new ProtocolResponse("RecordList", new { records = mappedList }).Encode();
-        }
+        return new ProtocolResponse("RecordList", new { records = mappedList }).Encode();
+    }
+
+    public class ResultListType
+    {
+        public string resultId { get; set; }
     }
 }

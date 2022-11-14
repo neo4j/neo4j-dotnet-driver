@@ -16,10 +16,14 @@ internal static class TaskExtensions
             var finished = await Task.WhenAny(task, delay).ConfigureAwait(false);
 
             if (finished.IsCanceled)
+            {
                 throw new TaskCanceledException(task);
+            }
 
             if (finished.IsCompleted && finished == delay)
+            {
                 throw new TimeoutException();
+            }
 
             await task.ConfigureAwait(false);
         }
@@ -39,10 +43,14 @@ internal static class TaskExtensions
             var finished = await Task.WhenAny(task, delay).ConfigureAwait(false);
 
             if (finished.IsCanceled)
+            {
                 throw new TaskCanceledException(task);
+            }
 
             if (finished.IsCompleted && finished == delay)
+            {
                 throw new TimeoutException();
+            }
 
             return await task.ConfigureAwait(false);
         }

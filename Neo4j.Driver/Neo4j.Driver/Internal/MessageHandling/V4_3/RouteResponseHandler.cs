@@ -22,12 +22,12 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4_3;
 
 internal sealed class RouteResponseHandler : MetadataCollectingResponseHandler
 {
-    public IDictionary<string, object> RoutingInformation { get; set; }
-
     public RouteResponseHandler()
     {
         AddMetadata<RoutingTableCollector, IDictionary<string, object>>();
     }
+
+    public IDictionary<string, object> RoutingInformation { get; set; }
 
     public override void OnSuccess(IDictionary<string, object> metadata)
     {

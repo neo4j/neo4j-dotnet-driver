@@ -29,6 +29,27 @@ internal abstract class MetadataCollectingResponseHandler : IResponseHandler
         _metadataCollectors = new Dictionary<Type, IMetadataCollector>();
     }
 
+    public virtual void OnSuccess(IDictionary<string, object> metadata)
+    {
+        foreach (var collector in _metadataCollectors.Values)
+        {
+            collector.Collect(metadata);
+        }
+    }
+
+    public virtual void OnRecord(object[] fieldValues)
+    {
+        throw new ProtocolException($"{nameof(OnRecord)} is not expected at this time.");
+    }
+
+    public virtual void OnFailure(IResponsePipelineError error)
+    {
+    }
+
+    public virtual void OnIgnored()
+    {
+    }
+
     protected void AddMetadata<TCollector, TMetadata>()
         where TCollector : class, IMetadataCollector<TMetadata>, new()
     {
@@ -52,28 +73,7 @@ internal abstract class MetadataCollectingResponseHandler : IResponseHandler
         where TCollector : class, IMetadataCollector<TMetadata>
     {
         return _metadataCollectors.TryGetValue(typeof(TCollector), out var collector)
-            ? ((IMetadataCollector<TMetadata>) collector).Collected
+            ? ((IMetadataCollector<TMetadata>)collector).Collected
             : default;
-    }
-
-    public virtual void OnSuccess(IDictionary<string, object> metadata)
-    {
-        foreach (var collector in _metadataCollectors.Values)
-        {
-            collector.Collect(metadata);
-        }
-    }
-
-    public virtual void OnRecord(object[] fieldValues)
-    {
-        throw new ProtocolException($"{nameof(OnRecord)} is not expected at this time.");
-    }
-
-    public virtual void OnFailure(IResponsePipelineError error)
-    {
-    }
-
-    public virtual void OnIgnored()
-    {
     }
 }

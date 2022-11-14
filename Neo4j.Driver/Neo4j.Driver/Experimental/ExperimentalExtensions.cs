@@ -18,19 +18,21 @@
 namespace Neo4j.Driver.Experimental;
 
 /// <summary>
-/// Methods being considered for moving to the Neo4j.Driver.
-/// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
+/// Methods being considered for moving to the Neo4j.Driver. There is no guarantee that anything in
+/// Neo4j.Driver.Experimental namespace will be in a next minor version.
 /// </summary>
 public static class ExperimentalExtensions
 {
     /// <summary>
     /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
-    /// Sets the <see cref="IBookmarkManager"/> for maintaining bookmarks for the lifetime of a session.
+    /// Sets the <see cref="IBookmarkManager" /> for maintaining bookmarks for the lifetime of a session.
     /// </summary>
     /// <param name="builder">this builder.</param>
-    /// <param name="bookmarkManager">Instance of <see cref="IBookmarkManager"/>.</param>
-    /// <returns>this <see cref="SessionConfigBuilder"/> instance.</returns>
-    public static SessionConfigBuilder WithBookmarkManager(this SessionConfigBuilder builder, IBookmarkManager bookmarkManager)
+    /// <param name="bookmarkManager">Instance of <see cref="IBookmarkManager" />.</param>
+    /// <returns>this <see cref="SessionConfigBuilder" /> instance.</returns>
+    public static SessionConfigBuilder WithBookmarkManager(
+        this SessionConfigBuilder builder,
+        IBookmarkManager bookmarkManager)
     {
         return builder.WithBookmarkManager(bookmarkManager);
     }

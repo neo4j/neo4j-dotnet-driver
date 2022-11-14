@@ -23,8 +23,8 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 internal sealed class SystemDateTimeSerializer : WriteOnlySerializer
 {
     internal static readonly SystemDateTimeSerializer Instance = new();
-    
-    public override IEnumerable<Type> WritableTypes => new[] {typeof(DateTime)};
+
+    public override IEnumerable<Type> WritableTypes => new[] { typeof(DateTime) };
 
     public override void Serialize(PackStreamWriter writer, object value)
     {
@@ -36,9 +36,11 @@ internal sealed class SystemDateTimeSerializer : WriteOnlySerializer
             case DateTimeKind.Unspecified:
                 writer.Write(new LocalDateTime(dateTime));
                 break;
+
             case DateTimeKind.Utc:
                 writer.Write(new ZonedDateTime(dateTime, 0));
                 break;
+
             default:
                 throw new ProtocolException(
                     $"Unsupported DateTimeKind {dateTime.Kind} passed to {nameof(SystemDateTimeSerializer)}!");

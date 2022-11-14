@@ -1,36 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using System.Diagnostics;
-using System.Linq;
+﻿using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Tests.TestBackend
+namespace Neo4j.Driver.Tests.TestBackend;
+
+internal class RetryableNegative : IProtocolObject
 {
-    internal class RetryableNegative : IProtocolObject
+    public RetryableNegativeType data { get; set; } = new();
+
+    public override async Task Process(Controller controller)
     {
-        public RetryableNegativeType data { get; set; } = new RetryableNegativeType();
+        var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
+        sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAbleNegative, data.errorId);
 
-        public class RetryableNegativeType
-        {
-            public string sessionId { get; set; }
-            public string errorId { get; set; }
-        }
+        TriggerEvent();
 
-        public override async Task Process(Controller controller)
-        {
-			var sessionContainer = ((NewSession)ObjManager.GetObject(data.sessionId));
-			sessionContainer.SetupRetryAbleState(NewSession.SessionState.RetryAbleNegative, data.errorId);
+        await Task.CompletedTask;
+    }
 
-			TriggerEvent();
+    public override string Respond()
+    {
+        return string.Empty;
+    }
 
-			await Task.CompletedTask;
-		}
-
-
-        public override string Respond()
-        {
-			return string.Empty;
-        }
+    public class RetryableNegativeType
+    {
+        public string sessionId { get; set; }
+        public string errorId { get; set; }
     }
 }

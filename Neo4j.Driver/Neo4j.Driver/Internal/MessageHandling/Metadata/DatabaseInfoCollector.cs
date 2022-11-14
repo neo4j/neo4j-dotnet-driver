@@ -18,33 +18,32 @@
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Result;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata
+namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
+
+internal class DatabaseInfoCollector : IMetadataCollector<IDatabaseInfo>
 {
-    internal class DatabaseInfoCollector : IMetadataCollector<IDatabaseInfo>
+    internal const string DbKey = "db";
+    object IMetadataCollector.Collected => Collected;
+
+    public IDatabaseInfo Collected { get; private set; }
+
+    public void Collect(IDictionary<string, object> metadata)
     {
-        internal const string DbKey = "db";
-        object IMetadataCollector.Collected => Collected;
+        var databaseName = (string)null;
 
-        public IDatabaseInfo Collected { get; private set; }
-
-        public void Collect(IDictionary<string, object> metadata)
+        if (metadata != null && metadata.TryGetValue(DbKey, out var dbValue))
         {
-            var databaseName = (string) null;
-
-            if (metadata != null && metadata.TryGetValue(DbKey, out var dbValue))
+            if (dbValue is string db)
             {
-                if (dbValue is string db)
-                {
-                    databaseName = db;
-                }
-                else
-                {
-                    throw new ProtocolException(
-                        $"Expected '{DbKey}' metadata to be of type 'string', but got '{dbValue?.GetType().Name}'.");
-                }
+                databaseName = db;
             }
-
-            Collected = new DatabaseInfo(databaseName);
+            else
+            {
+                throw new ProtocolException(
+                    $"Expected '{DbKey}' metadata to be of type 'string', but got '{dbValue?.GetType().Name}'.");
+            }
         }
+
+        Collected = new DatabaseInfo(databaseName);
     }
 }

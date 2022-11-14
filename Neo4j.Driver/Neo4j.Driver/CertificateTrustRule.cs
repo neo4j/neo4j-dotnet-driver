@@ -15,25 +15,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver;
+
+/// <summary>Rules for how to validate a server certificate.</summary>
+public enum CertificateTrustRule
 {
-    /// <summary>
-    /// Rules for how to validate a server certificate.
-    /// </summary>
-    public enum CertificateTrustRule
-    {
-        /// <summary>
-        /// Trust only certificates that can build a chain against
-        /// system's CA stores
-        /// </summary>
-        TrustSystem = 0,
-        /// <summary>
-        /// Trust certificates that can build an x509Chain against list of specified certificates.
-        /// </summary>
-        TrustList = 1,
-        /// <summary>
-        /// Trust any certificate
-        /// </summary>
-        TrustAny = 2
-    }
+    /// <summary>Trust only certificates that can build a chain against system's CA stores</summary>
+    TrustSystem = 0,
+
+    /// <summary>Trust certificates that can build an x509Chain against list of specified certificates.</summary>
+    TrustList = 1,
+
+    /// <summary>Trust any certificate</summary>
+    TrustAny = 2
 }

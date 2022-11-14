@@ -15,117 +15,120 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.TestUtil;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
 using static Neo4j.Driver.SessionConfigBuilder;
-using System.Threading;
 
-namespace Neo4j.Driver.IntegrationTests.Routing
+namespace Neo4j.Driver.IntegrationTests.Routing;
+
+public class BoltV4IT : RoutingDriverTestBase
 {
-    public class BoltV4IT : RoutingDriverTestBase
+    private readonly IDriver _driver;
+
+    public BoltV4IT(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)
+        : base(output, fixture)
     {
-        private readonly IDriver _driver;
+        _driver = GraphDatabase.Driver(
+            Cluster.BoltRoutingUri,
+            Cluster.AuthToken,
+            o => o.WithLogger(TestLogger.Create(output)));
+    }
 
-        public BoltV4IT(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)
-            : base(output, fixture)
+    [RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]
+    public async Task ShouldReturnDatabaseInfoForDefaultDatabaseInTxFunc()
+    {
+        await VerifyDatabaseNameOnSummaryTxFunc(null, "neo4j");
+    }
+
+    [RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]
+    public async Task ShouldReturnDatabaseInfoForDefaultDatabaseWhenSpecifiedInTxFunc()
+    {
+        await VerifyDatabaseNameOnSummaryTxFunc("neo4j", "neo4j");
+    }
+
+    //[RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]
+    [RequireClusterFact(Skip = "Requires server fix")]
+    public async Task ShouldReturnDatabaseInfoForDatabaseInTxFunc()
+    {
+        var bookmark = await CreateDatabase(_driver, "foo");
+
+        try
         {
-            _driver = GraphDatabase.Driver(Cluster.BoltRoutingUri, Cluster.AuthToken,
-                o => o.WithLogger(TestLogger.Create(output)));
+            await VerifyDatabaseNameOnSummaryTxFunc("foo", "foo", bookmark);
+        }
+        finally
+        {
+            await DropDatabase(_driver, "foo", bookmark);
+        }
+    }
+
+    //[RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]
+    [RequireClusterFact(Skip = "Requires server fix")]
+    public async Task ShouldReturnDatabaseInfoForDatabaseInAutoCommit()
+    {
+        var dbname = "foo";
+        var session = _driver.AsyncSession(ForDatabase("system"));
+        Bookmarks bookmarks;
+
+        try
+        {
+            await session.RunAsync(new Query($"CREATE DATABASE {dbname}"));
+            bookmarks = session.LastBookmarks;
+        }
+        finally
+        {
+            await session.CloseAsync();
         }
 
-        [RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]
-        public async Task ShouldReturnDatabaseInfoForDefaultDatabaseInTxFunc()
-        {
-            await VerifyDatabaseNameOnSummaryTxFunc(null, "neo4j");
-        }
-
-        [RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]
-        public async Task ShouldReturnDatabaseInfoForDefaultDatabaseWhenSpecifiedInTxFunc()
-        {
-            await VerifyDatabaseNameOnSummaryTxFunc("neo4j", "neo4j");
-        }
-
-        //[RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]
-		[RequireClusterFact(Skip = "Requires server fix")]
-		public async Task ShouldReturnDatabaseInfoForDatabaseInTxFunc()
-        {
-            var bookmark = await CreateDatabase(_driver, "foo");
-
-            try
+        session = _driver.AsyncSession(
+            o =>
             {
-                await VerifyDatabaseNameOnSummaryTxFunc("foo", "foo", bookmark);
-            }
-            finally
-            {
-                await DropDatabase(_driver, "foo", bookmark);
-            }
-        }
+                if (!string.IsNullOrEmpty(dbname))
+                {
+                    o.WithDatabase(dbname);
+                }
 
+                o.WithBookmarks(bookmarks ?? Bookmarks.Empty);
+            });
 
-		//[RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]
-		[RequireClusterFact(Skip = "Requires server fix")]
-		public async Task ShouldReturnDatabaseInfoForDatabaseInAutoCommit()
-		{	
-			string dbname = "foo"; 
-			var session = _driver.AsyncSession(ForDatabase("system"));
-			Bookmarks bookmarks;
-
-			try
-			{
-				
-				await session.RunAsync(new Query($"CREATE DATABASE { dbname }"));
-				bookmarks = session.LastBookmarks;
-			}
-			finally
-			{
-				await session.CloseAsync();
-			}
-
-
-			session = _driver.AsyncSession(o =>
-			{
-				if (!string.IsNullOrEmpty(dbname))
-				{
-					o.WithDatabase(dbname);
-				}
-
-				o.WithBookmarks(bookmarks ?? Bookmarks.Empty);
-			});
-
-			try
-			{
-				var result = await session.RunAsync(new Query("RETURN 1"));
-				var summary = await result.ConsumeAsync();
-				summary.Database.Should().NotBeNull();
-				summary.Database.Name.Should().Be(dbname);
-			}
-			finally
-			{
-				await session.CloseAsync();
-			}
-		}
-
-		[RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]
-        public void ShouldThrowForNonExistentDatabaseInTxFunc()
+        try
         {
-            this.Awaiting(_ => VerifyDatabaseNameOnSummaryTxFunc("bar", "bar")).Should().Throw<ClientException>()
-                .WithMessage("*database does not exist*");
+            var result = await session.RunAsync(new Query("RETURN 1"));
+            var summary = await result.ConsumeAsync();
+            summary.Database.Should().NotBeNull();
+            summary.Database.Name.Should().Be(dbname);
         }
-
-        [RequireClusterFact("4.0.0", VersionComparison.LessThan)]
-        public void ShouldThrowWhenDatabaseIsSpecifiedInTxFunc()
+        finally
         {
-            this.Awaiting(_ => VerifyDatabaseNameOnSummaryTxFunc("bar", "bar")).Should().Throw<ClientException>()
-                .WithMessage("*to a server that does not support multiple databases.*");
+            await session.CloseAsync();
         }
+    }
 
-        private async Task VerifyDatabaseNameOnSummaryTxFunc(string name, string expected, Bookmarks bookmarks = null)
-        {
-            var session = _driver.AsyncSession(o =>
+    [RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]
+    public void ShouldThrowForNonExistentDatabaseInTxFunc()
+    {
+        this.Awaiting(_ => VerifyDatabaseNameOnSummaryTxFunc("bar", "bar"))
+            .Should()
+            .Throw<ClientException>()
+            .WithMessage("*database does not exist*");
+    }
+
+    [RequireClusterFact("4.0.0", VersionComparison.LessThan)]
+    public void ShouldThrowWhenDatabaseIsSpecifiedInTxFunc()
+    {
+        this.Awaiting(_ => VerifyDatabaseNameOnSummaryTxFunc("bar", "bar"))
+            .Should()
+            .Throw<ClientException>()
+            .WithMessage("*to a server that does not support multiple databases.*");
+    }
+
+    private async Task VerifyDatabaseNameOnSummaryTxFunc(string name, string expected, Bookmarks bookmarks = null)
+    {
+        var session = _driver.AsyncSession(
+            o =>
             {
                 if (!string.IsNullOrEmpty(name))
                 {
@@ -135,44 +138,44 @@ namespace Neo4j.Driver.IntegrationTests.Routing
                 o.WithBookmarks(bookmarks ?? Bookmarks.Empty);
             });
 
-            try
-            {
-				var summary = await session.ReadTransactionAsync(async txc => { return await txc.RunAndConsumeAsync("RETURN 1"); });
-
-                summary.Database.Should().NotBeNull();
-                summary.Database.Name.Should().Be(expected);
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
-
-        private static async Task<Bookmarks> CreateDatabase(IDriver driver, string name)
+        try
         {
-            var session = driver.AsyncSession(ForDatabase("system"));
-            try
-            {
-        				await session.WriteTransactionAsync(async txc => await txc.RunAndConsumeAsync($"CREATE DATABASE {name}"));
-				        return session.LastBookmarks;
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
+            var summary =
+                await session.ReadTransactionAsync(async txc => { return await txc.RunAndConsumeAsync("RETURN 1"); });
 
-        private static async Task DropDatabase(IDriver driver, string name, Bookmarks bookmarks)
+            summary.Database.Should().NotBeNull();
+            summary.Database.Name.Should().Be(expected);
+        }
+        finally
         {
-            var session = driver.AsyncSession(o => o.WithDatabase("system").WithBookmarks(bookmarks));
-            try
-            {
-                await session.WriteTransactionAsync(async txc => await txc.RunAndConsumeAsync($"DROP DATABASE {name}"));
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
+            await session.CloseAsync();
+        }
+    }
+
+    private static async Task<Bookmarks> CreateDatabase(IDriver driver, string name)
+    {
+        var session = driver.AsyncSession(ForDatabase("system"));
+        try
+        {
+            await session.WriteTransactionAsync(async txc => await txc.RunAndConsumeAsync($"CREATE DATABASE {name}"));
+            return session.LastBookmarks;
+        }
+        finally
+        {
+            await session.CloseAsync();
+        }
+    }
+
+    private static async Task DropDatabase(IDriver driver, string name, Bookmarks bookmarks)
+    {
+        var session = driver.AsyncSession(o => o.WithDatabase("system").WithBookmarks(bookmarks));
+        try
+        {
+            await session.WriteTransactionAsync(async txc => await txc.RunAndConsumeAsync($"DROP DATABASE {name}"));
+        }
+        finally
+        {
+            await session.CloseAsync();
         }
     }
 }

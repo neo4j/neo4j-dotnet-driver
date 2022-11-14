@@ -22,7 +22,8 @@ namespace Neo4j.Driver.Internal
 {
     internal static class RxExtensions
     {
-        public static IObservable<TSource> CatchAndThrow<TSource>(this IObservable<TSource> source,
+        public static IObservable<TSource> CatchAndThrow<TSource>(
+            this IObservable<TSource> source,
             Func<Exception, IObservable<TSource>> handler)
         {
             return source.Catch((Exception exc) => handler(exc).Concat(Observable.Throw<TSource>(exc)));

@@ -33,6 +33,16 @@ namespace Neo4j.Driver.IntegrationTests.Stress;
 public abstract class StressTest<TContext> : IDisposable
     where TContext : StressTestContext
 {
+    public enum StressTestMinLogLevel
+    {
+        Trace,
+        Debug,
+        Info,
+        Warn,
+        Error,
+        None
+    }
+
     private const int DefaultExecutionTime = 30;
 
     private const int StressTestThreadCount = 8;
@@ -53,7 +63,10 @@ public abstract class StressTest<TContext> : IDisposable
     protected readonly ITestOutputHelper _output;
     private bool _disposed;
 
-    protected StressTest(ITestOutputHelper output, Uri databaseUri, IAuthToken authToken,
+    protected StressTest(
+        ITestOutputHelper output,
+        Uri databaseUri,
+        IAuthToken authToken,
         Action<ConfigBuilder> configure = null)
     {
         _output = output ?? throw new ArgumentNullException(nameof(output));
@@ -63,23 +76,32 @@ public abstract class StressTest<TContext> : IDisposable
 
         var seconds = Environment.GetEnvironmentVariable("TEST_NEO4J_STRESS_DURATION");
         if (!string.IsNullOrEmpty(seconds))
+        {
             StressTestExecutionTime =
-                TimeSpan.FromSeconds(Convert.ToDouble(seconds) /
-                                     3); //There are three areas so divide by 3, async, blocking and reactive.
+                TimeSpan.FromSeconds(
+                    Convert.ToDouble(seconds) /
+                    3); //There are three areas so divide by 3, async, blocking and reactive.
+        }
 
         var minLevel = StressTestMinLogLevel.None;
         var minLevelText = Environment.GetEnvironmentVariable("TEST_NEO4J_STRESS_MIN_LOG_LEVEL");
         if (!string.IsNullOrWhiteSpace(minLevelText))
-            Enum.TryParse(minLevelText, out minLevel);
-
-        _driver = GraphDatabase.Driver(databaseUri, authToken, builder =>
         {
-            builder
-                .WithLogger(new StressTestLogger(_output, minLevel))
-                .WithMaxConnectionPoolSize(100)
-                .WithConnectionAcquisitionTimeout(TimeSpan.FromMinutes(1));
-            configure?.Invoke(builder);
-        });
+            Enum.TryParse(minLevelText, out minLevel);
+        }
+
+        _driver = GraphDatabase.Driver(
+            databaseUri,
+            authToken,
+            builder =>
+            {
+                builder
+                    .WithLogger(new StressTestLogger(_output, minLevel))
+                    .WithMaxConnectionPoolSize(100)
+                    .WithConnectionAcquisitionTimeout(TimeSpan.FromMinutes(1));
+
+                configure?.Invoke(builder);
+            });
 
         CleanupDatabase();
     }
@@ -89,15 +111,10 @@ public abstract class StressTest<TContext> : IDisposable
         Dispose(false);
     }
 
-    public enum StressTestMinLogLevel
-    {
-        Trace, Debug, Info, Warn, Error, None
-    }
-
     private class StressTestLogger : ILogger
     {
-        private readonly ITestOutputHelper _output;
         private readonly StressTestMinLogLevel _minLevel;
+        private readonly ITestOutputHelper _output;
 
         public StressTestLogger(ITestOutputHelper output, StressTestMinLogLevel minLevel)
         {
@@ -110,7 +127,10 @@ public abstract class StressTest<TContext> : IDisposable
             if (_minLevel <= StressTestMinLogLevel.Error)
             {
                 if (!string.IsNullOrEmpty(message))
+                {
                     Write(message, args);
+                }
+
                 _output.WriteLine(cause.Message);
             }
         }
@@ -120,7 +140,10 @@ public abstract class StressTest<TContext> : IDisposable
             if (_minLevel <= StressTestMinLogLevel.Warn)
             {
                 if (!string.IsNullOrEmpty(message))
+                {
                     Write(message, args);
+                }
+
                 _output.WriteLine(cause.Message);
             }
         }
@@ -128,19 +151,25 @@ public abstract class StressTest<TContext> : IDisposable
         public void Info(string message, params object[] args)
         {
             if (_minLevel <= StressTestMinLogLevel.Info)
+            {
                 Write(message, args);
+            }
         }
 
         public void Debug(string message, params object[] args)
         {
             if (_minLevel <= StressTestMinLogLevel.Debug)
+            {
                 Write(message, args);
+            }
         }
 
         public void Trace(string message, params object[] args)
         {
             if (_minLevel <= StressTestMinLogLevel.Trace)
+            {
                 Write(message, args);
+            }
         }
 
         public bool IsTraceEnabled()
@@ -212,17 +241,25 @@ public abstract class StressTest<TContext> : IDisposable
         var commands = CreateBlockingCommands();
 
         var tasks = new List<Task>();
-        for (var i = 0; i < StressTestThreadCount; i++) tasks.Add(LaunchBlockingWorkerThread(context, commands));
+        for (var i = 0; i < StressTestThreadCount; i++)
+        {
+            tasks.Add(LaunchBlockingWorkerThread(context, commands));
+        }
 
         return tasks;
     }
 
     private static Task LaunchBlockingWorkerThread(TContext context, IList<IBlockingCommand<TContext>> commands)
     {
-        return Task.Factory.StartNew(() =>
-        {
-            while (!context.Stopped) commands.RandomElement().Execute(context);
-        }, TaskCreationOptions.LongRunning);
+        return Task.Factory.StartNew(
+            () =>
+            {
+                while (!context.Stopped)
+                {
+                    commands.RandomElement().Execute(context);
+                }
+            },
+            TaskCreationOptions.LongRunning);
     }
 
     #endregion
@@ -273,20 +310,28 @@ public abstract class StressTest<TContext> : IDisposable
         var commands = CreateAsyncCommands();
 
         var tasks = new List<Task>();
-        for (var i = 0; i < StressTestThreadCount; i++) tasks.Add(LaunchAsyncWorkerThread(context, commands));
+        for (var i = 0; i < StressTestThreadCount; i++)
+        {
+            tasks.Add(LaunchAsyncWorkerThread(context, commands));
+        }
 
         return tasks;
     }
 
     private static Task LaunchAsyncWorkerThread(TContext context, IList<IAsyncCommand<TContext>> commands)
     {
-        return Task.Factory.StartNew(() =>
-        {
-            while (!context.Stopped)
-                Task.WaitAll(Enumerable.Range(1, StressTestAsyncBatchSize)
-                    .Select(_ => commands.RandomElement().ExecuteAsync(context))
-                    .ToArray());
-        }, TaskCreationOptions.LongRunning);
+        return Task.Factory.StartNew(
+            () =>
+            {
+                while (!context.Stopped)
+                {
+                    Task.WaitAll(
+                        Enumerable.Range(1, StressTestAsyncBatchSize)
+                            .Select(_ => commands.RandomElement().ExecuteAsync(context))
+                            .ToArray());
+                }
+            },
+            TaskCreationOptions.LongRunning);
     }
 
     #endregion
@@ -312,21 +357,30 @@ public abstract class StressTest<TContext> : IDisposable
         var tasks = new List<Task>();
 
         if (commands.Count > 0)
+        {
             for (var i = 0; i < StressTestThreadCount; i++)
+            {
                 tasks.Add(LaunchRxWorkerThread(context, commands));
+            }
+        }
 
         return tasks;
     }
 
     private static Task LaunchRxWorkerThread(TContext context, IList<IRxCommand<TContext>> commands)
     {
-        return Task.Factory.StartNew(() =>
-        {
-            while (!context.Stopped)
-                Task.WaitAll(Enumerable.Range(1, StressTestAsyncBatchSize)
-                    .Select(_ => commands.RandomElement().ExecuteAsync(context))
-                    .ToArray());
-        }, TaskCreationOptions.LongRunning);
+        return Task.Factory.StartNew(
+            () =>
+            {
+                while (!context.Stopped)
+                {
+                    Task.WaitAll(
+                        Enumerable.Range(1, StressTestAsyncBatchSize)
+                            .Select(_ => commands.RandomElement().ExecuteAsync(context))
+                            .ToArray());
+                }
+            },
+            TaskCreationOptions.LongRunning);
     }
 
     #endregion
@@ -338,6 +392,7 @@ public abstract class StressTest<TContext> : IDisposable
     {
         var bookmark =
             await CreateNodesAsync(BigDataTestBatchCount, BigDataTestBatchSize, BigDataTestBatchBuffer, _driver);
+
         await ReadNodesAsync(_driver, bookmark, BigDataTestBatchCount * BigDataTestBatchSize);
     }
 
@@ -349,13 +404,19 @@ public abstract class StressTest<TContext> : IDisposable
         try
         {
             for (var batchIndex = 0; batchIndex < batchCount; batchIndex++)
-                await session.ExecuteWriteAsync(txc => Task.WhenAll(
-                    Enumerable.Range(1, batchSize)
-                        .Select(index => batchIndex * batchSize + index)
-                        .Batch(batchBuffer)
-                        .Select(indices =>
-                            txc.RunAsync(CreateBatchNodesQuery(indices))
-                                .ContinueWith(t => t.Result.ConsumeAsync()).Unwrap()).ToArray()));
+            {
+                await session.ExecuteWriteAsync(
+                    txc => Task.WhenAll(
+                        Enumerable.Range(1, batchSize)
+                            .Select(index => batchIndex * batchSize + index)
+                            .Batch(batchBuffer)
+                            .Select(
+                                indices =>
+                                    txc.RunAsync(CreateBatchNodesQuery(indices))
+                                        .ContinueWith(t => t.Result.ConsumeAsync())
+                                        .Unwrap())
+                            .ToArray()));
+            }
         }
         finally
         {
@@ -369,18 +430,21 @@ public abstract class StressTest<TContext> : IDisposable
 
     private Query CreateBatchNodesQuery(IEnumerable<int> batch)
     {
-        return new Query("UNWIND $values AS props CREATE (n:Test:Node) SET n = props", new
-        {
-            values = batch.Select(nodeIndex => new
+        return new Query(
+            "UNWIND $values AS props CREATE (n:Test:Node) SET n = props",
+            new
             {
-                index = nodeIndex,
-                name = $"name-{nodeIndex}",
-                surname = $"surname-{nodeIndex}",
-                longList = Enumerable.Repeat((long) nodeIndex, 10),
-                doubleList = Enumerable.Repeat((double) nodeIndex, 10),
-                boolList = Enumerable.Repeat(nodeIndex % 2 == 0, 10)
-            })
-        });
+                values = batch.Select(
+                    nodeIndex => new
+                    {
+                        index = nodeIndex,
+                        name = $"name-{nodeIndex}",
+                        surname = $"surname-{nodeIndex}",
+                        longList = Enumerable.Repeat((long)nodeIndex, 10),
+                        doubleList = Enumerable.Repeat((double)nodeIndex, 10),
+                        boolList = Enumerable.Repeat(nodeIndex % 2 == 0, 10)
+                    })
+            });
     }
 
     private async Task ReadNodesAsync(IDriver driver, Bookmarks bookmarks, int expectedNodes)
@@ -390,38 +454,43 @@ public abstract class StressTest<TContext> : IDisposable
         var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read).WithBookmarks(bookmarks));
         try
         {
-            await session.ExecuteReadAsync(async txc =>
-            {
-                var records = await txc.RunAsync("MATCH (n:Node) RETURN n ORDER BY n.index")
-                    .ContinueWith(r => r.Result.ToListAsync())
-                    .Unwrap();
+            await session.ExecuteReadAsync(
+                async txc =>
+                {
+                    var records = await txc.RunAsync("MATCH (n:Node) RETURN n ORDER BY n.index")
+                        .ContinueWith(r => r.Result.ToListAsync())
+                        .Unwrap();
 
-                records.Select(r => r[0].As<INode>())
-                    .Should().BeEquivalentTo(
-                        Enumerable.Range(1, expectedNodes).Select(index =>
-                            new
-                            {
-                                Labels = new[] {"Test", "Node"},
-                                Properties = new Dictionary<string, object>(6)
-                                {
-                                    {"index", (long) index},
-                                    {"name", $"name-{index}"},
-                                    {"surname", $"surname-{index}"},
-                                    {
-                                        "longList",
-                                        Enumerable.Repeat((long) index, 10)
-                                    },
-                                    {
-                                        "doubleList",
-                                        Enumerable.Repeat((double) index, 10)
-                                    },
-                                    {
-                                        "boolList",
-                                        Enumerable.Repeat(index % 2 == 0, 10)
-                                    }
-                                }
-                            }), opts => opts.Including(x => x.Labels).Including(x => x.Properties));
-            });
+                    records.Select(r => r[0].As<INode>())
+                        .Should()
+                        .BeEquivalentTo(
+                            Enumerable.Range(1, expectedNodes)
+                                .Select(
+                                    index =>
+                                        new
+                                        {
+                                            Labels = new[] { "Test", "Node" },
+                                            Properties = new Dictionary<string, object>(6)
+                                            {
+                                                { "index", (long)index },
+                                                { "name", $"name-{index}" },
+                                                { "surname", $"surname-{index}" },
+                                                {
+                                                    "longList",
+                                                    Enumerable.Repeat((long)index, 10)
+                                                },
+                                                {
+                                                    "doubleList",
+                                                    Enumerable.Repeat((double)index, 10)
+                                                },
+                                                {
+                                                    "boolList",
+                                                    Enumerable.Repeat(index % 2 == 0, 10)
+                                                }
+                                            }
+                                        }),
+                            opts => opts.Including(x => x.Labels).Including(x => x.Properties));
+                });
         }
         finally
         {
@@ -452,11 +521,13 @@ public abstract class StressTest<TContext> : IDisposable
             {
                 var index = batchIndex;
 
-                session.ExecuteWrite(txc =>
-                    Enumerable.Range(1, batchSize)
-                        .Select(item => index * batchSize + item)
-                        .Batch(batchBuffer).Select(indices => txc.Run(CreateBatchNodesQuery(indices)).Consume())
-                        .ToArray());
+                session.ExecuteWrite(
+                    txc =>
+                        Enumerable.Range(1, batchSize)
+                            .Select(item => index * batchSize + item)
+                            .Batch(batchBuffer)
+                            .Select(indices => txc.Run(CreateBatchNodesQuery(indices)).Consume())
+                            .ToArray());
             }
 
             _output.WriteLine("Creating nodes with Sync API took: {0}ms", timer.ElapsedMilliseconds);
@@ -471,29 +542,34 @@ public abstract class StressTest<TContext> : IDisposable
 
         using (var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Read).WithBookmarks(bookmarks)))
         {
-            session.ExecuteRead(txc =>
-            {
-                var result = txc.Run("MATCH (n:Node) RETURN n ORDER BY n.index");
+            session.ExecuteRead(
+                txc =>
+                {
+                    var result = txc.Run("MATCH (n:Node) RETURN n ORDER BY n.index");
 
-                result.Select(r => r[0].As<INode>())
-                    .Should().BeEquivalentTo(
-                        Enumerable.Range(1, expectedNodes).Select(index =>
-                            new
-                            {
-                                Labels = new[] {"Test", "Node"},
-                                Properties = new Dictionary<string, object>(6)
-                                {
-                                    {"index", (long) index},
-                                    {"name", $"name-{index}"},
-                                    {"surname", $"surname-{index}"},
-                                    {"longList", Enumerable.Repeat((long) index, 10)},
-                                    {"doubleList", Enumerable.Repeat((double) index, 10)},
-                                    {"boolList", Enumerable.Repeat(index % 2 == 0, 10)}
-                                }
-                            }), opts => opts.Including(x => x.Labels).Including(x => x.Properties));
+                    result.Select(r => r[0].As<INode>())
+                        .Should()
+                        .BeEquivalentTo(
+                            Enumerable.Range(1, expectedNodes)
+                                .Select(
+                                    index =>
+                                        new
+                                        {
+                                            Labels = new[] { "Test", "Node" },
+                                            Properties = new Dictionary<string, object>(6)
+                                            {
+                                                { "index", (long)index },
+                                                { "name", $"name-{index}" },
+                                                { "surname", $"surname-{index}" },
+                                                { "longList", Enumerable.Repeat((long)index, 10) },
+                                                { "doubleList", Enumerable.Repeat((double)index, 10) },
+                                                { "boolList", Enumerable.Repeat(index % 2 == 0, 10) }
+                                            }
+                                        }),
+                            opts => opts.Including(x => x.Labels).Including(x => x.Properties));
 
-                return result.Consume();
-            });
+                    return result.Consume();
+                });
         }
 
         _output.WriteLine("Reading nodes with Sync API took: {0}ms", timer.ElapsedMilliseconds);
@@ -514,14 +590,17 @@ public abstract class StressTest<TContext> : IDisposable
         var timer = Stopwatch.StartNew();
         var session = driver.RxSession();
 
-        Observable.Range(0, batchCount).Select(batchIndex =>
-                session.ExecuteWrite(txc => Observable.Range(1, batchSize)
-                    .Select(index => batchIndex * batchSize + index)
-                    .Buffer(batchBuffer)
-                    .SelectMany(batch => txc.Run(CreateBatchNodesQuery(batch)).Consume())
-                ))
+        Observable.Range(0, batchCount)
+            .Select(
+                batchIndex =>
+                    session.ExecuteWrite(
+                        txc => Observable.Range(1, batchSize)
+                            .Select(index => batchIndex * batchSize + index)
+                            .Buffer(batchBuffer)
+                            .SelectMany(batch => txc.Run(CreateBatchNodesQuery(batch)).Consume())))
             .Concat()
-            .Concat(session.Close<IResultSummary>()).CatchAndThrow(_ => session.Close<IResultSummary>())
+            .Concat(session.Close<IResultSummary>())
+            .CatchAndThrow(_ => session.Close<IResultSummary>())
             .Wait();
 
         _output.WriteLine("Creating nodes with Async API took: {0}ms", timer.ElapsedMilliseconds);
@@ -535,35 +614,42 @@ public abstract class StressTest<TContext> : IDisposable
 
         var session = driver.RxSession(o => o.WithDefaultAccessMode(AccessMode.Read).WithBookmarks(bookmarks));
 
-        session.ExecuteRead(txc => 
-                txc.Run("MATCH (n:Node) RETURN n ORDER BY n.index").Records().Select(r => r[0].As<INode>()).Do(n =>
-                {
-                    var index = n.Properties["index"].As<int>();
-
-                    n.Should().BeEquivalentTo(
-                        new
-                        {
-                            Labels = new[] {"Test", "Node"},
-                            Properties = new Dictionary<string, object>(6)
+        session.ExecuteRead(
+                txc =>
+                    txc.Run("MATCH (n:Node) RETURN n ORDER BY n.index")
+                        .Records()
+                        .Select(r => r[0].As<INode>())
+                        .Do(
+                            n =>
                             {
-                                {"index", (long) index},
-                                {"name", $"name-{index}"},
-                                {"surname", $"surname-{index}"},
-                                {
-                                    "longList",
-                                    Enumerable.Repeat((long) index, 10)
-                                },
-                                {
-                                    "doubleList",
-                                    Enumerable.Repeat((double) index, 10)
-                                },
-                                {
-                                    "boolList",
-                                    Enumerable.Repeat(index % 2 == 0, 10)
-                                }
-                            }
-                        }, opts => opts.Including(x => x.Labels).Including(x => x.Properties));
-                }))
+                                var index = n.Properties["index"].As<int>();
+
+                                n.Should()
+                                    .BeEquivalentTo(
+                                        new
+                                        {
+                                            Labels = new[] { "Test", "Node" },
+                                            Properties = new Dictionary<string, object>(6)
+                                            {
+                                                { "index", (long)index },
+                                                { "name", $"name-{index}" },
+                                                { "surname", $"surname-{index}" },
+                                                {
+                                                    "longList",
+                                                    Enumerable.Repeat((long)index, 10)
+                                                },
+                                                {
+                                                    "doubleList",
+                                                    Enumerable.Repeat((double)index, 10)
+                                                },
+                                                {
+                                                    "boolList",
+                                                    Enumerable.Repeat(index % 2 == 0, 10)
+                                                }
+                                            }
+                                        },
+                                        opts => opts.Including(x => x.Labels).Including(x => x.Properties));
+                            }))
             .Concat(session.Close<INode>())
             .CatchAndThrow(_ => session.Close<INode>())
             .Wait();
@@ -603,16 +689,24 @@ public abstract class StressTest<TContext> : IDisposable
         failure.Get().Should().BeNull($"Some workers have failed. Exception {failure.Get()?.Message}");
     }
 
-    private static Task[] LaunchPoolWorkers(IDriver driver, CancellationToken token, Action<Worker> job,
+    private static Task[] LaunchPoolWorkers(
+        IDriver driver,
+        CancellationToken token,
+        Action<Worker> job,
         AtomicReference<Exception> failure)
     {
         var tasks = new List<Task>();
         for (var i = 0; i < PoolTestThreadCount; i++)
-            tasks.Add(Task.Factory.StartNew(() =>
-            {
-                var worker = new Worker(driver, token, failure);
-                job(worker);
-            }, TaskCreationOptions.LongRunning));
+        {
+            tasks.Add(
+                Task.Factory.StartNew(
+                    () =>
+                    {
+                        var worker = new Worker(driver, token, failure);
+                        job(worker);
+                    },
+                    TaskCreationOptions.LongRunning));
+        }
 
         return tasks.ToArray();
     }
@@ -620,10 +714,10 @@ public abstract class StressTest<TContext> : IDisposable
     private class Worker
     {
         private static readonly (AccessMode, string)[] Queries =
-            {
-                (AccessMode.Read, "RETURN 1295+42"),
-                (AccessMode.Write, "UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n")
-            };
+        {
+            (AccessMode.Read, "RETURN 1295+42"),
+            (AccessMode.Write, "UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n")
+        };
 
         private readonly IDriver _driver;
         private readonly AtomicReference<Exception> _failure;
@@ -642,8 +736,12 @@ public abstract class StressTest<TContext> : IDisposable
             try
             {
                 while (!_token.IsCancellationRequested)
+                {
                     foreach (var (accessMode, query) in Queries)
+                    {
                         RunWithNoTx(accessMode, query);
+                    }
+                }
             }
             catch (Exception exc)
             {
@@ -656,8 +754,12 @@ public abstract class StressTest<TContext> : IDisposable
             try
             {
                 while (!_token.IsCancellationRequested)
+                {
                     foreach (var (accessMode, query) in Queries)
+                    {
                         RunWithTxFunc(accessMode, query);
+                    }
+                }
             }
             catch (Exception exc)
             {
@@ -682,9 +784,11 @@ public abstract class StressTest<TContext> : IDisposable
                     case AccessMode.Read:
                         session.ExecuteRead(txc => Execute(txc, query));
                         break;
+
                     case AccessMode.Write:
                         session.ExecuteWrite(txc => Execute(txc, query));
                         break;
+
                     default:
                         throw new ArgumentOutOfRangeException(nameof(mode), mode, null);
                 }
@@ -732,7 +836,9 @@ public abstract class StressTest<TContext> : IDisposable
             _delegate = factory;
         }
 
-        public IPooledConnection Create(Uri uri, IConnectionReleaseManager releaseManager,
+        public IPooledConnection Create(
+            Uri uri,
+            IConnectionReleaseManager releaseManager,
             IDictionary<string, string> routingContext)
         {
             var pooledConnection = _delegate.Create(uri, releaseManager, routingContext);
@@ -751,7 +857,9 @@ public abstract class StressTest<TContext> : IDisposable
         var workers = launcher(context);
 
         if (!workers.Any())
+        {
             return;
+        }
 
         await Task.Delay(StressTestExecutionTime); //Divide by three because there are three sets of tests
         context.Stop();
@@ -762,7 +870,6 @@ public abstract class StressTest<TContext> : IDisposable
 
         VerifyResults(context);
     }
-
 
     private void VerifyResults(TContext context)
     {
@@ -775,7 +882,8 @@ public abstract class StressTest<TContext> : IDisposable
         using (var session = _driver.Session(o => o.WithDefaultAccessMode(AccessMode.Write)))
         {
             var count = session.Run("MATCH (n) RETURN count(n) as createdNodes")
-                .Select(r => r["createdNodes"].As<long>()).Single();
+                .Select(r => r["createdNodes"].As<long>())
+                .Single();
 
             count.Should().Be(expected);
         }
@@ -794,9 +902,14 @@ public abstract class StressTest<TContext> : IDisposable
     protected virtual void Dispose(bool disposing)
     {
         if (_disposed)
+        {
             return;
+        }
 
-        if (disposing) CleanupDatabase();
+        if (disposing)
+        {
+            CleanupDatabase();
+        }
 
         //Mark as disposed
         _disposed = true;

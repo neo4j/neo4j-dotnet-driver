@@ -24,19 +24,20 @@ namespace Neo4j.Driver.Internal.Messaging;
 internal sealed class IgnoredMessage : IResponseMessage
 {
     public static readonly IgnoredMessage Instance = new();
-    public IPackStreamSerializer Serializer => IgnoredMessageSerializer.Instance;
-    
+
     private IgnoredMessage()
     {
+    }
+
+    public IPackStreamSerializer Serializer => IgnoredMessageSerializer.Instance;
+
+    public void Dispatch(IResponsePipeline pipeline)
+    {
+        pipeline.OnIgnored();
     }
 
     public override string ToString()
     {
         return "IGNORED";
-    }
-
-    public void Dispatch(IResponsePipeline pipeline)
-    {
-        pipeline.OnIgnored();
     }
 }

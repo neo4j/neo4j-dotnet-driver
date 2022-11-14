@@ -44,8 +44,10 @@ internal sealed class RunResponseHandler : MetadataCollectingResponseHandler
 
         _summaryBuilder.ResultAvailableAfter = GetMetadata<TimeToFirstCollector, long>();
 
-        _streamBuilder.RunCompleted(GetMetadata<QueryIdCollector, long>(),
-            GetMetadata<FieldsCollector, string[]>(), null);
+        _streamBuilder.RunCompleted(
+            GetMetadata<QueryIdCollector, long>(),
+            GetMetadata<FieldsCollector, string[]>(),
+            null);
     }
 
     public override void OnFailure(IResponsePipelineError error)

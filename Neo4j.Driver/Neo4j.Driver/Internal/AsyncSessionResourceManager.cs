@@ -17,17 +17,38 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Result;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal partial class AsyncSession : IResultResourceHandler, ITransactionResourceHandler, IBookmarksTracker
 {
-    internal partial class AsyncSession : IResultResourceHandler, ITransactionResourceHandler, IBookmarksTracker
+    /// <summary>Only set the bookmark to a new value if the new value is not null</summary>
+    /// <param name="bookmarks">The new bookmarks.</param>
+    public void UpdateBookmarks(Bookmarks bookmarks, IDatabaseInfo dbInfo = null)
     {
-        public Task CloseAsync()
+        if (bookmarks == null || !bookmarks.Values.Any())
         {
-            return TryExecuteAsync(_logger, async () =>
+            return;
+        }
+
+        var previousBookmarks = LastBookmarks?.Values ?? Array.Empty<string>();
+        LastBookmarks = bookmarks;
+
+        var db = dbInfo?.Name ?? _database;
+        if (_useBookmarkManager)
+        {
+            _bookmarkManager.UpdateBookmarksAsync(db, previousBookmarks, bookmarks.Values);
+        }
+    }
+
+    public Task CloseAsync()
+    {
+        return TryExecuteAsync(
+            _logger,
+            async () =>
             {
                 if (_isOpen)
                 {
@@ -42,148 +63,132 @@ namespace Neo4j.Driver.Internal
                         await DisposeSessionResultAsync().ConfigureAwait(false);
                     }
                 }
-            }, "Failed to close the session asynchronously.");
-        }
+            },
+            "Failed to close the session asynchronously.");
+    }
 
-        /// <summary>
-        ///  This method will be called back by <see cref="ResultCursorBuilder"/> after it consumed result
-        /// </summary>
-        public Task OnResultConsumedAsync()
+    /// <summary>This method will be called back by <see cref="ResultCursorBuilder" /> after it consumed result</summary>
+    public Task OnResultConsumedAsync()
+    {
+        if (_connection != null)
         {
-            if (_connection != null)
-                throw new ArgumentNullException(nameof(_connection)); // TODO: Assess if this correct exception type.
-            
-            return DisposeConnectionAsync();
+            throw new ArgumentNullException(nameof(_connection)); // TODO: Assess if this correct exception type.
         }
 
-        /// <summary>
-        /// Called back when transaction is closed
-        /// </summary>
-        public Task OnTransactionDisposeAsync(Bookmarks bookmarks, string database)
-        {
-            UpdateBookmarks(bookmarks, new DatabaseInfo(database));
-            _transaction = null;
+        return DisposeConnectionAsync();
+    }
 
-            return DisposeConnectionAsync();
-        }
+    /// <summary>Called back when transaction is closed</summary>
+    public Task OnTransactionDisposeAsync(Bookmarks bookmarks, string database)
+    {
+        UpdateBookmarks(bookmarks, new DatabaseInfo(database));
+        _transaction = null;
 
-        /// <summary>
-        /// Only set the bookmark to a new value if the new value is not null
-        /// </summary>
-        /// <param name="bookmarks">The new bookmarks.</param>
-        public void UpdateBookmarks(Bookmarks bookmarks, IDatabaseInfo dbInfo = null)
-        {
-            if (bookmarks == null || !bookmarks.Values.Any())
-                return;
+        return DisposeConnectionAsync();
+    }
 
-            var previousBookmarks = _bookmarks?.Values ?? Array.Empty<string>();
-            _bookmarks = bookmarks;
-
-            var db = dbInfo?.Name ?? _database;
-            if (_useBookmarkManager)
-                _bookmarkManager.UpdateBookmarksAsync(db, previousBookmarks, bookmarks.Values);
-        }
-
-        /// <summary>
-        /// Clean any transaction reference.
-        /// If transaction result is not committed, then rollback the transaction.
-        /// </summary>
-        /// <exception cref="ClientException">If error when rollback the transaction</exception>
-        private async Task DisposeTransactionAsync()
-        {
-            // When there is a open transaction, this method will also try to close the tx
-            if (_transaction != null)
-            {	
-				try
-                {
-                    await _transaction.RollbackAsync().ConfigureAwait(false);
-                }
-				catch (Exception e)
-                {	
-					throw new ClientException((e as Neo4jException)?.Code, $"Error when disposing unclosed transaction in session: {e.Message}", e);
-				}
-            }
-        }
-
-        private async Task DisposeSessionResultAsync()
+    /// <summary>Clean any transaction reference. If transaction result is not committed, then rollback the transaction.</summary>
+    /// <exception cref="ClientException">If error when rollback the transaction</exception>
+    private async Task DisposeTransactionAsync()
+    {
+        // When there is a open transaction, this method will also try to close the tx
+        if (_transaction != null)
         {
             try
             {
-                await DiscardUnconsumedResultAsync().ConfigureAwait(false);
+                await _transaction.RollbackAsync().ConfigureAwait(false);
             }
-            finally
-            {
-                await DisposeConnectionAsync().ConfigureAwait(false);
-            }
-        }
-        private async Task DiscardUnconsumedResultAsync()
-        {
-            if (_result != null)
-            {
-                IResultCursor cursor = null;
-                try
-                {
-                    cursor = await _result.ConfigureAwait(false);
-                }
-                catch (Exception)
-                {
-                    // ignored if the cursor failed to create
-                }
-
-                if (cursor != null)
-                {
-                    await cursor.ConsumeAsync().ConfigureAwait(false);
-                }
-            }
-        }
-
-        private async Task DisposeConnectionAsync()
-        {
-            // always try to close connection used by the result too
-            if (_connection != null)
-            {
-                await _connection.CloseAsync().ConfigureAwait(false);
-            }
-
-            _connection = null;
-        }
-
-        private async Task EnsureCanRunMoreQuerysAsync(bool disposeUnconsumedSessionResult)
-        {
-            EnsureSessionIsOpen();
-            EnsureNoOpenTransaction();
-            if (disposeUnconsumedSessionResult)
-            {
-                await DisposeSessionResultAsync().ConfigureAwait(false);
-            }
-            else
-            {
-                if (_connection != null) // after a result is consumed, connection will be set to null
-                {
-                    throw new ClientException("Please consume the current query result before running " +
-                                              "more queries/transaction in the same session.");
-                }
-            }
-        }
-
-        private void EnsureNoOpenTransaction()
-        {
-            if (_transaction != null)
-            {
-				throw new TransactionNestingException("Attempting to nest transactions. A session can only have a single " +
-					"transaction open at a time. Ensure to commit or rollback the previous transaction before opening the next.");
-			}
-        }
-
-        private void EnsureSessionIsOpen()
-        {
-            if (!_isOpen)
+            catch (Exception e)
             {
                 throw new ClientException(
-                    "Cannot running more queries in the current session as it has already been disposed. " +
-                    "Make sure that you do not have a bad reference to a disposed session " +
-                    "and retry your query in another new session.");
+                    (e as Neo4jException)?.Code,
+                    $"Error when disposing unclosed transaction in session: {e.Message}",
+                    e);
             }
+        }
+    }
+
+    private async Task DisposeSessionResultAsync()
+    {
+        try
+        {
+            await DiscardUnconsumedResultAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            await DisposeConnectionAsync().ConfigureAwait(false);
+        }
+    }
+
+    private async Task DiscardUnconsumedResultAsync()
+    {
+        if (_result != null)
+        {
+            IResultCursor cursor = null;
+            try
+            {
+                cursor = await _result.ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                // ignored if the cursor failed to create
+            }
+
+            if (cursor != null)
+            {
+                await cursor.ConsumeAsync().ConfigureAwait(false);
+            }
+        }
+    }
+
+    private async Task DisposeConnectionAsync()
+    {
+        // always try to close connection used by the result too
+        if (_connection != null)
+        {
+            await _connection.CloseAsync().ConfigureAwait(false);
+        }
+
+        _connection = null;
+    }
+
+    private async Task EnsureCanRunMoreQuerysAsync(bool disposeUnconsumedSessionResult)
+    {
+        EnsureSessionIsOpen();
+        EnsureNoOpenTransaction();
+        if (disposeUnconsumedSessionResult)
+        {
+            await DisposeSessionResultAsync().ConfigureAwait(false);
+        }
+        else
+        {
+            if (_connection != null) // after a result is consumed, connection will be set to null
+            {
+                throw new ClientException(
+                    "Please consume the current query result before running " +
+                    "more queries/transaction in the same session.");
+            }
+        }
+    }
+
+    private void EnsureNoOpenTransaction()
+    {
+        if (_transaction != null)
+        {
+            throw new TransactionNestingException(
+                "Attempting to nest transactions. A session can only have a single " +
+                "transaction open at a time. Ensure to commit or rollback the previous transaction before opening the next.");
+        }
+    }
+
+    private void EnsureSessionIsOpen()
+    {
+        if (!_isOpen)
+        {
+            throw new ClientException(
+                "Cannot running more queries in the current session as it has already been disposed. " +
+                "Make sure that you do not have a bad reference to a disposed session " +
+                "and retry your query in another new session.");
         }
     }
 }

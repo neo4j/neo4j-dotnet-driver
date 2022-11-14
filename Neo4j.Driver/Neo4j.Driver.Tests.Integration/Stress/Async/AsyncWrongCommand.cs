@@ -15,39 +15,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
-{
-    public class AsyncWrongCommand<TContext> : AsyncCommand<TContext>
-        where TContext : StressTestContext
-    {
-        public AsyncWrongCommand(IDriver driver)
-            : base(driver, false)
-        {
-        }
+namespace Neo4j.Driver.IntegrationTests.Stress;
 
-        public override async Task ExecuteAsync(TContext context)
+public class AsyncWrongCommand<TContext> : AsyncCommand<TContext>
+    where TContext : StressTestContext
+{
+    public AsyncWrongCommand(IDriver driver)
+        : base(driver, false)
+    {
+    }
+
+    public override async Task ExecuteAsync(TContext context)
+    {
+        var session = NewSession(AccessMode.Read, context);
+        try
         {
-            var session = NewSession(AccessMode.Read, context);
-            try
-            {
-                var exc = await Record.ExceptionAsync(async () =>
+            var exc = await Record.ExceptionAsync(
+                async () =>
                 {
                     var cursor = await session.RunAsync("RETURN");
                     await cursor.ConsumeAsync();
                 });
 
-				exc.Should().BeOfType<ClientException>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
-			}
-            finally
-            {
-                await session.CloseAsync();
-            }
+            exc.Should().BeOfType<ClientException>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
+        }
+        finally
+        {
+            await session.CloseAsync();
         }
     }
 }

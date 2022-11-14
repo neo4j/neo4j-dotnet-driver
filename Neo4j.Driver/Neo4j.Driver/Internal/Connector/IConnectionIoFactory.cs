@@ -23,7 +23,11 @@ namespace Neo4j.Driver.Internal.Connector;
 internal interface IConnectionIoFactory
 {
     ITcpSocketClient TcpSocketClient(SocketSettings socketSettings, ILogger logger);
+
     (MessageFormat Format, ChunkWriter ChunkWriter, MemoryStream readBuffer, IMessageReader
-        MessageReader, IMessageWriter MessageWriter) Build(ITcpSocketClient socketClient, BufferSettings bufferSettings,
-            ILogger logger, BoltProtocolVersion version);
+        MessageReader, IMessageWriter MessageWriter) Build(
+            ITcpSocketClient socketClient,
+            BufferSettings bufferSettings,
+            ILogger logger,
+            BoltProtocolVersion version);
 }

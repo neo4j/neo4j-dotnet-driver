@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal.Connector;
 
 internal interface ITcpSocketClient : IAsyncDisposable
 {
-    Task ConnectAsync(Uri uri, CancellationToken cancellationToken = default);
     Stream ReaderStream { get; }
     Stream WriterStream { get; }
+    Task ConnectAsync(Uri uri, CancellationToken cancellationToken = default);
 }

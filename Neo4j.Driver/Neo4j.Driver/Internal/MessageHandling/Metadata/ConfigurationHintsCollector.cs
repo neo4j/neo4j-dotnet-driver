@@ -19,13 +19,13 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
 
-class ConfigurationHintsCollector : IMetadataCollector<Dictionary<string, object>>
+internal class ConfigurationHintsCollector : IMetadataCollector<Dictionary<string, object>>
 {
-    internal const string ConfigHintsKey = "hints";		
+    internal const string ConfigHintsKey = "hints";
 
     object IMetadataCollector.Collected => Collected;
 
-    public Dictionary<string, object> Collected { get; private set; }		
+    public Dictionary<string, object> Collected { get; private set; }
 
     public void Collect(IDictionary<string, object> metadata)
     {
@@ -33,13 +33,13 @@ class ConfigurationHintsCollector : IMetadataCollector<Dictionary<string, object
         {
             if (configHintsObject is Dictionary<string, object> hints)
             {
-                Collected = hints;					
+                Collected = hints;
             }
             else
             {
                 throw new ProtocolException(
                     $"Expected '{ConfigHintsKey}' metadata to be of type 'Dictionary<string, object>', but got '{configHintsObject?.GetType().Name}'.");
             }
-        }			
+        }
     }
 }

@@ -15,37 +15,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
-{
-    public class AsyncReadCommand<TContext> : AsyncCommand<TContext>
-        where TContext : StressTestContext
-    {
-        public AsyncReadCommand(IDriver driver, bool useBookmark)
-            : base(driver, useBookmark)
-        {
-        }
+namespace Neo4j.Driver.IntegrationTests.Stress;
 
-        public override async Task ExecuteAsync(TContext context)
+public class AsyncReadCommand<TContext> : AsyncCommand<TContext>
+    where TContext : StressTestContext
+{
+    public AsyncReadCommand(IDriver driver, bool useBookmark)
+        : base(driver, useBookmark)
+    {
+    }
+
+    public override async Task ExecuteAsync(TContext context)
+    {
+        var session = NewSession(AccessMode.Read, context);
+        try
         {
-            var session = NewSession(AccessMode.Read, context);
-            try
+            var cursor = await session.RunAsync("MATCH (n) RETURN n LIMIT 1");
+            var records = await cursor.ToListAsync();
+            if (records.Count > 0)
             {
-                var cursor = await session.RunAsync("MATCH (n) RETURN n LIMIT 1");
-                var records = await cursor.ToListAsync();
-                if (records.Count > 0)
-                {
-                    records[0][0].Should().BeAssignableTo<INode>();
-                    context.NodeRead(await cursor.ConsumeAsync());
-                }
+                records[0][0].Should().BeAssignableTo<INode>();
+                context.NodeRead(await cursor.ConsumeAsync());
             }
-            finally
-            {
-                await session.CloseAsync();
-            }
+        }
+        finally
+        {
+            await session.CloseAsync();
         }
     }
 }

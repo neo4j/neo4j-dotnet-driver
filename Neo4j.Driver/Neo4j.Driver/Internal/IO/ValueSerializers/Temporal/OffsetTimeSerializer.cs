@@ -22,14 +22,13 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 
 internal sealed class OffsetTimeSerializer : IPackStreamSerializer
 {
+    public const byte StructType = (byte)'T';
+    public const int StructSize = 2;
     internal static readonly OffsetTimeSerializer Instance = new();
 
-    public const byte StructType = (byte) 'T';
-    public const int StructSize = 2;
+    public IEnumerable<byte> ReadableStructs => new[] { StructType };
 
-    public IEnumerable<byte> ReadableStructs => new[] {StructType};
-
-    public IEnumerable<Type> WritableTypes => new[] {typeof(OffsetTime)};
+    public IEnumerable<Type> WritableTypes => new[] { typeof(OffsetTime) };
 
     public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
     {

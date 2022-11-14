@@ -28,10 +28,10 @@ internal sealed class CommitMessage : IRequestMessage
     {
     }
 
+    public IPackStreamSerializer Serializer => CommitMessageSerializer.Instance;
+
     public override string ToString()
     {
         return "COMMIT";
     }
-
-    public IPackStreamSerializer Serializer => CommitMessageSerializer.Instance;
 }

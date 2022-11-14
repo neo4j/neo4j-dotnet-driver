@@ -22,138 +22,142 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.IntegrationTests.Internals
+namespace Neo4j.Driver.IntegrationTests.Internals;
+
+internal class BoltStubServer : IDisposable
 {
-    internal class BoltStubServer : IDisposable
+    private static readonly string ScriptSourcePath;
+
+    private readonly IShellCommandRunner _commandRunner;
+    private readonly TcpClient _testTcpClient = new();
+    private bool _disposed;
+
+    static BoltStubServer()
     {
-        private bool _disposed = false;
-        private static readonly string ScriptSourcePath;
+        var assemblyUri = new Uri(typeof(BoltStubServer).GetTypeInfo().Assembly.Location);
+        var assemblyDirectory = new FileInfo(assemblyUri.AbsolutePath).Directory.FullName;
 
-        ~BoltStubServer() => Dispose(false);
+        ScriptSourcePath = Path.Combine(assemblyDirectory, "Resources");
+    }
 
-        static BoltStubServer()
+    private BoltStubServer(string script, int port)
+    {
+        _commandRunner = ShellCommandRunnerFactory.Create();
+        //_commandRunner.BeginRunCommand("bolt", "stub", "-l", "127.0.0.1:" + port.ToString(), "-v", script);
+        _commandRunner.BeginRunCommand("boltstub", "-v", port.ToString(), script);
+        WaitForServer(port);
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    ~BoltStubServer()
+    {
+        Dispose(false);
+    }
+
+    public static BoltStubServer Start(string script, int port)
+    {
+        return new BoltStubServer(Source(script), port);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed)
         {
-            Uri assemblyUri = new Uri(typeof(BoltStubServer).GetTypeInfo().Assembly.Location);
-            string assemblyDirectory = new FileInfo(assemblyUri.AbsolutePath).Directory.FullName;
-
-            ScriptSourcePath = Path.Combine(assemblyDirectory, "Resources");
+            return;
         }
 
-        private readonly IShellCommandRunner _commandRunner;
-        private readonly TcpClient _testTcpClient = new TcpClient();
-
-        private BoltStubServer(string script, int port)
+        if (disposing)
         {
-            _commandRunner = ShellCommandRunnerFactory.Create();
-            //_commandRunner.BeginRunCommand("bolt", "stub", "-l", "127.0.0.1:" + port.ToString(), "-v", script);
-            _commandRunner.BeginRunCommand("boltstub", "-v", port.ToString(), script);
-            WaitForServer(port);
-        }
-
-        public static BoltStubServer Start(string script, int port)
-        {
-            return new BoltStubServer(Source(script), port);
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_disposed)
-                return;
-
-            if (disposing)
+            try
             {
-                try
-                {
-                    Disconnect(_testTcpClient);
-                }
-                catch (Exception)
-                {
-                    // ignored
-                }
-
-                _commandRunner.EndRunCommand();
+                Disconnect(_testTcpClient);
+            }
+            catch (Exception)
+            {
+                // ignored
             }
 
-            _disposed = true;
+            _commandRunner.EndRunCommand();
         }
 
-        private static string Source(string script)
+        _disposed = true;
+    }
+
+    private static string Source(string script)
+    {
+        var scriptFilePath = Path.Combine(ScriptSourcePath, $"{script}.script");
+        if (!File.Exists(scriptFilePath))
         {
-            var scriptFilePath = Path.Combine(ScriptSourcePath, $"{script}.script");
-            if (!File.Exists(scriptFilePath))
+            throw new ArgumentException($"Cannot locate script file `{scriptFilePath}`", scriptFilePath);
+        }
+
+        return scriptFilePath;
+    }
+
+    private void WaitForServer(int port, ServerStatus status = ServerStatus.Online)
+    {
+        var waitingTimeInSeconds = 15;
+        var waitingTime = TimeSpan.FromSeconds(waitingTimeInSeconds).TotalMilliseconds;
+        var stopwatch = Stopwatch.StartNew();
+        do
+        {
+            ServerStatus currentStatus;
+            try
             {
-                throw new ArgumentException($"Cannot locate script file `{scriptFilePath}`", scriptFilePath);
-            }
-
-            return scriptFilePath;
-        }
-
-        private enum ServerStatus
-        {
-            Online,
-            Offline
-        }
-
-        private void WaitForServer(int port, ServerStatus status = ServerStatus.Online)
-        {
-            var waitingTimeInSeconds = 15;
-            var waitingTime = TimeSpan.FromSeconds(waitingTimeInSeconds).TotalMilliseconds;
-            var stopwatch = Stopwatch.StartNew();
-            do
-            {
-                ServerStatus currentStatus;
-                try
+                Connect(_testTcpClient, port);
+                if (_testTcpClient.Connected)
                 {
-                    Connect(_testTcpClient, port);
-                    if (_testTcpClient.Connected)
-                    {
-                        currentStatus = ServerStatus.Online;
-                    }
-                    else
-                    {
-                        currentStatus = ServerStatus.Offline;
-                    }
+                    currentStatus = ServerStatus.Online;
                 }
-                catch (Exception)
+                else
                 {
                     currentStatus = ServerStatus.Offline;
                 }
+            }
+            catch (Exception)
+            {
+                currentStatus = ServerStatus.Offline;
+            }
 
-                if (currentStatus == status)
-                {
-                    return;
-                }
+            if (currentStatus == status)
+            {
+                return;
+            }
 
-                // otherwise wait and retry
-                Task.Delay(300).Wait();
-            } while (stopwatch.ElapsedMilliseconds <= waitingTime);
+            // otherwise wait and retry
+            Task.Delay(300).Wait();
+        } while (stopwatch.ElapsedMilliseconds <= waitingTime);
 
-            throw new InvalidOperationException(
-                $"Waited for {waitingTimeInSeconds}s for stub server to be in {status} status, but failed.");
-        }
+        throw new InvalidOperationException(
+            $"Waited for {waitingTimeInSeconds}s for stub server to be in {status} status, but failed.");
+    }
 
-        private void Disconnect(TcpClient testTcpClient)
-        {
-#if NET452
+    private void Disconnect(TcpClient testTcpClient)
+    {
+        #if NET452
             testTcpClient.Close();
-#else
-            testTcpClient.Dispose();
-#endif
-        }
+        #else
+        testTcpClient.Dispose();
+        #endif
+    }
 
-        private void Connect(TcpClient testTcpClient, int port)
-        {
-#if NET452
+    private void Connect(TcpClient testTcpClient, int port)
+    {
+        #if NET452
             testTcpClient.Connect("127.0.0.1", port);
-#else
-            Task.Run(() => testTcpClient.ConnectAsync("127.0.0.1", port)).Wait();
-#endif
-        }
+        #else
+        Task.Run(() => testTcpClient.ConnectAsync("127.0.0.1", port)).Wait();
+        #endif
+    }
+
+    private enum ServerStatus
+    {
+        Online,
+        Offline
     }
 }

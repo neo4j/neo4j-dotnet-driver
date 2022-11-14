@@ -16,46 +16,44 @@
 // limitations under the License.
 
 using System;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.Internal.Logging
+namespace Neo4j.Driver.Internal.Logging;
+
+internal class NullLogger : ILogger
 {
-    internal class NullLogger : ILogger
+    public static readonly NullLogger Instance = new();
+
+    private NullLogger()
     {
-        public static readonly NullLogger Instance = new NullLogger();
+    }
 
-        private NullLogger()
-        {
-        }
+    public void Error(Exception cause, string message, params object[] args)
+    {
+    }
 
-        public void Error(Exception cause, string message, params object[] args)
-        {
-        }
+    public void Warn(Exception cause, string message, params object[] args)
+    {
+    }
 
-        public void Warn(Exception cause, string message, params object[] args)
-        {
-        }
+    public void Info(string message, params object[] args)
+    {
+    }
 
-        public void Info(string message, params object[] args)
-        {
-        }
+    public void Debug(string message, params object[] args)
+    {
+    }
 
-        public void Debug(string message, params object[] args)
-        {
-        }
+    public void Trace(string message, params object[] args)
+    {
+    }
 
-        public void Trace(string message, params object[] args)
-        {
-        }
+    public bool IsTraceEnabled()
+    {
+        return false;
+    }
 
-        public bool IsTraceEnabled()
-        {
-            return false;
-        }
-
-        public bool IsDebugEnabled()
-        {
-            return false;
-        }
+    public bool IsDebugEnabled()
+    {
+        return false;
     }
 }

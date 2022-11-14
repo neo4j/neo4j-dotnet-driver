@@ -26,212 +26,247 @@ using Neo4j.Driver.Internal.Connector.Trust;
 using Org.BouncyCastle.Pkcs;
 using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests.Direct
+namespace Neo4j.Driver.IntegrationTests.Direct;
+
+public class CertificateTrustIT : IClassFixture<CertificateTrustIT.CertificateTrustIntegrationTestFixture>
 {
-    public class CertificateTrustIT : IClassFixture<CertificateTrustIT.CertificateTrustIntegrationTestFixture>
+    public CertificateTrustIT(CertificateTrustIntegrationTestFixture fixture)
     {
-        public StandAlone Server { get; }
-        public Pkcs12Store Pkcs12 { get; }
+        Server = fixture.StandAlone;
+        Pkcs12 = fixture.Pkcs12;
+    }
 
-        public CertificateTrustIT(CertificateTrustIntegrationTestFixture fixture)
+    public StandAlone Server { get; }
+    public Pkcs12Store Pkcs12 { get; }
+
+    [ShouldNotRunInTestKitFact]
+    public async Task CertificateTrustManager_ShouldTrust()
+    {
+        await VerifySuccess(
+            Server.BoltUri,
+            new CertificateTrustManager(true, new[] { Pkcs12.GetDotnetCertificate() }),
+            EncryptionLevel.None);
+    }
+
+    [ShouldNotRunInTestKitFact]
+    public async Task CertificateTrustManager_ShouldNotTrustIfHostnameDiffers()
+    {
+        await VerifyFailure(
+            new Uri("bolt://another.host.domain:7687"),
+            new CertificateTrustManager(true, new[] { Pkcs12.GetDotnetCertificate() }));
+    }
+
+    [ShouldNotRunInTestKitFact]
+    public async Task
+        CertificateTrustManager_ShouldTrustIfHostnameDiffersWhenHostnameVerificationIsDisabled()
+    {
+        await VerifySuccess(
+            new Uri("bolt://another.host.domain:7687"),
+            new CertificateTrustManager(false, new[] { Pkcs12.GetDotnetCertificate() }));
+    }
+
+    [ShouldNotRunInTestKitFact]
+    public async Task CertificateTrustManager_ShouldNotTrustIfNotValid()
+    {
+        try
         {
-            Server = fixture.StandAlone;
-            Pkcs12 = fixture.Pkcs12;
+            var pkcs12 = CertificateUtils.CreateCert(
+                "localhost",
+                DateTime.Now.AddYears(-1),
+                DateTime.Now.AddDays(-1),
+                null,
+                null,
+                null);
+
+            Server.RestartServerWithCertificate(pkcs12);
+
+            await VerifyFailure(
+                Server.BoltUri,
+                new CertificateTrustManager(true, new[] { pkcs12.GetDotnetCertificate() }));
         }
-
-        [ShouldNotRunInTestKitFact]
-        public async Task CertificateTrustManager_ShouldTrust()
+        finally
         {
-            await VerifySuccess(Server.BoltUri,
-                                new CertificateTrustManager(true, new[] {Pkcs12.GetDotnetCertificate()}), 
-                                EncryptionLevel.None);
+            Server.RestartServerWithCertificate(Pkcs12);
         }
+    }
 
-        [ShouldNotRunInTestKitFact]
-        public async Task CertificateTrustManager_ShouldNotTrustIfHostnameDiffers()
-        {
-            await VerifyFailure(new Uri("bolt://another.host.domain:7687"),
-                new CertificateTrustManager(true, new[] {Pkcs12.GetDotnetCertificate()}));
-        }
+    [ShouldNotRunInTestKitFact]
+    public async Task CertificateTrustManager_ShouldNotTrustIfCertificateIsNotTrusted()
+    {
+        var pkcs12Untrusted = CertificateUtils.CreateCert(
+            "localhost",
+            DateTime.Now.AddYears(-1),
+            DateTime.Now.AddYears(1),
+            null,
+            null,
+            null);
 
-        [ShouldNotRunInTestKitFact]
-        public async Task
-            CertificateTrustManager_ShouldTrustIfHostnameDiffersWhenHostnameVerificationIsDisabled()
-        {
-            await VerifySuccess(new Uri("bolt://another.host.domain:7687"),
-                new CertificateTrustManager(false, new[] {Pkcs12.GetDotnetCertificate()}));
-        }
+        await VerifyFailure(
+            Server.BoltUri,
+            new CertificateTrustManager(true, new[] { pkcs12Untrusted.GetDotnetCertificate() }));
+    }
 
-        [ShouldNotRunInTestKitFact]
-        public async Task CertificateTrustManager_ShouldNotTrustIfNotValid()
+    [ShouldNotRunInTestKitFact]
+    public async Task InsecureTrustManager_ShouldTrust()
+    {
+        await VerifySuccess(Server.BoltUri, new InsecureTrustManager(true), EncryptionLevel.None);
+    }
+
+    [ShouldNotRunInTestKitFact]
+    public async Task InsecureTrustManager_ShouldNotTrustIfHostnameDiffers()
+    {
+        await VerifyFailure(new Uri("bolt://another.host.domain:7687"), new InsecureTrustManager(true));
+    }
+
+    [ShouldNotRunInTestKitFact]
+    public async Task InsecureTrustManager_ShouldTrustIfHostnameDiffersWhenHostnameVerificationIsDisabled()
+    {
+        await VerifySuccess(
+            new Uri("bolt://another.host.domain:7687"),
+            new InsecureTrustManager(false),
+            EncryptionLevel.None);
+    }
+
+    private async Task VerifyFailure(Uri target, TrustManager trustManager)
+    {
+        var ex = await Record.ExceptionAsync(
+            () => TestConnectivity(
+                target,
+                Config.Builder.WithTrustManager(trustManager).WithEncryptionLevel(EncryptionLevel.Encrypted).Build()));
+
+        ex.Should()
+            .BeOfType<SecurityException>()
+            .Which.Message.Should()
+            .Contain("Failed to establish encrypted connection with server");
+    }
+
+    private async Task VerifySuccess(
+        Uri target,
+        TrustManager trustManager,
+        EncryptionLevel encryptionLevel = EncryptionLevel.Encrypted)
+    {
+        var ex = await Record.ExceptionAsync(
+            () => TestConnectivity(
+                target,
+                Config.Builder.WithTrustManager(trustManager).WithEncryptionLevel(encryptionLevel).Build()));
+
+        ex.Should().BeNull();
+    }
+
+    private async Task TestConnectivity(Uri target, Config config)
+    {
+        using (var driver = SetupWithCustomResolver(target, config))
         {
+            var session = driver.AsyncSession();
             try
             {
-                var pkcs12 = CertificateUtils.CreateCert("localhost", DateTime.Now.AddYears(-1),
-                    DateTime.Now.AddDays(-1),
-                    null, null, null);
+                var cursor = await session.RunAsync("RETURN 1");
+                var records = await cursor.ToListAsync(r => r[0].As<int>());
 
-                Server.RestartServerWithCertificate(pkcs12);
-
-                await VerifyFailure(Server.BoltUri,
-                    new CertificateTrustManager(true, new[] {pkcs12.GetDotnetCertificate()}));
+                records.Should().BeEquivalentTo(1);
             }
             finally
             {
-                Server.RestartServerWithCertificate(Pkcs12);
+                await session.CloseAsync();
             }
         }
+    }
 
-        [ShouldNotRunInTestKitFact]
-        public async Task CertificateTrustManager_ShouldNotTrustIfCertificateIsNotTrusted()
+    private IDriver SetupWithCustomResolver(Uri overridenUri, Config config)
+    {
+        var connectionSettings = new ConnectionSettings(overridenUri, Server.AuthToken, config);
+        connectionSettings.SocketSettings.HostResolver =
+            new CustomHostResolver(Server.BoltUri, connectionSettings.SocketSettings.HostResolver);
+
+        var bufferSettings = new BufferSettings(config);
+        var connectionFactory =
+            new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logger);
+
+        return GraphDatabase.CreateDriver(overridenUri, config, connectionFactory, connectionSettings);
+    }
+
+    private class CustomHostResolver : IHostResolver
+    {
+        private readonly IHostResolver _original;
+        private readonly Uri _target;
+
+        public CustomHostResolver(Uri target, IHostResolver original)
         {
-            var pkcs12Untrusted = CertificateUtils.CreateCert("localhost", DateTime.Now.AddYears(-1),
-                DateTime.Now.AddYears(1),
-                null, null, null);
-
-            await VerifyFailure(Server.BoltUri,
-                new CertificateTrustManager(true, new[] {pkcs12Untrusted.GetDotnetCertificate()}));
+            _target = target;
+            _original = original;
         }
 
-        [ShouldNotRunInTestKitFact]
-        public async Task InsecureTrustManager_ShouldTrust()
+        public IPAddress[] Resolve(string hostname)
         {
-            await VerifySuccess(Server.BoltUri, new InsecureTrustManager(true), EncryptionLevel.None);
+            return _original.Resolve(_target.Host);
         }
 
-        [ShouldNotRunInTestKitFact]
-        public async Task InsecureTrustManager_ShouldNotTrustIfHostnameDiffers()
+        public Task<IPAddress[]> ResolveAsync(string hostname)
         {
-            await VerifyFailure(new Uri("bolt://another.host.domain:7687"), new InsecureTrustManager(true));
+            return _original.ResolveAsync(_target.Host);
         }
+    }
 
-        [ShouldNotRunInTestKitFact]
-        public async Task InsecureTrustManager_ShouldTrustIfHostnameDiffersWhenHostnameVerificationIsDisabled()
-        {
-            await VerifySuccess(new Uri("bolt://another.host.domain:7687"), new InsecureTrustManager(false), EncryptionLevel.None);
-        }
+    // ReSharper disable once ClassNeverInstantiated.Global
+    public class CertificateTrustIntegrationTestFixture : IDisposable
+    {
+        private bool _disposed;
 
-        private async Task VerifyFailure(Uri target, TrustManager trustManager)
+        public CertificateTrustIntegrationTestFixture()
         {
-            var ex = await Record.ExceptionAsync(() => TestConnectivity(target,
-                Config.Builder.WithTrustManager(trustManager).WithEncryptionLevel(EncryptionLevel.Encrypted).Build()
-            ));
-            ex.Should().BeOfType<SecurityException>().Which.Message.Should()
-                .Contain("Failed to establish encrypted connection with server");
-        }
-
-        private async Task VerifySuccess(Uri target, TrustManager trustManager, EncryptionLevel encryptionLevel = EncryptionLevel.Encrypted)
-        {
-            var ex = await Record.ExceptionAsync(() => TestConnectivity(target,
-                Config.Builder.WithTrustManager(trustManager).WithEncryptionLevel(encryptionLevel).Build()
-            ));
-            ex.Should().BeNull();
-        }
-
-        private async Task TestConnectivity(Uri target, Config config)
-        {
-            using (var driver = SetupWithCustomResolver(target, config))
+            if (!BoltkitHelper.ServerAvailable())
             {
-                var session = driver.AsyncSession();
-                try
-                {
-                    var cursor = await session.RunAsync("RETURN 1");
-                    var records = await cursor.ToListAsync(r => r[0].As<int>());
+                return;
+            }
 
-                    records.Should().BeEquivalentTo(1);
-                }
-                finally
-                {
-                    await session.CloseAsync();
-                }
+            try
+            {
+                Pkcs12 = CertificateUtils.CreateCert(
+                    "localhost",
+                    DateTime.Now.AddYears(-1),
+                    DateTime.Now.AddYears(1),
+                    null,
+                    null,
+                    null);
+
+                StandAlone = new StandAlone(Pkcs12);
+            }
+            catch (Exception)
+            {
+                Dispose();
+                throw;
             }
         }
 
-        private IDriver SetupWithCustomResolver(Uri overridenUri, Config config)
-        {
-            var connectionSettings = new ConnectionSettings(overridenUri, Server.AuthToken, config);
-            connectionSettings.SocketSettings.HostResolver =
-                new CustomHostResolver(Server.BoltUri, connectionSettings.SocketSettings.HostResolver);
-            var bufferSettings = new BufferSettings(config);
-            var connectionFactory =
-                new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logger);
+        public StandAlone StandAlone { get; }
+        public Pkcs12Store Pkcs12 { get; }
 
-            return GraphDatabase.CreateDriver(overridenUri, config, connectionFactory, connectionSettings);
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
-        private class CustomHostResolver : IHostResolver
+        ~CertificateTrustIntegrationTestFixture()
         {
-            private readonly Uri _target;
-            private readonly IHostResolver _original;
-
-            public CustomHostResolver(Uri target, IHostResolver original)
-            {
-                _target = target;
-                _original = original;
-            }
-
-            public IPAddress[] Resolve(string hostname)
-            {
-                return _original.Resolve(_target.Host);
-            }
-
-            public Task<IPAddress[]> ResolveAsync(string hostname)
-            {
-                return _original.ResolveAsync(_target.Host);
-            }
+            Dispose(false);
         }
 
-        // ReSharper disable once ClassNeverInstantiated.Global
-        public class CertificateTrustIntegrationTestFixture : IDisposable
+        protected virtual void Dispose(bool disposing)
         {
-            public StandAlone StandAlone { get; }
-            public Pkcs12Store Pkcs12 { get; }
-
-            ~CertificateTrustIntegrationTestFixture() => Dispose(false);
-
-            public CertificateTrustIntegrationTestFixture()
+            if (_disposed)
             {
-                if (!BoltkitHelper.ServerAvailable())
-                {
-                    return;
-                }
-
-                try
-                {
-                    Pkcs12 = CertificateUtils.CreateCert("localhost", DateTime.Now.AddYears(-1),
-                        DateTime.Now.AddYears(1),
-                        null, null, null);
-                    StandAlone = new StandAlone(Pkcs12);
-                }
-                catch (Exception)
-                {
-                    Dispose();
-                    throw;
-                }
+                return;
             }
 
-
-            private bool _disposed = false;
-            public void Dispose()
+            if (disposing)
             {
-                Dispose(true);
-                GC.SuppressFinalize(this);
+                //Dispose managed state (managed objects).
+                StandAlone?.Dispose();
+                StandAlone?.UpdateCertificate(Pkcs12);
             }
 
-            protected virtual void Dispose(bool disposing)
-			{
-                if (_disposed)
-                    return;
-
-                if(disposing)
-				{
-                    //Dispose managed state (managed objects).
-                    StandAlone?.Dispose();
-                    StandAlone?.UpdateCertificate(Pkcs12);
-                }
-
-                _disposed = true;
-            }
+            _disposed = true;
         }
     }
 }

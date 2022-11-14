@@ -28,13 +28,27 @@ internal interface IBoltProtocol
     Task LogoutAsync(IConnection connection);
     Task ResetAsync(IConnection connection);
 
-    Task<IReadOnlyDictionary<string, object>> GetRoutingTable(IConnection connection, string database,
-        string impersonatedUser, Bookmarks bookmarks);
+    Task<IReadOnlyDictionary<string, object>> GetRoutingTable(
+        IConnection connection,
+        string database,
+        string impersonatedUser,
+        Bookmarks bookmarks);
+
     Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, AutoCommitParams autoCommitParams);
-    Task BeginTransactionAsync(IConnection connection, string database, Bookmarks bookmarks, TransactionConfig config,
+
+    Task BeginTransactionAsync(
+        IConnection connection,
+        string database,
+        Bookmarks bookmarks,
+        TransactionConfig config,
         string impersonatedUser);
-    Task<IResultCursor> RunInExplicitTransactionAsync(IConnection connection, Query query, bool reactive,
+
+    Task<IResultCursor> RunInExplicitTransactionAsync(
+        IConnection connection,
+        Query query,
+        bool reactive,
         long fetchSize);
+
     Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker);
     Task RollbackTransactionAsync(IConnection connection);
 }

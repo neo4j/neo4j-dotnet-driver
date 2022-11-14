@@ -15,52 +15,46 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.Util
+namespace Neo4j.Driver.Internal.Util;
+
+internal class ConcurrentHashSet<T> : IEnumerable<T>
 {
-    internal class ConcurrentHashSet<T> : IEnumerable<T>
+    private readonly ConcurrentDictionary<T, bool> _items = new();
+
+    public int Count => _items.Count;
+
+    public IEnumerator<T> GetEnumerator()
     {
-        private readonly ConcurrentDictionary<T, bool> _items = new ConcurrentDictionary<T, bool>();
+        return _items.Keys.GetEnumerator();
+    }
 
-        /// <summary>
-        /// true if the item was added to the set successfully; false if the item already exists.
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public bool TryAdd(T item)
-        {
-            return _items.GetOrAdd(item, _ => true);
-        }
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
 
-        /// <summary>
-        /// true if the item was removed from the set successfully; false if the item does not exists.
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public bool TryRemove(T item)
-        {
-            return _items.TryRemove(item, out _);
-        }
+    /// <summary>true if the item was added to the set successfully; false if the item already exists.</summary>
+    /// <param name="item"></param>
+    /// <returns></returns>
+    public bool TryAdd(T item)
+    {
+        return _items.GetOrAdd(item, _ => true);
+    }
 
-        public int Count => _items.Count;
+    /// <summary>true if the item was removed from the set successfully; false if the item does not exists.</summary>
+    /// <param name="item"></param>
+    /// <returns></returns>
+    public bool TryRemove(T item)
+    {
+        return _items.TryRemove(item, out _);
+    }
 
-        public IEnumerator<T> GetEnumerator()
-        {
-            return _items.Keys.GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
-        public override string ToString()
-        {
-            return _items.Keys.ToContentString();
-        }
+    public override string ToString()
+    {
+        return _items.Keys.ToContentString();
     }
 }

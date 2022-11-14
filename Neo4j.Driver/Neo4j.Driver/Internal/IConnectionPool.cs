@@ -17,14 +17,13 @@
 
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal interface IConnectionPool : IConnectionProvider, IConnectionReleaseManager
 {
-    internal interface IConnectionPool : IConnectionProvider, IConnectionReleaseManager
-    {
-        int NumberOfInUseConnections { get; }
-        int NumberOfIdleConnections { get; }
-        ConnectionPoolStatus Status { get; }
-        Task DeactivateAsync();
-        void Activate();
-	}
+    int NumberOfInUseConnections { get; }
+    int NumberOfIdleConnections { get; }
+    ConnectionPoolStatus Status { get; }
+    Task DeactivateAsync();
+    void Activate();
 }

@@ -22,14 +22,13 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 
 internal class LocalDateTimeSerializer : IPackStreamSerializer
 {
+    public const byte StructType = (byte)'d';
+    public const int StructSize = 2;
     internal static readonly LocalDateTimeSerializer Instance = new();
 
-    public const byte StructType = (byte) 'd';
-    public const int StructSize = 2;
+    public IEnumerable<byte> ReadableStructs => new[] { StructType };
 
-    public IEnumerable<byte> ReadableStructs => new[] {StructType};
-
-    public IEnumerable<Type> WritableTypes => new[] {typeof(LocalDateTime)};
+    public IEnumerable<Type> WritableTypes => new[] { typeof(LocalDateTime) };
 
     public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
     {

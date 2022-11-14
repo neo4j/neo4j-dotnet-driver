@@ -15,44 +15,44 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 
-namespace Neo4j.Driver.Internal.Metrics
-{
-    internal interface IInternalMetrics : IMetrics, IMetricsListener{}
+namespace Neo4j.Driver.Internal.Metrics;
 
-    internal interface IMetricsListener
+internal interface IInternalMetrics : IMetrics, IMetricsListener
+{
+}
+
+internal interface IMetricsListener
+{
+    IConnectionPoolListener PutPoolMetrics(string poolId, IConnectionPool pool);
+    void RemovePoolMetrics(string poolId);
+}
+
+internal class DefaultMetrics : IInternalMetrics
+{
+    private readonly ConcurrentDictionary<string, IInternalConnectionPoolMetrics> _poolMetrics;
+
+    public DefaultMetrics()
     {
-        IConnectionPoolListener PutPoolMetrics(string poolId, IConnectionPool pool);
-        void RemovePoolMetrics(string poolId);
+        _poolMetrics = new ConcurrentDictionary<string, IInternalConnectionPoolMetrics>();
     }
 
-    internal class DefaultMetrics : IInternalMetrics
+    public IDictionary<string, IConnectionPoolMetrics> ConnectionPoolMetrics =>
+        new ReadOnlyDictionary<string, IConnectionPoolMetrics>(
+            _poolMetrics.ToDictionary(item => item.Key, item => (IConnectionPoolMetrics)item.Value));
+
+    public IConnectionPoolListener PutPoolMetrics(string poolId, IConnectionPool pool)
     {
-        private readonly ConcurrentDictionary<string, IInternalConnectionPoolMetrics> _poolMetrics;
+        var poolMetrics = new ConnectionPoolMetrics(poolId, pool, this);
+        return _poolMetrics.GetOrAdd(poolId, poolMetrics);
+    }
 
-        public DefaultMetrics()
-        {
-            _poolMetrics = new ConcurrentDictionary<string, IInternalConnectionPoolMetrics>();
-        }
-
-        public IDictionary<string, IConnectionPoolMetrics> ConnectionPoolMetrics =>
-            new ReadOnlyDictionary<string, IConnectionPoolMetrics>(
-                _poolMetrics.ToDictionary(item => item.Key, item => (IConnectionPoolMetrics) item.Value));
-
-        public IConnectionPoolListener PutPoolMetrics(string poolId, IConnectionPool pool)
-        {
-            var poolMetrics = new ConnectionPoolMetrics(poolId, pool, this);
-            return _poolMetrics.GetOrAdd(poolId, poolMetrics);
-        }
-
-        public void RemovePoolMetrics(string poolId)
-        {
-            _poolMetrics.TryRemove(poolId, out _);
-        }
+    public void RemovePoolMetrics(string poolId)
+    {
+        _poolMetrics.TryRemove(poolId, out _);
     }
 }

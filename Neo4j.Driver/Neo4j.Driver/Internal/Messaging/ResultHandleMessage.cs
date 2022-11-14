@@ -28,13 +28,15 @@ internal abstract class ResultHandleMessage : IRequestMessage
     protected ResultHandleMessage(long id, long n)
     {
         Metadata = id == NoQueryId
-            ? new Dictionary<string, object> {{"n", n}}
-            : new Dictionary<string, object> {{"n", n}, {"qid", id}};
+            ? new Dictionary<string, object> { { "n", n } }
+            : new Dictionary<string, object> { { "n", n }, { "qid", id } };
     }
 
     protected abstract string Name { get; }
 
     public IDictionary<string, object> Metadata { get; }
+
+    public abstract IPackStreamSerializer Serializer { get; }
 
     protected bool Equals(ResultHandleMessage other)
     {
@@ -43,10 +45,22 @@ internal abstract class ResultHandleMessage : IRequestMessage
 
     public override bool Equals(object obj)
     {
-        if (ReferenceEquals(null, obj)) return false;
-        if (ReferenceEquals(this, obj)) return true;
-        if (obj.GetType() != this.GetType()) return false;
-        return Equals((ResultHandleMessage) obj);
+        if (ReferenceEquals(null, obj))
+        {
+            return false;
+        }
+
+        if (ReferenceEquals(this, obj))
+        {
+            return true;
+        }
+
+        if (obj.GetType() != GetType())
+        {
+            return false;
+        }
+
+        return Equals((ResultHandleMessage)obj);
     }
 
     public override int GetHashCode()
@@ -58,6 +72,4 @@ internal abstract class ResultHandleMessage : IRequestMessage
     {
         return $"{Name} {Metadata.ToContentString()}";
     }
-
-    public abstract IPackStreamSerializer Serializer { get; }
 }

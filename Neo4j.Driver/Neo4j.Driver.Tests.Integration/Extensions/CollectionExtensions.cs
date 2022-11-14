@@ -19,32 +19,34 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Neo4j.Driver.IntegrationTests
+namespace Neo4j.Driver.IntegrationTests;
+
+public static class CollectionExtensions
 {
-    public static class CollectionExtensions
+    public static T RandomElement<T>(this IEnumerable<T> list)
     {
-        public static T RandomElement<T>(this IEnumerable<T> list)
+        var random = new Random(Guid.NewGuid().GetHashCode());
+        var index = random.Next(0, list.Count());
+        return list.ElementAt(index);
+    }
+
+    public static IEnumerable<IEnumerable<T>> Batch<T>(this IEnumerable<T> collection, int batchSize)
+    {
+        var nextBatch = new List<T>(batchSize);
+        foreach (var item in collection)
         {
-            var random = new Random(Guid.NewGuid().GetHashCode());
-            var index = random.Next(0, list.Count());
-            return list.ElementAt(index);
+            nextBatch.Add(item);
+            if (nextBatch.Count == batchSize)
+            {
+                yield return nextBatch;
+
+                nextBatch = new List<T>(batchSize);
+            }
         }
 
-        public static IEnumerable<IEnumerable<T>> Batch<T>(this IEnumerable<T> collection, int batchSize)
+        if (nextBatch.Count > 0)
         {
-            var nextBatch = new List<T>(batchSize);
-            foreach (var item in collection)
-            {
-                nextBatch.Add(item);
-                if (nextBatch.Count == batchSize)
-                {
-                    yield return nextBatch;
-                    nextBatch = new List<T>(batchSize);
-                }
-            }
-
-            if (nextBatch.Count > 0)
-                yield return nextBatch;
+            yield return nextBatch;
         }
     }
 }

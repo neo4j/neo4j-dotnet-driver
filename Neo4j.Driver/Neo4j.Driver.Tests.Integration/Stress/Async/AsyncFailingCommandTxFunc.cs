@@ -15,53 +15,59 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
+namespace Neo4j.Driver.IntegrationTests.Stress;
+
+public class AsyncFailingCommandTxFunc<TContext> : AsyncCommand<TContext>
+    where TContext : StressTestContext
 {
-	public class AsyncFailingCommandTxFunc<TContext> : AsyncCommand<TContext>
-		where TContext : StressTestContext
-	{
-		public AsyncFailingCommandTxFunc(IDriver driver)
-			: base(driver, false)
-		{
-		}
+    public AsyncFailingCommandTxFunc(IDriver driver)
+        : base(driver, false)
+    {
+    }
 
-		public override async Task ExecuteAsync(TContext context)
-		{
-			var session = NewSession(AccessMode.Read, context);
+    public override async Task ExecuteAsync(TContext context)
+    {
+        var session = NewSession(AccessMode.Read, context);
 
-			try
-			{
-				await session.ReadTransactionAsync(async tx =>
-				{
-					try
-					{
-						var exc = await Record.ExceptionAsync(async () =>
-						{
-							var cursor = await tx.RunAsync("UNWIND [10, 5, 0] AS x RETURN 10 / x").ConfigureAwait(false);
-							var exc = await Record.ExceptionAsync(async () => await cursor.ConsumeAsync().ConfigureAwait(false)).ConfigureAwait(false);
+        try
+        {
+            await session.ReadTransactionAsync(
+                    async tx =>
+                    {
+                        try
+                        {
+                            var exc = await Record.ExceptionAsync(
+                                    async () =>
+                                    {
+                                        var cursor = await tx.RunAsync("UNWIND [10, 5, 0] AS x RETURN 10 / x")
+                                            .ConfigureAwait(false);
 
-							exc.Should().BeOfType<ClientException>().Which.Message.Should().Contain("/ by zero");
+                                        var exc = await Record
+                                            .ExceptionAsync(
+                                                async () => await cursor.ConsumeAsync().ConfigureAwait(false))
+                                            .ConfigureAwait(false);
 
-						}).ConfigureAwait(false);						
-					}
-					finally
-					{
-						await tx.RollbackAsync().ConfigureAwait(false);
-					}
-
-				}).ConfigureAwait(false);
-			}
-			finally
-			{
-				await session.CloseAsync().ConfigureAwait(false);
-			}
-		}
-	}
+                                        exc.Should()
+                                            .BeOfType<ClientException>()
+                                            .Which.Message.Should()
+                                            .Contain("/ by zero");
+                                    })
+                                .ConfigureAwait(false);
+                        }
+                        finally
+                        {
+                            await tx.RollbackAsync().ConfigureAwait(false);
+                        }
+                    })
+                .ConfigureAwait(false);
+        }
+        finally
+        {
+            await session.CloseAsync().ConfigureAwait(false);
+        }
+    }
 }
-

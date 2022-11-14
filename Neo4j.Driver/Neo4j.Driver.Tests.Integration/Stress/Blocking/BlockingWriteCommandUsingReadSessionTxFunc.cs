@@ -15,42 +15,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Linq;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
+namespace Neo4j.Driver.IntegrationTests.Stress;
+
+public class BlockingWriteCommandUsingReadSessionTxFunc<TContext> : BlockingCommand<TContext>
+    where TContext : StressTestContext
 {
-	public class BlockingWriteCommandUsingReadSessionTxFunc<TContext> : BlockingCommand<TContext>
-		where TContext : StressTestContext
-	{
-		public BlockingWriteCommandUsingReadSessionTxFunc(IDriver driver, bool useBookmark)
-			: base(driver, useBookmark)
-		{
-		}
+    public BlockingWriteCommandUsingReadSessionTxFunc(IDriver driver, bool useBookmark)
+        : base(driver, useBookmark)
+    {
+    }
 
-		public override void Execute(TContext context)
-		{
-			var result = default(IResult);
+    public override void Execute(TContext context)
+    {
+        var result = default(IResult);
 
-			using var session = NewSession(AccessMode.Read, context);
-			session.ReadTransaction(tx =>
-			{
-				var exc = Record.Exception(() =>
-				{
-					result = tx.Run("CREATE ()");
-					result.Consume();
-					return result;
-				});
-				
-				exc.Should().BeOfType<ClientException>();
-				return result;
-			});
+        using var session = NewSession(AccessMode.Read, context);
+        session.ReadTransaction(
+            tx =>
+            {
+                var exc = Record.Exception(
+                    () =>
+                    {
+                        result = tx.Run("CREATE ()");
+                        result.Consume();
+                        return result;
+                    });
 
-			result.Should().NotBeNull();
-			result.Consume().Counters.NodesCreated.Should().Be(0);
-		}
+                exc.Should().BeOfType<ClientException>();
+                return result;
+            });
 
-	}
+        result.Should().NotBeNull();
+        result.Consume().Counters.NodesCreated.Should().Be(0);
+    }
 }

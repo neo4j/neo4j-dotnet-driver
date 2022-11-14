@@ -17,59 +17,58 @@
 
 using System;
 
-namespace Neo4j.Driver.Internal.Util
+namespace Neo4j.Driver.Internal.Util;
+
+internal static class ConfigBuilders
 {
-    internal static class ConfigBuilders
+    public static TransactionConfig BuildTransactionConfig(Action<TransactionConfigBuilder> action)
     {
-        public static TransactionConfig BuildTransactionConfig(Action<TransactionConfigBuilder> action)
+        TransactionConfig config;
+        if (action == null)
         {
-            TransactionConfig config;
-            if (action == null)
-            {
-                config = TransactionConfig.Default;
-            }
-            else
-            {
-                var builder = TransactionConfig.Builder;
-                action.Invoke(builder);
-                config = builder.Build();
-            }
-
-            return config;
+            config = TransactionConfig.Default;
+        }
+        else
+        {
+            var builder = TransactionConfig.Builder;
+            action.Invoke(builder);
+            config = builder.Build();
         }
 
-        public static SessionConfig BuildSessionConfig(Action<SessionConfigBuilder> action)
-        {
-            SessionConfig config;
-            if (action == null)
-            {
-                config = SessionConfig.Default;
-            }
-            else
-            {
-                var builder = SessionConfig.Builder;
-                action.Invoke(builder);
-                config = builder.Build();
-            }
+        return config;
+    }
 
-            return config;
+    public static SessionConfig BuildSessionConfig(Action<SessionConfigBuilder> action)
+    {
+        SessionConfig config;
+        if (action == null)
+        {
+            config = SessionConfig.Default;
+        }
+        else
+        {
+            var builder = SessionConfig.Builder;
+            action.Invoke(builder);
+            config = builder.Build();
         }
 
-        public static Config BuildConfig(Action<ConfigBuilder> action)
-        {
-            Config config;
-            if (action == null)
-            {
-                config = Config.Default;
-            }
-            else
-            {
-                var builder = Config.Builder;
-                action.Invoke(builder);
-                config = builder.Build();
-            }
+        return config;
+    }
 
-            return config;
+    public static Config BuildConfig(Action<ConfigBuilder> action)
+    {
+        Config config;
+        if (action == null)
+        {
+            config = Config.Default;
         }
+        else
+        {
+            var builder = Config.Builder;
+            action.Invoke(builder);
+            config = builder.Build();
+        }
+
+        return config;
     }
 }

@@ -27,37 +27,33 @@ namespace Neo4j.Driver.Internal;
 
 internal sealed partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
 {
+    private readonly IBookmarkManager _bookmarkManager;
+
     // If the connection is ever successfully created, 
     // then it is session's responsibility to dispose them properly
     // without any possible connection leak.
     private readonly IConnectionProvider _connectionProvider;
 
     private readonly AccessMode _defaultMode;
+    private readonly long _fetchSize;
+
+    private readonly ILogger _logger;
+    private readonly bool _reactive;
+
+    private readonly IAsyncRetryLogic _retryLogic;
+    private readonly bool _useBookmarkManager;
+
     private IConnection _connection;
+
+    private string _database;
+    private bool _disposed;
+    private bool _isOpen = true;
     private Task<IResultCursor> _result; // last session run result if any
 
     private AsyncTransaction _transaction;
 
-    private readonly IAsyncRetryLogic _retryLogic;
-    private bool _isOpen = true;
-    private bool _disposed;
-
-    private Bookmarks _bookmarks;
-
-    private readonly ILogger _logger;
-
-    [Obsolete("Replaced by more sensibly named LastBookmarks. Will be removed in 6.0")]
-    public Bookmark LastBookmark => _bookmarks;
-
-    public Bookmarks LastBookmarks => _bookmarks;
-
-    private string _database;
-    private readonly bool _reactive;
-    private readonly long _fetchSize;
-    private readonly IBookmarkManager _bookmarkManager;
-    private readonly bool _useBookmarkManager;
-
-    public AsyncSession(IConnectionProvider provider,
+    public AsyncSession(
+        IConnectionProvider provider,
         ILogger logger,
         IAsyncRetryLogic retryLogic,
         long defaultFetchSize,
@@ -77,11 +73,20 @@ internal sealed partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSes
         _useBookmarkManager = config.BookmarkManager != null;
 
         if (_useBookmarkManager)
+        {
             _bookmarkManager = config.BookmarkManager;
+        }
 
         if (config.Bookmarks != null)
-            _bookmarks = Bookmarks.From(config.Bookmarks);
+        {
+            LastBookmarks = Bookmarks.From(config.Bookmarks);
+        }
     }
+
+    [Obsolete("Replaced by more sensibly named LastBookmarks. Will be removed in 6.0")]
+    public Bookmark LastBookmark => LastBookmarks;
+
+    public Bookmarks LastBookmarks { get; private set; }
 
     public Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action)
     {
@@ -95,7 +100,9 @@ internal sealed partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSes
         return RunAsync(new Query(query), action);
     }
 
-    public Task<IResultCursor> RunAsync(string query, IDictionary<string, object> parameters,
+    public Task<IResultCursor> RunAsync(
+        string query,
+        IDictionary<string, object> parameters,
         Action<TransactionConfigBuilder> action)
     {
         return RunAsync(new Query(query, parameters), action);
@@ -116,91 +123,93 @@ internal sealed partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSes
         return BeginTransactionAsync(action, true);
     }
 
-    public async Task<IAsyncTransaction> BeginTransactionAsync(Action<TransactionConfigBuilder> action,
+    public async Task<IAsyncTransaction> BeginTransactionAsync(
+        Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult)
     {
-        var tx = await TryExecuteAsync(_logger,
+        var tx = await TryExecuteAsync(
+                _logger,
                 () => BeginTransactionWithoutLoggingAsync(_defaultMode, action, disposeUnconsumedSessionResult))
             .ConfigureAwait(false);
+
         return tx;
     }
 
-    public async Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode,
-        Action<TransactionConfigBuilder> action, bool disposeUnconsumedSessionResult)
+    public async Task<IAsyncTransaction> BeginTransactionAsync(
+        AccessMode mode,
+        Action<TransactionConfigBuilder> action,
+        bool disposeUnconsumedSessionResult)
     {
-        var tx = await TryExecuteAsync(_logger,
+        var tx = await TryExecuteAsync(
+                _logger,
                 () => BeginTransactionWithoutLoggingAsync(mode, action, disposeUnconsumedSessionResult))
             .ConfigureAwait(false);
+
         return tx;
     }
 
-    public Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action,
+    public Task<IResultCursor> RunAsync(
+        Query query,
+        Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult)
     {
         var options = BuildTransactionConfig(action);
-        var result = TryExecuteAsync(_logger, async () =>
-        {
-            await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
-
-            await AcquireConnectionAndDbNameAsync(_defaultMode).ConfigureAwait(false);
-
-            if (_useBookmarkManager)
-                _bookmarks = await GetBookmarksAsync().ConfigureAwait(false);
-
-            var autoCommit = new AutoCommitParams
+        var result = TryExecuteAsync(
+            _logger,
+            async () =>
             {
-                Query = query,
-                Reactive = _reactive,
-                Bookmarks = _bookmarks,
-                BookmarksTracker = this,
-                ResultResourceHandler = this,
-                Config = options,
-                Database = _database,
-                FetchSize = _fetchSize,
-                ImpersonatedUser = ImpersonatedUser(),
-            };
+                await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
 
-            return await _connection.RunInAutoCommitTransactionAsync(autoCommit).ConfigureAwait(false);
-        });
+                await AcquireConnectionAndDbNameAsync(_defaultMode).ConfigureAwait(false);
+
+                if (_useBookmarkManager)
+                {
+                    LastBookmarks = await GetBookmarksAsync().ConfigureAwait(false);
+                }
+
+                var autoCommit = new AutoCommitParams
+                {
+                    Query = query,
+                    Reactive = _reactive,
+                    Bookmarks = LastBookmarks,
+                    BookmarksTracker = this,
+                    ResultResourceHandler = this,
+                    Config = options,
+                    Database = _database,
+                    FetchSize = _fetchSize,
+                    ImpersonatedUser = ImpersonatedUser()
+                };
+
+                return await _connection.RunInAutoCommitTransactionAsync(autoCommit).ConfigureAwait(false);
+            });
 
         _result = result;
         return result;
     }
 
-    private async Task<Bookmarks> GetBookmarksAsync()
-    {
-        return _bookmarks == null
-            ? Bookmarks.From(await _bookmarkManager.GetAllBookmarksAsync().ConfigureAwait(false))
-            : Bookmarks.From((await _bookmarkManager.GetAllBookmarksAsync().ConfigureAwait(false)).Concat(_bookmarks.Values));
-    }
-
-
-    private async Task<Bookmarks> GetBookmarksAsync(string database)
-    {
-        return _bookmarks == null
-            ? Bookmarks.From(await _bookmarkManager.GetBookmarksAsync(database).ConfigureAwait(false))
-            : Bookmarks.From((await _bookmarkManager.GetBookmarksAsync(database).ConfigureAwait(false)).Concat(_bookmarks.Values));
-    }
-
-    public Task<T> ReadTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work,
+    public Task<T> ReadTransactionAsync<T>(
+        Func<IAsyncTransaction, Task<T>> work,
         Action<TransactionConfigBuilder> action = null)
     {
         return RunTransactionAsync(AccessMode.Read, work, action);
     }
 
-    public Task ReadTransactionAsync(Func<IAsyncTransaction, Task> work,
+    public Task ReadTransactionAsync(
+        Func<IAsyncTransaction, Task> work,
         Action<TransactionConfigBuilder> action = null)
     {
         return RunTransactionAsync(AccessMode.Read, work, action);
     }
 
-    public Task<T> WriteTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work,
+    public Task<T> WriteTransactionAsync<T>(
+        Func<IAsyncTransaction, Task<T>> work,
         Action<TransactionConfigBuilder> action = null)
     {
         return RunTransactionAsync(AccessMode.Write, work, action);
     }
 
-    public Task WriteTransactionAsync(Func<IAsyncTransaction, Task> work,
+    public Task WriteTransactionAsync(
+        Func<IAsyncTransaction, Task> work,
         Action<TransactionConfigBuilder> action = null)
     {
         return RunTransactionAsync(AccessMode.Write, work, action);
@@ -211,86 +220,133 @@ internal sealed partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSes
         return RunTransactionAsync(AccessMode.Read, work, action);
     }
 
-    public Task<T> ExecuteReadAsync<T>(Func<IAsyncQueryRunner, Task<T>> work,
+    public Task<T> ExecuteReadAsync<T>(
+        Func<IAsyncQueryRunner, Task<T>> work,
         Action<TransactionConfigBuilder> action = null)
     {
         return RunTransactionAsync(AccessMode.Read, work, action);
     }
 
-    public Task ExecuteWriteAsync(Func<IAsyncQueryRunner, Task> work,
+    public Task ExecuteWriteAsync(
+        Func<IAsyncQueryRunner, Task> work,
         Action<TransactionConfigBuilder> action = null)
     {
         return RunTransactionAsync(AccessMode.Write, work, action);
     }
 
-    public Task<T> ExecuteWriteAsync<T>(Func<IAsyncQueryRunner, Task<T>> work,
+    public Task<T> ExecuteWriteAsync<T>(
+        Func<IAsyncQueryRunner, Task<T>> work,
         Action<TransactionConfigBuilder> action = null)
     {
         return RunTransactionAsync(AccessMode.Write, work, action);
     }
 
-    private Task RunTransactionAsync(AccessMode mode, Func<IAsyncQueryRunner, Task> work,
-        Action<TransactionConfigBuilder> action)
+    private async Task<Bookmarks> GetBookmarksAsync()
     {
-        return RunTransactionAsync(mode, async tx =>
-        {
-            await work(tx).ConfigureAwait(false);
-            var ignored = 1;
-            return ignored;
-        }, action);
+        return LastBookmarks == null
+            ? Bookmarks.From(await _bookmarkManager.GetAllBookmarksAsync().ConfigureAwait(false))
+            : Bookmarks.From(
+                (await _bookmarkManager.GetAllBookmarksAsync().ConfigureAwait(false)).Concat(LastBookmarks.Values));
     }
 
-    private Task RunTransactionAsync(AccessMode mode, Func<IAsyncTransaction, Task> work,
-        Action<TransactionConfigBuilder> action)
+    private async Task<Bookmarks> GetBookmarksAsync(string database)
     {
-        return RunTransactionAsync(mode, async tx =>
-        {
-            await work(tx).ConfigureAwait(false);
-            var ignored = 1;
-            return ignored;
-        }, action);
+        return LastBookmarks == null
+            ? Bookmarks.From(await _bookmarkManager.GetBookmarksAsync(database).ConfigureAwait(false))
+            : Bookmarks.From(
+                (await _bookmarkManager.GetBookmarksAsync(database).ConfigureAwait(false))
+                .Concat(LastBookmarks.Values));
     }
 
-    private Task<T> RunTransactionAsync<T>(AccessMode mode, Func<IAsyncTransaction, Task<T>> work,
+    private Task RunTransactionAsync(
+        AccessMode mode,
+        Func<IAsyncQueryRunner, Task> work,
         Action<TransactionConfigBuilder> action)
     {
-        return TryExecuteAsync(_logger, () => _retryLogic.RetryAsync(async () =>
-        {
-            var tx = await BeginTransactionWithoutLoggingAsync(mode, action, true).ConfigureAwait(false);
-            try
+        return RunTransactionAsync(
+            mode,
+            async tx =>
             {
-                var result = await work(tx).ConfigureAwait(false);
-                if (tx.IsOpen)
-                {
-                    await tx.CommitAsync().ConfigureAwait(false);
-                }
-
-                return result;
-            }
-            catch
-            {
-                if (tx.IsOpen)
-                {
-                    await tx.RollbackAsync().ConfigureAwait(false);
-                }
-
-                throw;
-            }
-        }));
+                await work(tx).ConfigureAwait(false);
+                var ignored = 1;
+                return ignored;
+            },
+            action);
     }
 
-    private async Task<IInternalAsyncTransaction> BeginTransactionWithoutLoggingAsync(AccessMode mode,
-        Action<TransactionConfigBuilder> action, bool disposeUnconsumedSessionResult)
+    private Task RunTransactionAsync(
+        AccessMode mode,
+        Func<IAsyncTransaction, Task> work,
+        Action<TransactionConfigBuilder> action)
+    {
+        return RunTransactionAsync(
+            mode,
+            async tx =>
+            {
+                await work(tx).ConfigureAwait(false);
+                var ignored = 1;
+                return ignored;
+            },
+            action);
+    }
+
+    private Task<T> RunTransactionAsync<T>(
+        AccessMode mode,
+        Func<IAsyncTransaction, Task<T>> work,
+        Action<TransactionConfigBuilder> action)
+    {
+        return TryExecuteAsync(
+            _logger,
+            () => _retryLogic.RetryAsync(
+                async () =>
+                {
+                    var tx = await BeginTransactionWithoutLoggingAsync(mode, action, true).ConfigureAwait(false);
+                    try
+                    {
+                        var result = await work(tx).ConfigureAwait(false);
+                        if (tx.IsOpen)
+                        {
+                            await tx.CommitAsync().ConfigureAwait(false);
+                        }
+
+                        return result;
+                    }
+                    catch
+                    {
+                        if (tx.IsOpen)
+                        {
+                            await tx.RollbackAsync().ConfigureAwait(false);
+                        }
+
+                        throw;
+                    }
+                }));
+    }
+
+    private async Task<IInternalAsyncTransaction> BeginTransactionWithoutLoggingAsync(
+        AccessMode mode,
+        Action<TransactionConfigBuilder> action,
+        bool disposeUnconsumedSessionResult)
     {
         var config = BuildTransactionConfig(action);
         await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
 
         await AcquireConnectionAndDbNameAsync(mode).ConfigureAwait(false);
         if (_useBookmarkManager)
-            _bookmarks = await GetBookmarksAsync().ConfigureAwait(false);
+        {
+            LastBookmarks = await GetBookmarksAsync().ConfigureAwait(false);
+        }
 
-        var tx = new AsyncTransaction(_connection, this, _logger, _database, _bookmarks, _reactive, _fetchSize,
+        var tx = new AsyncTransaction(
+            _connection,
+            this,
+            _logger,
+            _database,
+            LastBookmarks,
+            _reactive,
+            _fetchSize,
             ImpersonatedUser());
+
         await tx.BeginTransactionAsync(config).ConfigureAwait(false);
         _transaction = tx;
         return _transaction;
@@ -299,9 +355,11 @@ internal sealed partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSes
     private async Task AcquireConnectionAndDbNameAsync(AccessMode mode)
     {
         if (_useBookmarkManager)
-            _bookmarks = await GetBookmarksAsync("system").ConfigureAwait(false);
+        {
+            LastBookmarks = await GetBookmarksAsync("system").ConfigureAwait(false);
+        }
 
-        _connection = await _connectionProvider.AcquireAsync(mode, _database, ImpersonatedUser(), _bookmarks)
+        _connection = await _connectionProvider.AcquireAsync(mode, _database, ImpersonatedUser(), LastBookmarks)
             .ConfigureAwait(false);
 
         //Update the database. If a routing request occurred it may have returned a differing DB alias name that needs to be used for the 
@@ -312,7 +370,9 @@ internal sealed partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSes
     protected override void Dispose(bool disposing)
     {
         if (_disposed)
+        {
             return;
+        }
 
         if (disposing)
         {

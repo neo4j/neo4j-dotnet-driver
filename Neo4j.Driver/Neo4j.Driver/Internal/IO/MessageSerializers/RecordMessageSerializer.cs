@@ -24,12 +24,12 @@ internal sealed class RecordMessageSerializer : ReadOnlySerializer
 {
     internal static RecordMessageSerializer Instance = new();
 
-    private static readonly byte[] StructTags = {MessageFormat.MsgRecord};
+    private static readonly byte[] StructTags = { MessageFormat.MsgRecord };
     public override IEnumerable<byte> ReadableStructs => StructTags;
 
     public override object Deserialize(PackStreamReader reader, byte _, long __)
     {
-        var fieldCount = (int) reader.ReadListHeader();
+        var fieldCount = (int)reader.ReadListHeader();
         var fields = new object[fieldCount];
         for (var i = 0; i < fieldCount; i++)
         {

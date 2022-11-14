@@ -25,23 +25,32 @@ internal sealed class RouteMessage : IRequestMessage
     private const string DBNameKey = "db";
     private const string ImpersonatedUserKey = "imp_user";
 
-    public RouteMessage(IDictionary<string, string> routingContext, Bookmarks bookmarks,
-        string databaseName, string impersonatedUser)
+    public RouteMessage(
+        IDictionary<string, string> routingContext,
+        Bookmarks bookmarks,
+        string databaseName,
+        string impersonatedUser)
     {
         Routing = routingContext ?? new Dictionary<string, string>();
         Bookmarks = bookmarks ?? Bookmarks.From(Array.Empty<string>());
         DatabaseContext = new Dictionary<string, string>();
 
         if (!string.IsNullOrEmpty(databaseName))
+        {
             DatabaseContext.Add(DBNameKey, databaseName);
+        }
 
         if (!string.IsNullOrEmpty(impersonatedUser))
+        {
             DatabaseContext.Add(ImpersonatedUserKey, impersonatedUser);
+        }
     }
 
     public IDictionary<string, string> Routing { get; }
     public Bookmarks Bookmarks { get; }
     public IDictionary<string, string> DatabaseContext { get; }
+
+    public IPackStreamSerializer Serializer => RouteMessageSerializer.Instance;
 
     public override string ToString()
     {
@@ -49,32 +58,39 @@ internal sealed class RouteMessage : IRequestMessage
         stringBuilder.Append("ROUTE {");
 
         foreach (var data in Routing)
+        {
             stringBuilder.Append(" '")
                 .Append(data.Key)
                 .Append("':'")
                 .Append(data.Value)
                 .Append("'");
+        }
+
         stringBuilder.Append(" } ");
 
         if (Bookmarks?.Values.Length > 0)
+        {
             stringBuilder.Append("{ bookmarks, ")
                 .Append(Bookmarks.Values.ToContentString())
                 .Append(" }");
+        }
         else
+        {
             stringBuilder.Append("[]");
+        }
 
         stringBuilder.Append(" {");
         foreach (var data in DatabaseContext)
+        {
             stringBuilder.Append(" '")
                 .Append(data.Key)
                 .Append("':'")
                 .Append(data.Value)
                 .Append("'");
+        }
 
         stringBuilder.Append(" } ");
 
         return stringBuilder.ToString();
     }
-
-    public IPackStreamSerializer Serializer => RouteMessageSerializer.Instance;
 }

@@ -17,11 +17,10 @@
 
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
+namespace Neo4j.Driver.IntegrationTests.Stress;
+
+public interface IAsyncCommand<in TContext>
+    where TContext : StressTestContext
 {
-    public interface IAsyncCommand<in TContext>
-        where TContext : StressTestContext
-    {
-        Task ExecuteAsync(TContext context);
-    }
+    Task ExecuteAsync(TContext context);
 }

@@ -22,14 +22,13 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 
 internal class UtcZonedDateTimeSerializer : IPackStreamSerializer
 {
+    public const byte StructTypeWithOffset = (byte)'I'; //49
+    public const byte StructTypeWithId = (byte)'i'; // 69
+    public const int StructSize = 3;
     internal static readonly UtcZonedDateTimeSerializer Instance = new();
 
-    public const byte StructTypeWithOffset = (byte) 'I'; //49
-    public const byte StructTypeWithId = (byte) 'i'; // 69
-    public const int StructSize = 3;
-
-    public IEnumerable<byte> ReadableStructs => new[] {StructTypeWithId, StructTypeWithOffset};
-    public IEnumerable<Type> WritableTypes => new[] {typeof(ZonedDateTime)};
+    public IEnumerable<byte> ReadableStructs => new[] { StructTypeWithId, StructTypeWithOffset };
+    public IEnumerable<Type> WritableTypes => new[] { typeof(ZonedDateTime) };
 
     //TODO: Support Non-utc
 
@@ -63,16 +62,17 @@ internal class UtcZonedDateTimeSerializer : IPackStreamSerializer
                 writer.WriteInt(dateTime.Nanosecond);
                 writer.WriteString(zone.Id);
                 break;
+
             case ZoneOffset zone:
                 writer.WriteStructHeader(StructSize, StructTypeWithOffset);
                 writer.WriteLong(TemporalHelpers.UtcEpochSeconds(dateTime));
                 writer.WriteInt(dateTime.Nanosecond);
                 writer.WriteInt(zone.OffsetSeconds);
                 break;
+
             default:
                 throw new ProtocolException(
                     $"{GetType().Name}: Zone('{dateTime.Zone.GetType().Name}') is not supported.");
         }
     }
-        
 }

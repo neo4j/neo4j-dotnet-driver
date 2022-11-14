@@ -28,10 +28,10 @@ internal sealed class PullAllMessage : IRequestMessage
     {
     }
 
+    public IPackStreamSerializer Serializer => PullMessageSerializer.Instance;
+
     public override string ToString()
     {
         return "PULLALL";
     }
-
-    public IPackStreamSerializer Serializer => PullMessageSerializer.Instance;
 }

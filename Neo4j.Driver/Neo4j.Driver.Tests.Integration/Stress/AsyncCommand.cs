@@ -18,47 +18,47 @@
 using System;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
+namespace Neo4j.Driver.IntegrationTests.Stress;
+
+public abstract class AsyncCommand<TContext> : IAsyncCommand<TContext>
+    where TContext : StressTestContext
 {
-    public abstract class AsyncCommand<TContext> : IAsyncCommand<TContext>
-        where TContext : StressTestContext
+    protected readonly IDriver _driver;
+    protected readonly bool _useBookmark;
+
+    protected AsyncCommand(IDriver driver, bool useBookmark)
     {
-        protected readonly IDriver _driver;
-        protected readonly bool _useBookmark;
+        _driver = driver ?? throw new ArgumentNullException(nameof(driver));
+        _useBookmark = useBookmark;
+    }
 
-        protected AsyncCommand(IDriver driver, bool useBookmark)
-        {
-            _driver = driver ?? throw new ArgumentNullException(nameof(driver));
-            _useBookmark = useBookmark;
-        }
+    public abstract Task ExecuteAsync(TContext context);
 
-        public IAsyncSession NewSession(AccessMode mode, TContext context)
-        {
-            return _driver.AsyncSession(o =>
+    public IAsyncSession NewSession(AccessMode mode, TContext context)
+    {
+        return _driver.AsyncSession(
+            o =>
                 o.WithDefaultAccessMode(mode)
-                    .WithBookmarks(_useBookmark ? new[] {context.Bookmarks} : Array.Empty<Bookmarks>()));
-        }
+                    .WithBookmarks(_useBookmark ? new[] { context.Bookmarks } : Array.Empty<Bookmarks>()));
+    }
 
-        public Task<IAsyncTransaction> BeginTransaction(IAsyncSession session, TContext context)
+    public Task<IAsyncTransaction> BeginTransaction(IAsyncSession session, TContext context)
+    {
+        if (_useBookmark)
         {
-            if (_useBookmark)
+            while (true)
             {
-                while (true)
+                try
                 {
-                    try
-                    {
-                        return session.BeginTransactionAsync();
-                    }
-                    catch (TransientException)
-                    {
-                        context.BookmarkFailed();
-                    }
+                    return session.BeginTransactionAsync();
+                }
+                catch (TransientException)
+                {
+                    context.BookmarkFailed();
                 }
             }
-
-            return session.BeginTransactionAsync();
         }
 
-        public abstract Task ExecuteAsync(TContext context);
+        return session.BeginTransactionAsync();
     }
 }
