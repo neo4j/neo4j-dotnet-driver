@@ -38,21 +38,22 @@ internal sealed class SocketClient : ISocketClient
     private int _closedMarker = -1;
 
     private readonly ILogger _logger;
-    
+    private readonly IConnectionIoFactory _connectionIoFactory;
+
     private MessageFormat _format;
     private MemoryStream _readBufferStream;
-    private MessageReader _messageReader;
-    private MessageWriter _messageWriter;
-    private ChunkReader _chunkReader;
+    private IMessageReader _messageReader;
+    private IMessageWriter _messageWriter;
     private ChunkWriter _chunkWriter;
 
-    public SocketClient(Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings, ILogger logger = null,
-        ITcpSocketClient socketClient = null)
+    public SocketClient(Uri uri, SocketSettings socketSettings, BufferSettings bufferSettings, ILogger logger, 
+        IConnectionIoFactory connectionIoFactory)
     {
         _uri = uri;
         _logger = logger;
+        _connectionIoFactory = connectionIoFactory ?? new SocketClientIoFactory();
         _bufferSettings = bufferSettings;
-        _tcpSocketClient = socketClient ?? new TcpSocketClient(socketSettings, _logger);
+        _tcpSocketClient = _connectionIoFactory.TcpSocketClient(socketSettings, _logger);
     }
 
     public bool IsOpen => _closedMarker == 0;
@@ -64,18 +65,12 @@ internal sealed class SocketClient : ISocketClient
 
         _logger?.Debug($"~~ [CONNECT] {_uri}");
         Version = await DoHandshakeAsync(cancellationToken).ConfigureAwait(false);
+
+        (_format, _chunkWriter, _readBufferStream, _messageReader, _messageWriter) =
+            _connectionIoFactory.Build(_tcpSocketClient, _bufferSettings, _logger, Version);
         
-        _format = new MessageFormat(Version);
-
-        _chunkReader = new ChunkReader(_tcpSocketClient.ReaderStream);
-        _chunkWriter = new ChunkWriter(_tcpSocketClient.WriterStream, _bufferSettings, _logger);
-        _readBufferStream = new MemoryStream(_bufferSettings.MaxReadBufferSize);
-        _messageReader = new MessageReader(_chunkReader, _bufferSettings, _logger);
-        _messageWriter = new MessageWriter(_chunkWriter);
-
         SetOpened();
     }
-
 
     public BoltProtocolVersion Version { get; private set; }
 
@@ -177,19 +172,12 @@ internal sealed class SocketClient : ISocketClient
         _format.UseUtcEncoder();
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
-        return Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0
-            ? _tcpSocketClient.DisposeAsync()
-            : default;
+        if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
+        {
+            _readBufferStream.Dispose();
+            await _tcpSocketClient.DisposeAsync().ConfigureAwait(false);
+        }
     }
-}
-
-internal sealed class ByteBuffers
-{
-    public byte[] ByteArray = new byte[1];
-    public byte[] ShortBuffer = new byte[2];
-    public byte[] IntBuffer = new byte[4];
-    public byte[] LongBuffer = new byte[8];
-
 }

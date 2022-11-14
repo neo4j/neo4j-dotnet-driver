@@ -52,7 +52,7 @@ internal sealed class SocketConnection : IConnection
         _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
         _logger = new PrefixLogger(logger, FormatPrefix(_id));
 
-        _client = new SocketClient(uri, connectionSettings.SocketSettings, bufferSettings, _logger);
+        _client = new SocketClient(uri, connectionSettings.SocketSettings, bufferSettings, _logger, null);
         _authToken = connectionSettings.AuthToken;
         _userAgent = connectionSettings.UserAgent;
         _serverInfo = new ServerInfo(uri);

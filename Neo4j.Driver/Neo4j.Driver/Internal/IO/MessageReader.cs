@@ -21,15 +21,15 @@ using Neo4j.Driver.Internal.MessageHandling;
 
 namespace Neo4j.Driver.Internal.IO;
 
-internal sealed class MessageReader
+internal sealed class MessageReader : IMessageReader
 {
-    private readonly ChunkReader _chunkReader;
+    private readonly IChunkReader _chunkReader;
     private readonly ILogger _logger;
     private readonly int _defaultBufferSize;
     private readonly int _maxBufferSize;
-    private int _shrinkCounter = 0;
+    private int _shrinkCounter;
 
-    public MessageReader(ChunkReader chunkReader, BufferSettings bufferSettings, ILogger logger)
+    public MessageReader(IChunkReader chunkReader, BufferSettings bufferSettings, ILogger logger)
     {
         _chunkReader = chunkReader;
         _defaultBufferSize = bufferSettings.DefaultReadBufferSize;
@@ -39,7 +39,7 @@ internal sealed class MessageReader
 
     public async Task ReadAsync(IResponsePipeline pipeline, PackStreamReader reader)
     {
-        var messageCount = await _chunkReader.ReadNextMessagesAsync(reader.Stream).ConfigureAwait(false);
+        var messageCount = await _chunkReader.ReadMessageChunksToBufferStreamAsync(reader.Stream).ConfigureAwait(false);
         ConsumeMessages(pipeline, messageCount, reader);
     }
 
@@ -50,7 +50,6 @@ internal sealed class MessageReader
         while (packStreamReader.Stream.Length > packStreamReader.Stream.Position && leftMessages > 0)
         {
             ProcessMessage(pipeline, packStreamReader);
-    
             leftMessages -= 1;
         }
 

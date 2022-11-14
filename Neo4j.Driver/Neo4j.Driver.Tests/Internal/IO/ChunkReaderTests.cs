@@ -88,7 +88,7 @@ namespace Neo4j.Driver.Internal.IO
             var reader = new ChunkReader(new MemoryStream(input));
 
             var targetStream = new MemoryStream();
-            var count = await reader.ReadNextMessagesAsync(targetStream);
+            var count = await reader.ReadMessageChunksToBufferStreamAsync(targetStream);
             var messageBuffers = targetStream.ToArray();
 
             count.Should().Be(expectedCount);
@@ -105,7 +105,7 @@ namespace Neo4j.Driver.Internal.IO
             var reader = new ChunkReader(new MemoryStream(input));
 
             var targetStream = new MemoryStream();
-            var ex = await Record.ExceptionAsync(() => reader.ReadNextMessagesAsync(targetStream));
+            var ex = await Record.ExceptionAsync(() => reader.ReadMessageChunksToBufferStreamAsync(targetStream));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<IOException>().Which.Message.Should().StartWith("Unexpected end of stream");
@@ -129,7 +129,7 @@ namespace Neo4j.Driver.Internal.IO
             var reader = new ChunkReader(new MemoryStream(input));
 
             var targetStream = new MemoryStream();
-            var count = await reader.ReadNextMessagesAsync(targetStream);
+            var count = await reader.ReadMessageChunksToBufferStreamAsync(targetStream);
             var messageBuffers = targetStream.ToArray();
 
             count.Should().Be(expectedCount);
@@ -148,7 +148,7 @@ namespace Neo4j.Driver.Internal.IO
 
             var bufferPosition = bufferStream.Position;
 
-            var count = await reader.ReadNextMessagesAsync(bufferStream);
+            var count = await reader.ReadMessageChunksToBufferStreamAsync(bufferStream);
 
             bufferStream.Position.Should().Be(bufferPosition);
         }
@@ -161,7 +161,7 @@ namespace Neo4j.Driver.Internal.IO
             testStream.Position = 0;
             var reader = new ChunkReader(testStream);
 
-            var ex = await Record.ExceptionAsync(() => reader.ReadNextMessagesAsync(new MemoryStream()));
+            var ex = await Record.ExceptionAsync(() => reader.ReadMessageChunksToBufferStreamAsync(new MemoryStream()));
 
             ex.Should().NotBeNull();
             ex.Should().BeAssignableTo<OperationCanceledException>();
@@ -175,7 +175,7 @@ namespace Neo4j.Driver.Internal.IO
             testStream.Position = 0;
             var reader = new ChunkReader(testStream);
 
-            var ex = await Record.ExceptionAsync(() => reader.ReadNextMessagesAsync(new MemoryStream()));
+            var ex = await Record.ExceptionAsync(() => reader.ReadMessageChunksToBufferStreamAsync(new MemoryStream()));
 
             ex.Should().NotBeNull();
             ex.Should().BeAssignableTo<IOException>().Which.Message.Should().Be("some error");
@@ -189,7 +189,7 @@ namespace Neo4j.Driver.Internal.IO
             testStream.Position = 0;
             var reader = new ChunkReader(testStream);
 
-            var ex = await Record.ExceptionAsync(() => reader.ReadNextMessagesAsync(new MemoryStream()));
+            var ex = await Record.ExceptionAsync(() => reader.ReadMessageChunksToBufferStreamAsync(new MemoryStream()));
 
             ex.Should().NotBeNull();
             ex.Should().BeAssignableTo<IOException>().Which.Message.Should().Be("some error");
@@ -207,7 +207,7 @@ namespace Neo4j.Driver.Internal.IO
 
             var bufferPosition = bufferStream.Position;
 
-            var count = await reader.ReadNextMessagesAsync(bufferStream);
+            var count = await reader.ReadMessageChunksToBufferStreamAsync(bufferStream);
 
             bufferStream.Position.Should().Be(bufferPosition);
         }
@@ -222,7 +222,7 @@ namespace Neo4j.Driver.Internal.IO
             var resultStream = new MemoryStream();
             var reader = new ChunkReader(inputStream);
             
-            var count = await reader.ReadNextMessagesAsync(resultStream);
+            var count = await reader.ReadMessageChunksToBufferStreamAsync(resultStream);
 
             count.Should().Be(1);
         }
@@ -241,7 +241,7 @@ namespace Neo4j.Driver.Internal.IO
             var resultStream = new MemoryStream();
             var reader = new ChunkReader(inputStream);
             
-            var count = await reader.ReadNextMessagesAsync(resultStream);
+            var count = await reader.ReadMessageChunksToBufferStreamAsync(resultStream);
 
             count.Should().Be(2);
         }
@@ -264,7 +264,7 @@ namespace Neo4j.Driver.Internal.IO
             writer.CloseChunk();
 
             writer.Flush();
-            writer.Send();
+            writer.SendAsync().GetAwaiter().GetResult();
 
             return stream.ToArray();
         }

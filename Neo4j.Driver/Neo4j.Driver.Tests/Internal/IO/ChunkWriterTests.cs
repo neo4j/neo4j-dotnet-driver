@@ -37,14 +37,15 @@ namespace Neo4j.Driver.Internal.IO
             var mockStream = new Mock<Stream>();
             mockStream.Setup(l => l.CanWrite).Returns(false);
 
-            var ex = Record.Exception(() => new ChunkWriter(mockStream.Object, _settings, _logger.Object));
+            var ex = Record.Exception(() => 
+                new ChunkWriter(mockStream.Object, _settings, _logger.Object));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ArgumentOutOfRangeException>();
         }
 
         [Fact]
-        public void ShouldWriteToUnderlyingStreamUponSend()
+        public async Task ShouldWriteToUnderlyingStreamUponSend()
         {
             var buffer = new byte[1024];
             var stream = new MemoryStream();
@@ -57,13 +58,13 @@ namespace Neo4j.Driver.Internal.IO
 
             stream.Length.Should().Be(0);
 
-            writer.Send();
+            await writer.SendAsync();
 
             stream.Length.Should().Be(buffer.Length + 2);
         }
 
         [Fact]
-        public async void ShouldWriteToUnderlyingStreamUponSendAsync()
+        public async Task ShouldWriteToUnderlyingStreamUponSendAsync()
         {
             var buffer = new byte[1024];
             var stream = new MemoryStream();
@@ -87,7 +88,7 @@ namespace Neo4j.Driver.Internal.IO
         [InlineData(Constants.ChunkBufferSize)]
         [InlineData(Constants.MaxChunkSize)]
         [InlineData(Constants.MaxChunkSize * 3)]
-        public async void ShouldCloseTheChunkWithCorrectSize(int chunkSize)
+        public async Task ShouldCloseTheChunkWithCorrectSize(int chunkSize)
         {
             var buffer = Enumerable.Range(0, chunkSize).Select(i => i % byte.MaxValue).Select(i => (byte)i).ToArray();
             var stream = new MemoryStream();
@@ -103,7 +104,7 @@ namespace Neo4j.Driver.Internal.IO
             writer.CloseChunk();
 
             // Write To Underlying Stream
-            writer.Send();
+            await writer.SendAsync();
 
             var constructed = await ConstructMessage(stream.ToArray());
 
@@ -117,7 +118,7 @@ namespace Neo4j.Driver.Internal.IO
         [InlineData(Constants.ChunkBufferSize)]
         [InlineData(Constants.MaxChunkSize)]
         [InlineData(Constants.MaxChunkSize * 3)]
-        public async void ShouldCloseTheChunkWithCorrectSizeAsync(int chunkSize)
+        public async Task ShouldCloseTheChunkWithCorrectSizeAsync(int chunkSize)
         {
             var buffer = Enumerable.Range(0, chunkSize).Select(i => i % byte.MaxValue).Select(i => (byte)i).ToArray();
             var stream = new MemoryStream();
@@ -142,7 +143,7 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         [Fact]
-        public void ShouldLogDataOnSend()
+        public async Task ShouldLogDataOnSend()
         {
             var buffer = Enumerable.Range(0, 10).Select(i => (byte)i).ToArray();
             var stream = new MemoryStream();
@@ -156,13 +157,13 @@ namespace Neo4j.Driver.Internal.IO
 
             logger.Verify(x => x.Trace("C: {0}", It.IsAny<string>()), Times.Never);
 
-            writer.Send();
+            await writer.SendAsync();
 
             logger.Verify(x => x.Trace("C: {0}", It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
-        public async void ShouldLogDataOnSendAsync()
+        public async Task ShouldLogDataOnSendAsync()
         {
             var buffer = Enumerable.Range(0, 10).Select(i => (byte)i).ToArray();
             var stream = new MemoryStream();
@@ -186,7 +187,7 @@ namespace Neo4j.Driver.Internal.IO
         [InlineData(100, 200, 10)]
         [InlineData(100, 200, 50)]
         [InlineData(100, 200, 98)]
-        public void ShouldNotResetCapacityWhenBelowMaxBufferSize(int defaultBufferSize, int maxBufferSize, int messageSize)
+        public async Task ShouldNotResetCapacityWhenBelowMaxBufferSize(int defaultBufferSize, int maxBufferSize, int messageSize)
         {
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
@@ -197,7 +198,7 @@ namespace Neo4j.Driver.Internal.IO
             writer.OpenChunk();
             writer.Write(buffer, 0, buffer.Length);
             writer.CloseChunk();
-            writer.Send();
+            await writer.SendAsync();
 
             logger.Verify(l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()), Times.Never);
         }
@@ -230,7 +231,7 @@ namespace Neo4j.Driver.Internal.IO
         [InlineData(100, 200, 150)]
         [InlineData(100, 200, 200)]
         [InlineData(100, 200, 500)]
-        public void ShouldResetCapacityWhenAboveMaxBufferSize(int defaultBufferSize, int maxBufferSize, int messageSize)
+        public async Task ShouldResetCapacityWhenAboveMaxBufferSize(int defaultBufferSize, int maxBufferSize, int messageSize)
         {
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
@@ -241,7 +242,7 @@ namespace Neo4j.Driver.Internal.IO
             writer.OpenChunk();
             writer.Write(buffer, 0, buffer.Length);
             writer.CloseChunk();
-            writer.Send();
+            await writer.SendAsync();
 
             logger.Verify(l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()), Times.Once);
         }
@@ -270,7 +271,7 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         [Fact]
-        public void ShouldResetCapacityWhenAboveMaxBufferSizeAfterEachSend()
+        public async Task ShouldResetCapacityWhenAboveMaxBufferSizeAfterEachSend()
         {
             var buffer = new byte[1536];
             var stream = new MemoryStream();
@@ -282,18 +283,18 @@ namespace Neo4j.Driver.Internal.IO
             writer.OpenChunk();
             writer.Write(buffer, 0, buffer.Length);
             writer.CloseChunk();
-            writer.Send();
+            await writer.SendAsync();
 
             writer.OpenChunk();
             writer.Write(buffer, 0, buffer.Length);
             writer.CloseChunk();
-            writer.Send();
+            await writer.SendAsync();
 
             logger.Verify(l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()), Times.Exactly(2));
         }
 
         [Fact]
-        public async void ShouldResetCapacityWhenAboveMaxBufferSizeAfterEachSendAsync()
+        public async Task ShouldResetCapacityWhenAboveMaxBufferSizeAfterEachSendAsync()
         {
             var buffer = new byte[1536];
             var stream = new MemoryStream();
@@ -320,7 +321,7 @@ namespace Neo4j.Driver.Internal.IO
             var stream = new MemoryStream();
             var reader = new ChunkReader(new MemoryStream(buffer));
 
-            await reader.ReadNextMessagesAsync(stream);
+            await reader.ReadMessageChunksToBufferStreamAsync(stream);
 
             return stream.ToArray();
         }

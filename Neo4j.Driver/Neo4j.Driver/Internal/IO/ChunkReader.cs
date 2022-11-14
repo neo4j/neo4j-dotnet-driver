@@ -22,12 +22,12 @@ using System.Threading.Tasks;
 namespace Neo4j.Driver.Internal.IO;
 
 //TODO: Optimize reading stream with Span/Memory in .net6+
-internal sealed class ChunkReader
+
+internal sealed class ChunkReader : IChunkReader
 {
     private Stream InputStream { get; }
     private MemoryStream ChunkBuffer { get; set; }
     private long ChunkBufferRemaining => ChunkBuffer.Length - ChunkBuffer.Position;
-    public int ReadTimeoutSeconds { get; set; }
 
     private const int ChunkHeaderSize = 2;
     private readonly int _readTimeoutMs = -1;
@@ -36,6 +36,33 @@ internal sealed class ChunkReader
     {
         InputStream = downStream ?? throw new ArgumentNullException(nameof(downStream));
         Throw.ArgumentOutOfRangeException.IfFalse(downStream.CanRead, nameof(downStream.CanRead));
+    }
+    
+    public async Task<int> ReadMessageChunksToBufferStreamAsync(Stream bufferStream)
+    {
+        var messageCount = 0;
+        //store output streams state, and ensure we add to the end of it.
+        var previousStreamPosition = bufferStream.Position;
+        bufferStream.Position = bufferStream.Length;
+
+        using (ChunkBuffer = new MemoryStream())
+        {
+            long chunkBufferPosition = -1;   //Use this as we need an initial state < ChunkBuffer.Length
+
+            while (chunkBufferPosition < ChunkBuffer.Length)   //We have not finished parsing the chunk buffer, so further messages to de-chunk
+            {
+                if (await ConstructMessageAsync(bufferStream).ConfigureAwait(false))
+                {
+                    messageCount++;
+                }
+
+                chunkBufferPosition = ChunkBuffer.Position;
+            }
+        }
+
+        //restore output streams state.
+        bufferStream.Position = previousStreamPosition;
+        return messageCount;
     }
 
     private void ChunkBufferTrimUsedData()
@@ -123,32 +150,4 @@ internal sealed class ChunkReader
         return dataRead;    //Return if a message was constructed
 
     }
-
-    public async Task<int> ReadNextMessagesAsync(Stream outputMessageStream)
-    {
-        var messageCount = 0;
-        //store output streams state, and ensure we add to the end of it.
-        var previousStreamPosition = outputMessageStream.Position;
-        outputMessageStream.Position = outputMessageStream.Length;
-
-        using (ChunkBuffer = new MemoryStream())
-        {
-            long chunkBufferPosition = -1;   //Use this as we need an initial state < ChunkBuffer.Length
-
-            while (chunkBufferPosition < ChunkBuffer.Length)   //We have not finished parsing the chunk buffer, so further messages to de-chunk
-            {
-                if (await ConstructMessageAsync(outputMessageStream).ConfigureAwait(false))
-                {
-                    messageCount++;
-                }
-
-                chunkBufferPosition = ChunkBuffer.Position;
-            }
-        }
-
-        //restore output streams state.
-        outputMessageStream.Position = previousStreamPosition;
-        return messageCount;
-    }
-
 }

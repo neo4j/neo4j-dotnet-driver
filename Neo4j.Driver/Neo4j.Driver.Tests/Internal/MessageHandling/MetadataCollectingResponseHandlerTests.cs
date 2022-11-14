@@ -48,7 +48,6 @@ namespace Neo4j.Driver.Internal.MessageHandling
 
             var handler = new TestHandler();
             handler.AddCollector<IMetadataCollector<long>, long>(collector.Object);
-            handler.RemoveCollector<IMetadataCollector<long>, long>();
 
             var metadata = new Dictionary<string, object> {{"x", 1}, {"y", false}};
             handler.OnSuccess(metadata);
@@ -71,20 +70,10 @@ namespace Neo4j.Driver.Internal.MessageHandling
 
         private class TestHandler : MetadataCollectingResponseHandler
         {
-            public TestHandler()
-            {
-            }
-
             public void AddCollector<TCollector, TMetadata>(TCollector collector)
                 where TCollector : class, IMetadataCollector<TMetadata>
             {
                 AddMetadata<TCollector, TMetadata>(collector);
-            }
-
-            public void RemoveCollector<TCollector, TMetadata>()
-                where TCollector : class, IMetadataCollector<TMetadata>
-            {
-                RemoveMetadata<TCollector, TMetadata>();
             }
         }
     }

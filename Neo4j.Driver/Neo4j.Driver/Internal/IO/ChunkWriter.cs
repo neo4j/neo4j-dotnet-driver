@@ -62,7 +62,7 @@ internal sealed class ChunkWriter: Stream
         _dataPos = _chunkStream.Position;
         _startPos = _dataPos - ZeroChunkSizeBuffer.Length;
     }
-
+    
     public override void Write(byte[] buffer, int offset, int count)
     {
         var currentLength = _chunkStream.Position - _dataPos;
@@ -118,16 +118,6 @@ internal sealed class ChunkWriter: Stream
         {
             _chunkStream.Position = previousPos;
         }
-    }
-        
-    public void Send()
-    {
-        LogStream(_chunkStream);
-
-        _chunkStream.Position = 0;
-        _chunkStream.CopyTo(_downStream);
-
-        Cleanup();
     }
 
     public async Task SendAsync()

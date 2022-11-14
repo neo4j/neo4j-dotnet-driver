@@ -16,33 +16,13 @@
 // limitations under the License.
 
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Messaging;
 
-namespace Neo4j.Driver.Internal.IO;
+namespace Neo4j.Driver.Internal.Connector;
 
-internal sealed class MessageWriter : IMessageWriter
+internal interface IMessageWriter
 {
-    public MessageWriter(ChunkWriter chunkWriter)
-    {
-        _chunkWriter = chunkWriter;
-    }
-
-    private readonly ChunkWriter _chunkWriter;
-
-    public void Write(IRequestMessage message, PackStreamWriter writer)
-    {
-        _chunkWriter.OpenChunk();
-        writer.Write(message);
-        _chunkWriter.CloseChunk();
-
-        // add message boundary
-        _chunkWriter.OpenChunk();
-        _chunkWriter.CloseChunk();
-    }
-
-    public Task FlushAsync()
-    {
-        return _chunkWriter.SendAsync();
-    }
+    void Write(IRequestMessage message, PackStreamWriter writer);
+    Task FlushAsync();
 }
