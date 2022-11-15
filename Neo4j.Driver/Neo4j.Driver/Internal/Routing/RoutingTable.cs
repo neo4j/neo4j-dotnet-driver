@@ -3,7 +3,7 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
+// Licensed under the Apache License, Version 2.0 (the "License"):
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
@@ -26,10 +26,10 @@ namespace Neo4j.Driver.Internal.Routing;
 internal class RoutingTable : IRoutingTable
 {
     private const int MinRouterCount = 1;
+    private readonly DateTime _expirationTimeStamp;
     private readonly ConcurrentOrderedSet<Uri> _readers = new();
     private readonly ConcurrentOrderedSet<Uri> _routers = new();
     private readonly ConcurrentOrderedSet<Uri> _writers = new();
-    private readonly DateTime _expirationTimeStamp;
 
     public RoutingTable(string database, IEnumerable<Uri> routers, long expireAfterSeconds = 0)
         : this(database, routers, Enumerable.Empty<Uri>(), Enumerable.Empty<Uri>(), expireAfterSeconds)

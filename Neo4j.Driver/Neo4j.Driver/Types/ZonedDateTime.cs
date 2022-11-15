@@ -3,7 +3,7 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
+// Licensed under the Apache License, Version 2.0 (the "License"):
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
@@ -32,9 +32,10 @@ public sealed class ZonedDateTime : TemporalValue,
     /// <summary>Default comparer for <see cref="ZonedDateTime" /> values.</summary>
     public static readonly IComparer<ZonedDateTime> Comparer = new TemporalValueComparer<ZonedDateTime>();
 
+    private readonly object _lazyLock;
+
     private int _day;
     private int _hour;
-    private readonly object _lazyLock;
     private int _minute;
     private int _month;
 
