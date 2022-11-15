@@ -1,23 +1,184 @@
 ﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
-	<s:String x:Key="/Default/CodeStyle/CodeCleanup/Profiles/=Add_0020Header/@EntryIndexedValue">&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;Profile name="Add Header"&gt;&lt;CSUpdateFileHeader&gt;True&lt;/CSUpdateFileHeader&gt;&lt;/Profile&gt;</s:String>
+	<s:String x:Key="/Default/CodeEditing/TypingAssist/BraceInsertType/@EntryValue">ON_ENTER</s:String>
+	<s:String x:Key="/Default/CodeEditing/TypingAssist/FormatOnPaste/@EntryValue">FullFormat</s:String>
+	<s:Boolean x:Key="/Default/CodeEditing/TypingAssist/SmartParenthEnabled/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/CodeEditing/TypingAssist/VirtualSpaceOnEnter/@EntryValue">True</s:Boolean>
+	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=ArrangeNamespaceBody/@EntryIndexedValue">WARNING</s:String>
+	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=EnforceDoWhileStatementBraces/@EntryIndexedValue">SUGGESTION</s:String>
+	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=EnforceFixedStatementBraces/@EntryIndexedValue">SUGGESTION</s:String>
+	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=EnforceForeachStatementBraces/@EntryIndexedValue">SUGGESTION</s:String>
+	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=EnforceForStatementBraces/@EntryIndexedValue">SUGGESTION</s:String>
+	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=EnforceIfStatementBraces/@EntryIndexedValue">SUGGESTION</s:String>
+	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=EnforceLockStatementBraces/@EntryIndexedValue">SUGGESTION</s:String>
+	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=EnforceUsingStatementBraces/@EntryIndexedValue">SUGGESTION</s:String>
+	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=EnforceWhileStatementBraces/@EntryIndexedValue">SUGGESTION</s:String>
+	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=IdentifierTypo/@EntryIndexedValue">DO_NOT_SHOW</s:String>
+	<s:Boolean x:Key="/Default/CodeInspection/Roslyn/LegacySeveritiesMigrated/@EntryValue">True</s:Boolean>
+	<s:String x:Key="/Default/CodeStyle/CodeCleanup/Profiles/=Add_0020Header/@EntryIndexedValue">&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;Profile name="Add Header"&gt;&lt;CSUpdateFileHeader&gt;True&lt;/CSUpdateFileHeader&gt;&lt;IDEA_SETTINGS&gt;&amp;lt;profile version="1.0"&amp;gt;&#xD;
+  &amp;lt;option name="myName" value="Add Header" /&amp;gt;&#xD;
+&amp;lt;/profile&amp;gt;&lt;/IDEA_SETTINGS&gt;&lt;RIDER_SETTINGS&gt;&amp;lt;profile&amp;gt;&#xD;
+  &amp;lt;Language id="CSS"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+    &amp;lt;Rearrange&amp;gt;true&amp;lt;/Rearrange&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="EditorConfig"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="HTML"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+    &amp;lt;Rearrange&amp;gt;true&amp;lt;/Rearrange&amp;gt;&#xD;
+    &amp;lt;OptimizeImports&amp;gt;true&amp;lt;/OptimizeImports&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="HTTP Request"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="Handlebars"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="Ini"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="JSON"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="Jade"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="JavaScript"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+    &amp;lt;Rearrange&amp;gt;true&amp;lt;/Rearrange&amp;gt;&#xD;
+    &amp;lt;OptimizeImports&amp;gt;true&amp;lt;/OptimizeImports&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="Markdown"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="Properties"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="RELAX-NG"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="SQL"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="XML"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+    &amp;lt;Rearrange&amp;gt;true&amp;lt;/Rearrange&amp;gt;&#xD;
+    &amp;lt;OptimizeImports&amp;gt;true&amp;lt;/OptimizeImports&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="yaml"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+&amp;lt;/profile&amp;gt;&lt;/RIDER_SETTINGS&gt;&lt;/Profile&gt;</s:String>
+	<s:String x:Key="/Default/CodeStyle/CodeCleanup/Profiles/=Even_0020Fuller_0020Cleanup/@EntryIndexedValue">&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;Profile name="Even Fuller Cleanup"&gt;&lt;AspOptimizeRegisterDirectives&gt;True&lt;/AspOptimizeRegisterDirectives&gt;&lt;CppAddTypenameTemplateKeywords&gt;True&lt;/CppAddTypenameTemplateKeywords&gt;&lt;CppRemoveCastDescriptor&gt;True&lt;/CppRemoveCastDescriptor&gt;&lt;CppRemoveElseKeyword&gt;True&lt;/CppRemoveElseKeyword&gt;&lt;CppShortenQualifiedName&gt;True&lt;/CppShortenQualifiedName&gt;&lt;CppDeleteRedundantSpecifier&gt;True&lt;/CppDeleteRedundantSpecifier&gt;&lt;CppRemoveStatement&gt;True&lt;/CppRemoveStatement&gt;&lt;CppDeleteRedundantTypenameTemplateKeywords&gt;True&lt;/CppDeleteRedundantTypenameTemplateKeywords&gt;&lt;CppCStyleToStaticCastDescriptor&gt;True&lt;/CppCStyleToStaticCastDescriptor&gt;&lt;CppReplaceExpressionWithBooleanConst&gt;True&lt;/CppReplaceExpressionWithBooleanConst&gt;&lt;CppMakeIfConstexpr&gt;True&lt;/CppMakeIfConstexpr&gt;&lt;CppMakePostfixOperatorPrefix&gt;True&lt;/CppMakePostfixOperatorPrefix&gt;&lt;CppChangeSmartPointerToMakeFunction&gt;True&lt;/CppChangeSmartPointerToMakeFunction&gt;&lt;CppReplaceThrowWithRethrowFix&gt;True&lt;/CppReplaceThrowWithRethrowFix&gt;&lt;CppTypeTraitAliasDescriptor&gt;True&lt;/CppTypeTraitAliasDescriptor&gt;&lt;CppReplaceExpressionWithNullptr&gt;True&lt;/CppReplaceExpressionWithNullptr&gt;&lt;CppReplaceTieWithStructuredBindingDescriptor&gt;True&lt;/CppReplaceTieWithStructuredBindingDescriptor&gt;&lt;CppUseAssociativeContainsDescriptor&gt;True&lt;/CppUseAssociativeContainsDescriptor&gt;&lt;CppUseEraseAlgorithmDescriptor&gt;True&lt;/CppUseEraseAlgorithmDescriptor&gt;&lt;CppCodeStyleCleanupDescriptor ArrangeBraces="True" ArrangeAuto="True" ArrangeFunctionDeclarations="True" ArrangeNestedNamespaces="True" ArrangeTypeAliases="True" ArrangeCVQualifiers="True" ArrangeSlashesInIncludeDirectives="True" ArrangeOverridingFunctions="True" SortIncludeDirectives="True" SortMemberInitializers="True" /&gt;&lt;CppReformatCode&gt;True&lt;/CppReformatCode&gt;&lt;CSReorderTypeMembers&gt;True&lt;/CSReorderTypeMembers&gt;&lt;CSCodeStyleAttributes ArrangeVarStyle="True" ArrangeTypeAccessModifier="True" ArrangeTypeMemberAccessModifier="True" SortModifiers="True" ArrangeArgumentsStyle="True" RemoveRedundantParentheses="True" AddMissingParentheses="True" ArrangeBraces="True" ArrangeAttributes="True" ArrangeCodeBodyStyle="True" ArrangeTrailingCommas="True" ArrangeObjectCreation="True" ArrangeDefaultValue="True" ArrangeNamespaces="True" /&gt;&lt;FSReformatCode&gt;True&lt;/FSReformatCode&gt;&lt;ShaderLabReformatCode&gt;True&lt;/ShaderLabReformatCode&gt;&lt;RemoveCodeRedundanciesVB&gt;True&lt;/RemoveCodeRedundanciesVB&gt;&lt;Xaml.RedundantFreezeAttribute&gt;True&lt;/Xaml.RedundantFreezeAttribute&gt;&lt;Xaml.RemoveRedundantModifiersAttribute&gt;True&lt;/Xaml.RemoveRedundantModifiersAttribute&gt;&lt;Xaml.RemoveRedundantNameAttribute&gt;True&lt;/Xaml.RemoveRedundantNameAttribute&gt;&lt;Xaml.RemoveRedundantResource&gt;True&lt;/Xaml.RemoveRedundantResource&gt;&lt;Xaml.RemoveRedundantCollectionProperty&gt;True&lt;/Xaml.RemoveRedundantCollectionProperty&gt;&lt;Xaml.RemoveRedundantAttachedPropertySetter&gt;True&lt;/Xaml.RemoveRedundantAttachedPropertySetter&gt;&lt;Xaml.RemoveRedundantStyledValue&gt;True&lt;/Xaml.RemoveRedundantStyledValue&gt;&lt;Xaml.RemoveRedundantNamespaceAlias&gt;True&lt;/Xaml.RemoveRedundantNamespaceAlias&gt;&lt;Xaml.RemoveForbiddenResourceName&gt;True&lt;/Xaml.RemoveForbiddenResourceName&gt;&lt;Xaml.RemoveRedundantGridDefinitionsAttribute&gt;True&lt;/Xaml.RemoveRedundantGridDefinitionsAttribute&gt;&lt;Xaml.RemoveRedundantUpdateSourceTriggerAttribute&gt;True&lt;/Xaml.RemoveRedundantUpdateSourceTriggerAttribute&gt;&lt;Xaml.RemoveRedundantBindingModeAttribute&gt;True&lt;/Xaml.RemoveRedundantBindingModeAttribute&gt;&lt;Xaml.RemoveRedundantGridSpanAttribut&gt;True&lt;/Xaml.RemoveRedundantGridSpanAttribut&gt;&lt;XMLReformatCode&gt;True&lt;/XMLReformatCode&gt;&lt;RemoveCodeRedundancies&gt;True&lt;/RemoveCodeRedundancies&gt;&lt;CSUseAutoProperty&gt;True&lt;/CSUseAutoProperty&gt;&lt;CSMakeFieldReadonly&gt;True&lt;/CSMakeFieldReadonly&gt;&lt;CSMakeAutoPropertyGetOnly&gt;True&lt;/CSMakeAutoPropertyGetOnly&gt;&lt;CSArrangeQualifiers&gt;True&lt;/CSArrangeQualifiers&gt;&lt;CSFixBuiltinTypeReferences&gt;True&lt;/CSFixBuiltinTypeReferences&gt;&lt;HtmlReformatCode&gt;True&lt;/HtmlReformatCode&gt;&lt;VBOptimizeImports&gt;True&lt;/VBOptimizeImports&gt;&lt;VBShortenReferences&gt;True&lt;/VBShortenReferences&gt;&lt;CSOptimizeUsings&gt;&lt;OptimizeUsings&gt;True&lt;/OptimizeUsings&gt;&lt;/CSOptimizeUsings&gt;&lt;CSShortenReferences&gt;True&lt;/CSShortenReferences&gt;&lt;VBReformatCode&gt;True&lt;/VBReformatCode&gt;&lt;VBFormatDocComments&gt;True&lt;/VBFormatDocComments&gt;&lt;CSReformatCode&gt;True&lt;/CSReformatCode&gt;&lt;CSharpFormatDocComments&gt;True&lt;/CSharpFormatDocComments&gt;&lt;FormatAttributeQuoteDescriptor&gt;True&lt;/FormatAttributeQuoteDescriptor&gt;&lt;IDEA_SETTINGS&gt;&amp;lt;profile version="1.0"&amp;gt;&#xD;
+  &amp;lt;option name="myName" value="Even Fuller Cleanup" /&amp;gt;&#xD;
+&amp;lt;/profile&amp;gt;&lt;/IDEA_SETTINGS&gt;&lt;RIDER_SETTINGS&gt;&amp;lt;profile&amp;gt;&#xD;
+  &amp;lt;Language id="CSS"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+    &amp;lt;Rearrange&amp;gt;true&amp;lt;/Rearrange&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="EditorConfig"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="HTML"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+    &amp;lt;Rearrange&amp;gt;true&amp;lt;/Rearrange&amp;gt;&#xD;
+    &amp;lt;OptimizeImports&amp;gt;true&amp;lt;/OptimizeImports&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="HTTP Request"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="Handlebars"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="Ini"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="JSON"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="Jade"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="JavaScript"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+    &amp;lt;Rearrange&amp;gt;true&amp;lt;/Rearrange&amp;gt;&#xD;
+    &amp;lt;OptimizeImports&amp;gt;true&amp;lt;/OptimizeImports&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="Markdown"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="Properties"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="RELAX-NG"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="SQL"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="XML"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+    &amp;lt;Rearrange&amp;gt;true&amp;lt;/Rearrange&amp;gt;&#xD;
+    &amp;lt;OptimizeImports&amp;gt;true&amp;lt;/OptimizeImports&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+  &amp;lt;Language id="yaml"&amp;gt;&#xD;
+    &amp;lt;Reformat&amp;gt;true&amp;lt;/Reformat&amp;gt;&#xD;
+  &amp;lt;/Language&amp;gt;&#xD;
+&amp;lt;/profile&amp;gt;&lt;/RIDER_SETTINGS&gt;&lt;CSUpdateFileHeader&gt;True&lt;/CSUpdateFileHeader&gt;&lt;/Profile&gt;</s:String>
+	<s:String x:Key="/Default/CodeStyle/CodeCleanup/RecentlyUsedProfile/@EntryValue">Even Fuller Cleanup</s:String>
+	<s:String x:Key="/Default/CodeStyle/CodeCleanup/SilentCleanupProfile/@EntryValue">Even Fuller Cleanup</s:String>
+	<s:Boolean x:Key="/Default/CodeStyle/CodeFormatting/CommonFormatter/SHOW_AUTODETECT_CONFIGURE_FORMATTING_TIP/@EntryValue">False</s:Boolean>
+	<s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpCodeStyle/BRACES_FOR_FOR/@EntryValue">Required</s:String>
+	<s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpCodeStyle/BRACES_FOR_FOREACH/@EntryValue">Required</s:String>
+	<s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpCodeStyle/BRACES_FOR_IFELSE/@EntryValue">Required</s:String>
+	<s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpCodeStyle/BRACES_FOR_WHILE/@EntryValue">Required</s:String>
+	<s:Boolean x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/ALIGN_MULTILINE_BINARY_EXPRESSIONS_CHAIN/@EntryValue">False</s:Boolean>
+	<s:Int64 x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/BLANK_LINES_AFTER_CONTROL_TRANSFER_STATEMENTS/@EntryValue">1</s:Int64>
+	<s:Int64 x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/BLANK_LINES_AFTER_MULTILINE_STATEMENTS/@EntryValue">1</s:Int64>
+	<s:Int64 x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/BLANK_LINES_AROUND_MULTILINE_CASE_SECTION/@EntryValue">1</s:Int64>
+	<s:Int64 x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/BLANK_LINES_AROUND_SINGLE_LINE_LOCAL_METHOD/@EntryValue">1</s:Int64>
+	<s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/INDENT_PREPROCESSOR_IF/@EntryValue">USUAL_INDENT</s:String>
+	<s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/INDENT_PREPROCESSOR_OTHER/@EntryValue">USUAL_INDENT</s:String>
+	<s:Int64 x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/KEEP_BLANK_LINES_IN_CODE/@EntryValue">1</s:Int64>
+	<s:Int64 x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/KEEP_BLANK_LINES_IN_DECLARATIONS/@EntryValue">1</s:Int64>
+	<s:Boolean x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/KEEP_EXISTING_INVOCATION_PARENS_ARRANGEMENT/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/KEEP_EXISTING_PROPERTY_PATTERNS_ARRANGEMENT/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/KEEP_EXISTING_SWITCH_EXPRESSION_ARRANGEMENT/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/LINE_FEED_AT_FILE_END/@EntryValue">True</s:Boolean>
+	<s:Int64 x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/MAX_ENUM_MEMBERS_ON_LINE/@EntryValue">1</s:Int64>
+	<s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/NESTED_TERNARY_STYLE/@EntryValue">EXPANDED</s:String>
+	<s:Boolean x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/OUTDENT_BINARY_OPS/@EntryValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/OUTDENT_STATEMENT_LABELS/@EntryValue">True</s:Boolean>
+	<s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/PLACE_EXPR_ACCESSOR_ON_SINGLE_LINE/@EntryValue">ALWAYS</s:String>
+	<s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/PLACE_EXPR_METHOD_ON_SINGLE_LINE/@EntryValue">ALWAYS</s:String>
+	<s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/PLACE_FIELD_ATTRIBUTE_ON_SAME_LINE_EX/@EntryValue">NEVER</s:String>
+	<s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/PLACE_SIMPLE_CASE_STATEMENT_ON_SAME_LINE/@EntryValue">ALWAYS</s:String>
+	<s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/PLACE_SIMPLE_EMBEDDED_STATEMENT_ON_SAME_LINE/@EntryValue">NEVER</s:String>
+	<s:Boolean x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/SPACE_WITHING_EMPTY_BRACES/@EntryValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/WRAP_AFTER_DECLARATION_LPAR/@EntryValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/WRAP_AFTER_INVOCATION_LPAR/@EntryValue">True</s:Boolean>
+	<s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/WRAP_ARGUMENTS_STYLE/@EntryValue">CHOP_IF_LONG</s:String>
+	<s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/WRAP_ARRAY_INITIALIZER_STYLE/@EntryValue">CHOP_IF_LONG</s:String>
+	<s:Boolean x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/WRAP_BEFORE_FIRST_TYPE_PARAMETER_CONSTRAINT/@EntryValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/WRAP_BEFORE_LINQ_EXPRESSION/@EntryValue">True</s:Boolean>
+	<s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/WRAP_CHAINED_BINARY_EXPRESSIONS/@EntryValue">CHOP_IF_LONG</s:String>
+	<s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/WRAP_CHAINED_BINARY_PATTERNS/@EntryValue">CHOP_IF_LONG</s:String>
+	<s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/WRAP_CHAINED_METHOD_CALLS/@EntryValue">CHOP_IF_LONG</s:String>
+	<s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/WRAP_EXTENDS_LIST_STYLE/@EntryValue">CHOP_IF_LONG</s:String>
+	<s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpFormat/WRAP_PARAMETERS_STYLE/@EntryValue">CHOP_IF_LONG</s:String>
+	<s:Boolean x:Key="/Default/CodeStyle/CodeFormatting/XmlDocFormatter/BlankLineAfterProcessingInstructions/@EntryValue">False</s:Boolean>
+	<s:String x:Key="/Default/CodeStyle/CodeFormatting/XmlDocFormatter/IndentTagContent/@EntryValue">ZeroIndent</s:String>
+	<s:Boolean x:Key="/Default/CodeStyle/CodeFormatting/XmlDocFormatter/KeepUserLineBreaks/@EntryValue">False</s:Boolean>
+	<s:Int64 x:Key="/Default/CodeStyle/CodeFormatting/XmlDocFormatter/MaxBlankLines/@EntryValue">1</s:Int64>
+	<s:String x:Key="/Default/CodeStyle/CodeFormatting/XmlDocFormatter/TagAttributeIndenting/@EntryValue">ByFirstAttr</s:String>
+	<s:Boolean x:Key="/Default/CodeStyle/CSharpVarKeywordUsage/PreferExplicitDiscardDeclaration/@EntryValue">True</s:Boolean>
 	
 	
-	<s:String x:Key="/Default/CodeStyle/FileHeader/FileHeaderText/@EntryValue">Copyright (c) 2002-$CURRENT_YEAR$ "Neo4j,"&#xD;
-Neo4j Sweden AB [http://neo4j.com]&#xD;
-&#xD;
-This file is part of Neo4j.&#xD;
-&#xD;
-Licensed under the Apache License, Version 2.0 (the "License");&#xD;
-you may not use this file except in compliance with the License.&#xD;
-You may obtain a copy of the License at&#xD;
-&#xD;
-    http://www.apache.org/licenses/LICENSE-2.0&#xD;
-&#xD;
-Unless required by applicable law or agreed to in writing, software&#xD;
-distributed under the License is distributed on an "AS IS" BASIS,&#xD;
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.&#xD;
-See the License for the specific language governing permissions and&#xD;
-limitations under the License.</s:String>
+	<s:String x:Key="/Default/CodeStyle/FileHeader/FileHeaderText/@EntryValue">Copyright (c) "Neo4j"</s:String>
+	<s:Boolean x:Key="/Default/CodeStyle/Generate/=Implementations/@KeyIndexDefined">True</s:Boolean>
+	<s:String x:Key="/Default/CodeStyle/Generate/=Implementations/Options/=Async/@EntryIndexedValue">False</s:String>
+	<s:Boolean x:Key="/Default/CodeStyle/Naming/CSharpAutoNaming/IsNotificationDisabled/@EntryValue">True</s:Boolean>
 	<s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/Abbreviations/=IT/@EntryIndexedValue">IT</s:String>
 	<s:String x:Key="/Default/CodeStyle/Naming/CSharpNaming/PredefinedNamingRules/=MethodPropertyEvent/@EntryIndexedValue">&lt;Policy Inspect="True" Prefix="" Suffix="" Style="AaBb"&gt;&lt;ExtraRule Prefix="Neo4j" Suffix="" Style="AaBb" /&gt;&lt;ExtraRule Prefix="" Suffix="Neo4j" Style="AaBb" /&gt;&lt;/Policy&gt;</s:String>
 	<s:String x:Key="/Default/CodeStyle/Naming/JavaScriptNaming/UserRules/=JS_005FBLOCK_005FSCOPE_005FCONSTANT/@EntryIndexedValue">&lt;Policy Inspect="True" Prefix="" Suffix="" Style="aaBb" /&gt;</s:String>
