@@ -117,13 +117,13 @@ public class ClusterDiscoveryTests
         {
             MessagePair(
                 new RunWithMetadataMessage(
+                    BoltProtocolVersion.V4_0,
                     new Query(
                         "CALL dbms.cluster.routing.getRoutingTable($context)",
-                        new Dictionary<string, object> { { "context", routingContext } }),
-                    AccessMode.Write),
+                        new Dictionary<string, object> { { "context", routingContext } })),
                 SuccessMessage(new List<object> { "ttl", "servers" })),
             MessagePair(new RecordMessage(recordFields)),
-            MessagePair(PullAll, SuccessMessage())
+            MessagePair(PullAllMessage.Instance, SuccessMessage())
         };
 
         var serverInfo = new ServerInfo(new Uri("bolt://123:456")) { Agent = "Neo4j/3.2.2" };
@@ -141,6 +141,7 @@ public class ClusterDiscoveryTests
         {
             MessagePair(
                 new RunWithMetadataMessage(
+                    BoltProtocolVersion.V4_0,
                     new Query(
                         "CALL dbms.routing.getRoutingTable($context, $database)",
                         new Dictionary<string, object>
@@ -148,10 +149,10 @@ public class ClusterDiscoveryTests
                             { "context", routingContext },
                             { "database", string.IsNullOrEmpty(database) ? null : database }
                         }),
-                    "system",
-                    bookmark,
-                    TransactionConfig.Default,
-                    AccessMode.Read),
+                    database: "system",
+                    bookmarks: bookmark,
+                    config: TransactionConfig.Default,
+                    mode: AccessMode.Read),
                 SuccessMessage(new List<object> { "ttl", "servers" })),
             MessagePair(new RecordMessage(recordFields)),
             MessagePair(new PullMessage(ResultHandleMessage.All), SuccessMessage())
