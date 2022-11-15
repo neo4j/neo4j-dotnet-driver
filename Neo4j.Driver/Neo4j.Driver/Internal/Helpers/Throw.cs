@@ -3,7 +3,7 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
+// Licensed under the Apache License, Version 2.0 (the "License"):
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
@@ -25,7 +25,9 @@ internal static class Throw
     {
         public static System.ObjectDisposedException GetDriverDisposedException(string typeName)
         {
-            return new(typeName, "Failed to acquire a new connection as the driver has already been disposed.");
+            return new System.ObjectDisposedException(
+                typeName,
+                "Failed to acquire a new connection as the driver has already been disposed.");
         }
     }
 
