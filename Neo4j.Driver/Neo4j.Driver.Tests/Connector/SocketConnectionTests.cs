@@ -175,7 +175,7 @@ public class SocketConnectionTests
             await con.EnqueueAsync(
                 new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("a query"), mode: AccessMode.Read),
                 NoOpHandler,
-                PullAll,
+                PullAllMessage.Instance,
                 NoOpHandler);
 
             // Then
@@ -193,7 +193,7 @@ public class SocketConnectionTests
             await con.EnqueueAsync(
                 new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("query"), mode: AccessMode.Read),
                 NoOpHandler,
-                PullAll,
+                PullAllMessage.Instance,
                 NoOpHandler);
 
             pipeline.Verify(h => h.Enqueue(NoOpHandler), Times.Once);

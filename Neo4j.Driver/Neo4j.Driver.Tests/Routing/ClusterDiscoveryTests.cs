@@ -407,13 +407,13 @@ public class ClusterDiscoveryTests
                     {
                         msg1.ToString().Should().Be(_requestMessages[_requestCount].ToString());
                         _requestCount++;
-                        _pipeline.Enqueue(msg1, handler1);
+                        _pipeline.Enqueue(handler1);
 
                         if (msg2 != null)
                         {
                             msg2.ToString().Should().Be(_requestMessages[_requestCount].ToString());
                             _requestCount++;
-                            _pipeline.Enqueue(msg2, handler2);
+                            _pipeline.Enqueue(handler2);
                         }
                     });
 
