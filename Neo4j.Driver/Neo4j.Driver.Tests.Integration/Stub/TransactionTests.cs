@@ -17,6 +17,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
@@ -25,8 +26,22 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Stub;
 
+static class ExceptionExtension
+{
+    public static bool HasCause<T>(this Exception exception)
+    {
+        return exception switch
+        {
+            T => true,
+            AggregateException aggregate => aggregate.InnerExceptions.Any(x => x.HasCause<T>()),
+            _ => exception.InnerException?.HasCause<T>() ?? false
+        };
+    }
+}
 public class TransactionTests
 {
+
+    
     private static void NoEncryptionAndShortRetry(ConfigBuilder builder)
     {
         builder.WithEncryptionLevel(EncryptionLevel.None)
@@ -137,7 +152,7 @@ public class TransactionTests
                 }
             }
         }
-
+        
         [Theory]
         [InlineData("V3")]
         [InlineData("V4")]

@@ -23,48 +23,36 @@ namespace Neo4j.Driver.Internal;
 
 internal class ConnectionSettings
 {
-    public ConnectionSettings(Uri uri, IAuthToken auth, Config config)
-        : this(
-            auth,
-            EncryptionManager.Create(
-                uri,
-                config.NullableEncryptionLevel,
-                config.TrustManager,
-                config.Logger),
-            config.ConnectionTimeout,
-            config.SocketKeepAlive,
-            config.Ipv6Enabled,
-            config.UserAgent)
-    {
-    }
-
-    private ConnectionSettings(
-        IAuthToken authToken,
-        EncryptionManager encryptionManager,
-        TimeSpan connectionTimeout,
-        bool socketKeepAlive,
-        bool ipv6Enabled,
-        string userAgent)
+    internal ConnectionSettings(Uri uri, IAuthToken authToken, Config config, IHostResolver hostResolver = null)
     {
         AuthToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
-        UserAgent = userAgent ?? DefaultUserAgent;
-
-        IHostResolver systemResolver = new SystemHostResolver();
-        if (RuntimeHelper.IsDotNetCore)
+        
+        var resolver = hostResolver switch
         {
-            systemResolver = new SystemNetCoreHostResolver(systemResolver);
-        }
+            //TODO: Consider moving to a factory.
+            null when RuntimeHelper.IsDotNetCore => new SystemNetCoreHostResolver(new SystemHostResolver()),
+            null when !RuntimeHelper.IsDotNetCore => new DefaultHostResolver(
+                new SystemHostResolver(), config.Ipv6Enabled),
+            // test code can provide resolver.
+            _ => hostResolver
+        };
 
+        var encryptionManager = EncryptionManager.Create(
+            uri,
+            config.NullableEncryptionLevel,
+            config.TrustManager,
+            config.Logger);
+        
         SocketSettings = new SocketSettings(
-            new DefaultHostResolver(systemResolver, ipv6Enabled),
+            resolver,
             encryptionManager)
         {
-            ConnectionTimeout = connectionTimeout,
-            SocketKeepAliveEnabled = socketKeepAlive,
-            Ipv6Enabled = ipv6Enabled
+            ConnectionTimeout = config.ConnectionTimeout,
+            SocketKeepAliveEnabled = config.SocketKeepAlive,
+            Ipv6Enabled = config.Ipv6Enabled
         };
     }
-
+    
     internal static string DefaultUserAgent
     {
         get

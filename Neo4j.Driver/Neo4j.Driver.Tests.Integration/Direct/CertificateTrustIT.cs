@@ -174,9 +174,13 @@ public class CertificateTrustIT : IClassFixture<CertificateTrustIT.CertificateTr
 
     private IDriver SetupWithCustomResolver(Uri overridenUri, Config config)
     {
-        var connectionSettings = new ConnectionSettings(overridenUri, Server.AuthToken, config);
-        connectionSettings.SocketSettings.HostResolver =
-            new CustomHostResolver(Server.BoltUri, connectionSettings.SocketSettings.HostResolver);
+        var connectionSettings = new ConnectionSettings(
+            overridenUri,
+            Server.AuthToken,
+            config,
+            new CustomHostResolver(
+                Server.BoltUri, 
+                new SystemNetCoreHostResolver(new SystemHostResolver())));
 
         var bufferSettings = new BufferSettings(config);
         var connectionFactory =
