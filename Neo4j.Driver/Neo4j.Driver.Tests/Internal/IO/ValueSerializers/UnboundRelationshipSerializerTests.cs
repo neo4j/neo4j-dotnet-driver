@@ -21,6 +21,7 @@ using FluentAssertions;
 using Neo4j.Driver.Internal.IO.Utils;
 using Neo4j.Driver.Internal.Types;
 using Xunit;
+#pragma warning disable CS0618
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers;
 
@@ -28,7 +29,7 @@ public class UnboundRelationshipSerializerTests : PackStreamSerializerTests
 {
     internal override IPackStreamSerializer SerializerUnderTest => new UnboundRelationshipSerializer();
 
-    private PackStreamWriterMachine CreateWriterMachine()
+    private new PackStreamWriterMachine CreateWriterMachine()
     {
         return CreateWriterMachine(BoltProtocolVersion.V4_0);
     }

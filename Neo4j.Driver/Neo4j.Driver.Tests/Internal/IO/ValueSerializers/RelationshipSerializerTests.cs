@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Types;
 using Xunit;
+#pragma warning disable CS0618
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers;
 

@@ -26,7 +26,7 @@ public class ZonedDateTimeSerializerTests : PackStreamSerializerTests
 {
     internal override IPackStreamSerializer SerializerUnderTest => new ZonedDateTimeSerializer();
 
-    private PackStreamWriterMachine CreateWriterMachine()
+    private new PackStreamWriterMachine CreateWriterMachine()
     {
         return CreateWriterMachine(BoltProtocolVersion.V4_0);
     }

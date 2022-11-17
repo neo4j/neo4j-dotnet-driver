@@ -27,6 +27,7 @@ using Neo4j.Driver.Tests;
 using Xunit;
 using static Microsoft.Reactive.Testing.ReactiveAssert;
 using static Neo4j.Driver.Tests.Assertions;
+#pragma warning disable CS0618
 
 namespace Neo4j.Driver.Reactive.Internal;
 

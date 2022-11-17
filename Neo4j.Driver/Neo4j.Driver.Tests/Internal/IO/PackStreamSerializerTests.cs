@@ -30,7 +30,7 @@ public abstract class PackStreamSerializerTests
     internal virtual IEnumerable<IPackStreamSerializer> SerializersNeeded =>
         Enumerable.Empty<IPackStreamSerializer>();
 
-    protected virtual PackStreamWriterMachine CreateWriterMachine()
+    internal virtual PackStreamWriterMachine CreateWriterMachine()
     {
         var format = new MessageFormat(SerializerUnderTest, SerializersNeeded);
 
@@ -38,21 +38,19 @@ public abstract class PackStreamSerializerTests
         var logger = new Mock<ILogger>().Object;
 
         return new PackStreamWriterMachine(
-            stream =>
-                new PackStreamWriter(format, new ChunkWriter(stream, settings, logger)));
+            stream => new PackStreamWriter(format, new ChunkWriter(stream, settings, logger)));
     }
 
-    protected virtual PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
+    internal virtual PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
     {
         var format = new MessageFormat(SerializerUnderTest, SerializersNeeded);
 
         return new PackStreamReaderMachine(
             bytes,
-            stream =>
-                new PackStreamReader(stream, format, new ByteBuffers()));
+            stream => new PackStreamReader(stream, format, new ByteBuffers()));
     }
 
-    protected PackStreamWriterMachine CreateWriterMachine(BoltProtocolVersion version)
+    internal PackStreamWriterMachine CreateWriterMachine(BoltProtocolVersion version)
     {
         var format = new MessageFormat(version);
 
@@ -60,16 +58,14 @@ public abstract class PackStreamSerializerTests
         var logger = new Mock<ILogger>().Object;
 
         return new PackStreamWriterMachine(
-            stream =>
-                new PackStreamWriter(format, new ChunkWriter(stream, settings, logger)));
+            stream => new PackStreamWriter(format, new ChunkWriter(stream, settings, logger)));
     }
 
-    protected PackStreamReaderMachine CreateReaderMachine(BoltProtocolVersion version, byte[] bytes)
+    internal PackStreamReaderMachine CreateReaderMachine(BoltProtocolVersion version, byte[] bytes)
     {
         var format = new MessageFormat(version);
         return new PackStreamReaderMachine(
             bytes,
-            stream =>
-                new PackStreamReader(stream, format, new ByteBuffers()));
+            stream => new PackStreamReader(stream, format, new ByteBuffers()));
     }
 }

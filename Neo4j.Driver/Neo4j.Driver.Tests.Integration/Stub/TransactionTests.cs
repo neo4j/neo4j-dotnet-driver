@@ -40,8 +40,6 @@ static class ExceptionExtension
 }
 public class TransactionTests
 {
-
-    
     private static void NoEncryptionAndShortRetry(ConfigBuilder builder)
     {
         builder.WithEncryptionLevel(EncryptionLevel.None)

@@ -53,7 +53,9 @@ public static class InternalSessionTests
 
             var bookmark = session.LastBookmark;
 
+            #pragma warning disable CS0618
             asyncSession.Verify(x => x.LastBookmark, Times.Once);
+            #pragma warning restore CS0618
         }
     }
 

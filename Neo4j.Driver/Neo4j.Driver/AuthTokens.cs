@@ -27,8 +27,7 @@ namespace Neo4j.Driver;
 /// this driver. The scheme used must be also supported by the Neo4j instance you are connecting to.
 /// </summary>
 /// <remarks>
-///     <see
-///         cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder}(Neo4j.Driver.ConfigBuilder))" />
+/// <see cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder})" />
 /// </remarks>
 public class AuthTokens
 {
@@ -37,8 +36,7 @@ public class AuthTokens
     /// work if authentication is disabled on the Neo4j Instance we are connecting to.
     /// </summary>
     /// <remarks>
-    ///     <see
-    ///         cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder}(Neo4j.Driver.ConfigBuilder))" />
+    /// <see cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder})" />
     /// </remarks>
     public static IAuthToken None => new AuthToken(new Dictionary<string, object> { { SchemeKey, "none" } });
 
