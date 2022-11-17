@@ -14,33 +14,53 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-using System.IO;
 using Neo4j.Driver.Internal.IO;
 
 namespace Neo4j.Driver.Internal.Connector;
 
-internal class SocketClientIoFactory : IConnectionIoFactory
+internal interface IConnectionIoFactory
 {
+    ITcpSocketClient TcpSocketClient(SocketSettings socketSettings, ILogger logger);
+    MessageFormat Format(BoltProtocolVersion version);
+
+    IMessageReader Readers(
+        ITcpSocketClient client,
+        BufferSettings settings,
+        ILogger logger);
+
+    (ChunkWriter, IMessageWriter) Writers(ITcpSocketClient client, BufferSettings settings, ILogger logger);
+}
+
+internal sealed class SocketClientIoFactory : IConnectionIoFactory
+{
+    internal static readonly SocketClientIoFactory Default = new();
+
+    private SocketClientIoFactory()
+    {
+    }
+
     public ITcpSocketClient TcpSocketClient(SocketSettings socketSettings, ILogger logger)
     {
         return new TcpSocketClient(socketSettings, logger);
     }
 
-    public (MessageFormat Format, ChunkWriter ChunkWriter, MemoryStream readBuffer, IMessageReader
-        MessageReader, IMessageWriter MessageWriter) Build(
-            ITcpSocketClient socketClient,
-            BufferSettings bufferSettings,
-            ILogger logger,
-            BoltProtocolVersion version)
+    public MessageFormat Format(BoltProtocolVersion version)
     {
-        var format = new MessageFormat(version);
-        var chunkReader = new ChunkReader(socketClient.ReaderStream);
-        var chunkWriter = new ChunkWriter(socketClient.WriterStream, bufferSettings, logger);
-        var readBuffer = new MemoryStream(bufferSettings.MaxReadBufferSize);
-        var messageReader = new MessageReader(chunkReader, bufferSettings, logger);
-        var messageWriter = new MessageWriter(chunkWriter);
+        return new MessageFormat(version);
+    }
 
-        return (format, chunkWriter, readBuffer, messageReader, messageWriter);
+    public IMessageReader Readers(
+        ITcpSocketClient client,
+        BufferSettings settings,
+        ILogger logger)
+    {
+        return new MessageReader(new ChunkReader(client.ReaderStream), settings, logger);
+    }
+
+    public (ChunkWriter, IMessageWriter) Writers(ITcpSocketClient client, BufferSettings settings, ILogger logger)
+    {
+        var chunkWriter = new ChunkWriter(client.WriterStream, settings, logger);
+        var messageWriter = new MessageWriter(chunkWriter);
+        return (chunkWriter, messageWriter);
     }
 }

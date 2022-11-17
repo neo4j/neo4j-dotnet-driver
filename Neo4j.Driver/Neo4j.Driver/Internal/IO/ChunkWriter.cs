@@ -23,7 +23,16 @@ using System.Threading.Tasks;
 namespace Neo4j.Driver.Internal.IO;
 
 //TODO: .NET6+ Span/memory optimize
-internal sealed class ChunkWriter : Stream
+internal interface IChunkWriter
+{
+    Stream Stream { get; }
+    void OpenChunk();
+    void Write(byte[] buffer, int offset, int count);
+    void CloseChunk();
+    Task SendAsync();
+}
+
+internal sealed class ChunkWriter : Stream, IChunkWriter
 {
     private static readonly byte[] ZeroChunkSizeBuffer = PackStreamBitConverter.GetBytes((ushort)0);
 
@@ -38,6 +47,8 @@ internal sealed class ChunkWriter : Stream
 
     private long _startPos = -1;
 
+    public Stream Stream => this; 
+    
     //TODO: ArrayPool avoid creating a new array for each chunk writer
     public ChunkWriter(Stream downStream, BufferSettings settings, ILogger logger)
     {

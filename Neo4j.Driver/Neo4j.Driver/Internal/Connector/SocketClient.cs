@@ -33,30 +33,33 @@ internal sealed class SocketClient : ISocketClient
     private readonly IConnectionIoFactory _connectionIoFactory;
 
     private readonly ILogger _logger;
+    private readonly IPackStreamFactory _packstreamFactory;
+    private readonly MemoryStream _readBufferStream;
     private readonly ByteBuffers _readerBuffers = new();
-
     private readonly ITcpSocketClient _tcpSocketClient;
     private readonly Uri _uri;
-    private ChunkWriter _chunkWriter;
+    private IChunkWriter _chunkWriter;
 
     private int _closedMarker = -1;
 
     private MessageFormat _format;
     private IMessageReader _messageReader;
     private IMessageWriter _messageWriter;
-    private MemoryStream _readBufferStream;
 
     public SocketClient(
         Uri uri,
         SocketSettings socketSettings,
         BufferSettings bufferSettings,
         ILogger logger,
-        IConnectionIoFactory connectionIoFactory)
+        IConnectionIoFactory connectionIoFactory,
+        IPackStreamFactory packstreamFactory = null)
     {
         _uri = uri;
         _logger = logger;
-        _connectionIoFactory = connectionIoFactory ?? new SocketClientIoFactory();
+        _packstreamFactory = packstreamFactory ?? PackStreamFactory.Default;
+        _connectionIoFactory = connectionIoFactory ?? SocketClientIoFactory.Default;
         _bufferSettings = bufferSettings;
+        _readBufferStream = new MemoryStream(_bufferSettings.MaxReadBufferSize);
         _tcpSocketClient = _connectionIoFactory.TcpSocketClient(socketSettings, _logger);
     }
 
@@ -71,8 +74,9 @@ internal sealed class SocketClient : ISocketClient
         _logger?.Debug($"~~ [CONNECT] {_uri}");
         Version = await DoHandshakeAsync(cancellationToken).ConfigureAwait(false);
 
-        (_format, _chunkWriter, _readBufferStream, _messageReader, _messageWriter) =
-            _connectionIoFactory.Build(_tcpSocketClient, _bufferSettings, _logger, Version);
+        _format = _connectionIoFactory.Format(Version);
+        _messageReader = _connectionIoFactory.Readers(_tcpSocketClient, _bufferSettings, _logger);
+        (_chunkWriter, _messageWriter) = _connectionIoFactory.Writers(_tcpSocketClient, _bufferSettings, _logger);
 
         SetOpened();
     }
@@ -85,7 +89,8 @@ internal sealed class SocketClient : ISocketClient
         {
             foreach (var message in messages)
             {
-                _messageWriter.Write(message, new PackStreamWriter(_format, _chunkWriter));
+                var writer = _packstreamFactory.BuildWriter(_format, _chunkWriter);
+                _messageWriter.Write(message, writer);
                 _logger?.Debug(MessagePattern, message);
             }
 
@@ -111,8 +116,8 @@ internal sealed class SocketClient : ISocketClient
     {
         try
         {
-            var packStreamReader = new PackStreamReader(_readBufferStream, _format, _readerBuffers);
-            await _messageReader.ReadAsync(responsePipeline, packStreamReader).ConfigureAwait(false);
+            var reader = _packstreamFactory.BuildReader(_format, _readBufferStream, _readerBuffers);
+            await _messageReader.ReadAsync(responsePipeline, reader).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -157,7 +162,9 @@ internal sealed class SocketClient : ISocketClient
         }
     }
 
-    /// <summary>Internal for testing, not for use outside of SocketClient.</summary>
+    /// <summary>
+    /// Internal for testing purposes. Not for use outside of SocketClient.
+    /// </summary>
     internal void SetOpened()
     {
         Interlocked.CompareExchange(ref _closedMarker, 0, -1);

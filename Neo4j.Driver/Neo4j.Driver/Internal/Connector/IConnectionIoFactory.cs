@@ -15,19 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.IO;
 using Neo4j.Driver.Internal.IO;
 
 namespace Neo4j.Driver.Internal.Connector;
-
-internal interface IConnectionIoFactory
-{
-    ITcpSocketClient TcpSocketClient(SocketSettings socketSettings, ILogger logger);
-
-    (MessageFormat Format, ChunkWriter ChunkWriter, MemoryStream readBuffer, IMessageReader
-        MessageReader, IMessageWriter MessageWriter) Build(
-            ITcpSocketClient socketClient,
-            BufferSettings bufferSettings,
-            ILogger logger,
-            BoltProtocolVersion version);
-}

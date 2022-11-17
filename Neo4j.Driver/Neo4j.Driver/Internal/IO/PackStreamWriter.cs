@@ -30,10 +30,10 @@ internal sealed class PackStreamWriter
     private readonly MessageFormat _format;
     private readonly Stream _stream;
 
-    public PackStreamWriter(MessageFormat format, ChunkWriter stream)
+    public PackStreamWriter(MessageFormat format, IChunkWriter writer)
     {
         _format = format;
-        _stream = stream;
+        _stream = writer.Stream;
     }
 
     public void Write(object value)

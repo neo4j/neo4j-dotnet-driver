@@ -30,10 +30,10 @@ internal sealed class PackStreamReader
 
     public MemoryStream Stream;
 
-    internal PackStreamReader(MemoryStream stream, MessageFormat format, ByteBuffers buffers)
+    internal PackStreamReader(MessageFormat format, MemoryStream stream, ByteBuffers buffers)
     {
-        Stream = stream;
         _format = format;
+        Stream = stream;
         _buffers = buffers;
     }
 

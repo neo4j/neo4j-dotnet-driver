@@ -15,34 +15,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Threading.Tasks;
+using System.IO;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.IO;
 
-internal sealed class MessageWriter : IMessageWriter
+internal interface IPackStreamFactory
 {
-    private readonly IChunkWriter _chunkWriter;
+    PackStreamWriter BuildWriter(MessageFormat format, IChunkWriter stream);
+    PackStreamReader BuildReader(MessageFormat format, MemoryStream stream, ByteBuffers buffers);
+}
 
-    public MessageWriter(IChunkWriter chunkWriter)
+internal sealed class PackStreamFactory : IPackStreamFactory
+{
+    internal static readonly PackStreamFactory Default = new();
+    
+    private PackStreamFactory()
     {
-        _chunkWriter = chunkWriter;
     }
 
-    public void Write(IRequestMessage message, PackStreamWriter writer)
+    public PackStreamWriter BuildWriter(MessageFormat format, IChunkWriter stream)
     {
-        _chunkWriter.OpenChunk();
-        writer.Write(message);
-        _chunkWriter.CloseChunk();
-
-        // add message boundary
-        _chunkWriter.OpenChunk();
-        _chunkWriter.CloseChunk();
+        return new PackStreamWriter(format, stream);
     }
 
-    public Task FlushAsync()
+    public PackStreamReader BuildReader(MessageFormat format, MemoryStream stream, ByteBuffers buffers)
     {
-        return _chunkWriter.SendAsync();
+        return new PackStreamReader(format, stream, buffers);
     }
 }
