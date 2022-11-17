@@ -69,7 +69,7 @@ internal partial class AsyncSession : IResultResourceHandler, ITransactionResour
     /// <summary>This method will be called back by <see cref="ResultCursorBuilder"/> after it consumed result</summary>
     public Task OnResultConsumedAsync()
     {
-        if (_connection != null)
+        if (_connection == null)
         {
             throw new ArgumentNullException(nameof(_connection)); // TODO: Assess if this correct exception type.
         }
