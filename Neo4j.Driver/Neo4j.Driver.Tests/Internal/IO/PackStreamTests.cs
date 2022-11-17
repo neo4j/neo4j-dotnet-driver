@@ -41,7 +41,7 @@ public class BasePackStreamTests : PackStreamTestSpecs
         return new PackStreamReaderMachine(
             bytes,
             s =>
-                new PackStreamReader(s, new MessageFormat(null, structHandlers.Values), new ByteBuffers()));
+                new PackStreamReader(new MessageFormat(null, structHandlers.Values), s, new ByteBuffers()));
     }
 
     internal override PackStreamWriterMachine CreateWriterMachine()

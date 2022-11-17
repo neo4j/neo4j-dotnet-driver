@@ -71,22 +71,15 @@ public class SocketClientTests
         IMessageReader messageReader = null,
         IMessageWriter messageWriter = null)
     {
-        factory.Setup(
-                y => y.Build(
-                    It.IsAny<ITcpSocketClient>(),
-                    It.IsAny<BufferSettings>(),
-                    It.IsAny<ILogger>(),
-                    It.IsAny<BoltProtocolVersion>()))
-            .Returns(
-                (format ?? new MessageFormat(Version),
-                    writer ??
-                    new ChunkWriter(
-                        new MemoryStream(),
-                        DefaultBuffers,
-                        Mock.Of<ILogger>()),
-                    stream ?? new MemoryStream(),
-                    messageReader ?? Mock.Of<IMessageReader>(),
-                    messageWriter ?? Mock.Of<IMessageWriter>()));
+        var fmt = format ?? new MessageFormat(Version);
+        var cw = writer ??
+            new ChunkWriter(
+                new MemoryStream(),
+                DefaultBuffers,
+                Mock.Of<ILogger>());
+
+        var mr = messageReader ?? Mock.Of<IMessageReader>();
+        var mw = messageWriter ?? Mock.Of<IMessageWriter>();
     }
 
     public class ConnectMethod
@@ -210,8 +203,8 @@ public class SocketClientTests
         {
             // Given
             var packStreamReader = new PackStreamReader(
-                new MemoryStream(),
                 new MessageFormat(Version),
+                new MemoryStream(),
                 new ByteBuffers());
 
             var pipeline = new Mock<IResponsePipeline>();
@@ -268,7 +261,7 @@ public class SocketClientTests
             var client = Client(factory);
             client.SetOpened();
 
-            var psr = new PackStreamReader(new MemoryStream(), new MessageFormat(Version), new ByteBuffers());
+            var psr = new PackStreamReader(new MessageFormat(Version), new MemoryStream(), new ByteBuffers());
 
             readerMock.Setup(x => x.ReadAsync(pipeline.Object, psr)).ThrowsAsync(new DatabaseException());
 

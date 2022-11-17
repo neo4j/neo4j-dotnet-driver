@@ -47,7 +47,7 @@ public abstract class PackStreamSerializerTests
 
         return new PackStreamReaderMachine(
             bytes,
-            stream => new PackStreamReader(stream, format, new ByteBuffers()));
+            stream => new PackStreamReader(format, stream, new ByteBuffers()));
     }
 
     internal PackStreamWriterMachine CreateWriterMachine(BoltProtocolVersion version)
@@ -66,6 +66,6 @@ public abstract class PackStreamSerializerTests
         var format = new MessageFormat(version);
         return new PackStreamReaderMachine(
             bytes,
-            stream => new PackStreamReader(stream, format, new ByteBuffers()));
+            stream => new PackStreamReader(format, stream, new ByteBuffers()));
     }
 }
