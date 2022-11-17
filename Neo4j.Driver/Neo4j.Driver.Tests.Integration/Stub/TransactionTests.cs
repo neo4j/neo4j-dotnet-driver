@@ -26,7 +26,7 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Stub;
 
-static class ExceptionExtension
+internal static class ExceptionExtension
 {
     public static bool HasCause<T>(this Exception exception)
     {
@@ -38,6 +38,7 @@ static class ExceptionExtension
         };
     }
 }
+
 public class TransactionTests
 {
     private static void NoEncryptionAndShortRetry(ConfigBuilder builder)
@@ -150,7 +151,7 @@ public class TransactionTests
                 }
             }
         }
-        
+
         [Theory]
         [InlineData("V3")]
         [InlineData("V4")]

@@ -26,12 +26,12 @@ namespace Neo4j.Driver;
 /// </summary>
 public sealed class Duration : TemporalValue, IEquatable<Duration>, IComparable, IComparable<Duration>
 {
-    /// <summary>Default comparer for <see cref="Duration" /> values.</summary>
+    /// <summary>Default comparer for <see cref="Duration"/> values.</summary>
     public static readonly IComparer<Duration> Comparer = new TemporalValueComparer<Duration>();
 
-    /// <summary>Initializes a new instance of <see cref="Duration" /> in terms of <see cref="Seconds" /></summary>
+    /// <summary>Initializes a new instance of <see cref="Duration"/> in terms of <see cref="Seconds"/></summary>
     /// <param name="seconds">
-    ///     <see cref="Seconds" />
+    ///     <see cref="Seconds"/>
     /// </param>
     public Duration(long seconds)
         : this(seconds, 0)
@@ -39,14 +39,13 @@ public sealed class Duration : TemporalValue, IEquatable<Duration>, IComparable,
     }
 
     /// <summary>
-    /// Initializes a new instance of <see cref="Duration" /> in terms of <see cref="Seconds" /> and
-    /// <see cref="Nanos" />
+    /// Initializes a new instance of <see cref="Duration"/> in terms of <see cref="Seconds"/> and <see cref="Nanos"/>
     /// </summary>
     /// <param name="seconds">
-    ///     <see cref="Seconds" />
+    ///     <see cref="Seconds"/>
     /// </param>
     /// <param name="nanos">
-    ///     <see cref="Nanos" />
+    ///     <see cref="Nanos"/>
     /// </param>
     public Duration(long seconds, int nanos)
         : this(0, seconds, nanos)
@@ -54,35 +53,35 @@ public sealed class Duration : TemporalValue, IEquatable<Duration>, IComparable,
     }
 
     /// <summary>
-    /// Initializes a new instance of <see cref="Duration" /> in terms of <see cref="Days" />, <see cref="Seconds" />
-    /// and <see cref="Nanos" />
+    /// Initializes a new instance of <see cref="Duration"/> in terms of <see cref="Days"/>, <see cref="Seconds"/> and
+    /// <see cref="Nanos"/>
     /// </summary>
     /// <param name="days">
-    ///     <see cref="Days" />
+    ///     <see cref="Days"/>
     /// </param>
     /// <param name="seconds">
-    ///     <see cref="Seconds" />
+    ///     <see cref="Seconds"/>
     /// </param>
     /// <param name="nanos">
-    ///     <see cref="Nanos" />
+    ///     <see cref="Nanos"/>
     /// </param>
     public Duration(long days, long seconds, int nanos)
         : this(0, days, seconds, nanos)
     {
     }
 
-    /// <summary>Initializes a new instance of <see cref="Duration" /> with all supported temporal fields</summary>
+    /// <summary>Initializes a new instance of <see cref="Duration"/> with all supported temporal fields</summary>
     /// <param name="months">
-    ///     <see cref="Months" />
+    ///     <see cref="Months"/>
     /// </param>
     /// <param name="days">
-    ///     <see cref="Days" />
+    ///     <see cref="Days"/>
     /// </param>
     /// <param name="seconds">
-    ///     <see cref="Seconds" />
+    ///     <see cref="Seconds"/>
     /// </param>
     /// <param name="nanos">
-    ///     <see cref="Nanos" />
+    ///     <see cref="Nanos"/>
     /// </param>
     public Duration(long months, long days, long seconds, int nanos)
     {
@@ -111,9 +110,9 @@ public sealed class Duration : TemporalValue, IEquatable<Duration>, IComparable,
     public int Nanos { get; }
 
     /// <summary>
-    /// Compares the value of this instance to a specified object which is expected to be a <see cref="Duration" />
+    /// Compares the value of this instance to a specified object which is expected to be a <see cref="Duration"/>
     /// value, and returns an integer that indicates whether this instance is earlier than, the same as, or later than the
-    /// specified <see cref="Duration" /> value.
+    /// specified <see cref="Duration"/> value.
     /// </summary>
     /// <param name="obj">The object to compare to the current instance.</param>
     /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
@@ -138,7 +137,7 @@ public sealed class Duration : TemporalValue, IEquatable<Duration>, IComparable,
     }
 
     /// <summary>
-    /// Compares the value of this instance to a specified <see cref="Duration" /> value and returns an integer that
+    /// Compares the value of this instance to a specified <see cref="Duration"/> value and returns an integer that
     /// indicates whether this instance is earlier than, the same as, or later than the specified DateTime value.
     /// </summary>
     /// <param name="other">The object to compare to the current instance.</param>
@@ -171,7 +170,7 @@ public sealed class Duration : TemporalValue, IEquatable<Duration>, IComparable,
 
     /// <summary>
     /// Returns a value indicating whether the value of this instance is equal to the value of the specified
-    /// <see cref="Duration" /> instance.
+    /// <see cref="Duration"/> instance.
     /// </summary>
     /// <param name="other">The object to compare to this instance.</param>
     /// <returns>
@@ -196,7 +195,7 @@ public sealed class Duration : TemporalValue, IEquatable<Duration>, IComparable,
     /// <summary>Returns a value indicating whether this instance is equal to a specified object.</summary>
     /// <param name="obj">The object to compare to this instance.</param>
     /// <returns>
-    /// <code>true</code> if <code>value</code> is an instance of <see cref="Duration" /> and equals the value of this
+    /// <code>true</code> if <code>value</code> is an instance of <see cref="Duration"/> and equals the value of this
     /// instance; otherwise, <code>false</code>
     /// </returns>
     public override bool Equals(object obj)
@@ -228,17 +227,14 @@ public sealed class Duration : TemporalValue, IEquatable<Duration>, IComparable,
         }
     }
 
-    /// <summary>Converts the value of the current <see cref="Duration" /> object to its equivalent string representation.</summary>
+    /// <summary>Converts the value of the current <see cref="Duration"/> object to its equivalent string representation.</summary>
     /// <returns>String representation of this Point.</returns>
     public override string ToString()
     {
         return TemporalHelpers.ToIsoDurationString(Months, Days, Seconds, Nanos);
     }
 
-    /// <summary>
-    /// Determines whether one specified <see cref="Duration" /> is less than another specified
-    /// <see cref="Duration" />.
-    /// </summary>
+    /// <summary>Determines whether one specified <see cref="Duration"/> is less than another specified <see cref="Duration"/>.</summary>
     /// <param name="left">The first object to compare.</param>
     /// <param name="right">The second object to compare.</param>
     /// <returns><code>true</code> if one is less than another, otherwise <code>false</code>.</returns>
@@ -247,10 +243,7 @@ public sealed class Duration : TemporalValue, IEquatable<Duration>, IComparable,
         return left.CompareTo(right) < 0;
     }
 
-    /// <summary>
-    /// Determines whether one specified <see cref="Duration" /> is more than another specified
-    /// <see cref="Duration" />.
-    /// </summary>
+    /// <summary>Determines whether one specified <see cref="Duration"/> is more than another specified <see cref="Duration"/>.</summary>
     /// <param name="left">The first object to compare.</param>
     /// <param name="right">The second object to compare.</param>
     /// <returns><code>true</code> if one is greater than another, otherwise <code>false</code>.</returns>
@@ -260,8 +253,8 @@ public sealed class Duration : TemporalValue, IEquatable<Duration>, IComparable,
     }
 
     /// <summary>
-    /// Determines whether one specified <see cref="Duration" /> represents a duration that is the same as or more
-    /// than the other specified <see cref="Duration" />
+    /// Determines whether one specified <see cref="Duration"/> represents a duration that is the same as or more than
+    /// the other specified <see cref="Duration"/>
     /// </summary>
     /// <param name="left">The first object to compare.</param>
     /// <param name="right">The second object to compare.</param>
@@ -272,8 +265,8 @@ public sealed class Duration : TemporalValue, IEquatable<Duration>, IComparable,
     }
 
     /// <summary>
-    /// Determines whether one specified <see cref="Duration" /> represents a duration that is the same as or less
-    /// than the other specified <see cref="Duration" />
+    /// Determines whether one specified <see cref="Duration"/> represents a duration that is the same as or less than
+    /// the other specified <see cref="Duration"/>
     /// </summary>
     /// <param name="left">The first object to compare.</param>
     /// <param name="right">The second object to compare.</param>

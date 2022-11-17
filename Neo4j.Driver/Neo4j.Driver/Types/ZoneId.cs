@@ -38,7 +38,7 @@ public sealed class ZoneId : Zone, IEquatable<ZoneId>
 
     /// <summary>
     /// Returns a value indicating whether the value of this instance is equal to the value of the specified
-    /// <see cref="ZoneId" /> instance.
+    /// <see cref="ZoneId"/> instance.
     /// </summary>
     /// <param name="other">The object to compare to this instance.</param>
     /// <returns>
@@ -65,7 +65,7 @@ public sealed class ZoneId : Zone, IEquatable<ZoneId>
         return (int)TemporalHelpers.GetTimeZoneInfo(Id).GetUtcOffset(dateTime).TotalSeconds;
     }
 
-    /// <summary>Converts the value of the current <see cref="ZoneId" /> object to its equivalent string representation.</summary>
+    /// <summary>Converts the value of the current <see cref="ZoneId"/> object to its equivalent string representation.</summary>
     /// <returns>String representation of this Point.</returns>
     public override string ToString()
     {
@@ -75,7 +75,7 @@ public sealed class ZoneId : Zone, IEquatable<ZoneId>
     /// <summary>Returns a value indicating whether this instance is equal to a specified object.</summary>
     /// <param name="obj">The object to compare to this instance.</param>
     /// <returns>
-    /// <code>true</code> if <code>value</code> is an instance of <see cref="ZoneId" /> and equals the value of this
+    /// <code>true</code> if <code>value</code> is an instance of <see cref="ZoneId"/> and equals the value of this
     /// instance; otherwise, <code>false</code>
     /// </returns>
     public override bool Equals(object obj)

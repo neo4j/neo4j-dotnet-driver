@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License"):
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -17,11 +17,11 @@
 
 namespace Neo4j.Driver;
 
-/// <summary>Factory for <see cref="IBookmarkManager" />.</summary>
+/// <summary>Factory for <see cref="IBookmarkManager"/>.</summary>
 public interface IBookmarkManagerFactory
 {
-    /// <summary>Create an <see cref="IBookmarkManager" /> with specified configuration.</summary>
+    /// <summary>Create an <see cref="IBookmarkManager"/> with specified configuration.</summary>
     /// <param name="config">Configuration object. If this is null or not specified, default configuration is used.</param>
-    /// <returns>New configured instance of <see cref="IBookmarkManager" />.</returns>
+    /// <returns>New configured instance of <see cref="IBookmarkManager"/>.</returns>
     IBookmarkManager NewBookmarkManager(BookmarkManagerConfig config = null);
 }

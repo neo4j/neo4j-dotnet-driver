@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License"):
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -24,8 +24,8 @@ namespace Neo4j.Driver;
 
 /// <summary>
 /// The interface that defines options applicable to session constructions. It could be populated by the provided
-/// builder-style methods. The default <see cref="SessionConfig" /> defines a <see cref="AccessMode.Write" /> session with
-/// the server default database using default fetch size specified in <see cref="Config.FetchSize" />.
+/// builder-style methods. The default <see cref="SessionConfig"/> defines a <see cref="AccessMode.Write"/> session with
+/// the server default database using default fetch size specified in <see cref="Config.FetchSize"/>.
 /// </summary>
 public sealed class SessionConfig
 {
@@ -50,14 +50,14 @@ public sealed class SessionConfig
     /// The database that the constructed session will connect to.
     /// <remarks>
     /// When used against servers supporting multi-databases, it is recommended that this value to be set explicitly
-    /// either through <see cref="SessionConfigBuilder.WithDatabase" /> method. If not, then the session will connect to the
+    /// either through <see cref="SessionConfigBuilder.WithDatabase"/> method. If not, then the session will connect to the
     /// default database configured on the server side. When used against servers that don't support multi-databases, this
     /// property should be left unset.
     /// </remarks>
     /// </summary>
     /// <exception cref="set_Database">
-    /// throws <see cref="System.ArgumentNullException" /> when provided database name is null
-    /// or an empty string.
+    /// throws <see cref="System.ArgumentNullException"/> when provided database name is null or
+    /// an empty string.
     /// </exception>
     public string Database
     {
@@ -79,10 +79,10 @@ public sealed class SessionConfig
     /// <remarks>
     /// The default access mode set is overriden when transaction functions (i.e.
     /// <see
-    ///     cref="IAsyncSession.ReadTransactionAsync{T}(System.Func{Neo4j.Driver.IAsyncTransaction,System.Threading.Tasks.Task{T}})" />
+    ///     cref="IAsyncSession.ReadTransactionAsync{T}(System.Func{Neo4j.Driver.IAsyncTransaction,System.Threading.Tasks.Task{T}})"/>
     /// and
     /// <see
-    ///     cref="IAsyncSession.WriteTransactionAsync{T}(System.Func{Neo4j.Driver.IAsyncTransaction,System.Threading.Tasks.Task{T}})" />
+    ///     cref="IAsyncSession.WriteTransactionAsync{T}(System.Func{Neo4j.Driver.IAsyncTransaction,System.Threading.Tasks.Task{T}})"/>
     /// is used (with corresponding access modes derived from invoked method name).
     /// </remarks>
     /// </summary>
@@ -91,7 +91,7 @@ public sealed class SessionConfig
     /// <summary>
     /// The initial bookmarks to be used by the constructed session. The first transaction (either auto-commit or
     /// explicit) will ensure that the executing server is at least up to date to the point identified by the latest of the
-    /// provided initial bookmarks. The bookmarks can be obtained from <see cref="IAsyncSession.LastBookmarks" /> (and
+    /// provided initial bookmarks. The bookmarks can be obtained from <see cref="IAsyncSession.LastBookmarks"/> (and
     /// corresponding properties in other types of sessions, i.e. IRxSession or ISession.
     /// </summary>
     public IEnumerable<Bookmarks> Bookmarks
@@ -102,7 +102,7 @@ public sealed class SessionConfig
 
     /// <summary>
     /// The default fetch size. Since Bolt v4 (Neo4j 4.0+), the query running result (records) are pulled from server
-    /// in batches. This fetch size defines how many records to pull in each batch. Use <see cref="Config.Infinite" /> to
+    /// in batches. This fetch size defines how many records to pull in each batch. Use <see cref="Config.Infinite"/> to
     /// disable batching and always pull all records in one batch instead.
     /// </summary>
     public long? FetchSize
@@ -116,7 +116,7 @@ public sealed class SessionConfig
     /// Once set this cannot be changed for the duration of the session's lifetime.
     /// </summary>
     /// <exception cref="set_ImpersonatedUser">
-    /// throws <see cref="System.ArgumentNullException" /> when provided with a null or
+    /// throws <see cref="System.ArgumentNullException"/> when provided with a null or
     /// empty string
     /// </exception>
     public string ImpersonatedUser
@@ -128,7 +128,7 @@ public sealed class SessionConfig
     public IBookmarkManager BookmarkManager { get; set; }
 }
 
-/// <summary>The builder to build a <see cref="SessionConfig" />.</summary>
+/// <summary>The builder to build a <see cref="SessionConfig"/>.</summary>
 public sealed class SessionConfigBuilder
 {
     private readonly SessionConfig _config;
@@ -139,11 +139,11 @@ public sealed class SessionConfigBuilder
     }
 
     /// <summary>
-    /// Returns an action on <see cref="SessionConfigBuilder" /> which will set the database name to the value
+    /// Returns an action on <see cref="SessionConfigBuilder"/> which will set the database name to the value
     /// specified.
     /// </summary>
     /// <param name="database">the database name</param>
-    /// <returns>An action of <see cref="SessionConfigBuilder" /></returns>
+    /// <returns>An action of <see cref="SessionConfigBuilder"/></returns>
     public static Action<SessionConfigBuilder> ForDatabase(string database)
     {
         return o => o.WithDatabase(database);
@@ -151,8 +151,8 @@ public sealed class SessionConfigBuilder
 
     /// <summary>Sets the database the constructed session will connect to.</summary>
     /// <param name="database">the database name</param>
-    /// <returns>this <see cref="SessionConfigBuilder" /> instance</returns>
-    /// <seealso cref="SessionConfig.Database" />
+    /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
+    /// <seealso cref="SessionConfig.Database"/>
     public SessionConfigBuilder WithDatabase(string database)
     {
         _config.Database = database;
@@ -161,8 +161,8 @@ public sealed class SessionConfigBuilder
 
     /// <summary>Sets the type of access required by the constructed session.</summary>
     /// <param name="defaultAccessMode">the access mode</param>
-    /// <returns>this <see cref="SessionConfigBuilder" /> instance</returns>
-    /// <seealso cref="SessionConfig.DefaultAccessMode" />
+    /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
+    /// <seealso cref="SessionConfig.DefaultAccessMode"/>
     public SessionConfigBuilder WithDefaultAccessMode(AccessMode defaultAccessMode)
     {
         _config.DefaultAccessMode = defaultAccessMode;
@@ -171,8 +171,8 @@ public sealed class SessionConfigBuilder
 
     /// <summary>Sets the initial bookmarks to be used by the constructed session.</summary>
     /// <param name="bookmarks">the initial bookmarks</param>
-    /// <returns>this <see cref="SessionConfigBuilder" /> instance</returns>
-    /// <seealso cref="SessionConfig.Bookmarks" />
+    /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
+    /// <seealso cref="SessionConfig.Bookmarks"/>
     [Obsolete("Replaced by WithBookmarks. Will be removed in 6.0.")]
     public SessionConfigBuilder WithBookmarks(params Bookmark[] bookmark)
     {
@@ -182,8 +182,8 @@ public sealed class SessionConfigBuilder
 
     /// <summary>Sets the initial bookmarks to be used by the constructed session.</summary>
     /// <param name="bookmarks">the initial bookmarks</param>
-    /// <returns>this <see cref="SessionConfigBuilder" /> instance</returns>
-    /// <seealso cref="SessionConfig.Bookmarks" />
+    /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
+    /// <seealso cref="SessionConfig.Bookmarks"/>
     public SessionConfigBuilder WithBookmarks(params Bookmarks[] bookmarks)
     {
         _config.Bookmarks = bookmarks;
@@ -192,12 +192,12 @@ public sealed class SessionConfigBuilder
 
     /// <summary>
     /// Sets the default fetch size. Since Bolt v4 (Neo4j 4.0+), the query running result (records) are pulled from
-    /// server in batches. This fetch size defines how many records to pull in each batch. Use <see cref="Config.Infinite" />
-    /// to disable batching and always pull all records in one batch instead.
+    /// server in batches. This fetch size defines how many records to pull in each batch. Use <see cref="Config.Infinite"/> to
+    /// disable batching and always pull all records in one batch instead.
     /// </summary>
     /// <param name="size">Fetch size of each record batch.</param>
-    /// <returns>this <see cref="SessionConfigBuilder" /> instance</returns>
-    /// <seealso cref="SessionConfig.FetchSize" />
+    /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
+    /// <seealso cref="SessionConfig.FetchSize"/>
     public SessionConfigBuilder WithFetchSize(long size)
     {
         _config.FetchSize = size;
@@ -209,7 +209,7 @@ public sealed class SessionConfigBuilder
     /// Once set this cannot be changed for the duration of the session's lifetime.
     /// </summary>
     /// <param name="impersonatedUser">username that the user wants to impersonate</param>
-    /// <returns>this <see cref="SessionConfigBuilder" /> instance</returns>
+    /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
     public SessionConfigBuilder WithImpersonatedUser(string impersonatedUser)
     {
         _config.ImpersonatedUser = impersonatedUser;

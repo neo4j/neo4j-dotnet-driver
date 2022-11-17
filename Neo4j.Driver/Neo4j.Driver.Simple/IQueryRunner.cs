@@ -21,7 +21,7 @@ using System.Collections.Generic;
 namespace Neo4j.Driver;
 
 /// <summary>Common interface for components that can execute Neo4j queries.</summary>
-/// <remarks><see cref="IAsyncSession" /> and <see cref="IAsyncTransaction" /></remarks>
+/// <remarks><see cref="IAsyncSession"/> and <see cref="IAsyncTransaction"/></remarks>
 public interface IQueryRunner : IDisposable
 {
     /// <summary>
@@ -49,7 +49,7 @@ public interface IQueryRunner : IDisposable
     IResult Run(string query, IDictionary<string, object> parameters);
 
     /// <summary>Execute a query and return a result stream.</summary>
-    /// <param name="query">A Cypher query, <see cref="Query" />.</param>
+    /// <param name="query">A Cypher query, <see cref="Query"/>.</param>
     /// <returns>A stream of result values and associated metadata.</returns>
     IResult Run(Query query);
 }

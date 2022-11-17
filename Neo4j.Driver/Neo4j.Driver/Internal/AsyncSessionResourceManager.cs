@@ -68,7 +68,7 @@ internal partial class AsyncSession : IResultResourceHandler, ITransactionResour
             "Failed to close the session asynchronously.");
     }
 
-    /// <summary>This method will be called back by <see cref="ResultCursorBuilder" /> after it consumed result</summary>
+    /// <summary>This method will be called back by <see cref="ResultCursorBuilder"/> after it consumed result</summary>
     public Task OnResultConsumedAsync()
     {
         if (_connection != null)

@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 namespace Neo4j.Driver;
 
 /// <summary>Common interface for components that can execute Neo4j queries.</summary>
-/// <remarks><see cref="IAsyncSession" /> and <see cref="IAsyncTransaction" /></remarks>
+/// <remarks><see cref="IAsyncSession"/> and <see cref="IAsyncTransaction"/></remarks>
 public interface IAsyncQueryRunner : IAsyncDisposable, IDisposable
 {
     /// <summary>
@@ -54,7 +54,7 @@ public interface IAsyncQueryRunner : IAsyncDisposable, IDisposable
     Task<IResultCursor> RunAsync(string query, IDictionary<string, object> parameters);
 
     /// <summary>Asynchronously execute a query and return a task of result stream.</summary>
-    /// <param name="query">A Cypher query, <see cref="Query" />.</param>
+    /// <param name="query">A Cypher query, <see cref="Query"/>.</param>
     /// <returns>A task of a stream of result values and associated metadata.</returns>
     /// <exception cref="TransactionClosedException">>Thrown when used in a transaction that has previously been closed.</exception>
     Task<IResultCursor> RunAsync(Query query);

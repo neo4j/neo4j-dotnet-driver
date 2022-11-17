@@ -25,8 +25,8 @@ namespace Neo4j.Driver.Internal.Routing;
 
 internal class ClusterDiscovery : IDiscovery
 {
-    /// <remarks>Throws <see cref="ProtocolException" /> if the discovery result is invalid.</remarks>
-    /// <remarks>Throws <see cref="ServiceUnavailableException" /> if the no discovery procedure could be found in the server.</remarks>
+    /// <remarks>Throws <see cref="ProtocolException"/> if the discovery result is invalid.</remarks>
+    /// <remarks>Throws <see cref="ServiceUnavailableException"/> if the no discovery procedure could be found in the server.</remarks>
     public async Task<IRoutingTable> DiscoverAsync(
         IConnection connection,
         string database,

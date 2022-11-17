@@ -29,11 +29,11 @@ public sealed class LocalTime : TemporalValue,
     IComparable<LocalTime>,
     IHasTimeComponents
 {
-    /// <summary>Default comparer for <see cref="LocalTime" /> values.</summary>
+    /// <summary>Default comparer for <see cref="LocalTime"/> values.</summary>
     public static readonly IComparer<LocalTime> Comparer = new TemporalValueComparer<LocalTime>();
 
     /// <summary>
-    /// Initializes a new instance of <see cref="LocalTime" /> from time components of given <see cref="DateTime" />
+    /// Initializes a new instance of <see cref="LocalTime"/> from time components of given <see cref="DateTime"/>
     /// </summary>
     /// <param name="time"></param>
     public LocalTime(DateTime time)
@@ -41,14 +41,14 @@ public sealed class LocalTime : TemporalValue,
     {
     }
 
-    /// <summary>Initializes a new instance of <see cref="LocalTime" /> from given <see cref="TimeSpan" /> value</summary>
+    /// <summary>Initializes a new instance of <see cref="LocalTime"/> from given <see cref="TimeSpan"/> value</summary>
     /// <param name="time"></param>
     public LocalTime(TimeSpan time)
         : this(time.Hours, time.Minutes, time.Seconds, TemporalHelpers.ExtractNanosecondFromTicks(time.Ticks))
     {
     }
 
-    /// <summary>Initializes a new instance of <see cref="LocalTime" /> from individual time components</summary>
+    /// <summary>Initializes a new instance of <see cref="LocalTime"/> from individual time components</summary>
     /// <param name="hour"></param>
     /// <param name="minute"></param>
     /// <param name="second"></param>
@@ -58,7 +58,7 @@ public sealed class LocalTime : TemporalValue,
     }
 
     #if NET6_0_OR_GREATER
-    /// <summary>Initializes a new instance of <see cref="LocalTime" /> from given <see cref="TimeOnly" /> value</summary>
+    /// <summary>Initializes a new instance of <see cref="LocalTime"/> from given <see cref="TimeOnly"/> value</summary>
     /// <param name="time"></param>
     public LocalTime(TimeOnly time)
         : this(TimeSpan.FromTicks(time.Ticks))
@@ -66,7 +66,7 @@ public sealed class LocalTime : TemporalValue,
     }
     #endif
 
-    /// <summary>Initializes a new instance of <see cref="LocalTime" /> from individual time components</summary>
+    /// <summary>Initializes a new instance of <see cref="LocalTime"/> from individual time components</summary>
     /// <param name="hour"></param>
     /// <param name="minute"></param>
     /// <param name="second"></param>
@@ -104,9 +104,9 @@ public sealed class LocalTime : TemporalValue,
     }
 
     /// <summary>
-    /// Compares the value of this instance to a specified object which is expected to be a <see cref="LocalTime" />
+    /// Compares the value of this instance to a specified object which is expected to be a <see cref="LocalTime"/>
     /// value, and returns an integer that indicates whether this instance is earlier than, the same as, or later than the
-    /// specified <see cref="LocalTime" /> value.
+    /// specified <see cref="LocalTime"/> value.
     /// </summary>
     /// <param name="obj">The object to compare to the current instance.</param>
     /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
@@ -131,7 +131,7 @@ public sealed class LocalTime : TemporalValue,
     }
 
     /// <summary>
-    /// Compares the value of this instance to a specified <see cref="LocalTime" /> value and returns an integer that
+    /// Compares the value of this instance to a specified <see cref="LocalTime"/> value and returns an integer that
     /// indicates whether this instance is earlier than, the same as, or later than the specified DateTime value.
     /// </summary>
     /// <param name="other">The object to compare to the current instance.</param>
@@ -171,7 +171,7 @@ public sealed class LocalTime : TemporalValue,
 
     /// <summary>
     /// Returns a value indicating whether the value of this instance is equal to the value of the specified
-    /// <see cref="LocalTime" /> instance.
+    /// <see cref="LocalTime"/> instance.
     /// </summary>
     /// <param name="other">The object to compare to this instance.</param>
     /// <returns>
@@ -205,10 +205,10 @@ public sealed class LocalTime : TemporalValue,
     /// <summary>Gets the nanosecond component of this instance.</summary>
     public int Nanosecond { get; }
 
-    /// <summary>Converts this time value to a <see cref="TimeSpan" /> instance.</summary>
-    /// <value>Equivalent <see cref="TimeSpan" /> value</value>
+    /// <summary>Converts this time value to a <see cref="TimeSpan"/> instance.</summary>
+    /// <value>Equivalent <see cref="TimeSpan"/> value</value>
     /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
-    /// <returns>A <see cref="TimeSpan" /> instance.</returns>
+    /// <returns>A <see cref="TimeSpan"/> instance.</returns>
     public TimeSpan ToTimeSpan()
     {
         TemporalHelpers.AssertNoTruncation(this, nameof(TimeSpan));
@@ -218,8 +218,8 @@ public sealed class LocalTime : TemporalValue,
     }
 
     #if NET6_0_OR_GREATER
-    /// <summary>Converts this time value to a <see cref="TimeOnly" /> instance.</summary>
-    /// <returns>A <see cref="TimeOnly" /> instance.</returns>
+    /// <summary>Converts this time value to a <see cref="TimeOnly"/> instance.</summary>
+    /// <returns>A <see cref="TimeOnly"/> instance.</returns>
     public TimeOnly ToTimeOnly()
     {
         TemporalHelpers.AssertNoTruncation(this, nameof(TimeOnly));
@@ -230,8 +230,8 @@ public sealed class LocalTime : TemporalValue,
     /// <summary>Returns a value indicating whether this instance is equal to a specified object.</summary>
     /// <param name="obj">The object to compare to this instance.</param>
     /// <returns>
-    /// <code>true</code> if <code>value</code> is an instance of <see cref="LocalTime" /> and equals the value of
-    /// this instance; otherwise, <code>false</code>
+    /// <code>true</code> if <code>value</code> is an instance of <see cref="LocalTime"/> and equals the value of this
+    /// instance; otherwise, <code>false</code>
     /// </returns>
     public override bool Equals(object obj)
     {
@@ -262,7 +262,7 @@ public sealed class LocalTime : TemporalValue,
         }
     }
 
-    /// <summary>Converts the value of the current <see cref="LocalTime" /> object to its equivalent string representation.</summary>
+    /// <summary>Converts the value of the current <see cref="LocalTime"/> object to its equivalent string representation.</summary>
     /// <returns>String representation of this Point.</returns>
     public override string ToString()
     {
@@ -270,8 +270,8 @@ public sealed class LocalTime : TemporalValue,
     }
 
     /// <summary>
-    /// Determines whether one specified <see cref="LocalTime" /> is earlier than another specified
-    /// <see cref="LocalTime" />.
+    /// Determines whether one specified <see cref="LocalTime"/> is earlier than another specified
+    /// <see cref="LocalTime"/>.
     /// </summary>
     /// <param name="left">The first object to compare.</param>
     /// <param name="right">The second object to compare.</param>
@@ -282,8 +282,8 @@ public sealed class LocalTime : TemporalValue,
     }
 
     /// <summary>
-    /// Determines whether one specified <see cref="LocalTime" /> is later than another specified
-    /// <see cref="LocalTime" />.
+    /// Determines whether one specified <see cref="LocalTime"/> is later than another specified
+    /// <see cref="LocalTime"/>.
     /// </summary>
     /// <param name="left">The first object to compare.</param>
     /// <param name="right">The second object to compare.</param>
@@ -294,8 +294,8 @@ public sealed class LocalTime : TemporalValue,
     }
 
     /// <summary>
-    /// Determines whether one specified <see cref="LocalTime" /> represents a duration that is the same as or later
-    /// than the other specified <see cref="LocalTime" />
+    /// Determines whether one specified <see cref="LocalTime"/> represents a duration that is the same as or later
+    /// than the other specified <see cref="LocalTime"/>
     /// </summary>
     /// <param name="left">The first object to compare.</param>
     /// <param name="right">The second object to compare.</param>
@@ -306,8 +306,8 @@ public sealed class LocalTime : TemporalValue,
     }
 
     /// <summary>
-    /// Determines whether one specified <see cref="LocalTime" /> represents a duration that is the same as or earlier
-    /// than the other specified <see cref="LocalTime" />
+    /// Determines whether one specified <see cref="LocalTime"/> represents a duration that is the same as or earlier
+    /// than the other specified <see cref="LocalTime"/>
     /// </summary>
     /// <param name="left">The first object to compare.</param>
     /// <param name="right">The second object to compare.</param>
@@ -317,13 +317,13 @@ public sealed class LocalTime : TemporalValue,
         return left.CompareTo(right) >= 0;
     }
 
-    /// <inheritdoc cref="TemporalValue.ConvertToDateTime" />
+    /// <inheritdoc cref="TemporalValue.ConvertToDateTime"/>
     protected override DateTime ConvertToDateTime()
     {
         return DateTime.Today.Add(ToTimeSpan());
     }
 
-    /// <inheritdoc cref="TemporalValue.ConvertToTimeSpan" />
+    /// <inheritdoc cref="TemporalValue.ConvertToTimeSpan"/>
     protected override TimeSpan ConvertToTimeSpan()
     {
         return ToTimeSpan();

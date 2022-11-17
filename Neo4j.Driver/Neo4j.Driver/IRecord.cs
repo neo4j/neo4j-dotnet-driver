@@ -32,9 +32,9 @@ public interface IRecord
     /// <returns>the value specified with the given key.</returns>
     object this[string key] { get; }
 
-    /// <summary>Gets the key and value pairs in a <see cref="IReadOnlyDictionary{TKey,TValue}" />.</summary>
+    /// <summary>Gets the key and value pairs in a <see cref="IReadOnlyDictionary{TKey,TValue}"/>.</summary>
     IReadOnlyDictionary<string, object> Values { get; }
 
-    /// <summary>Gets the keys in a <see cref="IReadOnlyList{T}" />.</summary>
+    /// <summary>Gets the keys in a <see cref="IReadOnlyList{T}"/>.</summary>
     IReadOnlyList<string> Keys { get; }
 }

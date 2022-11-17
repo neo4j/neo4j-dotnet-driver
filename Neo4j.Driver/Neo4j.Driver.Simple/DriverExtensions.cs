@@ -20,12 +20,12 @@ using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver;
 
-/// <summary>Provides extension methods on <see cref="Neo4j.Driver.IDriver" /> for acquiring synchronous session instances.</summary>
+/// <summary>Provides extension methods on <see cref="Neo4j.Driver.IDriver"/> for acquiring synchronous session instances.</summary>
 public static class DriverExtensions
 {
     /// <summary>
     /// Obtain a session which is designed to be used synchronously, which is built on top of the default asynchronous
-    /// <see cref="IAsyncSession" /> with default <see cref="SessionConfig" />.
+    /// <see cref="IAsyncSession"/> with default <see cref="SessionConfig"/>.
     /// </summary>
     /// <param name="driver">driver instance</param>
     /// <returns>A simple session instance</returns>
@@ -36,12 +36,12 @@ public static class DriverExtensions
 
     /// <summary>
     /// Obtain a session which is designed to be used synchronously, which is built on top of the default asynchronous
-    /// <see cref="IAsyncSession" /> with the customized <see cref="SessionConfig" />.
+    /// <see cref="IAsyncSession"/> with the customized <see cref="SessionConfig"/>.
     /// </summary>
     /// <param name="driver">driver instance</param>
     /// <param name="action">
-    /// An action, provided with a <see cref="SessionConfigBuilder" /> instance, that should populate the
-    /// provided instance with desired session configurations <see cref="SessionConfig" />.
+    /// An action, provided with a <see cref="SessionConfigBuilder"/> instance, that should populate the
+    /// provided instance with desired session configurations <see cref="SessionConfig"/>.
     /// </param>
     /// <returns>A simple session instance</returns>
     public static ISession Session(this IDriver driver, Action<SessionConfigBuilder> action)

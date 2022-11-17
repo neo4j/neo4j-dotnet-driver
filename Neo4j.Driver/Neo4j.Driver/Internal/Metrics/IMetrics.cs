@@ -30,7 +30,7 @@ internal interface IMetrics
 internal interface IConnectionPoolMetrics
 {
     /// <summary>
-    /// The unique name of this metrics, used as an unique identifier among all <see cref="IConnectionPoolMetrics" />
+    /// The unique name of this metrics, used as an unique identifier among all <see cref="IConnectionPoolMetrics"/>
     /// instances.
     /// </summary>
     string Id { get; }

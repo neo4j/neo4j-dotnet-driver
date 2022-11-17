@@ -21,10 +21,10 @@ using System.Linq;
 namespace Neo4j.Driver;
 
 /// <summary>
-/// Provides access to the result as an <see cref="IEnumerable{T}" /> of <see cref="IRecord" />s. The records in
-/// the result is lazily retrieved and could only be visited once.
+/// Provides access to the result as an <see cref="IEnumerable{T}"/> of <see cref="IRecord"/>s. The records in the
+/// result is lazily retrieved and could only be visited once.
 /// </summary>
-/// <remarks> Calling <see cref="Enumerable.ToList{TSource}" /> will enumerate the entire stream.</remarks>
+/// <remarks> Calling <see cref="Enumerable.ToList{TSource}"/> will enumerate the entire stream.</remarks>
 public interface IResult : IEnumerable<IRecord>
 {
     /// <summary>Gets the keys in the result.</summary>
@@ -32,9 +32,9 @@ public interface IResult : IEnumerable<IRecord>
 
     /// <summary>
     /// Get whether the underlying cursor is open to read records, a cursor will be considered open if
-    /// <see cref="Consume" /> has not been called.<br /> Attempting to read records from a closed cursor will throw
-    /// <see cref="ResultConsumedException" />.<br /> Cursors can also be closed if its session is disposed or its session runs
-    /// a query.
+    /// <see cref="Consume"/> has not been called.<br/> Attempting to read records from a closed cursor will throw
+    /// <see cref="ResultConsumedException"/>.<br/> Cursors can also be closed if its session is disposed or its session runs a
+    /// query.
     /// </summary>
     bool IsOpen { get; }
 
@@ -44,7 +44,7 @@ public interface IResult : IEnumerable<IRecord>
 
     /// <summary>
     /// Consume the entire result, yielding a summary of it. Calling this method exhausts the result. If you want to
-    /// obtain the summary without discarding the records, use <see cref="Enumerable.ToList{TSource}" /> to buffer all
+    /// obtain the summary without discarding the records, use <see cref="Enumerable.ToList{TSource}"/> to buffer all
     /// unconsumed records into memory instead.
     /// </summary>
     /// <returns>A summary for running the query.</returns>

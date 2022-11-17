@@ -129,8 +129,8 @@ public abstract class TemporalValue : IValue, IConvertible
         throw new InvalidCastException($"Conversion of {GetType().Name} to {conversionType.Name} is not supported.");
     }
 
-    /// <summary>Converts this <see cref="TemporalValue" /> instance to a <see cref="DateTime" /> instance.</summary>
-    /// <returns>A <see cref="DateTime" /> value</returns>
+    /// <summary>Converts this <see cref="TemporalValue"/> instance to a <see cref="DateTime"/> instance.</summary>
+    /// <returns>A <see cref="DateTime"/> value</returns>
     /// <exception cref="InvalidCastException">If conversion is not possible</exception>
     /// <exception cref="ValueTruncationException">If conversion results in a truncation under ms precision</exception>
     /// <exception cref="OverflowException">If the value falls beyond valid range of target type</exception>
@@ -139,8 +139,8 @@ public abstract class TemporalValue : IValue, IConvertible
         throw new InvalidCastException($"Conversion of {GetType().Name} to {nameof(DateTime)} is not supported.");
     }
 
-    /// <summary>Converts this <see cref="TemporalValue" /> instance to a <see cref="DateTimeOffset" /> instance.</summary>
-    /// <returns>A <see cref="DateTime" /> value</returns>
+    /// <summary>Converts this <see cref="TemporalValue"/> instance to a <see cref="DateTimeOffset"/> instance.</summary>
+    /// <returns>A <see cref="DateTime"/> value</returns>
     /// <exception cref="InvalidCastException">If conversion is not possible</exception>
     /// <exception cref="ValueTruncationException">If conversion results in a truncation under ms precision</exception>
     /// <exception cref="OverflowException">If the value falls beyond valid range of target type</exception>
@@ -149,8 +149,8 @@ public abstract class TemporalValue : IValue, IConvertible
         throw new InvalidCastException($"Conversion of {GetType().Name} to {nameof(DateTimeOffset)} is not supported.");
     }
 
-    /// <summary>Converts this <see cref="TemporalValue" /> instance to a <see cref="TimeSpan" /> instance.</summary>
-    /// <returns>A <see cref="DateTime" /> value</returns>
+    /// <summary>Converts this <see cref="TemporalValue"/> instance to a <see cref="TimeSpan"/> instance.</summary>
+    /// <returns>A <see cref="DateTime"/> value</returns>
     /// <exception cref="InvalidCastException">If conversion is not possible</exception>
     /// <exception cref="ValueTruncationException">If conversion results in a truncation under ms precision</exception>
     /// <exception cref="OverflowException">If the value falls beyond valid range of target type</exception>

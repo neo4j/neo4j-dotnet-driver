@@ -21,8 +21,8 @@ using System.Threading.Tasks;
 namespace Neo4j.Driver;
 
 /// <summary>
-/// Experimental: Subject to change. Manager of Neo4j's causal-consistency mechanism, bookmarks.<br /> The manager
-/// maintains and provides collections of bookmarks for databases, exposing to both driver and user-code.<br />
+/// Experimental: Subject to change. Manager of Neo4j's causal-consistency mechanism, bookmarks.<br/> The manager
+/// maintains and provides collections of bookmarks for databases, exposing to both driver and user-code.<br/>
 /// </summary>
 public interface IBookmarkManager
 {

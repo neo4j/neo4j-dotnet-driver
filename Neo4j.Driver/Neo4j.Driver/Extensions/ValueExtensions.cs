@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License"):
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -33,18 +33,18 @@ public static class ValueExtensions
     /// A helper method to explicitly cast the value streamed back via Bolt to a local type, with default fallback
     /// value.
     /// </summary>
-    /// <param name="value">The value that streamed back via Bolt protocol, e.g.<see cref="IEntity.Properties" />.</param>
+    /// <param name="value">The value that streamed back via Bolt protocol, e.g.<see cref="IEntity.Properties"/>.</param>
     /// <param name="defaultValue">Returns this value if the the value is null</param>
     /// <typeparam name="T">
     /// Supports for the following types (or nullable version of the following types if applies):
-    /// <see cref="short" />, <see cref="int" />, <see cref="long" />, <see cref="float" />, <see cref="double" />,
-    /// <see cref="sbyte" />, <see cref="ushort" />, <see cref="uint" />, <see cref="ulong" />, <see cref="byte" />,
-    /// <see cref="char" />, <see cref="bool" />, <see cref="string" />, <see cref="List{T}" />, <see cref="INode" />,
-    /// <see cref="IRelationship" />, <see cref="IPath" />. Undefined support for other types that are not listed above. No
+    /// <see cref="short"/>, <see cref="int"/>, <see cref="long"/>, <see cref="float"/>, <see cref="double"/>,
+    /// <see cref="sbyte"/>, <see cref="ushort"/>, <see cref="uint"/>, <see cref="ulong"/>, <see cref="byte"/>,
+    /// <see cref="char"/>, <see cref="bool"/>, <see cref="string"/>, <see cref="List{T}"/>, <see cref="INode"/>,
+    /// <see cref="IRelationship"/>, <see cref="IPath"/>. Undefined support for other types that are not listed above. No
     /// support for user-defined types, e.g. Person, Movie.
     /// </typeparam>
     /// <returns>The value of specified return type.</returns>
-    /// <remarks>Throws <see cref="InvalidCastException" /> if the specified cast is not possible.</remarks>
+    /// <remarks>Throws <see cref="InvalidCastException"/> if the specified cast is not possible.</remarks>
     public static T As<T>(this object value, T defaultValue)
     {
         return value == null ? defaultValue : value.As<T>();
@@ -53,15 +53,15 @@ public static class ValueExtensions
     /// <summary>A helper method to explicitly cast the value streamed back via Bolt to a local type.</summary>
     /// <typeparam name="T">
     /// Supports for the following types (or nullable version of the following types if applies):
-    /// <see cref="short" />, <see cref="int" />, <see cref="long" />, <see cref="float" />, <see cref="double" />,
-    /// <see cref="sbyte" />, <see cref="ushort" />, <see cref="uint" />, <see cref="ulong" />, <see cref="byte" />,
-    /// <see cref="char" />, <see cref="bool" />, <see cref="string" />, <see cref="List{T}" />, <see cref="INode" />,
-    /// <see cref="IRelationship" />, <see cref="IPath" />. Undefined support for other types that are not listed above. No
+    /// <see cref="short"/>, <see cref="int"/>, <see cref="long"/>, <see cref="float"/>, <see cref="double"/>,
+    /// <see cref="sbyte"/>, <see cref="ushort"/>, <see cref="uint"/>, <see cref="ulong"/>, <see cref="byte"/>,
+    /// <see cref="char"/>, <see cref="bool"/>, <see cref="string"/>, <see cref="List{T}"/>, <see cref="INode"/>,
+    /// <see cref="IRelationship"/>, <see cref="IPath"/>. Undefined support for other types that are not listed above. No
     /// support for user-defined types, e.g. Person, Movie.
     /// </typeparam>
-    /// <param name="value">The value that streamed back via Bolt protocol, e.g.<see cref="IEntity.Properties" />.</param>
+    /// <param name="value">The value that streamed back via Bolt protocol, e.g.<see cref="IEntity.Properties"/>.</param>
     /// <returns>The value of specified return type.</returns>
-    /// <remarks>Throws <see cref="InvalidCastException" /> if the specified cast is not possible.</remarks>
+    /// <remarks>Throws <see cref="InvalidCastException"/> if the specified cast is not possible.</remarks>
     public static T As<T>(this object value)
     {
         if (value == null)

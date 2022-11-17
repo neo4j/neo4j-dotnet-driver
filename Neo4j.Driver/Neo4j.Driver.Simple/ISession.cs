@@ -30,13 +30,13 @@ namespace Neo4j.Driver;
 public interface ISession : IQueryRunner
 {
     /// <summary>
-    /// Gets the bookmark received following the last successfully completed <see cref="ITransaction" />. If no
+    /// Gets the bookmark received following the last successfully completed <see cref="ITransaction"/>. If no
     /// bookmark was received or if this transaction was rolled back, the bookmark value will not be changed.
     /// </summary>
     Bookmarks LastBookmarks { get; }
 
     /// <summary>
-    /// Gets the bookmark received following the last successfully completed <see cref="ITransaction" />. If no
+    /// Gets the bookmark received following the last successfully completed <see cref="ITransaction"/>. If no
     /// bookmark was received or if this transaction was rolled back, the bookmark value will not be changed.
     /// </summary>
     [Obsolete("Deprecated, Replaced by LastBookmarks. LastBookmark will be removed in 6.0")]
@@ -49,126 +49,126 @@ public interface ISession : IQueryRunner
     /// Begin a new transaction in this session using server default transaction configurations. A session can have at
     /// most one transaction running at a time, if you want to run multiple concurrent transactions, you should use multiple
     /// concurrent sessions. All data operations in Neo4j are transactional. However, for convenience we provide a
-    /// <see cref="IQueryRunner.Run(Query)" /> method directly on this session interface as well. When you use that method,
-    /// your query automatically gets wrapped in a transaction. If you want to run multiple queries in the same transaction,
-    /// you should wrap them in a transaction using this method.
+    /// <see cref="IQueryRunner.Run(Query)"/> method directly on this session interface as well. When you use that method, your
+    /// query automatically gets wrapped in a transaction. If you want to run multiple queries in the same transaction, you
+    /// should wrap them in a transaction using this method.
     /// </summary>
     /// <returns>A new transaction.</returns>
     ITransaction BeginTransaction();
 
     /// <summary>
-    /// Begin a new transaction with a specific <see cref="TransactionConfig" /> in this session. A session can have
-    /// at most one transaction running at a time, if you want to run multiple concurrent transactions, you should use multiple
+    /// Begin a new transaction with a specific <see cref="TransactionConfig"/> in this session. A session can have at
+    /// most one transaction running at a time, if you want to run multiple concurrent transactions, you should use multiple
     /// concurrent sessions. All data operations in Neo4j are transactional. However, for convenience we provide a
-    /// <see cref="IQueryRunner.Run(Query)" /> method directly on this session interface as well. When you use that method,
-    /// your query automatically gets wrapped in a transaction. If you want to run multiple queries in the same transaction,
-    /// you should wrap them in a transaction using this method.
+    /// <see cref="IQueryRunner.Run(Query)"/> method directly on this session interface as well. When you use that method, your
+    /// query automatically gets wrapped in a transaction. If you want to run multiple queries in the same transaction, you
+    /// should wrap them in a transaction using this method.
     /// </summary>
     /// <param name="action">
-    /// Given a <see cref="TransactionConfigBuilder" />, defines how to set the configurations for the new
+    /// Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new
     /// transaction. This configuration overrides server side default transaction configurations. See
-    /// <see cref="TransactionConfig" />
+    /// <see cref="TransactionConfig"/>
     /// </param>
     /// <returns>A new transaction.</returns>
     ITransaction BeginTransaction(Action<TransactionConfigBuilder> action);
 
-    /// <summary>Execute given unit of work in a  <see cref="AccessMode.Read" /> transaction.</summary>
+    /// <summary>Execute given unit of work in a  <see cref="AccessMode.Read"/> transaction.</summary>
     /// <typeparam name="T">The return type of the given unit of work.</typeparam>
-    /// <param name="work">The <see cref="Func{TResult}" /> to be applied to a new read transaction.</param>
+    /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new read transaction.</param>
     /// <returns>A result as returned by the given unit of work.</returns>
     [Obsolete("Deprecated, Replaced by ExecuteRead, will be removed in 6.0")]
     T ReadTransaction<T>(Func<ITransaction, T> work);
 
     /// <summary>
-    /// Execute given unit of work in a  <see cref="AccessMode.Read" /> transaction with a specific
-    /// <see cref="TransactionConfig" />.
+    /// Execute given unit of work in a  <see cref="AccessMode.Read"/> transaction with a specific
+    /// <see cref="TransactionConfig"/>.
     /// </summary>
     /// <typeparam name="T">The return type of the given unit of work.</typeparam>
-    /// <param name="work">The <see cref="Func{TResult}" /> to be applied to a new read transaction.</param>
+    /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new read transaction.</param>
     /// <param name="action">
-    /// Given a <see cref="TransactionConfigBuilder" />, defines how to set the configurations for the new
+    /// Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new
     /// transaction. This configuration overrides server side default transaction configurations.
     /// </param>
     /// <returns>A result as returned by the given unit of work.</returns>
     [Obsolete("Deprecated, Replaced by ExecuteRead, will be removed in 6.0")]
     T ReadTransaction<T>(Func<ITransaction, T> work, Action<TransactionConfigBuilder> action);
 
-    /// <summary>Execute given unit of work in a  <see cref="AccessMode.Write" /> transaction.</summary>
+    /// <summary>Execute given unit of work in a  <see cref="AccessMode.Write"/> transaction.</summary>
     /// <typeparam name="T">The return type of the given unit of work.</typeparam>
-    /// <param name="work">The <see cref="Func{TResult}" /> to be applied to a new write transaction.</param>
+    /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new write transaction.</param>
     /// <returns>A result as returned by the given unit of work.</returns>
     [Obsolete("Deprecated, Replaced by ExecuteWrite, will be removed in 6.0")]
     T WriteTransaction<T>(Func<ITransaction, T> work);
 
     /// <summary>
-    /// Execute given unit of work in a  <see cref="AccessMode.Write" /> transaction with a specific
-    /// <see cref="TransactionConfig" />.
+    /// Execute given unit of work in a  <see cref="AccessMode.Write"/> transaction with a specific
+    /// <see cref="TransactionConfig"/>.
     /// </summary>
     /// <typeparam name="T">The return type of the given unit of work.</typeparam>
-    /// <param name="work">The <see cref="Func{TResult}" /> to be applied to a new write transaction.</param>
+    /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new write transaction.</param>
     /// <param name="action">
-    /// Given a <see cref="TransactionConfigBuilder" />, defines how to set the configurations for the new
+    /// Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new
     /// transaction. This configuration overrides server side default transaction configurations. See
-    /// <see cref="TransactionConfig" />
+    /// <see cref="TransactionConfig"/>
     /// </param>
     /// <returns>A result as returned by the given unit of work.</returns>
     [Obsolete("Deprecated, Replaced by ExecuteWrite, will be removed in 6.0")]
     T WriteTransaction<T>(Func<ITransaction, T> work, Action<TransactionConfigBuilder> action);
 
-    /// <summary>Execute given unit of work in a  <see cref="AccessMode.Read" /> managed transaction.</summary>
+    /// <summary>Execute given unit of work in a  <see cref="AccessMode.Read"/> managed transaction.</summary>
     /// <typeparam name="T">The return type of the given unit of work.</typeparam>
-    /// <param name="work">The <see cref="Func{TResult}" /> to be applied to a new read transaction.</param>
+    /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new read transaction.</param>
     /// <returns>A result as returned by the given unit of work.</returns>
     T ExecuteRead<T>(Func<IQueryRunner, T> work);
 
     /// <summary>
-    /// Execute given unit of work in a  <see cref="AccessMode.Read" /> managed transaction with a specific
-    /// <see cref="TransactionConfig" />.
+    /// Execute given unit of work in a  <see cref="AccessMode.Read"/> managed transaction with a specific
+    /// <see cref="TransactionConfig"/>.
     /// </summary>
     /// <typeparam name="T">The return type of the given unit of work.</typeparam>
-    /// <param name="work">The <see cref="Func{TResult}" /> to be applied to a new read transaction.</param>
+    /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new read transaction.</param>
     /// <param name="action">
-    /// Given a <see cref="TransactionConfigBuilder" />, defines how to set the configurations for the new
+    /// Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new
     /// transaction. This configuration overrides server side default transaction configurations.
     /// </param>
     /// <returns>A result as returned by the given unit of work.</returns>
     T ExecuteRead<T>(Func<IQueryRunner, T> work, Action<TransactionConfigBuilder> action);
 
-    /// <summary>Execute given unit of work in a  <see cref="AccessMode.Write" /> managed transaction.</summary>
+    /// <summary>Execute given unit of work in a  <see cref="AccessMode.Write"/> managed transaction.</summary>
     /// <typeparam name="T">The return type of the given unit of work.</typeparam>
-    /// <param name="work">The <see cref="Func{TResult}" /> to be applied to a new write transaction.</param>
+    /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new write transaction.</param>
     /// <returns>A result as returned by the given unit of work.</returns>
     T ExecuteWrite<T>(Func<IQueryRunner, T> work);
 
     /// <summary>
-    /// Execute given unit of work in a  <see cref="AccessMode.Write" /> managed transaction with a specific
-    /// <see cref="TransactionConfig" />.
+    /// Execute given unit of work in a  <see cref="AccessMode.Write"/> managed transaction with a specific
+    /// <see cref="TransactionConfig"/>.
     /// </summary>
     /// <typeparam name="T">The return type of the given unit of work.</typeparam>
-    /// <param name="work">The <see cref="Func{TResult}" /> to be applied to a new write transaction.</param>
+    /// <param name="work">The <see cref="Func{TResult}"/> to be applied to a new write transaction.</param>
     /// <param name="action">
-    /// Given a <see cref="TransactionConfigBuilder" />, defines how to set the configurations for the new
+    /// Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new
     /// transaction. This configuration overrides server side default transaction configurations. See
-    /// <see cref="TransactionConfig" />
+    /// <see cref="TransactionConfig"/>
     /// </param>
     /// <returns>A result as returned by the given unit of work.</returns>
     T ExecuteWrite<T>(Func<IQueryRunner, T> work, Action<TransactionConfigBuilder> action);
 
     /// <summary>
-    /// Run a query with the specific <see cref="TransactionConfig" /> and return a result stream. This method accepts
+    /// Run a query with the specific <see cref="TransactionConfig"/> and return a result stream. This method accepts
     /// a String representing a Cypher query which will be compiled into a query object that can be used to efficiently execute
     /// this query multiple times.
     /// </summary>
     /// <param name="query">A Cypher query.</param>
     /// <param name="action">
-    /// Given a <see cref="TransactionConfigBuilder" />, defines how to set the configurations for the new
+    /// Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new
     /// transaction.
     /// </param>
     /// <returns>A stream of result values and associated metadata.</returns>
     IResult Run(string query, Action<TransactionConfigBuilder> action);
 
     /// <summary>
-    /// Run a query with the specific <see cref="TransactionConfig" /> and return a result stream. This method accepts
+    /// Run a query with the specific <see cref="TransactionConfig"/> and return a result stream. This method accepts
     /// a String representing a Cypher query which will be compiled into a query object that can be used to efficiently execute
     /// this query multiple times. This method optionally accepts a set of parameters which will be injected into the query
     /// object query by Neo4j.
@@ -176,16 +176,16 @@ public interface ISession : IQueryRunner
     /// <param name="query">A Cypher query.</param>
     /// <param name="parameters">Input parameters for the query.</param>
     /// <param name="action">
-    /// Given a <see cref="TransactionConfigBuilder" />, defines how to set the configurations for the new
+    /// Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new
     /// transaction.
     /// </param>
     /// <returns>A stream of result values and associated metadata.</returns>
     IResult Run(string query, IDictionary<string, object> parameters, Action<TransactionConfigBuilder> action);
 
-    /// <summary>Execute a query with the specific <see cref="TransactionConfig" /> and return a result stream.</summary>
-    /// <param name="query">A Cypher query, <see cref="Query" />.</param>
+    /// <summary>Execute a query with the specific <see cref="TransactionConfig"/> and return a result stream.</summary>
+    /// <param name="query">A Cypher query, <see cref="Query"/>.</param>
     /// <param name="action">
-    /// Given a <see cref="TransactionConfigBuilder" />, defines how to set the configurations for the new
+    /// Given a <see cref="TransactionConfigBuilder"/>, defines how to set the configurations for the new
     /// transaction.
     /// </param>
     /// <returns>A stream of result values and associated metadata.</returns>

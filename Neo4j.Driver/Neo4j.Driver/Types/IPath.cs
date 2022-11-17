@@ -28,10 +28,10 @@ namespace Neo4j.Driver;
 /// </summary>
 public interface IPath : IEquatable<IPath>
 {
-    /// <summary>Gets the start <see cref="INode" /> in the path.</summary>
+    /// <summary>Gets the start <see cref="INode"/> in the path.</summary>
     INode Start { get; }
 
-    /// <summary>Gets the end <see cref="INode" /> in the path.</summary>
+    /// <summary>Gets the end <see cref="INode"/> in the path.</summary>
     INode End { get; }
 
     /// <summary>Gets all the nodes in the path.</summary>

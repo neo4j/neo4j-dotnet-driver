@@ -55,7 +55,7 @@ public interface IResultSummary
 
     /// <summary>Gets profiled query plan for the executed query if available, otherwise null.</summary>
     /// <remarks>
-    /// This describes how the database did execute your query. If the query you executed (<see cref="HasProfile" />
+    /// This describes how the database did execute your query. If the query you executed (<see cref="HasProfile"/>
     /// was profiled), the query plan will contain detailed information about what each step of the plan did. That more
     /// in-depth version of the query plan becomes available here.
     /// </remarks>

@@ -20,7 +20,7 @@ using System.Collections.Generic;
 namespace Neo4j.Driver;
 
 /// <summary>
-/// This is the same as a regular <see cref="IPlan" /> - except this plan has been executed, meaning it also
+/// This is the same as a regular <see cref="IPlan"/> - except this plan has been executed, meaning it also
 /// contains detailed information about how much work each step of the plan incurred on the database.
 /// </summary>
 public interface IProfiledPlan : IPlan
@@ -49,7 +49,7 @@ public interface IProfiledPlan : IPlan
     /// <summary>
     /// Gets zero or more child profiled plans. A profiled plan is a tree, where each child is another profiled plan.
     /// The children are where this part of the plan gets its input records - unless this is an
-    /// <see cref="IPlan.OperatorType" /> that introduces new records on its own.
+    /// <see cref="IPlan.OperatorType"/> that introduces new records on its own.
     /// </summary>
     new IList<IProfiledPlan> Children { get; }
 }

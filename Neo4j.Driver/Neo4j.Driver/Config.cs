@@ -22,24 +22,24 @@ using Neo4j.Driver.Internal.Logging;
 
 namespace Neo4j.Driver;
 
-/// <summary>Use this class to configure the <see cref="IDriver" />.</summary>
+/// <summary>Use this class to configure the <see cref="IDriver"/>.</summary>
 /// <remarks>
-/// The defaults for fields in this class are <br />
+/// The defaults for fields in this class are <br/>
 /// <list type="bullet">
-///     <item><see cref="EncryptionLevel" /> : <c><see cref="EncryptionLevel" /> Encrypted</c> </item>
-///     <item><see cref="TrustManager" /> : <c><see cref="TrustManager" />CreateChainTrust()</c> </item>
-///     <item><see cref="ConnectionTimeout" />: <c>30s</c> </item> <item><see cref="SocketKeepAlive" />: <c>true</c></item>
-///     <item><see cref="Ipv6Enabled" />: <c>true</c></item> <br></br>
-///     <item><see cref="MaxConnectionPoolSize" /> : <c>100</c> </item>
-///     <item><see cref="ConnectionAcquisitionTimeout" /> : <c>1mins</c> </item>
-///     <item><see cref="ConnectionIdleTimeout" />: <see cref="InfiniteInterval" /></item>
-///     <item><see cref="MaxConnectionLifetime" />: <c>1h</c></item> <br></br>
-///     <item><see cref="Logger" /> : <c>logs nothing.</c></item>
-///     <item><see cref="MaxTransactionRetryTime" />: <c>30s</c></item> <br></br>
-///     <item><see cref="DefaultReadBufferSize" /> : <c>32K</c> </item>
-///     <item><see cref="MaxReadBufferSize" /> : <c>128K</c> </item>
-///     <item><see cref="DefaultWriteBufferSize" /> : <c>16K</c> </item>
-///     <item><see cref="MaxWriteBufferSize" /> : <c>64K</c> </item>
+///     <item><see cref="EncryptionLevel"/> : <c><see cref="EncryptionLevel"/> Encrypted</c> </item>
+///     <item><see cref="TrustManager"/> : <c><see cref="TrustManager"/>CreateChainTrust()</c> </item>
+///     <item><see cref="ConnectionTimeout"/>: <c>30s</c> </item> <item><see cref="SocketKeepAlive"/>: <c>true</c></item>
+///     <item><see cref="Ipv6Enabled"/>: <c>true</c></item> <br></br>
+///     <item><see cref="MaxConnectionPoolSize"/> : <c>100</c> </item>
+///     <item><see cref="ConnectionAcquisitionTimeout"/> : <c>1mins</c> </item>
+///     <item><see cref="ConnectionIdleTimeout"/>: <see cref="InfiniteInterval"/></item>
+///     <item><see cref="MaxConnectionLifetime"/>: <c>1h</c></item> <br></br>
+///     <item><see cref="Logger"/> : <c>logs nothing.</c></item>
+///     <item><see cref="MaxTransactionRetryTime"/>: <c>30s</c></item> <br></br>
+///     <item><see cref="DefaultReadBufferSize"/> : <c>32K</c> </item>
+///     <item><see cref="MaxReadBufferSize"/> : <c>128K</c> </item>
+///     <item><see cref="DefaultWriteBufferSize"/> : <c>16K</c> </item>
+///     <item><see cref="MaxWriteBufferSize"/> : <c>64K</c> </item>
 /// </list>
 /// </remarks>
 public class Config
@@ -50,17 +50,17 @@ public class Config
     /// <summary>This const defines the value of infinite interval in terms of configuration properties.</summary>
     public static readonly TimeSpan InfiniteInterval = TimeSpan.FromMilliseconds(-1);
 
-    /// <summary>Returns the default configuration for the <see cref="IDriver" />.</summary>
+    /// <summary>Returns the default configuration for the <see cref="IDriver"/>.</summary>
     internal static readonly Config Default = new();
 
     private long _fetchSize = Constants.DefaultFetchSize;
 
     private int _maxIdleConnPoolSize = Infinite;
 
-    /// <summary>Create an instance of <see cref="ConfigBuilder" /> to build a <see cref="Config" />.</summary>
+    /// <summary>Create an instance of <see cref="ConfigBuilder"/> to build a <see cref="Config"/>.</summary>
     internal static ConfigBuilder Builder => new(new Config());
 
-    /// <summary>The use of encryption for all the connections created by the <see cref="IDriver" />.</summary>
+    /// <summary>The use of encryption for all the connections created by the <see cref="IDriver"/>.</summary>
     public EncryptionLevel EncryptionLevel
     {
         get => NullableEncryptionLevel.GetValueOrDefault(EncryptionLevel.None);
@@ -69,10 +69,10 @@ public class Config
 
     internal EncryptionLevel? NullableEncryptionLevel { get; set; }
 
-    /// <summary>Specifies which <see cref="TrustManager" /> implementation should be used while establishing trust via TLS.</summary>
+    /// <summary>Specifies which <see cref="TrustManager"/> implementation should be used while establishing trust via TLS.</summary>
     public TrustManager TrustManager { get; internal set; }
 
-    /// <summary>The <see cref="ILogger" /> instance to be used to receive all logs produced by this driver.</summary>
+    /// <summary>The <see cref="ILogger"/> instance to be used to receive all logs produced by this driver.</summary>
     public ILogger Logger { get; internal set; } = NullLogger.Instance;
 
     /// <summary>The maximum transaction retry timeout.</summary>
@@ -80,15 +80,15 @@ public class Config
 
     /// <summary>
     /// The max idle connection pool size. If the value of this is not internal set, then it will default to be the
-    /// same as <see cref="MaxConnectionPoolSize" />
+    /// same as <see cref="MaxConnectionPoolSize"/>
     /// </summary>
     /// <remarks>
     /// The max idle connection pool size represents the maximum number of idle connections buffered by the driver. An
     /// idle connection is a connection that has already been connected to the database instance and doesn't need to
-    /// re-initialize. Setting this value to <see cref="Infinite" /> results in the idle pool size to be assigned the same
-    /// value as <see cref="MaxConnectionPoolSize" />.
+    /// re-initialize. Setting this value to <see cref="Infinite"/> results in the idle pool size to be assigned the same value
+    /// as <see cref="MaxConnectionPoolSize"/>.
     /// </remarks>
-    /// <remarks>Also see <see cref="MaxConnectionPoolSize" /></remarks>
+    /// <remarks>Also see <see cref="MaxConnectionPoolSize"/></remarks>
     public int MaxIdleConnectionPoolSize
     {
         get => _maxIdleConnPoolSize == Infinite ? MaxConnectionPoolSize : _maxIdleConnPoolSize;
@@ -100,11 +100,11 @@ public class Config
     /// The max connection pool size specifies the allowed maximum number of idle and current in-use connections by
     /// the driver. a.k.a. ConnectionPoolSize = IdleConnectionPoolSize + InUseConnectionSize. When a driver reaches its allowed
     /// maximum connection pool size, no new connections can be established. Instead all threads that require a new connection
-    /// have to wait until a connection is available to reclaim. See <see cref="ConnectionAcquisitionTimeout" />for the maximum
-    /// waiting time to acquire an idle connection from the pool. Setting this value to <see cref="Infinite" /> will result in
+    /// have to wait until a connection is available to reclaim. See <see cref="ConnectionAcquisitionTimeout"/>for the maximum
+    /// waiting time to acquire an idle connection from the pool. Setting this value to <see cref="Infinite"/> will result in
     /// an infinite pool.
     /// </remarks>
-    /// <remarks>Also see <see cref="MaxIdleConnectionPoolSize" /></remarks>
+    /// <remarks>Also see <see cref="MaxIdleConnectionPoolSize"/></remarks>
     public int MaxConnectionPoolSize { get; internal set; } = 100;
 
     /// <summary>
@@ -121,14 +121,14 @@ public class Config
 
     /// <summary>
     /// The idle timeout on pooled connections. A connection that has been idled in connection pool for longer than
-    /// the given timeout is stale and will be closed once it is seen. Use <see cref="InfiniteInterval" /> to disable idle time
+    /// the given timeout is stale and will be closed once it is seen. Use <see cref="InfiniteInterval"/> to disable idle time
     /// checking.
     /// </summary>
     public TimeSpan ConnectionIdleTimeout { get; internal set; } = InfiniteInterval;
 
     /// <summary>
     /// The maximum connection lifetime on pooled connections. A connection that has been created for longer than the
-    /// given time will be closed once it is seen. Use <see cref="InfiniteInterval" /> to disable connection lifetime checking.
+    /// given time will be closed once it is seen. Use <see cref="InfiniteInterval"/> to disable connection lifetime checking.
     /// </summary>
     public TimeSpan MaxConnectionLifetime { get; internal set; } = TimeSpan.FromHours(1);
 
@@ -168,7 +168,7 @@ public class Config
 
     /// <summary>
     /// The default fetch size. Since Bolt v4 (Neo4j 4.0+), the query running result (records) are pulled from server
-    /// in batches. This fetch size defines how many records to pull in each batch. Use <see cref="Infinite" /> to disable
+    /// in batches. This fetch size defines how many records to pull in each batch. Use <see cref="Infinite"/> to disable
     /// batching and always pull all records in one batch instead.
     /// </summary>
     public long FetchSize

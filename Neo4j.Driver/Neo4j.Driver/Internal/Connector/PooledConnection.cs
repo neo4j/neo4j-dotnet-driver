@@ -38,7 +38,7 @@ internal class PooledConnection : DelegatedConnection, IPooledConnection
 
     /// <summary>
     /// Return true if unrecoverable error has been received on this connection, otherwise false. The connection that
-    /// has been marked as has unrecoverable errors will be eventually closed when returning back to the pool. <br /><br />
+    /// has been marked as has unrecoverable errors will be eventually closed when returning back to the pool. <br/><br/>
     /// </summary>
     internal bool HasUnrecoverableError { get; private set; }
 

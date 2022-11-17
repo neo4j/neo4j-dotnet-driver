@@ -29,24 +29,24 @@ public sealed class LocalDate : TemporalValue,
     IComparable<LocalDate>,
     IHasDateComponents
 {
-    /// <summary>Default comparer for <see cref="LocalDate" /> values.</summary>
+    /// <summary>Default comparer for <see cref="LocalDate"/> values.</summary>
     public static readonly IComparer<LocalDate> Comparer = new TemporalValueComparer<LocalDate>();
 
-    /// <summary>Initializes a new instance of <see cref="LocalDate" /> from a date value</summary>
+    /// <summary>Initializes a new instance of <see cref="LocalDate"/> from a date value</summary>
     /// <param name="date"></param>
     public LocalDate(DateTime date)
         : this(date.Year, date.Month, date.Day)
     {
     }
     #if NET6_0_OR_GREATER
-    /// <summary>Initializes a new instance of <see cref="LocalDate" /> from a date value</summary>
+    /// <summary>Initializes a new instance of <see cref="LocalDate"/> from a date value</summary>
     /// <param name="date"></param>
     public LocalDate(DateOnly date)
         : this(date.Year, date.Month, date.Day)
     {
     }
     #endif
-    /// <summary>Initializes a new instance of <see cref="LocalDate" /> from individual date component values</summary>
+    /// <summary>Initializes a new instance of <see cref="LocalDate"/> from individual date component values</summary>
     /// <param name="year"></param>
     /// <param name="month"></param>
     /// <param name="day"></param>
@@ -76,9 +76,9 @@ public sealed class LocalDate : TemporalValue,
     }
 
     /// <summary>
-    /// Compares the value of this instance to a specified object which is expected to be a <see cref="LocalDate" />
+    /// Compares the value of this instance to a specified object which is expected to be a <see cref="LocalDate"/>
     /// value, and returns an integer that indicates whether this instance is earlier than, the same as, or later than the
-    /// specified <see cref="LocalDate" /> value.
+    /// specified <see cref="LocalDate"/> value.
     /// </summary>
     /// <param name="obj">The object to compare to the current instance.</param>
     /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
@@ -103,7 +103,7 @@ public sealed class LocalDate : TemporalValue,
     }
 
     /// <summary>
-    /// Compares the value of this instance to a specified <see cref="LocalDate" /> value and returns an integer that
+    /// Compares the value of this instance to a specified <see cref="LocalDate"/> value and returns an integer that
     /// indicates whether this instance is earlier than, the same as, or later than the specified DateTime value.
     /// </summary>
     /// <param name="other">The object to compare to the current instance.</param>
@@ -137,7 +137,7 @@ public sealed class LocalDate : TemporalValue,
 
     /// <summary>
     /// Returns a value indicating whether the value of this instance is equal to the value of the specified
-    /// <see cref="LocalDate" /> instance.
+    /// <see cref="LocalDate"/> instance.
     /// </summary>
     /// <param name="other">The object to compare to this instance.</param>
     /// <returns>
@@ -168,10 +168,10 @@ public sealed class LocalDate : TemporalValue,
     /// <summary>Gets the day of month component of this instance.</summary>
     public int Day { get; }
 
-    /// <summary>Converts this date value to a <see cref="DateTime" /> instance.</summary>
-    /// <value>Equivalent <see cref="DateTime" /> value</value>
+    /// <summary>Converts this date value to a <see cref="DateTime"/> instance.</summary>
+    /// <value>Equivalent <see cref="DateTime"/> value</value>
     /// <exception cref="ValueOverflowException">If the value cannot be represented with DateTime</exception>
-    /// <returns>A <see cref="DateTime" /> instance.</returns>
+    /// <returns>A <see cref="DateTime"/> instance.</returns>
     public DateTime ToDateTime()
     {
         TemporalHelpers.AssertNoOverflow(this, nameof(DateTime));
@@ -180,7 +180,7 @@ public sealed class LocalDate : TemporalValue,
     }
 
     #if NET6_0_OR_GREATER
-    /// <summary>Converts this date value to a <see cref="DateOnly" /> instance.</summary>
+    /// <summary>Converts this date value to a <see cref="DateOnly"/> instance.</summary>
     /// <exception cref="ValueOverflowException">If the value cannot be represented with DateOnly.</exception>
     /// <returns></returns>
     public DateOnly ToDateOnly()
@@ -193,8 +193,8 @@ public sealed class LocalDate : TemporalValue,
     /// <summary>Returns a value indicating whether this instance is equal to a specified object.</summary>
     /// <param name="obj">The object to compare to this instance.</param>
     /// <returns>
-    /// <code>true</code> if <code>value</code> is an instance of <see cref="LocalDate" /> and equals the value of
-    /// this instance; otherwise, <code>false</code>
+    /// <code>true</code> if <code>value</code> is an instance of <see cref="LocalDate"/> and equals the value of this
+    /// instance; otherwise, <code>false</code>
     /// </returns>
     public override bool Equals(object obj)
     {
@@ -224,7 +224,7 @@ public sealed class LocalDate : TemporalValue,
         }
     }
 
-    /// <summary>Converts the value of the current <see cref="LocalDate" /> object to its equivalent string representation.</summary>
+    /// <summary>Converts the value of the current <see cref="LocalDate"/> object to its equivalent string representation.</summary>
     /// <returns>String representation of this Point.</returns>
     public override string ToString()
     {
@@ -232,8 +232,8 @@ public sealed class LocalDate : TemporalValue,
     }
 
     /// <summary>
-    /// Determines whether one specified <see cref="LocalDate" /> is earlier than another specified
-    /// <see cref="LocalDate" />.
+    /// Determines whether one specified <see cref="LocalDate"/> is earlier than another specified
+    /// <see cref="LocalDate"/>.
     /// </summary>
     /// <param name="left">The first object to compare.</param>
     /// <param name="right">The second object to compare.</param>
@@ -244,8 +244,8 @@ public sealed class LocalDate : TemporalValue,
     }
 
     /// <summary>
-    /// Determines whether one specified <see cref="LocalDate" /> is later than another specified
-    /// <see cref="LocalDate" />.
+    /// Determines whether one specified <see cref="LocalDate"/> is later than another specified
+    /// <see cref="LocalDate"/>.
     /// </summary>
     /// <param name="left">The first object to compare.</param>
     /// <param name="right">The second object to compare.</param>
@@ -256,8 +256,8 @@ public sealed class LocalDate : TemporalValue,
     }
 
     /// <summary>
-    /// Determines whether one specified <see cref="LocalDate" /> represents a duration that is the same as or later
-    /// than the other specified <see cref="LocalDate" />
+    /// Determines whether one specified <see cref="LocalDate"/> represents a duration that is the same as or later
+    /// than the other specified <see cref="LocalDate"/>
     /// </summary>
     /// <param name="left">The first object to compare.</param>
     /// <param name="right">The second object to compare.</param>
@@ -268,8 +268,8 @@ public sealed class LocalDate : TemporalValue,
     }
 
     /// <summary>
-    /// Determines whether one specified <see cref="LocalDate" /> represents a duration that is the same as or earlier
-    /// than the other specified <see cref="LocalDate" />
+    /// Determines whether one specified <see cref="LocalDate"/> represents a duration that is the same as or earlier
+    /// than the other specified <see cref="LocalDate"/>
     /// </summary>
     /// <param name="left">The first object to compare.</param>
     /// <param name="right">The second object to compare.</param>
@@ -279,7 +279,7 @@ public sealed class LocalDate : TemporalValue,
         return left.CompareTo(right) >= 0;
     }
 
-    /// <inheritdoc cref="TemporalValue.ConvertToDateTime" />
+    /// <inheritdoc cref="TemporalValue.ConvertToDateTime"/>
     protected override DateTime ConvertToDateTime()
     {
         return ToDateTime();

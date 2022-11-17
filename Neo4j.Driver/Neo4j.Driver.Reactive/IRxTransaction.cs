@@ -20,7 +20,7 @@ using System;
 namespace Neo4j.Driver
 {
     /// <summary>
-    /// A reactive transaction, which provides the same functionality as <see cref="IAsyncTransaction" /> but with
+    /// A reactive transaction, which provides the same functionality as <see cref="IAsyncTransaction"/> but with
     /// reactive API.
     /// </summary>
     public interface IRxTransaction : IRxRunnable

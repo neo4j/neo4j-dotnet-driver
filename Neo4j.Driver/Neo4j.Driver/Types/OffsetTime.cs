@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License"):
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -29,11 +29,11 @@ public sealed class OffsetTime : TemporalValue,
     IComparable<OffsetTime>,
     IHasTimeComponents
 {
-    /// <summary>Default comparer for <see cref="OffsetTime" /> values.</summary>
+    /// <summary>Default comparer for <see cref="OffsetTime"/> values.</summary>
     public static readonly IComparer<OffsetTime> Comparer = new TemporalValueComparer<OffsetTime>();
 
     /// <summary>
-    /// Initializes a new instance of <see cref="OffsetTime" /> from time components of given <see cref="DateTime" />
+    /// Initializes a new instance of <see cref="OffsetTime"/> from time components of given <see cref="DateTime"/>
     /// value
     /// </summary>
     /// <param name="time"></param>
@@ -43,7 +43,7 @@ public sealed class OffsetTime : TemporalValue,
     {
     }
 
-    /// <summary>Initializes a new instance of <see cref="OffsetTime" /> from given <see cref="TimeSpan" /> value</summary>
+    /// <summary>Initializes a new instance of <see cref="OffsetTime"/> from given <see cref="TimeSpan"/> value</summary>
     /// <param name="time"></param>
     /// <param name="offset"></param>
     public OffsetTime(TimeSpan time, TimeSpan offset)
@@ -51,7 +51,7 @@ public sealed class OffsetTime : TemporalValue,
     {
     }
 
-    /// <summary>Initializes a new instance of <see cref="OffsetTime" /> from given <see cref="TimeSpan" /> value</summary>
+    /// <summary>Initializes a new instance of <see cref="OffsetTime"/> from given <see cref="TimeSpan"/> value</summary>
     /// <param name="time"></param>
     /// <param name="offsetSeconds"></param>
     private OffsetTime(TimeSpan time, int offsetSeconds)
@@ -64,7 +64,7 @@ public sealed class OffsetTime : TemporalValue,
     {
     }
 
-    /// <summary>Initializes a new instance of <see cref="OffsetTime" /> from individual time components</summary>
+    /// <summary>Initializes a new instance of <see cref="OffsetTime"/> from individual time components</summary>
     /// <param name="hour"></param>
     /// <param name="minute"></param>
     /// <param name="second"></param>
@@ -74,7 +74,7 @@ public sealed class OffsetTime : TemporalValue,
     {
     }
 
-    /// <summary>Initializes a new instance of <see cref="OffsetTime" /> from individual time components</summary>
+    /// <summary>Initializes a new instance of <see cref="OffsetTime"/> from individual time components</summary>
     /// <param name="hour"></param>
     /// <param name="minute"></param>
     /// <param name="second"></param>
@@ -128,9 +128,9 @@ public sealed class OffsetTime : TemporalValue,
     public int OffsetSeconds { get; }
 
     /// <summary>
-    /// Compares the value of this instance to a specified object which is expected to be a <see cref="OffsetTime" />
+    /// Compares the value of this instance to a specified object which is expected to be a <see cref="OffsetTime"/>
     /// value, and returns an integer that indicates whether this instance is earlier than, the same as, or later than the
-    /// specified <see cref="OffsetTime" /> value.
+    /// specified <see cref="OffsetTime"/> value.
     /// </summary>
     /// <param name="obj">The object to compare to the current instance.</param>
     /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
@@ -155,7 +155,7 @@ public sealed class OffsetTime : TemporalValue,
     }
 
     /// <summary>
-    /// Compares the value of this instance to a specified <see cref="OffsetTime" /> value and returns an integer that
+    /// Compares the value of this instance to a specified <see cref="OffsetTime"/> value and returns an integer that
     /// indicates whether this instance is earlier than, the same as, or later than the specified DateTime value.
     /// </summary>
     /// <param name="other">The object to compare to the current instance.</param>
@@ -190,7 +190,7 @@ public sealed class OffsetTime : TemporalValue,
 
     /// <summary>
     /// Returns a value indicating whether the value of this instance is equal to the value of the specified
-    /// <see cref="OffsetTime" /> instance.
+    /// <see cref="OffsetTime"/> instance.
     /// </summary>
     /// <param name="other">The object to compare to this instance.</param>
     /// <returns>
@@ -231,7 +231,7 @@ public sealed class OffsetTime : TemporalValue,
     /// <summary>Returns a value indicating whether this instance is equal to a specified object.</summary>
     /// <param name="obj">The object to compare to this instance.</param>
     /// <returns>
-    /// <code>true</code> if <code>value</code> is an instance of <see cref="OffsetTime" /> and equals the value of
+    /// <code>true</code> if <code>value</code> is an instance of <see cref="OffsetTime"/> and equals the value of
     /// this instance; otherwise, <code>false</code>
     /// </returns>
     public override bool Equals(object obj)
@@ -264,7 +264,7 @@ public sealed class OffsetTime : TemporalValue,
         }
     }
 
-    /// <summary>Converts the value of the current <see cref="OffsetTime" /> object to its equivalent string representation.</summary>
+    /// <summary>Converts the value of the current <see cref="OffsetTime"/> object to its equivalent string representation.</summary>
     /// <returns>String representation of this Point.</returns>
     public override string ToString()
     {
@@ -273,8 +273,8 @@ public sealed class OffsetTime : TemporalValue,
     }
 
     /// <summary>
-    /// Determines whether one specified <see cref="OffsetTime" /> is earlier than another specified
-    /// <see cref="OffsetTime" />.
+    /// Determines whether one specified <see cref="OffsetTime"/> is earlier than another specified
+    /// <see cref="OffsetTime"/>.
     /// </summary>
     /// <param name="left">The first object to compare.</param>
     /// <param name="right">The second object to compare.</param>
@@ -285,8 +285,8 @@ public sealed class OffsetTime : TemporalValue,
     }
 
     /// <summary>
-    /// Determines whether one specified <see cref="OffsetTime" /> is later than another specified
-    /// <see cref="OffsetTime" />.
+    /// Determines whether one specified <see cref="OffsetTime"/> is later than another specified
+    /// <see cref="OffsetTime"/>.
     /// </summary>
     /// <param name="left">The first object to compare.</param>
     /// <param name="right">The second object to compare.</param>
@@ -297,8 +297,8 @@ public sealed class OffsetTime : TemporalValue,
     }
 
     /// <summary>
-    /// Determines whether one specified <see cref="OffsetTime" /> represents a duration that is the same as or later
-    /// than the other specified <see cref="OffsetTime" />
+    /// Determines whether one specified <see cref="OffsetTime"/> represents a duration that is the same as or later
+    /// than the other specified <see cref="OffsetTime"/>
     /// </summary>
     /// <param name="left">The first object to compare.</param>
     /// <param name="right">The second object to compare.</param>
@@ -309,8 +309,8 @@ public sealed class OffsetTime : TemporalValue,
     }
 
     /// <summary>
-    /// Determines whether one specified <see cref="OffsetTime" /> represents a duration that is the same as or
-    /// earlier than the other specified <see cref="OffsetTime" />
+    /// Determines whether one specified <see cref="OffsetTime"/> represents a duration that is the same as or earlier
+    /// than the other specified <see cref="OffsetTime"/>
     /// </summary>
     /// <param name="left">The first object to compare.</param>
     /// <param name="right">The second object to compare.</param>

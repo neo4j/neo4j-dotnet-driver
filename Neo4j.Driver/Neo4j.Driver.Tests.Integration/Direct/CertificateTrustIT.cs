@@ -179,7 +179,7 @@ public class CertificateTrustIT : IClassFixture<CertificateTrustIT.CertificateTr
             Server.AuthToken,
             config,
             new CustomHostResolver(
-                Server.BoltUri, 
+                Server.BoltUri,
                 new SystemNetCoreHostResolver(new SystemHostResolver())));
 
         var bufferSettings = new BufferSettings(config);

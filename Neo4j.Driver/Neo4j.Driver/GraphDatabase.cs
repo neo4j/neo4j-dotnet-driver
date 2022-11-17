@@ -24,7 +24,7 @@ using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver;
 
-/// <summary>Creates <see cref="IDriver" /> instances, optionally letting you configure them.</summary>
+/// <summary>Creates <see cref="IDriver"/> instances, optionally letting you configure them.</summary>
 public static class GraphDatabase
 {
     internal const int DefaultBoltPort = 7687;
@@ -37,9 +37,9 @@ public static class GraphDatabase
     /// used when creating a driver connecting to the Neo4j instance directly. The protocol <c>neo4j</c> should be used when
     /// creating a driver with built-in routing.
     /// </param>
-    /// <returns>A new <see cref="IDriver" /> instance specified by the <paramref name="uri" />.</returns>
-    /// <remarks>Ensure you provide the protocol for the <paramref name="uri" />.</remarks>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri" /> is <c>null</c>.</exception>
+    /// <returns>A new <see cref="IDriver"/> instance specified by the <paramref name="uri"/>.</returns>
+    /// <remarks>Ensure you provide the protocol for the <paramref name="uri"/>.</remarks>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri"/> is <c>null</c>.</exception>
     public static IDriver Driver(string uri)
     {
         return Driver(new Uri(uri));
@@ -53,9 +53,9 @@ public static class GraphDatabase
     /// used when creating a driver connecting to the Neo4j instance directly. The protocol <c>neo4j</c> should be used when
     /// creating a driver with built-in routing.
     /// </param>
-    /// <returns>A new <see cref="IDriver" /> instance specified by the <paramref name="uri" />.</returns>
-    /// <remarks>Ensure you provide the protocol for the <paramref name="uri" />.</remarks>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri" /> is <c>null</c>.</exception>
+    /// <returns>A new <see cref="IDriver"/> instance specified by the <paramref name="uri"/>.</returns>
+    /// <remarks>Ensure you provide the protocol for the <paramref name="uri"/>.</remarks>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri"/> is <c>null</c>.</exception>
     public static IDriver Driver(Uri uri)
     {
         return Driver(uri, (Action<ConfigBuilder>)null);
@@ -70,13 +70,13 @@ public static class GraphDatabase
     /// creating a driver with built-in routing.
     /// </param>
     /// <param name="action">
-    /// Specifies how to build a driver configuration <see cref="Config" />, using
-    /// <see cref="ConfigBuilder" />. If set to <c>null</c>, then no modification will be carried out and the default driver
-    /// configurations <see cref="Config" /> will be used when creating the driver.
+    /// Specifies how to build a driver configuration <see cref="Config"/>, using
+    /// <see cref="ConfigBuilder"/>. If set to <c>null</c>, then no modification will be carried out and the default driver
+    /// configurations <see cref="Config"/> will be used when creating the driver.
     /// </param>
-    /// <returns>A new <see cref="IDriver" /> instance specified by the <paramref name="uri" />.</returns>
-    /// <remarks>Ensure you provide the protocol for the <paramref name="uri" />.</remarks>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri" /> is <c>null</c>.</exception>
+    /// <returns>A new <see cref="IDriver"/> instance specified by the <paramref name="uri"/>.</returns>
+    /// <remarks>Ensure you provide the protocol for the <paramref name="uri"/>.</remarks>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri"/> is <c>null</c>.</exception>
     public static IDriver Driver(string uri, Action<ConfigBuilder> action)
     {
         return Driver(new Uri(uri), action);
@@ -91,13 +91,13 @@ public static class GraphDatabase
     /// creating a driver with built-in routing.
     /// </param>
     /// <param name="action">
-    /// Specifies how to build a driver configuration <see cref="Config" />, using
-    /// <see cref="ConfigBuilder" />. If set to <c>null</c>, then no modification will be carried out and the default driver
-    /// configurations <see cref="Config" /> will be used when creating the driver.
+    /// Specifies how to build a driver configuration <see cref="Config"/>, using
+    /// <see cref="ConfigBuilder"/>. If set to <c>null</c>, then no modification will be carried out and the default driver
+    /// configurations <see cref="Config"/> will be used when creating the driver.
     /// </param>
-    /// <returns>A new <see cref="IDriver" /> instance specified by the <paramref name="uri" />.</returns>
-    /// <remarks>Ensure you provide the protocol for the <paramref name="uri" />.</remarks>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri" /> is <c>null</c>.</exception>
+    /// <returns>A new <see cref="IDriver"/> instance specified by the <paramref name="uri"/>.</returns>
+    /// <remarks>Ensure you provide the protocol for the <paramref name="uri"/>.</remarks>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri"/> is <c>null</c>.</exception>
     public static IDriver Driver(Uri uri, Action<ConfigBuilder> action)
     {
         return Driver(uri, AuthTokens.None, action);
@@ -111,10 +111,10 @@ public static class GraphDatabase
     /// used when creating a driver connecting to the Neo4j instance directly. The protocol <c>neo4j</c> should be used when
     /// creating a driver with built-in routing.
     /// </param>
-    /// <param name="authToken">Authentication to use, <see cref="AuthTokens" />.</param>
-    /// <returns>A new <see cref="IDriver" /> instance specified by the <paramref name="uri" />.</returns>
-    /// <remarks>Ensure you provide the protocol for the <paramref name="uri" />.</remarks>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri" /> is <c>null</c>.</exception>
+    /// <param name="authToken">Authentication to use, <see cref="AuthTokens"/>.</param>
+    /// <returns>A new <see cref="IDriver"/> instance specified by the <paramref name="uri"/>.</returns>
+    /// <remarks>Ensure you provide the protocol for the <paramref name="uri"/>.</remarks>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri"/> is <c>null</c>.</exception>
     public static IDriver Driver(string uri, IAuthToken authToken)
     {
         return Driver(new Uri(uri), authToken);
@@ -128,10 +128,10 @@ public static class GraphDatabase
     /// used when creating a driver connecting to the Neo4j instance directly. The protocol <c>neo4j</c> should be used when
     /// creating a driver with built-in routing.
     /// </param>
-    /// <param name="authToken">Authentication to use, <see cref="AuthTokens" />.</param>
-    /// <returns>A new <see cref="IDriver" /> instance specified by the <paramref name="uri" />.</returns>
-    /// <remarks>Ensure you provide the protocol for the <paramref name="uri" />.</remarks>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri" /> is <c>null</c>.</exception>
+    /// <param name="authToken">Authentication to use, <see cref="AuthTokens"/>.</param>
+    /// <returns>A new <see cref="IDriver"/> instance specified by the <paramref name="uri"/>.</returns>
+    /// <remarks>Ensure you provide the protocol for the <paramref name="uri"/>.</remarks>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="uri"/> is <c>null</c>.</exception>
     public static IDriver Driver(Uri uri, IAuthToken authToken)
     {
         return Driver(uri, authToken, null);
@@ -145,13 +145,13 @@ public static class GraphDatabase
     /// used when creating a driver connecting to the Neo4j instance directly. The protocol <c>neo4j</c> should be used when
     /// creating a driver with built-in routing.
     /// </param>
-    /// <param name="authToken">Authentication to use, <see cref="AuthTokens" />.</param>
+    /// <param name="authToken">Authentication to use, <see cref="AuthTokens"/>.</param>
     /// <param name="action">
-    /// Specifies how to build a driver configuration <see cref="Config" />, using
-    /// <see cref="ConfigBuilder" />. If set to <c>null</c>, then no modification will be carried out and the default driver
-    /// configurations <see cref="Config" /> will be used when creating the driver.
+    /// Specifies how to build a driver configuration <see cref="Config"/>, using
+    /// <see cref="ConfigBuilder"/>. If set to <c>null</c>, then no modification will be carried out and the default driver
+    /// configurations <see cref="Config"/> will be used when creating the driver.
     /// </param>
-    /// <returns>A new driver to the database instance specified by the <paramref name="uri" />.</returns>
+    /// <returns>A new driver to the database instance specified by the <paramref name="uri"/>.</returns>
     public static IDriver Driver(string uri, IAuthToken authToken, Action<ConfigBuilder> action)
     {
         return Driver(new Uri(uri), authToken, action);
@@ -163,13 +163,13 @@ public static class GraphDatabase
     /// <c>neo4j://&lt;server location&gt;:&lt;port&gt;</c>. If <c>port</c> is not supplied the default of <c>7687</c> will be
     /// used.
     /// </param>
-    /// <param name="authToken">Authentication to use, <see cref="AuthTokens" />.</param>
+    /// <param name="authToken">Authentication to use, <see cref="AuthTokens"/>.</param>
     /// <param name="action">
-    /// Defines how to build a driver configuration <see cref="Config" /> using
-    /// <see cref="ConfigBuilder" />. If set to <c>null</c>, then no modification will be carried out on the build. As a
-    /// result, a default config with default settings will be used <see cref="Config" /> when creating the new driver.
+    /// Defines how to build a driver configuration <see cref="Config"/> using <see cref="ConfigBuilder"/>
+    /// . If set to <c>null</c>, then no modification will be carried out on the build. As a result, a default config with
+    /// default settings will be used <see cref="Config"/> when creating the new driver.
     /// </param>
-    /// <returns>A new driver to the database instance specified by the <paramref name="uri" />.</returns>
+    /// <returns>A new driver to the database instance specified by the <paramref name="uri"/>.</returns>
     public static IDriver Driver(Uri uri, IAuthToken authToken, Action<ConfigBuilder> action)
     {
         uri = uri ?? throw new ArgumentNullException(nameof(uri));

@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License"):
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -53,7 +53,7 @@ public abstract class TrustManager
     /// verification.
     /// </summary>
     /// <param name="verifyHostname">Whether to perform hostname verification</param>
-    /// <returns>An instance of <see cref="TrustManager" /></returns>
+    /// <returns>An instance of <see cref="TrustManager"/></returns>
     public static TrustManager CreateInsecure(bool verifyHostname = false)
     {
         return new InsecureTrustManager(verifyHostname);
@@ -67,7 +67,7 @@ public abstract class TrustManager
     /// <param name="revocationMode">The revocation check mode</param>
     /// <param name="revocationFlag">How should the revocation check should behave</param>
     /// <param name="useMachineContext">Whether to use machine context instead of user's for certificate stores</param>
-    /// <returns>An instance of <see cref="TrustManager" /></returns>
+    /// <returns>An instance of <see cref="TrustManager"/></returns>
     public static TrustManager CreateChainTrust(
         bool verifyHostname = true,
         X509RevocationMode revocationMode = X509RevocationMode.NoCheck,
@@ -83,7 +83,7 @@ public abstract class TrustManager
     /// </summary>
     /// <param name="verifyHostname">Whether to perform hostname verification</param>
     /// <param name="useMachineContext">Whether to use machine context instead of user's for certificate stores</param>
-    /// <returns>An instance of <see cref="TrustManager" /></returns>
+    /// <returns>An instance of <see cref="TrustManager"/></returns>
     public static TrustManager CreatePeerTrust(bool verifyHostname = true, bool useMachineContext = false)
     {
         return new PeerTrustManager(useMachineContext, verifyHostname);
@@ -95,7 +95,7 @@ public abstract class TrustManager
     /// </summary>
     /// <param name="trusted">List of trusted certificates</param>
     /// <param name="verifyHostname">Whether to perform hostname verification</param>
-    /// <returns>An instance of <see cref="TrustManager" /></returns>
+    /// <returns>An instance of <see cref="TrustManager"/></returns>
     public static TrustManager CreateCertTrust(IEnumerable<X509Certificate2> trusted, bool verifyHostname = true)
     {
         return new CertificateTrustManager(verifyHostname, trusted);

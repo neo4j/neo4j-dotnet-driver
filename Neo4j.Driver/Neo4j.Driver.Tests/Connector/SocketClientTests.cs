@@ -269,7 +269,7 @@ public class SocketClientTests
             client.SetOpened();
 
             var psr = new PackStreamReader(new MemoryStream(), new MessageFormat(Version), new ByteBuffers());
-            
+
             readerMock.Setup(x => x.ReadAsync(pipeline.Object, psr)).ThrowsAsync(new DatabaseException());
 
             // When

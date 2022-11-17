@@ -25,7 +25,7 @@ namespace Neo4j.Driver;
 /// <summary>
 /// Configuration object containing settings for explicit and auto-commit transactions. Leave the fields unmodified to use
 /// server side transaction configurations.
-/// <para />
+/// <para/>
 /// For example, the following code starts a transaction using server default transaction configurations.
 /// <code>
 /// session.BeginTransaction(b=>{});
@@ -75,9 +75,9 @@ public sealed class TransactionConfig
     /// <summary>
     /// The transaction metadata. Specified metadata will be attached to the executing transaction and visible in the
     /// output of <code>dbms.listQueries</code> and <code>dbms.listTransactions</code> procedures. It will also get logged to
-    /// the <code>query.log</code>. Transactions starting with this <see cref="TransactionConfig" /> This functionality makes
-    /// it easier to tag transactions and is equivalent to <code>dbms.setTXMetaData</code> procedure. Leave this field
-    /// unmodified to use default timeout configured on database.
+    /// the <code>query.log</code>. Transactions starting with this <see cref="TransactionConfig"/> This functionality makes it
+    /// easier to tag transactions and is equivalent to <code>dbms.setTXMetaData</code> procedure. Leave this field unmodified
+    /// to use default timeout configured on database.
     /// </summary>
     public IDictionary<string, object> Metadata
     {
@@ -94,7 +94,7 @@ public sealed class TransactionConfig
     }
 }
 
-/// <summary>The builder to create a <see cref="TransactionConfig" /></summary>
+/// <summary>The builder to create a <see cref="TransactionConfig"/></summary>
 public sealed class TransactionConfigBuilder
 {
     private readonly TransactionConfig _config;
@@ -115,7 +115,7 @@ public sealed class TransactionConfigBuilder
     /// zero
     /// </exception>
     /// <param name="timeout">the new timeout</param>
-    /// <returns>this <see cref="TransactionConfigBuilder" /> instance</returns>
+    /// <returns>this <see cref="TransactionConfigBuilder"/> instance</returns>
     public TransactionConfigBuilder WithTimeout(TimeSpan? timeout)
     {
         _config.Timeout = timeout;
@@ -125,12 +125,12 @@ public sealed class TransactionConfigBuilder
     /// <summary>
     /// The transaction metadata. Specified metadata will be attached to the executing transaction and visible in the
     /// output of <code>dbms.listQueries</code> and <code>dbms.listTransactions</code> procedures. It will also get logged to
-    /// the <code>query.log</code>. Transactions starting with this <see cref="TransactionConfig" /> This functionality makes
-    /// it easier to tag transactions and is equivalent to <code>dbms.setTXMetaData</code> procedure. Leave this field
-    /// unmodified to use default timeout configured on database.
+    /// the <code>query.log</code>. Transactions starting with this <see cref="TransactionConfig"/> This functionality makes it
+    /// easier to tag transactions and is equivalent to <code>dbms.setTXMetaData</code> procedure. Leave this field unmodified
+    /// to use default timeout configured on database.
     /// </summary>
     /// <param name="metadata">the metadata to set on transaction</param>
-    /// <returns>this <see cref="TransactionConfigBuilder" /> instance</returns>
+    /// <returns>this <see cref="TransactionConfigBuilder"/> instance</returns>
     public TransactionConfigBuilder WithMetadata(IDictionary<string, object> metadata)
     {
         _config.Metadata = metadata;

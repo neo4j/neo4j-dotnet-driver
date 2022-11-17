@@ -26,18 +26,18 @@ namespace Neo4j.Driver;
 /// </summary>
 public interface IEntity
 {
-    /// <summary>Gets the value that has the specified key in <see cref="Properties" />.</summary>
+    /// <summary>Gets the value that has the specified key in <see cref="Properties"/>.</summary>
     /// <param name="key">The key.</param>
-    /// <returns>The value specified by the given key in <see cref="Properties" />.</returns>
+    /// <returns>The value specified by the given key in <see cref="Properties"/>.</returns>
     object this[string key] { get; }
 
     /// <summary>Gets the properties of the entity.</summary>
     IReadOnlyDictionary<string, object> Properties { get; }
 
-    /// <summary>Get the identity as a <see cref="long" /> number.</summary>
+    /// <summary>Get the identity as a <see cref="long"/> number.</summary>
     [Obsolete("Replaced with ElementId, will be removed in 6.0")]
     long Id { get; }
 
-    /// <summary>Get the identity as a <see cref="string" />.</summary>
+    /// <summary>Get the identity as a <see cref="string"/>.</summary>
     string ElementId { get; }
 }

@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver;
 
-/// <summary>Extension methods for <see cref="IResultCursor" /></summary>
+/// <summary>Extension methods for <see cref="IResultCursor"/></summary>
 public static class ResultCursorExtensions
 {
     /// <summary>Return the only record in the result stream.</summary>

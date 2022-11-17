@@ -21,13 +21,13 @@ using System.Threading.Tasks;
 namespace Neo4j.Driver;
 
 /// <summary>
-/// The <see cref="IDriver" /> instance maintains the connections with a Neo4j database, providing an access point
-/// via the <see cref="IAsyncSession" /> method.
+/// The <see cref="IDriver"/> instance maintains the connections with a Neo4j database, providing an access point
+/// via the <see cref="IAsyncSession"/> method.
 /// </summary>
 /// <remarks>
 /// The Driver maintains a connection pool buffering connections created by the user. The size of the buffer can
-/// be configured by the <see cref="Neo4j.Driver.Config.MaxConnectionPoolSize" /> property on the
-/// <see cref="Neo4j.Driver.Config" /> when creating the Driver.
+/// be configured by the <see cref="Neo4j.Driver.Config.MaxConnectionPoolSize"/> property on the
+/// <see cref="Neo4j.Driver.Config"/> when creating the Driver.
 /// </remarks>
 public interface IDriver : IDisposable, IAsyncDisposable
 {
@@ -37,16 +37,16 @@ public interface IDriver : IDisposable, IAsyncDisposable
     /// <summary>Gets Encrypted status</summary>
     bool Encrypted { get; }
 
-    /// <summary>Obtain a session with the default <see cref="SessionConfig" />.</summary>
-    /// <returns>An <see cref="IAsyncSession" /> that could be used to execute queries.</returns>
+    /// <summary>Obtain a session with the default <see cref="SessionConfig"/>.</summary>
+    /// <returns>An <see cref="IAsyncSession"/> that could be used to execute queries.</returns>
     IAsyncSession AsyncSession();
 
-    /// <summary>Obtain a session with the customized <see cref="SessionConfig" />.</summary>
+    /// <summary>Obtain a session with the customized <see cref="SessionConfig"/>.</summary>
     /// <param name="action">
-    /// An action, provided with a <see cref="SessionConfigBuilder" /> instance, that should populate the
-    /// provided instance with desired <see cref="SessionConfig" />.
+    /// An action, provided with a <see cref="SessionConfigBuilder"/> instance, that should populate the
+    /// provided instance with desired <see cref="SessionConfig"/>.
     /// </param>
-    /// <returns>An <see cref="IAsyncSession" /> that could be used to execute queries.</returns>
+    /// <returns>An <see cref="IAsyncSession"/> that could be used to execute queries.</returns>
     IAsyncSession AsyncSession(Action<SessionConfigBuilder> action);
 
     /// <summary>
@@ -61,7 +61,7 @@ public interface IDriver : IDisposable, IAsyncDisposable
     /// Asynchronously verify if the driver can connect to the remote server returning server info. If the driver
     /// fails to connect to the remote server, an error will be thrown, which can be used to further understand the cause of
     /// the connectivity issue. Note: Even if this method failed with an error, the driver still need to be closed via
-    /// <see cref="CloseAsync" /> to free up all resources.
+    /// <see cref="CloseAsync"/> to free up all resources.
     /// </summary>
     /// <returns>A task that represents the asynchronous operation. The task result contains the connected server's info.</returns>
     Task<IServerInfo> GetServerInfoAsync();
@@ -70,7 +70,7 @@ public interface IDriver : IDisposable, IAsyncDisposable
     /// Asynchronously verify if the driver can connect to the remote server by establishing a network connection with
     /// the remote. If the driver fails to connect to the remote server, an error will be thrown, which can be used to further
     /// understand the cause of the connectivity issue. Note: Even if this method failed with an error, the driver still need
-    /// to be closed via <see cref="CloseAsync" /> to free up all resources.
+    /// to be closed via <see cref="CloseAsync"/> to free up all resources.
     /// </summary>
     /// <returns>A task that represents the asynchronous verification operation.</returns>
     Task VerifyConnectivityAsync();

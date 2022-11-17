@@ -29,7 +29,7 @@ public sealed class ZonedDateTime : TemporalValue,
     IComparable<ZonedDateTime>,
     IHasDateTimeComponents
 {
-    /// <summary>Default comparer for <see cref="ZonedDateTime" /> values.</summary>
+    /// <summary>Default comparer for <see cref="ZonedDateTime"/> values.</summary>
     public static readonly IComparer<ZonedDateTime> Comparer = new TemporalValueComparer<ZonedDateTime>();
 
     private readonly object _lazyLock;
@@ -57,14 +57,14 @@ public sealed class ZonedDateTime : TemporalValue,
         Zone = zone;
     }
 
-    /// <summary>Initializes a new instance of <see cref="ZonedDateTime" /> from given <see cref="DateTimeOffset" /> value.</summary>
+    /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from given <see cref="DateTimeOffset"/> value.</summary>
     /// <param name="dateTimeOffset"></param>
     public ZonedDateTime(DateTimeOffset dateTimeOffset)
         : this(dateTimeOffset.DateTime, dateTimeOffset.Offset)
     {
     }
 
-    /// <summary>Initializes a new instance of <see cref="ZonedDateTime" /> from given <see cref="DateTime" /> value.</summary>
+    /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from given <see cref="DateTime"/> value.</summary>
     /// <param name="dateTime"></param>
     /// <param name="offset"></param>
     public ZonedDateTime(DateTime dateTime, TimeSpan offset)
@@ -72,7 +72,7 @@ public sealed class ZonedDateTime : TemporalValue,
     {
     }
 
-    /// <summary>Initializes a new instance of <see cref="ZonedDateTime" /> from given <see cref="DateTime" /> value.</summary>
+    /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from given <see cref="DateTime"/> value.</summary>
     /// <param name="dateTime"></param>
     /// <param name="offsetSeconds"></param>
     public ZonedDateTime(DateTime dateTime, int offsetSeconds)
@@ -88,7 +88,7 @@ public sealed class ZonedDateTime : TemporalValue,
     {
     }
 
-    /// <summary>Initializes a new instance of <see cref="ZonedDateTime" /> from given <see cref="DateTime" /> value.</summary>
+    /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from given <see cref="DateTime"/> value.</summary>
     /// <param name="dateTime"></param>
     /// <param name="zoneId"></param>
     public ZonedDateTime(DateTime dateTime, string zoneId)
@@ -104,7 +104,7 @@ public sealed class ZonedDateTime : TemporalValue,
     {
     }
 
-    /// <summary>Initializes a new instance of <see cref="ZonedDateTime" /> from individual date time component values</summary>
+    /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from individual date time component values</summary>
     /// <param name="year"></param>
     /// <param name="month"></param>
     /// <param name="day"></param>
@@ -117,7 +117,7 @@ public sealed class ZonedDateTime : TemporalValue,
     {
     }
 
-    /// <summary>Initializes a new instance of <see cref="ZonedDateTime" /> from individual date time component values</summary>
+    /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from individual date time component values</summary>
     /// <param name="year"></param>
     /// <param name="month"></param>
     /// <param name="day"></param>
@@ -205,7 +205,7 @@ public sealed class ZonedDateTime : TemporalValue,
     /// <summary>The time zone that this instance represents.</summary>
     public Zone Zone { get; }
 
-    /// <summary>Gets a <see cref="DateTime" /> value that represents the date and time of this instance.</summary>
+    /// <summary>Gets a <see cref="DateTime"/> value that represents the date and time of this instance.</summary>
     /// <exception cref="ValueOverflowException">If the value cannot be represented with DateTime</exception>
     /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
     private DateTime DateTime
@@ -227,13 +227,13 @@ public sealed class ZonedDateTime : TemporalValue,
     public int OffsetSeconds => _offset ??
         Zone.OffsetSecondsAt(new DateTime(Year > 9999 ? 9999 : Year, Month, Day, Hour, Minute, Second));
 
-    /// <summary>Gets a <see cref="TimeSpan" /> value that represents the offset of this instance.</summary>
+    /// <summary>Gets a <see cref="TimeSpan"/> value that represents the offset of this instance.</summary>
     private TimeSpan Offset => TimeSpan.FromSeconds(OffsetSeconds);
 
     /// <summary>
     /// Compares the value of this instance to a specified object which is expected to be a
-    /// <see cref="ZonedDateTime" /> value, and returns an integer that indicates whether this instance is earlier than, the
-    /// same as, or later than the specified <see cref="ZonedDateTime" /> value.
+    /// <see cref="ZonedDateTime"/> value, and returns an integer that indicates whether this instance is earlier than, the
+    /// same as, or later than the specified <see cref="ZonedDateTime"/> value.
     /// </summary>
     /// <param name="obj">The object to compare to the current instance.</param>
     /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
@@ -258,7 +258,7 @@ public sealed class ZonedDateTime : TemporalValue,
     }
 
     /// <summary>
-    /// Compares the value of this instance to a specified <see cref="ZonedDateTime" /> value and returns an integer
+    /// Compares the value of this instance to a specified <see cref="ZonedDateTime"/> value and returns an integer
     /// that indicates whether this instance is earlier than, the same as, or later than the specified DateTime value.
     /// </summary>
     /// <param name="other">The object to compare to the current instance.</param>
@@ -288,7 +288,7 @@ public sealed class ZonedDateTime : TemporalValue,
 
     /// <summary>
     /// Returns a value indicating whether the value of this instance is equal to the value of the specified
-    /// <see cref="ZonedDateTime" /> instance.
+    /// <see cref="ZonedDateTime"/> instance.
     /// </summary>
     /// <param name="other">The object to compare to this instance.</param>
     /// <returns>
@@ -420,8 +420,8 @@ public sealed class ZonedDateTime : TemporalValue,
         _second = local.Second;
     }
 
-    /// <summary>Converts this instance to an equivalent <see cref="DateTimeOffset" /> value</summary>
-    /// <returns>Equivalent <see cref="DateTimeOffset" /> value</returns>
+    /// <summary>Converts this instance to an equivalent <see cref="DateTimeOffset"/> value</summary>
+    /// <returns>Equivalent <see cref="DateTimeOffset"/> value</returns>
     /// <exception cref="ValueOverflowException">If the value cannot be represented with DateTimeOffset</exception>
     /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
     public DateTimeOffset ToDateTimeOffset()
@@ -439,7 +439,7 @@ public sealed class ZonedDateTime : TemporalValue,
     /// <summary>Returns a value indicating whether this instance is equal to a specified object.</summary>
     /// <param name="obj">The object to compare to this instance.</param>
     /// <returns>
-    /// <code>true</code> if <code>value</code> is an instance of <see cref="ZonedDateTime" /> and equals the value of
+    /// <code>true</code> if <code>value</code> is an instance of <see cref="ZonedDateTime"/> and equals the value of
     /// this instance; otherwise, <code>false</code>
     /// </returns>
     public override bool Equals(object obj)
@@ -474,7 +474,7 @@ public sealed class ZonedDateTime : TemporalValue,
         }
     }
 
-    /// <summary>Converts the value of the current <see cref="ZonedDateTime" /> object to its equivalent string representation.</summary>
+    /// <summary>Converts the value of the current <see cref="ZonedDateTime"/> object to its equivalent string representation.</summary>
     /// <returns>String representation of this Point.</returns>
     public override string ToString()
     {
@@ -488,8 +488,8 @@ public sealed class ZonedDateTime : TemporalValue,
     }
 
     /// <summary>
-    /// Determines whether one specified <see cref="ZonedDateTime" /> is earlier than another specified
-    /// <see cref="ZonedDateTime" />.
+    /// Determines whether one specified <see cref="ZonedDateTime"/> is earlier than another specified
+    /// <see cref="ZonedDateTime"/>.
     /// </summary>
     /// <param name="left">The first object to compare.</param>
     /// <param name="right">The second object to compare.</param>
@@ -500,8 +500,8 @@ public sealed class ZonedDateTime : TemporalValue,
     }
 
     /// <summary>
-    /// Determines whether one specified <see cref="ZonedDateTime" /> is later than another specified
-    /// <see cref="ZonedDateTime" />.
+    /// Determines whether one specified <see cref="ZonedDateTime"/> is later than another specified
+    /// <see cref="ZonedDateTime"/>.
     /// </summary>
     /// <param name="left">The first object to compare.</param>
     /// <param name="right">The second object to compare.</param>
@@ -512,8 +512,8 @@ public sealed class ZonedDateTime : TemporalValue,
     }
 
     /// <summary>
-    /// Determines whether one specified <see cref="ZonedDateTime" /> represents a duration that is the same as or
-    /// later than the other specified <see cref="ZonedDateTime" />
+    /// Determines whether one specified <see cref="ZonedDateTime"/> represents a duration that is the same as or
+    /// later than the other specified <see cref="ZonedDateTime"/>
     /// </summary>
     /// <param name="left">The first object to compare.</param>
     /// <param name="right">The second object to compare.</param>
@@ -524,8 +524,8 @@ public sealed class ZonedDateTime : TemporalValue,
     }
 
     /// <summary>
-    /// Determines whether one specified <see cref="ZonedDateTime" /> represents a duration that is the same as or
-    /// earlier than the other specified <see cref="ZonedDateTime" />
+    /// Determines whether one specified <see cref="ZonedDateTime"/> represents a duration that is the same as or
+    /// earlier than the other specified <see cref="ZonedDateTime"/>
     /// </summary>
     /// <param name="left">The first object to compare.</param>
     /// <param name="right">The second object to compare.</param>
@@ -535,7 +535,7 @@ public sealed class ZonedDateTime : TemporalValue,
         return left.CompareTo(right) >= 0;
     }
 
-    /// <inheritdoc cref="TemporalValue.ConvertToDateTimeOffset" />
+    /// <inheritdoc cref="TemporalValue.ConvertToDateTimeOffset"/>
     protected override DateTimeOffset ConvertToDateTimeOffset()
     {
         return ToDateTimeOffset();

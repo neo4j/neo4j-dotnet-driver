@@ -20,7 +20,7 @@ using System;
 namespace Neo4j.Driver;
 
 /// <summary>
-/// A server address consists of <see cref="ServerAddress.Host" /> and <see cref="ServerAddress.Port" />. This
+/// A server address consists of <see cref="ServerAddress.Host"/> and <see cref="ServerAddress.Port"/>. This
 /// address specifies where the driver to find the server.
 /// </summary>
 public sealed class ServerAddress : IEquatable<ServerAddress>
@@ -39,7 +39,7 @@ public sealed class ServerAddress : IEquatable<ServerAddress>
 
     /// <summary>
     /// Returns a value indicating whether the value of this instance is equal to the value of the specified
-    /// <see cref="ServerAddress" /> instance.
+    /// <see cref="ServerAddress"/> instance.
     /// </summary>
     /// <param name="other">The object to compare to this instance.</param>
     /// <returns>
@@ -71,7 +71,7 @@ public sealed class ServerAddress : IEquatable<ServerAddress>
     }
 
     /// <summary>
-    /// Create a server address from a <see cref="Uri" />. Fields <see cref="Uri.Host" /> and <see cref="Uri.Port" />
+    /// Create a server address from a <see cref="Uri"/>. Fields <see cref="Uri.Host"/> and <see cref="Uri.Port"/>
     /// will be used to create the server address.
     /// </summary>
     /// <param name="uri">The input uri to read host name and port number from.</param>
@@ -84,7 +84,7 @@ public sealed class ServerAddress : IEquatable<ServerAddress>
     /// <summary>Returns a value indicating whether this instance is equal to a specified object.</summary>
     /// <param name="obj">The object to compare to this instance.</param>
     /// <returns>
-    /// <code>true</code> if <code>value</code> is an instance of <see cref="ServerAddress" /> and equals the value of
+    /// <code>true</code> if <code>value</code> is an instance of <see cref="ServerAddress"/> and equals the value of
     /// this instance; otherwise, <code>false</code>
     /// </returns>
     public override bool Equals(object obj)

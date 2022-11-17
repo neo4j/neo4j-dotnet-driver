@@ -37,12 +37,12 @@ public sealed class ZoneOffset : Zone, IEquatable<ZoneOffset>
     /// <summary>The offset (in seconds) from UTC.</summary>
     public int OffsetSeconds { get; }
 
-    /// <summary>The offset from UTC as a <see cref="TimeSpan" /> instance.</summary>
+    /// <summary>The offset from UTC as a <see cref="TimeSpan"/> instance.</summary>
     public TimeSpan Offset => TimeSpan.FromSeconds(OffsetSeconds);
 
     /// <summary>
     /// Returns a value indicating whether the value of this instance is equal to the value of the specified
-    /// <see cref="ZoneOffset" /> instance.
+    /// <see cref="ZoneOffset"/> instance.
     /// </summary>
     /// <param name="other">The object to compare to this instance.</param>
     /// <returns>
@@ -69,7 +69,7 @@ public sealed class ZoneOffset : Zone, IEquatable<ZoneOffset>
         return OffsetSeconds;
     }
 
-    /// <summary>Converts the value of the current <see cref="ZoneOffset" /> object to its equivalent string representation.</summary>
+    /// <summary>Converts the value of the current <see cref="ZoneOffset"/> object to its equivalent string representation.</summary>
     /// <returns>String representation of this Point.</returns>
     public override string ToString()
     {
@@ -79,7 +79,7 @@ public sealed class ZoneOffset : Zone, IEquatable<ZoneOffset>
     /// <summary>Returns a value indicating whether this instance is equal to a specified object.</summary>
     /// <param name="obj">The object to compare to this instance.</param>
     /// <returns>
-    /// <code>true</code> if <code>value</code> is an instance of <see cref="ZoneOffset" /> and equals the value of
+    /// <code>true</code> if <code>value</code> is an instance of <see cref="ZoneOffset"/> and equals the value of
     /// this instance; otherwise, <code>false</code>
     /// </returns>
     public override bool Equals(object obj)

@@ -27,33 +27,33 @@ public sealed class Point : IValue, IEquatable<Point>
     internal const int TwoD = 2;
     internal const int ThreeD = 3;
 
-    /// <summary>Initializes a new instance of <see cref="Point" /> structure with two dimensions</summary>
+    /// <summary>Initializes a new instance of <see cref="Point"/> structure with two dimensions</summary>
     /// <param name="srId">
-    ///     <see cref="SrId" />
+    ///     <see cref="SrId"/>
     /// </param>
     /// <param name="x">
-    ///     <see cref="X" />
+    ///     <see cref="X"/>
     /// </param>
     /// <param name="y">
-    ///     <see cref="Y" />
+    ///     <see cref="Y"/>
     /// </param>
     public Point(int srId, double x, double y)
         : this(TwoD, srId, x, y, double.NaN)
     {
     }
 
-    /// <summary>Initializes a new instance of <see cref="Point" /> structure with three dimensions</summary>
+    /// <summary>Initializes a new instance of <see cref="Point"/> structure with three dimensions</summary>
     /// <param name="srId">
-    ///     <see cref="SrId" />
+    ///     <see cref="SrId"/>
     /// </param>
     /// <param name="x">
-    ///     <see cref="X" />
+    ///     <see cref="X"/>
     /// </param>
     /// <param name="y">
-    ///     <see cref="Y" />
+    ///     <see cref="Y"/>
     /// </param>
     /// <param name="z">
-    ///     <see cref="Z" />
+    ///     <see cref="Z"/>
     /// </param>
     public Point(int srId, double x, double y, double z)
         : this(ThreeD, srId, x, y, z)
@@ -85,7 +85,7 @@ public sealed class Point : IValue, IEquatable<Point>
 
     /// <summary>
     /// Returns a value indicating whether the value of this instance is equal to the value of the specified
-    /// <see cref="Point" /> instance.
+    /// <see cref="Point"/> instance.
     /// </summary>
     /// <param name="other">The object to compare to this instance.</param>
     /// <returns>
@@ -111,7 +111,7 @@ public sealed class Point : IValue, IEquatable<Point>
             Z.Equals(other.Z);
     }
 
-    /// <summary>Converts the value of the current <see cref="Point" /> object to its equivalent string representation.</summary>
+    /// <summary>Converts the value of the current <see cref="Point"/> object to its equivalent string representation.</summary>
     /// <returns>String representation of this Point.</returns>
     public override string ToString()
     {
@@ -149,7 +149,7 @@ public sealed class Point : IValue, IEquatable<Point>
     /// <summary>Returns a value indicating whether this instance is equal to a specified object.</summary>
     /// <param name="obj">The object to compare to this instance.</param>
     /// <returns>
-    /// <code>true</code> if <code>value</code> is an instance of <see cref="Point" /> and equals the value of this
+    /// <code>true</code> if <code>value</code> is an instance of <see cref="Point"/> and equals the value of this
     /// instance; otherwise, <code>false</code>
     /// </returns>
     public override bool Equals(object obj)

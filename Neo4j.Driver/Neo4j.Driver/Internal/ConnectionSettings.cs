@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License"):
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -26,13 +26,14 @@ internal class ConnectionSettings
     internal ConnectionSettings(Uri uri, IAuthToken authToken, Config config, IHostResolver hostResolver = null)
     {
         AuthToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
-        
+
         var resolver = hostResolver switch
         {
             //TODO: Consider moving to a factory.
             null when RuntimeHelper.IsDotNetCore => new SystemNetCoreHostResolver(new SystemHostResolver()),
             null when !RuntimeHelper.IsDotNetCore => new DefaultHostResolver(
-                new SystemHostResolver(), config.Ipv6Enabled),
+                new SystemHostResolver(),
+                config.Ipv6Enabled),
             // test code can provide resolver.
             _ => hostResolver
         };
@@ -42,7 +43,7 @@ internal class ConnectionSettings
             config.NullableEncryptionLevel,
             config.TrustManager,
             config.Logger);
-        
+
         SocketSettings = new SocketSettings(
             resolver,
             encryptionManager)
@@ -52,7 +53,7 @@ internal class ConnectionSettings
             Ipv6Enabled = config.Ipv6Enabled
         };
     }
-    
+
     internal static string DefaultUserAgent
     {
         get

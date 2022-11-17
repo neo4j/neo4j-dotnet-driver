@@ -32,13 +32,13 @@ public interface ITransaction : IQueryRunner
 
     /// <summary>
     /// Mark this transaction as successful. You must call this method before calling
-    /// <see cref="IDisposable.Dispose" /> to have your transaction committed.
+    /// <see cref="IDisposable.Dispose"/> to have your transaction committed.
     /// </summary>
     void Commit();
 
     /// <summary>
-    /// Mark this transaction as failed. Calling <see cref="IDisposable.Dispose" /> will roll back the transaction.
-    /// Marking a transaction as failed is irreversible and guarantees that subsequent calls to <see cref="Commit" /> will not
+    /// Mark this transaction as failed. Calling <see cref="IDisposable.Dispose"/> will roll back the transaction.
+    /// Marking a transaction as failed is irreversible and guarantees that subsequent calls to <see cref="Commit"/> will not
     /// change it's status.
     /// </summary>
     void Rollback();

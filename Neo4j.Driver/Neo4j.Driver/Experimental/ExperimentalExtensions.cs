@@ -25,11 +25,11 @@ public static class ExperimentalExtensions
 {
     /// <summary>
     /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
-    /// Sets the <see cref="IBookmarkManager" /> for maintaining bookmarks for the lifetime of a session.
+    /// Sets the <see cref="IBookmarkManager"/> for maintaining bookmarks for the lifetime of a session.
     /// </summary>
     /// <param name="builder">this builder.</param>
-    /// <param name="bookmarkManager">Instance of <see cref="IBookmarkManager" />.</param>
-    /// <returns>this <see cref="SessionConfigBuilder" /> instance.</returns>
+    /// <param name="bookmarkManager">Instance of <see cref="IBookmarkManager"/>.</param>
+    /// <returns>this <see cref="SessionConfigBuilder"/> instance.</returns>
     public static SessionConfigBuilder WithBookmarkManager(
         this SessionConfigBuilder builder,
         IBookmarkManager bookmarkManager)

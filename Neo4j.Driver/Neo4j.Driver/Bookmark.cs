@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License"):
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -23,13 +23,13 @@ using Neo4j.Driver.Internal;
 namespace Neo4j.Driver;
 
 /// <summary>
-/// Identifies a point in the transactional history of the database.<br /><br /> When working with a casual
-/// cluster, transactions can be chained to ensure causal consistency. Causal chaining is carried out by passing bookmarks
-/// between transactions.<br /> When a session is constructed with an initial bookmarks, the first transaction (either
-/// auto-commit or explicit) will be blocked until the server has fast forwarded to catchup with the latest of the provided
-/// initial bookmarks.<br /> Within a session, bookmark propagation is carried out automatically and does not require any
-/// explicit signal or setting from the application.<br /> To opt out of this mechanism for unrelated units of work,
-/// applications can use multiple sessions.
+/// Identifies a point in the transactional history of the database.<br/><br/> When working with a casual cluster,
+/// transactions can be chained to ensure causal consistency. Causal chaining is carried out by passing bookmarks between
+/// transactions.<br/> When a session is constructed with an initial bookmarks, the first transaction (either auto-commit
+/// or explicit) will be blocked until the server has fast forwarded to catchup with the latest of the provided initial
+/// bookmarks.<br/> Within a session, bookmark propagation is carried out automatically and does not require any explicit
+/// signal or setting from the application.<br/> To opt out of this mechanism for unrelated units of work, applications can
+/// use multiple sessions.
 /// </summary>
 [Obsolete("Replaced with Bookmarks. Will be removed in 6.0")]
 public abstract class Bookmark
@@ -67,13 +67,13 @@ public abstract class Bookmark
 }
 
 /// <summary>
-/// Identifies a point in the transactional history of the database.<br /><br /> When working with a casual
-/// cluster, transactions can be chained to ensure causal consistency. Causal chaining is carried out by passing bookmarks
-/// between transactions.<br /> When a session is constructed with an initial bookmarks, the first transaction (either
-/// auto-commit or explicit) will be blocked until the server has fast forwarded to catchup with the latest of the provided
-/// initial bookmarks.<br /> Within a session, bookmarks propagation is carried out automatically and does not require any
-/// explicit signal or setting from the application.<br /> To opt out of this mechanism for unrelated units of work,
-/// applications can use multiple sessions.
+/// Identifies a point in the transactional history of the database.<br/><br/> When working with a casual cluster,
+/// transactions can be chained to ensure causal consistency. Causal chaining is carried out by passing bookmarks between
+/// transactions.<br/> When a session is constructed with an initial bookmarks, the first transaction (either auto-commit
+/// or explicit) will be blocked until the server has fast forwarded to catchup with the latest of the provided initial
+/// bookmarks.<br/> Within a session, bookmarks propagation is carried out automatically and does not require any explicit
+/// signal or setting from the application.<br/> To opt out of this mechanism for unrelated units of work, applications can
+/// use multiple sessions.
 /// </summary>
 public abstract class Bookmarks : Bookmark
 {
