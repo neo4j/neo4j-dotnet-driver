@@ -19,6 +19,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Internal;
+// ignore deprecation of bookmark.
+#pragma warning disable CS0618
 
 namespace Neo4j.Driver;
 
@@ -60,6 +62,12 @@ public abstract class Bookmark
                 .ToArray());
     }
 
+    /// <summary>
+    /// Combine both sets of bookmarks.
+    /// </summary>
+    /// <param name="lh">A <see cref="Bookmark"/> instance.</param>
+    /// <param name="rh">A <see cref="Bookmark"/> instance.</param>
+    /// <returns>New <see cref="Bookmark"/> container with all <see cref="Values"/> of each operand.</returns>
     public static Bookmark operator +(Bookmark lh, Bookmark rh)
     {
         return new InternalBookmarks(lh.Values.Concat(rh.Values).ToArray());
@@ -79,10 +87,14 @@ public abstract class Bookmarks : Bookmark
 {
     internal new static Bookmarks Empty => new InternalBookmarks();
 
-    /// <summary></summary>
-    /// <param name="lh"></param>
-    /// <param name="rh"></param>
-    /// <returns></returns>
+    /// <summary>
+    /// Combine both sets of bookmarks.
+    /// </summary>
+    /// <param name="lh">A <see cref="Bookmarks"/> instance.</param>
+    /// <param name="rh">A <see cref="Bookmarks"/> instance.</param>
+    /// <returns>
+    /// New <see cref="Bookmarks"/> container with all <see cref="Bookmark.Values"/> of each operand.
+    /// </returns>
     public static Bookmarks operator +(Bookmarks lh, Bookmarks rh)
     {
         return new InternalBookmarks(lh.Values.Concat(rh.Values).ToArray());
@@ -91,7 +103,7 @@ public abstract class Bookmarks : Bookmark
     /// <summary>Returns a new bookmark instance constructed from the provided list of bookmark strings.</summary>
     /// <param name="values">The bookmark strings to construct from</param>
     /// <returns>A new bookmark instance</returns>
-    public static Bookmarks From(params string[] values)
+    public new static Bookmarks From(params string[] values)
     {
         return new InternalBookmarks(values);
     }
@@ -112,7 +124,7 @@ public abstract class Bookmarks : Bookmark
         }
 
         var uniqueValues = bookmarks
-            .SelectMany(b => b == null ? Array.Empty<string>() : b.Values)
+            .SelectMany(b => b?.Values ?? Array.Empty<string>())
             .Distinct()
             .ToArray();
 

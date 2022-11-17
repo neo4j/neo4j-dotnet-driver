@@ -26,7 +26,7 @@ namespace Neo4j.Driver;
 /// <summary>
 /// Configuration for constructing a default <see cref="IBookmarkManager"/> using
 /// <see cref="IBookmarkManagerFactory.NewBookmarkManager"/>.<br/> the default <see cref="IBookmarkManagerFactory"/> can be
-/// accessed from <see cref="GraphDatabase.BookmarkManagerFactory"/>.
+/// accessed from <see cref="Experimental.GraphDatabase.BookmarkManagerFactory"/>.
 /// </summary>
 /// <param name="InitialBookmarks">
 /// Nullable collection of initial bookmarks to provide the bookmark manager, the keys

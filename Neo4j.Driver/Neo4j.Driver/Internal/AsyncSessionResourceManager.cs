@@ -26,8 +26,6 @@ namespace Neo4j.Driver.Internal;
 
 internal partial class AsyncSession : IResultResourceHandler, ITransactionResourceHandler, IBookmarksTracker
 {
-    /// <summary>Only set the bookmark to a new value if the new value is not null</summary>
-    /// <param name="bookmarks">The new bookmarks.</param>
     public void UpdateBookmarks(Bookmarks bookmarks, IDatabaseInfo dbInfo = null)
     {
         if (bookmarks == null || !bookmarks.Values.Any())

@@ -79,10 +79,16 @@ public sealed class SessionConfig
     /// <remarks>
     /// The default access mode set is overriden when transaction functions (i.e.
     /// <see
-    ///     cref="IAsyncSession.ReadTransactionAsync{T}(System.Func{Neo4j.Driver.IAsyncTransaction,System.Threading.Tasks.Task{T}})"/>
+    ///     cref="IAsyncSession.ReadTransactionAsync{T}(System.Func{Neo4j.Driver.IAsyncTransaction,System.Threading.Tasks.Task{T}}, System.Action{Neo4j.Driver.TransactionConfigBuilder})"/>
+    /// or
+    /// <see
+    ///     cref="IAsyncSession.ExecuteReadAsync{T}(System.Func{Neo4j.Driver.IAsyncQueryRunner,System.Threading.Tasks.Task{T}}, System.Action{Neo4j.Driver.TransactionConfigBuilder})"/>
     /// and
     /// <see
-    ///     cref="IAsyncSession.WriteTransactionAsync{T}(System.Func{Neo4j.Driver.IAsyncTransaction,System.Threading.Tasks.Task{T}})"/>
+    ///     cref="IAsyncSession.WriteTransactionAsync{T}(System.Func{Neo4j.Driver.IAsyncTransaction,System.Threading.Tasks.Task{T}}, System.Action{Neo4j.Driver.TransactionConfigBuilder})"/>
+    /// or
+    /// <see
+    ///     cref="IAsyncSession.ExecuteWriteAsync{T}(System.Func{Neo4j.Driver.IAsyncQueryRunner,System.Threading.Tasks.Task{T}}, System.Action{Neo4j.Driver.TransactionConfigBuilder})"/>
     /// is used (with corresponding access modes derived from invoked method name).
     /// </remarks>
     /// </summary>
@@ -125,7 +131,10 @@ public sealed class SessionConfig
         internal set => _impersonatedUser = !string.IsNullOrEmpty(value) ? value : throw new ArgumentNullException();
     }
 
-    public IBookmarkManager BookmarkManager { get; set; }
+    /// <summary>
+    /// Configured Bookmark Manager for use in session.
+    /// </summary>
+    public IBookmarkManager BookmarkManager { get; internal set; }
 }
 
 /// <summary>The builder to build a <see cref="SessionConfig"/>.</summary>
@@ -170,7 +179,7 @@ public sealed class SessionConfigBuilder
     }
 
     /// <summary>Sets the initial bookmarks to be used by the constructed session.</summary>
-    /// <param name="bookmarks">the initial bookmarks</param>
+    /// <param name="bookmark">the initial bookmarks</param>
     /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
     /// <seealso cref="SessionConfig.Bookmarks"/>
     [Obsolete("Replaced by WithBookmarks. Will be removed in 6.0.")]

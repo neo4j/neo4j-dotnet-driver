@@ -23,8 +23,7 @@ namespace Neo4j.Driver;
 /// available types of <see cref="IAuthToken"/>s.
 /// </summary>
 /// <remarks>
-///     <see
-///         cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder}(Neo4j.Driver.ConfigBuilder))"/>
+///     <see cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder})"/>
 /// </remarks>
 public interface IAuthToken
 {

@@ -96,8 +96,6 @@ internal sealed class MessageFormat
         }
     }
 
-    /// <summary>Only for use in tests, consider refactoring.</summary>
-    /// <param name="serializer"></param>
     internal MessageFormat(IPackStreamSerializer serializer, IEnumerable<IPackStreamSerializer> needed)
     {
         foreach (var packStreamSerializer in needed)
