@@ -17,31 +17,30 @@
 
 using System;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver;
+
+/// <summary>
+/// A reactive transaction, which provides the same functionality as <see cref="IAsyncTransaction"/> but with
+/// reactive API.
+/// </summary>
+public interface IRxTransaction : IRxRunnable
 {
+    /// <summary>Gets the transaction configuration.</summary>
+    TransactionConfig TransactionConfig { get; }
+
     /// <summary>
-    /// A reactive transaction, which provides the same functionality as <see cref="IAsyncTransaction"/> but with
-    /// reactive API.
+    /// Commits the transaction and returns an empty reactive stream. The type parameter makes it easier to chain this
+    /// method to other reactive streams.
     /// </summary>
-    public interface IRxTransaction : IRxRunnable
-    {
-        /// <summary>Gets the transaction configuration.</summary>
-        TransactionConfig TransactionConfig { get; }
+    /// <typeparam name="T">the desired return type</typeparam>
+    /// <returns>an empty reactive stream</returns>
+    IObservable<T> Commit<T>();
 
-        /// <summary>
-        /// Commits the transaction and returns an empty reactive stream. The type parameter makes it easier to chain this
-        /// method to other reactive streams.
-        /// </summary>
-        /// <typeparam name="T">the desired return type</typeparam>
-        /// <returns>an empty reactive stream</returns>
-        IObservable<T> Commit<T>();
-
-        /// <summary>
-        /// Rollbacks the transaction and returns an empty reactive stream. The type parameter makes it easier to chain
-        /// this method to other reactive streams.
-        /// </summary>
-        /// <typeparam name="T">the desired return type</typeparam>
-        /// <returns>an empty reactive stream</returns>
-        IObservable<T> Rollback<T>();
-    }
+    /// <summary>
+    /// Rollbacks the transaction and returns an empty reactive stream. The type parameter makes it easier to chain
+    /// this method to other reactive streams.
+    /// </summary>
+    /// <typeparam name="T">the desired return type</typeparam>
+    /// <returns>an empty reactive stream</returns>
+    IObservable<T> Rollback<T>();
 }

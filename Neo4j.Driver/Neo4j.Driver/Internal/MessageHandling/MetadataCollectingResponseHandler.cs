@@ -72,7 +72,8 @@ internal abstract class MetadataCollectingResponseHandler : IResponseHandler
     protected TMetadata GetMetadata<TCollector, TMetadata>()
         where TCollector : class, IMetadataCollector<TMetadata>
     {
-        if (_metadataCollectors.TryGetValue(typeof(TCollector), out var collector)) {
+        if (_metadataCollectors.TryGetValue(typeof(TCollector), out var collector))
+        {
             return ((IMetadataCollector<TMetadata>)collector).Collected;
         }
 

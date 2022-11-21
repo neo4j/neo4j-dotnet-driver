@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Internal;
+
 // ignore deprecation of bookmark.
 #pragma warning disable CS0618
 
@@ -62,9 +63,7 @@ public abstract class Bookmark
                 .ToArray());
     }
 
-    /// <summary>
-    /// Combine both sets of bookmarks.
-    /// </summary>
+    /// <summary>Combine both sets of bookmarks.</summary>
     /// <param name="lh">A <see cref="Bookmark"/> instance.</param>
     /// <param name="rh">A <see cref="Bookmark"/> instance.</param>
     /// <returns>New <see cref="Bookmark"/> container with all <see cref="Values"/> of each operand.</returns>
@@ -87,14 +86,10 @@ public abstract class Bookmarks : Bookmark
 {
     internal new static Bookmarks Empty => new InternalBookmarks();
 
-    /// <summary>
-    /// Combine both sets of bookmarks.
-    /// </summary>
+    /// <summary>Combine both sets of bookmarks.</summary>
     /// <param name="lh">A <see cref="Bookmarks"/> instance.</param>
     /// <param name="rh">A <see cref="Bookmarks"/> instance.</param>
-    /// <returns>
-    /// New <see cref="Bookmarks"/> container with all <see cref="Bookmark.Values"/> of each operand.
-    /// </returns>
+    /// <returns>New <see cref="Bookmarks"/> container with all <see cref="Bookmark.Values"/> of each operand.</returns>
     public static Bookmarks operator +(Bookmarks lh, Bookmarks rh)
     {
         return new InternalBookmarks(lh.Values.Concat(rh.Values).ToArray());

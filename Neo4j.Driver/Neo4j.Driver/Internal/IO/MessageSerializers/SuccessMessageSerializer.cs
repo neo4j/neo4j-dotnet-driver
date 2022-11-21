@@ -30,7 +30,7 @@ internal sealed class SuccessMessageSerializer : ReadOnlySerializer
     public override object Deserialize(PackStreamReader reader, byte _, long __)
     {
         var map = reader.ReadMap();
-        
+
         return new SuccessMessage(map);
     }
 }

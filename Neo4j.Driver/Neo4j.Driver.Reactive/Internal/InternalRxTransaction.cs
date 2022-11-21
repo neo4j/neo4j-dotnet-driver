@@ -18,49 +18,48 @@
 using System;
 using System.Reactive.Linq;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal class InternalRxTransaction : IRxTransaction
 {
-    internal class InternalRxTransaction : IRxTransaction
+    private readonly IInternalAsyncTransaction _transaction;
+
+    public InternalRxTransaction(IInternalAsyncTransaction transaction)
     {
-        private readonly IInternalAsyncTransaction _transaction;
-
-        public InternalRxTransaction(IInternalAsyncTransaction transaction)
-        {
-            _transaction = transaction;
-        }
-
-        public bool IsOpen => _transaction.IsOpen;
-        public TransactionConfig TransactionConfig => _transaction.TransactionConfig;
-
-        public IObservable<T> Commit<T>()
-        {
-            return Observable.FromAsync(() => _transaction.CommitAsync()).SelectMany(x => Observable.Empty<T>());
-        }
-
-        public IObservable<T> Rollback<T>()
-        {
-            return Observable.FromAsync(() => _transaction.RollbackAsync()).SelectMany(x => Observable.Empty<T>());
-        }
-
-        #region Run Methods
-
-        public IRxResult Run(string query)
-        {
-            return Run(query, null);
-        }
-
-        public IRxResult Run(string query, object parameters)
-        {
-            return Run(new Query(query, parameters.ToDictionary()));
-        }
-
-        public IRxResult Run(Query query)
-        {
-            return new RxResult(
-                Observable.FromAsync(() => _transaction.RunAsync(query))
-                    .Cast<IInternalResultCursor>());
-        }
-
-        #endregion
+        _transaction = transaction;
     }
+
+    public bool IsOpen => _transaction.IsOpen;
+    public TransactionConfig TransactionConfig => _transaction.TransactionConfig;
+
+    public IObservable<T> Commit<T>()
+    {
+        return Observable.FromAsync(() => _transaction.CommitAsync()).SelectMany(x => Observable.Empty<T>());
+    }
+
+    public IObservable<T> Rollback<T>()
+    {
+        return Observable.FromAsync(() => _transaction.RollbackAsync()).SelectMany(x => Observable.Empty<T>());
+    }
+
+#region Run Methods
+
+    public IRxResult Run(string query)
+    {
+        return Run(query, null);
+    }
+
+    public IRxResult Run(string query, object parameters)
+    {
+        return Run(new Query(query, parameters.ToDictionary()));
+    }
+
+    public IRxResult Run(Query query)
+    {
+        return new RxResult(
+            Observable.FromAsync(() => _transaction.RunAsync(query))
+                .Cast<IInternalResultCursor>());
+    }
+
+#endregion
 }

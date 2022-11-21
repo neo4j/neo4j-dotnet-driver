@@ -47,8 +47,6 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
 
     private long _startPos = -1;
 
-    public Stream Stream => this; 
-    
     //TODO: ArrayPool avoid creating a new array for each chunk writer
     public ChunkWriter(Stream downStream, BufferSettings settings, ILogger logger)
     {
@@ -67,6 +65,8 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
         _maxBufferSize = settings.MaxWriteBufferSize;
         _chunkStream = new MemoryStream(settings.DefaultWriteBufferSize);
     }
+
+    public Stream Stream => this;
 
     public void OpenChunk()
     {
@@ -184,7 +184,7 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
         }
     }
 
-    #region Stream Forwarders
+#region Stream Forwarders
 
     public override long Position
     {
@@ -225,5 +225,5 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
         return _chunkStream.FlushAsync(cancellationToken);
     }
 
-    #endregion
+#endregion
 }

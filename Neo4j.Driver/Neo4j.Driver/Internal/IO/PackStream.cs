@@ -21,7 +21,7 @@ namespace Neo4j.Driver.Internal.IO;
 
 internal static class PackStream
 {
-    #region PackStream Constants
+#region PackStream Constants
 
     public const byte TinyString = 0x80;
     public const byte TinyList = 0x90;
@@ -84,9 +84,9 @@ internal static class PackStream
     public const long Minus2ToThe15 = -32768L;
     public const long Minus2ToThe31 = -2147483648L;
 
-    #endregion
+#endregion
 
-    #region Helper Methods
+#region Helper Methods
 
     public static readonly Dictionary<string, object> EmptyDictionary = new();
 
@@ -99,5 +99,5 @@ internal static class PackStream
         }
     }
 
-    #endregion
+#endregion
 }

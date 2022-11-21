@@ -139,20 +139,20 @@ internal class BoltStubServer : IDisposable
 
     private void Disconnect(TcpClient testTcpClient)
     {
-        #if NET452
+#if NET452
             testTcpClient.Close();
-        #else
+#else
         testTcpClient.Dispose();
-        #endif
+#endif
     }
 
     private void Connect(TcpClient testTcpClient, int port)
     {
-        #if NET452
+#if NET452
             testTcpClient.Connect("127.0.0.1", port);
-        #else
+#else
         Task.Run(() => testTcpClient.ConnectAsync("127.0.0.1", port)).Wait();
-        #endif
+#endif
     }
 
     private enum ServerStatus

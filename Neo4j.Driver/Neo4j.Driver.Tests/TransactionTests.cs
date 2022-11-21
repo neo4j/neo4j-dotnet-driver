@@ -118,8 +118,7 @@ public class TransactionTests
             var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
             var query = new Query("lala");
 
-            mockConn.Setup(
-                    x => x.RunInExplicitTransactionAsync(query, false, It.IsAny<long>()))
+            mockConn.Setup(x => x.RunInExplicitTransactionAsync(query, false, It.IsAny<long>()))
                 .Throws<Neo4jException>();
 
             var error = await ExceptionAsync(() => tx.RunAsync(query));

@@ -18,7 +18,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO.Utils;
 
@@ -63,8 +62,7 @@ public abstract class PackStreamSerializerTests
     {
         var format = new MessageFormat(version);
 
-        return new PackStreamWriterMachine(
-            stream => new PackStreamWriter(format, stream));
+        return new PackStreamWriterMachine(stream => new PackStreamWriter(format, stream));
     }
 
     internal PackStreamReaderMachine CreateReaderMachine(BoltProtocolVersion version, byte[] bytes)

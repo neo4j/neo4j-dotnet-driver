@@ -96,7 +96,7 @@ internal sealed class MessageFormat
             AddHandler(ElementUnboundRelationshipSerializer.Instance);
         }
     }
-    
+
     // Test code.
     internal MessageFormat(IEnumerable<IPackStreamSerializer> serializers = null)
     {
@@ -105,7 +105,7 @@ internal sealed class MessageFormat
             AddHandler(packStreamSerializer);
         }
     }
-    
+
     // Test code
     internal MessageFormat(
         IReadOnlyDictionary<Type, IPackStreamSerializer> writeHandlers = null,

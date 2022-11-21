@@ -125,10 +125,10 @@ public class TimeZoneMappingTests
 
     private static void SetCulture(CultureInfo culture)
     {
-        #if NET452
+#if NET452
             Thread.CurrentThread.CurrentCulture = culture;
-        #else
+#else
         CultureInfo.CurrentCulture = culture;
-        #endif
+#endif
     }
 }

@@ -199,7 +199,7 @@ public static class ValueExtensions
         return list.AsItIs<T>();
     }
 
-    #region Helper Methods
+#region Helper Methods
 
     private static object InvokeStatic(this MethodInfo method, params object[] parameters)
     {
@@ -222,5 +222,5 @@ public static class ValueExtensions
             $"The expected value `{typeof(T)}` is different from the actual value `{value.GetType()}`");
     }
 
-    #endregion Helper Methods
+#endregion Helper Methods
 }

@@ -20,7 +20,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
-using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO.Utils;
 using Xunit;
@@ -60,7 +59,7 @@ public class BasePackStreamTests : PackStreamTestSpecs
         return new PackStreamWriterMachine(
             s =>
                 new PackStreamWriter(
-                    new MessageFormat(structHandlers, null),
+                    new MessageFormat(structHandlers),
                     s));
     }
 

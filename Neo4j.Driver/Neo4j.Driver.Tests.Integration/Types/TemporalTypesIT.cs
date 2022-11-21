@@ -46,7 +46,7 @@ public class TemporalTypesIT : DirectDriverTestBase
     {
     }
 
-    #region Receive Only Tests
+#region Receive Only Tests
 
     [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
     public async Task ShouldReceiveDuration()
@@ -112,9 +112,9 @@ public class TemporalTypesIT : DirectDriverTestBase
             new ZonedDateTime(1959, 5, 31, 23, 49, 59, 999999999, Zone.Of("Europe/London")));
     }
 
-    #endregion
+#endregion
 
-    #region Send and Receive Tests
+#region Send and Receive Tests
 
     [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
     public async Task ShouldSendAndReceiveDuration()
@@ -273,9 +273,9 @@ public class TemporalTypesIT : DirectDriverTestBase
             });
     }
 
-    #endregion
+#endregion
 
-    #region Randomized Send and Receive Tests
+#region Randomized Send and Receive Tests
 
     [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
     public async Task ShouldSendAndReceiveRandomDuration()
@@ -340,9 +340,9 @@ public class TemporalTypesIT : DirectDriverTestBase
                 .Select(TestSendAndReceive));
     }
 
-    #endregion
+#endregion
 
-    #region Randomized Send And Receive Array Tests
+#region Randomized Send And Receive Array Tests
 
     [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
     public async Task ShouldSendAndReceiveArrayOfDuration()
@@ -400,9 +400,9 @@ public class TemporalTypesIT : DirectDriverTestBase
                 .Select(i => RandomZonedDateTime()));
     }
 
-    #endregion
+#endregion
 
-    #region Receive System Types through As Methods
+#region Receive System Types through As Methods
 
     [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
     public async Task ShouldReceiveDateAsDateTime()
@@ -478,9 +478,9 @@ public class TemporalTypesIT : DirectDriverTestBase
                 TimeSpan.FromMinutes(-150)));
     }
 
-    #endregion
+#endregion
 
-    #region Send and Receive System Types
+#region Send and Receive System Types
 
     [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
     public async Task ShouldSendAndReceiveSystemDateTimeMilliseconds()
@@ -532,9 +532,9 @@ public class TemporalTypesIT : DirectDriverTestBase
         await TestSendAndReceiveWithType(data, new LocalTime(data));
     }
 
-    #endregion
+#endregion
 
-    #region Send and Receive Arrays Of System Types
+#region Send and Receive Arrays Of System Types
 
     [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
     public async Task ShouldSendAndReceiveArrayOfSystemDateTime()
@@ -572,9 +572,9 @@ public class TemporalTypesIT : DirectDriverTestBase
         await TestSendAndReceiveArrayWithType(array, actual);
     }
 
-    #endregion
+#endregion
 
-    #region Helper Methods
+#region Helper Methods
 
     private async Task TestReceiveData(string query, object expected)
     {
@@ -713,9 +713,9 @@ public class TemporalTypesIT : DirectDriverTestBase
         }
     }
 
-    #endregion
+#endregion
 
-    #region Random Temporal Value Generation
+#region Random Temporal Value Generation
 
     private Duration RandomDuration()
     {
@@ -816,5 +816,5 @@ public class TemporalTypesIT : DirectDriverTestBase
         return _tzNames.ElementAt(_random.Next(0, _tzNames.Count()));
     }
 
-    #endregion
+#endregion
 }

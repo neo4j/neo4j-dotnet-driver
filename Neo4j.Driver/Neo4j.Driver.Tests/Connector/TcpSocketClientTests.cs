@@ -42,12 +42,28 @@ public class TcpSocketClientTests
 
             // use non-routable IP address to mimic a connect timeout
             // https://stackoverflow.com/questions/100841/artificially-create-a-connection-timeout-error
-            var exception = await Record.ExceptionAsync(() => client.ConnectAsync(new Uri("192.168.0.0:9999")));
-            exception.Should().NotBeNull();
-            exception.Should().BeOfType<OperationCanceledException>(exception.ToString());
-            exception.Message.Should().Be("Failed to connect to server 192.168.0.0:9999 within 1000ms.");
+            var exception = await Record.ExceptionAsync(
+                () =>
+                    client.ConnectSocketAsync(
+                        IPAddress.Parse("192.168.0.0"),
+                        9999));
 
-            var disposed = await Record.ExceptionAsync(() => client.ConnectAsync(new Uri("192.168.0.0:9999")));
+            exception
+                .Should()
+                .NotBeNull()
+                .And
+                .BeOfType<OperationCanceledException>()
+                .Which
+                .Message
+                .Should()
+                .Be("Failed to connect to server 192.168.0.0:9999 within 1000ms.");
+
+            var disposed = await Record.ExceptionAsync(
+                () =>
+                    client.ConnectSocketAsync(
+                        IPAddress.Parse("192.168.0.0"),
+                        9999));
+
             disposed.Should().BeOfType<ObjectDisposedException>();
         }
 

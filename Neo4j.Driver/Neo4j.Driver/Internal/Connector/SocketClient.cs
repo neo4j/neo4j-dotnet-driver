@@ -153,18 +153,18 @@ internal sealed class SocketClient : ISocketClient
         _format.UseUtcEncoder();
     }
 
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
         {
             _readBufferStream.Dispose();
-            await _tcpSocketClient.DisposeAsync().ConfigureAwait(false);
+            _tcpSocketClient.Dispose();
         }
+
+        return default;
     }
 
-    /// <summary>
-    /// Internal for testing purposes. Not for use outside of SocketClient.
-    /// </summary>
+    /// <summary>Internal for testing purposes. Not for use outside of SocketClient.</summary>
     internal void SetOpened()
     {
         Interlocked.CompareExchange(ref _closedMarker, 0, -1);

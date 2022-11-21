@@ -83,20 +83,20 @@ internal class ChainTrustManager : TrustManager
         out X509Chain chain)
     {
         var time = DateTime.Now;
-        #if NET452
+#if NET452
             var newChain = new X509Chain(_useMachineCtx)
-        #else
+#else
         var newChain = new X509Chain()
-            #endif
+#endif
+        {
+            ChainPolicy =
             {
-                ChainPolicy =
-                {
-                    RevocationMode = _revocationMode,
-                    RevocationFlag = _revocationScope,
-                    UrlRetrievalTimeout = OnlineTimeout,
-                    VerificationTime = time
-                }
-            };
+                RevocationMode = _revocationMode,
+                RevocationFlag = _revocationScope,
+                UrlRetrievalTimeout = OnlineTimeout,
+                VerificationTime = time
+            }
+        };
 
         newChain.ChainPolicy.ExtraStore.AddRange(additionalCerts);
 

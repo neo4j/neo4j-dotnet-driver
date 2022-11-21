@@ -88,7 +88,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
         }
     }
 
-    public ValueTask DisposeAsync()
+    public void Dispose()
     {
         if (_client != null)
         {
@@ -98,18 +98,14 @@ internal sealed class TcpSocketClient : ITcpSocketClient
             }
 
             _client.Dispose();
+            ReaderStream?.Dispose();
 
             _client = null;
             ReaderStream = null;
         }
-
-        #if NET6_0_OR_GREATER
-        return ValueTask.CompletedTask;
-        #else
-        return default;
-        #endif
     }
 
+    //Marked as internal for testing purposes.
     private async Task ConnectSocketAsync(Uri uri, CancellationToken cancellationToken = default)
     {
         var innerErrors = new List<Exception>();
@@ -173,29 +169,23 @@ internal sealed class TcpSocketClient : ITcpSocketClient
     private async Task ConnectAsync(IPAddress address, int port, CancellationToken cancellationToken)
     {
         var ctr = cancellationToken.Register(_client.Close);
-        #if NET6_0_OR_GREATER
+#if NET6_0_OR_GREATER
         await using var _ = ctr.ConfigureAwait(false);
         await _client.ConnectAsync(new IPEndPoint(address, port), cancellationToken).ConfigureAwait(false);
-        #else
-        try
-        {
-            await _client.ConnectAsync(new IPEndPoint(address, port))
-                .Timeout(_connectionTimeout, cancellationToken)
-                .ConfigureAwait(false);
-        }
-        finally
-        {
-            ctr.Dispose();
-        }
-        #endif
+#else
+        using var _ = ctr;
+        await _client.ConnectAsync(new IPEndPoint(address, port))
+            .Timeout(_connectionTimeout, cancellationToken)
+            .ConfigureAwait(false);
+#endif
     }
 
-    private async Task TryCleanUpAsync(IPAddress address, int port)
+    private Task TryCleanUpAsync(IPAddress address, int port)
     {
         try
         {
             // close client immediately when failed to connect within timeout
-            await DisposeAsync().ConfigureAwait(false);
+            Dispose();
         }
         catch (Exception e)
         {
@@ -204,6 +194,8 @@ internal sealed class TcpSocketClient : ITcpSocketClient
                 $"Failed to close connect to the server {address}:{port}" +
                 $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms.");
         }
+
+        return Task.CompletedTask;
     }
 
     private void InitClient()

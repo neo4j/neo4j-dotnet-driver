@@ -29,7 +29,7 @@ internal interface IPackStreamFactory
 internal sealed class PackStreamFactory : IPackStreamFactory
 {
     internal static readonly PackStreamFactory Default = new();
-    
+
     private PackStreamFactory()
     {
     }

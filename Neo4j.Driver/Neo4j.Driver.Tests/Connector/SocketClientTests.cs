@@ -173,7 +173,7 @@ public class SocketClientTests
 
             // Then
             exception.Should().BeOfType<NullReferenceException>();
-            tcpConn.Verify(x => x.DisposeAsync(), Times.Once);
+            tcpConn.Verify(x => x.Dispose(), Times.Once);
         }
     }
 
@@ -223,7 +223,7 @@ public class SocketClientTests
 
             // Then
             exception.Should().BeOfType<IOException>();
-            connMock.Verify(x => x.DisposeAsync(), Times.Once);
+            connMock.Verify(x => x.Dispose(), Times.Once);
         }
 
         [Fact]
@@ -245,7 +245,7 @@ public class SocketClientTests
             // Then
             exception.Should().BeOfType<ProtocolException>();
             readerMock.Verify(x => x.ReadAsync(pipeline.Object, It.IsAny<PackStreamReader>()), Times.Once);
-            connMock.Verify(x => x.DisposeAsync(), Times.Once);
+            connMock.Verify(x => x.Dispose(), Times.Once);
         }
 
         [Fact]
@@ -271,7 +271,7 @@ public class SocketClientTests
             // Then
             exception.Should().BeOfType<DatabaseException>();
             readerMock.Verify(x => x.ReadAsync(pipeline.Object, It.IsAny<PackStreamReader>()), Times.Once);
-            connMock.Verify(x => x.DisposeAsync(), Times.Once);
+            connMock.Verify(x => x.Dispose(), Times.Once);
         }
     }
 
@@ -289,7 +289,7 @@ public class SocketClientTests
             await client.DisposeAsync();
 
             // Then
-            connMock.Verify(x => x.DisposeAsync(), Times.Once);
+            connMock.Verify(x => x.Dispose(), Times.Once);
             client.IsOpen.Should().BeFalse();
         }
     }

@@ -131,9 +131,7 @@ public sealed class SessionConfig
         internal set => _impersonatedUser = !string.IsNullOrEmpty(value) ? value : throw new ArgumentNullException();
     }
 
-    /// <summary>
-    /// Configured Bookmark Manager for use in session.
-    /// </summary>
+    /// <summary>Configured Bookmark Manager for use in session.</summary>
     public IBookmarkManager BookmarkManager { get; internal set; }
 }
 

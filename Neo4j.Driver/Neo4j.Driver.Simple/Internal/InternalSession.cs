@@ -35,9 +35,9 @@ internal class InternalSession : ISession
         _executor = executor ?? throw new ArgumentNullException(nameof(executor));
     }
 
-    #pragma warning disable CS0618
+#pragma warning disable CS0618
     public Bookmark LastBookmark => _session.LastBookmark;
-    #pragma warning restore CS0618
+#pragma warning restore CS0618
     public Bookmarks LastBookmarks => _session.LastBookmarks;
     public SessionConfig SessionConfig => _session.SessionConfig;
 
@@ -105,7 +105,7 @@ internal class InternalSession : ISession
         _disposed = true;
     }
 
-    #region BeginTransaction Methods
+#region BeginTransaction Methods
 
     public ITransaction BeginTransaction()
     {
@@ -128,9 +128,9 @@ internal class InternalSession : ISession
             _executor);
     }
 
-    #endregion
+#endregion
 
-    #region Transaction Methods
+#region Transaction Methods
 
     public T ReadTransaction<T>(Func<ITransaction, T> work)
     {
@@ -202,5 +202,5 @@ internal class InternalSession : ISession
             });
     }
 
-    #endregion
+#endregion
 }

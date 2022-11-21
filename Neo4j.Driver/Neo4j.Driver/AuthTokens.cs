@@ -61,7 +61,8 @@ public class AuthTokens
     /// </param>
     /// <returns>An authentication token that can be used to connect to Neo4j.</returns>
     /// <remarks>
-    ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Action{ConfigBuilder})"/>
+    ///     <see
+    ///         cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder}(Neo4j.Driver.ConfigBuilder))"/>
     /// </remarks>
     public static IAuthToken Basic(string username, string password, string realm)
     {

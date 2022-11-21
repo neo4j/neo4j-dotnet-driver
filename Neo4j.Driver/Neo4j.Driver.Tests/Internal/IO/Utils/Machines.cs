@@ -30,6 +30,8 @@ public class PackStreamWriterMachine
         Writer = writerFactory(_output);
     }
 
+    internal PackStreamWriter Writer { get; }
+
     public void Reset()
     {
         _output.SetLength(0);
@@ -39,8 +41,6 @@ public class PackStreamWriterMachine
     {
         return _output.ToArray();
     }
-
-    internal PackStreamWriter Writer { get; }
 }
 
 public class PackStreamReaderMachine

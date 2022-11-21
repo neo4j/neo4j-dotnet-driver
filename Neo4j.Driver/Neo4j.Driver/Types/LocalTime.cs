@@ -57,14 +57,14 @@ public sealed class LocalTime : TemporalValue,
     {
     }
 
-    #if NET6_0_OR_GREATER
+#if NET6_0_OR_GREATER
     /// <summary>Initializes a new instance of <see cref="LocalTime"/> from given <see cref="TimeOnly"/> value</summary>
     /// <param name="time"></param>
     public LocalTime(TimeOnly time)
         : this(TimeSpan.FromTicks(time.Ticks))
     {
     }
-    #endif
+#endif
 
     /// <summary>Initializes a new instance of <see cref="LocalTime"/> from individual time components</summary>
     /// <param name="hour"></param>
@@ -217,7 +217,7 @@ public sealed class LocalTime : TemporalValue,
             TimeSpan.FromTicks(TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond)));
     }
 
-    #if NET6_0_OR_GREATER
+#if NET6_0_OR_GREATER
     /// <summary>Converts this time value to a <see cref="TimeOnly"/> instance.</summary>
     /// <returns>A <see cref="TimeOnly"/> instance.</returns>
     public TimeOnly ToTimeOnly()
@@ -225,7 +225,7 @@ public sealed class LocalTime : TemporalValue,
         TemporalHelpers.AssertNoTruncation(this, nameof(TimeOnly));
         return new TimeOnly(Hour, Minute, Second, TemporalHelpers.NanosecondToMillisecond(Nanosecond));
     }
-    #endif
+#endif
 
     /// <summary>Returns a value indicating whether this instance is equal to a specified object.</summary>
     /// <param name="obj">The object to compare to this instance.</param>

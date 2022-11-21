@@ -188,7 +188,7 @@ public abstract class StressTest<TContext> : IDisposable
         }
     }
 
-    #region Abstract Members
+#region Abstract Members
 
     protected abstract TContext CreateContext();
 
@@ -209,9 +209,9 @@ public abstract class StressTest<TContext> : IDisposable
 
     public abstract bool HandleWriteFailure(Exception error, TContext context);
 
-    #endregion
+#endregion
 
-    #region Blocking Stress Test
+#region Blocking Stress Test
 
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
     public async Task Blocking()
@@ -262,9 +262,9 @@ public abstract class StressTest<TContext> : IDisposable
             TaskCreationOptions.LongRunning);
     }
 
-    #endregion
+#endregion
 
-    #region Async Stress Test
+#region Async Stress Test
 
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
     public async Task Async()
@@ -334,9 +334,9 @@ public abstract class StressTest<TContext> : IDisposable
             TaskCreationOptions.LongRunning);
     }
 
-    #endregion
+#endregion
 
-    #region Reactive Stress Test
+#region Reactive Stress Test
 
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
     public async Task Reactive()
@@ -383,9 +383,9 @@ public abstract class StressTest<TContext> : IDisposable
             TaskCreationOptions.LongRunning);
     }
 
-    #endregion
+#endregion
 
-    #region Async Big Data Tests
+#region Async Big Data Tests
 
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
     public async Task AsyncBigData()
@@ -500,9 +500,9 @@ public abstract class StressTest<TContext> : IDisposable
         _output.WriteLine("Reading nodes with Async API took: {0}ms", timer.ElapsedMilliseconds);
     }
 
-    #endregion
+#endregion
 
-    #region Blocking Big Data Tests
+#region Blocking Big Data Tests
 
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
     public void BlockingBigData()
@@ -575,9 +575,9 @@ public abstract class StressTest<TContext> : IDisposable
         _output.WriteLine("Reading nodes with Sync API took: {0}ms", timer.ElapsedMilliseconds);
     }
 
-    #endregion
+#endregion
 
-    #region Reactive Big Data Tests
+#region Reactive Big Data Tests
 
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
     public void ReactiveBigData()
@@ -657,9 +657,9 @@ public abstract class StressTest<TContext> : IDisposable
         _output.WriteLine("Reading nodes with Async API took: {0}ms", timer.ElapsedMilliseconds);
     }
 
-    #endregion
+#endregion
 
-    #region Pooling Stress Tests
+#region Pooling Stress Tests
 
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
     public void Pool()
@@ -847,9 +847,9 @@ public abstract class StressTest<TContext> : IDisposable
         }
     }
 
-    #endregion
+#endregion
 
-    #region Test and Verifications
+#region Test and Verifications
 
     private async Task RunStressTest(Func<TContext, IEnumerable<Task>> launcher)
     {
@@ -889,9 +889,9 @@ public abstract class StressTest<TContext> : IDisposable
         }
     }
 
-    #endregion
+#endregion
 
-    #region Cleanup
+#region Cleanup
 
     public void Dispose()
     {
@@ -923,5 +923,5 @@ public abstract class StressTest<TContext> : IDisposable
         }
     }
 
-    #endregion
+#endregion
 }

@@ -72,7 +72,7 @@ public abstract class PackStreamTestSpecs
 
         // When
         var readerMachine = CreateReaderMachine(bytes);
-        
+
         var packedType = readerMachine.Reader().PeekNextType();
         var packedValue = readerMachine.Reader().ReadBoolean();
 

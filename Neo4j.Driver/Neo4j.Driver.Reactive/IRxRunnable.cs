@@ -18,42 +18,41 @@
 using System;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver;
+
+/// <summary>Common interface that enables execution of Neo4j query using Reactive API.</summary>
+/// 
+/// <seealso cref="IRxSession"/>
+/// <seealso cref="IRxTransaction"/>
+public interface IRxRunnable
 {
-    /// <summary>Common interface that enables execution of Neo4j query using Reactive API.</summary>
+    /// <summary>Create <see cref="IRxResult">a reactive result</see> that will execute the query.</summary>
+    /// <param name="query">Query to be executed</param>
+    /// <returns>a reactive result</returns>
     /// 
-    /// <seealso cref="IRxSession"/>
-    /// <seealso cref="IRxTransaction"/>
-    public interface IRxRunnable
-    {
-        /// <summary>Create <see cref="IRxResult">a reactive result</see> that will execute the query.</summary>
-        /// <param name="query">Query to be executed</param>
-        /// <returns>a reactive result</returns>
-        /// 
-        /// <see cref="Run(Query)"/>
-        IRxResult Run(string query);
+    /// <see cref="Run(Query)"/>
+    IRxResult Run(string query);
 
-        /// <summary>
-        /// Create <see cref="IRxResult">a reactive result</see> that will execute the query with the specified
-        /// parameters.
-        /// </summary>
-        /// <param name="query">Query to be executed</param>
-        /// <param name="parameters">
-        /// a parameter dictionary, can be an <see cref="IDictionary{String,Object}"/> or an anonymous
-        /// object
-        /// </param>
-        /// <returns>a reactive result</returns>
-        /// 
-        /// <see cref="Run(Query)"/>
-        IRxResult Run(string query, object parameters);
+    /// <summary>
+    /// Create <see cref="IRxResult">a reactive result</see> that will execute the query with the specified
+    /// parameters.
+    /// </summary>
+    /// <param name="query">Query to be executed</param>
+    /// <param name="parameters">
+    /// a parameter dictionary, can be an <see cref="IDictionary{String,Object}"/> or an anonymous
+    /// object
+    /// </param>
+    /// <returns>a reactive result</returns>
+    /// 
+    /// <see cref="Run(Query)"/>
+    IRxResult Run(string query, object parameters);
 
-        /// <summary>
-        /// Create <see cref="IRxResult">a reactive result</see> that will execute the given query. The query is only
-        /// executed when an <see cref="IObserver{T}"/> is subscribed to one of the reactive streams that can be accessed through
-        /// the returned reactive result.
-        /// </summary>
-        /// <param name="query">Query to be executed</param>
-        /// <returns>a reactive result</returns>
-        IRxResult Run(Query query);
-    }
+    /// <summary>
+    /// Create <see cref="IRxResult">a reactive result</see> that will execute the given query. The query is only
+    /// executed when an <see cref="IObserver{T}"/> is subscribed to one of the reactive streams that can be accessed through
+    /// the returned reactive result.
+    /// </summary>
+    /// <param name="query">Query to be executed</param>
+    /// <returns>a reactive result</returns>
+    IRxResult Run(Query query);
 }

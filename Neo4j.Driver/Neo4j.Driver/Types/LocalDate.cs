@@ -38,14 +38,14 @@ public sealed class LocalDate : TemporalValue,
         : this(date.Year, date.Month, date.Day)
     {
     }
-    #if NET6_0_OR_GREATER
+#if NET6_0_OR_GREATER
     /// <summary>Initializes a new instance of <see cref="LocalDate"/> from a date value</summary>
     /// <param name="date"></param>
     public LocalDate(DateOnly date)
         : this(date.Year, date.Month, date.Day)
     {
     }
-    #endif
+#endif
     /// <summary>Initializes a new instance of <see cref="LocalDate"/> from individual date component values</summary>
     /// <param name="year"></param>
     /// <param name="month"></param>
@@ -179,7 +179,7 @@ public sealed class LocalDate : TemporalValue,
         return new DateTime(Year, Month, Day);
     }
 
-    #if NET6_0_OR_GREATER
+#if NET6_0_OR_GREATER
     /// <summary>Converts this date value to a <see cref="DateOnly"/> instance.</summary>
     /// <exception cref="ValueOverflowException">If the value cannot be represented with DateOnly.</exception>
     /// <returns></returns>
@@ -188,7 +188,7 @@ public sealed class LocalDate : TemporalValue,
         TemporalHelpers.AssertValidDateOnly(this);
         return new DateOnly(Year, Month, Day);
     }
-    #endif
+#endif
 
     /// <summary>Returns a value indicating whether this instance is equal to a specified object.</summary>
     /// <param name="obj">The object to compare to this instance.</param>

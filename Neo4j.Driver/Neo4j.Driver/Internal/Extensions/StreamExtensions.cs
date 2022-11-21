@@ -73,14 +73,14 @@ internal static class StreamExtensions
 
         try
         {
-            #if NET6_0_OR_GREATER
+#if NET6_0_OR_GREATER
             var ctr = source.Token.Register(stream.Close);
             await using var _ = ctr.ConfigureAwait(false);
             return await stream.ReadAsync(buffer.AsMemory(offset, count), source.Token).ConfigureAwait(false);
-            #else
-                using var _ = source.Token.Register(stream.Close);
-                return await stream.ReadAsync(buffer, offset, count, source.Token).ConfigureAwait(false);
-            #endif
+#else
+            using var _ = source.Token.Register(stream.Close);
+            return await stream.ReadAsync(buffer, offset, count, source.Token).ConfigureAwait(false);
+#endif
         }
         catch (Exception ex) when (source.IsCancellationRequested)
         {
