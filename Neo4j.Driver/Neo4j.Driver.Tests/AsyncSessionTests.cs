@@ -60,57 +60,10 @@ public class AsyncSessionTests
             reactive);
     }
 
-    internal static Mock<IConnection> NewMockedConnection(IBoltProtocol boltProtocol = null)
+    internal static Mock<IConnection> NewMockedConnection()
     {
         var mockConn = new Mock<IConnection>();
         mockConn.Setup(x => x.IsOpen).Returns(true);
-        if (boltProtocol == null)
-        {
-            var protocol = new Mock<IBoltProtocol>();
-            protocol.Setup(x => x.LoginAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<IAuthToken>()))
-                .Returns(Task.CompletedTask);
-
-            protocol.Setup(
-                    x => x.RunInAutoCommitTransactionAsync(
-                        It.IsAny<IConnection>(),
-                        It.IsAny<AutoCommitParams>()))
-                .ReturnsAsync(new Mock<IResultCursor>().Object);
-
-            protocol.Setup(
-                    x =>
-                        x.BeginTransactionAsync(
-                            It.IsAny<IConnection>(),
-                            It.IsAny<string>(),
-                            It.IsAny<Bookmarks>(),
-                            It.IsAny<TransactionConfig>(),
-                            null))
-                .Returns(Task.CompletedTask);
-
-            protocol.Setup(
-                    x =>
-                        x.RunInExplicitTransactionAsync(
-                            It.IsAny<IConnection>(),
-                            It.IsAny<Query>(),
-                            false,
-                            It.IsAny<long>()))
-                .ReturnsAsync(new Mock<IResultCursor>().Object);
-
-            protocol.Setup(x => x.CommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<IBookmarksTracker>()))
-                .Returns(Task.CompletedTask);
-
-            protocol.Setup(x => x.RollbackTransactionAsync(It.IsAny<IConnection>()))
-                .Returns(Task.CompletedTask);
-
-            protocol.Setup(x => x.ResetAsync(It.IsAny<IConnection>()))
-                .Returns(Task.CompletedTask);
-
-            protocol.Setup(x => x.LogoutAsync(It.IsAny<IConnection>()))
-                .Returns(Task.CompletedTask);
-
-            boltProtocol = protocol.Object;
-        }
-
-        mockConn.Setup(x => x.BoltProtocol).Returns(boltProtocol);
         return mockConn;
     }
 
@@ -286,13 +239,11 @@ public class AsyncSessionTests
         public async void ShouldCloseConnectionOnNewBeginTxIfBeginTxFailed()
         {
             // Given
-            var mockProtocol = new Mock<IBoltProtocol>();
-            var mockConn = NewMockedConnection(mockProtocol.Object);
+            var mockConn = NewMockedConnection();
             var calls = 0;
-            mockProtocol.Setup(
+            mockConn.Setup(
                     x =>
                         x.BeginTransactionAsync(
-                            It.IsAny<IConnection>(),
                             It.IsAny<string>(),
                             It.IsAny<Bookmarks>(),
                             It.IsAny<TransactionConfig>(),
@@ -326,12 +277,10 @@ public class AsyncSessionTests
         [Fact]
         public async void ShouldCloseConnectionIfBeginTxFailed()
         {
-            var mockProtocol = new Mock<IBoltProtocol>();
-            var mockConn = NewMockedConnection(mockProtocol.Object);
-            mockProtocol.Setup(
+            var mockConn = NewMockedConnection();
+            mockConn.Setup(
                     x =>
                         x.BeginTransactionAsync(
-                            It.IsAny<IConnection>(),
                             It.IsAny<string>(),
                             It.IsAny<Bookmarks>(),
                             It.IsAny<TransactionConfig>(),
@@ -349,13 +298,12 @@ public class AsyncSessionTests
         [Fact]
         public async void ShouldCloseTxOnCloseAsync()
         {
-            var mockProtocol = new Mock<IBoltProtocol>();
-            var mockConn = NewMockedConnection(mockProtocol.Object);
+            var mockConn = NewMockedConnection();
             var session = NewSession(mockConn.Object);
-            var tx = await session.BeginTransactionAsync();
+            var _ = await session.BeginTransactionAsync();
             await session.CloseAsync();
 
-            mockProtocol.Verify(x => x.RollbackTransactionAsync(It.IsAny<IConnection>()), Times.Once);
+            mockConn.Verify(x => x.RollbackTransactionAsync(), Times.Once);
             mockConn.Verify(x => x.CloseAsync(), Times.Once);
         }
 
