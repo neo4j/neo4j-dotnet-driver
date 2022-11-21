@@ -23,12 +23,11 @@ namespace Neo4j.Driver.Internal.IO.Utils;
 public class PackStreamWriterMachine
 {
     private readonly MemoryStream _output;
-    private readonly PackStreamWriter _writer;
 
     internal PackStreamWriterMachine(Func<Stream, PackStreamWriter> writerFactory)
     {
         _output = new MemoryStream();
-        _writer = writerFactory(_output);
+        Writer = writerFactory(_output);
     }
 
     public void Reset()
@@ -41,10 +40,7 @@ public class PackStreamWriterMachine
         return _output.ToArray();
     }
 
-    internal PackStreamWriter Writer()
-    {
-        return _writer;
-    }
+    internal PackStreamWriter Writer { get; }
 }
 
 public class PackStreamReaderMachine

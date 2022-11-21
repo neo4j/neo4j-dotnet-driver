@@ -29,7 +29,7 @@ public class LocalDateTimeSerializerTests : PackStreamSerializerTests
     {
         var dateTime = new LocalDateTime(1978, 12, 16, 12, 35, 59, 128000987);
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.Write(dateTime);
 
@@ -47,7 +47,7 @@ public class LocalDateTimeSerializerTests : PackStreamSerializerTests
     public void ShouldDeserializeDateTime()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.WriteStructHeader(LocalDateTimeSerializer.StructSize, LocalDateTimeSerializer.StructType);
         writer.Write(282659759);

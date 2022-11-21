@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Moq;
@@ -32,18 +33,26 @@ public abstract class PackStreamSerializerTests
 
     internal virtual PackStreamWriterMachine CreateWriterMachine()
     {
-        var format = new MessageFormat(SerializerUnderTest, SerializersNeeded);
+        var writerHandlersDict = SerializersNeeded.Union(new[] { SerializerUnderTest })
+            .SelectMany(
+                h => h.WritableTypes,
+                (handler, type) => new KeyValuePair<Type, IPackStreamSerializer>(type, handler))
+            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
-        var settings = new BufferSettings(Config.Default);
-        var logger = new Mock<ILogger>().Object;
+        var format = new MessageFormat(writerHandlersDict);
 
-        return new PackStreamWriterMachine(
-            stream => new PackStreamWriter(format, new ChunkWriter(stream, settings, logger)));
+        return new PackStreamWriterMachine(stream => new PackStreamWriter(format, stream));
     }
 
     internal virtual PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
     {
-        var format = new MessageFormat(SerializerUnderTest, SerializersNeeded);
+        var readerHandlersDict = SerializersNeeded.Union(new[] { SerializerUnderTest })
+            .SelectMany(
+                h => h.ReadableStructs,
+                (handler, signature) => new KeyValuePair<byte, IPackStreamSerializer>(signature, handler))
+            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+        var format = new MessageFormat(null, readerHandlersDict);
 
         return new PackStreamReaderMachine(
             bytes,
@@ -54,11 +63,8 @@ public abstract class PackStreamSerializerTests
     {
         var format = new MessageFormat(version);
 
-        var settings = new BufferSettings(Config.Default);
-        var logger = new Mock<ILogger>().Object;
-
         return new PackStreamWriterMachine(
-            stream => new PackStreamWriter(format, new ChunkWriter(stream, settings, logger)));
+            stream => new PackStreamWriter(format, stream));
     }
 
     internal PackStreamReaderMachine CreateReaderMachine(BoltProtocolVersion version, byte[] bytes)

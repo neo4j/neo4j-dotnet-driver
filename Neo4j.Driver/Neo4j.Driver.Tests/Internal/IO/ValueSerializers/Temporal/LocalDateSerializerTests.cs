@@ -31,7 +31,7 @@ public class LocalDateSerializerTests : PackStreamSerializerTests
     {
         var date = new LocalDate(1950, 8, 31);
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.Write(date);
 
@@ -48,7 +48,7 @@ public class LocalDateSerializerTests : PackStreamSerializerTests
     public void ShouldDeserializeDate()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.WriteStructHeader(LocalDateSerializer.StructSize, LocalDateSerializer.StructType);
         writer.Write(-7063L);
@@ -69,7 +69,7 @@ public class LocalDateSerializerTests : PackStreamSerializerTests
     {
         var date = new DateOnly(1950, 8, 31);
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.Write(date);
 

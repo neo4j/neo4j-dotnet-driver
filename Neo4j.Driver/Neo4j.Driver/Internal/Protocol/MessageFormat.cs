@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.IO.ValueSerializers;
@@ -95,17 +96,29 @@ internal sealed class MessageFormat
             AddHandler(ElementUnboundRelationshipSerializer.Instance);
         }
     }
-
-    internal MessageFormat(IPackStreamSerializer serializer, IEnumerable<IPackStreamSerializer> needed)
+    
+    // Test code.
+    internal MessageFormat(IEnumerable<IPackStreamSerializer> serializers = null)
     {
-        foreach (var packStreamSerializer in needed)
+        foreach (var packStreamSerializer in serializers)
         {
             AddHandler(packStreamSerializer);
         }
-
-        if (serializer != null)
+    }
+    
+    // Test code
+    internal MessageFormat(
+        IReadOnlyDictionary<Type, IPackStreamSerializer> writeHandlers = null,
+        IReadOnlyDictionary<byte, IPackStreamSerializer> readHandlers = null)
+    {
+        if (writeHandlers != null)
         {
-            AddHandler(serializer);
+            _writerStructHandlers = writeHandlers.ToDictionary(x => x.Key, x => x.Value);
+        }
+
+        if (readHandlers != null)
+        {
+            _readerStructHandlers = readHandlers.ToDictionary(x => x.Key, x => x.Value);
         }
     }
 

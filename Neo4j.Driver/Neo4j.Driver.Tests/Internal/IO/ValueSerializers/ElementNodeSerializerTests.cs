@@ -26,13 +26,13 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers;
 
 public class ElementNodeSerializerTests : PackStreamSerializerTests
 {
-    internal override IPackStreamSerializer SerializerUnderTest => new ElementNodeSerializer();
+    internal override IPackStreamSerializer SerializerUnderTest => ElementNodeSerializer.Instance;
 
     [Fact]
     public void ShouldDeserialize()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.WriteStructHeader(3, ElementNodeSerializer.Node);
         writer.Write(1);

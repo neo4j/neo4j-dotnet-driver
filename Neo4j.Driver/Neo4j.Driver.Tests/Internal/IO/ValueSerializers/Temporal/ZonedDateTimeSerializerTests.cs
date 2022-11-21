@@ -45,7 +45,7 @@ public class ZonedDateTimeSerializerTests : PackStreamSerializerTests
             Zone.Of((int)TimeSpan.FromMinutes(-150).TotalSeconds));
 
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.Write(dateTime);
 
@@ -64,7 +64,7 @@ public class ZonedDateTimeSerializerTests : PackStreamSerializerTests
     public void ShouldDeserializeDateTimeWithOffset()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.WriteStructHeader(ZonedDateTimeSerializer.StructSize, ZonedDateTimeSerializer.StructTypeWithOffset);
         writer.Write(282659759);
@@ -96,7 +96,7 @@ public class ZonedDateTimeSerializerTests : PackStreamSerializerTests
     {
         var dateTime = new ZonedDateTime(1978, 12, 16, 12, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.Write(dateTime);
 
@@ -115,7 +115,7 @@ public class ZonedDateTimeSerializerTests : PackStreamSerializerTests
     public void ShouldDeserializeDateTimeWithZoneId()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.WriteStructHeader(ZonedDateTimeSerializer.StructSize, ZonedDateTimeSerializer.StructTypeWithId);
         writer.Write(282659759);

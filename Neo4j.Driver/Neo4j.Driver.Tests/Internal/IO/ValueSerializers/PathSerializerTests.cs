@@ -36,7 +36,7 @@ public class PathSerializerTests : PackStreamSerializerTests
     public void ShouldDeserialize()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         SerializePath(writer);
 
@@ -50,7 +50,7 @@ public class PathSerializerTests : PackStreamSerializerTests
     public void ShouldDeserializeReverse()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         SerializePath(writer, true);
 
@@ -64,7 +64,7 @@ public class PathSerializerTests : PackStreamSerializerTests
     public void ShouldDeserializeWhenInList()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.WriteListHeader(1);
         SerializePath(writer);
@@ -82,7 +82,7 @@ public class PathSerializerTests : PackStreamSerializerTests
     public void ShouldDeserializeWhenInMap()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.WriteMapHeader(1);
         writer.Write("x");

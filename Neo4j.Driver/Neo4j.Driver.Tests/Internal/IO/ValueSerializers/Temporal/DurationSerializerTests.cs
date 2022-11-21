@@ -28,7 +28,7 @@ public class DurationSerializerTests : PackStreamSerializerTests
     public void ShouldSerializeDuration()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.Write(new Duration(10, 4, 300, 120));
 
@@ -48,7 +48,7 @@ public class DurationSerializerTests : PackStreamSerializerTests
     public void ShouldDeserializeDuration()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.WriteStructHeader(DurationSerializer.StructSize, DurationSerializer.StructType);
         writer.Write(21L);

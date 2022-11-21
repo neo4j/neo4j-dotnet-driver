@@ -29,24 +29,26 @@ namespace Neo4j.Driver.Internal.IO;
 
 public abstract class PackStreamTestSpecs
 {
-    internal abstract PackStreamWriterMachine CreateWriterMachine();
-    internal abstract PackStreamReaderMachine CreateReaderMachine(byte[] bytes);
+    internal abstract PackStreamWriterMachine CreateWriterMachine(BoltProtocolVersion version = null);
+    internal abstract PackStreamReaderMachine CreateReaderMachine(byte[] data, BoltProtocolVersion version = null);
 
-    [Fact]
-    public void ShouldReadWriteNull()
+    [Theory]
+    [InlineData(3, 0)]
+    public void ShouldReadWriteNull(int major, int minor)
     {
+        var version = new BoltProtocolVersion(major, minor);
         // Given
-        var writerMachine = CreateWriterMachine();
+        var writerMachine = CreateWriterMachine(version);
 
         // When
-        writerMachine.Writer().WriteNull();
+        writerMachine.Writer.WriteNull();
 
         // Then
         var bytes = writerMachine.GetOutput();
-        Assert.Equal(bytes, new byte[] { 0xC0 });
+        bytes.Should().Equal(0xC0);
 
         // When
-        var readerMachine = CreateReaderMachine(bytes);
+        var readerMachine = CreateReaderMachine(bytes, version);
         var packedType = readerMachine.Reader().PeekNextType();
         var packedValue = readerMachine.Reader().Read();
 
@@ -62,7 +64,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        writerMachine.Writer().Write(true);
+        writerMachine.Writer.Write(true);
 
         // Then
         var bytes = writerMachine.GetOutput();
@@ -70,6 +72,7 @@ public abstract class PackStreamTestSpecs
 
         // When
         var readerMachine = CreateReaderMachine(bytes);
+        
         var packedType = readerMachine.Reader().PeekNextType();
         var packedValue = readerMachine.Reader().ReadBoolean();
 
@@ -85,7 +88,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        writerMachine.Writer().Write(false);
+        writerMachine.Writer.Write(false);
 
         // Then
         var bytes = writerMachine.GetOutput();
@@ -111,7 +114,7 @@ public abstract class PackStreamTestSpecs
         {
             // When
             writerMachine.Reset();
-            writerMachine.Writer().Write(i);
+            writerMachine.Writer.Write(i);
 
             // Then
             var bytes = writerMachine.GetOutput();
@@ -138,7 +141,7 @@ public abstract class PackStreamTestSpecs
         {
             // When
             writerMachine.Reset();
-            writerMachine.Writer().Write(i);
+            writerMachine.Writer.Write(i);
 
             // Then
             var bytes = writerMachine.GetOutput();
@@ -167,7 +170,7 @@ public abstract class PackStreamTestSpecs
 
             // When
             writerMachine.Reset();
-            writerMachine.Writer().Write(n);
+            writerMachine.Writer.Write(n);
 
             // When
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -192,7 +195,7 @@ public abstract class PackStreamTestSpecs
 
             // When
             writerMachine.Reset();
-            writerMachine.Writer().Write(n);
+            writerMachine.Writer.Write(n);
 
             // When
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -215,7 +218,7 @@ public abstract class PackStreamTestSpecs
 
         // When
         writerMachine.Reset();
-        writerMachine.Writer().Write(n);
+        writerMachine.Writer.Write(n);
 
         // When
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -237,7 +240,7 @@ public abstract class PackStreamTestSpecs
 
             // When
             writerMachine.Reset();
-            writerMachine.Writer().Write(n);
+            writerMachine.Writer.Write(n);
 
             // When
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -262,7 +265,7 @@ public abstract class PackStreamTestSpecs
 
             // When
             writerMachine.Reset();
-            writerMachine.Writer().Write(n);
+            writerMachine.Writer.Write(n);
 
             // When
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -287,7 +290,7 @@ public abstract class PackStreamTestSpecs
 
             // When
             writerMachine.Reset();
-            writerMachine.Writer().Write(str);
+            writerMachine.Writer.Write(str);
 
             // When
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -309,7 +312,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.Write(bytes);
 
         // When
@@ -342,7 +345,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        writerMachine.Writer().Write('A');
+        writerMachine.Writer.Write('A');
 
         // When
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -361,7 +364,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        writerMachine.Writer().Write("ABCDEFGHIJ");
+        writerMachine.Writer.Write("ABCDEFGHIJ");
 
         // When
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -380,7 +383,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        writerMachine.Writer().Write("Mjölnir");
+        writerMachine.Writer.Write("Mjölnir");
 
         // When
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -399,7 +402,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.WriteListHeader(3);
         writer.Write(12);
         writer.Write(13);
@@ -424,7 +427,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.Write(new List<string>(new[] { "one", "two", "three" }));
 
         // When
@@ -446,7 +449,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.WriteListHeader(3);
         writer.Write("one");
         writer.Write("two");
@@ -471,7 +474,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.Write(new object[] { 1, 2.0, "three", false, 'A' }.ToList());
 
         // When
@@ -495,7 +498,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.WriteListHeader(4);
         writer.Write(1);
         writer.Write(2.0);
@@ -522,7 +525,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.WriteListHeader(3);
         writer.Write("Mjölnir");
         writer.Write("Häagen-Dazs");
@@ -565,7 +568,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.WriteStructHeader(3, (byte)'N');
         writer.Write(12);
         writer.Write(new[] { "Person", "Employee" }.ToList());
@@ -617,7 +620,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.Write(new object[] { 1, 2, 3, new[] { 4, 5 }.ToList() }.ToList());
 
         // When
@@ -642,7 +645,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.WriteStructHeader(4, (byte)'~');
         writer.Write(1);
         writer.Write(2);
@@ -673,7 +676,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.WriteMapHeader(2);
         writer.Write("name");
         writer.Write("Bob");
@@ -714,7 +717,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.Write(null);
         writer.Write(null);
         writer.Write(null);
@@ -740,7 +743,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.Write(null);
 
         // When
@@ -758,7 +761,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         var ex = Record.Exception(() => writer.Write(new UnsupportedType()));
 
         ex.Should().NotBeNull();
@@ -786,7 +789,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.Write(list);
 
@@ -809,7 +812,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.Write(nums);
 
         // When
@@ -836,7 +839,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.Write(values);
 
         // When
@@ -863,7 +866,7 @@ public abstract class PackStreamTestSpecs
         var array = new byte[length];
 
         machine.Reset();
-        machine.Writer().Write(array);
+        machine.Writer.Write(array);
 
         var readerMachine = CreateReaderMachine(machine.GetOutput());
         var packedType = readerMachine.Reader().PeekNextType();
@@ -880,7 +883,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.Write(Enumerable.Range(0, size).Select(i => value).ToList());
 
         // When
@@ -902,7 +905,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         var dict = new Dictionary<string, int>();
         for (var i = 0; i < size; i++)
         {
@@ -931,7 +934,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.WriteStructHeader(size, (byte)'N');
         for (var i = 0; i < size; i++)
         {
@@ -958,7 +961,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.Write(value);
 
         // When
@@ -975,7 +978,7 @@ public abstract class PackStreamTestSpecs
         var writerMachine = CreateWriterMachine();
 
         // When
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.Write(value);
 
         // When

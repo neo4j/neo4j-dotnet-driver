@@ -33,7 +33,7 @@ public class NodeSerializerTests : PackStreamSerializerTests
     public void ShouldDeserialize()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         SerializeNode(writer);
 
@@ -47,7 +47,7 @@ public class NodeSerializerTests : PackStreamSerializerTests
     public void ShouldDeserializeWhenInList()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.WriteListHeader(1);
         SerializeNode(writer);
@@ -65,7 +65,7 @@ public class NodeSerializerTests : PackStreamSerializerTests
     public void ShouldDeserializeWhenInMap()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.WriteMapHeader(1);
         writer.Write("x");

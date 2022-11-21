@@ -32,7 +32,7 @@ public class ElementRelationshipSerializerTests : PackStreamSerializerTests
     public void ShouldDeserialize()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.WriteStructHeader(3, ElementRelationshipSerializer.Relationship);
         writer.Write(1);

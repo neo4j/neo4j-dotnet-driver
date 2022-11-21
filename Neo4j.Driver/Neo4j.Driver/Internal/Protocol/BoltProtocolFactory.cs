@@ -60,6 +60,7 @@ internal static class BoltProtocolFactory
         return version switch
         {
             { MajorVersion: 3, MinorVersion: 0 } => new LegacyBoltProtocol(),
+            { MajorVersion: 4, MinorVersion: 0 } => new BoltProtocol(null),
             { MajorVersion: 4, MinorVersion: 1 } => new BoltProtocol(null),
             { MajorVersion: 4, MinorVersion: 2 } => new BoltProtocol(null),
             { MajorVersion: 4, MinorVersion: 3 } => new BoltProtocol(new RoutingTableProtocol43()),

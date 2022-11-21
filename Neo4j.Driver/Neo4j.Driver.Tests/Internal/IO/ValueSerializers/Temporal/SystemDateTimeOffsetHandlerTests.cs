@@ -36,7 +36,7 @@ public class SystemDateTimeOffsetHandlerTests : PackStreamSerializerTests
     {
         var dateTime = new DateTimeOffset(1978, 12, 16, 12, 35, 59, 999, TimeSpan.FromSeconds(3060));
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.Write(dateTime);
 

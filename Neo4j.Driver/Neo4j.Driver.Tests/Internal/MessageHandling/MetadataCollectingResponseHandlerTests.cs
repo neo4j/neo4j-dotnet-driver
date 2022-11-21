@@ -41,20 +41,6 @@ public class MetadataCollectingResponseHandlerTests
     }
 
     [Fact]
-    public void ShouldAddRemoveCollector()
-    {
-        var collector = new Mock<IMetadataCollector<long>>();
-
-        var handler = new TestHandler();
-        handler.AddCollector<IMetadataCollector<long>, long>(collector.Object);
-
-        var metadata = new Dictionary<string, object> { { "x", 1 }, { "y", false } };
-        handler.OnSuccess(metadata);
-
-        collector.Verify(x => x.Collect(metadata), Times.Never);
-    }
-
-    [Fact]
     public void ShouldNotAddSameCollectorTypeTwice()
     {
         var (collector1, collector2) = (new Mock<IMetadataCollector<long>>(), new Mock<IMetadataCollector<long>>());

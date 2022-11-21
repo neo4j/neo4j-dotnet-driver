@@ -29,34 +29,39 @@ namespace Neo4j.Driver.Internal.IO;
 
 public class BasePackStreamTests : PackStreamTestSpecs
 {
-    internal override PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
-    {
-        return CreateReaderMachine(bytes, null);
-    }
-
     internal virtual PackStreamReaderMachine CreateReaderMachine(
         byte[] bytes,
-        IDictionary<byte, IPackStreamSerializer> structHandlers)
+        IReadOnlyDictionary<byte, IPackStreamSerializer> structHandlers)
     {
         return new PackStreamReaderMachine(
             bytes,
             s =>
-                new PackStreamReader(new MessageFormat(null, structHandlers.Values), s, new ByteBuffers()));
+                new PackStreamReader(
+                    new MessageFormat(
+                        null,
+                        structHandlers),
+                    s,
+                    new ByteBuffers()));
     }
 
-    internal override PackStreamWriterMachine CreateWriterMachine()
+    internal override PackStreamWriterMachine CreateWriterMachine(BoltProtocolVersion version = null)
     {
-        return CreateWriterMachine(null);
+        return CreateWriterMachine(new MessageFormat(version ?? BoltProtocolVersion.V30).WriteStructHandlers);
+    }
+
+    internal override PackStreamReaderMachine CreateReaderMachine(byte[] data, BoltProtocolVersion version = null)
+    {
+        return CreateReaderMachine(data, new MessageFormat(version ?? BoltProtocolVersion.V30).ReaderStructHandlers);
     }
 
     internal virtual PackStreamWriterMachine CreateWriterMachine(
-        IDictionary<Type, IPackStreamSerializer> structHandlers)
+        IReadOnlyDictionary<Type, IPackStreamSerializer> structHandlers)
     {
         return new PackStreamWriterMachine(
             s =>
                 new PackStreamWriter(
-                    new MessageFormat(null, structHandlers.Values),
-                    new ChunkWriter(s, new BufferSettings(Config.Default), new Mock<ILogger>().Object)));
+                    new MessageFormat(structHandlers, null),
+                    s));
     }
 
     [Fact]
@@ -64,16 +69,15 @@ public class BasePackStreamTests : PackStreamTestSpecs
     {
         var structHandler = new StructTypeSerializer();
         var structSignature = structHandler.ReadableStructs.First();
-        var structHandlerDict =
-            new Dictionary<byte, IPackStreamSerializer> { { structSignature, structHandler } };
+        var structHandlerDict = new Dictionary<byte, IPackStreamSerializer> { { structSignature, structHandler } };
 
         var writerMachine = CreateWriterMachine();
-        writerMachine.Writer().WriteStructHeader(5, structSignature);
-        writerMachine.Writer().Write(1L);
-        writerMachine.Writer().Write(2L);
-        writerMachine.Writer().Write(true);
-        writerMachine.Writer().Write(3.0);
-        writerMachine.Writer().Write("something");
+        writerMachine.Writer.WriteStructHeader(5, structSignature);
+        writerMachine.Writer.Write(1L);
+        writerMachine.Writer.Write(2L);
+        writerMachine.Writer.Write(true);
+        writerMachine.Writer.Write(3.0);
+        writerMachine.Writer.Write("something");
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput(), structHandlerDict);
         var value = readerMachine.Reader().Read();
@@ -96,7 +100,7 @@ public class BasePackStreamTests : PackStreamTestSpecs
             new Dictionary<Type, IPackStreamSerializer> { { structType, structHandler } };
 
         var writerMachine = CreateWriterMachine(structHandlerDict);
-        writerMachine.Writer().Write(new StructType(new List<object> { 1L, 2L, true, 3.0, "something" }));
+        writerMachine.Writer.Write(new StructType(new List<object> { 1L, 2L, true, 3.0, "something" }));
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
         var reader = readerMachine.Reader();

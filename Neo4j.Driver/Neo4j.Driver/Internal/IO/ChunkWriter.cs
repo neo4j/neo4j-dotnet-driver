@@ -57,7 +57,8 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
         if (!_downStream.CanWrite)
         {
             throw new ArgumentOutOfRangeException(
-                $"Parameter {nameof(downStream)} is invalid. Property:{nameof(downStream.CanWrite)} is false but should be true");
+                $"Parameter {nameof(downStream)} is invalid. " +
+                $"Property:{nameof(downStream.CanWrite)} is false but should be true");
         }
 
         _chunkSize = Constants.MaxChunkSize;
@@ -103,14 +104,12 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
 
             currentLength = 0;
 
-            if (leftToChunk <= 0)
+            if (leftToChunk > 0)
             {
-                continue;
+                // If there's still more data, then close existing chunk and open a new one.
+                CloseChunk();
+                OpenChunk();
             }
-
-            // If there's still more data, then close existing chunk and open a new one.
-            CloseChunk();
-            OpenChunk();
         }
     }
 
@@ -143,8 +142,14 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
         LogStream(_chunkStream);
 
         _chunkStream.Position = 0;
-        await _chunkStream.CopyToAsync(_downStream).ConfigureAwait(false);
-        Cleanup();
+        try
+        {
+            await _chunkStream.CopyToAsync(_downStream).ConfigureAwait(false);
+        }
+        finally
+        {
+            Cleanup();
+        }
     }
 
     private void Cleanup()

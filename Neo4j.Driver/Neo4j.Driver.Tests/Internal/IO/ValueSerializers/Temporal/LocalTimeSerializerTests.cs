@@ -31,7 +31,7 @@ public class LocalTimeSerializerTests : PackStreamSerializerTests
     {
         var time = new LocalTime(12, 35, 59, 128000987);
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.Write(time);
 
@@ -48,7 +48,7 @@ public class LocalTimeSerializerTests : PackStreamSerializerTests
     public void ShouldDeserializeTime()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.WriteStructHeader(LocalTimeSerializer.StructSize, LocalTimeSerializer.StructType);
         writer.Write(45359128000987);
@@ -70,7 +70,7 @@ public class LocalTimeSerializerTests : PackStreamSerializerTests
     {
         var time = new TimeOnly(12, 35, 59, 128);
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.Write(time);
 

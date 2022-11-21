@@ -36,7 +36,7 @@ internal sealed class PackStreamFactory : IPackStreamFactory
 
     public PackStreamWriter BuildWriter(MessageFormat format, IChunkWriter stream)
     {
-        return new PackStreamWriter(format, stream);
+        return new PackStreamWriter(format, stream.Stream);
     }
 
     public PackStreamReader BuildReader(MessageFormat format, MemoryStream stream, ByteBuffers buffers)

@@ -30,7 +30,7 @@ public class OffsetTimeSerializerTests : PackStreamSerializerTests
     {
         var time = new OffsetTime(12, 35, 59, 128000987, (int)TimeSpan.FromMinutes(150).TotalSeconds);
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.Write(time);
 
@@ -48,7 +48,7 @@ public class OffsetTimeSerializerTests : PackStreamSerializerTests
     public void ShouldDeserializeTimeWithOffset()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.WriteStructHeader(OffsetTimeSerializer.StructSize, OffsetTimeSerializer.StructType);
         writer.Write(45359128000987);

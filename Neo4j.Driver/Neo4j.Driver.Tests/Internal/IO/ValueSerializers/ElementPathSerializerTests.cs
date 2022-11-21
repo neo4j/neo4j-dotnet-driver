@@ -35,7 +35,7 @@ public class ElementPathSerializerTests : PackStreamSerializerTests
     public void ShouldDeserializeAddingElementIds()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         SerializeElementPath(
             writer,
@@ -81,7 +81,7 @@ public class ElementPathSerializerTests : PackStreamSerializerTests
     public void ShouldDeserializeWithElementIds()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         SerializeElementPath(
             writer,

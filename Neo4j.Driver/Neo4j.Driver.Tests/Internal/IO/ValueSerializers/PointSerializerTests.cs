@@ -28,7 +28,7 @@ public class PointSerializerTests : PackStreamSerializerTests
     public void ShouldSerializePoint2D()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.Write(new Point(7203, 51.5044585, -0.105658));
 
@@ -47,7 +47,7 @@ public class PointSerializerTests : PackStreamSerializerTests
     public void ShouldSerializePoint3D()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.Write(new Point(7203, 51.5044585, -0.105658, 35.25));
 
@@ -67,7 +67,7 @@ public class PointSerializerTests : PackStreamSerializerTests
     public void ShouldDeserializePoint2D()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.WriteStructHeader(PointSerializer.Point2DStructSize, PointSerializer.Point2DStructType);
         writer.Write(7203);
@@ -89,7 +89,7 @@ public class PointSerializerTests : PackStreamSerializerTests
     public void ShouldDeserializePoint3D()
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.WriteStructHeader(PointSerializer.Point3DStructSize, PointSerializer.Point3DStructType);
         writer.Write(7203);

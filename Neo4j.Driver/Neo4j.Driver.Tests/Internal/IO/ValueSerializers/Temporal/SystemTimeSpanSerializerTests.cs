@@ -36,7 +36,7 @@ public class SystemTimeSpanSerializerTests : PackStreamSerializerTests
     {
         var time = new TimeSpan(0, 12, 35, 59, 999);
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.Write(time);
 
@@ -54,7 +54,7 @@ public class SystemTimeSpanSerializerTests : PackStreamSerializerTests
     {
         var time = new TimeSpan(0, 0, 0, 0, -999);
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         var ex = Record.Exception(() => writer.Write(time));
 
@@ -66,7 +66,7 @@ public class SystemTimeSpanSerializerTests : PackStreamSerializerTests
     {
         var time = new TimeSpan(0, 24, 0, 0, 0);
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         var ex = Record.Exception(() => writer.Write(time));
 

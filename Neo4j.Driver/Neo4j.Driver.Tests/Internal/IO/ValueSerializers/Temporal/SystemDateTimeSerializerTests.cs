@@ -36,7 +36,7 @@ public class SystemDateTimeSerializerTests : PackStreamSerializerTests
     {
         var dateTime = new DateTime(1978, 12, 16, 12, 35, 59, 999, DateTimeKind.Local);
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.Write(dateTime);
 
@@ -55,7 +55,7 @@ public class SystemDateTimeSerializerTests : PackStreamSerializerTests
     {
         var dateTime = new DateTime(1978, 12, 16, 12, 35, 59, 999, DateTimeKind.Unspecified);
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.Write(dateTime);
 
@@ -74,7 +74,7 @@ public class SystemDateTimeSerializerTests : PackStreamSerializerTests
     {
         var dateTime = new DateTime(1978, 12, 16, 12, 35, 59, 999, DateTimeKind.Utc);
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.Write(dateTime);
 

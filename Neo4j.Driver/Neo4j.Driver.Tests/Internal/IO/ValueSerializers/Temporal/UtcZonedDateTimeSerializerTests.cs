@@ -71,7 +71,7 @@ public class UtcZonedDateTimeSerializerTests : PackStreamSerializerTests
         (long seconds, long nanos, ZoneOffset offset) expected)
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.Write(inDate);
 
@@ -93,7 +93,7 @@ public class UtcZonedDateTimeSerializerTests : PackStreamSerializerTests
         (long seconds, long nanos, ZoneOffset offset) inDate)
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.WriteStructHeader(
             UtcZonedDateTimeSerializer.StructSize,
@@ -122,7 +122,7 @@ public class UtcZonedDateTimeSerializerTests : PackStreamSerializerTests
         var inDate = new ZonedDateTime(1978, 12, 16, 12, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
         var expected = (seconds: 282652559L, nanos: 128000987L, zoneId: "Europe/Istanbul");
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.Write(inDate);
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -142,7 +142,7 @@ public class UtcZonedDateTimeSerializerTests : PackStreamSerializerTests
         var expected = new ZonedDateTime(1978, 12, 16, 12, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
         var inDate = (seconds: 282652559L, nanos: 128000987L, zoneId: "Europe/Istanbul");
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.WriteStructHeader(UtcZonedDateTimeSerializer.StructSize, UtcZonedDateTimeSerializer.StructTypeWithId);
         writer.Write(inDate.seconds);
@@ -162,7 +162,7 @@ public class UtcZonedDateTimeSerializerTests : PackStreamSerializerTests
         var inDate = new ZonedDateTime(1978, 12, 16, 13, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
         var expected = (seconds: 282652559L, nanos: 128000987L, zoneId: "Europe/Istanbul");
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.Write(inDate);
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -182,7 +182,7 @@ public class UtcZonedDateTimeSerializerTests : PackStreamSerializerTests
         var expected = new ZonedDateTime(1978, 12, 16, 13, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
         var inDate = (seconds: 282652559L, nanos: 128000987L, zoneId: "Europe/Istanbul");
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.WriteStructHeader(UtcZonedDateTimeSerializer.StructSize, UtcZonedDateTimeSerializer.StructTypeWithId);
         writer.Write(inDate.seconds);
@@ -203,7 +203,7 @@ public class UtcZonedDateTimeSerializerTests : PackStreamSerializerTests
         (long seconds, long nanos, string zoneId) expected)
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.Write(inDate);
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -224,7 +224,7 @@ public class UtcZonedDateTimeSerializerTests : PackStreamSerializerTests
         (long seconds, long nanos, string zoneId) inDate)
     {
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
 
         writer.WriteStructHeader(UtcZonedDateTimeSerializer.StructSize, UtcZonedDateTimeSerializer.StructTypeWithId);
         writer.Write(inDate.seconds);
@@ -247,7 +247,7 @@ public class UtcZonedDateTimeSerializerTests : PackStreamSerializerTests
         var zonedUtc = new ZonedDateTime(utc);
 
         var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer();
+        var writer = writerMachine.Writer;
         writer.Write(zoned);
         writer.Write(zonedUtc);
 
