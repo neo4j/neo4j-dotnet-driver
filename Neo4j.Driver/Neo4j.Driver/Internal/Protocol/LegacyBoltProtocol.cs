@@ -236,7 +236,7 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
             return;
         }
 
-        if (impersonatedUser is not null)
+        if (!string.IsNullOrWhiteSpace(impersonatedUser))
         {
             throw new ArgumentException(
                 "Bolt Protocol 3.0 does not support impersonatedUser, " +

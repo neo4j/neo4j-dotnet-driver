@@ -41,8 +41,8 @@ internal sealed class BoltProtocol : IBoltProtocol
         IConnection connection,
         AutoCommitParams autoCommitParams)
     {
-        if (connection.Version <= BoltProtocolVersion.V4_4 &&
-            string.IsNullOrWhiteSpace(autoCommitParams.ImpersonatedUser))
+        if (connection.Version < BoltProtocolVersion.V4_4 &&
+            !string.IsNullOrWhiteSpace(autoCommitParams.ImpersonatedUser))
         {
             throw new Exception("Can not impersonate users in 3.0-4.3"); //TODO: Make better.
         }
@@ -95,7 +95,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         TransactionConfig config,
         string impersonatedUser)
     {
-        if (connection.Version <= BoltProtocolVersion.V4_4 && string.IsNullOrWhiteSpace(impersonatedUser))
+        if (connection.Version < BoltProtocolVersion.V4_4 && !string.IsNullOrWhiteSpace(impersonatedUser))
         {
             throw new Exception("Can not impersonate users in 3.0-4.3"); //TODO: Make better.
         }
@@ -171,7 +171,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         string impersonatedUser,
         Bookmarks bookmarks)
     {
-        if (connection.Version <= BoltProtocolVersion.V4_4 && string.IsNullOrWhiteSpace(impersonatedUser))
+        if (connection.Version < BoltProtocolVersion.V4_4 && !string.IsNullOrWhiteSpace(impersonatedUser))
         {
             throw new Exception("Can not impersonate users in 3.0-4.3"); //TODO: Make better.
         }

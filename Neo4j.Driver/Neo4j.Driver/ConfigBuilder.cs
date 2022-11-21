@@ -268,12 +268,7 @@ public sealed class ConfigBuilder
     /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithUserAgent(string userAgent)
     {
-        if (userAgent == null)
-        {
-            throw new ArgumentNullException(nameof(userAgent));
-        }
-
-        _config.UserAgent = userAgent;
+        _config.UserAgent = userAgent ?? throw new ArgumentNullException(nameof(userAgent));
         return this;
     }
 

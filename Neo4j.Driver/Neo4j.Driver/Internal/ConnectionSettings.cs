@@ -26,7 +26,7 @@ internal class ConnectionSettings
     internal ConnectionSettings(Uri uri, IAuthToken authToken, Config config, IHostResolver hostResolver = null)
     {
         AuthToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
-
+        UserAgent = config.UserAgent;
         var resolver = hostResolver switch
         {
             //TODO: Consider moving to a factory.

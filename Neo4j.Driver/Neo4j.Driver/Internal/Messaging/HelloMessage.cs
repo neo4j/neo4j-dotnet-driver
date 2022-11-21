@@ -31,13 +31,13 @@ internal sealed class HelloMessage : IRequestMessage
         IDictionary<string, object> authToken,
         IDictionary<string, string> routingContext)
     {
-        if (authToken == null || authToken.Count == 0)
+        if (authToken?.Count > 0)
         {
-            MetaData = new Dictionary<string, object> { [UserAgentMetadataKey] = userAgent };
+            MetaData = new Dictionary<string, object>(authToken) { [UserAgentMetadataKey] = userAgent };
         }
         else
         {
-            MetaData = new Dictionary<string, object>(authToken) { [UserAgentMetadataKey] = userAgent };
+            MetaData = new Dictionary<string, object> { [UserAgentMetadataKey] = userAgent };
         }
 
         // Routing added in 4.1, subsequent hellos should include it.
