@@ -520,8 +520,10 @@ public class ConnectionPoolTests
 
             stopWatch.Stop();
             stopWatch.Elapsed.TotalSeconds.Should().BeGreaterOrEqualTo(10, 0.1);
-            exception.Should().BeOfType<ClientException>();
-            exception.Message.Should().StartWith("Failed to obtain a connection from pool");
+            exception.Should()
+                .BeOfType<ClientException>()
+                .Which.Message.Should()
+                .StartWith("Failed to obtain a connection from pool");
         }
 
         [Fact]
@@ -534,11 +536,15 @@ public class ConnectionPoolTests
                 poolSettings: new ConnectionPoolSettings(config),
                 isConnectionValid: false);
 
-            var exception =
-                await Record.ExceptionAsync(() => pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty));
+            var exception = await Record.ExceptionAsync(
+                () =>
+                    pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty));
 
-            exception.Should().BeOfType<ClientException>();
-            exception.Message.Should().StartWith("Failed to obtain a connection from pool within");
+            exception.Should()
+                .BeOfType<ClientException>()
+                .Which
+                .Message.Should()
+                .StartWith("Failed to obtain a connection from pool within");
         }
 
         [Theory]
@@ -546,16 +552,17 @@ public class ConnectionPoolTests
         [InlineData(AccessMode.Write)]
         public async Task ShouldManageModePropertyAsync(AccessMode mode)
         {
-            var connection = new Mock<IPooledConnection>().SetupProperty(x => x.Mode);
+            var connection = new Mock<IPooledConnection>();
+
             var idleConnections = new BlockingCollection<IPooledConnection> { connection.Object };
 
             var pool = NewConnectionPool(idleConnections);
 
             var acquired = await pool.AcquireAsync(mode, null, null, Bookmarks.Empty);
-            acquired.Mode.Should().Be(mode);
+            connection.Verify(x => x.Configure(null, mode));
 
             await pool.ReleaseAsync((IPooledConnection)acquired);
-            acquired.Mode.Should().BeNull();
+            connection.Verify(x => x.Configure(null, null));
         }
     }
 
