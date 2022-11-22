@@ -34,7 +34,7 @@ public class BoltProtocolFactoryTests
             var connMock = new Mock<ITcpSocketClient>();
             TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
             TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-            var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V30);
+            var boltProtocol = BoltProtocolFactory.Default.ForVersion(BoltProtocolVersion.V30);
             boltProtocol.Should().BeOfType<LegacyBoltProtocol>();
         }
 
@@ -44,7 +44,7 @@ public class BoltProtocolFactoryTests
             var connMock = new Mock<ITcpSocketClient>();
             TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
             TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-            var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V4_0);
+            var boltProtocol = BoltProtocolFactory.Default.ForVersion(BoltProtocolVersion.V4_0);
             boltProtocol.Should().BeOfType<BoltProtocol>();
         }
 
@@ -56,7 +56,7 @@ public class BoltProtocolFactoryTests
         public void ShouldThrowExceptionIfVersionIsNotSupported(int majorVersion, int minorVersion, string errorMessage)
         {
             var version = new BoltProtocolVersion(majorVersion, minorVersion);
-            var exception = Record.Exception(() => BoltProtocolFactory.ForVersion(version));
+            var exception = Record.Exception(() => BoltProtocolFactory.Default.ForVersion(version));
             exception.Should().BeOfType<NotSupportedException>();
             exception.Message.Should().StartWith(errorMessage);
         }
@@ -66,7 +66,7 @@ public class BoltProtocolFactoryTests
         public void ShouldThrowExceptionIfSpecialVersionIsNotSupported(int largeVersion, string errorMessage)
         {
             var version = new BoltProtocolVersion(largeVersion);
-            var exception = Record.Exception(() => BoltProtocolFactory.ForVersion(version));
+            var exception = Record.Exception(() => BoltProtocolFactory.Default.ForVersion(version));
             exception.Should().BeOfType<NotSupportedException>();
             exception.Message.Should().StartWith(errorMessage);
         }

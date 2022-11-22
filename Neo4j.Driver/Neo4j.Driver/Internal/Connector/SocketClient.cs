@@ -45,6 +45,7 @@ internal sealed class SocketClient : ISocketClient
     private MessageFormat _format;
     private IMessageReader _messageReader;
     private IMessageWriter _messageWriter;
+    private readonly IBoltHandshaker _handshaker;
 
     public SocketClient(
         Uri uri,
@@ -52,13 +53,17 @@ internal sealed class SocketClient : ISocketClient
         BufferSettings bufferSettings,
         ILogger logger,
         IConnectionIoFactory connectionIoFactory,
-        IPackStreamFactory packstreamFactory = null)
+        IPackStreamFactory packstreamFactory = null,
+        IBoltHandshaker boltHandshaker = null)
     {
         _uri = uri;
+        _bufferSettings = bufferSettings;
         _logger = logger;
+        
         _packstreamFactory = packstreamFactory ?? PackStreamFactory.Default;
         _connectionIoFactory = connectionIoFactory ?? SocketClientIoFactory.Default;
-        _bufferSettings = bufferSettings;
+        _handshaker = boltHandshaker ?? BoltHandshaker.Default;
+        
         _readBufferStream = new MemoryStream(_bufferSettings.MaxReadBufferSize);
         _tcpSocketClient = _connectionIoFactory.TcpSocketClient(socketSettings, _logger);
     }
@@ -72,7 +77,10 @@ internal sealed class SocketClient : ISocketClient
         await _tcpSocketClient.ConnectAsync(_uri, cancellationToken).ConfigureAwait(false);
 
         _logger?.Debug($"~~ [CONNECT] {_uri}");
-        Version = await DoHandshakeAsync(cancellationToken).ConfigureAwait(false);
+        
+        Version = await _handshaker
+            .DoHandshakeAsync(_tcpSocketClient, _logger, cancellationToken)
+            .ConfigureAwait(false);
 
         _format = _connectionIoFactory.Format(Version);
         _messageReader = _connectionIoFactory.Readers(_tcpSocketClient, _bufferSettings, _logger);
@@ -164,34 +172,8 @@ internal sealed class SocketClient : ISocketClient
         return default;
     }
 
-    /// <summary>Internal for testing purposes. Not for use outside of SocketClient.</summary>
-    internal void SetOpened()
+    private void SetOpened()
     {
         Interlocked.CompareExchange(ref _closedMarker, 0, -1);
-    }
-
-    private async Task<BoltProtocolVersion> DoHandshakeAsync(CancellationToken cancellationToken = default)
-    {
-        var data = BoltProtocolFactory.PackSupportedVersions();
-        await _tcpSocketClient.WriterStream.WriteAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(false);
-        await _tcpSocketClient.WriterStream.FlushAsync(cancellationToken).ConfigureAwait(false);
-
-        _logger?.Debug("C: [HANDSHAKE] {0}", data.ToHexString());
-
-        var responseBytes = new byte[4];
-        var read = await _tcpSocketClient.ReaderStream
-            .ReadAsync(responseBytes, 0, responseBytes.Length, cancellationToken)
-            .ConfigureAwait(false);
-
-        if (read < responseBytes.Length)
-        {
-            throw new IOException($"Unexpected end of stream when performing handshake, read returned {read}");
-        }
-
-        var agreedVersion = BoltProtocolFactory.UnpackAgreedVersion(responseBytes);
-
-        _logger?.Debug("S: [HANDSHAKE] {0}.{1}", agreedVersion.MajorVersion, agreedVersion.MinorVersion);
-
-        return agreedVersion;
     }
 }

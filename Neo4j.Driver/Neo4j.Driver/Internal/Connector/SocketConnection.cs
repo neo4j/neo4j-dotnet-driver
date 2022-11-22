@@ -45,6 +45,7 @@ internal sealed class SocketConnection : IConnection
     private readonly string _userAgent;
 
     private string _id;
+    private readonly IBoltProtocolFactory _protocolFactory;
 
     internal SocketConnection(
         Uri uri,
@@ -64,6 +65,7 @@ internal sealed class SocketConnection : IConnection
 
         _responsePipeline = new ResponsePipeline(_logger);
         RoutingContext = routingContext;
+        _protocolFactory = BoltProtocolFactory.Default;
     }
 
     // for test only
@@ -73,7 +75,8 @@ internal sealed class SocketConnection : IConnection
         string userAgent,
         ILogger logger,
         ServerInfo server,
-        IResponsePipeline responsePipeline = null)
+        IResponsePipeline responsePipeline = null,
+        IBoltProtocolFactory protocolFactory = null)
     {
         _client = socketClient ?? throw new ArgumentNullException(nameof(socketClient));
         _authToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
@@ -84,6 +87,7 @@ internal sealed class SocketConnection : IConnection
         _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
         _logger = new PrefixLogger(logger, FormatPrefix(_id));
         _responsePipeline = responsePipeline ?? new ResponsePipeline(logger);
+        _protocolFactory = protocolFactory ?? BoltProtocolFactory.Default;
     }
 
     internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
@@ -112,7 +116,7 @@ internal sealed class SocketConnection : IConnection
         try
         {
             await _client.ConnectAsync(RoutingContext, cancellationToken).ConfigureAwait(false);
-            BoltProtocol = BoltProtocolFactory.ForVersion(Version);
+            BoltProtocol = _protocolFactory.ForVersion(Version);
         }
         finally
         {

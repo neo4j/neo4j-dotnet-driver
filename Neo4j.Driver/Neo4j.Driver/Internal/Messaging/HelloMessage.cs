@@ -59,6 +59,7 @@ internal sealed class HelloMessage : IRequestMessage
     public override string ToString()
     {
         var metadataCopy = new Dictionary<string, object>(MetaData);
+        
         if (metadataCopy.ContainsKey(AuthToken.CredentialsKey))
         {
             metadataCopy[AuthToken.CredentialsKey] = "******";

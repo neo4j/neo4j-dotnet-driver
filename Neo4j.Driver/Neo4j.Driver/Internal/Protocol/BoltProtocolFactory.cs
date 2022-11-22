@@ -22,8 +22,19 @@ using Neo4j.Driver.Internal.IO;
 
 namespace Neo4j.Driver.Internal;
 
-internal static class BoltProtocolFactory
+internal interface IBoltProtocolFactory
 {
+    IBoltProtocol ForVersion(BoltProtocolVersion version);
+}
+
+internal class BoltProtocolFactory : IBoltProtocolFactory
+{
+    internal static BoltProtocolFactory Default = new();
+
+    private BoltProtocolFactory()
+    {
+    }
+    
     private const int BoltHttpIdentifier = 1213486160; // 0x‭48 54 54 50 - or HTTP ascii codes...
 
     private static readonly string HttpErrorMessage =
@@ -55,7 +66,7 @@ internal static class BoltProtocolFactory
             },
             LazyThreadSafetyMode.PublicationOnly);
 
-    public static IBoltProtocol ForVersion(BoltProtocolVersion version)
+    public IBoltProtocol ForVersion(BoltProtocolVersion version)
     {
         return version switch
         {

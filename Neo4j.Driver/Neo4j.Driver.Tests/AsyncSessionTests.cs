@@ -34,26 +34,11 @@ namespace Neo4j.Driver.Tests;
 
 public class AsyncSessionTests
 {
-    internal static AsyncSession NewSession(IConnection connection, ILogger logger = null)
+    internal static AsyncSession NewSession(IConnection connection, bool reactive = false, ILogger logger = null)
     {
         return new AsyncSession(
             new TestConnectionProvider(connection),
             logger,
-            null,
-            0,
-            new Driver.SessionConfig(),
-            false);
-    }
-
-    internal static AsyncSession NewSession(IBoltProtocol protocol, bool reactive = false)
-    {
-        var mockConn = new Mock<IConnection>();
-        mockConn.Setup(x => x.IsOpen).Returns(true);
-        mockConn.Setup(x => x.BoltProtocol).Returns(protocol);
-
-        return new AsyncSession(
-            new TestConnectionProvider(mockConn.Object),
-            null,
             null,
             0,
             new Driver.SessionConfig(),
@@ -111,12 +96,12 @@ public class AsyncSessionTests
         [InlineData(false)]
         public async Task ShouldDelegateToProtocolRunAutoCommitTxAsync(bool reactive)
         {
-            var mockProtocol = new Mock<IBoltProtocol>();
-            var session = NewSession(mockProtocol.Object, reactive);
+            var mockConn = new Mock<IConnection>();
+            var session = NewSession(mockConn.Object, reactive);
             await session.RunAsync("lalalal");
 
-            mockProtocol.Verify(
-                x => x.RunInAutoCommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<AutoCommitParams>()),
+            mockConn.Verify(
+                x => x.RunInAutoCommitTransactionAsync(It.IsAny<AutoCommitParams>()),
                 Times.Once);
         }
     }
@@ -211,13 +196,10 @@ public class AsyncSessionTests
         public async void ShouldCloseConnectionOnRunIfBeginTxFailed()
         {
             // Given
-            var mockProtocol = new Mock<IBoltProtocol>();
-            var mockConn = MockedConnectionWithSuccessResponse(mockProtocol.Object);
-
-            mockProtocol.Setup(
+            var mockConn = new Mock<IConnection>();
+            mockConn.Setup(
                     x =>
                         x.BeginTransactionAsync(
-                            It.IsAny<IConnection>(),
                             It.IsAny<string>(),
                             It.IsAny<Bookmarks>(),
                             It.IsAny<TransactionConfig>(),

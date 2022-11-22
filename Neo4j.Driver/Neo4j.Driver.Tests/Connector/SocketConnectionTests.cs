@@ -45,11 +45,19 @@ public class SocketConnectionTests
         ISocketClient socketClient = null,
         IResponsePipeline pipeline = null,
         ServerInfo server = null,
-        ILogger logger = null)
+        ILogger logger = null,
+        IBoltProtocolFactory boltProtocolFactory = null)
     {
         socketClient ??= SocketClient;
         server ??= Server;
-        return new SocketConnection(socketClient, AuthToken, UserAgent, logger ?? Logger, server, pipeline);
+        return new SocketConnection(
+            socketClient,
+            AuthToken,
+            UserAgent,
+            logger ?? Logger,
+            server,
+            pipeline,
+            boltProtocolFactory);
     }
 
     public class InitMethod
@@ -59,16 +67,20 @@ public class SocketConnectionTests
         {
             // Given
             var mockClient = new Mock<ISocketClient>();
-            var mockProtocol = new Mock<IBoltProtocol>();
-            mockClient.Setup(x => x.ConnectAsync(null, CancellationToken.None));
-            var conn = NewSocketConnection(mockClient.Object);
+            mockClient.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V30);
+
+            var protocolMock = new Mock<IBoltProtocol>();
+            var bpFactory = new Mock<IBoltProtocolFactory>();
+            bpFactory.Setup(x => x.ForVersion(BoltProtocolVersion.V30)).Returns(protocolMock.Object);
+            
+            var conn = NewSocketConnection(mockClient.Object, boltProtocolFactory: bpFactory.Object);
 
             // When
             await conn.InitAsync();
 
             // Then
             mockClient.Verify(c => c.ConnectAsync(null, CancellationToken.None), Times.Once);
-            mockProtocol.Verify(p => p.LoginAsync(conn, It.IsAny<string>(), It.IsAny<IAuthToken>()));
+            protocolMock.Verify(x => x.LoginAsync(conn, It.IsAny<string>(), It.IsAny<IAuthToken>()), Times.Once);
         }
 
         [Fact]

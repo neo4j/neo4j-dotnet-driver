@@ -41,12 +41,37 @@ public class SocketClientTests
         Mock.Of<IHostResolver>(),
         new EncryptionManager(false, TrustManager.CreateInsecure()));
 
-    private static SocketClient Client(Mock<IConnectionIoFactory> factory)
+    private static SocketClient NewClient(
+        Mock<IConnectionIoFactory> factory = null,
+        Mock<IPackStreamFactory> mockPackstreamFactory = null,
+        Mock<IBoltHandshaker> boltHandshaker = null)
     {
-        return new SocketClient(FakeUri, SocketSetting, DefaultBuffers, Mock.Of<ILogger>(), factory.Object);
+        factory ??= CreateMockIoFactory(null, null).Item2;
+        mockPackstreamFactory ??= new Mock<IPackStreamFactory>();
+        
+        if (boltHandshaker == null)
+        {
+            boltHandshaker = new Mock<IBoltHandshaker>();
+            boltHandshaker
+                .Setup(
+                    x => x.DoHandshakeAsync(
+                        It.IsAny<ITcpSocketClient>(),
+                        It.IsAny<ILogger>(),
+                        It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(Version));
+        }
+
+        return new SocketClient(
+            FakeUri,
+            SocketSetting,
+            DefaultBuffers,
+            Mock.Of<ILogger>(),
+            factory.Object,
+            mockPackstreamFactory.Object,
+            boltHandshaker.Object);
     }
 
-    private static (Mock<ITcpSocketClient>, Mock<IConnectionIoFactory>) CreatMockIoFactory(
+    private static (Mock<ITcpSocketClient>, Mock<IConnectionIoFactory>) CreateMockIoFactory(
         Action<Mock<ITcpSocketClient>> configureMock,
         Action<Mock<IConnectionIoFactory>> configureFactory)
     {
@@ -63,11 +88,10 @@ public class SocketClientTests
         return (connMock, mockIoFactory);
     }
 
-    private static void SetupBuild(
+    private static void SetupFactory(
         Mock<IConnectionIoFactory> factory,
         MessageFormat format = null,
-        ChunkWriter writer = null,
-        MemoryStream stream = null,
+        IChunkWriter writer = null,
         IMessageReader messageReader = null,
         IMessageWriter messageWriter = null)
     {
@@ -80,27 +104,47 @@ public class SocketClientTests
 
         var mr = messageReader ?? Mock.Of<IMessageReader>();
         var mw = messageWriter ?? Mock.Of<IMessageWriter>();
+
+        factory
+            .Setup(x => x.Readers(It.IsAny<ITcpSocketClient>(), It.IsAny<BufferSettings>(), It.IsAny<ILogger>()))
+            .Returns(mr);
+
+        factory
+            .Setup(x => x.Writers(It.IsAny<ITcpSocketClient>(), It.IsAny<BufferSettings>(), It.IsAny<ILogger>()))
+            .Returns((cw, mw));
+
+        factory.Setup(x => x.Format(Version)).Returns(fmt);
     }
 
     public class ConnectMethod
     {
         [Fact]
-        public async void ShouldThrowIOExceptionIfFailedToReadOnHandshakeAsync()
+        public async void ShouldNotCatchHandshakeFailuresOrConstructIoTypes()
         {
-            var (_, mockIoFactory) = CreatMockIoFactory(
-                connMock =>
-                {
-                    TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                    TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
-                },
-                null);
-
-            var client = Client(mockIoFactory);
+            var (_, io) = CreateMockIoFactory(null, null);
+            var mockHandshaker = new Mock<IBoltHandshaker>();
+            var exception = new IOException();
+            mockHandshaker
+                .Setup(
+                    x => x.DoHandshakeAsync(
+                        It.IsAny<ITcpSocketClient>(),
+                        It.IsAny<ILogger>(),
+                        It.IsAny<CancellationToken>()))
+                .ThrowsAsync(exception);
+            
+            var client = NewClient(io, null, mockHandshaker);
 
             var ex = await Record.ExceptionAsync(
                 () => client.ConnectAsync(new Dictionary<string, string>(), CancellationToken.None));
-
-            ex.Should().NotBeNull().And.BeOfType<IOException>();
+            
+            mockHandshaker.Verify(
+                x => x.DoHandshakeAsync(
+                    It.IsAny<ITcpSocketClient>(),
+                    It.IsAny<ILogger>(),
+                    It.IsAny<CancellationToken>()), Times.Once);
+            ex.Should().NotBeNull().And.Be(exception);
+            
+            io.Verify(x => x.Format(It.IsAny<BoltProtocolVersion>()), Times.Never);
         }
     }
 
@@ -111,7 +155,7 @@ public class SocketClientTests
         {
             var version = new BoltProtocolVersion(4, 1);
 
-            var (connMock, factory) = CreatMockIoFactory(
+            var (connMock, factory) = CreateMockIoFactory(
                 x =>
                 {
                     TcpSocketClientTestSetup.CreateReadStreamMock(
@@ -122,7 +166,7 @@ public class SocketClientTests
                 },
                 null);
 
-            var client = Client(factory);
+            var client = NewClient(factory);
 
             await client.ConnectAsync(new Dictionary<string, string>());
 
@@ -138,42 +182,44 @@ public class SocketClientTests
         {
             // Given
             var writerMock = new Mock<IMessageWriter>();
+            var chunkerMock = new Mock<IChunkWriter>();
 
-            var (_, factory) = CreatMockIoFactory(
+            var (_, factory) = CreateMockIoFactory(
                 null,
-                factoryMock =>
-                    SetupBuild(factoryMock, messageWriter: writerMock.Object));
+                x => SetupFactory(x, writer:chunkerMock.Object, messageWriter: writerMock.Object));
 
             var m1 = new RunWithMetadataMessage(Version, new Query("Run message 1"));
             var m2 = new RunWithMetadataMessage(Version, new Query("Run message 2"));
             var messages = new IRequestMessage[] { m1, m2 };
 
-            var client = Client(factory);
-
+            var client = NewClient(factory, new Mock<IPackStreamFactory>());
+            await client.ConnectAsync(null);
+            
             // When
             await client.SendAsync(messages);
 
             // Then
             writerMock.Verify(x => x.Write(m1, It.IsAny<PackStreamWriter>()), Times.Once);
             writerMock.Verify(x => x.Write(m2, It.IsAny<PackStreamWriter>()), Times.Once);
-            writerMock.Verify(x => x.FlushAsync(), Times.Once);
+            
+            chunkerMock.Verify(x => x.SendAsync(), Times.Once);
         }
 
         [Fact]
         public async Task ShouldCloseConnectionIfErrorAsync()
         {
-            var (tcpConn, factory) = CreatMockIoFactory(null, null);
+            var (connMock, factory) = CreateMockIoFactory(null, null);
 
             // Given
-            var client = Client(factory);
-            client.SetOpened();
+            var client = NewClient(factory);
+            await client.ConnectAsync(null);
 
             // When
             var exception = await Record.ExceptionAsync(() => client.SendAsync(null));
 
             // Then
             exception.Should().BeOfType<NullReferenceException>();
-            tcpConn.Verify(x => x.Dispose(), Times.Once);
+            connMock.Verify(x => x.Dispose(), Times.Once);
         }
     }
 
@@ -183,13 +229,20 @@ public class SocketClientTests
         public async Task ShouldReadMessageAsync()
         {
             // Given
+            var pipeline = new Mock<IResponsePipeline>();
             var readerMock = new Mock<IMessageReader>();
 
-            var (_, factory) = CreatMockIoFactory(null, x => SetupBuild(x, messageReader: readerMock.Object));
-
-            var client = Client(factory);
-
-            var pipeline = new Mock<IResponsePipeline>();
+            var (_, factory) = CreateMockIoFactory(null, x => SetupFactory(x, messageReader: readerMock.Object));
+            
+            var psFactory = new Mock<IPackStreamFactory>();
+            psFactory.Setup(x => x.BuildReader(
+                    It.IsAny<MessageFormat>(),
+                    It.IsAny<MemoryStream>(),
+                    It.IsAny<ByteBuffers>()))
+                .Returns(new PackStreamReader(null, null, null));
+            
+            var client = NewClient(factory, psFactory);
+            await client.ConnectAsync(null);
 
             // When
             await client.ReceiveOneAsync(pipeline.Object);
@@ -202,27 +255,25 @@ public class SocketClientTests
         public async Task ShouldCloseConnectionIfErrorAsync()
         {
             // Given
-            var packStreamReader = new PackStreamReader(
-                new MessageFormat(Version),
-                new MemoryStream(),
-                new ByteBuffers());
-
-            var pipeline = new Mock<IResponsePipeline>();
+            var mockPipeline = new Mock<IResponsePipeline>();
 
             var readerMock = new Mock<IMessageReader>();
+            readerMock
+                .Setup(x => x.ReadAsync(mockPipeline.Object, It.IsAny<PackStreamReader>()))
+                .Throws<IOException>();
 
-            // Throw error when try to read
-            readerMock.Setup(x => x.ReadAsync(pipeline.Object, packStreamReader)).Throws<IOException>();
+            var (connMock, factory) = CreateMockIoFactory(null,
+                x => SetupFactory(x, messageReader: readerMock.Object));
 
-            var (connMock, factory) = CreatMockIoFactory(null, x => SetupBuild(x, messageReader: readerMock.Object));
-            var client = Client(factory);
-            client.SetOpened();
+            var client = NewClient(factory);
+            await client.ConnectAsync(null);
 
             // When
-            var exception = await Record.ExceptionAsync(() => client.ReceiveOneAsync(pipeline.Object));
+            var exception = await Record.ExceptionAsync(() => client.ReceiveOneAsync(mockPipeline.Object));
 
             // Then
             exception.Should().BeOfType<IOException>();
+            readerMock.Verify(x => x.ReadAsync(mockPipeline.Object, It.IsAny<PackStreamReader>()), Times.Once);
             connMock.Verify(x => x.Dispose(), Times.Once);
         }
 
@@ -230,21 +281,23 @@ public class SocketClientTests
         public async Task ShouldCloseConnectionOnProtocolException()
         {
             // Given
-            var pipeline = new Mock<IResponsePipeline>();
+            var mockPipeline = new Mock<IResponsePipeline>();
+
             var readerMock = new Mock<IMessageReader>();
+            readerMock.Setup(x => x.ReadAsync(mockPipeline.Object, It.IsAny<PackStreamReader>()))
+                .Throws(new ProtocolException("test"));
 
-            var (connMock, factory) = CreatMockIoFactory(null, x => SetupBuild(x, messageReader: readerMock.Object));
-            var client = Client(factory);
-            client.SetOpened();
+            var (connMock, factory) = CreateMockIoFactory(null, x => SetupFactory(x, messageReader: readerMock.Object));
 
-            pipeline.Setup(x => x.AssertNoProtocolViolation()).Throws(new ProtocolException("some protocol error"));
+            var client = NewClient(factory);
+            await client.ConnectAsync(null);
 
             // When
-            var exception = await Record.ExceptionAsync(() => client.ReceiveOneAsync(pipeline.Object));
+            var exception = await Record.ExceptionAsync(() => client.ReceiveOneAsync(mockPipeline.Object));
 
             // Then
             exception.Should().BeOfType<ProtocolException>();
-            readerMock.Verify(x => x.ReadAsync(pipeline.Object, It.IsAny<PackStreamReader>()), Times.Once);
+            readerMock.Verify(x => x.ReadAsync(mockPipeline.Object, It.IsAny<PackStreamReader>()), Times.Once);
             connMock.Verify(x => x.Dispose(), Times.Once);
         }
 
@@ -253,17 +306,15 @@ public class SocketClientTests
         {
             // Given
             var readerMock = new Mock<IMessageReader>();
-            var connMock = new Mock<ITcpSocketClient>();
             var pipeline = new Mock<IResponsePipeline>();
 
-            var (_, factory) = CreatMockIoFactory(null, x => SetupBuild(x, messageReader: readerMock.Object));
+            var (connMock, factory) = CreateMockIoFactory(null, x => SetupFactory(x, messageReader: readerMock.Object));
 
-            var client = Client(factory);
-            client.SetOpened();
+            var client = NewClient(factory);
+            await client.ConnectAsync(null);
 
-            var psr = new PackStreamReader(new MessageFormat(Version), new MemoryStream(), new ByteBuffers());
-
-            readerMock.Setup(x => x.ReadAsync(pipeline.Object, psr)).ThrowsAsync(new DatabaseException());
+            readerMock.Setup(x => x.ReadAsync(pipeline.Object, It.IsAny<PackStreamReader>()))
+                .ThrowsAsync(new DatabaseException());
 
             // When
             var exception = await Record.ExceptionAsync(() => client.ReceiveOneAsync(pipeline.Object));
@@ -280,10 +331,10 @@ public class SocketClientTests
         [Fact]
         public async Task ShouldCallDisconnectAsyncOnTheTcpSocketClientWhenStoppedAsync()
         {
-            var (connMock, factory) = CreatMockIoFactory(null, null);
+            var (connMock, factory) = CreateMockIoFactory(null, null);
 
-            var client = new SocketClient(FakeUri, SocketSetting, DefaultBuffers, Mock.Of<ILogger>(), factory.Object);
-            client.SetOpened();
+            var client = NewClient(factory);
+            await client.ConnectAsync(null);
 
             // When
             await client.DisposeAsync();

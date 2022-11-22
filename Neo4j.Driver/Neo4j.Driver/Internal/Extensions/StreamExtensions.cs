@@ -68,7 +68,10 @@ internal static class StreamExtensions
         int count,
         int timeoutMs)
     {
-        var timeout = timeoutMs <= 0 ? TimeSpan.FromMilliseconds(-1) : TimeSpan.FromMilliseconds(timeoutMs);
+        var timeout = timeoutMs <= 0
+            ? TimeSpan.FromMilliseconds(-1)
+            : TimeSpan.FromMilliseconds(timeoutMs);
+
         using var source = new CancellationTokenSource(timeout);
 
         try
@@ -82,7 +85,8 @@ internal static class StreamExtensions
             return await stream.ReadAsync(buffer, offset, count, source.Token).ConfigureAwait(false);
 #endif
         }
-        catch (Exception ex) when (source.IsCancellationRequested)
+        catch (Exception ex) when (ex is OperationCanceledException or ObjectDisposedException or IOException &&
+                                   source.IsCancellationRequested)
         {
             stream.Close();
             throw new ConnectionReadTimeoutException(

@@ -17,6 +17,8 @@
 
 using System;
 using System.IO;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -31,26 +33,57 @@ public class StreamExtensionTests
     [Fact]
     public async Task ShouldReadAndThrowOnTimeout()
     {
-        const int timeout = 100;
-        var moqMemoryStream = new Mock<Stream>();
-        moqMemoryStream.Setup(
-                x =>
-                    x.ReadAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(100, TimeSpan.FromMilliseconds(200));
+        async Task RunServer(CancellationToken token)
+        {
+            var tcpServer = new TcpListener(IPAddress.Loopback, 32411);
+            try
+            {
+                tcpServer.Start();
+                using var socket = await tcpServer.AcceptSocketAsync(token);
+                while (!token.IsCancellationRequested)
+                {
+                    await Task.Delay(10, token);
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                // ignore.
+            }
+            finally
+            {
+                tcpServer.Stop();
+            }
+        }
+        
+        var source = new CancellationTokenSource();
+        var server = RunServer(source.Token);
 
-        var ex = await Record.ExceptionAsync(
-            () =>
-                moqMemoryStream.Object.ReadWithTimeoutAsync(
-                    It.IsAny<byte[]>(),
-                    It.IsAny<int>(),
-                    It.IsAny<int>(),
-                    timeout));
+        try
+        {
+            using var socket = new TcpClient();
+            await socket.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 32411));
+            await using var stream = socket.GetStream();
+            const int timeout = 100;
 
-        ex.Should().NotBeNull();
-        ex.Should()
-            .BeOfType<ConnectionReadTimeoutException>()
-            .Which.Message.Should()
-            .Be($"Socket/Stream timed out after {timeout}ms, socket closed.");
+            var ex = await Record.ExceptionAsync(() => stream.ReadWithTimeoutAsync(new byte[1], 0, 1, timeout));
+
+            ex.Should()
+                .BeOfType<ConnectionReadTimeoutException>()
+                .Which.Message.Should()
+                .Be($"Socket/Stream timed out after {timeout}ms, socket closed.");
+        }
+        finally
+        {
+            source.Cancel();
+            try
+            {
+                await server;
+            }
+            catch (OperationCanceledException)
+            {
+                //ignore
+            }
+        }
     }
 
     [Theory]

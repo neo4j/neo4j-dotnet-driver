@@ -40,7 +40,7 @@ internal sealed class RouteMessage : IRequestMessage
 
     public override string ToString()
     {
-        var stringBuilder = new StringBuilder(50);
+        var stringBuilder = new StringBuilder(64);
 
         stringBuilder.Append("ROUTE {");
         foreach (var data in Routing)

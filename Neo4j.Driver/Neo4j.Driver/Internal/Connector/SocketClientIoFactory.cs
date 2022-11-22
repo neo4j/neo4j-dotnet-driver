@@ -29,7 +29,7 @@ internal interface IConnectionIoFactory
         BufferSettings settings,
         ILogger logger);
 
-    (ChunkWriter, IMessageWriter) Writers(ITcpSocketClient client, BufferSettings settings, ILogger logger);
+    (IChunkWriter, IMessageWriter) Writers(ITcpSocketClient client, BufferSettings settings, ILogger logger);
 }
 
 internal sealed class SocketClientIoFactory : IConnectionIoFactory
@@ -58,7 +58,7 @@ internal sealed class SocketClientIoFactory : IConnectionIoFactory
         return new MessageReader(new ChunkReader(client.ReaderStream), settings, logger);
     }
 
-    public (ChunkWriter, IMessageWriter) Writers(ITcpSocketClient client, BufferSettings settings, ILogger logger)
+    public (IChunkWriter, IMessageWriter) Writers(ITcpSocketClient client, BufferSettings settings, ILogger logger)
     {
         var chunkWriter = new ChunkWriter(client.WriterStream, settings, logger);
         var messageWriter = new MessageWriter(chunkWriter);
