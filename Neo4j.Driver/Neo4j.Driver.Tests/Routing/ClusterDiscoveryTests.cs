@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -25,12 +24,9 @@ using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Messaging.V4_3;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.Routing;
 using Xunit;
-using static Neo4j.Driver.Tests.Routing.MockedMessagingClientV3;
-using static Neo4j.Driver.Tests.Routing.MockedMessagingClientV4_3;
 
 namespace Neo4j.Driver.Tests.Routing;
 
