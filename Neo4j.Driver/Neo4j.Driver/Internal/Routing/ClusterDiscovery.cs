@@ -33,9 +33,8 @@ internal class ClusterDiscovery : IDiscovery
         string impersonatedUser,
         Bookmarks bookmarks)
     {
-        var routingTable = await connection.GetRoutingTable(database, impersonatedUser, bookmarks)
-            .ConfigureAwait(
-                false); //Not ideal passing the connection in... but protocol currently doesn't know what connection it is on. Needs some though...
+        var routingTable = await connection.GetRoutingTableAsync(database, impersonatedUser, bookmarks)
+            .ConfigureAwait(false);
 
         return ParseDiscoveryResult(routingTable);
     }

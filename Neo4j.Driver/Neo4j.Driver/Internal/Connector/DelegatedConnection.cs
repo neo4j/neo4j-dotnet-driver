@@ -128,12 +128,12 @@ internal abstract class DelegatedConnection : IConnection
         return Delegate.LogoutAsync();
     }
 
-    public Task<IReadOnlyDictionary<string, object>> GetRoutingTable(
+    public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         string database,
         string impersonatedUser,
         Bookmarks bookmarks)
     {
-        return Delegate.GetRoutingTable(database, impersonatedUser, bookmarks);
+        return Delegate.GetRoutingTableAsync(database, impersonatedUser, bookmarks);
     }
 
     public Task<IResultCursor> RunInAutoCommitTransactionAsync(AutoCommitParams autoCommitParams)

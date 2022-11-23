@@ -33,57 +33,28 @@ public class StreamExtensionTests
     [Fact]
     public async Task ShouldReadAndThrowOnTimeout()
     {
-        async Task RunServer(CancellationToken token)
+        void Callback(Memory<byte> _, CancellationToken token)
         {
-            var tcpServer = new TcpListener(IPAddress.Loopback, 32411);
-            try
-            {
-                tcpServer.Start();
-                using var socket = await tcpServer.AcceptSocketAsync(token);
-                while (!token.IsCancellationRequested)
-                {
-                    await Task.Delay(10, token);
-                }
-            }
-            catch (TaskCanceledException)
-            {
-                // ignore.
-            }
-            finally
-            {
-                tcpServer.Stop();
-            }
+            Task.Delay(110).GetAwaiter().GetResult();
+            token.ThrowIfCancellationRequested();
         }
+
+        var streamMock = new Mock<Stream>();
+        streamMock
+            .Setup(x => x.ReadAsync(It.IsAny<Memory<byte>>(), It.IsAny<CancellationToken>()))
+            .Callback(Callback)
+            .ReturnsAsync(1);
+
+        const int timeout = 100;
+
+        var ex = await Record.ExceptionAsync(() => streamMock.Object.ReadWithTimeoutAsync(new byte[1], 0, 1, timeout));
+
+        ex.Should()
+            .BeOfType<ConnectionReadTimeoutException>()
+            .Which.Message.Should()
+            .Be($"Socket/Stream timed out after {timeout}ms, socket closed.");
         
-        var source = new CancellationTokenSource();
-        var server = RunServer(source.Token);
-
-        try
-        {
-            using var socket = new TcpClient();
-            await socket.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 32411));
-            await using var stream = socket.GetStream();
-            const int timeout = 100;
-
-            var ex = await Record.ExceptionAsync(() => stream.ReadWithTimeoutAsync(new byte[1], 0, 1, timeout));
-
-            ex.Should()
-                .BeOfType<ConnectionReadTimeoutException>()
-                .Which.Message.Should()
-                .Be($"Socket/Stream timed out after {timeout}ms, socket closed.");
-        }
-        finally
-        {
-            source.Cancel();
-            try
-            {
-                await server;
-            }
-            catch (OperationCanceledException)
-            {
-                //ignore
-            }
-        }
+        streamMock.Verify(x => x.Close(), Times.Once);
     }
 
     [Theory]
@@ -94,10 +65,8 @@ public class StreamExtensionTests
     public async Task ShouldReadSuccessfullyWithTimeout(int timeout)
     {
         var moqMemoryStream = new Mock<Stream>();
-        moqMemoryStream.Setup(
-                x =>
-                    x.ReadAsync(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(100, TimeSpan.FromMilliseconds(200));
+        moqMemoryStream.Setup(x => x.ReadAsync(It.IsAny<Memory<byte>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(100, TimeSpan.FromMilliseconds(100));
 
         var ex = await Record.ExceptionAsync(
             () =>
@@ -106,6 +75,24 @@ public class StreamExtensionTests
                     It.IsAny<int>(),
                     It.IsAny<int>(),
                     timeout));
+
+        ex.Should().BeNull();
+    }
+    
+    [Fact]
+    public async Task ShouldReadSuccessfullyWithoutTimeout()
+    {
+        var moqMemoryStream = new Mock<Stream>();
+        moqMemoryStream.Setup(x => x.ReadAsync(It.IsAny<Memory<byte>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(100, TimeSpan.FromMilliseconds(100));
+
+        var ex = await Record.ExceptionAsync(
+            () =>
+                moqMemoryStream.Object.ReadWithTimeoutAsync(
+                    It.IsAny<byte[]>(),
+                    It.IsAny<int>(),
+                    It.IsAny<int>(),
+                    -1));
 
         ex.Should().BeNull();
     }

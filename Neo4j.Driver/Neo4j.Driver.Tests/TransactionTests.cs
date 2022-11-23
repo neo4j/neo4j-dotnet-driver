@@ -31,20 +31,9 @@ public class TransactionTests
     public class Constructor
     {
         [Fact]
-        public void ShouldObtainProtocolFromConnection()
-        {
-            var mockConn = new Mock<IConnection>();
-            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
-
-            mockConn.Verify(x => x.BoltProtocol);
-        }
-
-        [Fact]
         public async Task ShouldSaveBookmark()
         {
             var mockConn = new Mock<IConnection>();
-            var mockProtocol = new Mock<IBoltProtocol>();
-            mockConn.Setup(x => x.BoltProtocol).Returns(mockProtocol.Object);
 
             var bookmarks = Bookmarks.From(FakeABookmark(123));
             var tx = new AsyncTransaction(
@@ -55,9 +44,8 @@ public class TransactionTests
                 bookmarks);
 
             await tx.BeginTransactionAsync(null);
-            mockProtocol.Verify(
+            mockConn.Verify(
                 x => x.BeginTransactionAsync(
-                    It.IsAny<IConnection>(),
                     It.IsAny<string>(),
                     bookmarks,
                     It.IsAny<TransactionConfig>(),

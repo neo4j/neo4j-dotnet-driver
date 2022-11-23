@@ -36,303 +36,52 @@ namespace Neo4j.Driver.Tests.Routing;
 
 public class ClusterDiscoveryTests
 {
-    private static object[] CreateGetServersResponseRecordFields(int routerCount, int writerCount, int readerCount)
-    {
-        return new object[]
-        {
-            "15000",
-            new List<object>
-            {
-                new Dictionary<string, object>
-                {
-                    { "addresses", GenerateServerList(routerCount) },
-                    { "role", "ROUTE" }
-                },
-                new Dictionary<string, object>
-                {
-                    { "addresses", GenerateServerList(writerCount) },
-                    { "role", "WRITE" }
-                },
-                new Dictionary<string, object>
-                {
-                    { "addresses", GenerateServerList(readerCount) },
-                    { "role", "READ" }
-                }
-            }
-        };
-    }
-
-    internal static Dictionary<string, object> CreateGetServersDictionary(
-        int routerCount,
-        int writerCount,
-        int readerCount)
-    {
-        return new Dictionary<string, object>
-        {
-            {
-                "rt", new Dictionary<string, object>
-                {
-                    { "ttl", "15000" },
-                    {
-                        "servers", new List<object>
-                        {
-                            new Dictionary<string, object>
-                            {
-                                { "addresses", GenerateServerList(routerCount) },
-                                { "role", "ROUTE" }
-                            },
-                            new Dictionary<string, object>
-                            {
-                                { "addresses", GenerateServerList(writerCount) },
-                                { "role", "WRITE" }
-                            },
-                            new Dictionary<string, object>
-                            {
-                                { "addresses", GenerateServerList(readerCount) },
-                                { "role", "READ" }
-                            }
-                        }
-                    }
-                }
-            }
-        };
-    }
-
-    private static IList<object> GenerateServerList(int count)
-    {
-        var list = new List<object>(count);
-        for (var i = 0; i < count; i++)
-        {
-            list.Add($"127.0.0.1:{i + 9001}");
-        }
-
-        return list;
-    }
-
-    internal static Mock<IConnection> Setup32SocketConnection(
-        IDictionary<string, string> routingContext,
-        object[] recordFields)
-    {
-        var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
-        {
-            MessagePair(
-                new RunWithMetadataMessage(
-                    BoltProtocolVersion.V4_0,
-                    new Query(
-                        "CALL dbms.cluster.routing.getRoutingTable($context)",
-                        new Dictionary<string, object> { { "context", routingContext } })),
-                SuccessMessage(new List<object> { "ttl", "servers" })),
-            MessagePair(new RecordMessage(recordFields)),
-            MessagePair(PullAllMessage.Instance, SuccessMessage())
-        };
-
-        var serverInfo = new ServerInfo(new Uri("bolt://123:456")) { Agent = "Neo4j/3.2.2" };
-
-        return new MockedConnection(AccessMode.Write, pairs, serverInfo).MockConn;
-    }
-
-    internal static Mock<IConnection> Setup40SocketConnection(
-        IDictionary<string, string> routingContext,
-        string database,
-        Bookmarks bookmark,
-        object[] recordFields)
-    {
-        var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
-        {
-            MessagePair(
-                new RunWithMetadataMessage(
-                    BoltProtocolVersion.V4_0,
-                    new Query(
-                        "CALL dbms.routing.getRoutingTable($context, $database)",
-                        new Dictionary<string, object>
-                        {
-                            { "context", routingContext },
-                            { "database", string.IsNullOrEmpty(database) ? null : database }
-                        }),
-                    database: "system",
-                    bookmarks: bookmark,
-                    config: TransactionConfig.Default,
-                    mode: AccessMode.Read),
-                SuccessMessage(new List<object> { "ttl", "servers" })),
-            MessagePair(new RecordMessage(recordFields)),
-            MessagePair(new PullMessage(ResultHandleMessage.All), SuccessMessage())
-        };
-
-        var serverInfo = new ServerInfo(new Uri("bolt://123:456"))
-            { Agent = "Neo4j/4.0.0", Protocol = new BoltProtocolVersion(4, 0) };
-
-        return new MockedConnection(AccessMode.Read, pairs, serverInfo).MockConn;
-    }
-
-    internal static Mock<IConnection> Setup43SocketConnection(
-        IDictionary<string, string> routingContext,
-        string database,
-        Bookmarks bookmark,
-        Dictionary<string, object> recordFields)
-    {
-        var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
-        {
-            MessagePair(new RouteMessage(routingContext, bookmark, database), SuccessMessage(recordFields))
-        };
-
-        var serverInfo = new ServerInfo(new Uri("bolt://123:456"))
-            { Agent = "Neo4j/4.3.0", Protocol = new BoltProtocolVersion(4, 3) };
-
-        return new MockedConnection(AccessMode.Read, pairs, serverInfo, routingContext).MockConn;
-    }
-
     public class RediscoveryMethod
     {
-        [Theory]
-        [InlineData(1, 1, 1)]
-        [InlineData(2, 1, 1)]
-        [InlineData(1, 2, 1)]
-        [InlineData(2, 2, 1)]
-        [InlineData(1, 1, 2)]
-        [InlineData(2, 1, 2)]
-        [InlineData(1, 2, 2)]
-        [InlineData(2, 2, 2)]
-        [InlineData(3, 1, 2)]
-        [InlineData(3, 2, 1)]
-        public async Task ShouldCarryOutRediscoveryWith32Server(int routerCount, int writerCount, int readerCount)
-        {
-            // Given
-            var routingContext = new Dictionary<string, string>
-            {
-                { "name", "molly" },
-                { "age", "1" },
-                { "color", "white" }
-            };
-
-            var recordFields = CreateGetServersResponseRecordFields(routerCount, writerCount, readerCount);
-            var mockConn = Setup32SocketConnection(routingContext, recordFields);
-            mockConn.Setup(m => m.RoutingContext).Returns(routingContext);
-            var manager = new ClusterDiscovery();
-
-            // When
-            var table = await manager.DiscoverAsync(mockConn.Object, null, null, Bookmarks.Empty);
-
-            // Then
-            table.Readers.Count().Should().Be(readerCount);
-            table.Writers.Count().Should().Be(writerCount);
-            table.Routers.Count().Should().Be(routerCount);
-            table.ExpireAfterSeconds.Should().Be(15000L);
-            mockConn.Verify(x => x.CloseAsync(), Times.Once);
-        }
-
-        [Theory]
-        [InlineData(1, 1, 1, null)]
-        [InlineData(2, 1, 1, null, "bookmark-1", "bookmark-2")]
-        [InlineData(1, 2, 1, "foo-db")]
-        [InlineData(2, 2, 1, "bar-db", "bookmark-3")]
-        [InlineData(1, 1, 2, "")]
-        [InlineData(2, 1, 2, "")]
-        [InlineData(1, 2, 2, "my-db", "bookmark-1", "bookmark-2", "bookmark-3")]
-        [InlineData(2, 2, 2, "my-db")]
-        [InlineData(3, 1, 2, "that-db")]
-        [InlineData(3, 2, 1, "another-db", "bookmark-6")]
-        public async Task ShouldCarryOutRediscoveryWith40Server(
-            int routerCount,
-            int writerCount,
-            int readerCount,
-            string database,
-            params string[] bookmarks)
-        {
-            // Given
-            var routingContext = new Dictionary<string, string>
-            {
-                { "name", "molly" },
-                { "age", "1" },
-                { "color", "white" }
-            };
-
-            var recordFields = CreateGetServersResponseRecordFields(routerCount, writerCount, readerCount);
-            var mockConn = Setup40SocketConnection(routingContext, database, Bookmarks.From(bookmarks), recordFields);
-            mockConn.Setup(m => m.RoutingContext).Returns(routingContext);
-            var manager = new ClusterDiscovery();
-
-            // When
-            var table = await manager.DiscoverAsync(mockConn.Object, database, null, Bookmarks.From(bookmarks));
-
-            // Then
-            table.Database.Should().Be(database ?? "");
-            table.Readers.Count().Should().Be(readerCount);
-            table.Writers.Count().Should().Be(writerCount);
-            table.Routers.Count().Should().Be(routerCount);
-            table.ExpireAfterSeconds.Should().Be(15000L);
-            mockConn.Verify(x => x.CloseAsync(), Times.Once);
-        }
-
-        [Theory]
-        [InlineData(1, 1, 1, null)]
-        [InlineData(2, 1, 1, null, "bookmark-1", "bookmark-2")]
-        [InlineData(1, 2, 1, "foo-db")]
-        [InlineData(2, 2, 1, "bar-db", "bookmark-3")]
-        [InlineData(1, 1, 2, "")]
-        [InlineData(2, 1, 2, "")]
-        [InlineData(1, 2, 2, "my-db", "bookmark-1", "bookmark-2", "bookmark-3")]
-        [InlineData(2, 2, 2, "my-db")]
-        [InlineData(3, 1, 2, "that-db")]
-        [InlineData(3, 2, 1, "another-db", "bookmark-6")]
-        public async Task ShouldCarryOutRediscoveryWith43Server(
-            int routerCount,
-            int writerCount,
-            int readerCount,
-            string database,
-            params string[] bookmarks)
-        {
-            // Given
-            var routingContext = new Dictionary<string, string>
-            {
-                { "address", "127.0.0.1:9001" },
-                { "region", "china" },
-                { "policy", "myp_policy" }
-            };
-
-            var recordFields = CreateGetServersDictionary(routerCount, writerCount, readerCount);
-            var mockConn = Setup43SocketConnection(routingContext, database, Bookmarks.From(bookmarks), recordFields);
-            mockConn.Setup(m => m.RoutingContext).Returns(routingContext);
-            var manager = new ClusterDiscovery();
-
-            // When
-            var table = await manager.DiscoverAsync(mockConn.Object, database, null, Bookmarks.From(bookmarks));
-
-            // Then
-            table.Database.Should().Be(database ?? "");
-            table.Readers.Count().Should().Be(readerCount);
-            table.Writers.Count().Should().Be(writerCount);
-            table.Routers.Count().Should().Be(routerCount);
-            table.ExpireAfterSeconds.Should().Be(15000L);
-            mockConn.Verify(x => x.CloseAsync(), Times.Once);
-        }
-
         [Fact]
-        public void ShouldThrowWhenProcedureNotFound()
+        public async Task ShouldParseRoutingTableResult()
         {
-            // Given
-            var pairs = new List<Tuple<IRequestMessage, IResponseMessage>>
+            var bookmarks = Bookmarks.From("id1");
+            IReadOnlyDictionary<string, object> routingTable = new Dictionary<string, object>()
             {
-                MessagePair(
-                    new RunWithMetadataMessage(
-                        BoltProtocolVersion.V4_4,
-                        new Query(
-                            "CALL dbms.cluster.routing.getRoutingTable($context)",
-                            new Dictionary<string, object> { { "context", null } }),
-                        mode: AccessMode.Write),
-                    new FailureMessage("Neo.ClientError.Procedure.ProcedureNotFound", "not found")),
-                MessagePair(PullAllMessage.Instance, IgnoredMessage.Instance)
+                ["db"] = "test",
+                ["ttl"] = 15000L,
+                ["servers"] = new List<Dictionary<string, object>>
+                {
+                    new()
+                    {
+                        ["addresses"] = new List<string> { "localhost:7689" },
+                        ["role"] = "READ"
+                    },
+                    new()
+                    {
+                        ["addresses"] = new List<string> { "anotherServer" },
+                        ["role"] = "WRITE"
+                    },
+                    new()
+                    {
+                        ["addresses"] = new List<string> { "localhost:7689", "anotherServer" },
+                        ["role"] = "ROUTE"
+                    }
+                }
             };
-
-            var connMock = new MockedConnection(AccessMode.Write, pairs).MockConn;
+            
+            var mockConn = new Mock<IConnection>();
+            mockConn.Setup(x => x.GetRoutingTableAsync("test", "fake-person", bookmarks))
+                .ReturnsAsync(routingTable);
+            
+            // When
             var manager = new ClusterDiscovery();
+            var table = await manager.DiscoverAsync(mockConn.Object, "test", "fake-person", bookmarks);
 
-            // When & Then
-            manager.Awaiting(m => m.DiscoverAsync(connMock.Object, null, null, Bookmarks.Empty))
-                .Should()
-                .Throw<ClientException>()
-                .WithMessage("*not found*");
-
-            connMock.Verify(x => x.CloseAsync(), Times.Once);
+            // Then
+            table.Database.Should().Be("test");
+            table.Readers.Should().BeEquivalentTo(new Uri("neo4j://localhost:7689"));
+            table.Writers.Should().BeEquivalentTo(new Uri("neo4j://anotherServer:7687"));
+            table.Routers.Should().BeEquivalentTo(
+                new Uri("neo4j://localhost:7689"),
+                new Uri("neo4j://anotherServer:7687"));
+            table.ExpireAfterSeconds.Should().Be(15000L);
         }
     }
 

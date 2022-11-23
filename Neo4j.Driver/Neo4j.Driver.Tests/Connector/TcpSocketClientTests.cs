@@ -57,14 +57,6 @@ public class TcpSocketClientTests
                 .Message
                 .Should()
                 .Be("Failed to connect to server 192.168.0.0:9999 within 1000ms.");
-
-            var disposed = await Record.ExceptionAsync(
-                () =>
-                    client.ConnectSocketAsync(
-                        IPAddress.Parse("192.168.0.0"),
-                        9999));
-
-            disposed.Should().BeOfType<ObjectDisposedException>();
         }
 
         [Fact]

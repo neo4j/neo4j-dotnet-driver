@@ -70,7 +70,7 @@ internal interface IConnectionRunner
     Task LoginAsync(string userAgent, IAuthToken authToken);
     Task LogoutAsync();
 
-    Task<IReadOnlyDictionary<string, object>> GetRoutingTable(
+    Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         string database,
         string impersonatedUser,
         Bookmarks bookmarks);

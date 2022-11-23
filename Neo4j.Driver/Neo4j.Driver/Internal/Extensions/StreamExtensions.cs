@@ -24,6 +24,7 @@ namespace Neo4j.Driver.Internal;
 
 internal static class StreamExtensions
 {
+#if !NET6_0_OR_GREATER
     public static void Write(this Stream stream, byte[] bytes)
     {
         stream.Write(bytes, 0, bytes.Length);
@@ -50,6 +51,7 @@ internal static class StreamExtensions
 
         return offset;
     }
+#endif
 
     /// <summary>
     /// The standard ReadAsync in .Net does not honor the CancellationToken even if supplied. This method wraps a call
@@ -68,35 +70,67 @@ internal static class StreamExtensions
         int count,
         int timeoutMs)
     {
-        var timeout = timeoutMs <= 0
-            ? TimeSpan.FromMilliseconds(-1)
-            : TimeSpan.FromMilliseconds(timeoutMs);
+        if (timeoutMs <= 0)
+        {
+            // no timeout and high traffic code, so avoid allocation Cancellation token source.
+            return await ReadWithoutTimeoutAsync(stream, buffer, offset, count).ConfigureAwait(false);
+        }
 
-        using var source = new CancellationTokenSource(timeout);
+        using var source = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeoutMs));
 
         try
         {
 #if NET6_0_OR_GREATER
-            var ctr = source.Token.Register(stream.Close);
-            await using var _ = ctr.ConfigureAwait(false);
+            // .netcore 3.0+ network streams support cancellation tokens.
             return await stream.ReadAsync(buffer.AsMemory(offset, count), source.Token).ConfigureAwait(false);
 #else
+            // .net standard implementation relies on closing stream
             using var _ = source.Token.Register(stream.Close);
             return await stream.ReadAsync(buffer, offset, count, source.Token).ConfigureAwait(false);
 #endif
         }
-        catch (Exception ex) when (ex is OperationCanceledException or ObjectDisposedException or IOException &&
-                                   source.IsCancellationRequested)
+        catch (Exception ex)
         {
+            // close the stream, the stream will be fully disposed later by SocketClient Dispose.
             stream.Close();
-            throw new ConnectionReadTimeoutException(
-                $"Socket/Stream timed out after {timeoutMs}ms, socket closed.",
-                ex);
+            
+            //if the exception relates to cancellation we should throw a timeout.
+            if (source.IsCancellationRequested && IsCancellationException(ex))
+            {
+                throw new ConnectionReadTimeoutException(
+                    $"Socket/Stream timed out after {timeoutMs}ms, socket closed.",
+                    ex);
+            }
+            
+            throw;
+        }
+    }
+
+    private static async Task<int> ReadWithoutTimeoutAsync(Stream stream, byte[] buffer, int offset, int count)
+    {
+        try
+        {
+#if NET6_0_OR_GREATER
+            // .netcore 3.0+ network streams support cancellation tokens.
+            return await stream.ReadAsync(buffer.AsMemory(offset, count)).ConfigureAwait(false);
+#else
+            // .net standard implementation relies on closing stream
+            return await stream.ReadAsync(buffer, offset, count).ConfigureAwait(false);
+#endif
         }
         catch
         {
             stream.Close();
             throw;
         }
+    }
+
+    private static bool IsCancellationException(Exception ex)
+    {
+#if NET6_0_OR_GREATER
+        return ex is OperationCanceledException;
+#else
+        return ex is OperationCanceledException or ObjectDisposedException or IOException;
+#endif
     }
 }
