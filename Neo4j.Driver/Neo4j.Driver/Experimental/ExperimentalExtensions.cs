@@ -34,4 +34,17 @@ public static class ExperimentalExtensions
     {
         return builder.WithBookmarkManager(bookmarkManager);
     }
+    
+    /// <summary>
+    /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
+    /// Experimental: This method be removed, in favor of "BookmarkManager" property on <see cref="SessionConfig"/>.
+    /// Returns configured experimental bookmark manager from <see cref="SessionConfig"/>.
+    /// <seealso cref="WithBookmarkManager"/>
+    /// </summary>
+    /// <param name="config">Instance of <see cref="SessionConfig"/>.</param>
+    /// <returns>Configured <see cref="IBookmarkManager"/>.</returns>
+    public static IBookmarkManager GetBookmarkManager(this SessionConfig config)
+    {
+        return config.BookmarkManager;
+    }
 }

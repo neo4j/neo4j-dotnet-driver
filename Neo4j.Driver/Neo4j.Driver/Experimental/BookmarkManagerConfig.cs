@@ -21,7 +21,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver;
+namespace Neo4j.Driver.Experimental;
 
 /// <summary>
 /// Configuration for constructing a default <see cref="IBookmarkManager"/> using <see cref="IBookmarkManagerFactory.NewBookmarkManager"/>.<br/>

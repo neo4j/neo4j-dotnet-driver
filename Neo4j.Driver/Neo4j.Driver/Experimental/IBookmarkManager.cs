@@ -18,7 +18,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver;
+namespace Neo4j.Driver.Experimental;
 
 /// <summary>
 /// Experimental: Subject to change.
