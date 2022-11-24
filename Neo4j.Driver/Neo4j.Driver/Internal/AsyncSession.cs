@@ -50,7 +50,8 @@ namespace Neo4j.Driver.Internal
         public Bookmark LastBookmark => _bookmarks;
 
         public Bookmarks LastBookmarks => _bookmarks;
-
+        private Bookmarks _initialBookmarks;
+        
         private string _database;
         private readonly bool _reactive;
         private readonly long _fetchSize;
@@ -80,7 +81,10 @@ namespace Neo4j.Driver.Internal
                 _bookmarkManager = config.BookmarkManager;
 
             if (config.Bookmarks != null)
+            {
                 _bookmarks = Bookmarks.From(config.Bookmarks);
+                _initialBookmarks = _bookmarks;
+            }
         }
 
         public Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action)
@@ -161,17 +165,9 @@ namespace Neo4j.Driver.Internal
 
         private async Task<Bookmarks> GetBookmarksAsync()
         {
-            return _bookmarks == null
-                ? Bookmarks.From(await _bookmarkManager.GetAllBookmarksAsync().ConfigureAwait(false))
-                : Bookmarks.From((await _bookmarkManager.GetAllBookmarksAsync().ConfigureAwait(false)).Concat(_bookmarks.Values));
-        }
-
-
-        private async Task<Bookmarks> GetBookmarksAsync(string database)
-        {
-            return _bookmarks == null
-                ? Bookmarks.From(await _bookmarkManager.GetBookmarksAsync(database).ConfigureAwait(false))
-                : Bookmarks.From((await _bookmarkManager.GetBookmarksAsync(database).ConfigureAwait(false)).Concat(_bookmarks.Values));
+            return _initialBookmarks == null
+                ? Bookmarks.From(await _bookmarkManager.GetBookmarksAsync().ConfigureAwait(false))
+                : Bookmarks.From((await _bookmarkManager.GetBookmarksAsync().ConfigureAwait(false)).Concat(_initialBookmarks.Values));
         }
 
         public Task<T> ReadTransactionAsync<T>(Func<IAsyncTransaction, Task<T>> work,
@@ -291,7 +287,7 @@ namespace Neo4j.Driver.Internal
         private async Task AcquireConnectionAndDbNameAsync(AccessMode mode)
         {
             if (_useBookmarkManager)
-                _bookmarks = await GetBookmarksAsync("system").ConfigureAwait(false);
+                _bookmarks = await GetBookmarksAsync().ConfigureAwait(false);
 
 
             _connection = await _connectionProvider.AcquireAsync(mode, _database, ImpersonatedUser(), _bookmarks)
