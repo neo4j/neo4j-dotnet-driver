@@ -24,14 +24,54 @@ using System.Threading.Tasks;
 namespace Neo4j.Driver.Experimental;
 
 /// <summary>
-/// Configuration for constructing a default <see cref="IBookmarkManager"/> using <see cref="IBookmarkManagerFactory.NewBookmarkManager"/>.<br/>
-/// the default <see cref="IBookmarkManagerFactory"/> can be accessed from <see cref="Experimental.GraphDatabase.BookmarkManagerFactory"/>.
+/// Encapsulates configuration for initializing a default <see cref="IBookmarkManager"/> instance
+/// with the <see cref="IBookmarkManagerFactory.NewBookmarkManager"/> factory method.
 /// </summary>
-/// <param name="InitialBookmarks">Nullable collection of initial bookmarks to provide the bookmark manager</param>
-/// <param name="BookmarkSupplierAsync">Nullable delegate to provide externally sourced bookmarks to the driver.<br/>
-/// Invoked when updating a cluster routing table, beginning transaction, or running a query from a session.</param>
-/// <param name="NotifyBookmarksAsync">Nullable delegate to notify application of new bookmarks received by the driver from the server.</param>
-public record BookmarkManagerConfig(
-    IEnumerable<string>? InitialBookmarks = null,
-    Func<CancellationToken, Task<string[]>>? BookmarkSupplierAsync = null,
-    Func<string[], CancellationToken, Task>? NotifyBookmarksAsync = null);
+/// <remarks>
+/// The default <see cref="IBookmarkManagerFactory"/> can be accessed from
+/// <see cref="Experimental.GraphDatabase.BookmarkManagerFactory"/>.
+/// </remarks>
+public record BookmarkManagerConfig
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BookmarkManagerConfig"/> record using the specified optional
+    /// bookmark collection and delegates.
+    /// </summary>
+    /// <param name="initialBookmarks">
+    /// The initial bookmarks to populate a new <see cref="IBookmarkManager"/> with.
+    /// </param>
+    /// <param name="bookmarkSupplierAsync">
+    /// A function for supplying the configured <see cref="IBookmarkManager"/> with bookmarks from user code.<br/>
+    /// Invoked when updating routing tables, beginning transactions, and running queries in sessions configured with
+    /// the <see cref="IBookmarkManager"/>.
+    /// </param>
+    /// <param name="notifyBookmarksAsync">
+    /// A function for the configured <see cref="IBookmarkManager"/> to notify user code of new bookmarks.<br/>
+    /// Invoked when a transaction completes or session query completes in sessions configured with the
+    /// <see cref="IBookmarkManager"/>.
+    /// </param>
+    public BookmarkManagerConfig(
+        IEnumerable<string>? initialBookmarks = null,
+        Func<CancellationToken, Task<string[]>>? bookmarkSupplierAsync = null,
+        Func<string[], CancellationToken, Task>? notifyBookmarksAsync = null)
+    {
+        InitialBookmarks = initialBookmarks;
+        BookmarkSupplierAsync = bookmarkSupplierAsync;
+        NotifyBookmarksAsync = notifyBookmarksAsync;
+    }
+    
+    /// <summary>
+    /// Gets the collection of initial bookmarks to provide the <see cref="IBookmarkManager"/>.
+    /// </summary>
+    public IEnumerable<string>? InitialBookmarks { get; }
+
+    /// <summary>
+    /// Gets the function for supplying the <see cref="IBookmarkManager"/> with bookmarks from user code.
+    /// </summary>
+    public Func<CancellationToken, Task<string[]>>? BookmarkSupplierAsync { get; }
+
+    /// <summary>
+    /// Gets the function to notify user code of new bookmarks received by the <see cref="IBookmarkManager"/>.
+    /// </summary>
+    public Func<string[], CancellationToken, Task>? NotifyBookmarksAsync { get; }
+}
