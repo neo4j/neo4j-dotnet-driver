@@ -51,7 +51,7 @@ public interface IBookmarkManager
     Task UpdateBookmarksAsync(string[] previousBookmarks, string[] newBookmarks, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Retrieve all bookmarks from internal cache, combining with configured
+    /// Retrieve all bookmarks from the internal cache, combining them with configured
     /// <see cref="BookmarkManagerConfig.BookmarkSupplierAsync"/>.<br/>
     /// </summary>
     /// <param name="cancellationToken">
