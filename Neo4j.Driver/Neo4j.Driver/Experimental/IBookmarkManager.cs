@@ -39,7 +39,8 @@ public interface IBookmarkManager
     /// <see cref="IAsyncTransaction.CommitAsync"/>.
     /// </param>
     /// <param name="newBookmarks">The Bookmarks received from completing a causally chained process such as
-    /// <see cref="IAsyncTransaction.CommitAsync"/>..</param>
+    /// <see cref="IAsyncTransaction.CommitAsync"/>.
+    /// </param>
     /// <param name="cancellationToken">
     /// A cancellation token that can be used to cancel the asynchronous operation.
     /// </param>
