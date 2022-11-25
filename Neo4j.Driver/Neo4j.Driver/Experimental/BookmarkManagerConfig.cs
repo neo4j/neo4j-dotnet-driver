@@ -24,8 +24,9 @@ using System.Threading.Tasks;
 namespace Neo4j.Driver.Experimental;
 
 /// <summary>
-/// Encapsulates configuration for initializing a default <see cref="IBookmarkManager"/> instance
-/// with the <see cref="IBookmarkManagerFactory.NewBookmarkManager"/> factory method.
+/// Encapsulates configuration for initializing a new default <see cref="IBookmarkManager"/> instance.
+/// The <see cref="BookmarkManagerConfig"/> instance can be passed to the
+/// <see cref="IBookmarkManagerFactory.NewBookmarkManager"/> factory method.
 /// </summary>
 /// <remarks>
 /// The default <see cref="IBookmarkManagerFactory"/> can be accessed from
@@ -34,21 +35,22 @@ namespace Neo4j.Driver.Experimental;
 public record BookmarkManagerConfig
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="BookmarkManagerConfig"/> record using the specified optional
-    /// bookmark collection and delegates.
+    /// Initializes a new instance of the <see cref="BookmarkManagerConfig"/> record using the optional
+    /// bookmark collection and delegate parameters.
     /// </summary>
     /// <param name="initialBookmarks">
     /// The initial bookmarks to populate a new <see cref="IBookmarkManager"/> with.
     /// </param>
     /// <param name="bookmarkSupplierAsync">
-    /// A function for supplying the configured <see cref="IBookmarkManager"/> with bookmarks from user code.<br/>
-    /// Invoked when updating routing tables, beginning transactions, and running queries in sessions configured with
-    /// the <see cref="IBookmarkManager"/>.
+    /// A function for supplying the <see cref="IBookmarkManager"/> instance with bookmarks from user code.<br/>
+    /// The function is invoked when updating routing tables, beginning transactions, and running queries in sessions
+    /// configured with the <see cref="IBookmarkManager"/> instance.
     /// </param>
     /// <param name="notifyBookmarksAsync">
-    /// A function for the configured <see cref="IBookmarkManager"/> to notify user code of new bookmarks.<br/>
-    /// Invoked when a transaction completes or session query completes in sessions configured with the
-    /// <see cref="IBookmarkManager"/>.
+    /// A function for the <see cref="IBookmarkManager"/> instance to notify user code of new bookmarks received by
+    /// sessions configured with the <see cref="IBookmarkManager"/>.<br/>
+    /// The function is invoked when a transaction completes or session query completes in sessions configured with the
+    /// <see cref="IBookmarkManager"/> instance.
     /// </param>
     public BookmarkManagerConfig(
         IEnumerable<string>? initialBookmarks = null,

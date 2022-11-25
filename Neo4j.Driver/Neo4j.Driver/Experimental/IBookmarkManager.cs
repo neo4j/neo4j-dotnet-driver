@@ -21,37 +21,55 @@ using System.Threading.Tasks;
 namespace Neo4j.Driver.Experimental;
 
 /// <summary>
-/// Experimental: Subject to change.
-/// Manager of Neo4j's causal-consistency mechanism: <see cref="Bookmarks"/>.<br/>
-/// The manager maintains and provides collections of bookmarks for all databases,
-/// exposing to both driver and user-code.<br/>
+/// Experimental: Subject to change.<br/>
+/// The <see cref="IBookmarkManager"/> interface is intended for implementation by classes that provide convenient
+/// interfacing with <see cref="Bookmarks"/> in both the driver and user code.
 /// </summary>
+/// <see cref="ExperimentalExtensions.WithBookmarkManager"/>
 public interface IBookmarkManager
 {
     /// <summary>
-    /// Updates the bookmark manager's bookmark cache. Removing <paramref name="previousBookmarks"/>
-    /// and inserting <paramref name="newBookmarks"/>.<br/>
-    /// After cache completes updates it invokes configured <see cref="BookmarkManagerConfig.NotifyBookmarksAsync"/>
-    /// with latest known bookmarks.
+    /// Updates the <see cref="IBookmarkManager"/>'s internal cache, removing values in
+    /// <paramref name="previousBookmarks"/> and inserting values in <paramref name="newBookmarks"/>.<br/>
+    /// After the <see cref="IBookmarkManager"/> updates it invokes the configured
+    /// <see cref="BookmarkManagerConfig.NotifyBookmarksAsync"/> function with latest known bookmarks.
     /// </summary>
-    /// <param name="previousBookmarks">Bookmarks used at beginning of transaction.</param>
-    /// <param name="newBookmarks">Bookmarks received from transaction.</param>
-    /// <param name="cancellationToken">Cancellation for async operation.</param>
-    /// <returns>A task that represents the asynchronous execution operation.</returns>
+    /// <param name="previousBookmarks">
+    /// The bookmarks used at beginning of the causally chained process such as
+    /// <see cref="IAsyncTransaction.CommitAsync"/>.
+    /// </param>
+    /// <param name="newBookmarks">The Bookmarks received from completing a causally chained process such as
+    /// <see cref="IAsyncTransaction.CommitAsync"/>..</param>
+    /// <param name="cancellationToken">
+    /// A cancellation token that can be used to cancel the asynchronous operation.
+    /// </param>
+    /// <returns>
+    /// An asynchronous task that completes when the <see cref="IBookmarkManager"/> has been updated and the optional
+    /// <see cref="BookmarkManagerConfig.NotifyBookmarksAsync"/> function has completed.
+    /// </returns>
     Task UpdateBookmarksAsync(string[] previousBookmarks, string[] newBookmarks, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieve all bookmarks from internal cache, combining with configured
     /// <see cref="BookmarkManagerConfig.BookmarkSupplierAsync"/>.<br/>
     /// </summary>
-    /// <param name="cancellationToken">Cancellation for async operation.</param>
-    /// <returns>A task that represents the asynchronous execution operation.<br/>
-    /// Task's result contains last known bookmarks for database.</returns>
+    /// <param name="cancellationToken">
+    /// A cancellation token that can be used to cancel the asynchronous operation.
+    /// </param>
+    /// <returns>
+    /// An asynchronous task that completes when the <see cref="IBookmarkManager"/> has collected bookmarks
+    /// from both the internal cache and the optional <see cref="BookmarkManagerConfig.BookmarkSupplierAsync"/>
+    /// function.
+    /// </returns>
     Task<string[]> GetBookmarksAsync(CancellationToken cancellationToken = default);
     /// <summary>
-    /// Removes all bookmarks from internal cache.
+    /// Remove all bookmarks from the <see cref="IBookmarkManager"/>.
     /// </summary>
-    /// <param name="cancellationToken">Cancellation for async operation.</param>
-    /// <returns>A task that represents the asynchronous execution operation.</returns>
+    /// <param name="cancellationToken">
+    /// A cancellation token that can be used to cancel the asynchronous operation.
+    /// </param>
+    /// <returns>
+    /// An asynchronous task that completes when the <see cref="IBookmarkManager"/> has removed all bookmarks.
+    /// </returns>
     Task ForgetAsync(CancellationToken cancellationToken = default);
 }
