@@ -30,9 +30,7 @@ public interface IBookmarkManager
 {
     /// <summary>
     /// Updates the <see cref="IBookmarkManager"/>'s internal cache, removing values in
-    /// <paramref name="previousBookmarks"/> and inserting values in <paramref name="newBookmarks"/>.<br/>
-    /// After the <see cref="IBookmarkManager"/> updates, it invokes the configured
-    /// <see cref="BookmarkManagerConfig.NotifyBookmarksAsync"/> function with the latest known bookmarks.
+    /// <paramref name="previousBookmarks"/> and inserting values in <paramref name="newBookmarks"/>.
     /// </summary>
     /// <param name="previousBookmarks">
     /// The bookmarks used at beginning of the causally chained process such as
@@ -45,22 +43,18 @@ public interface IBookmarkManager
     /// A cancellation token that can be used to cancel the asynchronous operation.
     /// </param>
     /// <returns>
-    /// An asynchronous task that completes when the <see cref="IBookmarkManager"/> has been updated and the optional
-    /// <see cref="BookmarkManagerConfig.NotifyBookmarksAsync"/> function has completed.
+    /// An asynchronous task that completes when the <see cref="IBookmarkManager"/> has been updated.
     /// </returns>
     Task UpdateBookmarksAsync(string[] previousBookmarks, string[] newBookmarks, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Retrieve all bookmarks from the internal cache, combining them with configured
-    /// <see cref="BookmarkManagerConfig.BookmarkSupplierAsync"/>.<br/>
+    /// Retrieve all bookmarks from the internal cache.
     /// </summary>
     /// <param name="cancellationToken">
     /// A cancellation token that can be used to cancel the asynchronous operation.
     /// </param>
     /// <returns>
-    /// An asynchronous task that completes when the <see cref="IBookmarkManager"/> has collected bookmarks
-    /// from both the internal cache and the optional <see cref="BookmarkManagerConfig.BookmarkSupplierAsync"/>
-    /// function.
+    /// An asynchronous task that completes when the <see cref="IBookmarkManager"/> has collected bookmarks.
     /// </returns>
     Task<string[]> GetBookmarksAsync(CancellationToken cancellationToken = default);
 }
