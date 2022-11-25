@@ -29,7 +29,7 @@ namespace Neo4j.Driver.Experimental;
 public interface IBookmarkManager
 {
     /// <summary>
-    /// Updates the <see cref="IBookmarkManager"/>'s internal cache, removing values in
+    /// Update the <see cref="IBookmarkManager"/>, removing values in
     /// <paramref name="previousBookmarks"/> and inserting values in <paramref name="newBookmarks"/>.
     /// </summary>
     /// <param name="previousBookmarks">
@@ -48,7 +48,7 @@ public interface IBookmarkManager
     Task UpdateBookmarksAsync(string[] previousBookmarks, string[] newBookmarks, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Retrieve all bookmarks from the internal cache.
+    /// Retrieve all bookmarks from the <see cref="IBookmarkManager"/>.
     /// </summary>
     /// <param name="cancellationToken">
     /// A cancellation token that can be used to cancel the asynchronous operation.
