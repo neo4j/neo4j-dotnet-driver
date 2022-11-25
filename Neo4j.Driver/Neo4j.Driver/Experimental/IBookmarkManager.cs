@@ -33,7 +33,7 @@ public interface IBookmarkManager
     /// <paramref name="previousBookmarks"/> and inserting values in <paramref name="newBookmarks"/>.
     /// </summary>
     /// <param name="previousBookmarks">
-    /// The bookmarks used at beginning of the causally chained process such as
+    /// The bookmarks used at the beginning of the causally chained process such as
     /// <see cref="IAsyncTransaction.CommitAsync"/>.
     /// </param>
     /// <param name="newBookmarks">The Bookmarks received from completing a causally chained process such as
