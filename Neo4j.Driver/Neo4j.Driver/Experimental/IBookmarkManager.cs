@@ -62,14 +62,4 @@ public interface IBookmarkManager
     /// function.
     /// </returns>
     Task<string[]> GetBookmarksAsync(CancellationToken cancellationToken = default);
-    /// <summary>
-    /// Remove all bookmarks from the <see cref="IBookmarkManager"/>.
-    /// </summary>
-    /// <param name="cancellationToken">
-    /// A cancellation token that can be used to cancel the asynchronous operation.
-    /// </param>
-    /// <returns>
-    /// An asynchronous task that completes when the <see cref="IBookmarkManager"/> has removed all bookmarks.
-    /// </returns>
-    Task ForgetAsync(CancellationToken cancellationToken = default);
 }

@@ -62,7 +62,6 @@ internal class DefaultBookmarkManager : IBookmarkManager
             await _onBookmarks(newBookmarks, cancellationToken).ConfigureAwait(false);
     }
 
-
     public async Task<string[]> GetBookmarksAsync(CancellationToken cancellationToken = default)
     {
         HashSet<string> set;
@@ -82,19 +81,5 @@ internal class DefaultBookmarkManager : IBookmarkManager
         set.UnionWith(await _bookmarkSupplier(cancellationToken).ConfigureAwait(false));
 
         return set.ToArray();
-    }
-
-    public async Task ForgetAsync(CancellationToken cancellationToken = default)
-    {
-        await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            _bookmarkSet.Clear();
-        }
-        finally
-        {
-            _lock.Release();
-        }
     }
 }

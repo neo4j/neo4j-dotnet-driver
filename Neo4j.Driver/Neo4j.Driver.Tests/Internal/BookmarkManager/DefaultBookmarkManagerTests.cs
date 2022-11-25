@@ -138,15 +138,4 @@ public class DefaultBookmarkManagerTests
         var exists = await bookmarkManager.GetBookmarksAsync();
         exists.Should().BeEquivalentTo("eg1");
     }
-
-    [Fact]
-    public async Task ShouldForgetAllDatabases()
-    {
-        var bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig(new []{"a", "b"}));
-
-        await bookmarkManager.ForgetAsync();
-
-        var exists = await bookmarkManager.GetBookmarksAsync();
-        exists.Should().BeEquivalentTo(Array.Empty<string>());
-    }
 }
