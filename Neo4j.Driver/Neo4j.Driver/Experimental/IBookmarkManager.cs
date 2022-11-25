@@ -31,8 +31,8 @@ public interface IBookmarkManager
     /// <summary>
     /// Updates the <see cref="IBookmarkManager"/>'s internal cache, removing values in
     /// <paramref name="previousBookmarks"/> and inserting values in <paramref name="newBookmarks"/>.<br/>
-    /// After the <see cref="IBookmarkManager"/> updates it invokes the configured
-    /// <see cref="BookmarkManagerConfig.NotifyBookmarksAsync"/> function with latest known bookmarks.
+    /// After the <see cref="IBookmarkManager"/> updates, it invokes the configured
+    /// <see cref="BookmarkManagerConfig.NotifyBookmarksAsync"/> function with the latest known bookmarks.
     /// </summary>
     /// <param name="previousBookmarks">
     /// The bookmarks used at beginning of the causally chained process such as
