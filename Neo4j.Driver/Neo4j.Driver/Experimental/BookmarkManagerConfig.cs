@@ -24,9 +24,10 @@ using System.Threading.Tasks;
 namespace Neo4j.Driver.Experimental;
 
 /// <summary>
-/// Encapsulates configuration for initializing a new default <see cref="IBookmarkManager"/> instance.
-/// The <see cref="BookmarkManagerConfig"/> instance can be passed to the
-/// <see cref="IBookmarkManagerFactory.NewBookmarkManager"/> factory method.
+/// The <see cref="BookmarkManagerConfig"/> record encapsulates configuration values for initializing a new default
+/// <see cref="IBookmarkManager"/> implementation. The <see cref="BookmarkManagerConfig"/> instance should be passed to
+/// an <see cref="IBookmarkManagerFactory.NewBookmarkManager"/> factory method to construct a new
+/// <see cref="IBookmarkManager"/> instance.
 /// </summary>
 /// <remarks>
 /// The default <see cref="IBookmarkManagerFactory"/> can be accessed from
