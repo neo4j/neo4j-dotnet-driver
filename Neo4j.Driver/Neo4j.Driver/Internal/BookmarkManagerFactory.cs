@@ -15,6 +15,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.Experimental;
+
 namespace Neo4j.Driver.Internal;
 
 internal class BookmarkManagerFactory : IBookmarkManagerFactory

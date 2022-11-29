@@ -23,6 +23,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Experimental;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
@@ -419,13 +420,13 @@ namespace Neo4j.Driver.Tests
                 using (var session = new AsyncSession(null, null, null, 0, cfg, false))
                 {
                     session.UpdateBookmarks(new InternalBookmarks("a"));
-                    bookmarkManager.Verify(x => x.UpdateBookmarksAsync("test", Array.Empty<string>(), new[] { "a" }, It.IsAny<CancellationToken>()), Times.Once);
+                    bookmarkManager.Verify(x => x.UpdateBookmarksAsync(Array.Empty<string>(), new[] { "a" }, It.IsAny<CancellationToken>()), Times.Once);
                     session.UpdateBookmarks(new InternalBookmarks("b"));
-                    bookmarkManager.Verify(x => x.UpdateBookmarksAsync("test", new[] { "a" }, new[] { "b" }, It.IsAny<CancellationToken>()), Times.Once);
+                    bookmarkManager.Verify(x => x.UpdateBookmarksAsync(new[] { "a" }, new[] { "b" }, It.IsAny<CancellationToken>()), Times.Once);
                 }   
 
-                bookmarkManager.Verify(x => x.UpdateBookmarksAsync("test", It.IsAny<string[]>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-                bookmarkManager.Verify(x => x.UpdateBookmarksAsync("test", new[] { "a" }, new[] { "b" }, It.IsAny<CancellationToken>()), Times.Once);
+                bookmarkManager.Verify(x => x.UpdateBookmarksAsync(It.IsAny<string[]>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                bookmarkManager.Verify(x => x.UpdateBookmarksAsync( new[] { "a" }, new[] { "b" }, It.IsAny<CancellationToken>()), Times.Once);
             }
         }
     }
