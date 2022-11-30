@@ -49,30 +49,45 @@ namespace Neo4j.Driver
         internal static SessionConfigBuilder Builder => new SessionConfigBuilder(new SessionConfig());
 
         /// <summary>
-        /// The database that the constructed session will connect to.
-        ///
-        /// <remarks>
-        /// When used against servers supporting multi-databases, it is recommended that this value to be set explicitly
-        /// either through <see cref="SessionConfigBuilder.WithDatabase"/> method.
-        /// If not, then the session will connect to the default database configured on the server side.
-        ///
-        /// When used against servers that don't support multi-databases, this property should be left unset.
-        /// </remarks>
+        /// Gets the target database name for queries executed within the constructed session.
         /// </summary>
-        /// <exception cref="set_Database">throws <see cref="System.ArgumentNullException"/> when provided database name
-        /// is null or an empty string.</exception>
+        /// <remarks>
+        /// This option has no explicit value by default, as such it is recommended to set a value if the target
+        /// database is known in advance. This has the benefit of ensuring a consistent target database name throughout
+        /// the session in a straightforward way and potentially simplifies driver logic, which reduces network
+        /// communication and might result in better performance.<br/><br/>
+        /// Cypher clauses such as USE are not a replacement for this option as Cypher is handled by the server and not
+        /// the driver.<br/><br/>
+        /// When no explicit name is set, the driver behavior depends on the connection URI scheme supplied to the
+        /// driver on instantiation and Bolt protocol version.<br/><br/>
+        /// Specifically, the following applies:
+        /// <list type="bullet">
+        /// <item>
+        /// <b>bolt schemes</b> - queries are dispatched to the server for execution without explicit database name
+        /// supplied, meaning that the target database name for query execution is determined by the server.
+        /// It is important to note that the target database may change (even within the same session), for instance
+        /// if the user's home database is changed on the server.
+        /// </item>
+        /// <item>
+        /// <b>neo4j schemes</b>  - providing that Bolt protocol version 4.4, which was introduced with
+        /// Neo4j server 4.4, or above is available, the driver fetches the user's home database name from the server
+        /// on first query execution within the session and uses the fetched database name explicitly for all queries
+        /// executed within the session. This ensures that the database name remains consistent within the given
+        /// session. For instance, if the user's home database name is 'movies' and the server supplies it to the driver
+        /// upon database name fetching for the session, all queries within that session are executed with the explicit
+        /// database name 'movies' supplied. Any change to the user’s home database is reflected only in sessions
+        /// created after such change takes effect. This behavior requires additional network communication. In
+        /// clustered environments, it is strongly recommended to avoid a single point of failure. For instance, by
+        /// ensuring that the connection URI resolves to multiple endpoints. For older Bolt protocol versions the
+        /// behavior is the same as described for the bolt schemes above.
+        /// </item>
+        /// </list>
+        /// </remarks>
+        /// <seealso cref="SessionConfigBuilder.WithDatabase"/>
         public string Database
         {
             get => _database;
-            internal set
-            {
-                if (string.IsNullOrEmpty(value))
-                {
-                    throw new ArgumentNullException();
-                }
-
-                _database = value;
-            }
+            internal set => _database = value;
         }
 
         /// <summary>
@@ -153,13 +168,53 @@ namespace Neo4j.Driver
         }
 
         /// <summary>
-        /// Sets the database the constructed session will connect to.
+        /// Sets the target database name for queries executed within the constructed session.
         /// </summary>
-        /// <param name="database">the database name</param>
-        /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
+        /// <param name="database">The database name.</param>
+        /// <returns>This <see cref="SessionConfigBuilder"/> instance.</returns>
         /// <seealso cref="SessionConfig.Database"/>
+        /// <remarks>
+        /// This option has no explicit value by default, as such it is recommended to set a value if the target
+        /// database is known in advance. This has the benefit of ensuring a consistent target database name throughout
+        /// the session in a straightforward way and potentially simplifies driver logic, which reduces network
+        /// communication and might result in better performance.<br/><br/>
+        /// Cypher clauses such as USE are not a replacement for this option as Cypher is handled by the server and not
+        /// the driver.<br/><br/>
+        /// When no explicit name is set, the driver behavior depends on the connection URI scheme supplied to the
+        /// driver on instantiation and Bolt protocol version.<br/><br/>
+        /// Specifically, the following applies:
+        /// <list type="bullet">
+        /// <item>
+        /// <b>bolt schemes</b> - queries are dispatched to the server for execution without explicit database name
+        /// supplied, meaning that the target database name for query execution is determined by the server.
+        /// It is important to note that the target database may change (even within the same session), for instance
+        /// if the user's home database is changed on the server.
+        /// </item>
+        /// <item>
+        /// <b>neo4j schemes</b>  - providing that Bolt protocol version 4.4, which was introduced with
+        /// Neo4j server 4.4, or above is available, the driver fetches the user's home database name from the server
+        /// on first query execution within the session and uses the fetched database name explicitly for all queries
+        /// executed within the session. This ensures that the database name remains consistent within the given
+        /// session. For instance, if the user's home database name is 'movies' and the server supplies it to the driver
+        /// upon database name fetching for the session, all queries within that session are executed with the explicit
+        /// database name 'movies' supplied. Any change to the user’s home database is reflected only in sessions
+        /// created after such change takes effect. This behavior requires additional network communication. In
+        /// clustered environments, it is strongly recommended to avoid a single point of failure. For instance, by
+        /// ensuring that the connection URI resolves to multiple endpoints. For older Bolt protocol versions the
+        /// behavior is the same as described for the bolt schemes above.
+        /// </item>
+        /// </list>
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        /// Throws <see cref="System.ArgumentNullException"/> when provided database name is null or an empty string.
+        /// </exception>
         public SessionConfigBuilder WithDatabase(string database)
         {
+            if (string.IsNullOrEmpty(database))
+            {
+                throw new ArgumentNullException(nameof(database));
+            }
+            
             _config.Database = database;
             return this;
         }
