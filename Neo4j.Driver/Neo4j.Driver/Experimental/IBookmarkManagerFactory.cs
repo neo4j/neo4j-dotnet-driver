@@ -15,18 +15,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver;
+namespace Neo4j.Driver.Experimental;
 
 /// <summary>
-/// Factory for <see cref="IBookmarkManager"/>.
+/// Experimental: Subject to change.<br/>
+/// The <see cref="IBookmarkManagerFactory"/> interface is intended for classes that construct instances of an
+/// <see cref="IBookmarkManager"/> implementation.
 /// </summary>
 public interface IBookmarkManagerFactory
 {
     /// <summary>
-    /// Create an <see cref="IBookmarkManager"/> with specified configuration.
+    /// Create an <see cref="IBookmarkManager"/> instance with specified configuration.
     /// </summary>
-    /// <param name="config">Configuration object. If this is null or not specified,
-    /// default configuration is used.</param>
-    /// <returns>New configured instance of <see cref="IBookmarkManager"/>.</returns>
+    /// <param name="config">The configuration object for constructing a new <see cref="IBookmarkManager"/>.</param>
+    /// <returns>a new <see cref="IBookmarkManager"/> instance instantiated with the <see cref="BookmarkManagerConfig"/>
+    /// parameter.</returns>
     IBookmarkManager NewBookmarkManager(BookmarkManagerConfig config = null);
 }
