@@ -1,0 +1,6 @@
+# Snyk (https://snyk.io) policy file
+exclude:
+ code:
+  - testkit/**
+  - Neo4j.Driver/Neo4j.Driver.Tests/**
+  - Neo4j.Driver/Neo4j.Driver.Tests.*/**
