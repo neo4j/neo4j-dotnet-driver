@@ -172,18 +172,18 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
 
                 return await _connection
                     .RunInAutoCommitTransactionAsync(
-                       new AutoCommitParams
-                       {
-                           Query = query,
-                           Reactive = _reactive,
-                           Database = _database,
-                           Bookmarks = LastBookmarks,
-                           Config = options,
-                           ImpersonatedUser = ImpersonatedUser(),
-                           FetchSize = _fetchSize,
-                           BookmarksTracker = this,
-                           ResultResourceHandler = this
-                       })
+                        new AutoCommitParams
+                        {
+                            Query = query,
+                            Reactive = _reactive,
+                            Database = _database,
+                            Bookmarks = LastBookmarks,
+                            Config = options,
+                            ImpersonatedUser = ImpersonatedUser(),
+                            FetchSize = _fetchSize,
+                            BookmarksTracker = this,
+                            ResultResourceHandler = this
+                        })
                     .ConfigureAwait(false);
             });
 

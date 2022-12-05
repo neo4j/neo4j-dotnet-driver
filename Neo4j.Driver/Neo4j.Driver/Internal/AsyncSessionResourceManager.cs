@@ -72,8 +72,10 @@ internal partial class AsyncSession : IResultResourceHandler, ITransactionResour
     public Task OnResultConsumedAsync()
     {
         if (_connection == null)
+        {
             throw new ArgumentNullException(nameof(_connection));
-        
+        }
+
         return DisposeConnectionAsync();
     }
 

@@ -71,8 +71,7 @@ public class AsyncSessionTests
             protocol.Setup(x => x.LoginAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<IAuthToken>()))
                 .Returns(Task.CompletedTask);
 
-            protocol.Setup(
-                    x => x.RunInAutoCommitTransactionAsync(mockConn.Object, It.IsAny<AutoCommitParams>()))
+            protocol.Setup(x => x.RunInAutoCommitTransactionAsync(mockConn.Object, It.IsAny<AutoCommitParams>()))
                 .ReturnsAsync(new Mock<IResultCursor>().Object);
 
             protocol.Setup(
@@ -457,6 +456,11 @@ public class AsyncSessionTests
             throw new NotSupportedException();
         }
 
+        public ValueTask DisposeAsync()
+        {
+            return default;
+        }
+
         public void Dispose()
         {
             // do nothing
@@ -470,11 +474,6 @@ public class AsyncSessionTests
         public Task VerifyConnectivityAsync()
         {
             return Task.CompletedTask;
-        }
-
-        public ValueTask DisposeAsync()
-        {
-            return default;
         }
     }
 
