@@ -42,7 +42,6 @@ internal sealed class RoutingTableProtocol43 : IRoutingTableProtocol
         await connection.EnqueueAsync(message, responseHandler).ConfigureAwait(false);
 
         await connection.SyncAsync().ConfigureAwait(false);
-        await connection.CloseAsync().ConfigureAwait(false);
 
         // Since 4.4 the Routing information will contain a db.
         // 4.3 needs to populate this here as it's not received in the older route response...

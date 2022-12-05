@@ -31,11 +31,6 @@ internal sealed class ConnectionResourceHandler : IResultResourceHandler
 
     public Task OnResultConsumedAsync()
     {
-        return CloseConnection();
-    }
-
-    private Task CloseConnection()
-    {
-        return Connection.CloseAsync();
+        return Task.CompletedTask;
     }
 }

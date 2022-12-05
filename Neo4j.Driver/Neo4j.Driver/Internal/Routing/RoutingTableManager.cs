@@ -113,10 +113,17 @@ internal class RoutingTableManager : IRoutingTableManager
             throw new ServiceUnavailableException("Could not create connection");
         }
 
-        var rt = await _discovery.DiscoverAsync(conn, null, null, null)
-            .ConfigureAwait(false);
+        IRoutingTable rt;
+        try
+        {
+            rt = await _discovery.DiscoverAsync(conn, null, null, null)
+                .ConfigureAwait(false);
+        }
+        finally
+        {
+            await conn.CloseAsync().ConfigureAwait(false);
+        }
 
-        await conn.CloseAsync().ConfigureAwait(false);
         await UpdateAsync(rt).ConfigureAwait(false);
         foreach (var table in rt.Readers)
         {
@@ -312,9 +319,17 @@ internal class RoutingTableManager : IRoutingTableManager
                 }
                 else
                 {
-                    var newRoutingTable =
-                        await _discovery.DiscoverAsync(conn, database, impersonatedUser, bookmarks)
-                            .ConfigureAwait(false);
+                    IRoutingTable newRoutingTable;
+                    try
+                    {
+                        newRoutingTable =
+                            await _discovery.DiscoverAsync(conn, database, impersonatedUser, bookmarks)
+                                .ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        await conn.CloseAsync().ConfigureAwait(false);
+                    }
 
                     if (!newRoutingTable.IsStale(mode))
                     {

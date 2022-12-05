@@ -40,7 +40,6 @@ internal sealed class RoutingTableProtocol44 : IRoutingTableProtocol
 
         await connection.EnqueueAsync(message, responseHandler).ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);
-        await connection.CloseAsync().ConfigureAwait(false);
 
         return (IReadOnlyDictionary<string, object>)responseHandler.RoutingInformation;
     }
