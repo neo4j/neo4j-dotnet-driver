@@ -120,12 +120,12 @@ internal abstract class DelegatedConnection : IConnection
 
     public Task LoginAsync(string userAgent, IAuthToken authToken)
     {
-        return Delegate.LoginAsync(userAgent, authToken);
+        return TaskWithErrorHandling(() => Delegate.LoginAsync(userAgent, authToken));
     }
 
     public Task LogoutAsync()
     {
-        return Delegate.LogoutAsync();
+        return TaskWithErrorHandling(Delegate.LogoutAsync);
     }
 
     public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
@@ -133,12 +133,12 @@ internal abstract class DelegatedConnection : IConnection
         string impersonatedUser,
         Bookmarks bookmarks)
     {
-        return Delegate.GetRoutingTableAsync(database, impersonatedUser, bookmarks);
+        return TaskWithErrorHandling(() => Delegate.GetRoutingTableAsync(database, impersonatedUser, bookmarks));
     }
 
     public Task<IResultCursor> RunInAutoCommitTransactionAsync(AutoCommitParams autoCommitParams)
     {
-        return Delegate.RunInAutoCommitTransactionAsync(autoCommitParams);
+        return TaskWithErrorHandling(() => Delegate.RunInAutoCommitTransactionAsync(autoCommitParams));
     }
 
     public Task BeginTransactionAsync(
@@ -147,22 +147,23 @@ internal abstract class DelegatedConnection : IConnection
         TransactionConfig config,
         string impersonatedUser)
     {
-        return Delegate.BeginTransactionAsync(database, bookmarks, config, impersonatedUser);
+        return TaskWithErrorHandling(
+            () => Delegate.BeginTransactionAsync(database, bookmarks, config, impersonatedUser));
     }
 
     public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize)
     {
-        return Delegate.RunInExplicitTransactionAsync(query, reactive, fetchSize);
+        return TaskWithErrorHandling(() => Delegate.RunInExplicitTransactionAsync(query, reactive, fetchSize));
     }
 
     public Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker)
     {
-        return Delegate.CommitTransactionAsync(bookmarksTracker);
+        return TaskWithErrorHandling(() => Delegate.CommitTransactionAsync(bookmarksTracker));
     }
 
     public Task RollbackTransactionAsync()
     {
-        return Delegate.RollbackTransactionAsync();
+        return TaskWithErrorHandling(Delegate.RollbackTransactionAsync);
     }
 
     internal virtual Task OnErrorAsync(Exception error)
@@ -170,7 +171,7 @@ internal abstract class DelegatedConnection : IConnection
         return Task.CompletedTask;
     }
 
-    internal virtual async Task TaskWithErrorHandling(Func<Task> task)
+    internal async Task TaskWithErrorHandling(Func<Task> task)
     {
         try
         {
@@ -182,6 +183,20 @@ internal abstract class DelegatedConnection : IConnection
         }
     }
 
+    internal async Task<T> TaskWithErrorHandling<T>(Func<Task<T>> task)
+    {
+        try
+        {
+            return await task().ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            await OnErrorAsync(e).ConfigureAwait(false);
+        }
+
+        return default;
+    }
+    
     public override string ToString()
     {
         return Delegate.ToString();
