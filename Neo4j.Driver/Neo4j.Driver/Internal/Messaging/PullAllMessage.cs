@@ -28,7 +28,7 @@ internal sealed class PullAllMessage : IRequestMessage
     {
     }
 
-    public IPackStreamSerializer Serializer => PullMessageSerializer.Instance;
+    public IPackStreamSerializer Serializer => PullAllMessageSerializer.Instance;
 
     public override string ToString()
     {
