@@ -85,7 +85,8 @@ public class AuthTokens
     /// <param name="base64EncodedTicket">A base64 encoded service ticket.</param>
     /// <returns>an authentication token that can be used to connect to Neo4j.</returns>
     /// <remarks>
-    ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Action{ConfigBuilder})"/>
+    ///     <see
+    ///         cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder}(Neo4j.Driver.ConfigBuilder))"/>
     /// </remarks>
     public static IAuthToken Kerberos(string base64EncodedTicket)
     {

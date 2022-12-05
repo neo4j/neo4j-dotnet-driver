@@ -31,6 +31,7 @@ internal sealed class SocketClient : ISocketClient
     private const string MessagePattern = "C: {0}";
     private readonly BufferSettings _bufferSettings;
     private readonly IConnectionIoFactory _connectionIoFactory;
+    private readonly IBoltHandshaker _handshaker;
 
     private readonly ILogger _logger;
     private readonly IPackStreamFactory _packstreamFactory;
@@ -45,7 +46,6 @@ internal sealed class SocketClient : ISocketClient
     private MessageFormat _format;
     private IMessageReader _messageReader;
     private IMessageWriter _messageWriter;
-    private readonly IBoltHandshaker _handshaker;
 
     public SocketClient(
         Uri uri,
@@ -59,11 +59,11 @@ internal sealed class SocketClient : ISocketClient
         _uri = uri;
         _bufferSettings = bufferSettings;
         _logger = logger;
-        
+
         _packstreamFactory = packstreamFactory ?? PackStreamFactory.Default;
         _connectionIoFactory = connectionIoFactory ?? SocketClientIoFactory.Default;
         _handshaker = boltHandshaker ?? BoltHandshaker.Default;
-        
+
         _readBufferStream = new MemoryStream(_bufferSettings.MaxReadBufferSize);
         _tcpSocketClient = _connectionIoFactory.TcpSocketClient(socketSettings, _logger);
     }
@@ -77,7 +77,7 @@ internal sealed class SocketClient : ISocketClient
         await _tcpSocketClient.ConnectAsync(_uri, cancellationToken).ConfigureAwait(false);
 
         _logger?.Debug($"~~ [CONNECT] {_uri}");
-        
+
         Version = await _handshaker
             .DoHandshakeAsync(_tcpSocketClient, _logger, cancellationToken)
             .ConfigureAwait(false);

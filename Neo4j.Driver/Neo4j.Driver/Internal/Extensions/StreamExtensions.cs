@@ -24,35 +24,6 @@ namespace Neo4j.Driver.Internal;
 
 internal static class StreamExtensions
 {
-#if !NET6_0_OR_GREATER
-    public static void Write(this Stream stream, byte[] bytes)
-    {
-        stream.Write(bytes, 0, bytes.Length);
-    }
-
-    public static int Read(this Stream stream, byte[] bytes)
-    {
-        var hasRead = 0;
-        var offset = 0;
-        var toRead = bytes.Length;
-
-        do
-        {
-            hasRead = stream.Read(bytes, offset, toRead);
-            offset += hasRead;
-            toRead -= hasRead;
-        } while (toRead > 0 && hasRead > 0);
-
-        if (hasRead <= 0)
-        {
-            throw new IOException(
-                $"Failed to read more from input stream. Expected {bytes.Length} bytes, received {offset}.");
-        }
-
-        return offset;
-    }
-#endif
-
     /// <summary>
     /// The standard ReadAsync in .Net does not honor the CancellationToken even if supplied. This method wraps a call
     /// to ReadAsync in a task that monitors the token, and when detected calls the streams close method.
@@ -93,7 +64,7 @@ internal static class StreamExtensions
         {
             // close the stream, the stream will be fully disposed later by SocketClient Dispose.
             stream.Close();
-            
+
             //if the exception relates to cancellation we should throw a timeout.
             if (source.IsCancellationRequested && IsCancellationException(ex))
             {
@@ -101,7 +72,7 @@ internal static class StreamExtensions
                     $"Socket/Stream timed out after {timeoutMs}ms, socket closed.",
                     ex);
             }
-            
+
             throw;
         }
     }
@@ -133,4 +104,32 @@ internal static class StreamExtensions
         return ex is OperationCanceledException or ObjectDisposedException or IOException;
 #endif
     }
+#if !NET6_0_OR_GREATER
+    public static void Write(this Stream stream, byte[] bytes)
+    {
+        stream.Write(bytes, 0, bytes.Length);
+    }
+
+    public static int Read(this Stream stream, byte[] bytes)
+    {
+        var hasRead = 0;
+        var offset = 0;
+        var toRead = bytes.Length;
+
+        do
+        {
+            hasRead = stream.Read(bytes, offset, toRead);
+            offset += hasRead;
+            toRead -= hasRead;
+        } while (toRead > 0 && hasRead > 0);
+
+        if (hasRead <= 0)
+        {
+            throw new IOException(
+                $"Failed to read more from input stream. Expected {bytes.Length} bytes, received {offset}.");
+        }
+
+        return offset;
+    }
+#endif
 }

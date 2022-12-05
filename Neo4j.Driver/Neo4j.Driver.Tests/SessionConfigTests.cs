@@ -26,14 +26,6 @@ public class SessionConfigTests
     [Theory]
     [InlineData((string)null)]
     [InlineData("")]
-    public void ShouldThrowExceptionForInvalidDatabaseOnSetter(string name)
-    {
-        this.Invoking(_ => new SessionConfig().Database = name).Should().Throw<ArgumentNullException>();
-    }
-
-    [Theory]
-    [InlineData((string)null)]
-    [InlineData("")]
     public void ShouldThrowExceptionForInvalidDatabaseOnBuilder(string name)
     {
         this.Invoking(_ => SessionConfig.Builder.WithDatabase(name)).Should().Throw<ArgumentNullException>();

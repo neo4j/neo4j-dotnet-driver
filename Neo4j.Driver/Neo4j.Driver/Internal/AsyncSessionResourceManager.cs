@@ -26,8 +26,11 @@ namespace Neo4j.Driver.Internal;
 
 internal partial class AsyncSession : IResultResourceHandler, ITransactionResourceHandler, IBookmarksTracker
 {
+    /// <summary>Only set the bookmark to a new value if the new value is not null</summary>
+    /// <param name="bookmarks">The new bookmarks.</param>
     public void UpdateBookmarks(Bookmarks bookmarks, IDatabaseInfo dbInfo = null)
     {
+        _initialBookmarks = null;
         if (bookmarks == null || !bookmarks.Values.Any())
         {
             return;
@@ -36,10 +39,9 @@ internal partial class AsyncSession : IResultResourceHandler, ITransactionResour
         var previousBookmarks = LastBookmarks?.Values ?? Array.Empty<string>();
         LastBookmarks = bookmarks;
 
-        var db = dbInfo?.Name ?? _database;
         if (_useBookmarkManager)
         {
-            _bookmarkManager.UpdateBookmarksAsync(db, previousBookmarks, bookmarks.Values);
+            _bookmarkManager.UpdateBookmarksAsync(previousBookmarks, bookmarks.Values).GetAwaiter().GetResult();
         }
     }
 
@@ -70,10 +72,8 @@ internal partial class AsyncSession : IResultResourceHandler, ITransactionResour
     public Task OnResultConsumedAsync()
     {
         if (_connection == null)
-        {
-            throw new ArgumentNullException(nameof(_connection)); // TODO: Assess if this correct exception type.
-        }
-
+            throw new ArgumentNullException(nameof(_connection));
+        
         return DisposeConnectionAsync();
     }
 

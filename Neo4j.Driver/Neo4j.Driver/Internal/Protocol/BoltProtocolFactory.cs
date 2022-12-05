@@ -29,13 +29,8 @@ internal interface IBoltProtocolFactory
 
 internal class BoltProtocolFactory : IBoltProtocolFactory
 {
-    internal static BoltProtocolFactory Default = new();
-
-    private BoltProtocolFactory()
-    {
-    }
-    
     private const int BoltHttpIdentifier = 1213486160; // 0x‭48 54 54 50 - or HTTP ascii codes...
+    internal static BoltProtocolFactory Default = new();
 
     private static readonly string HttpErrorMessage =
         "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
@@ -65,6 +60,10 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
                 return versions.SelectMany(PackStreamBitConverter.GetBytes).ToArray();
             },
             LazyThreadSafetyMode.PublicationOnly);
+
+    private BoltProtocolFactory()
+    {
+    }
 
     public IBoltProtocol ForVersion(BoltProtocolVersion version)
     {

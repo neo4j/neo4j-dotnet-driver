@@ -48,7 +48,7 @@ public class SocketClientTests
     {
         factory ??= CreateMockIoFactory(null, null).Item2;
         mockPackstreamFactory ??= new Mock<IPackStreamFactory>();
-        
+
         if (boltHandshaker == null)
         {
             boltHandshaker = new Mock<IBoltHandshaker>();
@@ -131,19 +131,21 @@ public class SocketClientTests
                         It.IsAny<ILogger>(),
                         It.IsAny<CancellationToken>()))
                 .ThrowsAsync(exception);
-            
+
             var client = NewClient(io, null, mockHandshaker);
 
             var ex = await Record.ExceptionAsync(
                 () => client.ConnectAsync(new Dictionary<string, string>(), CancellationToken.None));
-            
+
             mockHandshaker.Verify(
                 x => x.DoHandshakeAsync(
                     It.IsAny<ITcpSocketClient>(),
                     It.IsAny<ILogger>(),
-                    It.IsAny<CancellationToken>()), Times.Once);
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+
             ex.Should().NotBeNull().And.Be(exception);
-            
+
             io.Verify(x => x.Format(It.IsAny<BoltProtocolVersion>()), Times.Never);
         }
     }
@@ -186,7 +188,7 @@ public class SocketClientTests
 
             var (_, factory) = CreateMockIoFactory(
                 null,
-                x => SetupFactory(x, writer:chunkerMock.Object, messageWriter: writerMock.Object));
+                x => SetupFactory(x, writer: chunkerMock.Object, messageWriter: writerMock.Object));
 
             var m1 = new RunWithMetadataMessage(Version, new Query("Run message 1"));
             var m2 = new RunWithMetadataMessage(Version, new Query("Run message 2"));
@@ -194,14 +196,14 @@ public class SocketClientTests
 
             var client = NewClient(factory, new Mock<IPackStreamFactory>());
             await client.ConnectAsync(null);
-            
+
             // When
             await client.SendAsync(messages);
 
             // Then
             writerMock.Verify(x => x.Write(m1, It.IsAny<PackStreamWriter>()), Times.Once);
             writerMock.Verify(x => x.Write(m2, It.IsAny<PackStreamWriter>()), Times.Once);
-            
+
             chunkerMock.Verify(x => x.SendAsync(), Times.Once);
         }
 
@@ -233,14 +235,15 @@ public class SocketClientTests
             var readerMock = new Mock<IMessageReader>();
 
             var (_, factory) = CreateMockIoFactory(null, x => SetupFactory(x, messageReader: readerMock.Object));
-            
+
             var psFactory = new Mock<IPackStreamFactory>();
-            psFactory.Setup(x => x.BuildReader(
-                    It.IsAny<MessageFormat>(),
-                    It.IsAny<MemoryStream>(),
-                    It.IsAny<ByteBuffers>()))
+            psFactory.Setup(
+                    x => x.BuildReader(
+                        It.IsAny<MessageFormat>(),
+                        It.IsAny<MemoryStream>(),
+                        It.IsAny<ByteBuffers>()))
                 .Returns(new PackStreamReader(null, null, null));
-            
+
             var client = NewClient(factory, psFactory);
             await client.ConnectAsync(null);
 
@@ -262,7 +265,8 @@ public class SocketClientTests
                 .Setup(x => x.ReadAsync(mockPipeline.Object, It.IsAny<PackStreamReader>()))
                 .Throws<IOException>();
 
-            var (connMock, factory) = CreateMockIoFactory(null,
+            var (connMock, factory) = CreateMockIoFactory(
+                null,
                 x => SetupFactory(x, messageReader: readerMock.Object));
 
             var client = NewClient(factory);

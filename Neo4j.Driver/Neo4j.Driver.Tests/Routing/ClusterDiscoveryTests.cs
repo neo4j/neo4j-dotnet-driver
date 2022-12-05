@@ -38,7 +38,7 @@ public class ClusterDiscoveryTests
         public async Task ShouldParseRoutingTableResult()
         {
             var bookmarks = Bookmarks.From("id1");
-            IReadOnlyDictionary<string, object> routingTable = new Dictionary<string, object>()
+            IReadOnlyDictionary<string, object> routingTable = new Dictionary<string, object>
             {
                 ["db"] = "test",
                 ["ttl"] = 15000L,
@@ -61,11 +61,11 @@ public class ClusterDiscoveryTests
                     }
                 }
             };
-            
+
             var mockConn = new Mock<IConnection>();
             mockConn.Setup(x => x.GetRoutingTableAsync("test", "fake-person", bookmarks))
                 .ReturnsAsync(routingTable);
-            
+
             // When
             var manager = new ClusterDiscovery();
             var table = await manager.DiscoverAsync(mockConn.Object, "test", "fake-person", bookmarks);
@@ -74,9 +74,11 @@ public class ClusterDiscoveryTests
             table.Database.Should().Be("test");
             table.Readers.Should().BeEquivalentTo(new Uri("neo4j://localhost:7689"));
             table.Writers.Should().BeEquivalentTo(new Uri("neo4j://anotherServer:7687"));
-            table.Routers.Should().BeEquivalentTo(
-                new Uri("neo4j://localhost:7689"),
-                new Uri("neo4j://anotherServer:7687"));
+            table.Routers.Should()
+                .BeEquivalentTo(
+                    new Uri("neo4j://localhost:7689"),
+                    new Uri("neo4j://anotherServer:7687"));
+
             table.ExpireAfterSeconds.Should().Be(15000L);
         }
     }

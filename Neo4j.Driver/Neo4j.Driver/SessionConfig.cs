@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Neo4j.Driver.Experimental;
 using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver;
@@ -31,14 +32,13 @@ public sealed class SessionConfig
 {
     internal static readonly SessionConfig Default = new();
     private IEnumerable<Bookmarks> _bookmarks;
-    private string _database;
     private long? _fetchSize;
     private string _impersonatedUser;
 
     internal SessionConfig()
     {
         DefaultAccessMode = AccessMode.Write;
-        _database = null;
+        Database = null;
         _bookmarks = null;
         _fetchSize = null;
         _impersonatedUser = null;
@@ -46,32 +46,38 @@ public sealed class SessionConfig
 
     internal static SessionConfigBuilder Builder => new(new SessionConfig());
 
-    /// <summary>
-    /// The database that the constructed session will connect to.
+    /// <summary>Gets the target database name for queries executed within the constructed session.</summary>
     /// <remarks>
-    /// When used against servers supporting multi-databases, it is recommended that this value to be set explicitly
-    /// either through <see cref="SessionConfigBuilder.WithDatabase"/> method. If not, then the session will connect to the
-    /// default database configured on the server side. When used against servers that don't support multi-databases, this
-    /// property should be left unset.
+    /// This option has no explicit value by default, as such it is recommended to set a value if the target database is known
+    /// in advance. This has the benefit of ensuring a consistent target database name throughout the session in a
+    /// straightforward way and potentially simplifies driver logic, which reduces network communication and might result in
+    /// better performance.<br/><br/> Cypher clauses such as USE are not a replacement for this option as Cypher is handled by
+    /// the server and not the driver.<br/><br/> When no explicit name is set, the driver behavior depends on the connection
+    /// URI scheme supplied to the driver on instantiation and Bolt protocol version.<br/><br/> Specifically, the following
+    /// applies:
+    /// <list type="bullet">
+    ///     <item>
+    ///     <b>bolt schemes</b> - queries are dispatched to the server for execution without explicit database name
+    ///     supplied, meaning that the target database name for query execution is determined by the server. It is important to
+    ///     note that the target database may change (even within the same session), for instance if the user's home database
+    ///     is changed on the server.
+    ///     </item>
+    ///     <item>
+    ///     <b>neo4j schemes</b>  - providing that Bolt protocol version 4.4, which was introduced with Neo4j server 4.4,
+    ///     or above is available, the driver fetches the user's home database name from the server on first query execution
+    ///     within the session and uses the fetched database name explicitly for all queries executed within the session. This
+    ///     ensures that the database name remains consistent within the given session. For instance, if the user's home
+    ///     database name is 'movies' and the server supplies it to the driver upon database name fetching for the session, all
+    ///     queries within that session are executed with the explicit database name 'movies' supplied. Any change to the
+    ///     user’s home database is reflected only in sessions created after such change takes effect. This behavior requires
+    ///     additional network communication. In clustered environments, it is strongly recommended to avoid a single point of
+    ///     failure. For instance, by ensuring that the connection URI resolves to multiple endpoints. For older Bolt protocol
+    ///     versions the behavior is the same as described for the bolt schemes above.
+    ///     </item>
+    /// </list>
     /// </remarks>
-    /// </summary>
-    /// <exception cref="set_Database">
-    /// throws <see cref="System.ArgumentNullException"/> when provided database name is null or
-    /// an empty string.
-    /// </exception>
-    public string Database
-    {
-        get => _database;
-        internal set
-        {
-            if (string.IsNullOrEmpty(value))
-            {
-                throw new ArgumentNullException();
-            }
-
-            _database = value;
-        }
-    }
+    /// <seealso cref="SessionConfigBuilder.WithDatabase"/>
+    public string Database { get; internal set; }
 
     /// <summary>
     /// The type of access required by the constructed session. This is used to route the requests originating from this
@@ -79,16 +85,10 @@ public sealed class SessionConfig
     /// <remarks>
     /// The default access mode set is overriden when transaction functions (i.e.
     /// <see
-    ///     cref="IAsyncSession.ReadTransactionAsync{T}(System.Func{Neo4j.Driver.IAsyncTransaction,System.Threading.Tasks.Task{T}}, System.Action{Neo4j.Driver.TransactionConfigBuilder})"/>
-    /// or
-    /// <see
-    ///     cref="IAsyncSession.ExecuteReadAsync{T}(System.Func{Neo4j.Driver.IAsyncQueryRunner,System.Threading.Tasks.Task{T}}, System.Action{Neo4j.Driver.TransactionConfigBuilder})"/>
+    ///     cref="IAsyncSession.ReadTransactionAsync{T}(System.Func{Neo4j.Driver.IAsyncTransaction,System.Threading.Tasks.Task{T}})"/>
     /// and
     /// <see
-    ///     cref="IAsyncSession.WriteTransactionAsync{T}(System.Func{Neo4j.Driver.IAsyncTransaction,System.Threading.Tasks.Task{T}}, System.Action{Neo4j.Driver.TransactionConfigBuilder})"/>
-    /// or
-    /// <see
-    ///     cref="IAsyncSession.ExecuteWriteAsync{T}(System.Func{Neo4j.Driver.IAsyncQueryRunner,System.Threading.Tasks.Task{T}}, System.Action{Neo4j.Driver.TransactionConfigBuilder})"/>
+    ///     cref="IAsyncSession.WriteTransactionAsync{T}(System.Func{Neo4j.Driver.IAsyncTransaction,System.Threading.Tasks.Task{T}})"/>
     /// is used (with corresponding access modes derived from invoked method name).
     /// </remarks>
     /// </summary>
@@ -131,8 +131,7 @@ public sealed class SessionConfig
         internal set => _impersonatedUser = !string.IsNullOrEmpty(value) ? value : throw new ArgumentNullException();
     }
 
-    /// <summary>Configured Bookmark Manager for use in session.</summary>
-    public IBookmarkManager BookmarkManager { get; internal set; }
+    internal IBookmarkManager BookmarkManager { get; set; }
 }
 
 /// <summary>The builder to build a <see cref="SessionConfig"/>.</summary>
@@ -156,12 +155,50 @@ public sealed class SessionConfigBuilder
         return o => o.WithDatabase(database);
     }
 
-    /// <summary>Sets the database the constructed session will connect to.</summary>
-    /// <param name="database">the database name</param>
-    /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
+    /// <summary>Sets the target database name for queries executed within the constructed session.</summary>
+    /// <param name="database">The database name.</param>
+    /// <returns>This <see cref="SessionConfigBuilder"/> instance.</returns>
     /// <seealso cref="SessionConfig.Database"/>
+    /// <remarks>
+    /// This option has no explicit value by default, as such it is recommended to set a value if the target database is known
+    /// in advance. This has the benefit of ensuring a consistent target database name throughout the session in a
+    /// straightforward way and potentially simplifies driver logic, which reduces network communication and might result in
+    /// better performance.<br/><br/> Cypher clauses such as USE are not a replacement for this option as Cypher is handled by
+    /// the server and not the driver.<br/><br/> When no explicit name is set, the driver behavior depends on the connection
+    /// URI scheme supplied to the driver on instantiation and Bolt protocol version.<br/><br/> Specifically, the following
+    /// applies:
+    /// <list type="bullet">
+    ///     <item>
+    ///     <b>bolt schemes</b> - queries are dispatched to the server for execution without explicit database name
+    ///     supplied, meaning that the target database name for query execution is determined by the server. It is important to
+    ///     note that the target database may change (even within the same session), for instance if the user's home database
+    ///     is changed on the server.
+    ///     </item>
+    ///     <item>
+    ///     <b>neo4j schemes</b>  - providing that Bolt protocol version 4.4, which was introduced with Neo4j server 4.4,
+    ///     or above is available, the driver fetches the user's home database name from the server on first query execution
+    ///     within the session and uses the fetched database name explicitly for all queries executed within the session. This
+    ///     ensures that the database name remains consistent within the given session. For instance, if the user's home
+    ///     database name is 'movies' and the server supplies it to the driver upon database name fetching for the session, all
+    ///     queries within that session are executed with the explicit database name 'movies' supplied. Any change to the
+    ///     user’s home database is reflected only in sessions created after such change takes effect. This behavior requires
+    ///     additional network communication. In clustered environments, it is strongly recommended to avoid a single point of
+    ///     failure. For instance, by ensuring that the connection URI resolves to multiple endpoints. For older Bolt protocol
+    ///     versions the behavior is the same as described for the bolt schemes above.
+    ///     </item>
+    /// </list>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">
+    /// Throws <see cref="System.ArgumentNullException"/> when provided database name
+    /// is null or an empty string.
+    /// </exception>
     public SessionConfigBuilder WithDatabase(string database)
     {
+        if (string.IsNullOrEmpty(database))
+        {
+            throw new ArgumentNullException(nameof(database));
+        }
+
         _config.Database = database;
         return this;
     }
@@ -177,7 +214,7 @@ public sealed class SessionConfigBuilder
     }
 
     /// <summary>Sets the initial bookmarks to be used by the constructed session.</summary>
-    /// <param name="bookmark">the initial bookmarks</param>
+    /// <param name="bookmarks">the initial bookmarks</param>
     /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
     /// <seealso cref="SessionConfig.Bookmarks"/>
     [Obsolete("Replaced by WithBookmarks. Will be removed in 6.0.")]

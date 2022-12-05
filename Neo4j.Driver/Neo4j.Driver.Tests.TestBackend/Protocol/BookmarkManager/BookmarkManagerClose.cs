@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -22,12 +22,6 @@ namespace Neo4j.Driver.Tests.TestBackend;
 internal class BookmarkManagerClose : IProtocolObject
 {
     public BookmarkManagerCloseDto data;
-
-    public override Task Process()
-    {
-        var bookmarkManager = ObjManager.GetObject<NewBookmarkManager>(data.id).BookmarkManager;
-        return bookmarkManager.ForgetAsync();
-    }
 
     public override string Respond()
     {

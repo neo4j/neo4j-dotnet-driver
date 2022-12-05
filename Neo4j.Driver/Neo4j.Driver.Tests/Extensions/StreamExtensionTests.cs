@@ -17,8 +17,6 @@
 
 using System;
 using System.IO;
-using System.Net;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -53,7 +51,7 @@ public class StreamExtensionTests
             .BeOfType<ConnectionReadTimeoutException>()
             .Which.Message.Should()
             .Be($"Socket/Stream timed out after {timeout}ms, socket closed.");
-        
+
         streamMock.Verify(x => x.Close(), Times.Once);
     }
 
@@ -78,7 +76,7 @@ public class StreamExtensionTests
 
         ex.Should().BeNull();
     }
-    
+
     [Fact]
     public async Task ShouldReadSuccessfullyWithoutTimeout()
     {

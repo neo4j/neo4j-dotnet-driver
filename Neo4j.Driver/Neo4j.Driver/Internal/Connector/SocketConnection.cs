@@ -38,6 +38,7 @@ internal sealed class SocketConnection : IConnection
     private readonly PrefixLogger _logger;
 
     private readonly Queue<IRequestMessage> _messages = new();
+    private readonly IBoltProtocolFactory _protocolFactory;
     private readonly SemaphoreSlim _recvLock = new(1, 1);
     private readonly IResponsePipeline _responsePipeline;
     private readonly SemaphoreSlim _sendLock = new(1, 1);
@@ -45,7 +46,6 @@ internal sealed class SocketConnection : IConnection
     private readonly string _userAgent;
 
     private string _id;
-    private readonly IBoltProtocolFactory _protocolFactory;
 
     internal SocketConnection(
         Uri uri,

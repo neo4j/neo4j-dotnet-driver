@@ -72,7 +72,7 @@ public class SocketConnectionTests
             var protocolMock = new Mock<IBoltProtocol>();
             var bpFactory = new Mock<IBoltProtocolFactory>();
             bpFactory.Setup(x => x.ForVersion(BoltProtocolVersion.V30)).Returns(protocolMock.Object);
-            
+
             var conn = NewSocketConnection(mockClient.Object, boltProtocolFactory: bpFactory.Object);
 
             // When

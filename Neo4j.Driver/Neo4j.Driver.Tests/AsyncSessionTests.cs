@@ -23,6 +23,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Experimental;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -34,7 +35,7 @@ namespace Neo4j.Driver.Tests;
 
 public class AsyncSessionTests
 {
-    internal static AsyncSession NewSession(IConnection connection, bool reactive = false, ILogger logger = null)
+    internal static AsyncSession NewSession(IConnection connection, ILogger logger = null)
     {
         return new AsyncSession(
             new TestConnectionProvider(connection),
@@ -42,13 +43,73 @@ public class AsyncSessionTests
             null,
             0,
             new Driver.SessionConfig(),
-            reactive);
+            false);
     }
 
-    internal static Mock<IConnection> NewMockedConnection()
+    internal static AsyncSession NewSession(IBoltProtocol protocol, bool reactive = false)
     {
         var mockConn = new Mock<IConnection>();
         mockConn.Setup(x => x.IsOpen).Returns(true);
+        mockConn.Setup(x => x.BoltProtocol).Returns(protocol);
+
+        return new AsyncSession(
+            new TestConnectionProvider(mockConn.Object),
+            null,
+            null,
+            0,
+            new Driver.SessionConfig(),
+            reactive);
+    }
+
+    internal static Mock<IConnection> NewMockedConnection(IBoltProtocol boltProtocol = null)
+    {
+        var mockConn = new Mock<IConnection>();
+        mockConn.Setup(x => x.IsOpen).Returns(true);
+        if (boltProtocol == null)
+        {
+            var protocol = new Mock<IBoltProtocol>();
+            protocol.Setup(x => x.LoginAsync(It.IsAny<IConnection>(), It.IsAny<string>(), It.IsAny<IAuthToken>()))
+                .Returns(Task.CompletedTask);
+
+            protocol.Setup(
+                    x => x.RunInAutoCommitTransactionAsync(mockConn.Object, It.IsAny<AutoCommitParams>()))
+                .ReturnsAsync(new Mock<IResultCursor>().Object);
+
+            protocol.Setup(
+                    x =>
+                        x.BeginTransactionAsync(
+                            It.IsAny<IConnection>(),
+                            It.IsAny<string>(),
+                            It.IsAny<Bookmarks>(),
+                            It.IsAny<TransactionConfig>(),
+                            null))
+                .Returns(Task.CompletedTask);
+
+            protocol.Setup(
+                    x =>
+                        x.RunInExplicitTransactionAsync(
+                            It.IsAny<IConnection>(),
+                            It.IsAny<Query>(),
+                            false,
+                            It.IsAny<long>()))
+                .ReturnsAsync(new Mock<IResultCursor>().Object);
+
+            protocol.Setup(x => x.CommitTransactionAsync(It.IsAny<IConnection>(), It.IsAny<IBookmarksTracker>()))
+                .Returns(Task.CompletedTask);
+
+            protocol.Setup(x => x.RollbackTransactionAsync(It.IsAny<IConnection>()))
+                .Returns(Task.CompletedTask);
+
+            protocol.Setup(x => x.ResetAsync(It.IsAny<IConnection>()))
+                .Returns(Task.CompletedTask);
+
+            protocol.Setup(x => x.LogoutAsync(It.IsAny<IConnection>()))
+                .Returns(Task.CompletedTask);
+
+            boltProtocol = protocol.Object;
+        }
+
+        mockConn.Setup(x => x.BoltProtocol).Returns(boltProtocol);
         return mockConn;
     }
 
@@ -96,12 +157,14 @@ public class AsyncSessionTests
         [InlineData(false)]
         public async Task ShouldDelegateToProtocolRunAutoCommitTxAsync(bool reactive)
         {
-            var mockConn = new Mock<IConnection>();
-            var session = NewSession(mockConn.Object, reactive);
+            var mockProtocol = new Mock<IBoltProtocol>();
+            var session = NewSession(mockProtocol.Object, reactive);
             await session.RunAsync("lalalal");
 
-            mockConn.Verify(
-                x => x.RunInAutoCommitTransactionAsync(It.IsAny<AutoCommitParams>()),
+            mockProtocol.Verify(
+                x => x.RunInAutoCommitTransactionAsync(
+                    It.IsAny<IConnection>(),
+                    It.IsAny<AutoCommitParams>()),
                 Times.Once);
         }
     }
@@ -196,10 +259,13 @@ public class AsyncSessionTests
         public async void ShouldCloseConnectionOnRunIfBeginTxFailed()
         {
             // Given
-            var mockConn = new Mock<IConnection>();
-            mockConn.Setup(
+            var mockProtocol = new Mock<IBoltProtocol>();
+            var mockConn = MockedConnectionWithSuccessResponse(mockProtocol.Object);
+
+            mockProtocol.Setup(
                     x =>
                         x.BeginTransactionAsync(
+                            It.IsAny<IConnection>(),
                             It.IsAny<string>(),
                             It.IsAny<Bookmarks>(),
                             It.IsAny<TransactionConfig>(),
@@ -221,11 +287,13 @@ public class AsyncSessionTests
         public async void ShouldCloseConnectionOnNewBeginTxIfBeginTxFailed()
         {
             // Given
-            var mockConn = NewMockedConnection();
+            var mockProtocol = new Mock<IBoltProtocol>();
+            var mockConn = NewMockedConnection(mockProtocol.Object);
             var calls = 0;
-            mockConn.Setup(
+            mockProtocol.Setup(
                     x =>
                         x.BeginTransactionAsync(
+                            It.IsAny<IConnection>(),
                             It.IsAny<string>(),
                             It.IsAny<Bookmarks>(),
                             It.IsAny<TransactionConfig>(),
@@ -259,10 +327,12 @@ public class AsyncSessionTests
         [Fact]
         public async void ShouldCloseConnectionIfBeginTxFailed()
         {
-            var mockConn = NewMockedConnection();
-            mockConn.Setup(
+            var mockProtocol = new Mock<IBoltProtocol>();
+            var mockConn = NewMockedConnection(mockProtocol.Object);
+            mockProtocol.Setup(
                     x =>
                         x.BeginTransactionAsync(
+                            It.IsAny<IConnection>(),
                             It.IsAny<string>(),
                             It.IsAny<Bookmarks>(),
                             It.IsAny<TransactionConfig>(),
@@ -280,12 +350,13 @@ public class AsyncSessionTests
         [Fact]
         public async void ShouldCloseTxOnCloseAsync()
         {
-            var mockConn = NewMockedConnection();
+            var mockProtocol = new Mock<IBoltProtocol>();
+            var mockConn = NewMockedConnection(mockProtocol.Object);
             var session = NewSession(mockConn.Object);
-            var _ = await session.BeginTransactionAsync();
+            var tx = await session.BeginTransactionAsync();
             await session.CloseAsync();
 
-            mockConn.Verify(x => x.RollbackTransactionAsync(), Times.Once);
+            mockProtocol.Verify(x => x.RollbackTransactionAsync(It.IsAny<IConnection>()), Times.Once);
             mockConn.Verify(x => x.CloseAsync(), Times.Once);
         }
 
@@ -386,11 +457,6 @@ public class AsyncSessionTests
             throw new NotSupportedException();
         }
 
-        public ValueTask DisposeAsync()
-        {
-            throw new NotImplementedException();
-        }
-
         public void Dispose()
         {
             // do nothing
@@ -404,6 +470,11 @@ public class AsyncSessionTests
         public Task VerifyConnectivityAsync()
         {
             return Task.CompletedTask;
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            return default;
         }
     }
 
@@ -423,29 +494,21 @@ public class AsyncSessionTests
             {
                 session.UpdateBookmarks(new InternalBookmarks("a"));
                 bookmarkManager.Verify(
-                    x => x.UpdateBookmarksAsync(
-                        "test",
-                        Array.Empty<string>(),
-                        new[] { "a" },
-                        It.IsAny<CancellationToken>()),
+                    x => x.UpdateBookmarksAsync(Array.Empty<string>(), new[] { "a" }, It.IsAny<CancellationToken>()),
                     Times.Once);
 
                 session.UpdateBookmarks(new InternalBookmarks("b"));
                 bookmarkManager.Verify(
-                    x => x.UpdateBookmarksAsync("test", new[] { "a" }, new[] { "b" }, It.IsAny<CancellationToken>()),
+                    x => x.UpdateBookmarksAsync(new[] { "a" }, new[] { "b" }, It.IsAny<CancellationToken>()),
                     Times.Once);
             }
 
             bookmarkManager.Verify(
-                x => x.UpdateBookmarksAsync(
-                    "test",
-                    It.IsAny<string[]>(),
-                    It.IsAny<string[]>(),
-                    It.IsAny<CancellationToken>()),
+                x => x.UpdateBookmarksAsync(It.IsAny<string[]>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()),
                 Times.Exactly(2));
 
             bookmarkManager.Verify(
-                x => x.UpdateBookmarksAsync("test", new[] { "a" }, new[] { "b" }, It.IsAny<CancellationToken>()),
+                x => x.UpdateBookmarksAsync(new[] { "a" }, new[] { "b" }, It.IsAny<CancellationToken>()),
                 Times.Once);
         }
     }

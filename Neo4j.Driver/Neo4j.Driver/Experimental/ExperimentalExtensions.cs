@@ -18,22 +18,36 @@
 namespace Neo4j.Driver.Experimental;
 
 /// <summary>
-/// Methods being considered for moving to the Neo4j.Driver. There is no guarantee that anything in
-/// Neo4j.Driver.Experimental namespace will be in a next minor version.
+/// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
+/// <br/> This class provides access to experimental APIs on existing non-static classes.
 /// </summary>
 public static class ExperimentalExtensions
 {
     /// <summary>
     /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
-    /// Sets the <see cref="IBookmarkManager"/> for maintaining bookmarks for the lifetime of a session.
+    /// <br/> Sets the <see cref="IBookmarkManager"/> for maintaining bookmarks for the lifetime of the session.
     /// </summary>
-    /// <param name="builder">this builder.</param>
-    /// <param name="bookmarkManager">Instance of <see cref="IBookmarkManager"/>.</param>
+    /// <param name="builder">This <see cref="SessionConfigBuilder"/> instance.</param>
+    /// <param name="bookmarkManager">An instance of <see cref="IBookmarkManager"/> to use in the session.</param>
     /// <returns>this <see cref="SessionConfigBuilder"/> instance.</returns>
     public static SessionConfigBuilder WithBookmarkManager(
         this SessionConfigBuilder builder,
         IBookmarkManager bookmarkManager)
     {
         return builder.WithBookmarkManager(bookmarkManager);
+    }
+
+    /// <summary>
+    /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
+    /// <br/> Experimental: This method will be removed and replaced with a readonly property "BookmarkManager" on the
+    /// <see cref="SessionConfig"/> class.<br/> Gets the configured experimental bookmark manager from this
+    /// <see cref="SessionConfig"/> instance.
+    /// </summary>
+    /// <seealso cref="WithBookmarkManager"/>
+    /// <param name="config">This <see cref="SessionConfig"/> instance.</param>
+    /// <returns>This <see cref="SessionConfig"/>'s configured <see cref="IBookmarkManager"/> instance.</returns>
+    public static IBookmarkManager GetBookmarkManager(this SessionConfig config)
+    {
+        return config.BookmarkManager;
     }
 }

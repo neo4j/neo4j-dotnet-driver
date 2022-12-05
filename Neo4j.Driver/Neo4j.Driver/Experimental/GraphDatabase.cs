@@ -26,10 +26,11 @@ namespace Neo4j.Driver.Experimental;
 public static class GraphDatabase
 {
     /// <summary>
-    /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
-    /// Experimental: Bookmark Manager API is still under consideration. <br/> Gets a new <see cref="IBookmarkManagerFactory"/>
-    /// , which can construct a default implementation of <see cref="IBookmarkManager"/> .<br/> <see cref="IBookmarkManager"/>
-    /// instances can be passed to <see cref="SessionConfigBuilder"/> when opening a new session.
+    /// Experimental: Bookmark Manager API is still under consideration. <br/> There is no guarantee that anything in
+    /// Neo4j.Driver.Experimental namespace will be in a next minor version.<br/> Gets a new
+    /// <see cref="IBookmarkManagerFactory"/>, which can construct a new default <see cref="IBookmarkManager"/> instance.<br/>
+    /// The <see cref="IBookmarkManager"/> instance should be passed to <see cref="SessionConfigBuilder"/> when opening a new
+    /// session with <see cref="ExperimentalExtensions.WithBookmarkManager"/>.
     /// </summary>
     public static IBookmarkManagerFactory BookmarkManagerFactory => new BookmarkManagerFactory();
 }

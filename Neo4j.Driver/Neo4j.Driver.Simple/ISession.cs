@@ -39,7 +39,7 @@ public interface ISession : IQueryRunner
     /// Gets the bookmark received following the last successfully completed <see cref="ITransaction"/>. If no
     /// bookmark was received or if this transaction was rolled back, the bookmark value will not be changed.
     /// </summary>
-    [Obsolete("Deprecated, Replaced by LastBookmarks. LastBookmark will be removed in 6.0")]
+    [Obsolete("Deprecated, Replaced by LastBookmarks. LastBookmark will be removed in 6.0.")]
     Bookmark LastBookmark { get; }
 
     /// <summary>Gets the session configuration back</summary>
