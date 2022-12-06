@@ -16,16 +16,22 @@
 // limitations under the License.
 
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.MessageHandling.Metadata;
 
-namespace Neo4j.Driver.Internal;
+namespace Neo4j.Driver.Internal.MessageHandling;
 
-internal interface IRoutingTableProtocol
+internal sealed class RouteResponseHandler : MetadataCollectingResponseHandler
 {
-    Task<IReadOnlyDictionary<string, object>> GetRoutingTable(
-        IConnection connection,
-        string database,
-        string impersonatedUser,
-        Bookmarks bookmarks);
+    public RouteResponseHandler()
+    {
+        AddMetadata<RoutingTableCollector, IDictionary<string, object>>();
+    }
+
+    public IDictionary<string, object> RoutingInformation { get; set; }
+
+    public override void OnSuccess(IDictionary<string, object> metadata)
+    {
+        base.OnSuccess(metadata);
+        RoutingInformation = GetMetadata<RoutingTableCollector, IDictionary<string, object>>();
+    }
 }

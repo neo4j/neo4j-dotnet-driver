@@ -29,8 +29,8 @@ internal interface IBoltProtocolFactory
 
 internal class BoltProtocolFactory : IBoltProtocolFactory
 {
-    private const int BoltHttpIdentifier = 1213486160; // 0x‭48 54 54 50 - or HTTP ascii codes...
-    internal static BoltProtocolFactory Default = new();
+    private static readonly BoltProtocolVersion HttpBoltVersion = new(1213486160); // 0x‭48 54 54 50 - or HTTP ascii codes...
+    internal static readonly BoltProtocolFactory Default = new();
 
     private static readonly string HttpErrorMessage =
         "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
@@ -67,23 +67,16 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
 
     public IBoltProtocol ForVersion(BoltProtocolVersion version)
     {
+        if (version == HttpBoltVersion) {
+            throw new NotSupportedException(HttpErrorMessage);
+        }
+        
         return version switch
         {
-            { MajorVersion: 3, MinorVersion: 0 } => new LegacyBoltProtocol(),
-            { MajorVersion: 4, MinorVersion: 0 } => new BoltProtocol(null),
-            { MajorVersion: 4, MinorVersion: 1 } => new BoltProtocol(null),
-            { MajorVersion: 4, MinorVersion: 2 } => new BoltProtocol(null),
-            { MajorVersion: 4, MinorVersion: 3 } => new BoltProtocol(new RoutingTableProtocol43()),
-            { MajorVersion: 4, MinorVersion: 4 } => new BoltProtocol(new RoutingTableProtocol44()),
-            { MajorVersion: 5, MinorVersion: 0 } => new BoltProtocol(new RoutingTableProtocol44()),
             // no matching versions
             { MajorVersion: 0, MinorVersion: 0 } => throw new NotSupportedException(NoAgreedVersion),
-            // http response
-            _ when version == new BoltProtocolVersion(BoltHttpIdentifier) => throw new NotSupportedException(
-                HttpErrorMessage),
-            // undefined
-            _ => throw new NotSupportedException(
-                $"Protocol error, server suggested unexpected protocol version: {version}")
+            { MajorVersion: 3, MinorVersion: 0 } => LegacyBoltProtocol.Instance,
+            _ => BoltProtocol.Instance
         };
     }
 

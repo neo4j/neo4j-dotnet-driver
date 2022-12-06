@@ -28,6 +28,13 @@ namespace Neo4j.Driver.Internal;
 
 internal sealed class LegacyBoltProtocol : IBoltProtocol
 {
+    public static readonly LegacyBoltProtocol Instance = new();
+
+    private LegacyBoltProtocol()
+    {
+        
+    }
+    
     public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
     {
         await connection.EnqueueAsync(
@@ -74,7 +81,7 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
         var resourceHandler = new ConnectionResourceHandler(connection);
         var sessionDb = connection.SupportsMultiDatabase() ? "system" : null;
 
-        connection.Configure(sessionDb, AccessMode.Read);
+        connection.Configure(null, AccessMode.Read);
 
         var query = GetRoutingTableQuery(connection, database);
 

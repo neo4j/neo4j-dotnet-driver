@@ -198,17 +198,13 @@ public class ClusterDiscoveryTests
 
             MockConn.Setup(x => x.Mode).Returns(mode);
 
-            IBoltProtocol protocol = new LegacyBoltProtocol();
+            IBoltProtocol protocol = LegacyBoltProtocol.Instance;
 
             if (serverInfo != null)
             {
-                if (serverInfo.Protocol >= BoltProtocolVersion.V4_3)
+                if (serverInfo.Protocol >= BoltProtocolVersion.V4_0)
                 {
-                    protocol = new BoltProtocol(new RoutingTableProtocol43());
-                }
-                else if (serverInfo.Protocol >= BoltProtocolVersion.V4_0)
-                {
-                    protocol = new BoltProtocol(null);
+                    protocol = BoltProtocol.Instance;
                 }
 
                 MockConn.Setup(x => x.Server).Returns(serverInfo);

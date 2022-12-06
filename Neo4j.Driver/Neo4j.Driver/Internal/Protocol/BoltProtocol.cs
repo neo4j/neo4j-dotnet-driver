@@ -23,29 +23,26 @@ using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.MessageHandling.V4;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
+using V43 = Neo4j.Driver.Internal.Messaging.V4_3;
+using V44 = Neo4j.Driver.Internal.Messaging.V4_4;
 
 namespace Neo4j.Driver.Internal;
 
 internal sealed class BoltProtocol : IBoltProtocol
 {
-    private readonly IRoutingTableProtocol _getRoutingTableProtocol;
+    public static readonly IBoltProtocol Instance = new BoltProtocol();
     private readonly LegacyBoltProtocol _legacyProtocol;
 
-    public BoltProtocol(IRoutingTableProtocol routingTableProtocol)
+    public BoltProtocol()
     {
-        _getRoutingTableProtocol = routingTableProtocol;
-        _legacyProtocol = new LegacyBoltProtocol();
+        _legacyProtocol = LegacyBoltProtocol.Instance;
     }
 
     public async Task<IResultCursor> RunInAutoCommitTransactionAsync(
         IConnection connection,
         AutoCommitParams autoCommitParams)
     {
-        if (connection.Version < BoltProtocolVersion.V4_4 &&
-            !string.IsNullOrWhiteSpace(autoCommitParams.ImpersonatedUser))
-        {
-            throw new Exception("Can not impersonate users in 3.0-4.3"); //TODO: Make better.
-        }
+        ValidateImpersonatedUser(connection, autoCommitParams.ImpersonatedUser);
 
         var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
         var streamBuilder = new ResultCursorBuilder(
@@ -62,13 +59,10 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
 
-        var pullMessage = default(PullMessage);
-        var pullHandler = default(PullResponseHandler);
-        if (!autoCommitParams.Reactive)
-        {
-            pullMessage = new PullMessage(autoCommitParams.FetchSize);
-            pullHandler = new PullResponseHandler(streamBuilder, summaryBuilder, autoCommitParams.BookmarksTracker);
-        }
+        var pullMessage = autoCommitParams.Reactive ? null : new PullMessage(autoCommitParams.FetchSize);
+        var pullHandler = autoCommitParams.Reactive
+            ? null 
+            : new PullResponseHandler(streamBuilder, summaryBuilder, autoCommitParams.BookmarksTracker);
 
         // Refactor to take AC Params
         var message = new RunWithMetadataMessage(
@@ -88,6 +82,15 @@ internal sealed class BoltProtocol : IBoltProtocol
         return streamBuilder.CreateCursor();
     }
 
+    private static void ValidateImpersonatedUser(IConnection connection, string impersonatedUser)
+    {
+        if (connection.Version < BoltProtocolVersion.V4_4 &&
+            !string.IsNullOrWhiteSpace(impersonatedUser))
+        {
+            throw new Exception("Can not impersonate users in 3.0-4.3"); //TODO: Make better.
+        }
+    }
+
     public Task BeginTransactionAsync(
         IConnection connection,
         string database,
@@ -95,11 +98,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         TransactionConfig config,
         string impersonatedUser)
     {
-        if (connection.Version < BoltProtocolVersion.V4_4 && !string.IsNullOrWhiteSpace(impersonatedUser))
-        {
-            throw new Exception("Can not impersonate users in 3.0-4.3"); //TODO: Make better.
-        }
-
+        ValidateImpersonatedUser(connection, impersonatedUser);
         return _legacyProtocol.BeginTransactionAsync(connection, database, bookmarks, config, impersonatedUser);
     }
 
@@ -121,13 +120,8 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
 
-        var pullMessage = default(PullMessage);
-        var pullHandler = default(PullResponseHandler);
-        if (!reactive)
-        {
-            pullMessage = new PullMessage(fetchSize);
-            pullHandler = new PullResponseHandler(streamBuilder, summaryBuilder, null);
-        }
+        var pullMessage = reactive ? null : new PullMessage(fetchSize);
+        var pullHandler = reactive ? null : new PullResponseHandler(streamBuilder, summaryBuilder, null);
 
         await connection.EnqueueAsync(
                 new RunWithMetadataMessage(connection.Version, query),
@@ -171,14 +165,39 @@ internal sealed class BoltProtocol : IBoltProtocol
         string impersonatedUser,
         Bookmarks bookmarks)
     {
-        if (connection.Version < BoltProtocolVersion.V4_4 && !string.IsNullOrWhiteSpace(impersonatedUser))
-        {
-            throw new Exception("Can not impersonate users in 3.0-4.3"); //TODO: Make better.
-        }
+        ValidateImpersonatedUser(connection, impersonatedUser);
 
         return connection.Version >= BoltProtocolVersion.V4_3
-            ? _getRoutingTableProtocol.GetRoutingTable(connection, database, impersonatedUser, bookmarks)
+            ? RoutingTableProcedure(connection, database, impersonatedUser, bookmarks)
             : _legacyProtocol.GetRoutingTable(connection, database, impersonatedUser, bookmarks);
+    }
+
+    public async Task<IReadOnlyDictionary<string, object>> RoutingTableProcedure(
+        IConnection connection,
+        string database,
+        string impersonatedUser,
+        Bookmarks bookmarks)
+    {
+        connection = connection ??
+            throw new ProtocolException("Attempting to get a routing table on a null connection");
+
+        IRequestMessage message = connection.Version == BoltProtocolVersion.V4_3
+            ? new V43.RouteMessage(connection.RoutingContext, bookmarks, database)
+            : new V44.RouteMessage(connection.RoutingContext, bookmarks, database, impersonatedUser);
+
+        var responseHandler = new RouteResponseHandler();
+
+        await connection.EnqueueAsync(message, responseHandler).ConfigureAwait(false);
+        await connection.SyncAsync().ConfigureAwait(false);
+
+        // Since 4.4 the Routing information will contain a db.
+        // 4.3 needs to populate this here as it's not received in the older route response...
+        if (connection.Version == BoltProtocolVersion.V4_3)
+        {
+            responseHandler.RoutingInformation.Add("db", database);
+        }
+
+        return (IReadOnlyDictionary<string, object>)responseHandler.RoutingInformation;
     }
 
     private static Func<IResultStreamBuilder, long, long, Task> RequestMore(
@@ -188,9 +207,9 @@ internal sealed class BoltProtocol : IBoltProtocol
     {
         return async (streamBuilder, id, n) =>
         {
-            var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
+            var pullResponseHandler = new PullResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
             await connection
-                .EnqueueAsync(new PullMessage(id, n), pullAllHandler)
+                .EnqueueAsync(new PullMessage(id, n), pullResponseHandler)
                 .ConfigureAwait(false);
 
             await connection.SendAsync().ConfigureAwait(false);
@@ -204,9 +223,9 @@ internal sealed class BoltProtocol : IBoltProtocol
     {
         return async (streamBuilder, id) =>
         {
-            var pullAllHandler = new PullResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
+            var pullResponseHandler = new PullResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
             await connection
-                .EnqueueAsync(new DiscardMessage(id, ResultHandleMessage.All), pullAllHandler)
+                .EnqueueAsync(new DiscardMessage(id, ResultHandleMessage.All), pullResponseHandler)
                 .ConfigureAwait(false);
 
             await connection.SendAsync().ConfigureAwait(false);

@@ -22,7 +22,7 @@ public class Program
     public static async Task Main()
     {
         using var driver = GraphDatabase.Driver(
-            "bolt://localhost:7687",
+            "bolt://127.0.0.1:7687",
             AuthTokens.Basic("neo4j", "pass"),
             x => x.WithLogger(new Logger()));
 
@@ -33,9 +33,7 @@ public class Program
             "CREATE (n: testNode { test: $val}) RETURN n.test",
             new { val = val.Next() });
 
-        var value = await cursor.ToListAsync();
-
-        Console.WriteLine(value[0].Values.First().Value);
+        var value = await cursor.ConsumeAsync();
     }
 }
 
