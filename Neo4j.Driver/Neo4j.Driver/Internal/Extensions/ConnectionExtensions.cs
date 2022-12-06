@@ -22,12 +22,6 @@ namespace Neo4j.Driver.Internal;
 
 internal static class ConnectionExtensions
 {
-    public static AccessMode GetEnforcedAccessMode(this IConnection connection)
-    {
-        return connection.Mode ??
-            throw new InvalidOperationException("Connection should have its Mode property set.");
-    }
-
     public static bool SupportsMultiDatabase(this IConnection connection)
     {
         return connection.Version >= BoltProtocolVersion.V4_0;

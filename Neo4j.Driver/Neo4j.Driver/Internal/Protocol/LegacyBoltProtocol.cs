@@ -122,7 +122,7 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
             autoCommitParams.Query,
             autoCommitParams.Bookmarks,
             autoCommitParams.Config,
-            connection.GetEnforcedAccessMode(),
+            connection.Mode ?? throw new InvalidOperationException("Connection should have its Mode property set."),
             null,
             autoCommitParams.ImpersonatedUser);
 
@@ -142,14 +142,17 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
     {
         ValidateImpersonatedUserForVersion(connection, impersonatedUser);
         ValidateDatabase(connection, database);
-
+        
+        var mode = connection.Mode ??
+            throw new InvalidOperationException("Connection should have its Mode property set.");
+        
         await connection.EnqueueAsync(
                 new BeginMessage(
                     connection.Version,
                     database,
                     bookmarks,
                     config,
-                    connection.GetEnforcedAccessMode(),
+                    mode,
                     impersonatedUser),
                 NoOpResponseHandler.Instance)
             .ConfigureAwait(false);

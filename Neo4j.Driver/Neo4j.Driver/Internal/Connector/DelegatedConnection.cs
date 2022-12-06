@@ -40,19 +40,40 @@ internal abstract class DelegatedConnection : IConnection
 
     public IDictionary<string, string> RoutingContext => Delegate.RoutingContext;
 
-    public Task SyncAsync()
+    public async Task SyncAsync()
     {
-        return TaskWithErrorHandling(Delegate.SyncAsync);
+        try
+        {
+            await Delegate.SyncAsync().ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            await OnErrorAsync(e).ConfigureAwait(false);
+        }
     }
 
-    public Task SendAsync()
+    public async Task SendAsync()
     {
-        return TaskWithErrorHandling(Delegate.SendAsync);
+        try
+        {
+            await Delegate.SendAsync().ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            await OnErrorAsync(e).ConfigureAwait(false);
+        }
     }
 
-    public Task ReceiveOneAsync()
+    public async Task ReceiveOneAsync()
     {
-        return TaskWithErrorHandling(Delegate.ReceiveOneAsync);
+        try
+        {
+            await Delegate.ReceiveOneAsync().ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            await OnErrorAsync(e).ConfigureAwait(false);
+        }
     }
 
     public BoltProtocolVersion Version => Delegate.Version;
@@ -62,23 +83,44 @@ internal abstract class DelegatedConnection : IConnection
         Delegate.Configure(database, mode);
     }
 
-    public Task InitAsync(CancellationToken cancellationToken = default)
+    public async Task InitAsync(CancellationToken cancellationToken = default)
     {
-        return TaskWithErrorHandling(() => Delegate.InitAsync(cancellationToken));
+        try
+        {
+            await Delegate.InitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            await OnErrorAsync(e).ConfigureAwait(false);
+        }
     }
 
-    public Task EnqueueAsync(
+    public async Task EnqueueAsync(
         IRequestMessage message1,
         IResponseHandler handler1,
         IRequestMessage message2 = null,
         IResponseHandler handler2 = null)
     {
-        return TaskWithErrorHandling(() => Delegate.EnqueueAsync(message1, handler1, message2, handler2));
+        try
+        {
+            await Delegate.EnqueueAsync(message1, handler1, message2, handler2).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            await OnErrorAsync(e).ConfigureAwait(false);
+        }
     }
 
-    public Task ResetAsync()
+    public async Task ResetAsync()
     {
-        return TaskWithErrorHandling(Delegate.ResetAsync);
+        try
+        {
+            await Delegate.ResetAsync().ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            await OnErrorAsync(e).ConfigureAwait(false);
+        }
     }
 
     public virtual bool IsOpen => Delegate.IsOpen;
@@ -118,83 +160,116 @@ internal abstract class DelegatedConnection : IConnection
         Delegate.SetUseUtcEncodedDateTime();
     }
 
-    public Task LoginAsync(string userAgent, IAuthToken authToken)
+    public async Task LoginAsync(string userAgent, IAuthToken authToken)
     {
-        return TaskWithErrorHandling(() => Delegate.LoginAsync(userAgent, authToken));
+        try
+        {
+            await Delegate.LoginAsync(userAgent, authToken).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            await OnErrorAsync(e).ConfigureAwait(false);
+        }
     }
 
-    public Task LogoutAsync()
+    public async Task LogoutAsync()
     {
-        return TaskWithErrorHandling(Delegate.LogoutAsync);
+        try
+        {
+            await Delegate.LogoutAsync().ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            await OnErrorAsync(e).ConfigureAwait(false);
+        }
     }
 
-    public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
+    public async Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         string database,
         string impersonatedUser,
         Bookmarks bookmarks)
     {
-        return TaskWithErrorHandling(() => Delegate.GetRoutingTableAsync(database, impersonatedUser, bookmarks));
+        try
+        {
+            return await Delegate.GetRoutingTableAsync(database, impersonatedUser, bookmarks).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            await OnErrorAsync(e).ConfigureAwait(false);
+            throw;
+        }
     }
 
-    public Task<IResultCursor> RunInAutoCommitTransactionAsync(AutoCommitParams autoCommitParams)
+    public async Task<IResultCursor> RunInAutoCommitTransactionAsync(AutoCommitParams autoCommitParams)
     {
-        return TaskWithErrorHandling(() => Delegate.RunInAutoCommitTransactionAsync(autoCommitParams));
+        try
+        {
+            return await Delegate.RunInAutoCommitTransactionAsync(autoCommitParams).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            await OnErrorAsync(e).ConfigureAwait(false);
+            throw;
+        }
     }
 
-    public Task BeginTransactionAsync(
+    public async Task BeginTransactionAsync(
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
         string impersonatedUser)
     {
-        return TaskWithErrorHandling(
-            () => Delegate.BeginTransactionAsync(database, bookmarks, config, impersonatedUser));
+        try
+        {
+            await Delegate.BeginTransactionAsync(database, bookmarks, config, impersonatedUser)
+                .ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            await OnErrorAsync(e).ConfigureAwait(false);
+        }
     }
 
-    public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize)
+    public async Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize)
     {
-        return TaskWithErrorHandling(() => Delegate.RunInExplicitTransactionAsync(query, reactive, fetchSize));
+        try
+        {
+            return await Delegate.RunInExplicitTransactionAsync(query, reactive, fetchSize);
+        }
+        catch (Exception e)
+        {
+            await OnErrorAsync(e).ConfigureAwait(false);
+            throw;
+        }
     }
 
-    public Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker)
+    public async Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker)
     {
-        return TaskWithErrorHandling(() => Delegate.CommitTransactionAsync(bookmarksTracker));
+        try
+        {
+            await Delegate.CommitTransactionAsync(bookmarksTracker).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            await OnErrorAsync(e).ConfigureAwait(false);
+        }
     }
 
-    public Task RollbackTransactionAsync()
+    public async Task RollbackTransactionAsync()
     {
-        return TaskWithErrorHandling(Delegate.RollbackTransactionAsync);
+        try
+        {
+            await Delegate.RollbackTransactionAsync().ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            await OnErrorAsync(e).ConfigureAwait(false);
+        }
     }
 
     internal virtual Task OnErrorAsync(Exception error)
     {
         return Task.CompletedTask;
-    }
-
-    internal async Task TaskWithErrorHandling(Func<Task> task)
-    {
-        try
-        {
-            await task().ConfigureAwait(false);
-        }
-        catch (Exception e)
-        {
-            await OnErrorAsync(e).ConfigureAwait(false);
-        }
-    }
-
-    internal async Task<T> TaskWithErrorHandling<T>(Func<Task<T>> task)
-    {
-        try
-        {
-            return await task().ConfigureAwait(false);
-        }
-        catch (Exception e)
-        {
-            await OnErrorAsync(e).ConfigureAwait(false);
-        }
-
-        return default;
     }
     
     public override string ToString()

@@ -76,7 +76,7 @@ internal sealed class BoltProtocol : IBoltProtocol
             autoCommitParams.Query,
             autoCommitParams.Bookmarks,
             autoCommitParams.Config,
-            connection.GetEnforcedAccessMode(),
+            connection.Mode ?? throw new InvalidOperationException("Connection should have its Mode property set."),
             autoCommitParams.Database,
             autoCommitParams.ImpersonatedUser);
 
