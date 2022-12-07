@@ -289,7 +289,7 @@ internal sealed class SocketConnection : IConnection
         string impersonatedUser,
         Bookmarks bookmarks)
     {
-        return BoltProtocol.GetRoutingTable(this, database, impersonatedUser, bookmarks);
+        return BoltProtocol.GetRoutingTableAsync(this, database, impersonatedUser, bookmarks);
     }
 
     public Task<IResultCursor> RunInAutoCommitTransactionAsync(AutoCommitParams autoCommitParams)

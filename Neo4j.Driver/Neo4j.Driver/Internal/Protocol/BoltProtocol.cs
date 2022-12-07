@@ -159,7 +159,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         return _legacyProtocol.ResetAsync(connection);
     }
 
-    public Task<IReadOnlyDictionary<string, object>> GetRoutingTable(
+    public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         IConnection connection,
         string database,
         string impersonatedUser,
@@ -169,7 +169,7 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         return connection.Version >= BoltProtocolVersion.V4_3
             ? RoutingTableProcedure(connection, database, impersonatedUser, bookmarks)
-            : _legacyProtocol.GetRoutingTable(connection, database, impersonatedUser, bookmarks);
+            : _legacyProtocol.GetRoutingTableAsync(connection, database, impersonatedUser, bookmarks);
     }
 
     private async Task<IReadOnlyDictionary<string, object>> RoutingTableProcedure(

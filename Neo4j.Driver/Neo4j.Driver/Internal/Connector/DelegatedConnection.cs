@@ -111,18 +111,6 @@ internal abstract class DelegatedConnection : IConnection
         }
     }
 
-    public async Task ResetAsync()
-    {
-        try
-        {
-            await Delegate.ResetAsync().ConfigureAwait(false);
-        }
-        catch (Exception e)
-        {
-            await OnErrorAsync(e).ConfigureAwait(false);
-        }
-    }
-
     public virtual bool IsOpen => Delegate.IsOpen;
 
     public IServerInfo Server => Delegate.Server;
@@ -150,6 +138,7 @@ internal abstract class DelegatedConnection : IConnection
         return Delegate.CloseAsync();
     }
 
+
     public void SetReadTimeoutInSeconds(int seconds)
     {
         Delegate.SetReadTimeoutInSeconds(seconds);
@@ -160,110 +149,56 @@ internal abstract class DelegatedConnection : IConnection
         Delegate.SetUseUtcEncodedDateTime();
     }
 
-    public async Task LoginAsync(string userAgent, IAuthToken authToken)
+    public Task LoginAsync(string userAgent, IAuthToken authToken)
     {
-        try
-        {
-            await Delegate.LoginAsync(userAgent, authToken).ConfigureAwait(false);
-        }
-        catch (Exception e)
-        {
-            await OnErrorAsync(e).ConfigureAwait(false);
-        }
+        return BoltProtocol.LoginAsync(this, userAgent, authToken);
     }
 
-    public async Task LogoutAsync()
+    public Task LogoutAsync()
     {
-        try
-        {
-            await Delegate.LogoutAsync().ConfigureAwait(false);
-        }
-        catch (Exception e)
-        {
-            await OnErrorAsync(e).ConfigureAwait(false);
-        }
+        return BoltProtocol.LogoutAsync(this);
     }
 
-    public async Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
+    public Task ResetAsync()
+    {
+        return BoltProtocol.ResetAsync(this);
+    }
+
+    public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         string database,
         string impersonatedUser,
         Bookmarks bookmarks)
     {
-        try
-        {
-            return await Delegate.GetRoutingTableAsync(database, impersonatedUser, bookmarks).ConfigureAwait(false);
-        }
-        catch (Exception e)
-        {
-            await OnErrorAsync(e).ConfigureAwait(false);
-            throw;
-        }
+        return BoltProtocol.GetRoutingTableAsync(this, database, impersonatedUser, bookmarks);
     }
 
-    public async Task<IResultCursor> RunInAutoCommitTransactionAsync(AutoCommitParams autoCommitParams)
+    public Task<IResultCursor> RunInAutoCommitTransactionAsync(AutoCommitParams autoCommitParams)
     {
-        try
-        {
-            return await Delegate.RunInAutoCommitTransactionAsync(autoCommitParams).ConfigureAwait(false);
-        }
-        catch (Exception e)
-        {
-            await OnErrorAsync(e).ConfigureAwait(false);
-            throw;
-        }
+        return BoltProtocol.RunInAutoCommitTransactionAsync(this, autoCommitParams);
     }
 
-    public async Task BeginTransactionAsync(
+    public Task BeginTransactionAsync(
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
         string impersonatedUser)
     {
-        try
-        {
-            await Delegate.BeginTransactionAsync(database, bookmarks, config, impersonatedUser).ConfigureAwait(false);
-        }
-        catch (Exception e)
-        {
-            await OnErrorAsync(e).ConfigureAwait(false);
-        }
+        return BoltProtocol.BeginTransactionAsync(this, database, bookmarks, config, impersonatedUser);
     }
 
-    public async Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize)
+    public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize)
     {
-        try
-        {
-            return await Delegate.RunInExplicitTransactionAsync(query, reactive, fetchSize).ConfigureAwait(false);
-        }
-        catch (Exception e)
-        {
-            await OnErrorAsync(e).ConfigureAwait(false);
-            return default;
-        }
+        return BoltProtocol.RunInExplicitTransactionAsync(this, query, reactive, fetchSize);
     }
 
-    public async Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker)
+    public Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker)
     {
-        try
-        {
-            await Delegate.CommitTransactionAsync(bookmarksTracker).ConfigureAwait(false);
-        }
-        catch (Exception e)
-        {
-            await OnErrorAsync(e).ConfigureAwait(false);
-        }
+        return BoltProtocol.CommitTransactionAsync(this, bookmarksTracker);
     }
 
-    public async Task RollbackTransactionAsync()
-    {
-        try
-        {
-            await Delegate.RollbackTransactionAsync().ConfigureAwait(false);
-        }
-        catch (Exception e)
-        {
-            await OnErrorAsync(e).ConfigureAwait(false);
-        }
+    public Task RollbackTransactionAsync()
+    { 
+        return BoltProtocol.RollbackTransactionAsync(this);
     }
 
     internal virtual Task OnErrorAsync(Exception error)

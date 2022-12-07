@@ -59,7 +59,7 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
         return connection.EnqueueAsync(ResetMessage.Instance, NoOpResponseHandler.Instance);
     }
 
-    public async Task<IReadOnlyDictionary<string, object>> GetRoutingTable(
+    public async Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         IConnection connection,
         string database,
         string impersonatedUser,

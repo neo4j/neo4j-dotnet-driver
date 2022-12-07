@@ -28,7 +28,7 @@ internal interface IBoltProtocol
     Task LogoutAsync(IConnection connection);
     Task ResetAsync(IConnection connection);
 
-    Task<IReadOnlyDictionary<string, object>> GetRoutingTable(
+    Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         IConnection connection,
         string database,
         string impersonatedUser,
