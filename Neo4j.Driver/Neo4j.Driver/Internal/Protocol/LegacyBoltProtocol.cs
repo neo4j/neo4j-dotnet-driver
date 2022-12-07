@@ -32,7 +32,6 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
 
     private LegacyBoltProtocol()
     {
-        
     }
     
     public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
@@ -100,8 +99,7 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
         //Since 4.4 the Routing information will contain a db.
         //Earlier versions need to populate this here as it's not received in the older route response...
         var finalDictionary = record.Values.ToDictionary();
-        const string dbKey = "db";
-        finalDictionary[dbKey] = database;
+        finalDictionary["db"] = database;
 
         return (IReadOnlyDictionary<string, object>)finalDictionary;
     }

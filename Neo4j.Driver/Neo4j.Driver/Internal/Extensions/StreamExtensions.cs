@@ -62,12 +62,12 @@ internal static class StreamExtensions
         }
         catch (Exception ex)
         {
-            // close the stream, the stream will be fully disposed later by SocketClient Dispose.
-            stream.Close();
-
             //if the exception relates to cancellation we should throw a timeout.
             if (source.IsCancellationRequested && IsCancellationException(ex))
             {
+                // close the stream, the stream will be fully disposed later by SocketClient Dispose.
+                stream.Close();
+                
                 throw new ConnectionReadTimeoutException(
                     $"Socket/Stream timed out after {timeoutMs}ms, socket closed.",
                     ex);
@@ -77,23 +77,15 @@ internal static class StreamExtensions
         }
     }
 
-    private static async Task<int> ReadWithoutTimeoutAsync(Stream stream, byte[] buffer, int offset, int count)
+    private static Task<int> ReadWithoutTimeoutAsync(Stream stream, byte[] buffer, int offset, int count)
     {
-        try
-        {
 #if NET6_0_OR_GREATER
-            // .netcore 3.0+ network streams support cancellation tokens.
-            return await stream.ReadAsync(buffer.AsMemory(offset, count)).ConfigureAwait(false);
+        // .netcore 3.0+ network streams support cancellation tokens.
+        return stream.ReadAsync(buffer.AsMemory(offset, count)).AsTask();
 #else
-            // .net standard implementation relies on closing stream
-            return await stream.ReadAsync(buffer, offset, count).ConfigureAwait(false);
+        // .net standard implementation relies on closing stream
+        return stream.ReadAsync(buffer, offset, count);
 #endif
-        }
-        catch
-        {
-            stream.Close();
-            throw;
-        }
     }
 
     private static bool IsCancellationException(Exception ex)

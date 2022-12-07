@@ -221,8 +221,7 @@ internal abstract class DelegatedConnection : IConnection
     {
         try
         {
-            await Delegate.BeginTransactionAsync(database, bookmarks, config, impersonatedUser)
-                .ConfigureAwait(false);
+            await Delegate.BeginTransactionAsync(database, bookmarks, config, impersonatedUser).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -234,12 +233,12 @@ internal abstract class DelegatedConnection : IConnection
     {
         try
         {
-            return await Delegate.RunInExplicitTransactionAsync(query, reactive, fetchSize);
+            return await Delegate.RunInExplicitTransactionAsync(query, reactive, fetchSize).ConfigureAwait(false);
         }
         catch (Exception e)
         {
             await OnErrorAsync(e).ConfigureAwait(false);
-            throw;
+            return default;
         }
     }
 

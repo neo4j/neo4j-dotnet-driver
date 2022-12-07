@@ -33,7 +33,7 @@ internal sealed class BoltProtocol : IBoltProtocol
     public static readonly IBoltProtocol Instance = new BoltProtocol();
     private readonly LegacyBoltProtocol _legacyProtocol;
 
-    public BoltProtocol()
+    private BoltProtocol()
     {
         _legacyProtocol = LegacyBoltProtocol.Instance;
     }
@@ -172,12 +172,13 @@ internal sealed class BoltProtocol : IBoltProtocol
             : _legacyProtocol.GetRoutingTable(connection, database, impersonatedUser, bookmarks);
     }
 
-    public async Task<IReadOnlyDictionary<string, object>> RoutingTableProcedure(
+    private async Task<IReadOnlyDictionary<string, object>> RoutingTableProcedure(
         IConnection connection,
         string database,
         string impersonatedUser,
         Bookmarks bookmarks)
     {
+        // TODO: Replace with ArgumentNullException.
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
 
