@@ -28,6 +28,7 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
 {
     IBoltProtocol BoltProtocol { get; }
 
+    void ConfigureMode(AccessMode? mode);
     void Configure(string database, AccessMode? mode);
 
     Task InitAsync(CancellationToken cancellationToken = default);

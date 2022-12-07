@@ -103,6 +103,11 @@ internal sealed class SocketConnection : IConnection
     /// <summary>Internal Set used for tests.</summary>
     public IBoltProtocol BoltProtocol { get; internal set; }
 
+    public void ConfigureMode(AccessMode? mode)
+    {
+        Mode = mode;
+    }
+
     public void Configure(string database, AccessMode? mode)
     {
         Mode = mode;

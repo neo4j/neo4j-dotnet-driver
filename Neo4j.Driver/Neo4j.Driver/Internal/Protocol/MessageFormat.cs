@@ -142,11 +142,25 @@ internal sealed class MessageFormat
 
     public void UseUtcEncoder()
     {
-        if (Version > BoltProtocolVersion.V4_4 || Version <= BoltProtocolVersion.V4_3)
+        if (Version > BoltProtocolVersion.V4_4 || Version < BoltProtocolVersion.V4_3)
         {
             return;
         }
 
+        RemoveHandler(ZonedDateTimeSerializer.Instance);
         AddHandler(UtcZonedDateTimeSerializer.Instance);
+    }   
+
+    private void RemoveHandler(ZonedDateTimeSerializer instance)
+    {
+        foreach (var b in instance.ReadableStructs)
+        {
+            _readerStructHandlers.Remove(b);
+        }
+
+        foreach (var type in instance.WritableTypes)
+        {
+            _writerStructHandlers.Remove(type);
+        }
     }
 }

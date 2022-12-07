@@ -78,6 +78,11 @@ internal abstract class DelegatedConnection : IConnection
 
     public BoltProtocolVersion Version => Delegate.Version;
 
+    public void ConfigureMode(AccessMode? mode)
+    {
+        Delegate.ConfigureMode(mode);
+    }
+
     public void Configure(string database, AccessMode? mode)
     {
         Delegate.Configure(database, mode);

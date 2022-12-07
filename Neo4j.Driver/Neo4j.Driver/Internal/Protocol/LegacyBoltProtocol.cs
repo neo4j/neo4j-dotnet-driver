@@ -65,10 +65,11 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
         string impersonatedUser,
         Bookmarks bookmarks)
     {
-        ValidateImpersonatedUserForVersion(connection, impersonatedUser);
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
 
+        ValidateImpersonatedUserForVersion(connection, impersonatedUser);
+  
         //TODO: Proper message
         bookmarks = connection.Version.MajorVersion > 3
             ? bookmarks
@@ -79,8 +80,8 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
         var bookmarkTracker = new BookmarksTracker(bookmarks);
         var resourceHandler = new ConnectionResourceHandler(connection);
         var sessionDb = connection.SupportsMultiDatabase() ? "system" : null;
-
-        connection.Configure(null, AccessMode.Read);
+        Console.WriteLine($"Looking up RT on:{sessionDb}");
+        connection.ConfigureMode(AccessMode.Read);
 
         var query = GetRoutingTableQuery(connection, database);
 
@@ -128,10 +129,14 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
             autoCommitParams.Bookmarks,
             autoCommitParams.Config,
             connection.Mode ?? throw new InvalidOperationException("Connection should have its Mode property set."),
-            null,
+            autoCommitParams.Database,
             autoCommitParams.ImpersonatedUser);
 
-        await connection.EnqueueAsync(autoCommitMessage, runHandler, PullAllMessage.Instance, pullAllHandler)
+        await connection.EnqueueAsync(
+                autoCommitMessage, 
+                runHandler, 
+                connection.Version >= BoltProtocolVersion.V4_0 ? new PullMessage(-1) : PullAllMessage.Instance, 
+                pullAllHandler)
             .ConfigureAwait(false);
 
         await connection.SendAsync().ConfigureAwait(false);
@@ -231,7 +236,7 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
 
         if (connection.Version.MajorVersion > 3)
         {
-            parameters.Add(database, string.IsNullOrWhiteSpace(database) ? null : database);
+            parameters.Add("database", string.IsNullOrWhiteSpace(database) ? null : database);
         }
 
         return new Query(procedure, parameters);
