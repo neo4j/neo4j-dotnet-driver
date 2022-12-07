@@ -22,8 +22,8 @@ namespace Neo4j.Driver.Tests.TestBackend
         protected void SetBaseValues(JObject jsonObject, T baseSession)
         {
             baseSession.sessionId = jsonObject["sessionId"]?.Value<string>();
-            baseSession.txMeta = jsonObject["txMeta"]?.ToObject<Dictionary<string, object>>()
-                                 ?? new Dictionary<string, object>();
+            baseSession.txMeta = JsonCypherParameterParser.ParseParameters(jsonObject["txMeta"])
+                                 ?? new Dictionary<string, CypherToNativeObject>();
             baseSession.timeout = jsonObject["timeout"]?.Value<int?>();
             baseSession.TimeoutSet = jsonObject.ContainsKey("timeout");
         }

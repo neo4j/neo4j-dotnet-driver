@@ -23,46 +23,11 @@ namespace Neo4j.Driver.Tests.TestBackend
             public Dictionary<string, CypherToNativeObject> parameters { get; set; } = new Dictionary<string, CypherToNativeObject>();
         }
 
-        private Dictionary<string, object> ConvertParameters(Dictionary<string, CypherToNativeObject> source)
-        {
-            if (data.parameters == null)
-                return null;
-
-            Dictionary<string, object> newParams = new Dictionary<string, object>();
-
-            foreach(KeyValuePair<string, CypherToNativeObject> element in source)
-            {
-                newParams.Add(element.Key, CypherToNative.Convert(element.Value));
-            }
-
-            return newParams;
-        }
-
-        void TransactionConfig(TransactionConfigBuilder configBuilder)
-        {
-            try
-            {
-                if (data.TimeoutSet)
-                {
-                    var timeout = data.timeout.HasValue
-                    ? TimeSpan.FromMilliseconds(data.timeout.Value)
-                        : default(TimeSpan?);
-                    configBuilder.WithTimeout(timeout);
-                }
-            }
-            catch (ArgumentOutOfRangeException e) when ((data.timeout ?? 0) < 0 && e.ParamName == "value")
-            {
-                throw new DriverExceptionWrapper(e);
-            }
-
-            if (data.txMeta.Count > 0) 
-                configBuilder.WithMetadata(data.txMeta);
-        }
-
         public override async Task Process()
         {
             var newSession = (NewSession)ObjManager.GetObject(data.sessionId);
-            IResultCursor cursor = await newSession.Session.RunAsync(data.cypher, ConvertParameters(data.parameters), TransactionConfig).ConfigureAwait(false);
+            IResultCursor cursor = await newSession.Session
+                .RunAsync(data.cypher, CypherToNativeObject.ConvertDitctionaryToNative(data.parameters), data.TransactionConfig).ConfigureAwait(false);
 
             var result = ProtocolObjectFactory.CreateObject<Result>();
             result.ResultCursor = cursor;
