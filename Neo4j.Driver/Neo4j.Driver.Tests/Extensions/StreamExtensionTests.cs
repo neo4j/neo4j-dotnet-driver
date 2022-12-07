@@ -33,7 +33,7 @@ public class StreamExtensionTests
     {
         void Callback(Memory<byte> _, CancellationToken token)
         {
-            Task.Delay(110).GetAwaiter().GetResult();
+            Task.Delay(200).GetAwaiter().GetResult();
             token.ThrowIfCancellationRequested();
         }
 
