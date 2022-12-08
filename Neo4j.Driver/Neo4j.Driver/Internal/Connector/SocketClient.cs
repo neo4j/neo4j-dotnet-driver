@@ -153,7 +153,9 @@ internal sealed class SocketClient : ISocketClient
 
     public void SetReadTimeoutInSeconds(int seconds)
     {
-        _tcpSocketClient.ReaderStream.ReadTimeout = seconds * 1000;
+        var ms = seconds * 1000;
+        _messageReader.SetReadTimeoutInMs(ms);
+        _tcpSocketClient.ReaderStream.ReadTimeout = ms;
     }
 
     public void UseUtcEncoded()

@@ -77,14 +77,10 @@ internal sealed class HelloResponseHandler : MetadataCollectingResponseHandler
             return;
         }
 
-        if (!configMetadata.TryGetValue("connection.recv_timeout_seconds", out var timeout))
+        var timeoutFound = configMetadata.TryGetValue("connection.recv_timeout_seconds", out var timeoutObject);
+        if (timeoutFound && timeoutObject is long timeoutSec)
         {
-            return;
-        }
-
-        if (timeout is int readConnectionTimeoutSeconds)
-        {
-            _connection.SetReadTimeoutInSeconds(readConnectionTimeoutSeconds);
+            _connection.SetReadTimeoutInSeconds((int)timeoutSec);
         }
     }
 

@@ -165,23 +165,57 @@ internal sealed class BoltProtocol : IBoltProtocol
         string impersonatedUser,
         Bookmarks bookmarks)
     {
-        ValidateImpersonatedUser(connection, impersonatedUser);
+        connection = connection ??
+            throw new ProtocolException("Attempting to get a routing table on a null connection");
+        LegacyBoltProtocol.ValidateImpersonatedUserForVersion(connection, impersonatedUser);
 
         return connection.Version >= BoltProtocolVersion.V4_3
-            ? RoutingTableProcedure(connection, database, impersonatedUser, bookmarks)
-            : _legacyProtocol.GetRoutingTableAsync(connection, database, impersonatedUser, bookmarks);
+            ? GetRoutingTableWithRouteMessageAsync(connection, database, impersonatedUser, bookmarks)
+            : GetRoutingTableWithQueryAsync(connection, database, bookmarks);
     }
 
-    private async Task<IReadOnlyDictionary<string, object>> RoutingTableProcedure(
+    private async Task<IReadOnlyDictionary<string,object>> GetRoutingTableWithQueryAsync(
+        IConnection connection,
+        string database,
+        Bookmarks bookmarks)
+    {
+        connection.ConfigureMode(AccessMode.Read);
+
+        var bookmarkTracker = new BookmarksTracker(bookmarks);
+        var resourceHandler = new ConnectionResourceHandler(connection);
+        var databaseParameter = string.IsNullOrEmpty(database) ? null : database;
+        var autoCommitParams = new AutoCommitParams
+        {
+            Query = new Query(
+                "CALL dbms.routing.getRoutingTable($context, $database)",
+                new Dictionary<string, object>
+                {
+                    ["context"] = connection.RoutingContext,
+                    ["database"] = databaseParameter
+                }),
+            BookmarksTracker = bookmarkTracker,
+            ResultResourceHandler = resourceHandler,
+            Database = "system",
+            Bookmarks = bookmarks
+        };
+
+        var result = await RunInAutoCommitTransactionAsync(connection, autoCommitParams).ConfigureAwait(false);
+        var record = await result.SingleAsync().ConfigureAwait(false);
+
+        //Since 4.4 the Routing information will contain a db.
+        //Earlier versions need to populate this here as it's not received in the older route response...
+        var finalDictionary = record.Values.ToDictionary();
+        finalDictionary["db"] = database;
+
+        return (IReadOnlyDictionary<string, object>)finalDictionary;
+    }
+
+    private async Task<IReadOnlyDictionary<string, object>> GetRoutingTableWithRouteMessageAsync(
         IConnection connection,
         string database,
         string impersonatedUser,
         Bookmarks bookmarks)
     {
-        // TODO: Replace with ArgumentNullException.
-        connection = connection ??
-            throw new ProtocolException("Attempting to get a routing table on a null connection");
-
         IRequestMessage message = connection.Version == BoltProtocolVersion.V4_3
             ? new V43.RouteMessage(connection.RoutingContext, bookmarks, database)
             : new V44.RouteMessage(connection.RoutingContext, bookmarks, database, impersonatedUser);

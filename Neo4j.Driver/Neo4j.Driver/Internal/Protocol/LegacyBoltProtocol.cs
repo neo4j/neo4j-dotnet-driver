@@ -67,31 +67,31 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
     {
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
-
+        
         ValidateImpersonatedUserForVersion(connection, impersonatedUser);
   
-        //TODO: Proper message
-        bookmarks = connection.Version.MajorVersion > 3
-            ? bookmarks
-            : bookmarks == null
-                ? null
-                : throw new Exception("Server does not support bookmarks");
+        if (bookmarks != null)
+        {
+            throw new InvalidOperationException("Attempting to specify bookmarks over bolt v3.");
+        }
 
-        var bookmarkTracker = new BookmarksTracker(bookmarks);
-        var resourceHandler = new ConnectionResourceHandler(connection);
-        var sessionDb = connection.SupportsMultiDatabase() ? "system" : null;
-        Console.WriteLine($"Looking up RT on:{sessionDb}");
         connection.ConfigureMode(AccessMode.Read);
 
-        var query = GetRoutingTableQuery(connection, database);
-
+        var bookmarkTracker = new BookmarksTracker(null);
+        var resourceHandler = new ConnectionResourceHandler(connection);
+        
         var autoCommitParams = new AutoCommitParams
         {
-            Query = query,
+            Query = new Query(
+                "CALL dbms.cluster.routing.getRoutingTable($context)",
+                new Dictionary<string, object>
+                {
+                    ["context"] = connection.RoutingContext
+                }),
             BookmarksTracker = bookmarkTracker,
             ResultResourceHandler = resourceHandler,
-            Database = sessionDb,
-            Bookmarks = bookmarks
+            Database = null,
+            Bookmarks = null
         };
 
         var result = await RunInAutoCommitTransactionAsync(connection, autoCommitParams).ConfigureAwait(false);
@@ -135,7 +135,7 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
         await connection.EnqueueAsync(
                 autoCommitMessage, 
                 runHandler, 
-                connection.Version >= BoltProtocolVersion.V4_0 ? new PullMessage(-1) : PullAllMessage.Instance, 
+                PullAllMessage.Instance, 
                 pullAllHandler)
             .ConfigureAwait(false);
 
@@ -210,11 +210,11 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
 
     private static void ValidateDatabase(IConnection connection, string database)
     {
-        if (connection.Version.MajorVersion >= 4)
+        if (connection.Version >= BoltProtocolVersion.V4_0)
         {
             return;
         }
-
+        
         if (!string.IsNullOrEmpty(database))
         {
             throw new ClientException(
@@ -223,26 +223,7 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
         }
     }
 
-    private static Query GetRoutingTableQuery(IConnection connection, string database)
-    {
-        var procedure = connection.Version.MajorVersion == 3
-            ? "CALL dbms.cluster.routing.getRoutingTable($context)"
-            : "CALL dbms.routing.getRoutingTable($context, $database)";
-
-        var parameters = new Dictionary<string, object>
-        {
-            ["context"] = connection.RoutingContext
-        };
-
-        if (connection.Version.MajorVersion > 3)
-        {
-            parameters.Add("database", string.IsNullOrWhiteSpace(database) ? null : database);
-        }
-
-        return new Query(procedure, parameters);
-    }
-
-    private static void ValidateImpersonatedUserForVersion(IConnection conn, string impersonatedUser)
+    public static void ValidateImpersonatedUserForVersion(IConnection conn, string impersonatedUser)
     {
         if (conn.Version >= BoltProtocolVersion.V4_4)
         {
@@ -252,8 +233,8 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
         if (!string.IsNullOrWhiteSpace(impersonatedUser))
         {
             throw new ArgumentException(
-                "Bolt Protocol 3.0 does not support impersonatedUser, " +
-                "yet has been passed a non null impersonated user string");
+                $"Bolt Protocol {conn.Version} does not support impersonatedUser, " +
+                "but has been passed a non-null impersonated user string");
         }
     }
 }

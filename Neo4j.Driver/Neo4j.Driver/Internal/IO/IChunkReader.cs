@@ -23,4 +23,5 @@ namespace Neo4j.Driver.Internal.IO;
 internal interface IChunkReader
 {
     Task<int> ReadMessageChunksToBufferStreamAsync(Stream bufferStream);
+    void SetTimeoutInMs(int ms);
 }

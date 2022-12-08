@@ -43,6 +43,11 @@ internal sealed class MessageReader : IMessageReader
         ConsumeMessages(pipeline, messageCount, reader);
     }
 
+    public void SetReadTimeoutInMs(int ms)
+    {
+        _chunkReader.SetTimeoutInMs(ms);
+    }
+
     private void ConsumeMessages(IResponsePipeline pipeline, int messages, PackStreamReader packStreamReader)
     {
         var leftMessages = messages;

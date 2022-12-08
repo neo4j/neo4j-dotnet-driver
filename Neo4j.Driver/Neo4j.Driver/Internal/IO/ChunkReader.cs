@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal.IO;
 internal sealed class ChunkReader : IChunkReader
 {
     private const int ChunkHeaderSize = 2;
-    private readonly int _readTimeoutMs = -1;
+    private int _readTimeoutMs = -1;
 
     internal ChunkReader(Stream downStream)
     {
@@ -47,11 +47,11 @@ internal sealed class ChunkReader : IChunkReader
 
         using (ChunkBuffer = new MemoryStream())
         {
-            long chunkBufferPosition = -1; //Use this as we need an initial state < ChunkBuffer.Length
-
-            while
-                (chunkBufferPosition <
-                 ChunkBuffer.Length) //We have not finished parsing the chunk buffer, so further messages to de-chunk
+            //Use this as we need an initial state < ChunkBuffer.Length
+            long chunkBufferPosition = -1; 
+            
+            //We have not finished parsing the chunk buffer, so further messages to de-chunk
+            while (chunkBufferPosition < ChunkBuffer.Length)
             {
                 if (await ConstructMessageAsync(bufferStream).ConfigureAwait(false))
                 {
@@ -65,6 +65,11 @@ internal sealed class ChunkReader : IChunkReader
         //restore output streams state.
         bufferStream.Position = previousStreamPosition;
         return messageCount;
+    }
+
+    public void SetTimeoutInMs(int ms)
+    {
+        _readTimeoutMs = ms;
     }
 
     private void ChunkBufferTrimUsedData()
@@ -107,9 +112,11 @@ internal sealed class ChunkReader : IChunkReader
             requiredSize -= numBytesRead;
         }
 
-        ChunkBuffer.Position = storedPosition; //Restore the chunk buffer state so that any reads can continue
-
-        if (ChunkBuffer.Length == 0) //No data so stop
+        //Restore the chunk buffer state so that any reads can continue
+        ChunkBuffer.Position = storedPosition;
+        
+        //No data so stop
+        if (ChunkBuffer.Length == 0)
         {
             throw new IOException("Unexpected end of stream, unable to read expected data from the network connection");
         }
@@ -138,8 +145,9 @@ internal sealed class ChunkReader : IChunkReader
         {
             var chunkHeader = await ReadDataOfSizeAsync(ChunkHeaderSize).ConfigureAwait(false);
             var chunkSize = PackStreamBitConverter.ToUInt16(chunkHeader);
-
-            if (chunkSize == 0) //NOOP or end of message
+            
+            //NOOP or end of message
+            if (chunkSize == 0)
             {
                 //We have been reading data so this is the end of a message zero chunk
                 //Or there is no data remaining after this NOOP
@@ -154,9 +162,11 @@ internal sealed class ChunkReader : IChunkReader
 
             var rawChunkData = await ReadDataOfSizeAsync(chunkSize).ConfigureAwait(false);
             dataRead = true;
-            outputMessageStream.Write(rawChunkData, 0, chunkSize); //Put the raw chunk data into the output stream
+            //Put the raw chunk data into the output stream
+            outputMessageStream.Write(rawChunkData, 0, chunkSize);
         }
 
-        return dataRead; //Return if a message was constructed
+        //Return if a message was constructed
+        return dataRead;
     }
 }
