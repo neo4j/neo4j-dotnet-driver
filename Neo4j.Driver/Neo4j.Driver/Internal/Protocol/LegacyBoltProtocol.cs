@@ -70,14 +70,9 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
         
         ValidateImpersonatedUserForVersion(connection, impersonatedUser);
   
-        if (bookmarks != null)
-        {
-            throw new InvalidOperationException("Attempting to specify bookmarks over bolt v3.");
-        }
-
         connection.ConfigureMode(AccessMode.Read);
 
-        var bookmarkTracker = new BookmarksTracker(null);
+        var bookmarkTracker = new BookmarksTracker(bookmarks);
         var resourceHandler = new ConnectionResourceHandler(connection);
         
         var autoCommitParams = new AutoCommitParams
@@ -89,9 +84,7 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
                     ["context"] = connection.RoutingContext
                 }),
             BookmarksTracker = bookmarkTracker,
-            ResultResourceHandler = resourceHandler,
-            Database = null,
-            Bookmarks = null
+            ResultResourceHandler = resourceHandler
         };
 
         var result = await RunInAutoCommitTransactionAsync(connection, autoCommitParams).ConfigureAwait(false);
