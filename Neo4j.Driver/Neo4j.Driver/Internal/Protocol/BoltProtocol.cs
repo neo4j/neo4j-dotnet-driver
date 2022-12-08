@@ -42,7 +42,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         IConnection connection,
         AutoCommitParams autoCommitParams)
     {
-        ValidateImpersonatedUser(connection, autoCommitParams.ImpersonatedUser);
+        LegacyBoltProtocol.ValidateImpersonatedUserForVersion(connection, autoCommitParams.ImpersonatedUser);
 
         var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
         var streamBuilder = new ResultCursorBuilder(
@@ -82,15 +82,6 @@ internal sealed class BoltProtocol : IBoltProtocol
         return streamBuilder.CreateCursor();
     }
 
-    private static void ValidateImpersonatedUser(IConnection connection, string impersonatedUser)
-    {
-        if (connection.Version < BoltProtocolVersion.V4_4 &&
-            !string.IsNullOrWhiteSpace(impersonatedUser))
-        {
-            throw new Exception("Can not impersonate users in 3.0-4.3"); //TODO: Make better.
-        }
-    }
-
     public Task BeginTransactionAsync(
         IConnection connection,
         string database,
@@ -98,7 +89,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         TransactionConfig config,
         string impersonatedUser)
     {
-        ValidateImpersonatedUser(connection, impersonatedUser);
+        LegacyBoltProtocol.ValidateImpersonatedUserForVersion(connection, impersonatedUser);
         return _legacyProtocol.BeginTransactionAsync(connection, database, bookmarks, config, impersonatedUser);
     }
 
