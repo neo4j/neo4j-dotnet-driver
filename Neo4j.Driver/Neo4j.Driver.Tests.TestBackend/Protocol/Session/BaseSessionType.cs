@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public TransactionConfigBuilder ConfigureTxMetadata(TransactionConfigBuilder configBuilder)
         {
-            if (txMeta.Count > 0) configBuilder.WithMetadata(CypherToNativeObject.ConvertDitctionaryToNative(txMeta));
+            if (txMeta.Count > 0) configBuilder.WithMetadata(CypherToNativeObject.ConvertDictionaryToNative(txMeta));
             return configBuilder;
         }
 

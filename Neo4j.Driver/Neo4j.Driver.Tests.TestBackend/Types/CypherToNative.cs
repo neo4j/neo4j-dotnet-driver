@@ -11,7 +11,7 @@ namespace Neo4j.Driver.Tests.TestBackend
         public string name { get; set; }
         public object data { get; set; }
 
-        public static Dictionary<string, object> ConvertDitctionaryToNative(Dictionary<string, CypherToNativeObject> source)
+        public static Dictionary<string, object> ConvertDictionaryToNative(Dictionary<string, CypherToNativeObject> source)
         {
             if (source == null)
                 return null;
