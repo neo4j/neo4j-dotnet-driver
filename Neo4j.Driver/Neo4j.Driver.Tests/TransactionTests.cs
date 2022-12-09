@@ -33,8 +33,8 @@ public class TransactionTests
         [Fact]
         public async Task ShouldSaveBookmark()
         {
-            var mockConn = new Mock<IConnection>();
-
+            var mockProtocol = new Mock<IBoltProtocol>();
+            var mockConn = NewMockedConnection(mockProtocol);
             var bookmarks = Bookmarks.From(FakeABookmark(123));
             var tx = new AsyncTransaction(
                 mockConn.Object,
@@ -44,8 +44,9 @@ public class TransactionTests
                 bookmarks);
 
             await tx.BeginTransactionAsync(null);
-            mockConn.Verify(
+            mockProtocol.Verify(
                 x => x.BeginTransactionAsync(
+                    It.IsAny<IConnection>(),
                     It.IsAny<string>(),
                     bookmarks,
                     It.IsAny<TransactionConfig>(),
@@ -59,13 +60,15 @@ public class TransactionTests
         [Fact]
         public async Task ShouldDelegateToProtocolBeginTxMethod()
         {
-            var mockConn = NewMockedConnection();
+            var protocol = new Mock<IBoltProtocol>();
+            var mockConn = NewMockedConnection(protocol);
             var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
             await tx.BeginTransactionAsync(TransactionConfig.Default);
 
-            mockConn.Verify(
+            protocol.Verify(
                 x => x.BeginTransactionAsync(
+                    It.IsAny<IConnection>(),
                     It.IsAny<string>(),
                     It.IsAny<Bookmarks>(),
                     It.IsAny<TransactionConfig>(),
@@ -79,13 +82,15 @@ public class TransactionTests
         [Fact]
         public async void ShouldDelegateToBoltProtocol()
         {
-            var mockConn = NewMockedConnection();
+            var mockProtocol = new Mock<IBoltProtocol>();
+            var mockConn = NewMockedConnection(mockProtocol);
             var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
             var query = new Query("lala");
             await tx.RunAsync(query);
 
-            mockConn.Verify(x => x.RunInExplicitTransactionAsync(query, false, It.IsAny<long>()));
+            mockProtocol.Verify(x => 
+                x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), query, false, It.IsAny<long>()));
         }
 
         [Fact]
@@ -102,11 +107,13 @@ public class TransactionTests
         [Fact]
         public async void ShouldThrowExceptionIfFailedToRunAndFetchResult()
         {
-            var mockConn = NewMockedConnection();
+            var mockProtocol = new Mock<IBoltProtocol>();
+            var mockConn = NewMockedConnection(mockProtocol);
             var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
             var query = new Query("lala");
 
-            mockConn.Setup(x => x.RunInExplicitTransactionAsync(query, false, It.IsAny<long>()))
+            mockProtocol.Setup(x =>
+                    x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), query, false, It.IsAny<long>()))
                 .Throws<Neo4jException>();
 
             var error = await ExceptionAsync(() => tx.RunAsync(query));
@@ -119,27 +126,29 @@ public class TransactionTests
         [Fact]
         public async void ShouldCommitOnSuccess()
         {
-            var mockConn = NewMockedConnection();
+            var mockProtocol = new Mock<IBoltProtocol>();
+            var mockConn = NewMockedConnection(mockProtocol);
             var mockHandler = new Mock<ITransactionResourceHandler>();
             var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object);
 
             mockConn.Invocations.Clear();
             await tx.CommitAsync();
 
-            mockConn.Verify(x => x.CommitTransactionAsync(tx));
+            mockProtocol.Verify(x => x.CommitTransactionAsync(It.IsAny<IConnection>(), tx));
             mockHandler.Verify(x => x.OnTransactionDisposeAsync(It.IsAny<Bookmarks>(), null), Times.Once);
         }
 
         [Fact]
         public async void ShouldRollbackOnFailure()
         {
-            var mockConn = NewMockedConnection();
+            var mockProtocol = new Mock<IBoltProtocol>();
+            var mockConn = NewMockedConnection(mockProtocol);
             var mockHandler = new Mock<ITransactionResourceHandler>();
             var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object);
 
             mockConn.Invocations.Clear();
             await tx.RollbackAsync();
-            mockConn.Verify(x => x.RollbackTransactionAsync());
+            mockProtocol.Verify(x => x.RollbackTransactionAsync(It.IsAny<IConnection>()));
             mockHandler.Verify(x => x.OnTransactionDisposeAsync(It.IsAny<Bookmarks>(), null), Times.Once);
         }
 

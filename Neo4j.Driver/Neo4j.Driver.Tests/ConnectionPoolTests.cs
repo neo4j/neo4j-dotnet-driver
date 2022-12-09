@@ -988,8 +988,10 @@ public class ConnectionPoolTests
         [Fact]
         public async Task ShouldReportCorrectPoolSize()
         {
+            var protocol = new Mock<IBoltProtocol>();
             var connectionMock = new Mock<IConnection>();
             connectionMock.Setup(x => x.IsOpen).Returns(true);
+            connectionMock.Setup(x => x.BoltProtocol).Returns(protocol.Object);
 
             var pool = CreatePool(connectionMock.Object, 5, 5);
 
@@ -1070,39 +1072,6 @@ public class ConnectionPoolTests
             reportedSizes.Should().NotContain(v => v > 5);
         }
 
-        [Fact]
-        public async void ShouldReportCorrectPoolSizeAsync()
-        {
-            var connectionMock = new Mock<IConnection>();
-            connectionMock.Setup(x => x.IsOpen).Returns(true);
-
-            var pool = CreatePool(connectionMock.Object, 5, 5);
-
-            pool.PoolSize.Should().Be(0);
-
-            var conn1 = await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
-            pool.PoolSize.Should().Be(1);
-
-            var conn2 = await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
-            var conn3 = await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
-            var conn4 = await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
-            pool.PoolSize.Should().Be(4);
-
-            await conn1.CloseAsync();
-            pool.PoolSize.Should().Be(4);
-
-            var conn5 = await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
-            pool.PoolSize.Should().Be(4);
-
-            await conn5.CloseAsync();
-            await conn4.CloseAsync();
-            await conn3.CloseAsync();
-            await conn2.CloseAsync();
-
-            pool.PoolSize.Should().Be(4);
-
-            connectionMock.Verify(x => x.IsOpen, Times.Exactly(5 * 2)); // On Acquire and Release
-        }
 
         [Fact]
         public async void ShouldReportCorrectPoolSizeWhenIdleConnectionsAreNotAllowedAsync()
