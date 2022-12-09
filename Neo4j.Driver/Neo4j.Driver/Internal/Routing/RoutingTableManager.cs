@@ -370,6 +370,16 @@ internal class RoutingTableManager : IRoutingTableManager
 
                 throw;
             }
+            catch (ProtocolException e)
+            {
+                _logger?.Error(
+                    e,
+                    "Failed to update routing table from server '{0}' for database '{1}' because of a protocol exception.",
+                    router,
+                    database);
+
+                throw;
+            }
             catch (Exception e)
             {
                 _logger?.Warn(
