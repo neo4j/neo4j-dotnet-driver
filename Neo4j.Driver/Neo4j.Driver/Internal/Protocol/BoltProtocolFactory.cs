@@ -29,14 +29,15 @@ internal interface IBoltProtocolFactory
 
 internal class BoltProtocolFactory : IBoltProtocolFactory
 {
-    private static readonly BoltProtocolVersion HttpBoltVersion = new(1213486160); // 0x‭48 54 54 50 - or HTTP ascii codes...
+    // 0x‭48 54 54 50 - or HTTP ascii codes...
+    private static readonly BoltProtocolVersion HttpBoltVersion = new(1213486160);
     internal static readonly BoltProtocolFactory Default = new();
 
-    private static readonly string HttpErrorMessage =
+    private const string HttpErrorMessage =
         "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
-        $"(HTTP defaults to port 7474 whereas BOLT defaults to port {GraphDatabase.DefaultBoltPort})";
+        "(HTTP defaults to port 7474 whereas BOLT defaults to port 7687)";
 
-    private static readonly string NoAgreedVersion =
+    private const string NoAgreedVersion =
         "The Neo4j server does not support any of the protocol versions supported by this client. " +
         "Ensure that you are using driver and server versions that are compatible with one another.";
 
@@ -70,13 +71,19 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
         if (version == HttpBoltVersion) {
             throw new NotSupportedException(HttpErrorMessage);
         }
-        
+
         return version switch
         {
             // no matching versions
             { MajorVersion: 0, MinorVersion: 0 } => throw new NotSupportedException(NoAgreedVersion),
             { MajorVersion: 3, MinorVersion: 0 } => LegacyBoltProtocol.Instance,
-            _ => BoltProtocol.Instance
+            { MajorVersion: 4, MinorVersion: 1 } => BoltProtocol.Instance,
+            { MajorVersion: 4, MinorVersion: 2 } => BoltProtocol.Instance,
+            { MajorVersion: 4, MinorVersion: 3 } => BoltProtocol.Instance,
+            { MajorVersion: 4, MinorVersion: 4 } => BoltProtocol.Instance,
+            { MajorVersion: 5, MinorVersion: 0 } => BoltProtocol.Instance,
+            _ => throw new NotSupportedException(
+                $"Protocol error, server suggested unexpected protocol version: {version}"),
         };
     }
 

@@ -29,46 +29,49 @@ public class BoltProtocolFactoryTests
     public class CreateMethod
     {
         [Fact]
-        public void ShouldCreateBoltProtocolV3()
+        public void ShouldCreateLegacyBoltProtocol()
         {
-            var connMock = new Mock<ITcpSocketClient>();
-            TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
-            TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
             var boltProtocol = BoltProtocolFactory.Default.ForVersion(BoltProtocolVersion.V30);
-            boltProtocol.Should().BeOfType<LegacyBoltProtocol>();
-        }
-
-        [Fact]
-        public void ShouldCreateBoltProtocolV4()
-        {
-            var connMock = new Mock<ITcpSocketClient>();
-            TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
-            TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-            var boltProtocol = BoltProtocolFactory.Default.ForVersion(BoltProtocolVersion.V4_0);
-            boltProtocol.Should().BeOfType<BoltProtocol>();
+            boltProtocol.Should().Be(LegacyBoltProtocol.Instance);
         }
 
         [Theory]
-        [InlineData(0, 0, "The Neo4j server does not support any of the protocol versions supported by this client")]
+        [InlineData(4, 1)]
+        [InlineData(4, 2)]
+        [InlineData(4, 3)]
+        [InlineData(4, 4)]
+        [InlineData(5, 0)]
+        public void ShouldCreateBoltProtocol(int major, int minor)
+        {
+            var boltProtocol = BoltProtocolFactory.Default.ForVersion(new BoltProtocolVersion(major, minor));
+            boltProtocol.Should().Be(BoltProtocol.Instance);
+        }
+
+        [Theory]
+        // No-matches
+        [InlineData(0, 0, "The Neo4j server does not support any of the protocol versions supported by this client. " +
+            "Ensure that you are using driver and server versions that are compatible with one another.")]
+        // Non-existent
         [InlineData(1, 0, "Protocol error, server suggested unexpected protocol version: 1.0")]
         [InlineData(2, 0, "Protocol error, server suggested unexpected protocol version: 2.0")]
+        // Future protocol
         [InlineData(15, 0, "Protocol error, server suggested unexpected protocol version: 15.0")]
+        // Deprecated protocol
+        [InlineData(4, 0, "Protocol error, server suggested unexpected protocol version: 4.0")]
         public void ShouldThrowExceptionIfVersionIsNotSupported(int majorVersion, int minorVersion, string errorMessage)
         {
             var version = new BoltProtocolVersion(majorVersion, minorVersion);
             var exception = Record.Exception(() => BoltProtocolFactory.Default.ForVersion(version));
-            exception.Should().BeOfType<NotSupportedException>();
-            exception.Message.Should().StartWith(errorMessage);
+            exception.Should().BeOfType<NotSupportedException>().Which.Message.Should().Be(errorMessage);
         }
 
-        [Theory]
-        [InlineData(1213486160 /*HTTP*/, "Server responded HTTP.")]
-        public void ShouldThrowExceptionIfSpecialVersionIsNotSupported(int largeVersion, string errorMessage)
+        [Fact]
+        public void ShouldThrowExceptionIfHttpVersionSpecified()
         {
-            var version = new BoltProtocolVersion(largeVersion);
+            var version = new BoltProtocolVersion(1213486160);
             var exception = Record.Exception(() => BoltProtocolFactory.Default.ForVersion(version));
-            exception.Should().BeOfType<NotSupportedException>();
-            exception.Message.Should().StartWith(errorMessage);
+            exception.Should().BeOfType<NotSupportedException>().Which.Message.Should().StartWith(
+                "Server responded HTTP.");
         }
     }
 }
