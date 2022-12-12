@@ -27,8 +27,9 @@ namespace Neo4j.Driver.Tests.TestBackend
             {
                 var transactionWrapper = controller.TransactionManager.FindTransaction(data.txId);
 
-                IResultCursor cursor = await transactionWrapper.Transaction
-                    .RunAsync(data.cypher, CypherToNativeObject.ConvertDictionaryToNative(data.parameters)).ConfigureAwait(false);
+                var cursor = await transactionWrapper.Transaction
+                    .RunAsync(data.cypher, CypherToNativeObject.ConvertDictionaryToNative(data.parameters))
+                    .ConfigureAwait(false);
 
                 ResultId = await transactionWrapper.ProcessResults(cursor);
 

@@ -11,14 +11,17 @@ namespace Neo4j.Driver.Tests.TestBackend
         public string name { get; set; }
         public object data { get; set; }
 
-        public static Dictionary<string, object> ConvertDictionaryToNative(Dictionary<string, CypherToNativeObject> source)
+        public static Dictionary<string, object> ConvertDictionaryToNative(
+            Dictionary<string, CypherToNativeObject> source)
         {
             if (source == null)
+            {
                 return null;
+            }
 
-            Dictionary<string, object> newDict = new Dictionary<string, object>();
+            var newDict = new Dictionary<string, object>();
 
-            foreach(KeyValuePair<string, CypherToNativeObject> element in source)
+            foreach (var element in source)
             {
                 newDict.Add(element.Key, CypherToNative.Convert(element.Value));
             }

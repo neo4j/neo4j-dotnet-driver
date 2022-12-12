@@ -10,7 +10,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         [JsonProperty(Required = Required.AllowNull)]
         [JsonConverter(typeof(QueryParameterConverter))]
-        public Dictionary<string, CypherToNativeObject> txMeta { get; set; } = new Dictionary<string, CypherToNativeObject>();
+        public Dictionary<string, CypherToNativeObject> txMeta { get; set; } = new();
 
         [JsonProperty(Required = Required.AllowNull)]
         public int? timeout { get; set; }
@@ -26,7 +26,8 @@ namespace Neo4j.Driver.Tests.TestBackend
                 {
                     var timeout = this.timeout.HasValue
                         ? TimeSpan.FromMilliseconds(this.timeout.Value)
-                            : default(TimeSpan?);
+                        : default(TimeSpan?);
+
                     configBuilder.WithTimeout(timeout);
                 }
             }
@@ -34,6 +35,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             {
                 throw new DriverExceptionWrapper(e);
             }
+
             return configBuilder;
         }
 
