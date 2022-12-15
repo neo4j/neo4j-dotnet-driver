@@ -302,7 +302,7 @@ namespace Neo4j.Driver
     /// When seen this error, contact driver developers.
     /// </summary>
     [DataContract]
-    public class ProtocolException : Neo4jException
+    public class ProtocolException : ClientException
     {
         private const string ErrorCodeInvalid = "Neo.ClientError.Request.Invalid";
         private const string ErrorCodeInvalidFormat = "Neo.ClientError.Request.InvalidFormat";
