@@ -116,7 +116,9 @@ namespace Neo4j.Driver.Tests.TestBackend
             ("test_temporal_types.TestDataTypes.test_date_time_cypher_created_tz_id",
                 "No Antarctica/Troll mapping available."),
             ("test_temporal_types.TestDataTypes.test_should_echo_all_timezone_ids",
-                "EST/HST/MST not supported.")
+                "EST/HST/MST not supported."),
+
+            (".test_should_fail_with_invalid_routing_request", "Needs to adjust fast failing discovery errors.")
         };
 
 		public static bool FindTest(string testName, out string reason)
