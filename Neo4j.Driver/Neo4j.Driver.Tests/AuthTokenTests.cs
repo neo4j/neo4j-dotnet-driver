@@ -103,6 +103,36 @@ namespace Neo4j.Driver.Tests
                 nums["Two"].Should().Be(2);
                 nums["Three"].Should().Be(3);
             }
+
+            [Fact]
+            public void ShouldCreateCustomAuthTokenWithRefresher()
+            {
+                var runNumber = 0;
+
+                var authToken = AuthTokens.Custom("zhenli", null, "foo", "custom", null, Refresher);
+                var dict = authToken.AsDictionary();
+
+                dict.Count.Should().Be(4);
+                dict["scheme"].Should().Be("custom");
+                dict["principal"].Should().Be("zhenli");
+                dict["credentials"].Should().Be("1");
+                dict["realm"].Should().Be("foo");
+
+                // refresh token
+                dict = authToken.AsDictionary();
+
+                dict.Count.Should().Be(4);
+                dict["scheme"].Should().Be("custom");
+                dict["principal"].Should().Be("zhenli");
+                // credentials should be updated
+                dict["credentials"].Should().Be("2");
+                dict["realm"].Should().Be("foo");
+
+                void Refresher(IDictionary<string, object> dict)
+                {
+                    dict["credentials"] = (++runNumber).ToString();
+                }
+            }
         }
     }
 }

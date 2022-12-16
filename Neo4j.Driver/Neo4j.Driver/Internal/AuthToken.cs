@@ -14,6 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.IO;
 
@@ -29,14 +30,25 @@ namespace Neo4j.Driver.Internal
         public const string CredentialsKey = "credentials";
         public const string RealmKey = "realm";
         public const string ParametersKey = "parameters";
-        
-        public AuthToken(IDictionary<string, object> content)
+
+        private readonly IDictionary<string, object> _content;
+        private readonly Action<IDictionary<string, object>> _tokenRefresher;
+
+        public AuthToken(IDictionary<string, object> content, Action<IDictionary<string, object>> tokenRefresher = null)
         {
             Throw.ArgumentNullException.IfNull(content, nameof(content));
-            Content = content;
+            _content = content;
+            _tokenRefresher = tokenRefresher;
         }
 
-        public IDictionary<string, object> Content { get; }
+        public IDictionary<string, object> Content
+        {
+            get
+            {
+                _tokenRefresher?.Invoke(_content);
+                return _content;
+            }
+        }
     }
 
     internal static class AuthTokenExtensions

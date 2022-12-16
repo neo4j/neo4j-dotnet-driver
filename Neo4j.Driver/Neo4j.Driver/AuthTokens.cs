@@ -116,7 +116,6 @@ namespace Neo4j.Driver
             return Custom(principal, credentials, realm, scheme, null);
         }
 
-
         /// <summary>
         ///     Gets an authentication token that can be used to connect to Neo4j instances with auth disabled.
         ///     This will only work if authentication is disabled on the Neo4j Instance we are connecting to.
@@ -133,6 +132,27 @@ namespace Neo4j.Driver
         public static IAuthToken Custom(string principal, string credentials, string realm, string scheme,
             Dictionary<string, object> parameters)
         {
+            return Custom(principal, credentials, realm, scheme, parameters, null);
+        }
+
+
+        /// <summary>
+        ///     Gets an authentication token that can be used to connect to Neo4j instances with auth disabled.
+        ///     This will only work if authentication is disabled on the Neo4j Instance we are connecting to.
+        /// </summary>
+        /// <remarks>
+        ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Action{ConfigBuilder})" />
+        /// </remarks>
+        /// <param name="principal">This is used to identify who this token represents.</param>
+        /// <param name="credentials">This is credentials authenticating the principal.</param>
+        /// <param name="realm">This is the "realm", specifies the authentication provider.</param>
+        /// <param name="scheme">This is the authentication scheme, specifying what kind of authentication that should be used.</param>
+        /// <param name="parameters">Extra parameters to be sent along the authentication provider. If none is given, then no extra parameters will be added.</param>
+        /// <param name="tokenRefresher">Optional function which can be used to refresh tokens with a limited validity period.</param>
+        /// <returns>An authentication token that can be used to connect to Neo4j.</returns>
+        public static IAuthToken Custom(string principal, string credentials, string realm, string scheme,
+            Dictionary<string, object> parameters, Action<IDictionary<string, object>> tokenRefresher)
+        {
             var token = new Dictionary<string, object>();
             if (!string.IsNullOrEmpty(principal)) token.Add(PrincipalKey, principal);
             if (!string.IsNullOrEmpty(scheme)) token.Add(SchemeKey, scheme);
@@ -144,7 +164,7 @@ namespace Neo4j.Driver
                 token.Add(ParametersKey, parameters);
             }
 
-            return new AuthToken(token);
+            return new AuthToken(token, tokenRefresher);
         }
     }
 }
