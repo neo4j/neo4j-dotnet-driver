@@ -10,6 +10,24 @@ namespace Neo4j.Driver.Tests.TestBackend
     {
         public string name { get; set; }
         public object data { get; set; }
+
+        public static Dictionary<string, object> ConvertDictionaryToNative(
+            Dictionary<string, CypherToNativeObject> source)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            var newDict = new Dictionary<string, object>();
+
+            foreach (var element in source)
+            {
+                newDict.Add(element.Key, CypherToNative.Convert(element.Value));
+            }
+
+            return newDict;
+        }
     }
 
     internal class SimpleValue

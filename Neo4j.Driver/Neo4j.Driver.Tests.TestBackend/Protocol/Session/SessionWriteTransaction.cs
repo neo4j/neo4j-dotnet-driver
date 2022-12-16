@@ -52,7 +52,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 					}
 				});
 
-			}, TransactionConfig);
+			}, data.TransactionConfig);
         }
 
         public override string Respond()
@@ -74,26 +74,6 @@ namespace Neo4j.Driver.Tests.TestBackend
 			}
 
 			return new ProtocolResponse("RetryableDone", new { }).Encode();
-		}
-
-		void TransactionConfig(TransactionConfigBuilder configBuilder)
-		{
-			if (data.txMeta.Count > 0) configBuilder.WithMetadata(data.txMeta);
-
-            try
-            {
-                if (data.TimeoutSet)
-                {
-                    var timeout = data.timeout.HasValue
-                    ? TimeSpan.FromMilliseconds(data.timeout.Value)
-                        : default(TimeSpan?);
-                    configBuilder.WithTimeout(timeout);
-                }
-            }
-            catch (ArgumentOutOfRangeException e) when ((data.timeout ?? 0) < 0 && e.ParamName == "value")
-            {
-                throw new DriverExceptionWrapper(e);
-            }
 		}
 	}
 }
