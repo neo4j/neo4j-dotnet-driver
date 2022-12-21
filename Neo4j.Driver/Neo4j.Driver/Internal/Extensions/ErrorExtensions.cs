@@ -55,6 +55,22 @@ namespace Neo4j.Driver.Internal
 					{
 						error = new InvalidBookmarkException(message);
 					}
+                    else if (InvalidBookmarkMixtureException.IsInvalidBookmarkMixtureException(code))
+                    {
+                        error = new InvalidBookmarkMixtureException(message);
+                    }
+                    else if (ArgumentErrorException.IsArgumentErrorException(code))
+                    {
+                        error = new ArgumentErrorException(message);
+                    }
+                    else if (TypeErrorException.IsTypeErrorException(code))
+                    {
+                        error = new TypeErrorException(message);
+                    }
+                    else if (ForbiddenException.IsForbiddenException(code))
+                    {
+                        error = new ForbiddenException(message);
+                    }
                     else
                     {
                         error = new ClientException(code, message);

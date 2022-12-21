@@ -291,31 +291,48 @@ namespace Neo4j.Driver.Internal.Routing
                             router, database);
                     }
                 }
-                catch (AuthorizationException e)
+                catch (Exception ex)
                 {
-                    _logger?.Warn(e, "Failed to update routing table from server '{0}' for database '{1}'.", router, database);
-                }
-                catch (SecurityException e)
-                {
-                    _logger?.Error(e,
-                        "Failed to update routing table from server '{0}' for database '{1}' because of a security exception.",
-                        router, database);
-                    throw;
-                }
-                catch (ClientException e)
-                {
-                    _logger?.Error(e,
-                        "Failed to update routing table from server '{0}' for database '{1}' because of a client exception.",
-                        router, database);
-                    throw;
-                }
-                catch (Exception e)
-                {
-                    _logger?.Warn(e, "Failed to update routing table from server '{0}' for database '{1}'.", router, database);
+                    var failfast = IsFailFastException(ex);
+                    var logMsg = "Failed to update routing table from server '{0}' for database '{1}'.";
+                    if (ex is Neo4jException ne)
+                    {
+                        logMsg += " Error code: '{2}'";
+                        var code = ne.Code;
+                        if (failfast)
+                        {
+                            _logger?.Error(ex, logMsg, router, database, code);
+                        }
+                        else
+                        {
+                            _logger?.Warn(ex, logMsg, router, database, code);
+                        }
+                    }
+                    else
+                    {
+                        _logger?.Warn(ex, logMsg, router, database);
+                    }
+
+                    if (failfast)
+                    {
+                        throw;
+                    }
                 }
             }
 
             return null;
+        }
+
+        private static bool IsFailFastException(Exception ex)
+        {
+            return ex
+                is FatalDiscoveryException
+                or InvalidBookmarkException
+                or InvalidBookmarkMixtureException
+                or ArgumentErrorException
+                or ProtocolException
+                or TypeErrorException
+                or ForbiddenException;
         }
     }
 }
