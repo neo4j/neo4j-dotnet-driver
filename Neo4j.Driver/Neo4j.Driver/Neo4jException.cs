@@ -547,6 +547,27 @@ namespace Neo4j.Driver
         }
     }
 
+    [DataContract]
+    public class UnknownSecurityException : ClientException
+    {
+        private const string ErrorCodePrefix= "Neo.ClientError.Security.";
+
+        /// <summary>
+        /// Create a new <see cref="TypeErrorException" /> with an error message.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+        /// <param name="code">The error code.</param>
+        public UnknownSecurityException(string message, string code) : base($"{ErrorCodePrefix}*", message)
+        {
+            Code = code;
+        }
+
+        internal static bool IsUnknownSecurityException(string code)
+        {
+            return code.StartsWith(ErrorCodePrefix);
+        }
+    }
+
     /// <summary>
     /// A value retrieved from the database needs to be truncated for this conversion to work, and will
     /// cause working with a modified data.
