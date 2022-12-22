@@ -426,7 +426,7 @@ namespace Neo4j.Driver
     /// </summary>
     public class TokenExpiredException : SecurityException 
     {
-        private const string ErrorCode = "Neo.ClientError.Security.TokenExpiredException";
+        private const string ErrorCode = "Neo.ClientError.Security.TokenExpired";
 
         internal static bool IsTokenExpiredError(string code)
         {

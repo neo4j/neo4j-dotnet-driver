@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             { typeof(FatalDiscoveryException), "FatalDiscoveryError" },
             { typeof(ResultConsumedException), "ResultConsumedError" },
             { typeof(TransactionNestingException), "TransactionNestingException" },
-            { typeof(TokenExpiredException), "TokenExpiredError" },
+            { typeof(TokenExpiredException), "ClientError" },
             { typeof(ConnectionReadTimeoutException), "ConnectionReadTimeoutError" },
             { typeof(InvalidBookmarkException), "InvalidBookmarkError" },
             { typeof(TransactionClosedException), "ClientError" },
