@@ -332,6 +332,9 @@ namespace Neo4j.Driver.Internal.Routing
                 or ArgumentErrorException
                 or ProtocolException
                 or TypeErrorException
+                or ForbiddenException
+                or AuthenticationException
+                or TokenExpiredException
                 or ForbiddenException;
         }
     }
