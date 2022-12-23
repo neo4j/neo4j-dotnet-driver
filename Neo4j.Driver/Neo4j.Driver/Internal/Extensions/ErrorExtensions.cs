@@ -63,9 +63,9 @@ namespace Neo4j.Driver.Internal
                     {
                         error = new ArgumentErrorException(message);
                     }
-                    else if (TypeErrorException.IsTypeErrorException(code))
+                    else if (TypeException.IsTypeException(code))
                     {
-                        error = new TypeErrorException(message);
+                        error = new TypeException(message);
                     }
                     else if (ForbiddenException.IsForbiddenException(code))
                     {

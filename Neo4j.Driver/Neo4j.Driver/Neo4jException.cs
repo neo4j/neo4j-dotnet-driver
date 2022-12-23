@@ -486,7 +486,8 @@ namespace Neo4j.Driver
     }
 
     /// <summary>
-    /// A generic argument error has occurred. To recover from this a new session needs to be created.</summary>
+    /// A generic argument error has occurred. To recover from this a new session needs to be created.
+    /// </summary>
     [DataContract]
     public class ArgumentErrorException : ClientException
     {
@@ -510,31 +511,34 @@ namespace Neo4j.Driver
     /// An error occurred related to data typing.
     /// </summary>
     [DataContract]
-    public class TypeErrorException : ClientException
+    public class TypeException : ClientException
     {
         private const string ErrorCode = "Neo.ClientError.Statement.TypeError";
 
         /// <summary>
-        /// Create a new <see cref="TypeErrorException" /> with an error message.
+        /// Create a new <see cref="TypeException" /> with an error message.
         /// </summary>
         /// <param name="message">The error message.</param>
-        public TypeErrorException(string message) : base(ErrorCode, message)
+        public TypeException(string message) : base(ErrorCode, message)
         {
         }
 
-        internal static bool IsTypeErrorException(string code)
+        internal static bool IsTypeException(string code)
         {
             return string.Equals(code, ErrorCode);
         }
     }
 
+    /// <summary>
+    /// This operation is forbidden.
+    /// </summary>
     [DataContract]
-    public class ForbiddenException : ClientException
+    public class ForbiddenException : SecurityException
     {
         private const string ErrorCode = "Neo.ClientError.Security.Forbidden";
 
         /// <summary>
-        /// Create a new <see cref="TypeErrorException" /> with an error message.
+        /// Create a new <see cref="ForbiddenException" /> with an error message.
         /// </summary>
         /// <param name="message">The error message.</param>
         public ForbiddenException(string message) : base(ErrorCode, message)
@@ -547,13 +551,16 @@ namespace Neo4j.Driver
         }
     }
 
+    /// <summary>
+    /// An unknown security error occurred.
+    /// </summary>
     [DataContract]
-    public class UnknownSecurityException : ClientException
+    public class UnknownSecurityException : SecurityException
     {
         private const string ErrorCodePrefix= "Neo.ClientError.Security.";
 
         /// <summary>
-        /// Create a new <see cref="TypeErrorException" /> with an error message.
+        /// Create a new <see cref="UnknownSecurityException" /> with an error message.
         /// </summary>
         /// <param name="message">The error message.</param>
         /// <param name="code">The error code.</param>
