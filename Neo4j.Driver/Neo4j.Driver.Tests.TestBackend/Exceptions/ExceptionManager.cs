@@ -29,29 +29,32 @@ namespace Neo4j.Driver.Tests.TestBackend
     {
         private static Dictionary<Type, string> TypeMap { get; set; } = new Dictionary<Type, string>()
         {
-            { typeof(Neo4jException),                   "Neo4jError" },
-            { typeof(ClientException),                  "ClientError" },
-            { typeof(TransientException),               "DriverError" },        //Should maybe Transient error, talk to Peter or Martin
-            { typeof(DatabaseException),                "DatabaseError" },
-            { typeof(ServiceUnavailableException),      "ServiceUnavailableError" },
-            { typeof(SessionExpiredException),          "SessionExpiredError" },
-            { typeof(Driver.ProtocolException),         "ProtocolError" },
-            { typeof(SecurityException),                "SecurityError" },
-            { typeof(AuthenticationException),          "AuthenticationError" },
-            { typeof(AuthorizationException),           "AuthorizationExpired" },
-            { typeof(ValueTruncationException),         "ValueTruncationError" },
-            { typeof(ValueOverflowException),           "ValueOverflowError" },
-            { typeof(FatalDiscoveryException),          "FatalDiscoveryError" },
-            { typeof(ResultConsumedException),          "ResultConsumedError" },
-            { typeof(TransactionNestingException),      "TransactionNestingException" },
-            { typeof(TokenExpiredException),			"TokenExpiredError"  },
-            { typeof(ConnectionReadTimeoutException),   "ConnectionReadTimeoutError"},
-            { typeof(InvalidBookmarkException),			"InvalidBookmarkError"},
-            { typeof(TransactionClosedException),       "ClientError"},
-
-            { typeof(NotSupportedException),            "NotSupportedException" },
-
-            { typeof(ArgumentException),				"ArgumentError"}
+            { typeof(Neo4jException), "Neo4jError" },
+            { typeof(ClientException), "ClientError" },
+            { typeof(TransientException), "DriverError" }, //Should maybe Transient error, talk to Peter or Martin
+            { typeof(DatabaseException), "DatabaseError" },
+            { typeof(ServiceUnavailableException), "ServiceUnavailableError" },
+            { typeof(SessionExpiredException), "SessionExpiredError" },
+            { typeof(Driver.ProtocolException), "ProtocolError" },
+            { typeof(SecurityException), "SecurityError" },
+            { typeof(AuthenticationException), "AuthenticationError" },
+            { typeof(AuthorizationException), "AuthorizationExpired" },
+            { typeof(ValueTruncationException), "ValueTruncationError" },
+            { typeof(ValueOverflowException), "ValueOverflowError" },
+            { typeof(FatalDiscoveryException), "FatalDiscoveryError" },
+            { typeof(ResultConsumedException), "ResultConsumedError" },
+            { typeof(TransactionNestingException), "TransactionNestingException" },
+            { typeof(TokenExpiredException), "ClientError" },
+            { typeof(ConnectionReadTimeoutException), "ConnectionReadTimeoutError" },
+            { typeof(InvalidBookmarkException), "InvalidBookmarkError" },
+            { typeof(TransactionClosedException), "ClientError" },
+            { typeof(NotSupportedException), "NotSupportedException" },
+            { typeof(ArgumentException), "ArgumentError" },
+            { typeof(InvalidBookmarkMixtureException), "InvalidBookmarkMixtureError" },
+            { typeof(ArgumentErrorException), "ArgumentError" },
+            { typeof(TypeException), "TypeError" },
+            { typeof(ForbiddenException), "ForbiddenError" },
+            { typeof(UnknownSecurityException), "OtherSecurityException" }
         };
 
 

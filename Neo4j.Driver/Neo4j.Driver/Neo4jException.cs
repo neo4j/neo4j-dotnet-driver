@@ -426,7 +426,7 @@ namespace Neo4j.Driver
     /// </summary>
     public class TokenExpiredException : SecurityException 
     {
-        private const string ErrorCode = "Neo.ClientError.Security.TokenExpiredException";
+        private const string ErrorCode = "Neo.ClientError.Security.TokenExpired";
 
         internal static bool IsTokenExpiredError(string code)
         {
@@ -461,6 +461,117 @@ namespace Neo4j.Driver
         /// <param name="message">The error message.</param>
         public InvalidBookmarkException(string message) : base(ErrorCode, message)
         {
+        }
+    }
+
+    /// <summary>
+    /// The provided bookmark is invalid. To recover from this a new session needs to be created.
+    /// </summary>
+    public class InvalidBookmarkMixtureException : ClientException
+    {
+        private const string ErrorCode = "Neo.ClientError.Transaction.InvalidBookmarkMixture";
+
+        /// <summary>
+        /// Create a new <see cref="InvalidBookmarkMixtureException" /> with an error message.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+        public InvalidBookmarkMixtureException(string message) : base(ErrorCode, message)
+        {
+        }
+
+        internal static bool IsInvalidBookmarkMixtureException(string code)
+        {
+            return string.Equals(code, ErrorCode);
+        }
+    }
+
+    /// <summary>
+    /// A generic argument error has occurred. To recover from this a new session needs to be created.
+    /// </summary>
+    [DataContract]
+    public class ArgumentErrorException : ClientException
+    {
+        private const string ErrorCode = "Neo.ClientError.Statement.ArgumentError";
+
+        /// <summary>
+        /// Create a new <see cref="ArgumentErrorException" /> with an error message.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+        public ArgumentErrorException(string message) : base(ErrorCode, message)
+        {
+        }
+
+        internal static bool IsArgumentErrorException(string code)
+        {
+            return string.Equals(code, ErrorCode);
+        }
+    }
+
+    /// <summary>
+    /// An error occurred related to data typing.
+    /// </summary>
+    [DataContract]
+    public class TypeException : ClientException
+    {
+        private const string ErrorCode = "Neo.ClientError.Statement.TypeError";
+
+        /// <summary>
+        /// Create a new <see cref="TypeException" /> with an error message.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+        public TypeException(string message) : base(ErrorCode, message)
+        {
+        }
+
+        internal static bool IsTypeException(string code)
+        {
+            return string.Equals(code, ErrorCode);
+        }
+    }
+
+    /// <summary>
+    /// This operation is forbidden.
+    /// </summary>
+    [DataContract]
+    public class ForbiddenException : SecurityException
+    {
+        private const string ErrorCode = "Neo.ClientError.Security.Forbidden";
+
+        /// <summary>
+        /// Create a new <see cref="ForbiddenException" /> with an error message.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+        public ForbiddenException(string message) : base(ErrorCode, message)
+        {
+        }
+
+        internal static bool IsForbiddenException(string code)
+        {
+            return string.Equals(code, ErrorCode);
+        }
+    }
+
+    /// <summary>
+    /// An unknown security error occurred.
+    /// </summary>
+    [DataContract]
+    public class UnknownSecurityException : SecurityException
+    {
+        private const string ErrorCodePrefix= "Neo.ClientError.Security.";
+
+        /// <summary>
+        /// Create a new <see cref="UnknownSecurityException" /> with an error message.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+        /// <param name="code">The error code.</param>
+        public UnknownSecurityException(string message, string code) : base($"{ErrorCodePrefix}*", message)
+        {
+            Code = code;
+        }
+
+        internal static bool IsUnknownSecurityException(string code)
+        {
+            return code.StartsWith(ErrorCodePrefix);
         }
     }
 
