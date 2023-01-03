@@ -105,28 +105,23 @@ internal class SessionReadTransaction : IProtocolObject
     {
         if (data.txMeta.Count > 0)
         {
-            configBuilder.WithMetadata(data.txMeta);
-        }
+			var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
 
-        try
-        {
-            if (data.TimeoutSet)
-            {
-                var timeout = data.timeout.HasValue
-                    ? TimeSpan.FromMilliseconds(data.timeout.Value)
-                    : default(TimeSpan?);
+			if (sessionContainer.RetryState == NewSession.SessionState.RetryAbleNothing)
+				throw new ArgumentException("Should never hit this code with a RetryAbleNothing");
 
-                configBuilder.WithTimeout(timeout);
-            }
-        }
-        catch (ArgumentOutOfRangeException e) when ((data.timeout ?? 0) < 0 && e.ParamName == "value")
-        {
-            throw new DriverExceptionWrapper(e);
-        }
-    }
+			else if (sessionContainer.RetryState == NewSession.SessionState.RetryAbleNegative)
+			{
+				if (string.IsNullOrEmpty(sessionContainer.RetryableErrorId))
+					return ExceptionManager.GenerateExceptionResponse(new TestKitClientException("Error from client in retryable tx")).Encode();
+				else
+				{
+					var exception = ((ProtocolException)(ObjManager.GetObject(sessionContainer.RetryableErrorId))).ExceptionObj;
+					return ExceptionManager.GenerateExceptionResponse(exception).Encode();
+				}
+			}
 
-    [JsonConverter(typeof(BaseSessionTypeJsonConverter<SessionReadTransactionType>))]
-    public class SessionReadTransactionType : BaseSessionType
-    {
-    }
+			return new ProtocolResponse("RetryableDone", new { }).Encode();
+		}
+	}
 }
