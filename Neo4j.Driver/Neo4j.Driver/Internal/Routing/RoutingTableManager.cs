@@ -306,25 +306,33 @@ internal class RoutingTableManager : IRoutingTableManager
             try
             {
                 var conn = await _poolManager.CreateClusterConnectionAsync(router).ConfigureAwait(false);
+                
                 if (conn == null)
                 {
                     routingTable.Remove(router);
                 }
                 else
                 {
-                    var newRoutingTable =
-                        await _discovery.DiscoverAsync(conn, database, impersonatedUser, bookmarks)
-                            .ConfigureAwait(false);
-
-                    if (!newRoutingTable.IsStale(mode))
+                    try
                     {
-                        return newRoutingTable;
-                    }
+                        var newRoutingTable =
+                            await _discovery.DiscoverAsync(conn, database, impersonatedUser, bookmarks)
+                                .ConfigureAwait(false);
 
-                    _logger?.Debug(
-                        "Skipping stale routing table received from server '{0}' for database '{1}'",
-                        router,
-                        database);
+                        if (!newRoutingTable.IsStale(mode))
+                        {
+                            return newRoutingTable;
+                        }
+
+                        _logger?.Debug(
+                            "Skipping stale routing table received from server '{0}' for database '{1}'",
+                            router,
+                            database);
+                    }
+                    finally
+                    {
+                        await conn.CloseAsync().ConfigureAwait(false);
+                    }
                 }
             }
             catch (Exception ex)
