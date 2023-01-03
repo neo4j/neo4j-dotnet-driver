@@ -123,7 +123,8 @@ public class AuthTokens
     /// work if authentication is disabled on the Neo4j Instance we are connecting to.
     /// </summary>
     /// <remarks>
-    ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Action{ConfigBuilder})"/>
+    ///     <see
+    ///         cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder}(Neo4j.Driver.ConfigBuilder))"/>
     /// </remarks>
     /// <param name="principal">This is used to identify who this token represents.</param>
     /// <param name="credentials">This is credentials authenticating the principal.</param>

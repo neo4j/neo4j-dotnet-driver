@@ -1072,7 +1072,6 @@ public class ConnectionPoolTests
             reportedSizes.Should().NotContain(v => v > 5);
         }
 
-
         [Fact]
         public async void ShouldReportCorrectPoolSizeWhenIdleConnectionsAreNotAllowedAsync()
         {

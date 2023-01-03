@@ -29,10 +29,6 @@ internal interface IBoltProtocolFactory
 
 internal class BoltProtocolFactory : IBoltProtocolFactory
 {
-    // 0x‭48 54 54 50 - or HTTP ascii codes...
-    private static readonly BoltProtocolVersion HttpBoltVersion = new(1213486160);
-    internal static readonly BoltProtocolFactory Default = new();
-
     private const string HttpErrorMessage =
         "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
         "(HTTP defaults to port 7474 whereas BOLT defaults to port 7687)";
@@ -40,6 +36,10 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
     private const string NoAgreedVersion =
         "The Neo4j server does not support any of the protocol versions supported by this client. " +
         "Ensure that you are using driver and server versions that are compatible with one another.";
+
+    // 0x‭48 54 54 50 - or HTTP ascii codes...
+    private static readonly BoltProtocolVersion HttpBoltVersion = new(1213486160);
+    internal static readonly BoltProtocolFactory Default = new();
 
     private static readonly Lazy<byte[]> HandshakeBytesLazy =
         new(
@@ -68,7 +68,8 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
 
     public IBoltProtocol ForVersion(BoltProtocolVersion version)
     {
-        if (version == HttpBoltVersion) {
+        if (version == HttpBoltVersion)
+        {
             throw new NotSupportedException(HttpErrorMessage);
         }
 
@@ -83,7 +84,7 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
             { MajorVersion: 4, MinorVersion: 4 } => BoltProtocol.Instance,
             { MajorVersion: 5, MinorVersion: 0 } => BoltProtocol.Instance,
             _ => throw new NotSupportedException(
-                $"Protocol error, server suggested unexpected protocol version: {version}"),
+                $"Protocol error, server suggested unexpected protocol version: {version}")
         };
     }
 

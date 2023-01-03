@@ -149,7 +149,7 @@ internal sealed class MessageFormat
 
         RemoveHandler(ZonedDateTimeSerializer.Instance);
         AddHandler(UtcZonedDateTimeSerializer.Instance);
-    }   
+    }
 
     private void RemoveHandler(ZonedDateTimeSerializer instance)
     {

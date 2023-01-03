@@ -89,8 +89,9 @@ public class TransactionTests
             var query = new Query("lala");
             await tx.RunAsync(query);
 
-            mockProtocol.Verify(x => 
-                x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), query, false, It.IsAny<long>()));
+            mockProtocol.Verify(
+                x =>
+                    x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), query, false, It.IsAny<long>()));
         }
 
         [Fact]
@@ -112,8 +113,9 @@ public class TransactionTests
             var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
             var query = new Query("lala");
 
-            mockProtocol.Setup(x =>
-                    x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), query, false, It.IsAny<long>()))
+            mockProtocol.Setup(
+                    x =>
+                        x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), query, false, It.IsAny<long>()))
                 .Throws<Neo4jException>();
 
             var error = await ExceptionAsync(() => tx.RunAsync(query));

@@ -67,7 +67,7 @@ internal static class StreamExtensions
             {
                 // close the stream, the stream will be fully disposed later by SocketClient Dispose.
                 stream.Close();
-                
+
                 throw new ConnectionReadTimeoutException(
                     $"Socket/Stream timed out after {timeoutMs}ms, socket closed.",
                     ex);

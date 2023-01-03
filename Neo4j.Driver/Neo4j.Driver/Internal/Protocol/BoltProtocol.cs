@@ -61,7 +61,7 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         var pullMessage = autoCommitParams.Reactive ? null : new PullMessage(autoCommitParams.FetchSize);
         var pullHandler = autoCommitParams.Reactive
-            ? null 
+            ? null
             : new PullResponseHandler(streamBuilder, summaryBuilder, autoCommitParams.BookmarksTracker);
 
         // Refactor to take AC Params
@@ -158,6 +158,7 @@ internal sealed class BoltProtocol : IBoltProtocol
     {
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
+
         LegacyBoltProtocol.ValidateImpersonatedUserForVersion(connection, impersonatedUser);
 
         return connection.Version >= BoltProtocolVersion.V4_3
@@ -165,7 +166,7 @@ internal sealed class BoltProtocol : IBoltProtocol
             : GetRoutingTableWithQueryAsync(connection, database, bookmarks);
     }
 
-    private async Task<IReadOnlyDictionary<string,object>> GetRoutingTableWithQueryAsync(
+    private async Task<IReadOnlyDictionary<string, object>> GetRoutingTableWithQueryAsync(
         IConnection connection,
         string database,
         Bookmarks bookmarks)

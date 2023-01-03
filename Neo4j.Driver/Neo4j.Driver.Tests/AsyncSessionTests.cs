@@ -54,6 +54,7 @@ public class AsyncSessionTests
         mockConn
             .SetupGet(x => x.BoltProtocol)
             .Returns(mockProtocol.Object);
+
         return mockConn;
     }
 
@@ -121,14 +122,14 @@ public class AsyncSessionTests
             mockConn
                 .SetupGet(x => x.BoltProtocol)
                 .Returns(mockProtocol.Object);
-            
+
             var session = NewSession(mockConn.Object);
             var tx = await session.BeginTransactionAsync(
                 o => o.WithMetadata(new Dictionary<string, object> { ["key"] = "value" })
-                        .WithTimeout(TimeSpan.MaxValue));
-            
+                    .WithTimeout(TimeSpan.MaxValue));
+
             var config = tx.TransactionConfig;
-            
+
             var item = config.Metadata.Single();
             item.Key.Should().Be("key");
             item.Value.Should().Be("value");

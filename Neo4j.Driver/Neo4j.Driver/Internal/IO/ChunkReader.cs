@@ -48,8 +48,8 @@ internal sealed class ChunkReader : IChunkReader
         using (ChunkBuffer = new MemoryStream())
         {
             //Use this as we need an initial state < ChunkBuffer.Length
-            long chunkBufferPosition = -1; 
-            
+            long chunkBufferPosition = -1;
+
             //We have not finished parsing the chunk buffer, so further messages to de-chunk
             while (chunkBufferPosition < ChunkBuffer.Length)
             {
@@ -114,7 +114,7 @@ internal sealed class ChunkReader : IChunkReader
 
         //Restore the chunk buffer state so that any reads can continue
         ChunkBuffer.Position = storedPosition;
-        
+
         //No data so stop
         if (ChunkBuffer.Length == 0)
         {
@@ -145,7 +145,7 @@ internal sealed class ChunkReader : IChunkReader
         {
             var chunkHeader = await ReadDataOfSizeAsync(ChunkHeaderSize).ConfigureAwait(false);
             var chunkSize = PackStreamBitConverter.ToUInt16(chunkHeader);
-            
+
             //NOOP or end of message
             if (chunkSize == 0)
             {

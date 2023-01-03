@@ -143,7 +143,6 @@ internal abstract class DelegatedConnection : IConnection
         return Delegate.CloseAsync();
     }
 
-
     public void SetReadTimeoutInSeconds(int seconds)
     {
         Delegate.SetReadTimeoutInSeconds(seconds);
@@ -202,7 +201,7 @@ internal abstract class DelegatedConnection : IConnection
     }
 
     public Task RollbackTransactionAsync()
-    { 
+    {
         return BoltProtocol.RollbackTransactionAsync(this);
     }
 
@@ -210,7 +209,7 @@ internal abstract class DelegatedConnection : IConnection
     {
         return Task.CompletedTask;
     }
-    
+
     public override string ToString()
     {
         return Delegate.ToString();

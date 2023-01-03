@@ -33,7 +33,7 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
     private LegacyBoltProtocol()
     {
     }
-    
+
     public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
     {
         await connection.EnqueueAsync(
@@ -67,14 +67,14 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
     {
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
-        
+
         ValidateImpersonatedUserForVersion(connection, impersonatedUser);
-  
+
         connection.ConfigureMode(AccessMode.Read);
 
         var bookmarkTracker = new BookmarksTracker(bookmarks);
         var resourceHandler = new ConnectionResourceHandler(connection);
-        
+
         var autoCommitParams = new AutoCommitParams
         {
             Query = new Query(
@@ -126,9 +126,9 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
             autoCommitParams.ImpersonatedUser);
 
         await connection.EnqueueAsync(
-                autoCommitMessage, 
-                runHandler, 
-                PullAllMessage.Instance, 
+                autoCommitMessage,
+                runHandler,
+                PullAllMessage.Instance,
                 pullAllHandler)
             .ConfigureAwait(false);
 
@@ -145,10 +145,10 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
     {
         ValidateImpersonatedUserForVersion(connection, impersonatedUser);
         ValidateDatabase(connection, database);
-        
+
         var mode = connection.Mode ??
             throw new InvalidOperationException("Connection should have its Mode property set.");
-        
+
         await connection.EnqueueAsync(
                 new BeginMessage(
                     connection.Version,
@@ -207,7 +207,7 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
         {
             return;
         }
-        
+
         if (!string.IsNullOrEmpty(database))
         {
             throw new ClientException(

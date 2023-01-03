@@ -160,7 +160,7 @@ internal class Controller
             catch (IOException ex)
             {
                 //Handled outside of the exception manager because there is no connection to reply on.
-                Trace.WriteLine($"Socket exception detected: {ex.Message}"); 
+                Trace.WriteLine($"Socket exception detected: {ex.Message}");
 
                 storedException = ex;
                 restartConnection = true;

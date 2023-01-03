@@ -27,34 +27,10 @@ internal class SessionBeginTransaction : IProtocolObject
 
     [JsonIgnore] public string TransactionId { get; set; }
 
-    private void TransactionConfig(TransactionConfigBuilder configBuilder)
-    {
-        try
-        {
-            if (data.TimeoutSet)
-            {
-                var timeout = data.timeout.HasValue
-                    ? TimeSpan.FromMilliseconds(data.timeout.Value)
-                    : default(TimeSpan?);
-
-                configBuilder.WithTimeout(timeout);
-            }
-        }
-        catch (ArgumentOutOfRangeException e) when ((data.timeout ?? 0) < 0 && e.ParamName == "value")
-        {
-            throw new DriverExceptionWrapper(e);
-        }
-
-        if (data.txMeta.Count > 0)
-        {
-            configBuilder.WithMetadata(data.txMeta);
-        }
-    }
-
     public override async Task Process(Controller controller)
     {
         var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
-        var transaction = await sessionContainer.Session.BeginTransactionAsync(TransactionConfig);
+        var transaction = await sessionContainer.Session.BeginTransactionAsync(data.TransactionConfig);
         TransactionId = controller.TransactionManager.AddTransaction(
             new TransactionWrapper(
                 transaction,

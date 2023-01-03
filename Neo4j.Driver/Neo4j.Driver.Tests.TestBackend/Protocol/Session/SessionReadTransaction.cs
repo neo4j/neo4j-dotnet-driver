@@ -27,6 +27,11 @@ internal class SessionReadTransaction : IProtocolObject
 
     [JsonIgnore] private string TransactionId { get; set; }
 
+    [JsonConverter(typeof(BaseSessionTypeJsonConverter<SessionReadTransactionType>))]
+    public class SessionReadTransactionType : BaseSessionType
+    {
+    }
+
     public override async Task Process(Controller controller)
     {
         var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
@@ -73,7 +78,7 @@ internal class SessionReadTransaction : IProtocolObject
                         }
                     });
             },
-            TransactionConfig);
+            data.TransactionConfig);
     }
 
     public override string Respond()
@@ -100,28 +105,4 @@ internal class SessionReadTransaction : IProtocolObject
 
         return new ProtocolResponse("RetryableDone", new {}).Encode();
     }
-
-    private void TransactionConfig(TransactionConfigBuilder configBuilder)
-    {
-        if (data.txMeta.Count > 0)
-        {
-			var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
-
-			if (sessionContainer.RetryState == NewSession.SessionState.RetryAbleNothing)
-				throw new ArgumentException("Should never hit this code with a RetryAbleNothing");
-
-			else if (sessionContainer.RetryState == NewSession.SessionState.RetryAbleNegative)
-			{
-				if (string.IsNullOrEmpty(sessionContainer.RetryableErrorId))
-					return ExceptionManager.GenerateExceptionResponse(new TestKitClientException("Error from client in retryable tx")).Encode();
-				else
-				{
-					var exception = ((ProtocolException)(ObjManager.GetObject(sessionContainer.RetryableErrorId))).ExceptionObj;
-					return ExceptionManager.GenerateExceptionResponse(exception).Encode();
-				}
-			}
-
-			return new ProtocolResponse("RetryableDone", new { }).Encode();
-		}
-	}
 }

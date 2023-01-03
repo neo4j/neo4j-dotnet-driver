@@ -17,9 +17,6 @@
 
 using System;
 using FluentAssertions;
-using Moq;
-using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Tests;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.Protocol;
@@ -49,7 +46,10 @@ public class BoltProtocolFactoryTests
 
         [Theory]
         // No-matches
-        [InlineData(0, 0, "The Neo4j server does not support any of the protocol versions supported by this client. " +
+        [InlineData(
+            0,
+            0,
+            "The Neo4j server does not support any of the protocol versions supported by this client. " +
             "Ensure that you are using driver and server versions that are compatible with one another.")]
         // Non-existent
         [InlineData(1, 0, "Protocol error, server suggested unexpected protocol version: 1.0")]
@@ -70,8 +70,10 @@ public class BoltProtocolFactoryTests
         {
             var version = new BoltProtocolVersion(1213486160);
             var exception = Record.Exception(() => BoltProtocolFactory.Default.ForVersion(version));
-            exception.Should().BeOfType<NotSupportedException>().Which.Message.Should().StartWith(
-                "Server responded HTTP.");
+            exception.Should()
+                .BeOfType<NotSupportedException>()
+                .Which.Message.Should()
+                .StartWith("Server responded HTTP.");
         }
     }
 }
