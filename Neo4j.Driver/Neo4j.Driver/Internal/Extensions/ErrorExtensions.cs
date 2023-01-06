@@ -16,13 +16,18 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Sockets;
+using Neo4j.Driver.Internal.ExceptionHandling;
 
 namespace Neo4j.Driver.Internal
 {
     internal static class ErrorExtensions
     {
+        private static Neo4jExceptionFactory _exceptionFactory = new();
+
         public static Neo4jException ParseServerException(string code, string message)
         {
             Neo4jException error;
@@ -31,56 +36,7 @@ namespace Neo4j.Driver.Internal
             switch (classification)
             {
                 case "clienterror":
-                    if (AuthenticationException.IsAuthenticationError(code))
-                    {
-                        error = new AuthenticationException(message);
-                    }
-					else if(AuthorizationException.IsAuthorizationError(code))
-					{
-						error = new AuthorizationException(message);
-					}
-                    else if (ProtocolException.IsProtocolError(code))
-                    {
-                        error = new ProtocolException(code, message);
-                    }
-                    else if (FatalDiscoveryException.IsFatalDiscoveryError(code))
-                    {
-                        error = new FatalDiscoveryException(message);
-                    }
-					else if(TokenExpiredException.IsTokenExpiredError(code))
-					{
-						error = new TokenExpiredException(message);
-					}
-					else if(InvalidBookmarkException.IsInvalidBookmarkException(code))
-					{
-						error = new InvalidBookmarkException(message);
-					}
-                    else if (InvalidBookmarkMixtureException.IsInvalidBookmarkMixtureException(code))
-                    {
-                        error = new InvalidBookmarkMixtureException(message);
-                    }
-                    else if (ArgumentErrorException.IsArgumentErrorException(code))
-                    {
-                        error = new ArgumentErrorException(message);
-                    }
-                    else if (TypeException.IsTypeException(code))
-                    {
-                        error = new TypeException(message);
-                    }
-                    else if (ForbiddenException.IsForbiddenException(code))
-                    {
-                        error = new ForbiddenException(message);
-                    }
-                    // this one needs to come after it has checked all other possibilities
-                    else if (UnknownSecurityException.IsUnknownSecurityException(code))
-                    {
-                        return new UnknownSecurityException(message, code);
-                    }
-                    else
-                    {
-                        error = new ClientException(code, message);
-                    }
-
+                    error = _exceptionFactory.GetException(code, message);
                     break;
                 case "transienterror":
                     error = new TransientException(code, message);
@@ -146,6 +102,14 @@ namespace Neo4j.Driver.Internal
             return new ResultConsumedException(
                 "Cannot access records on this result any more as the result has already been consumed " +
                 "or the query runner where the result is created has already been closed.");
+        }
+
+        public static IEnumerable<Type> GetAllNeo4jExceptions()
+        {
+            var type = typeof(Neo4jException);
+            var assembly = type.Assembly;
+            var types = assembly.GetExportedTypes().Where(t => type.IsAssignableFrom(t));
+            return types;
         }
     }
 }
