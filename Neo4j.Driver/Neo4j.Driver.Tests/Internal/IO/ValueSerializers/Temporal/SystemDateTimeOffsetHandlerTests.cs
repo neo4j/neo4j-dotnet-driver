@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 
 public class SystemDateTimeOffsetHandlerTests : PackStreamSerializerTests
 {
-    internal override IPackStreamSerializer SerializerUnderTest => new SystemDateTimeOffsetHandler();
+    internal override IPackStreamSerializer SerializerUnderTest => new SystemDateTimeOffsetSerializer();
 
     internal override IEnumerable<IPackStreamSerializer> SerializersNeeded => new IPackStreamSerializer[]
     {

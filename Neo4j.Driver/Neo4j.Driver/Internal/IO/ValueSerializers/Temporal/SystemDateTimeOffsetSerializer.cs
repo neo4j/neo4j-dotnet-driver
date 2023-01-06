@@ -20,9 +20,9 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 
-internal sealed class SystemDateTimeOffsetHandler : WriteOnlySerializer
+internal sealed class SystemDateTimeOffsetSerializer : WriteOnlySerializer
 {
-    internal static readonly SystemDateTimeOffsetHandler Instance = new();
+    internal static readonly SystemDateTimeOffsetSerializer Instance = new();
 
     public override IEnumerable<Type> WritableTypes => new[] { typeof(DateTimeOffset) };
 

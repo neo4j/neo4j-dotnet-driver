@@ -74,7 +74,7 @@ internal sealed class MessageFormat
 
         // Add BCL Handlers
         AddHandler(SystemDateTimeSerializer.Instance);
-        AddHandler(SystemDateTimeOffsetHandler.Instance);
+        AddHandler(SystemDateTimeOffsetSerializer.Instance);
         AddHandler(SystemTimeSpanSerializer.Instance);
 
         AddHandler(PathSerializer.Instance);
