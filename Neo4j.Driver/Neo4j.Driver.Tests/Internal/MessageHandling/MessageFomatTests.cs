@@ -17,6 +17,9 @@
 
 using System.Linq;
 using FluentAssertions;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
+using Neo4j.Driver.Internal.IO.ValueSerializers;
 using Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 using Xunit;
 
@@ -24,6 +27,110 @@ namespace Neo4j.Driver.Internal.MessageHandling;
 
 public class MessageFomatTests
 {
+    public class Constant
+    {
+        [Theory]
+        [InlineData(3, 0)]
+        [InlineData(4, 0)]
+        [InlineData(4, 1)]
+        [InlineData(4, 2)]
+        [InlineData(4, 3)]
+        [InlineData(4, 4)]
+        [InlineData(5, 0)]
+        [InlineData(5, 1)]
+        [InlineData(6, 0)]
+        public void ShouldHaveGeneralReaderStructSerializers(int major, int minor)
+        {
+            var format = new MessageFormat(new BoltProtocolVersion(major, minor));
+            format.ReaderStructHandlers.Values.Should()
+                .Contain(new IPackStreamSerializer[] {
+                    FailureMessageSerializer.Instance,
+                    IgnoredMessageSerializer.Instance,
+                    RecordMessageSerializer.Instance,
+                    SuccessMessageSerializer.Instance,
+                    PointSerializer.Instance,
+                    LocalDateSerializer.Instance,
+                    LocalTimeSerializer.Instance,
+                    LocalDateTimeSerializer.Instance,
+                    OffsetTimeSerializer.Instance,
+                    DurationSerializer.Instance,
+                    PathSerializer.Instance
+                });
+        }
+
+        [Theory]
+        [InlineData(3, 0)]
+        [InlineData(4, 0)]
+        [InlineData(4, 1)]
+        [InlineData(4, 2)]
+        [InlineData(4, 3)]
+        [InlineData(4, 4)]
+        [InlineData(5, 0)]
+        [InlineData(5, 1)]
+        [InlineData(6, 0)]
+        public void ShouldHaveGeneralWriterStructSerializers(int major, int minor)
+        {
+            var format = new MessageFormat(new BoltProtocolVersion(major, minor));
+            format.WriteStructHandlers.Values.Should()
+                .Contain(
+                    new IPackStreamSerializer[]
+                    {
+                        LocalDateSerializer.Instance,
+                        LocalTimeSerializer.Instance,
+                        LocalDateTimeSerializer.Instance,
+                        OffsetTimeSerializer.Instance,
+                        DurationSerializer.Instance,
+                        PointSerializer.Instance,
+                        SystemDateTimeSerializer.Instance,
+                        SystemDateTimeOffsetSerializer.Instance,
+                        SystemTimeSpanSerializer.Instance, 
+                    });
+        }
+    }
+
+    public class VersionDepdent
+    {
+
+        [Theory]
+        [InlineData(5, 0)]
+        [InlineData(5, 1)]
+        [InlineData(6, 0)]
+        public void HaveElementIdSerializers(int major, int minor)
+        {
+            var serializers = new IPackStreamSerializer[]
+            {
+                ElementNodeSerializer.Instance,
+                ElementRelationshipSerializer.Instance, 
+                ElementUnboundRelationshipSerializer.Instance
+            };
+
+            var format = new MessageFormat(new BoltProtocolVersion(major, minor));
+            
+            format.ReaderStructHandlers.Values.Should().Contain(serializers);
+        }
+
+        [Theory]
+        [InlineData(3, 0)]
+        [InlineData(4, 0)]
+        [InlineData(4, 1)]
+        [InlineData(4, 2)]
+        [InlineData(4, 3)]
+        [InlineData(4, 4)]
+        public void ShouldHaveIdSerializers(int major, int minor)
+        {
+            var serializers = new IPackStreamSerializer[]
+            {
+                NodeSerializer.Instance,
+                RelationshipSerializer.Instance,
+                UnboundRelationshipSerializer.Instance
+            };
+
+            var format = new MessageFormat(new BoltProtocolVersion(major, minor));
+
+            format.ReaderStructHandlers.Values.Should().Contain(serializers);
+        }
+    }
+   
     public class ZoneDateTimeTests
     {
         static readonly byte[] NonUtcEncoderBytes = { (byte)'F', (byte)'f' };
