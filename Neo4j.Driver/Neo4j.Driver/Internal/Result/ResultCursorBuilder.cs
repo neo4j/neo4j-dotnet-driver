@@ -24,7 +24,7 @@ using static Neo4j.Driver.Internal.Messaging.ResultHandleMessage;
 
 namespace Neo4j.Driver.Internal.Result;
 
-internal class ResultCursorBuilder : IResultStreamBuilder, IResultStream
+internal class ResultCursorBuilder : IResultCursorBuilder
 {
     private readonly Func<Task> _advanceFunction;
     private readonly IAutoPullHandler _autoPullHandler;
@@ -296,4 +296,9 @@ internal class ResultCursorBuilder : IResultStreamBuilder, IResultStream
         RecordsStreaming,
         Completed
     }
+}
+
+internal interface IResultCursorBuilder : IResultStreamBuilder, IResultStream
+{
+    IInternalResultCursor CreateCursor();
 }

@@ -26,8 +26,9 @@ namespace Neo4j.Driver.Internal;
 
 internal interface IBoltProtocolHandlerFactory
 {       
-    IResponseHandler NewRunHandler(ResultCursorBuilder streamBuilder, SummaryBuilder summaryBuilder);
-    ResultCursorBuilder NewResultCursorBuilder(SummaryBuilder summaryBuilder, 
+    IResponseHandler NewRunHandler(IResultCursorBuilder streamBuilder, SummaryBuilder summaryBuilder);
+
+    IResultCursorBuilder NewResultCursorBuilder(SummaryBuilder summaryBuilder, 
         IConnection connection, 
         AutoCommitParams autoCommitParams,
         Func<IConnection, SummaryBuilder, IBookmarksTracker, Func<IResultStreamBuilder,long,long,Task>> requestMore,
@@ -36,7 +37,7 @@ internal interface IBoltProtocolHandlerFactory
 
 internal class BoltProtocolResponseHandlerFactory : IBoltProtocolHandlerFactory
 {
-    public ResultCursorBuilder NewResultCursorBuilder(
+    public IResultCursorBuilder NewResultCursorBuilder(
         SummaryBuilder summaryBuilder,
         IConnection connection,
         AutoCommitParams autoCommitParams,
@@ -56,7 +57,7 @@ internal class BoltProtocolResponseHandlerFactory : IBoltProtocolHandlerFactory
             autoCommitParams.Reactive);
     }
 
-    public IResponseHandler NewRunHandler(ResultCursorBuilder streamBuilder, SummaryBuilder summaryBuilder)
+    public IResponseHandler NewRunHandler(IResultCursorBuilder streamBuilder, SummaryBuilder summaryBuilder)
     {
         return new RunResponseHandler(streamBuilder, summaryBuilder);
     }
