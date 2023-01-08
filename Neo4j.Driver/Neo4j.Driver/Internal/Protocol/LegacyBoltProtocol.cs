@@ -125,13 +125,9 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
             autoCommitParams.Database,
             autoCommitParams.ImpersonatedUser);
 
-        await connection.EnqueueAsync(
-                autoCommitMessage,
-                runHandler,
-                PullAllMessage.Instance,
-                pullAllHandler)
-            .ConfigureAwait(false);
-
+        await connection.EnqueueAsync(autoCommitMessage, runHandler).ConfigureAwait(false);
+        await connection.EnqueueAsync(PullAllMessage.Instance, pullAllHandler).ConfigureAwait(false);
+        
         await connection.SendAsync().ConfigureAwait(false);
         return streamBuilder.CreateCursor();
     }
@@ -177,9 +173,9 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
 
         var message = new RunWithMetadataMessage(connection.Version, query);
 
-        await connection.EnqueueAsync(message, runHandler, PullAllMessage.Instance, pullAllHandler)
+        await connection.EnqueueAsync(message, runHandler)
             .ConfigureAwait(false);
-
+        await connection.EnqueueAsync(PullAllMessage.Instance, pullAllHandler).ConfigureAwait(false);
         await connection.SendAsync().ConfigureAwait(false);
 
         return streamBuilder.CreateCursor();

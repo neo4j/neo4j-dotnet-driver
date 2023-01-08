@@ -102,13 +102,11 @@ internal abstract class DelegatedConnection : IConnection
 
     public async Task EnqueueAsync(
         IRequestMessage message1,
-        IResponseHandler handler1,
-        IRequestMessage message2 = null,
-        IResponseHandler handler2 = null)
+        IResponseHandler handler1)
     {
         try
         {
-            await Delegate.EnqueueAsync(message1, handler1, message2, handler2).ConfigureAwait(false);
+            await Delegate.EnqueueAsync(message1, handler1).ConfigureAwait(false);
         }
         catch (Exception e)
         {

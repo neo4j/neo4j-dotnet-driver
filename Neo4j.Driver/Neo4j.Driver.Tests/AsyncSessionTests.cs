@@ -70,18 +70,11 @@ public class AsyncSessionTests
         mockConn.Setup(
                 x => x.EnqueueAsync(
                     It.IsAny<IRequestMessage>(),
-                    It.IsAny<IResponseHandler>(),
-                    It.IsAny<IRequestMessage>(),
                     It.IsAny<IResponseHandler>()))
             .Returns(Task.CompletedTask)
-            .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
-                (m1, h1, m2, h2) =>
+            .Callback((IRequestMessage _, IResponseHandler h1) =>
                 {
                     h1.OnSuccess(new Dictionary<string, object>());
-                    if (m2 != null)
-                    {
-                        h2.OnSuccess(new Dictionary<string, object>());
-                    }
                 });
 
         if (protocol == null)
@@ -314,11 +307,9 @@ public class AsyncSessionTests
             mockConn.Setup(
                     x => x.EnqueueAsync(
                         It.IsAny<IRequestMessage>(),
-                        It.IsAny<IResponseHandler>(),
-                        It.IsAny<IRequestMessage>(),
                         It.IsAny<IResponseHandler>()))
-                .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
-                    (m1, h1, m2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
+                .Callback<IRequestMessage, IResponseHandler>(
+                    (m1, h1) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
             var session = NewSession(mockConn.Object);
             await session.RunAsync("lalal");

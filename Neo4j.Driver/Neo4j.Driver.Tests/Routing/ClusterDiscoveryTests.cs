@@ -145,23 +145,14 @@ public class ClusterDiscoveryTests
             MockConn.Setup(
                     x => x.EnqueueAsync(
                         It.IsAny<IRequestMessage>(),
-                        It.IsAny<IResponseHandler>(),
-                        It.IsAny<IRequestMessage>(),
                         It.IsAny<IResponseHandler>()))
                 .Returns(Task.CompletedTask)
-                .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
-                    (msg1, handler1, msg2, handler2) =>
+                .Callback<IRequestMessage, IResponseHandler>(
+                    (msg1, handler1) =>
                     {
                         msg1.ToString().Should().Be(_requestMessages[_requestCount].ToString());
                         _requestCount++;
                         _pipeline.Enqueue(handler1);
-
-                        if (msg2 != null)
-                        {
-                            msg2.ToString().Should().Be(_requestMessages[_requestCount].ToString());
-                            _requestCount++;
-                            _pipeline.Enqueue(handler2);
-                        }
                     });
 
             MockConn.Setup(x => x.ReceiveOneAsync())

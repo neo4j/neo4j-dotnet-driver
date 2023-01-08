@@ -185,9 +185,9 @@ public class SocketConnectionTests
             // When
             await con.EnqueueAsync(
                 new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("a query"), mode: AccessMode.Read),
-                NoOpResponseHandler.Instance,
-                PullAllMessage.Instance,
                 NoOpResponseHandler.Instance);
+
+            await con.EnqueueAsync(PullAllMessage.Instance, NoOpResponseHandler.Instance);
 
             // Then
             con.Messages.Count.Should().Be(2); // Run + PullAll
@@ -203,10 +203,8 @@ public class SocketConnectionTests
 
             await con.EnqueueAsync(
                 new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("query"), mode: AccessMode.Read),
-                NoOpResponseHandler.Instance,
-                PullAllMessage.Instance,
                 NoOpResponseHandler.Instance);
-
+            await con.EnqueueAsync(PullAllMessage.Instance, NoOpResponseHandler.Instance);
             pipeline.Verify(h => h.Enqueue(NoOpResponseHandler.Instance), Times.Exactly(2));
         }
     }

@@ -44,9 +44,7 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
 
     Task EnqueueAsync(
         IRequestMessage message1,
-        IResponseHandler handler1,
-        IRequestMessage message2 = null,
-        IResponseHandler handler2 = null);
+        IResponseHandler handler1);
 
     // Enqueue a reset message
     Task ResetAsync();

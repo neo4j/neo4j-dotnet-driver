@@ -33,10 +33,16 @@ internal sealed class BoltProtocol : IBoltProtocol
     public static readonly IBoltProtocol Instance = new BoltProtocol();
     private readonly LegacyBoltProtocol _legacyProtocol;
 
-    private BoltProtocol()
+    internal BoltProtocol(IBoltProtocolMessageFactory protocolMessageFactory = null,
+        IBoltProtocolHandlerFactory protocolHandlerFactory = null)
     {
+        _protocolMessageFactory = protocolMessageFactory ?? new BoltProtocolMessageFactory();
+        _protocolHandlerFactory = protocolHandlerFactory ?? new BoltProtocolResponseHandlerFactory();
         _legacyProtocol = LegacyBoltProtocol.Instance;
     }
+
+    private readonly IBoltProtocolMessageFactory _protocolMessageFactory;
+    private readonly IBoltProtocolHandlerFactory _protocolHandlerFactory;
 
     public async Task<IResultCursor> RunInAutoCommitTransactionAsync(
         IConnection connection,
@@ -45,41 +51,32 @@ internal sealed class BoltProtocol : IBoltProtocol
         LegacyBoltProtocol.ValidateImpersonatedUserForVersion(connection, autoCommitParams.ImpersonatedUser);
 
         var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
-        var streamBuilder = new ResultCursorBuilder(
+
+        var cursorBuilder = _protocolHandlerFactory.NewResultCursorBuilder(summaryBuilder,
+            connection,
+            autoCommitParams,
+            RequestMore,
+            CancelRequest);
+
+        var runMessage = _protocolMessageFactory.NewRunWithMetadataMessage(
             summaryBuilder,
-            connection.ReceiveOneAsync,
-            RequestMore(connection, summaryBuilder, autoCommitParams.BookmarksTracker),
-            CancelRequest(
-                connection,
-                summaryBuilder,
-                autoCommitParams.BookmarksTracker),
-            autoCommitParams.ResultResourceHandler,
-            autoCommitParams.FetchSize,
-            autoCommitParams.Reactive);
+            connection,
+            autoCommitParams);
 
-        var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
+        var runHandler = _protocolHandlerFactory.NewRunHandler(cursorBuilder, summaryBuilder);
+        await connection.EnqueueAsync(runMessage, runHandler).ConfigureAwait(false);
+        
+        if (autoCommitParams.Reactive)
+        {
+            var pullMessage = new PullMessage(autoCommitParams.FetchSize);
+            var pullHandler = new PullResponseHandler(cursorBuilder, summaryBuilder, autoCommitParams.BookmarksTracker);
 
-        var pullMessage = autoCommitParams.Reactive ? null : new PullMessage(autoCommitParams.FetchSize);
-        var pullHandler = autoCommitParams.Reactive
-            ? null
-            : new PullResponseHandler(streamBuilder, summaryBuilder, autoCommitParams.BookmarksTracker);
-
-        // Refactor to take AC Params
-        var message = new RunWithMetadataMessage(
-            connection.Version,
-            autoCommitParams.Query,
-            autoCommitParams.Bookmarks,
-            autoCommitParams.Config,
-            connection.Mode ?? throw new InvalidOperationException("Connection should have its Mode property set."),
-            autoCommitParams.Database,
-            autoCommitParams.ImpersonatedUser);
-
-        await connection.EnqueueAsync(message, runHandler, pullMessage, pullHandler)
-            .ConfigureAwait(false);
+            await connection.EnqueueAsync(pullMessage, pullHandler).ConfigureAwait(false);
+        }
 
         await connection.SendAsync().ConfigureAwait(false);
 
-        return streamBuilder.CreateCursor();
+        return cursorBuilder.CreateCursor();
     }
 
     public Task BeginTransactionAsync(
@@ -116,11 +113,11 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         await connection.EnqueueAsync(
                 new RunWithMetadataMessage(connection.Version, query),
-                runHandler,
-                pullMessage,
-                pullHandler)
+                runHandler)
             .ConfigureAwait(false);
-
+        await connection.EnqueueAsync(
+            pullMessage,
+            pullHandler).ConfigureAwait(false);
         await connection.SendAsync().ConfigureAwait(false);
         return streamBuilder.CreateCursor();
     }

@@ -245,9 +245,7 @@ internal sealed class SocketConnection : IConnection
 
     public async Task EnqueueAsync(
         IRequestMessage message1,
-        IResponseHandler handler1,
-        IRequestMessage message2 = null,
-        IResponseHandler handler2 = null)
+        IResponseHandler handler1)
     {
         await _sendLock.WaitAsync().ConfigureAwait(false);
 
@@ -255,12 +253,6 @@ internal sealed class SocketConnection : IConnection
         {
             _messages.Enqueue(message1);
             _responsePipeline.Enqueue(handler1);
-
-            if (message2 != null)
-            {
-                _messages.Enqueue(message2);
-                _responsePipeline.Enqueue(handler2);
-            }
         }
         finally
         {
