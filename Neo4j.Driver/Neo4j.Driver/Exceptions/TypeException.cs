@@ -23,7 +23,7 @@ namespace Neo4j.Driver;
 /// An error occurred related to data typing.
 /// </summary>
 [DataContract]
-[Neo4jErrorCode("Neo.ClientError.Statement.TypeError")]
+[ClientErrorCode("Neo.ClientError.Statement.TypeError")]
 public class TypeException : ClientException
 {
     /// <summary>

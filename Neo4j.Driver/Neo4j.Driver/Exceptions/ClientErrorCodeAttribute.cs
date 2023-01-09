@@ -24,15 +24,15 @@ namespace Neo4j.Driver;
 /// is the correct class to create when an error with the specified code is raised.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
-public class Neo4jErrorCodeAttribute : Attribute
+public class ClientErrorCodeAttribute : Attribute
 {
     public string Code { get; }
 
     /// <summary>
-    /// Creates a new instance of the <see cref="Neo4jErrorCodeAttribute"/> class.
+    /// Creates a new instance of the <see cref="ClientErrorCodeAttribute"/> class.
     /// </summary>
     /// <param name="code">The error code that the decorated class is the exception for.</param>
-    public Neo4jErrorCodeAttribute(string code)
+    public ClientErrorCodeAttribute(string code)
     {
         Code = code;
     }

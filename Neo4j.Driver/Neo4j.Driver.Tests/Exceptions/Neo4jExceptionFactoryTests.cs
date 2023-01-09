@@ -44,7 +44,7 @@ public class Neo4jExceptionFactoryTests
     [Theory, MemberData(nameof(CodeToTypeMapping))]
     public void ShouldCreateCorrectExceptionType(string code, Type exceptionType)
     {
-        var subject = new Neo4jExceptionFactory();
+        var subject = new ClientErrorExceptionFactory();
         var exception = subject.GetException(code, "testmessage");
         exception.Should().BeOfType(exceptionType);
         exception.Should().BeAssignableTo<Neo4jException>();

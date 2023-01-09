@@ -22,13 +22,13 @@ using System.Reflection;
 
 namespace Neo4j.Driver.Internal.ExceptionHandling;
 
-internal class Neo4jExceptionFactory
+internal class ClientErrorExceptionFactory
 {
     private record FactoryInfo(string Code, Func<string, string, Exception, Neo4jException> ExceptionFactory);
     private readonly List<FactoryInfo> _exceptionFactories = new();
     private readonly SimpleWildcardHelper _simpleWildcardHelper = new();
 
-    public Neo4jExceptionFactory()
+    public ClientErrorExceptionFactory()
     {
         // get all the types
         var codesAndExceptions = GetCodesAndExceptions();
@@ -45,7 +45,7 @@ internal class Neo4jExceptionFactory
                 exceptionType => new
                 {
                     exceptionType,
-                    attr = exceptionType.GetCustomAttribute<Neo4jErrorCodeAttribute>()
+                    attr = exceptionType.GetCustomAttribute<ClientErrorCodeAttribute>()
                 })
             .Where(t => t.attr is not null)
             .Select(t => (t.attr.Code, t.exceptionType))

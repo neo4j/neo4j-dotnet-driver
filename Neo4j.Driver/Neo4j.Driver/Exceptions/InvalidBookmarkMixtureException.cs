@@ -20,7 +20,7 @@ namespace Neo4j.Driver;
 /// <summary>
 /// The provided bookmark is invalid. To recover from this a new session needs to be created.
 /// </summary>
-[Neo4jErrorCode("Neo.ClientError.Transaction.InvalidBookmarkMixture")]
+[ClientErrorCode("Neo.ClientError.Transaction.InvalidBookmarkMixture")]
 public class InvalidBookmarkMixtureException : ClientException
 {
     /// <summary>

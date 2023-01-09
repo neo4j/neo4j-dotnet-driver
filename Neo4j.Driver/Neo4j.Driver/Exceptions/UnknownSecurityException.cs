@@ -23,7 +23,7 @@ namespace Neo4j.Driver;
 /// An unknown security error occurred.
 /// </summary>
 [DataContract]
-[Neo4jErrorCode("Neo.ClientError.Security.*")]
+[ClientErrorCode("Neo.ClientError.Security.*")]
 public class UnknownSecurityException : SecurityException
 {
     /// <summary>

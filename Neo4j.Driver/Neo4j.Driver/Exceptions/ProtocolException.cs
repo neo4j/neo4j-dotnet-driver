@@ -24,7 +24,7 @@ namespace Neo4j.Driver;
 /// When seen this error, contact driver developers.
 /// </summary>
 [DataContract]
-[Neo4jErrorCode("Neo.ClientError.Request.Invalid*")]
+[ClientErrorCode("Neo.ClientError.Request.Invalid*")]
 public class ProtocolException : Neo4jException
 {
     /// <summary>

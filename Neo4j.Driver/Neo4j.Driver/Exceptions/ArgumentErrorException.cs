@@ -24,7 +24,7 @@ namespace Neo4j.Driver;
 /// A generic argument error has occurred. To recover from this a new session needs to be created.
 /// </summary>
 [DataContract]
-[Neo4jErrorCode("Neo.ClientError.Statement.ArgumentError")]
+[ClientErrorCode("Neo.ClientError.Statement.ArgumentError")]
 public class ArgumentErrorException : ClientException
 {
     /// <summary>

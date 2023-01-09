@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal
 {
     internal static class ErrorExtensions
     {
-        private static Neo4jExceptionFactory _exceptionFactory = new();
+        private static ClientErrorExceptionFactory _clientErrorExceptionFactory = new();
 
         public static Neo4jException ParseServerException(string code, string message)
         {
@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Internal
             switch (classification)
             {
                 case "clienterror":
-                    error = _exceptionFactory.GetException(code, message);
+                    error = _clientErrorExceptionFactory.GetException(code, message);
                     break;
                 case "transienterror":
                     error = new TransientException(code, message);
