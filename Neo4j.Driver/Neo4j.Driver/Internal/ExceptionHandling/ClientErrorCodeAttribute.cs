@@ -17,14 +17,14 @@
 
 using System;
 
-namespace Neo4j.Driver;
+namespace Neo4j.Driver.Internal.ExceptionHandling;
 
 /// <summary>
 /// Use this attribute to decorate an exception class to declare that the class
 /// is the correct class to create when an error with the specified code is raised.
 /// </summary>
-[AttributeUsage(AttributeTargets.Class)]
-public class ClientErrorCodeAttribute : Attribute
+[AttributeUsage(AttributeTargets.Class, Inherited = false)]
+internal class ClientErrorCodeAttribute : Attribute
 {
     public string Code { get; }
 

@@ -65,7 +65,8 @@ internal class ClientErrorExceptionFactory
         // x comes before y if y matches x - this would happen if:
         // x = Error.Specific
         // y = Error.*
-        // otherwise the order doesn't matter
+        // this means that less-specific wildcards are at the end of the list, so the first
+        // matching wildcard will always be the most specific
 
         if (_simpleWildcardHelper.StringMatches(x.code, y.code))
         {

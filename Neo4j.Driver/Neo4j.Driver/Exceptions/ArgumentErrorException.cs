@@ -17,6 +17,7 @@
 
 using System;
 using System.Runtime.Serialization;
+using Neo4j.Driver.Internal.ExceptionHandling;
 
 namespace Neo4j.Driver;
 
