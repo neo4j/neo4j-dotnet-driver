@@ -26,7 +26,7 @@ namespace Neo4j.Driver;
 [DataContract]
 public class ServiceUnavailableException : Neo4jException
 {
-    internal override bool CanBeRetried => true;
+    internal override bool IsRetriable => true;
 
     /// <summary>
     /// Create a new <see cref="ServiceUnavailableException"/> with an error message.

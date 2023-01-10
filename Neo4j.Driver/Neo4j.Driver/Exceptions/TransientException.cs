@@ -28,7 +28,7 @@ namespace Neo4j.Driver;
 [DataContract]
 public class TransientException : Neo4jException
 {
-    internal override bool CanBeRetried => true;
+    internal override bool IsRetriable => true;
 
     /// <summary>
     /// Create a new <see cref="TransientException"/>.

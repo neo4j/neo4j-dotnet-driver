@@ -51,7 +51,7 @@ namespace Neo4j.Driver.Internal
 
         public static bool CanBeRetried(this Exception error)
         {
-            return error is Neo4jException neo4JException && neo4JException.CanBeRetried;
+            return error is Neo4jException neo4JException && neo4JException.IsRetriable;
         }
 
         public static bool IsRecoverableError(this Exception error)

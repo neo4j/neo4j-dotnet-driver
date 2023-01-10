@@ -26,7 +26,11 @@ namespace Neo4j.Driver
     [DataContract]
     public class Neo4jException : Exception
     {
-        internal virtual bool CanBeRetried => false;
+        /// <summary>
+        /// Gets whether the exception retriable or not.
+        /// </summary>
+        internal virtual bool IsRetriable => false;
+
         /// <summary>
         /// Create a new <see cref="Neo4jException"/>
         /// </summary>
