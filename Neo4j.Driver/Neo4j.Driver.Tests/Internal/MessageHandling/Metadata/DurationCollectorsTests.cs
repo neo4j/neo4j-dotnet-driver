@@ -19,136 +19,137 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
-
-public class TimeToFirstCollectorTests
+namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
-    private const string Key = TimeToFirstCollector.TimeToFirstKey;
-
-    internal static KeyValuePair<string, object> TestMetadata => new(Key, 35L);
-
-    internal static long TestMetadataCollected => 35L;
-
-    [Fact]
-    public void ShouldNotCollectIfMetadataIsNull()
+    public class TimeToFirstCollectorTests
     {
-        var collector = new TimeToFirstCollector();
+        private const string Key = TimeToFirstCollector.TimeToFirstKey;
 
-        collector.Collect(null);
+        internal static KeyValuePair<string, object> TestMetadata => new(Key, 35L);
 
-        collector.Collected.Should().Be(-1);
+        internal static long TestMetadataCollected => 35L;
+
+        [Fact]
+        public void ShouldNotCollectIfMetadataIsNull()
+        {
+            var collector = new TimeToFirstCollector();
+
+            collector.Collect(null);
+
+            collector.Collected.Should().Be(-1);
+        }
+
+        [Fact]
+        public void ShouldNotCollectIfNoValueIsGiven()
+        {
+            var collector = new TimeToFirstCollector();
+
+            collector.Collect(new Dictionary<string, object>());
+
+            collector.Collected.Should().Be(-1);
+        }
+
+        [Fact]
+        public void ShouldThrowIfValueIsOfWrongType()
+        {
+            var metadata = new Dictionary<string, object> { { Key, false } };
+            var collector = new TimeToFirstCollector();
+
+            var ex = Record.Exception(() => collector.Collect(metadata));
+
+            ex.Should()
+                .BeOfType<ProtocolException>()
+                .Which
+                .Message.Should()
+                .Contain($"Expected '{Key}' metadata to be of type 'Int64', but got 'Boolean'.");
+        }
+
+        [Fact]
+        public void ShouldCollect()
+        {
+            var metadata = new Dictionary<string, object> { { Key, 5L } };
+            var collector = new TimeToFirstCollector();
+
+            collector.Collect(metadata);
+
+            collector.Collected.Should().Be(5L);
+        }
+
+        [Fact]
+        public void ShouldReturnSameCollected()
+        {
+            var metadata = new Dictionary<string, object> { { Key, 5L } };
+            var collector = new TimeToFirstCollector();
+
+            collector.Collect(metadata);
+
+            ((IMetadataCollector)collector).Collected.Should().Be(collector.Collected);
+        }
     }
 
-    [Fact]
-    public void ShouldNotCollectIfNoValueIsGiven()
+    public class TimeToLastCollectorTests
     {
-        var collector = new TimeToFirstCollector();
+        private const string Key = TimeToLastCollector.TimeToLastKey;
 
-        collector.Collect(new Dictionary<string, object>());
+        internal static KeyValuePair<string, object> TestMetadata => new(Key, 45L);
 
-        collector.Collected.Should().Be(-1);
-    }
+        internal static long TestMetadataCollected => 45L;
 
-    [Fact]
-    public void ShouldThrowIfValueIsOfWrongType()
-    {
-        var metadata = new Dictionary<string, object> { { Key, false } };
-        var collector = new TimeToFirstCollector();
+        [Fact]
+        public void ShouldNotCollectIfMetadataIsNull()
+        {
+            var collector = new TimeToLastCollector();
 
-        var ex = Record.Exception(() => collector.Collect(metadata));
+            collector.Collect(null);
 
-        ex.Should()
-            .BeOfType<ProtocolException>()
-            .Which
-            .Message.Should()
-            .Contain($"Expected '{Key}' metadata to be of type 'Int64', but got 'Boolean'.");
-    }
+            collector.Collected.Should().Be(-1);
+        }
 
-    [Fact]
-    public void ShouldCollect()
-    {
-        var metadata = new Dictionary<string, object> { { Key, 5L } };
-        var collector = new TimeToFirstCollector();
+        [Fact]
+        public void ShouldNotCollectIfNoValueIsGiven()
+        {
+            var collector = new TimeToLastCollector();
 
-        collector.Collect(metadata);
+            collector.Collect(new Dictionary<string, object>());
 
-        collector.Collected.Should().Be(5L);
-    }
+            collector.Collected.Should().Be(-1);
+        }
 
-    [Fact]
-    public void ShouldReturnSameCollected()
-    {
-        var metadata = new Dictionary<string, object> { { Key, 5L } };
-        var collector = new TimeToFirstCollector();
+        [Fact]
+        public void ShouldThrowIfValueIsOfWrongType()
+        {
+            var metadata = new Dictionary<string, object> { { Key, false } };
+            var collector = new TimeToLastCollector();
 
-        collector.Collect(metadata);
+            var ex = Record.Exception(() => collector.Collect(metadata));
 
-        ((IMetadataCollector)collector).Collected.Should().Be(collector.Collected);
-    }
-}
+            ex.Should()
+                .BeOfType<ProtocolException>()
+                .Which
+                .Message.Should()
+                .Contain($"Expected '{Key}' metadata to be of type 'Int64', but got 'Boolean'.");
+        }
 
-public class TimeToLastCollectorTests
-{
-    private const string Key = TimeToLastCollector.TimeToLastKey;
+        [Fact]
+        public void ShouldCollect()
+        {
+            var metadata = new Dictionary<string, object> { { Key, 5L } };
+            var collector = new TimeToLastCollector();
 
-    internal static KeyValuePair<string, object> TestMetadata => new(Key, 45L);
+            collector.Collect(metadata);
 
-    internal static long TestMetadataCollected => 45L;
+            collector.Collected.Should().Be(5L);
+        }
 
-    [Fact]
-    public void ShouldNotCollectIfMetadataIsNull()
-    {
-        var collector = new TimeToLastCollector();
+        [Fact]
+        public void ShouldReturnSameCollected()
+        {
+            var metadata = new Dictionary<string, object> { { Key, 5L } };
+            var collector = new TimeToLastCollector();
 
-        collector.Collect(null);
+            collector.Collect(metadata);
 
-        collector.Collected.Should().Be(-1);
-    }
-
-    [Fact]
-    public void ShouldNotCollectIfNoValueIsGiven()
-    {
-        var collector = new TimeToLastCollector();
-
-        collector.Collect(new Dictionary<string, object>());
-
-        collector.Collected.Should().Be(-1);
-    }
-
-    [Fact]
-    public void ShouldThrowIfValueIsOfWrongType()
-    {
-        var metadata = new Dictionary<string, object> { { Key, false } };
-        var collector = new TimeToLastCollector();
-
-        var ex = Record.Exception(() => collector.Collect(metadata));
-
-        ex.Should()
-            .BeOfType<ProtocolException>()
-            .Which
-            .Message.Should()
-            .Contain($"Expected '{Key}' metadata to be of type 'Int64', but got 'Boolean'.");
-    }
-
-    [Fact]
-    public void ShouldCollect()
-    {
-        var metadata = new Dictionary<string, object> { { Key, 5L } };
-        var collector = new TimeToLastCollector();
-
-        collector.Collect(metadata);
-
-        collector.Collected.Should().Be(5L);
-    }
-
-    [Fact]
-    public void ShouldReturnSameCollected()
-    {
-        var metadata = new Dictionary<string, object> { { Key, 5L } };
-        var collector = new TimeToLastCollector();
-
-        collector.Collect(metadata);
-
-        ((IMetadataCollector)collector).Collected.Should().Be(collector.Collected);
+            ((IMetadataCollector)collector).Collected.Should().Be(collector.Collected);
+        }
     }
 }

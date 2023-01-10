@@ -18,21 +18,22 @@
 using Microsoft.Reactive.Testing;
 using Xunit.Abstractions;
 
-namespace Neo4j.Driver.Reactive;
-
-public abstract class AbstractRxTest : ReactiveTest
+namespace Neo4j.Driver.Reactive
 {
-    protected AbstractRxTest()
-        : this(null)
+    public abstract class AbstractRxTest : ReactiveTest
     {
-    }
+        protected AbstractRxTest()
+            : this(null)
+        {
+        }
 
-    protected AbstractRxTest(ITestOutputHelper output)
-    {
-        Output = output;
-        Scheduler = new TestScheduler();
-    }
+        protected AbstractRxTest(ITestOutputHelper output)
+        {
+            Output = output;
+            Scheduler = new TestScheduler();
+        }
 
-    protected ITestOutputHelper Output { get; }
-    protected TestScheduler Scheduler { get; }
+        protected ITestOutputHelper Output { get; }
+        protected TestScheduler Scheduler { get; }
+    }
 }

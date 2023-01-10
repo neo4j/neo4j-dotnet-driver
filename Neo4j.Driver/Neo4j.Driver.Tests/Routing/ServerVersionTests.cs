@@ -20,63 +20,64 @@ using FluentAssertions;
 using Neo4j.Driver.Internal.Util;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.Routing;
-
-public class ServerVersionTests
+namespace Neo4j.Driver.Tests.Routing
 {
-    [Theory]
-    [InlineData("3.2")]
-    [InlineData("3.2-alpha01")]
-    [InlineData("3.2.0-alpha01")]
-    [InlineData("Neo4j/3.2")]
-    public void ShouldHandleMajorMinorVersion(string version)
+    public class ServerVersionTests
     {
-        var serverVersion = ServerVersion.From(version);
-        serverVersion.Major.Should().Be(3);
-        serverVersion.Minor.Should().Be(2);
-        serverVersion.Patch.Should().Be(0);
-    }
+        [Theory]
+        [InlineData("3.2")]
+        [InlineData("3.2-alpha01")]
+        [InlineData("3.2.0-alpha01")]
+        [InlineData("Neo4j/3.2")]
+        public void ShouldHandleMajorMinorVersion(string version)
+        {
+            var serverVersion = ServerVersion.From(version);
+            serverVersion.Major.Should().Be(3);
+            serverVersion.Minor.Should().Be(2);
+            serverVersion.Patch.Should().Be(0);
+        }
 
-    [Theory]
-    [InlineData("3.2.1")]
-    [InlineData("Neo4j/3.2.1")]
-    public void ShouldHandleMajorMinorPatchVersion(string version)
-    {
-        var serverVersion = ServerVersion.From(version);
-        serverVersion.Major.Should().Be(3);
-        serverVersion.Minor.Should().Be(2);
-        serverVersion.Patch.Should().Be(1);
-    }
+        [Theory]
+        [InlineData("3.2.1")]
+        [InlineData("Neo4j/3.2.1")]
+        public void ShouldHandleMajorMinorPatchVersion(string version)
+        {
+            var serverVersion = ServerVersion.From(version);
+            serverVersion.Major.Should().Be(3);
+            serverVersion.Minor.Should().Be(2);
+            serverVersion.Patch.Should().Be(1);
+        }
 
-    [Fact]
-    public void ShouldHandleDevVersion()
-    {
-        var version = "Neo4j/dev";
-        var serverVersion = ServerVersion.From(version);
-        serverVersion.Major.Should().Be(int.MaxValue);
-        serverVersion.Minor.Should().Be(int.MaxValue);
-        serverVersion.Patch.Should().Be(int.MaxValue);
-    }
+        [Fact]
+        public void ShouldHandleDevVersion()
+        {
+            var version = "Neo4j/dev";
+            var serverVersion = ServerVersion.From(version);
+            serverVersion.Major.Should().Be(int.MaxValue);
+            serverVersion.Minor.Should().Be(int.MaxValue);
+            serverVersion.Patch.Should().Be(int.MaxValue);
+        }
 
-    [Theory]
-    [InlineData("Neo4j/illegal")]
-    [InlineData("Neo4j/3-alpha2")]
-    [InlineData("Illegal")]
-    [InlineData("\t\r\n")]
-    public void ShouldThrowWhenVersionNotRecognized(string version)
-    {
-        var exc = Record.Exception(() => ServerVersion.From(version));
+        [Theory]
+        [InlineData("Neo4j/illegal")]
+        [InlineData("Neo4j/3-alpha2")]
+        [InlineData("Illegal")]
+        [InlineData("\t\r\n")]
+        public void ShouldThrowWhenVersionNotRecognized(string version)
+        {
+            var exc = Record.Exception(() => ServerVersion.From(version));
 
-        exc.Should().BeOfType<ArgumentOutOfRangeException>();
-    }
+            exc.Should().BeOfType<ArgumentOutOfRangeException>();
+        }
 
-    [Theory]
-    [InlineData("")]
-    [InlineData(null)]
-    public void ShouldThrowWhenVersionIsNullOrEmpty(string version)
-    {
-        var exc = Record.Exception(() => ServerVersion.From(version));
+        [Theory]
+        [InlineData("")]
+        [InlineData(null)]
+        public void ShouldThrowWhenVersionIsNullOrEmpty(string version)
+        {
+            var exc = Record.Exception(() => ServerVersion.From(version));
 
-        exc.Should().BeOfType<ArgumentNullException>();
+            exc.Should().BeOfType<ArgumentNullException>();
+        }
     }
 }

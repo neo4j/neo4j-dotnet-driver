@@ -21,55 +21,56 @@ using System.Linq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO.Utils;
 
-namespace Neo4j.Driver.Internal.IO;
-
-public abstract class PackStreamSerializerTests
+namespace Neo4j.Driver.Internal.IO
 {
-    internal abstract IPackStreamSerializer SerializerUnderTest { get; }
-
-    internal virtual IEnumerable<IPackStreamSerializer> SerializersNeeded =>
-        Enumerable.Empty<IPackStreamSerializer>();
-
-    internal virtual PackStreamWriterMachine CreateWriterMachine()
+    public abstract class PackStreamSerializerTests
     {
-        var writerHandlersDict = SerializersNeeded.Union(new[] { SerializerUnderTest })
-            .SelectMany(
-                h => h.WritableTypes,
-                (handler, type) => new KeyValuePair<Type, IPackStreamSerializer>(type, handler))
-            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        internal abstract IPackStreamSerializer SerializerUnderTest { get; }
 
-        var format = new MessageFormat(writerHandlersDict);
+        internal virtual IEnumerable<IPackStreamSerializer> SerializersNeeded =>
+            Enumerable.Empty<IPackStreamSerializer>();
 
-        return new PackStreamWriterMachine(stream => new PackStreamWriter(format, stream));
-    }
+        internal virtual PackStreamWriterMachine CreateWriterMachine()
+        {
+            var writerHandlersDict = SerializersNeeded.Union(new[] { SerializerUnderTest })
+                .SelectMany(
+                    h => h.WritableTypes,
+                    (handler, type) => new KeyValuePair<Type, IPackStreamSerializer>(type, handler))
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
-    internal virtual PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
-    {
-        var readerHandlersDict = SerializersNeeded.Union(new[] { SerializerUnderTest })
-            .SelectMany(
-                h => h.ReadableStructs,
-                (handler, signature) => new KeyValuePair<byte, IPackStreamSerializer>(signature, handler))
-            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            var format = new MessageFormat(writerHandlersDict);
 
-        var format = new MessageFormat(null, readerHandlersDict);
+            return new PackStreamWriterMachine(stream => new PackStreamWriter(format, stream));
+        }
 
-        return new PackStreamReaderMachine(
-            bytes,
-            stream => new PackStreamReader(format, stream, new ByteBuffers()));
-    }
+        internal virtual PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
+        {
+            var readerHandlersDict = SerializersNeeded.Union(new[] { SerializerUnderTest })
+                .SelectMany(
+                    h => h.ReadableStructs,
+                    (handler, signature) => new KeyValuePair<byte, IPackStreamSerializer>(signature, handler))
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
-    internal PackStreamWriterMachine CreateWriterMachine(BoltProtocolVersion version)
-    {
-        var format = new MessageFormat(version);
+            var format = new MessageFormat(null, readerHandlersDict);
 
-        return new PackStreamWriterMachine(stream => new PackStreamWriter(format, stream));
-    }
+            return new PackStreamReaderMachine(
+                bytes,
+                stream => new PackStreamReader(format, stream, new ByteBuffers()));
+        }
 
-    internal PackStreamReaderMachine CreateReaderMachine(BoltProtocolVersion version, byte[] bytes)
-    {
-        var format = new MessageFormat(version);
-        return new PackStreamReaderMachine(
-            bytes,
-            stream => new PackStreamReader(format, stream, new ByteBuffers()));
+        internal PackStreamWriterMachine CreateWriterMachine(BoltProtocolVersion version)
+        {
+            var format = new MessageFormat(version);
+
+            return new PackStreamWriterMachine(stream => new PackStreamWriter(format, stream));
+        }
+
+        internal PackStreamReaderMachine CreateReaderMachine(BoltProtocolVersion version, byte[] bytes)
+        {
+            var format = new MessageFormat(version);
+            return new PackStreamReaderMachine(
+                bytes,
+                stream => new PackStreamReader(format, stream, new ByteBuffers()));
+        }
     }
 }

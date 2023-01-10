@@ -21,89 +21,16 @@ using Neo4j.Driver.Internal.Result;
 using Xunit;
 using Record = Xunit.Record;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
-
-public class NotificationsCollectorTests
+namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
-    public const string Key = NotificationsCollector.NotificationsKey;
-
-    internal static KeyValuePair<string, object> TestMetadata =>
-        new(
-            Key,
-            new List<object>
-            {
-                new Dictionary<string, object>
-                {
-                    { "code", "code1" },
-                    { "title", "title1" },
-                    { "description", "description1" },
-                    { "severity", "severity1" },
-                    {
-                        "position", new Dictionary<string, object>
-                        {
-                            { "offset", 1L },
-                            { "line", 2L },
-                            { "column", 3L }
-                        }
-                    }
-                }
-            });
-
-    internal static IList<INotification> TestMetadataCollected => new List<INotification>
-        { new Notification("code1", "title1", "description1", new InputPosition(1, 2, 3), "severity1") };
-
-    [Fact]
-    public void ShouldNotCollectIfMetadataIsNull()
+    public class NotificationsCollectorTests
     {
-        var collector = new NotificationsCollector();
+        public const string Key = NotificationsCollector.NotificationsKey;
 
-        collector.Collect(null);
-
-        collector.Collected.Should().BeNull();
-    }
-
-    [Fact]
-    public void ShouldNotCollectIfNoValueIsGiven()
-    {
-        var collector = new NotificationsCollector();
-
-        collector.Collect(new Dictionary<string, object>());
-
-        collector.Collected.Should().BeNull();
-    }
-
-    [Fact]
-    public void ShouldNotCollectIfValueIsNull()
-    {
-        var collector = new NotificationsCollector();
-
-        collector.Collect(new Dictionary<string, object> { { Key, null } });
-
-        collector.Collected.Should().BeNull();
-    }
-
-    [Fact]
-    public void ShouldThrowIfValueIsOfWrongType()
-    {
-        var metadata = new Dictionary<string, object> { { Key, 3 } };
-        var collector = new NotificationsCollector();
-
-        var ex = Record.Exception(() => collector.Collect(metadata));
-
-        ex.Should()
-            .BeOfType<ProtocolException>()
-            .Which
-            .Message.Should()
-            .Contain($"Expected '{Key}' metadata to be of type 'List<Object>', but got 'Int32'.");
-    }
-
-    [Fact]
-    public void ShouldCollect()
-    {
-        var metadata = new Dictionary<string, object>
-        {
-            {
-                Key, new List<object>
+        internal static KeyValuePair<string, object> TestMetadata =>
+            new(
+                Key,
+                new List<object>
                 {
                     new Dictionary<string, object>
                     {
@@ -120,116 +47,190 @@ public class NotificationsCollectorTests
                             }
                         }
                     }
-                }
-            }
-        };
+                });
 
-        var collector = new NotificationsCollector();
+        internal static IList<INotification> TestMetadataCollected => new List<INotification>
+            { new Notification("code1", "title1", "description1", new InputPosition(1, 2, 3), "severity1") };
 
-        collector.Collect(metadata);
-
-        collector.Collected.Should()
-            .BeEquivalentTo(
-                new Notification(
-                    "code1",
-                    "title1",
-                    "description1",
-                    new InputPosition(1, 2, 3),
-                    "severity1"));
-    }
-
-    [Fact]
-    public void ShouldCollectList()
-    {
-        var metadata = new Dictionary<string, object>
+        [Fact]
+        public void ShouldNotCollectIfMetadataIsNull()
         {
+            var collector = new NotificationsCollector();
+
+            collector.Collect(null);
+
+            collector.Collected.Should().BeNull();
+        }
+
+        [Fact]
+        public void ShouldNotCollectIfNoValueIsGiven()
+        {
+            var collector = new NotificationsCollector();
+
+            collector.Collect(new Dictionary<string, object>());
+
+            collector.Collected.Should().BeNull();
+        }
+
+        [Fact]
+        public void ShouldNotCollectIfValueIsNull()
+        {
+            var collector = new NotificationsCollector();
+
+            collector.Collect(new Dictionary<string, object> { { Key, null } });
+
+            collector.Collected.Should().BeNull();
+        }
+
+        [Fact]
+        public void ShouldThrowIfValueIsOfWrongType()
+        {
+            var metadata = new Dictionary<string, object> { { Key, 3 } };
+            var collector = new NotificationsCollector();
+
+            var ex = Record.Exception(() => collector.Collect(metadata));
+
+            ex.Should()
+                .BeOfType<ProtocolException>()
+                .Which
+                .Message.Should()
+                .Contain($"Expected '{Key}' metadata to be of type 'List<Object>', but got 'Int32'.");
+        }
+
+        [Fact]
+        public void ShouldCollect()
+        {
+            var metadata = new Dictionary<string, object>
             {
-                Key, new List<object>
                 {
-                    new Dictionary<string, object>
+                    Key, new List<object>
                     {
-                        { "code", "code1" },
-                        { "title", "title1" },
-                        { "description", "description1" },
-                        { "severity", "severity1" },
+                        new Dictionary<string, object>
                         {
-                            "position", new Dictionary<string, object>
+                            { "code", "code1" },
+                            { "title", "title1" },
+                            { "description", "description1" },
+                            { "severity", "severity1" },
                             {
-                                { "offset", 1L },
-                                { "line", 2L },
-                                { "column", 3L }
-                            }
-                        }
-                    },
-                    new Dictionary<string, object>
-                    {
-                        { "code", "code2" },
-                        { "title", "title2" },
-                        { "description", "description2" },
-                        { "severity", "severity2" },
-                        {
-                            "position", new Dictionary<string, object>
-                            {
-                                { "offset", 4L },
-                                { "line", 5L }
+                                "position", new Dictionary<string, object>
+                                {
+                                    { "offset", 1L },
+                                    { "line", 2L },
+                                    { "column", 3L }
+                                }
                             }
                         }
                     }
                 }
-            }
-        };
+            };
 
-        var collector = new NotificationsCollector();
+            var collector = new NotificationsCollector();
 
-        collector.Collect(metadata);
+            collector.Collect(metadata);
 
-        collector.Collected.Should()
-            .BeEquivalentTo(
-                new Notification(
-                    "code1",
-                    "title1",
-                    "description1",
-                    new InputPosition(1, 2, 3),
-                    "severity1"),
-                new Notification(
-                    "code2",
-                    "title2",
-                    "description2",
-                    new InputPosition(4, 5, 0),
-                    "severity2"));
-    }
+            collector.Collected.Should()
+                .BeEquivalentTo(
+                    new Notification(
+                        "code1",
+                        "title1",
+                        "description1",
+                        new InputPosition(1, 2, 3),
+                        "severity1"));
+        }
 
-    [Fact]
-    public void ShouldReturnSameCollected()
-    {
-        var metadata = new Dictionary<string, object>
+        [Fact]
+        public void ShouldCollectList()
         {
+            var metadata = new Dictionary<string, object>
             {
-                Key, new List<object>
                 {
-                    new Dictionary<string, object>
+                    Key, new List<object>
                     {
-                        { "code", "code1" },
-                        { "title", "title1" },
-                        { "description", "description1" },
-                        { "severity", "severity1" },
+                        new Dictionary<string, object>
                         {
-                            "position", new Dictionary<string, object>
+                            { "code", "code1" },
+                            { "title", "title1" },
+                            { "description", "description1" },
+                            { "severity", "severity1" },
                             {
-                                { "offset", 1L },
-                                { "line", 2L },
-                                { "column", 3L }
+                                "position", new Dictionary<string, object>
+                                {
+                                    { "offset", 1L },
+                                    { "line", 2L },
+                                    { "column", 3L }
+                                }
+                            }
+                        },
+                        new Dictionary<string, object>
+                        {
+                            { "code", "code2" },
+                            { "title", "title2" },
+                            { "description", "description2" },
+                            { "severity", "severity2" },
+                            {
+                                "position", new Dictionary<string, object>
+                                {
+                                    { "offset", 4L },
+                                    { "line", 5L }
+                                }
                             }
                         }
                     }
                 }
-            }
-        };
+            };
 
-        var collector = new NotificationsCollector();
+            var collector = new NotificationsCollector();
 
-        collector.Collect(metadata);
+            collector.Collect(metadata);
 
-        ((IMetadataCollector)collector).Collected.Should().BeSameAs(collector.Collected);
+            collector.Collected.Should()
+                .BeEquivalentTo(
+                    new Notification(
+                        "code1",
+                        "title1",
+                        "description1",
+                        new InputPosition(1, 2, 3),
+                        "severity1"),
+                    new Notification(
+                        "code2",
+                        "title2",
+                        "description2",
+                        new InputPosition(4, 5, 0),
+                        "severity2"));
+        }
+
+        [Fact]
+        public void ShouldReturnSameCollected()
+        {
+            var metadata = new Dictionary<string, object>
+            {
+                {
+                    Key, new List<object>
+                    {
+                        new Dictionary<string, object>
+                        {
+                            { "code", "code1" },
+                            { "title", "title1" },
+                            { "description", "description1" },
+                            { "severity", "severity1" },
+                            {
+                                "position", new Dictionary<string, object>
+                                {
+                                    { "offset", 1L },
+                                    { "line", 2L },
+                                    { "column", 3L }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            var collector = new NotificationsCollector();
+
+            collector.Collect(metadata);
+
+            ((IMetadataCollector)collector).Collected.Should().BeSameAs(collector.Collected);
+        }
     }
 }

@@ -18,52 +18,53 @@
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
-
-public class DurationSerializerTests : PackStreamSerializerTests
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
 {
-    internal override IPackStreamSerializer SerializerUnderTest => new DurationSerializer();
-
-    [Fact]
-    public void ShouldSerializeDuration()
+    public class DurationSerializerTests : PackStreamSerializerTests
     {
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+        internal override IPackStreamSerializer SerializerUnderTest => new DurationSerializer();
 
-        writer.Write(new Duration(10, 4, 300, 120));
+        [Fact]
+        public void ShouldSerializeDuration()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var reader = readerMachine.Reader();
+            writer.Write(new Duration(10, 4, 300, 120));
 
-        reader.PeekNextType().Should().Be(PackStreamType.Struct);
-        reader.ReadStructHeader().Should().Be(4);
-        reader.ReadStructSignature().Should().Be((byte)'E');
-        reader.Read().Should().Be(10L);
-        reader.Read().Should().Be(4L);
-        reader.Read().Should().Be(300L);
-        reader.ReadInteger().Should().Be(120);
-    }
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var reader = readerMachine.Reader();
 
-    [Fact]
-    public void ShouldDeserializeDuration()
-    {
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
+            reader.ReadStructHeader().Should().Be(4);
+            reader.ReadStructSignature().Should().Be((byte)'E');
+            reader.Read().Should().Be(10L);
+            reader.Read().Should().Be(4L);
+            reader.Read().Should().Be(300L);
+            reader.ReadInteger().Should().Be(120);
+        }
 
-        writer.WriteStructHeader(DurationSerializer.StructSize, DurationSerializer.StructType);
-        writer.Write(21L);
-        writer.Write(8L);
-        writer.Write(564L);
-        writer.Write(865);
+        [Fact]
+        public void ShouldDeserializeDuration()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var reader = readerMachine.Reader();
-        var value = reader.Read();
+            writer.WriteStructHeader(DurationSerializer.StructSize, DurationSerializer.StructType);
+            writer.Write(21L);
+            writer.Write(8L);
+            writer.Write(564L);
+            writer.Write(865);
 
-        value.Should().NotBeNull();
-        value.Should().BeOfType<Duration>().Which.Months.Should().Be(21L);
-        value.Should().BeOfType<Duration>().Which.Days.Should().Be(8L);
-        value.Should().BeOfType<Duration>().Which.Seconds.Should().Be(564L);
-        value.Should().BeOfType<Duration>().Which.Nanos.Should().Be(865);
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var reader = readerMachine.Reader();
+            var value = reader.Read();
+
+            value.Should().NotBeNull();
+            value.Should().BeOfType<Duration>().Which.Months.Should().Be(21L);
+            value.Should().BeOfType<Duration>().Which.Days.Should().Be(8L);
+            value.Should().BeOfType<Duration>().Which.Seconds.Should().Be(564L);
+            value.Should().BeOfType<Duration>().Which.Nanos.Should().Be(865);
+        }
     }
 }

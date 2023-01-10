@@ -20,72 +20,73 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
-
-public class SystemDateTimeSerializerTests : PackStreamSerializerTests
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
 {
-    internal override IPackStreamSerializer SerializerUnderTest => new SystemDateTimeSerializer();
-
-    internal override IEnumerable<IPackStreamSerializer> SerializersNeeded => new IPackStreamSerializer[]
+    public class SystemDateTimeSerializerTests : PackStreamSerializerTests
     {
-        new LocalDateTimeSerializer(), new ZonedDateTimeSerializer()
-    };
+        internal override IPackStreamSerializer SerializerUnderTest => new SystemDateTimeSerializer();
 
-    [Fact]
-    public void ShouldSerializeDateTimeLocal()
-    {
-        var dateTime = new DateTime(1978, 12, 16, 12, 35, 59, 999, DateTimeKind.Local);
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+        internal override IEnumerable<IPackStreamSerializer> SerializersNeeded => new IPackStreamSerializer[]
+        {
+            new LocalDateTimeSerializer(), new ZonedDateTimeSerializer()
+        };
 
-        writer.Write(dateTime);
+        [Fact]
+        public void ShouldSerializeDateTimeLocal()
+        {
+            var dateTime = new DateTime(1978, 12, 16, 12, 35, 59, 999, DateTimeKind.Local);
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var reader = readerMachine.Reader();
+            writer.Write(dateTime);
 
-        reader.PeekNextType().Should().Be(PackStreamType.Struct);
-        reader.ReadStructHeader().Should().Be(2);
-        reader.ReadStructSignature().Should().Be((byte)'d');
-        reader.Read().Should().Be(282659759L);
-        reader.Read().Should().Be(999000000L);
-    }
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var reader = readerMachine.Reader();
 
-    [Fact]
-    public void ShouldSerializeDateTimeUnspecified()
-    {
-        var dateTime = new DateTime(1978, 12, 16, 12, 35, 59, 999, DateTimeKind.Unspecified);
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
+            reader.ReadStructHeader().Should().Be(2);
+            reader.ReadStructSignature().Should().Be((byte)'d');
+            reader.Read().Should().Be(282659759L);
+            reader.Read().Should().Be(999000000L);
+        }
 
-        writer.Write(dateTime);
+        [Fact]
+        public void ShouldSerializeDateTimeUnspecified()
+        {
+            var dateTime = new DateTime(1978, 12, 16, 12, 35, 59, 999, DateTimeKind.Unspecified);
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var reader = readerMachine.Reader();
+            writer.Write(dateTime);
 
-        reader.PeekNextType().Should().Be(PackStreamType.Struct);
-        reader.ReadStructHeader().Should().Be(2);
-        reader.ReadStructSignature().Should().Be((byte)'d');
-        reader.Read().Should().Be(282659759L);
-        reader.Read().Should().Be(999000000L);
-    }
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var reader = readerMachine.Reader();
 
-    [Fact]
-    public void ShouldSerializeDateTimeUtc()
-    {
-        var dateTime = new DateTime(1978, 12, 16, 12, 35, 59, 999, DateTimeKind.Utc);
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
+            reader.ReadStructHeader().Should().Be(2);
+            reader.ReadStructSignature().Should().Be((byte)'d');
+            reader.Read().Should().Be(282659759L);
+            reader.Read().Should().Be(999000000L);
+        }
 
-        writer.Write(dateTime);
+        [Fact]
+        public void ShouldSerializeDateTimeUtc()
+        {
+            var dateTime = new DateTime(1978, 12, 16, 12, 35, 59, 999, DateTimeKind.Utc);
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var reader = readerMachine.Reader();
+            writer.Write(dateTime);
 
-        reader.PeekNextType().Should().Be(PackStreamType.Struct);
-        reader.ReadStructHeader().Should().Be(3);
-        reader.ReadStructSignature().Should().Be((byte)'F');
-        reader.Read().Should().Be(282659759L);
-        reader.Read().Should().Be(999000000L);
-        reader.Read().Should().Be(0L);
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var reader = readerMachine.Reader();
+
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
+            reader.ReadStructHeader().Should().Be(3);
+            reader.ReadStructSignature().Should().Be((byte)'F');
+            reader.Read().Should().Be(282659759L);
+            reader.Read().Should().Be(999000000L);
+            reader.Read().Should().Be(0L);
+        }
     }
 }

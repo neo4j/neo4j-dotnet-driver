@@ -20,34 +20,35 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
-
-public class SystemDateTimeOffsetHandlerTests : PackStreamSerializerTests
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
 {
-    internal override IPackStreamSerializer SerializerUnderTest => new SystemDateTimeOffsetSerializer();
-
-    internal override IEnumerable<IPackStreamSerializer> SerializersNeeded => new IPackStreamSerializer[]
+    public class SystemDateTimeOffsetHandlerTests : PackStreamSerializerTests
     {
-        new ZonedDateTimeSerializer()
-    };
+        internal override IPackStreamSerializer SerializerUnderTest => new SystemDateTimeOffsetSerializer();
 
-    [Fact]
-    public void ShouldSerializeDateTimeOffset()
-    {
-        var dateTime = new DateTimeOffset(1978, 12, 16, 12, 35, 59, 999, TimeSpan.FromSeconds(3060));
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+        internal override IEnumerable<IPackStreamSerializer> SerializersNeeded => new IPackStreamSerializer[]
+        {
+            new ZonedDateTimeSerializer()
+        };
 
-        writer.Write(dateTime);
+        [Fact]
+        public void ShouldSerializeDateTimeOffset()
+        {
+            var dateTime = new DateTimeOffset(1978, 12, 16, 12, 35, 59, 999, TimeSpan.FromSeconds(3060));
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var reader = readerMachine.Reader();
+            writer.Write(dateTime);
 
-        reader.PeekNextType().Should().Be(PackStreamType.Struct);
-        reader.ReadStructHeader().Should().Be(3);
-        reader.ReadStructSignature().Should().Be((byte)'F');
-        reader.Read().Should().Be(282659759L);
-        reader.Read().Should().Be(999000000L);
-        reader.Read().Should().Be(3060L);
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var reader = readerMachine.Reader();
+
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
+            reader.ReadStructHeader().Should().Be(3);
+            reader.ReadStructSignature().Should().Be((byte)'F');
+            reader.Read().Should().Be(282659759L);
+            reader.Read().Should().Be(999000000L);
+            reader.Read().Should().Be(3060L);
+        }
     }
 }

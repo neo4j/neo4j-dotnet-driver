@@ -19,60 +19,61 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.TestUtil;
-
-public class MonoFactAttribute : FactAttribute
+namespace Neo4j.Driver.Tests.TestUtil
 {
-    public MonoFactAttribute()
+    public class MonoFactAttribute : FactAttribute
     {
-        var shouldSkip = Type.GetType("Mono.Runtime") == null;
-
-        if (shouldSkip)
+        public MonoFactAttribute()
         {
-            Skip = "Test is supposed to be run only on mono runtimes";
+            var shouldSkip = Type.GetType("Mono.Runtime") == null;
+
+            if (shouldSkip)
+            {
+                Skip = "Test is supposed to be run only on mono runtimes";
+            }
         }
     }
-}
 
-public class MonoTheoryAttribute : TheoryAttribute
-{
-    public MonoTheoryAttribute()
+    public class MonoTheoryAttribute : TheoryAttribute
     {
-        var shouldSkip = Type.GetType("Mono.Runtime") == null;
-
-        if (shouldSkip)
+        public MonoTheoryAttribute()
         {
-            Skip = "Test is supposed to be run only on mono runtimes";
+            var shouldSkip = Type.GetType("Mono.Runtime") == null;
+
+            if (shouldSkip)
+            {
+                Skip = "Test is supposed to be run only on mono runtimes";
+            }
         }
     }
-}
 
-public class DotnetCoreFactAttribute : FactAttribute
-{
-    public DotnetCoreFactAttribute()
+    public class DotnetCoreFactAttribute : FactAttribute
     {
-        var shouldSkip =
-            RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase) ==
-            false;
-
-        if (shouldSkip)
+        public DotnetCoreFactAttribute()
         {
-            Skip = "Test is supposed to be run only on .net core runtimes";
+            var shouldSkip =
+                RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase) ==
+                false;
+
+            if (shouldSkip)
+            {
+                Skip = "Test is supposed to be run only on .net core runtimes";
+            }
         }
     }
-}
 
-public class DotnetCoreTheoryAttribute : TheoryAttribute
-{
-    public DotnetCoreTheoryAttribute()
+    public class DotnetCoreTheoryAttribute : TheoryAttribute
     {
-        var shouldSkip =
-            RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase) ==
-            false;
-
-        if (shouldSkip)
+        public DotnetCoreTheoryAttribute()
         {
-            Skip = "Test is supposed to be run only on .net core runtimes";
+            var shouldSkip =
+                RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase) ==
+                false;
+
+            if (shouldSkip)
+            {
+                Skip = "Test is supposed to be run only on .net core runtimes";
+            }
         }
     }
 }

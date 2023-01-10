@@ -20,88 +20,89 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.Tests;
-
-public class TransactionConfigTests
+namespace Neo4j.Driver.Tests
 {
-    public class TimeoutField
+    public class TransactionConfigTests
     {
-        public static IEnumerable<object[]> InvalidTimeSpanValues => new[]
+        public class TimeoutField
         {
-            new object[] { TimeSpan.FromSeconds(-1) },
-            new object[] { TimeSpan.FromHours(-2) }
-        };
+            public static IEnumerable<object[]> InvalidTimeSpanValues => new[]
+            {
+                new object[] { TimeSpan.FromSeconds(-1) },
+                new object[] { TimeSpan.FromHours(-2) }
+            };
 
-        public static IEnumerable<object[]> ValidTimeSpanValues => new[]
-        {
-            new object[] { null },
-            new object[] { (TimeSpan?)TimeSpan.Zero },
-            new object[] { (TimeSpan?)TimeSpan.FromMilliseconds(0.1) },
-            new object[] { (TimeSpan?)TimeSpan.FromMinutes(30) },
-            new object[] { (TimeSpan?)TimeSpan.MaxValue }
-        };
+            public static IEnumerable<object[]> ValidTimeSpanValues => new[]
+            {
+                new object[] { null },
+                new object[] { (TimeSpan?)TimeSpan.Zero },
+                new object[] { (TimeSpan?)TimeSpan.FromMilliseconds(0.1) },
+                new object[] { (TimeSpan?)TimeSpan.FromMinutes(30) },
+                new object[] { (TimeSpan?)TimeSpan.MaxValue }
+            };
 
-        [Fact]
-        public void ShouldReturnDefaultValueAsNull()
-        {
-            var config = new TransactionConfig();
+            [Fact]
+            public void ShouldReturnDefaultValueAsNull()
+            {
+                var config = new TransactionConfig();
 
-            config.Timeout.Should().Be(null);
+                config.Timeout.Should().Be(null);
+            }
+
+            [Theory]
+            [MemberData(nameof(ValidTimeSpanValues))]
+            public void ShouldAllowToSetToNewValue(TimeSpan? input)
+            {
+                var builder = TransactionConfig.Builder;
+                builder.WithTimeout(input);
+
+                var config = builder.Build();
+
+                config.Timeout.Should().Be(input);
+            }
+
+            [Theory]
+            [MemberData(nameof(InvalidTimeSpanValues))]
+            public void ShouldThrowExceptionIfAssigningValueLessThanZero(TimeSpan input)
+            {
+                var error = Record.Exception(() => TransactionConfig.Builder.WithTimeout(input));
+
+                error.Should().BeOfType<ArgumentOutOfRangeException>();
+                error.Message.Should().Contain("not be negative");
+            }
         }
 
-        [Theory]
-        [MemberData(nameof(ValidTimeSpanValues))]
-        public void ShouldAllowToSetToNewValue(TimeSpan? input)
+        public class MetadataField
         {
-            var builder = TransactionConfig.Builder;
-            builder.WithTimeout(input);
+            [Fact]
+            public void ShouldReturnDefaultValueEmptyDictionary()
+            {
+                var config = new TransactionConfig();
 
-            var config = builder.Build();
+                config.Metadata.Should().BeEmpty();
+            }
 
-            config.Timeout.Should().Be(input);
-        }
+            [Fact]
+            public void ShouldAllowToSetToNewValue()
+            {
+                var builder = TransactionConfig.Builder;
+                builder.WithMetadata(new Dictionary<string, object> { { "key", "value" } });
 
-        [Theory]
-        [MemberData(nameof(InvalidTimeSpanValues))]
-        public void ShouldThrowExceptionIfAssigningValueLessThanZero(TimeSpan input)
-        {
-            var error = Record.Exception(() => TransactionConfig.Builder.WithTimeout(input));
+                var config = builder.Build();
 
-            error.Should().BeOfType<ArgumentOutOfRangeException>();
-            error.Message.Should().Contain("not be negative");
-        }
-    }
+                config.Metadata.Should()
+                    .HaveCount(1)
+                    .And.Contain(new KeyValuePair<string, object>("key", "value"));
+            }
 
-    public class MetadataField
-    {
-        [Fact]
-        public void ShouldReturnDefaultValueEmptyDictionary()
-        {
-            var config = new TransactionConfig();
+            [Fact]
+            public void ShouldThrowExceptionIfAssigningNull()
+            {
+                var error = Record.Exception(() => TransactionConfig.Builder.WithMetadata(null));
 
-            config.Metadata.Should().BeEmpty();
-        }
-
-        [Fact]
-        public void ShouldAllowToSetToNewValue()
-        {
-            var builder = TransactionConfig.Builder;
-            builder.WithMetadata(new Dictionary<string, object> { { "key", "value" } });
-
-            var config = builder.Build();
-
-            config.Metadata.Should()
-                .HaveCount(1)
-                .And.Contain(new KeyValuePair<string, object>("key", "value"));
-        }
-
-        [Fact]
-        public void ShouldThrowExceptionIfAssigningNull()
-        {
-            var error = Record.Exception(() => TransactionConfig.Builder.WithMetadata(null));
-
-            error.Should().BeOfType<ArgumentNullException>();
-            error.Message.Should().Contain("should not be null");
+                error.Should().BeOfType<ArgumentNullException>();
+                error.Message.Should().Contain("should not be null");
+            }
         }
     }
 }

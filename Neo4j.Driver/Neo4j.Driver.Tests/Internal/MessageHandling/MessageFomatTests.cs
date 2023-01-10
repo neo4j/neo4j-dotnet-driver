@@ -23,210 +23,212 @@ using Neo4j.Driver.Internal.IO.ValueSerializers;
 using Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling;
-
-public class MessageFomatTests
+namespace Neo4j.Driver.Internal.MessageHandling
 {
-    public class Constant
+    public class MessageFomatTests
     {
-        [Theory]
-        [InlineData(3, 0)]
-        [InlineData(4, 0)]
-        [InlineData(4, 1)]
-        [InlineData(4, 2)]
-        [InlineData(4, 3)]
-        [InlineData(4, 4)]
-        [InlineData(5, 0)]
-        [InlineData(5, 1)]
-        [InlineData(6, 0)]
-        public void ShouldHaveGeneralReaderStructSerializers(int major, int minor)
+        public class Constant
         {
-            var format = new MessageFormat(new BoltProtocolVersion(major, minor));
-            format.ReaderStructHandlers.Values.Should()
-                .Contain(new IPackStreamSerializer[] {
-                    FailureMessageSerializer.Instance,
-                    IgnoredMessageSerializer.Instance,
-                    RecordMessageSerializer.Instance,
-                    SuccessMessageSerializer.Instance,
-                    PointSerializer.Instance,
-                    LocalDateSerializer.Instance,
-                    LocalTimeSerializer.Instance,
-                    LocalDateTimeSerializer.Instance,
-                    OffsetTimeSerializer.Instance,
-                    DurationSerializer.Instance,
-                    PathSerializer.Instance
-                });
-        }
-
-        [Theory]
-        [InlineData(3, 0)]
-        [InlineData(4, 0)]
-        [InlineData(4, 1)]
-        [InlineData(4, 2)]
-        [InlineData(4, 3)]
-        [InlineData(4, 4)]
-        [InlineData(5, 0)]
-        [InlineData(5, 1)]
-        [InlineData(6, 0)]
-        public void ShouldHaveGeneralWriterStructSerializers(int major, int minor)
-        {
-            var format = new MessageFormat(new BoltProtocolVersion(major, minor));
-            format.WriteStructHandlers.Values.Should()
-                .Contain(
-                    new IPackStreamSerializer[]
-                    {
-                        LocalDateSerializer.Instance,
-                        LocalTimeSerializer.Instance,
-                        LocalDateTimeSerializer.Instance,
-                        OffsetTimeSerializer.Instance,
-                        DurationSerializer.Instance,
-                        PointSerializer.Instance,
-                        SystemDateTimeSerializer.Instance,
-                        SystemDateTimeOffsetSerializer.Instance,
-                        SystemTimeSpanSerializer.Instance, 
-                    });
-        }
-    }
-
-    public class VersionDepdent
-    {
-
-        [Theory]
-        [InlineData(5, 0)]
-        [InlineData(5, 1)]
-        [InlineData(6, 0)]
-        public void HaveElementIdSerializers(int major, int minor)
-        {
-            var serializers = new IPackStreamSerializer[]
+            [Theory]
+            [InlineData(3, 0)]
+            [InlineData(4, 0)]
+            [InlineData(4, 1)]
+            [InlineData(4, 2)]
+            [InlineData(4, 3)]
+            [InlineData(4, 4)]
+            [InlineData(5, 0)]
+            [InlineData(5, 1)]
+            [InlineData(6, 0)]
+            public void ShouldHaveGeneralReaderStructSerializers(int major, int minor)
             {
-                ElementNodeSerializer.Instance,
-                ElementRelationshipSerializer.Instance, 
-                ElementUnboundRelationshipSerializer.Instance
-            };
+                var format = new MessageFormat(new BoltProtocolVersion(major, minor));
+                format.ReaderStructHandlers.Values.Should()
+                    .Contain(
+                        new IPackStreamSerializer[]
+                        {
+                            FailureMessageSerializer.Instance,
+                            IgnoredMessageSerializer.Instance,
+                            RecordMessageSerializer.Instance,
+                            SuccessMessageSerializer.Instance,
+                            PointSerializer.Instance,
+                            LocalDateSerializer.Instance,
+                            LocalTimeSerializer.Instance,
+                            LocalDateTimeSerializer.Instance,
+                            OffsetTimeSerializer.Instance,
+                            DurationSerializer.Instance,
+                            PathSerializer.Instance
+                        });
+            }
 
-            var format = new MessageFormat(new BoltProtocolVersion(major, minor));
-            
-            format.ReaderStructHandlers.Values.Should().Contain(serializers);
-        }
-
-        [Theory]
-        [InlineData(3, 0)]
-        [InlineData(4, 0)]
-        [InlineData(4, 1)]
-        [InlineData(4, 2)]
-        [InlineData(4, 3)]
-        [InlineData(4, 4)]
-        public void ShouldHaveIdSerializers(int major, int minor)
-        {
-            var serializers = new IPackStreamSerializer[]
+            [Theory]
+            [InlineData(3, 0)]
+            [InlineData(4, 0)]
+            [InlineData(4, 1)]
+            [InlineData(4, 2)]
+            [InlineData(4, 3)]
+            [InlineData(4, 4)]
+            [InlineData(5, 0)]
+            [InlineData(5, 1)]
+            [InlineData(6, 0)]
+            public void ShouldHaveGeneralWriterStructSerializers(int major, int minor)
             {
-                NodeSerializer.Instance,
-                RelationshipSerializer.Instance,
-                UnboundRelationshipSerializer.Instance
-            };
-
-            var format = new MessageFormat(new BoltProtocolVersion(major, minor));
-
-            format.ReaderStructHandlers.Values.Should().Contain(serializers);
-        }
-    }
-   
-    public class ZoneDateTimeTests
-    {
-        static readonly byte[] NonUtcEncoderBytes = { (byte)'F', (byte)'f' };
-        static readonly byte[] UtcEncoderBytes = { (byte)'I', (byte)'i' };
-
-        [Theory]
-        [InlineData(3, 0)]
-        [InlineData(4, 0)]
-        [InlineData(4, 1)]
-        [InlineData(4, 2)]
-        [InlineData(4, 3)]
-        [InlineData(4, 4)]
-        public void MessageFormatShouldDefaultToNonUtcDateSerializers(int major, int minor)
-        {
-            var format = new MessageFormat(new BoltProtocolVersion(major, minor));
-            format.ReaderStructHandlers.Keys.Should()
-                .Contain(NonUtcEncoderBytes)
-                .And.NotContain(UtcEncoderBytes);
-
-            format.ReaderStructHandlers
-                .Where(x => NonUtcEncoderBytes.Contains(x.Key))
-                .Select(x => x.Value)
-                .Distinct()
-                .First()
-                .Should()
-                .Be(ZonedDateTimeSerializer.Instance);
+                var format = new MessageFormat(new BoltProtocolVersion(major, minor));
+                format.WriteStructHandlers.Values.Should()
+                    .Contain(
+                        new IPackStreamSerializer[]
+                        {
+                            LocalDateSerializer.Instance,
+                            LocalTimeSerializer.Instance,
+                            LocalDateTimeSerializer.Instance,
+                            OffsetTimeSerializer.Instance,
+                            DurationSerializer.Instance,
+                            PointSerializer.Instance,
+                            SystemDateTimeSerializer.Instance,
+                            SystemDateTimeOffsetSerializer.Instance,
+                            SystemTimeSpanSerializer.Instance
+                        });
+            }
         }
 
-        [Theory]
-        [InlineData(5, 0)]
-        [InlineData(5, 1)]
-        [InlineData(6, 0)]
-        public void MessageFormatShouldDefaultToUtcDateSerializers(int major, int minor)
+        public class VersionDepdent
         {
-            var format = new MessageFormat(new BoltProtocolVersion(major, minor));
-            format.ReaderStructHandlers.Keys.Should()
-                .Contain(UtcEncoderBytes)
-                .And.NotContain(NonUtcEncoderBytes);
+            [Theory]
+            [InlineData(5, 0)]
+            [InlineData(5, 1)]
+            [InlineData(6, 0)]
+            public void HaveElementIdSerializers(int major, int minor)
+            {
+                var serializers = new IPackStreamSerializer[]
+                {
+                    ElementNodeSerializer.Instance,
+                    ElementRelationshipSerializer.Instance,
+                    ElementUnboundRelationshipSerializer.Instance
+                };
 
-            format.ReaderStructHandlers
-                .Where(x => UtcEncoderBytes.Contains(x.Key))
-                .Select(x => x.Value)
-                .Distinct()
-                .First()
-                .Should()
-                .Be(UtcZonedDateTimeSerializer.Instance);
+                var format = new MessageFormat(new BoltProtocolVersion(major, minor));
+
+                format.ReaderStructHandlers.Values.Should().Contain(serializers);
+            }
+
+            [Theory]
+            [InlineData(3, 0)]
+            [InlineData(4, 0)]
+            [InlineData(4, 1)]
+            [InlineData(4, 2)]
+            [InlineData(4, 3)]
+            [InlineData(4, 4)]
+            public void ShouldHaveIdSerializers(int major, int minor)
+            {
+                var serializers = new IPackStreamSerializer[]
+                {
+                    NodeSerializer.Instance,
+                    RelationshipSerializer.Instance,
+                    UnboundRelationshipSerializer.Instance
+                };
+
+                var format = new MessageFormat(new BoltProtocolVersion(major, minor));
+
+                format.ReaderStructHandlers.Values.Should().Contain(serializers);
+            }
         }
 
-        [Theory]
-        [InlineData(3, 0)]
-        [InlineData(4, 0)]
-        [InlineData(4, 1)]
-        [InlineData(4, 2)]
-        public void MessageFormatShouldIgnoreUseUtcEncoderWhenInvalid(int major, int minor)
+        public class ZoneDateTimeTests
         {
-            var format = new MessageFormat(new BoltProtocolVersion(major, minor));
+            private static readonly byte[] NonUtcEncoderBytes = { (byte)'F', (byte)'f' };
+            private static readonly byte[] UtcEncoderBytes = { (byte)'I', (byte)'i' };
 
-            //ignored for < 4.3
-            format.UseUtcEncoder();
+            [Theory]
+            [InlineData(3, 0)]
+            [InlineData(4, 0)]
+            [InlineData(4, 1)]
+            [InlineData(4, 2)]
+            [InlineData(4, 3)]
+            [InlineData(4, 4)]
+            public void MessageFormatShouldDefaultToNonUtcDateSerializers(int major, int minor)
+            {
+                var format = new MessageFormat(new BoltProtocolVersion(major, minor));
+                format.ReaderStructHandlers.Keys.Should()
+                    .Contain(NonUtcEncoderBytes)
+                    .And.NotContain(UtcEncoderBytes);
 
-            format.ReaderStructHandlers.Keys.Should()
-                .Contain(NonUtcEncoderBytes)
-                .And.NotContain(UtcEncoderBytes);
+                format.ReaderStructHandlers
+                    .Where(x => NonUtcEncoderBytes.Contains(x.Key))
+                    .Select(x => x.Value)
+                    .Distinct()
+                    .First()
+                    .Should()
+                    .Be(ZonedDateTimeSerializer.Instance);
+            }
 
-            format.ReaderStructHandlers
-                .Where(x => NonUtcEncoderBytes.Contains(x.Key))
-                .Select(x => x.Value)
-                .Distinct()
-                .First()
-                .Should()
-                .Be(ZonedDateTimeSerializer.Instance);
-        }
+            [Theory]
+            [InlineData(5, 0)]
+            [InlineData(5, 1)]
+            [InlineData(6, 0)]
+            public void MessageFormatShouldDefaultToUtcDateSerializers(int major, int minor)
+            {
+                var format = new MessageFormat(new BoltProtocolVersion(major, minor));
+                format.ReaderStructHandlers.Keys.Should()
+                    .Contain(UtcEncoderBytes)
+                    .And.NotContain(NonUtcEncoderBytes);
 
-        [Theory]
-        [InlineData(4, 3)]
-        [InlineData(4, 4)]
-        [InlineData(5, 0)]
-        [InlineData(6, 0)]
-        public void MessageFormatShouldUseUtcEncoderWhenInvalid(int major, int minor)
-        {
-            var format = new MessageFormat(new BoltProtocolVersion(major, minor));
+                format.ReaderStructHandlers
+                    .Where(x => UtcEncoderBytes.Contains(x.Key))
+                    .Select(x => x.Value)
+                    .Distinct()
+                    .First()
+                    .Should()
+                    .Be(UtcZonedDateTimeSerializer.Instance);
+            }
 
-            //ignored for version > 4.4 and applied for 4.3 & 4.4
-            format.UseUtcEncoder();
+            [Theory]
+            [InlineData(3, 0)]
+            [InlineData(4, 0)]
+            [InlineData(4, 1)]
+            [InlineData(4, 2)]
+            public void MessageFormatShouldIgnoreUseUtcEncoderWhenInvalid(int major, int minor)
+            {
+                var format = new MessageFormat(new BoltProtocolVersion(major, minor));
 
-            format.ReaderStructHandlers.Keys.Should()
-                .Contain(UtcEncoderBytes)
-                .And.NotContain(NonUtcEncoderBytes);
+                //ignored for < 4.3
+                format.UseUtcEncoder();
 
-            format.ReaderStructHandlers
-                .Where(x => UtcEncoderBytes.Contains(x.Key))
-                .Select(x => x.Value)
-                .Distinct()
-                .First()
-                .Should()
-                .Be(UtcZonedDateTimeSerializer.Instance);
+                format.ReaderStructHandlers.Keys.Should()
+                    .Contain(NonUtcEncoderBytes)
+                    .And.NotContain(UtcEncoderBytes);
+
+                format.ReaderStructHandlers
+                    .Where(x => NonUtcEncoderBytes.Contains(x.Key))
+                    .Select(x => x.Value)
+                    .Distinct()
+                    .First()
+                    .Should()
+                    .Be(ZonedDateTimeSerializer.Instance);
+            }
+
+            [Theory]
+            [InlineData(4, 3)]
+            [InlineData(4, 4)]
+            [InlineData(5, 0)]
+            [InlineData(6, 0)]
+            public void MessageFormatShouldUseUtcEncoderWhenInvalid(int major, int minor)
+            {
+                var format = new MessageFormat(new BoltProtocolVersion(major, minor));
+
+                //ignored for version > 4.4 and applied for 4.3 & 4.4
+                format.UseUtcEncoder();
+
+                format.ReaderStructHandlers.Keys.Should()
+                    .Contain(UtcEncoderBytes)
+                    .And.NotContain(NonUtcEncoderBytes);
+
+                format.ReaderStructHandlers
+                    .Where(x => UtcEncoderBytes.Contains(x.Key))
+                    .Select(x => x.Value)
+                    .Distinct()
+                    .First()
+                    .Should()
+                    .Be(UtcZonedDateTimeSerializer.Instance);
+            }
         }
     }
 }

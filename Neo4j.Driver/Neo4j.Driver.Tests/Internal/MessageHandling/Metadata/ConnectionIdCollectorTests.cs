@@ -19,70 +19,71 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
-
-public class ConnectionIdCollectorTests
+namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
-    private const string Key = ConnectionIdCollector.ConnectionIdKey;
-
-    internal static KeyValuePair<string, object> TestMetadata => new(Key, "id-1");
-
-    internal static string TestMetadataCollected => "id-1";
-
-    [Fact]
-    public void ShouldNotCollectIfMetadataIsNull()
+    public class ConnectionIdCollectorTests
     {
-        var collector = new ConnectionIdCollector();
+        private const string Key = ConnectionIdCollector.ConnectionIdKey;
 
-        collector.Collect(null);
+        internal static KeyValuePair<string, object> TestMetadata => new(Key, "id-1");
 
-        collector.Collected.Should().BeNull();
-    }
+        internal static string TestMetadataCollected => "id-1";
 
-    [Fact]
-    public void ShouldNotCollectIfNoValueIsGiven()
-    {
-        var collector = new ConnectionIdCollector();
+        [Fact]
+        public void ShouldNotCollectIfMetadataIsNull()
+        {
+            var collector = new ConnectionIdCollector();
 
-        collector.Collect(new Dictionary<string, object>());
+            collector.Collect(null);
 
-        collector.Collected.Should().BeNull();
-    }
+            collector.Collected.Should().BeNull();
+        }
 
-    [Fact]
-    public void ShouldThrowIfValueIsOfWrongType()
-    {
-        var metadata = new Dictionary<string, object> { { Key, 5 } };
-        var collector = new ConnectionIdCollector();
+        [Fact]
+        public void ShouldNotCollectIfNoValueIsGiven()
+        {
+            var collector = new ConnectionIdCollector();
 
-        var ex = Record.Exception(() => collector.Collect(metadata));
+            collector.Collect(new Dictionary<string, object>());
 
-        ex.Should()
-            .BeOfType<ProtocolException>()
-            .Which
-            .Message.Should()
-            .Contain($"Expected '{Key}' metadata to be of type 'String', but got 'Int32'.");
-    }
+            collector.Collected.Should().BeNull();
+        }
 
-    [Fact]
-    public void ShouldCollect()
-    {
-        var metadata = new Dictionary<string, object> { { Key, "id-5" } };
-        var collector = new ConnectionIdCollector();
+        [Fact]
+        public void ShouldThrowIfValueIsOfWrongType()
+        {
+            var metadata = new Dictionary<string, object> { { Key, 5 } };
+            var collector = new ConnectionIdCollector();
 
-        collector.Collect(metadata);
+            var ex = Record.Exception(() => collector.Collect(metadata));
 
-        collector.Collected.Should().Be("id-5");
-    }
+            ex.Should()
+                .BeOfType<ProtocolException>()
+                .Which
+                .Message.Should()
+                .Contain($"Expected '{Key}' metadata to be of type 'String', but got 'Int32'.");
+        }
 
-    [Fact]
-    public void ShouldReturnSameCollected()
-    {
-        var metadata = new Dictionary<string, object> { { Key, "id-5" } };
-        var collector = new ConnectionIdCollector();
+        [Fact]
+        public void ShouldCollect()
+        {
+            var metadata = new Dictionary<string, object> { { Key, "id-5" } };
+            var collector = new ConnectionIdCollector();
 
-        collector.Collect(metadata);
+            collector.Collect(metadata);
 
-        ((IMetadataCollector)collector).Collected.Should().BeSameAs(collector.Collected);
+            collector.Collected.Should().Be("id-5");
+        }
+
+        [Fact]
+        public void ShouldReturnSameCollected()
+        {
+            var metadata = new Dictionary<string, object> { { Key, "id-5" } };
+            var collector = new ConnectionIdCollector();
+
+            collector.Collect(metadata);
+
+            ((IMetadataCollector)collector).Collected.Should().BeSameAs(collector.Collected);
+        }
     }
 }

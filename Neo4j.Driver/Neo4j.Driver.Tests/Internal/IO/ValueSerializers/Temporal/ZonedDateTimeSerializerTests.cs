@@ -20,125 +20,126 @@ using FluentAssertions;
 using Neo4j.Driver.Internal.IO.Utils;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
-
-public class ZonedDateTimeSerializerTests : PackStreamSerializerTests
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
 {
-    internal override IPackStreamSerializer SerializerUnderTest => new ZonedDateTimeSerializer();
-
-    private new PackStreamWriterMachine CreateWriterMachine()
+    public class ZonedDateTimeSerializerTests : PackStreamSerializerTests
     {
-        return CreateWriterMachine(BoltProtocolVersion.V4_0);
-    }
+        internal override IPackStreamSerializer SerializerUnderTest => new ZonedDateTimeSerializer();
 
-    [Fact]
-    public void ShouldSerializeDateTimeWithOffset()
-    {
-        var dateTime = new ZonedDateTime(
-            1978,
-            12,
-            16,
-            12,
-            35,
-            59,
-            128000987,
-            Zone.Of((int)TimeSpan.FromMinutes(-150).TotalSeconds));
+        private new PackStreamWriterMachine CreateWriterMachine()
+        {
+            return CreateWriterMachine(BoltProtocolVersion.V4_0);
+        }
 
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+        [Fact]
+        public void ShouldSerializeDateTimeWithOffset()
+        {
+            var dateTime = new ZonedDateTime(
+                1978,
+                12,
+                16,
+                12,
+                35,
+                59,
+                128000987,
+                Zone.Of((int)TimeSpan.FromMinutes(-150).TotalSeconds));
 
-        writer.Write(dateTime);
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var reader = readerMachine.Reader();
+            writer.Write(dateTime);
 
-        reader.PeekNextType().Should().Be(PackStreamType.Struct);
-        reader.ReadStructHeader().Should().Be(3);
-        reader.ReadStructSignature().Should().Be((byte)'F');
-        reader.Read().Should().Be(282659759L);
-        reader.Read().Should().Be(128000987L);
-        reader.Read().Should().Be(-9000L);
-    }
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var reader = readerMachine.Reader();
 
-    [Fact]
-    public void ShouldDeserializeDateTimeWithOffset()
-    {
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
+            reader.ReadStructHeader().Should().Be(3);
+            reader.ReadStructSignature().Should().Be((byte)'F');
+            reader.Read().Should().Be(282659759L);
+            reader.Read().Should().Be(128000987L);
+            reader.Read().Should().Be(-9000L);
+        }
 
-        writer.WriteStructHeader(ZonedDateTimeSerializer.StructSize, ZonedDateTimeSerializer.StructTypeWithOffset);
-        writer.Write(282659759);
-        writer.Write(128000987);
-        writer.Write(-9000);
+        [Fact]
+        public void ShouldDeserializeDateTimeWithOffset()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var reader = readerMachine.Reader();
-        var value = reader.Read();
+            writer.WriteStructHeader(ZonedDateTimeSerializer.StructSize, ZonedDateTimeSerializer.StructTypeWithOffset);
+            writer.Write(282659759);
+            writer.Write(128000987);
+            writer.Write(-9000);
 
-        value.Should().NotBeNull();
-        value.Should().BeOfType<ZonedDateTime>().Which.Year.Should().Be(1978);
-        value.Should().BeOfType<ZonedDateTime>().Which.Month.Should().Be(12);
-        value.Should().BeOfType<ZonedDateTime>().Which.Day.Should().Be(16);
-        value.Should().BeOfType<ZonedDateTime>().Which.Hour.Should().Be(12);
-        value.Should().BeOfType<ZonedDateTime>().Which.Minute.Should().Be(35);
-        value.Should().BeOfType<ZonedDateTime>().Which.Second.Should().Be(59);
-        value.Should().BeOfType<ZonedDateTime>().Which.Nanosecond.Should().Be(128000987);
-        value.Should()
-            .BeOfType<ZonedDateTime>()
-            .Which.Zone.Should()
-            .BeOfType<ZoneOffset>()
-            .Which.OffsetSeconds.Should()
-            .Be((int)TimeSpan.FromMinutes(-150).TotalSeconds);
-    }
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var reader = readerMachine.Reader();
+            var value = reader.Read();
 
-    [Fact]
-    public void ShouldSerializeDateTimeWithZoneId()
-    {
-        var dateTime = new ZonedDateTime(1978, 12, 16, 12, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+            value.Should().NotBeNull();
+            value.Should().BeOfType<ZonedDateTime>().Which.Year.Should().Be(1978);
+            value.Should().BeOfType<ZonedDateTime>().Which.Month.Should().Be(12);
+            value.Should().BeOfType<ZonedDateTime>().Which.Day.Should().Be(16);
+            value.Should().BeOfType<ZonedDateTime>().Which.Hour.Should().Be(12);
+            value.Should().BeOfType<ZonedDateTime>().Which.Minute.Should().Be(35);
+            value.Should().BeOfType<ZonedDateTime>().Which.Second.Should().Be(59);
+            value.Should().BeOfType<ZonedDateTime>().Which.Nanosecond.Should().Be(128000987);
+            value.Should()
+                .BeOfType<ZonedDateTime>()
+                .Which.Zone.Should()
+                .BeOfType<ZoneOffset>()
+                .Which.OffsetSeconds.Should()
+                .Be((int)TimeSpan.FromMinutes(-150).TotalSeconds);
+        }
 
-        writer.Write(dateTime);
+        [Fact]
+        public void ShouldSerializeDateTimeWithZoneId()
+        {
+            var dateTime = new ZonedDateTime(1978, 12, 16, 12, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var reader = readerMachine.Reader();
+            writer.Write(dateTime);
 
-        reader.PeekNextType().Should().Be(PackStreamType.Struct);
-        reader.ReadStructHeader().Should().Be(3);
-        reader.ReadStructSignature().Should().Be((byte)'f');
-        reader.Read().Should().Be(282659759L);
-        reader.Read().Should().Be(128000987L);
-        reader.Read().Should().Be("Europe/Istanbul");
-    }
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var reader = readerMachine.Reader();
 
-    [Fact]
-    public void ShouldDeserializeDateTimeWithZoneId()
-    {
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
+            reader.ReadStructHeader().Should().Be(3);
+            reader.ReadStructSignature().Should().Be((byte)'f');
+            reader.Read().Should().Be(282659759L);
+            reader.Read().Should().Be(128000987L);
+            reader.Read().Should().Be("Europe/Istanbul");
+        }
 
-        writer.WriteStructHeader(ZonedDateTimeSerializer.StructSize, ZonedDateTimeSerializer.StructTypeWithId);
-        writer.Write(282659759);
-        writer.Write(128000987);
-        writer.Write("Europe/Istanbul");
+        [Fact]
+        public void ShouldDeserializeDateTimeWithZoneId()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var reader = readerMachine.Reader();
-        var value = reader.Read();
+            writer.WriteStructHeader(ZonedDateTimeSerializer.StructSize, ZonedDateTimeSerializer.StructTypeWithId);
+            writer.Write(282659759);
+            writer.Write(128000987);
+            writer.Write("Europe/Istanbul");
 
-        value.Should().NotBeNull();
-        value.Should().BeOfType<ZonedDateTime>().Which.Year.Should().Be(1978);
-        value.Should().BeOfType<ZonedDateTime>().Which.Month.Should().Be(12);
-        value.Should().BeOfType<ZonedDateTime>().Which.Day.Should().Be(16);
-        value.Should().BeOfType<ZonedDateTime>().Which.Hour.Should().Be(12);
-        value.Should().BeOfType<ZonedDateTime>().Which.Minute.Should().Be(35);
-        value.Should().BeOfType<ZonedDateTime>().Which.Second.Should().Be(59);
-        value.Should().BeOfType<ZonedDateTime>().Which.Nanosecond.Should().Be(128000987);
-        value.Should()
-            .BeOfType<ZonedDateTime>()
-            .Which.Zone.Should()
-            .BeOfType<ZoneId>()
-            .Which.Id.Should()
-            .Be("Europe/Istanbul");
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var reader = readerMachine.Reader();
+            var value = reader.Read();
+
+            value.Should().NotBeNull();
+            value.Should().BeOfType<ZonedDateTime>().Which.Year.Should().Be(1978);
+            value.Should().BeOfType<ZonedDateTime>().Which.Month.Should().Be(12);
+            value.Should().BeOfType<ZonedDateTime>().Which.Day.Should().Be(16);
+            value.Should().BeOfType<ZonedDateTime>().Which.Hour.Should().Be(12);
+            value.Should().BeOfType<ZonedDateTime>().Which.Minute.Should().Be(35);
+            value.Should().BeOfType<ZonedDateTime>().Which.Second.Should().Be(59);
+            value.Should().BeOfType<ZonedDateTime>().Which.Nanosecond.Should().Be(128000987);
+            value.Should()
+                .BeOfType<ZonedDateTime>()
+                .Which.Zone.Should()
+                .BeOfType<ZoneId>()
+                .Which.Id.Should()
+                .Be("Europe/Istanbul");
+        }
     }
 }

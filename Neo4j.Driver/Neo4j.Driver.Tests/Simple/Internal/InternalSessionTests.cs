@@ -19,60 +19,61 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Xunit;
 
-namespace Neo4j.Driver.Simple.Internal;
-
-public static class InternalSessionTests
+namespace Neo4j.Driver.Simple.Internal
 {
-    public class LastBookmarks
+    public static class InternalSessionTests
     {
-        [Fact]
-        public void ShouldDelegateToAsyncSession()
+        public class LastBookmarks
         {
-            var asyncSession = new Mock<IInternalAsyncSession>();
-            var session = new InternalSession(
-                asyncSession.Object,
-                Mock.Of<IRetryLogic>(),
-                Mock.Of<BlockingExecutor>());
+            [Fact]
+            public void ShouldDelegateToAsyncSession()
+            {
+                var asyncSession = new Mock<IInternalAsyncSession>();
+                var session = new InternalSession(
+                    asyncSession.Object,
+                    Mock.Of<IRetryLogic>(),
+                    Mock.Of<BlockingExecutor>());
 
-            var bookmark = session.LastBookmarks;
+                var bookmark = session.LastBookmarks;
 
-            asyncSession.Verify(x => x.LastBookmarks, Times.Once);
+                asyncSession.Verify(x => x.LastBookmarks, Times.Once);
+            }
         }
-    }
 
-    public class LastBookmark
-    {
-        [Fact]
-        public void ShouldDelegateToAsyncSession()
+        public class LastBookmark
         {
-            var asyncSession = new Mock<IInternalAsyncSession>();
-            var session = new InternalSession(
-                asyncSession.Object,
-                Mock.Of<IRetryLogic>(),
-                Mock.Of<BlockingExecutor>());
+            [Fact]
+            public void ShouldDelegateToAsyncSession()
+            {
+                var asyncSession = new Mock<IInternalAsyncSession>();
+                var session = new InternalSession(
+                    asyncSession.Object,
+                    Mock.Of<IRetryLogic>(),
+                    Mock.Of<BlockingExecutor>());
 
-            var bookmark = session.LastBookmark;
+                var bookmark = session.LastBookmark;
 
 #pragma warning disable CS0618
-            asyncSession.Verify(x => x.LastBookmark, Times.Once);
+                asyncSession.Verify(x => x.LastBookmark, Times.Once);
 #pragma warning restore CS0618
+            }
         }
-    }
 
-    public class SessionConfig
-    {
-        [Fact]
-        public void ShouldDelegateToAsyncSession()
+        public class SessionConfig
         {
-            var asyncSession = new Mock<IInternalAsyncSession>();
-            var session = new InternalSession(
-                asyncSession.Object,
-                Mock.Of<IRetryLogic>(),
-                Mock.Of<BlockingExecutor>());
+            [Fact]
+            public void ShouldDelegateToAsyncSession()
+            {
+                var asyncSession = new Mock<IInternalAsyncSession>();
+                var session = new InternalSession(
+                    asyncSession.Object,
+                    Mock.Of<IRetryLogic>(),
+                    Mock.Of<BlockingExecutor>());
 
-            var config = session.SessionConfig;
+                var config = session.SessionConfig;
 
-            asyncSession.Verify(x => x.SessionConfig, Times.Once);
+                asyncSession.Verify(x => x.SessionConfig, Times.Once);
+            }
         }
     }
 }

@@ -19,21 +19,22 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Xunit;
 
-namespace Neo4j.Driver.Simple.Internal;
-
-public static class InternalTransactionTests
+namespace Neo4j.Driver.Simple.Internal
 {
-    public class TransactionConfig
+    public static class InternalTransactionTests
     {
-        [Fact]
-        public void ShouldDelegateToAsyncTransaction()
+        public class TransactionConfig
         {
-            var asyncTx = new Mock<IInternalAsyncTransaction>();
-            var tx = new InternalTransaction(asyncTx.Object, Mock.Of<BlockingExecutor>());
+            [Fact]
+            public void ShouldDelegateToAsyncTransaction()
+            {
+                var asyncTx = new Mock<IInternalAsyncTransaction>();
+                var tx = new InternalTransaction(asyncTx.Object, Mock.Of<BlockingExecutor>());
 
-            var config = tx.TransactionConfig;
+                var config = tx.TransactionConfig;
 
-            asyncTx.Verify(x => x.TransactionConfig, Times.Once);
+                asyncTx.Verify(x => x.TransactionConfig, Times.Once);
+            }
         }
     }
 }

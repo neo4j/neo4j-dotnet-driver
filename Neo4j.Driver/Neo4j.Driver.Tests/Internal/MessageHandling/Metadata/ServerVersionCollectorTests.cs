@@ -20,78 +20,79 @@ using FluentAssertions;
 using Neo4j.Driver.Internal.Util;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
-
-public class ServerVersionCollectorTests
+namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
-    private const string Key = ServerVersionCollector.ServerKey;
-
-    internal static string TestServerAgent = "Neo4j/3.5.2";
-
-    internal static KeyValuePair<string, object> TestMetadata => new(Key, TestServerAgent);
-
-    internal static ServerVersion TestMetadataCollected => ServerVersion.From(TestServerAgent);
-
-    [Fact]
-    public void ShouldNotCollectIfMetadataIsNull()
+    public class ServerVersionCollectorTests
     {
-        var collector = new ServerVersionCollector();
+        private const string Key = ServerVersionCollector.ServerKey;
 
-        collector.Collect(null);
+        internal static string TestServerAgent = "Neo4j/3.5.2";
 
-        collector.Collected.Should().BeNull();
-    }
+        internal static KeyValuePair<string, object> TestMetadata => new(Key, TestServerAgent);
 
-    [Fact]
-    public void ShouldNotCollectIfNoValueIsGiven()
-    {
-        var collector = new ServerVersionCollector();
+        internal static ServerVersion TestMetadataCollected => ServerVersion.From(TestServerAgent);
 
-        collector.Collect(new Dictionary<string, object>());
+        [Fact]
+        public void ShouldNotCollectIfMetadataIsNull()
+        {
+            var collector = new ServerVersionCollector();
 
-        collector.Collected.Should().BeNull();
-    }
+            collector.Collect(null);
 
-    [Fact]
-    public void ShouldThrowIfValueIsOfWrongType()
-    {
-        var metadata = new Dictionary<string, object> { { Key, true } };
-        var collector = new ServerVersionCollector();
+            collector.Collected.Should().BeNull();
+        }
 
-        var ex = Record.Exception(() => collector.Collect(metadata));
+        [Fact]
+        public void ShouldNotCollectIfNoValueIsGiven()
+        {
+            var collector = new ServerVersionCollector();
 
-        ex.Should()
-            .BeOfType<ProtocolException>()
-            .Which
-            .Message.Should()
-            .Contain($"Expected '{Key}' metadata to be of type 'String', but got 'Boolean'.");
-    }
+            collector.Collect(new Dictionary<string, object>());
 
-    [Fact]
-    public void ShouldCollect()
-    {
-        var versionStr = "Neo4j/3.5.12-alpha1";
-        var metadata = new Dictionary<string, object> { { Key, versionStr } };
-        var collector = new ServerVersionCollector();
+            collector.Collected.Should().BeNull();
+        }
 
-        collector.Collect(metadata);
+        [Fact]
+        public void ShouldThrowIfValueIsOfWrongType()
+        {
+            var metadata = new Dictionary<string, object> { { Key, true } };
+            var collector = new ServerVersionCollector();
 
-        collector.Collected.Product.Should().Be("Neo4j");
-        collector.Collected.Major.Should().Be(3);
-        collector.Collected.Minor.Should().Be(5);
-        collector.Collected.Patch.Should().Be(12);
-        collector.Collected.ToString().Should().Be(versionStr);
-    }
+            var ex = Record.Exception(() => collector.Collect(metadata));
 
-    [Fact]
-    public void ShouldReturnSameCollected()
-    {
-        var versionStr = "Neo4j/3.5.12-alpha1";
-        var metadata = new Dictionary<string, object> { { Key, versionStr } };
-        var collector = new ServerVersionCollector();
+            ex.Should()
+                .BeOfType<ProtocolException>()
+                .Which
+                .Message.Should()
+                .Contain($"Expected '{Key}' metadata to be of type 'String', but got 'Boolean'.");
+        }
 
-        collector.Collect(metadata);
+        [Fact]
+        public void ShouldCollect()
+        {
+            var versionStr = "Neo4j/3.5.12-alpha1";
+            var metadata = new Dictionary<string, object> { { Key, versionStr } };
+            var collector = new ServerVersionCollector();
 
-        ((IMetadataCollector)collector).Collected.Should().BeSameAs(collector.Collected);
+            collector.Collect(metadata);
+
+            collector.Collected.Product.Should().Be("Neo4j");
+            collector.Collected.Major.Should().Be(3);
+            collector.Collected.Minor.Should().Be(5);
+            collector.Collected.Patch.Should().Be(12);
+            collector.Collected.ToString().Should().Be(versionStr);
+        }
+
+        [Fact]
+        public void ShouldReturnSameCollected()
+        {
+            var versionStr = "Neo4j/3.5.12-alpha1";
+            var metadata = new Dictionary<string, object> { { Key, versionStr } };
+            var collector = new ServerVersionCollector();
+
+            collector.Collect(metadata);
+
+            ((IMetadataCollector)collector).Collected.Should().BeSameAs(collector.Collected);
+        }
     }
 }

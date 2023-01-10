@@ -23,97 +23,98 @@ using Xunit;
 
 #pragma warning disable CS0618
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers;
-
-public class NodeSerializerTests : PackStreamSerializerTests
+namespace Neo4j.Driver.Internal.IO.ValueSerializers
 {
-    internal override IPackStreamSerializer SerializerUnderTest => new NodeSerializer();
-
-    [Fact]
-    public void ShouldDeserialize()
+    public class NodeSerializerTests : PackStreamSerializerTests
     {
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+        internal override IPackStreamSerializer SerializerUnderTest => new NodeSerializer();
 
-        SerializeNode(writer);
+        [Fact]
+        public void ShouldDeserialize()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var value = readerMachine.Reader().Read();
+            SerializeNode(writer);
 
-        VerifySerializedNode(value);
-    }
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var value = readerMachine.Reader().Read();
 
-    [Fact]
-    public void ShouldDeserializeWhenInList()
-    {
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+            VerifySerializedNode(value);
+        }
 
-        writer.WriteListHeader(1);
-        SerializeNode(writer);
+        [Fact]
+        public void ShouldDeserializeWhenInList()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var value = readerMachine.Reader().Read();
+            writer.WriteListHeader(1);
+            SerializeNode(writer);
 
-        value.Should().NotBeNull();
-        value.Should().BeAssignableTo<IList>().Which.Should().HaveCount(1);
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var value = readerMachine.Reader().Read();
 
-        VerifySerializedNode(value.Should().BeAssignableTo<IList>().Which[0]);
-    }
+            value.Should().NotBeNull();
+            value.Should().BeAssignableTo<IList>().Which.Should().HaveCount(1);
 
-    [Fact]
-    public void ShouldDeserializeWhenInMap()
-    {
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+            VerifySerializedNode(value.Should().BeAssignableTo<IList>().Which[0]);
+        }
 
-        writer.WriteMapHeader(1);
-        writer.Write("x");
-        SerializeNode(writer);
+        [Fact]
+        public void ShouldDeserializeWhenInMap()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var value = readerMachine.Reader().Read();
+            writer.WriteMapHeader(1);
+            writer.Write("x");
+            SerializeNode(writer);
 
-        value.Should().NotBeNull();
-        value.Should()
-            .BeAssignableTo<IDictionary<string, object>>()
-            .Which.Should()
-            .HaveCount(1)
-            .And
-            .ContainKey("x");
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var value = readerMachine.Reader().Read();
 
-        VerifySerializedNode(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
-    }
+            value.Should().NotBeNull();
+            value.Should()
+                .BeAssignableTo<IDictionary<string, object>>()
+                .Which.Should()
+                .HaveCount(1)
+                .And
+                .ContainKey("x");
 
-    private static void SerializeNode(PackStreamWriter writer)
-    {
-        writer.WriteStructHeader(3, NodeSerializer.Node);
-        writer.Write(1);
-        writer.Write(new List<string> { "Label1", "Label2" });
-        writer.Write(
-            new Dictionary<string, object>
-            {
-                { "prop1", "something" },
-                { "prop2", 15 },
-                { "prop3", true }
-            });
-    }
+            VerifySerializedNode(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
+        }
 
-    private static void VerifySerializedNode(object value)
-    {
-        value.Should().NotBeNull();
-        value.Should().BeOfType<Node>().Which.Id.Should().Be(1L);
-        value.Should().BeOfType<Node>().Which.Labels.Should().Equal("Label1", "Label2");
-        value.Should()
-            .BeOfType<Node>()
-            .Which.Properties.Should()
-            .HaveCount(3)
-            .And.Contain(
-                new[]
+        private static void SerializeNode(PackStreamWriter writer)
+        {
+            writer.WriteStructHeader(3, NodeSerializer.Node);
+            writer.Write(1);
+            writer.Write(new List<string> { "Label1", "Label2" });
+            writer.Write(
+                new Dictionary<string, object>
                 {
-                    new KeyValuePair<string, object>("prop1", "something"),
-                    new KeyValuePair<string, object>("prop2", 15L),
-                    new KeyValuePair<string, object>("prop3", true)
+                    { "prop1", "something" },
+                    { "prop2", 15 },
+                    { "prop3", true }
                 });
+        }
+
+        private static void VerifySerializedNode(object value)
+        {
+            value.Should().NotBeNull();
+            value.Should().BeOfType<Node>().Which.Id.Should().Be(1L);
+            value.Should().BeOfType<Node>().Which.Labels.Should().Equal("Label1", "Label2");
+            value.Should()
+                .BeOfType<Node>()
+                .Which.Properties.Should()
+                .HaveCount(3)
+                .And.Contain(
+                    new[]
+                    {
+                        new KeyValuePair<string, object>("prop1", "something"),
+                        new KeyValuePair<string, object>("prop2", 15L),
+                        new KeyValuePair<string, object>("prop3", true)
+                    });
+        }
     }
 }

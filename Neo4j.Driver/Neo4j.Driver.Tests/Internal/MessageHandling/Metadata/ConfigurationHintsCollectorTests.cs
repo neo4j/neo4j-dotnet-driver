@@ -19,57 +19,58 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
-
-public class ConfigurationHintsCollectorTests
+namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
-    private const string Key = ConfigurationHintsCollector.ConfigHintsKey;
-    private const string RecvTimeoutKey = "connection.recv_timeout_seconds";
-
-    [Fact]
-    public void ShouldNotCollectIfMetadataIsNull()
+    public class ConfigurationHintsCollectorTests
     {
-        var collector = new ConfigurationHintsCollector();
+        private const string Key = ConfigurationHintsCollector.ConfigHintsKey;
+        private const string RecvTimeoutKey = "connection.recv_timeout_seconds";
 
-        collector.Collect(null);
+        [Fact]
+        public void ShouldNotCollectIfMetadataIsNull()
+        {
+            var collector = new ConfigurationHintsCollector();
 
-        collector.Collected.Should().BeNull();
-    }
+            collector.Collect(null);
 
-    [Fact]
-    public void ShouldNotCollectIfNoValueIsGiven()
-    {
-        var collector = new ConfigurationHintsCollector();
+            collector.Collected.Should().BeNull();
+        }
 
-        collector.Collect(new Dictionary<string, object>());
+        [Fact]
+        public void ShouldNotCollectIfNoValueIsGiven()
+        {
+            var collector = new ConfigurationHintsCollector();
 
-        collector.Collected.Should().BeNull();
-    }
+            collector.Collect(new Dictionary<string, object>());
 
-    [Fact]
-    public void ShouldThrowIfValueIsOfWrongType()
-    {
-        var metadata = new Dictionary<string, object> { { Key, "WrongType" } };
-        var collector = new ConfigurationHintsCollector();
+            collector.Collected.Should().BeNull();
+        }
 
-        var ex = Record.Exception(() => collector.Collect(metadata));
+        [Fact]
+        public void ShouldThrowIfValueIsOfWrongType()
+        {
+            var metadata = new Dictionary<string, object> { { Key, "WrongType" } };
+            var collector = new ConfigurationHintsCollector();
 
-        ex.Should()
-            .BeOfType<ProtocolException>()
-            .Which
-            .Message.Should()
-            .Contain($"Expected '{Key}' metadata to be of type 'Dictionary<string, object>', but got 'String'.");
-    }
+            var ex = Record.Exception(() => collector.Collect(metadata));
 
-    [Fact]
-    public void ShouldCollect()
-    {
-        var hintsMetadata = new Dictionary<string, object> { { RecvTimeoutKey, 5 } };
-        var metadata = new Dictionary<string, object> { { Key, hintsMetadata } };
-        var collector = new ConfigurationHintsCollector();
+            ex.Should()
+                .BeOfType<ProtocolException>()
+                .Which
+                .Message.Should()
+                .Contain($"Expected '{Key}' metadata to be of type 'Dictionary<string, object>', but got 'String'.");
+        }
 
-        collector.Collect(metadata);
+        [Fact]
+        public void ShouldCollect()
+        {
+            var hintsMetadata = new Dictionary<string, object> { { RecvTimeoutKey, 5 } };
+            var metadata = new Dictionary<string, object> { { Key, hintsMetadata } };
+            var collector = new ConfigurationHintsCollector();
 
-        collector.Collected.Equals(hintsMetadata);
+            collector.Collect(metadata);
+
+            collector.Collected.Equals(hintsMetadata);
+        }
     }
 }

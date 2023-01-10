@@ -18,52 +18,53 @@
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
-
-public class LocalDateTimeSerializerTests : PackStreamSerializerTests
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
 {
-    internal override IPackStreamSerializer SerializerUnderTest => new LocalDateTimeSerializer();
-
-    [Fact]
-    public void ShouldSerializeDateTime()
+    public class LocalDateTimeSerializerTests : PackStreamSerializerTests
     {
-        var dateTime = new LocalDateTime(1978, 12, 16, 12, 35, 59, 128000987);
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+        internal override IPackStreamSerializer SerializerUnderTest => new LocalDateTimeSerializer();
 
-        writer.Write(dateTime);
+        [Fact]
+        public void ShouldSerializeDateTime()
+        {
+            var dateTime = new LocalDateTime(1978, 12, 16, 12, 35, 59, 128000987);
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var reader = readerMachine.Reader();
+            writer.Write(dateTime);
 
-        reader.PeekNextType().Should().Be(PackStreamType.Struct);
-        reader.ReadStructHeader().Should().Be(2);
-        reader.ReadStructSignature().Should().Be((byte)'d');
-        reader.Read().Should().Be(282659759L);
-        reader.Read().Should().Be(128000987L);
-    }
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var reader = readerMachine.Reader();
 
-    [Fact]
-    public void ShouldDeserializeDateTime()
-    {
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
+            reader.ReadStructHeader().Should().Be(2);
+            reader.ReadStructSignature().Should().Be((byte)'d');
+            reader.Read().Should().Be(282659759L);
+            reader.Read().Should().Be(128000987L);
+        }
 
-        writer.WriteStructHeader(LocalDateTimeSerializer.StructSize, LocalDateTimeSerializer.StructType);
-        writer.Write(282659759);
-        writer.Write(128000987);
+        [Fact]
+        public void ShouldDeserializeDateTime()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var reader = readerMachine.Reader();
-        var value = reader.Read();
+            writer.WriteStructHeader(LocalDateTimeSerializer.StructSize, LocalDateTimeSerializer.StructType);
+            writer.Write(282659759);
+            writer.Write(128000987);
 
-        value.Should().NotBeNull();
-        value.Should().BeOfType<LocalDateTime>().Which.Year.Should().Be(1978);
-        value.Should().BeOfType<LocalDateTime>().Which.Month.Should().Be(12);
-        value.Should().BeOfType<LocalDateTime>().Which.Day.Should().Be(16);
-        value.Should().BeOfType<LocalDateTime>().Which.Hour.Should().Be(12);
-        value.Should().BeOfType<LocalDateTime>().Which.Minute.Should().Be(35);
-        value.Should().BeOfType<LocalDateTime>().Which.Second.Should().Be(59);
-        value.Should().BeOfType<LocalDateTime>().Which.Nanosecond.Should().Be(128000987);
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var reader = readerMachine.Reader();
+            var value = reader.Read();
+
+            value.Should().NotBeNull();
+            value.Should().BeOfType<LocalDateTime>().Which.Year.Should().Be(1978);
+            value.Should().BeOfType<LocalDateTime>().Which.Month.Should().Be(12);
+            value.Should().BeOfType<LocalDateTime>().Which.Day.Should().Be(16);
+            value.Should().BeOfType<LocalDateTime>().Which.Hour.Should().Be(12);
+            value.Should().BeOfType<LocalDateTime>().Which.Minute.Should().Be(35);
+            value.Should().BeOfType<LocalDateTime>().Which.Second.Should().Be(59);
+            value.Should().BeOfType<LocalDateTime>().Which.Nanosecond.Should().Be(128000987);
+        }
     }
 }

@@ -26,144 +26,145 @@ using Neo4j.Driver.Internal.Result;
 using Xunit;
 using Record = Xunit.Record;
 
-namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests;
-
-public class BoltProtocolTests
+namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
 {
-    public class RunInAutoCommitTransactionAsyncTests
+    public class BoltProtocolTests
     {
-        [Theory]
-        [InlineData(4, 3)]
-        [InlineData(4, 2)]
-        [InlineData(4, 1)]
-        [InlineData(4, 0)]
-        public async Task ShouldThrowWhenUsingImpersonatedUserWithBoltVersionLessThan44(int major, int minor)
+        public class RunInAutoCommitTransactionAsyncTests
         {
-            var mockConn = new Mock<IConnection>();
-            mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
-
-            var acp = new AutoCommitParams
+            [Theory]
+            [InlineData(4, 3)]
+            [InlineData(4, 2)]
+            [InlineData(4, 1)]
+            [InlineData(4, 0)]
+            public async Task ShouldThrowWhenUsingImpersonatedUserWithBoltVersionLessThan44(int major, int minor)
             {
-                ImpersonatedUser = "Douglas Fir"
-            };
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
 
-            var exception = await Record.ExceptionAsync(
-                () => BoltProtocol.Instance.RunInAutoCommitTransactionAsync(mockConn.Object, acp));
+                var acp = new AutoCommitParams
+                {
+                    ImpersonatedUser = "Douglas Fir"
+                };
 
-            exception.Should().BeOfType<ArgumentException>();
-        }
+                var exception = await Record.ExceptionAsync(
+                    () => BoltProtocol.Instance.RunInAutoCommitTransactionAsync(mockConn.Object, acp));
 
-        [Theory]
-        [InlineData(4, 4)]
-        [InlineData(5, 0)]
-        [InlineData(6, 0)]
-        public async Task ShouldNotThrowWhenImpersonatingUserWithBoltVersionGreaterThan43(int major, int minor)
-        {
-            var mockConn = new Mock<IConnection>();
-            mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
-            mockConn.SetupGet(x => x.Mode).Returns(AccessMode.Read);
+                exception.Should().BeOfType<ArgumentException>();
+            }
 
-            var acp = new AutoCommitParams
+            [Theory]
+            [InlineData(4, 4)]
+            [InlineData(5, 0)]
+            [InlineData(6, 0)]
+            public async Task ShouldNotThrowWhenImpersonatingUserWithBoltVersionGreaterThan43(int major, int minor)
             {
-                Query = new Query("..."),
-                ImpersonatedUser = "Douglas Fir"
-            };
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
+                mockConn.SetupGet(x => x.Mode).Returns(AccessMode.Read);
 
-            var exception = await Record.ExceptionAsync(
-                () => BoltProtocol.Instance.RunInAutoCommitTransactionAsync(mockConn.Object, acp));
+                var acp = new AutoCommitParams
+                {
+                    Query = new Query("..."),
+                    ImpersonatedUser = "Douglas Fir"
+                };
 
-            exception.Should().BeNull();
-        }
+                var exception = await Record.ExceptionAsync(
+                    () => BoltProtocol.Instance.RunInAutoCommitTransactionAsync(mockConn.Object, acp));
 
-        [Fact]
-        public async Task ShouldBuildCursor()
-        {
-            var mockConn = new Mock<IConnection>();
-            mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(5, 0));
+                exception.Should().BeNull();
+            }
 
-            var msgFactory = new Mock<IBoltProtocolMessageFactory>();
-            var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
-            var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
-
-            handlerFactory.Setup(
-                    x => x.NewResultCursorBuilder(
-                        It.IsAny<SummaryBuilder>(),
-                        It.IsAny<IConnection>(),
-                        It.IsAny<AutoCommitParams>(),
-                        It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
-                            Func<IResultStreamBuilder, long, long, Task>>>(),
-                        It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
-                            Func<IResultStreamBuilder, long, Task>>>()))
-                .Returns(resultCursorBuilderMock.Object);
-
-            var protocol = new BoltProtocol(msgFactory.Object, handlerFactory.Object);
-
-            var acp = new AutoCommitParams
+            [Fact]
+            public async Task ShouldBuildCursor()
             {
-                Query = new Query("...")
-            };
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(5, 0));
 
-            await protocol.RunInAutoCommitTransactionAsync(mockConn.Object, acp);
+                var msgFactory = new Mock<IBoltProtocolMessageFactory>();
+                var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
+                var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
 
-            msgFactory.Verify(
-                x => x.NewRunWithMetadataMessage(It.IsNotNull<SummaryBuilder>(), mockConn.Object, acp),
-                Times.Once);
+                handlerFactory.Setup(
+                        x => x.NewResultCursorBuilder(
+                            It.IsAny<SummaryBuilder>(),
+                            It.IsAny<IConnection>(),
+                            It.IsAny<AutoCommitParams>(),
+                            It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                                Func<IResultStreamBuilder, long, long, Task>>>(),
+                            It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                                Func<IResultStreamBuilder, long, Task>>>()))
+                    .Returns(resultCursorBuilderMock.Object);
 
-            handlerFactory.Verify(
-                x => x.NewRunHandler(resultCursorBuilderMock.Object, It.IsNotNull<SummaryBuilder>()),
-                Times.Once);
+                var protocol = new BoltProtocol(msgFactory.Object, handlerFactory.Object);
 
-            mockConn.Verify(
-                x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()),
-                Times.Once);
+                var acp = new AutoCommitParams
+                {
+                    Query = new Query("...")
+                };
 
-            resultCursorBuilderMock.Verify(x => x.CreateCursor(), Times.Once);
-        }
+                await protocol.RunInAutoCommitTransactionAsync(mockConn.Object, acp);
 
-        [Fact]
-        public async Task ShouldEnqueueTwiceWithReactive()
-        {
-            var mockConn = new Mock<IConnection>();
-            mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(5, 0));
+                msgFactory.Verify(
+                    x => x.NewRunWithMetadataMessage(It.IsNotNull<SummaryBuilder>(), mockConn.Object, acp),
+                    Times.Once);
 
-            var msgFactory = new Mock<IBoltProtocolMessageFactory>();
-            var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
-            var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
+                handlerFactory.Verify(
+                    x => x.NewRunHandler(resultCursorBuilderMock.Object, It.IsNotNull<SummaryBuilder>()),
+                    Times.Once);
 
-            handlerFactory.Setup(
-                    x => x.NewResultCursorBuilder(
-                        It.IsAny<SummaryBuilder>(),
-                        It.IsAny<IConnection>(),
-                        It.IsAny<AutoCommitParams>(),
-                        It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
-                            Func<IResultStreamBuilder, long, long, Task>>>(),
-                        It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
-                            Func<IResultStreamBuilder, long, Task>>>()))
-                .Returns(resultCursorBuilderMock.Object);
+                mockConn.Verify(
+                    x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()),
+                    Times.Once);
 
-            var protocol = new BoltProtocol(msgFactory.Object, handlerFactory.Object);
+                resultCursorBuilderMock.Verify(x => x.CreateCursor(), Times.Once);
+            }
 
-            var acp = new AutoCommitParams
+            [Fact]
+            public async Task ShouldEnqueueTwiceWithReactive()
             {
-                Query = new Query("..."),
-                Reactive = true
-            };
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(5, 0));
 
-            await protocol.RunInAutoCommitTransactionAsync(mockConn.Object, acp);
+                var msgFactory = new Mock<IBoltProtocolMessageFactory>();
+                var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
+                var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
 
-            msgFactory.Verify(
-                x => x.NewRunWithMetadataMessage(It.IsNotNull<SummaryBuilder>(), mockConn.Object, acp),
-                Times.Once);
+                handlerFactory.Setup(
+                        x => x.NewResultCursorBuilder(
+                            It.IsAny<SummaryBuilder>(),
+                            It.IsAny<IConnection>(),
+                            It.IsAny<AutoCommitParams>(),
+                            It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                                Func<IResultStreamBuilder, long, long, Task>>>(),
+                            It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                                Func<IResultStreamBuilder, long, Task>>>()))
+                    .Returns(resultCursorBuilderMock.Object);
 
-            handlerFactory.Verify(
-                x => x.NewRunHandler(resultCursorBuilderMock.Object, It.IsNotNull<SummaryBuilder>()),
-                Times.Once);
+                var protocol = new BoltProtocol(msgFactory.Object, handlerFactory.Object);
 
-            mockConn.Verify(
-                x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()),
-                Times.Exactly(2));
+                var acp = new AutoCommitParams
+                {
+                    Query = new Query("..."),
+                    Reactive = true
+                };
 
-            resultCursorBuilderMock.Verify(x => x.CreateCursor(), Times.Once);
+                await protocol.RunInAutoCommitTransactionAsync(mockConn.Object, acp);
+
+                msgFactory.Verify(
+                    x => x.NewRunWithMetadataMessage(It.IsNotNull<SummaryBuilder>(), mockConn.Object, acp),
+                    Times.Once);
+
+                handlerFactory.Verify(
+                    x => x.NewRunHandler(resultCursorBuilderMock.Object, It.IsNotNull<SummaryBuilder>()),
+                    Times.Once);
+
+                mockConn.Verify(
+                    x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()),
+                    Times.Exactly(2));
+
+                resultCursorBuilderMock.Verify(x => x.CreateCursor(), Times.Once);
+            }
         }
     }
 }

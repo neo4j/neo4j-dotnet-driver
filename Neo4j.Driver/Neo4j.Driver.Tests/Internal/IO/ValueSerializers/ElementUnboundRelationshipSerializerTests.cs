@@ -22,49 +22,50 @@ using Xunit;
 
 #pragma warning disable CS0618
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers;
-
-public class ElementUnboundRelationshipSerializerTests : PackStreamSerializerTests
+namespace Neo4j.Driver.Internal.IO.ValueSerializers
 {
-    internal override IPackStreamSerializer SerializerUnderTest => new ElementUnboundRelationshipSerializer();
-
-    [Fact]
-    public void ShouldDeserialize()
+    public class ElementUnboundRelationshipSerializerTests : PackStreamSerializerTests
     {
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+        internal override IPackStreamSerializer SerializerUnderTest => new ElementUnboundRelationshipSerializer();
 
-        writer.WriteStructHeader(3, UnboundRelationshipSerializer.UnboundRelationship);
-        writer.Write(1);
-        writer.Write("RELATES_TO");
-        writer.Write(
-            new Dictionary<string, object>
-            {
-                { "prop3", true }
-            });
+        [Fact]
+        public void ShouldDeserialize()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        writer.Write("r1");
-
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var value = readerMachine.Reader().Read();
-
-        value.Should().NotBeNull();
-        value.Should().BeOfType<Relationship>().Which.Id.Should().Be(1L);
-        value.Should().BeOfType<Relationship>().Which.StartNodeId.Should().Be(-1L);
-        value.Should().BeOfType<Relationship>().Which.EndNodeId.Should().Be(-1L);
-        value.Should().BeOfType<Relationship>().Which.Type.Should().Be("RELATES_TO");
-        value.Should()
-            .BeOfType<Relationship>()
-            .Which.Properties.Should()
-            .HaveCount(1)
-            .And.Contain(
-                new[]
+            writer.WriteStructHeader(3, UnboundRelationshipSerializer.UnboundRelationship);
+            writer.Write(1);
+            writer.Write("RELATES_TO");
+            writer.Write(
+                new Dictionary<string, object>
                 {
-                    new KeyValuePair<string, object>("prop3", true)
+                    { "prop3", true }
                 });
 
-        value.Should().BeOfType<Relationship>().Which.ElementId.Should().Be("r1");
-        value.Should().BeOfType<Relationship>().Which.StartNodeElementId.Should().Be("-1");
-        value.Should().BeOfType<Relationship>().Which.EndNodeElementId.Should().Be("-1");
+            writer.Write("r1");
+
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var value = readerMachine.Reader().Read();
+
+            value.Should().NotBeNull();
+            value.Should().BeOfType<Relationship>().Which.Id.Should().Be(1L);
+            value.Should().BeOfType<Relationship>().Which.StartNodeId.Should().Be(-1L);
+            value.Should().BeOfType<Relationship>().Which.EndNodeId.Should().Be(-1L);
+            value.Should().BeOfType<Relationship>().Which.Type.Should().Be("RELATES_TO");
+            value.Should()
+                .BeOfType<Relationship>()
+                .Which.Properties.Should()
+                .HaveCount(1)
+                .And.Contain(
+                    new[]
+                    {
+                        new KeyValuePair<string, object>("prop3", true)
+                    });
+
+            value.Should().BeOfType<Relationship>().Which.ElementId.Should().Be("r1");
+            value.Should().BeOfType<Relationship>().Which.StartNodeElementId.Should().Be("-1");
+            value.Should().BeOfType<Relationship>().Which.EndNodeElementId.Should().Be("-1");
+        }
     }
 }

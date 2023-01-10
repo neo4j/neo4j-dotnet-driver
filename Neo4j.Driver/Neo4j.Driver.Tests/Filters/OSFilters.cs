@@ -20,86 +20,87 @@ using System.Runtime.InteropServices;
 using Neo4j.Driver.Internal;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.TestUtil;
-
-public class OSFactAttribute : FactAttribute
+namespace Neo4j.Driver.Tests.TestUtil
 {
-    public OSFactAttribute(params OSPlatform[] onPlatforms)
+    public class OSFactAttribute : FactAttribute
     {
-        var shouldSkip = onPlatforms.All(platform => !RuntimeInformation.IsOSPlatform(platform));
-
-        if (shouldSkip)
+        public OSFactAttribute(params OSPlatform[] onPlatforms)
         {
-            Skip = $"Test is supposed to be run only on platforms '{onPlatforms.ToContentString()}'";
+            var shouldSkip = onPlatforms.All(platform => !RuntimeInformation.IsOSPlatform(platform));
+
+            if (shouldSkip)
+            {
+                Skip = $"Test is supposed to be run only on platforms '{onPlatforms.ToContentString()}'";
+            }
         }
     }
-}
 
-public class WindowsFactAttribute : OSFactAttribute
-{
-    public WindowsFactAttribute() : base(OSPlatform.Windows)
+    public class WindowsFactAttribute : OSFactAttribute
     {
-    }
-}
-
-public class LinuxFactAttribute : OSFactAttribute
-{
-    public LinuxFactAttribute() : base(OSPlatform.Linux)
-    {
-    }
-}
-
-public class OSXFactAttribute : OSFactAttribute
-{
-    public OSXFactAttribute() : base(OSPlatform.OSX)
-    {
-    }
-}
-
-public class UnixFactAttribute : OSFactAttribute
-{
-    public UnixFactAttribute() : base(OSPlatform.Linux, OSPlatform.OSX)
-    {
-    }
-}
-
-public class OSTheoryAttribute : TheoryAttribute
-{
-    public OSTheoryAttribute(params OSPlatform[] onPlatforms)
-    {
-        var shouldSkip = onPlatforms.All(platform => !RuntimeInformation.IsOSPlatform(platform));
-
-        if (shouldSkip)
+        public WindowsFactAttribute() : base(OSPlatform.Windows)
         {
-            Skip = $"Test is supposed to be run only on platforms '{onPlatforms.ToContentString()}'";
         }
     }
-}
 
-public class WindowsTheoryAttribute : OSTheoryAttribute
-{
-    public WindowsTheoryAttribute() : base(OSPlatform.Windows)
+    public class LinuxFactAttribute : OSFactAttribute
     {
+        public LinuxFactAttribute() : base(OSPlatform.Linux)
+        {
+        }
     }
-}
 
-public class LinuxTheoryAttribute : OSTheoryAttribute
-{
-    public LinuxTheoryAttribute() : base(OSPlatform.Linux)
+    public class OSXFactAttribute : OSFactAttribute
     {
+        public OSXFactAttribute() : base(OSPlatform.OSX)
+        {
+        }
     }
-}
 
-public class OSXTheoryAttribute : OSTheoryAttribute
-{
-    public OSXTheoryAttribute() : base(OSPlatform.OSX)
+    public class UnixFactAttribute : OSFactAttribute
     {
+        public UnixFactAttribute() : base(OSPlatform.Linux, OSPlatform.OSX)
+        {
+        }
     }
-}
 
-public class UnixTheoryAttribute : OSTheoryAttribute
-{
-    public UnixTheoryAttribute() : base(OSPlatform.Linux, OSPlatform.OSX)
+    public class OSTheoryAttribute : TheoryAttribute
     {
+        public OSTheoryAttribute(params OSPlatform[] onPlatforms)
+        {
+            var shouldSkip = onPlatforms.All(platform => !RuntimeInformation.IsOSPlatform(platform));
+
+            if (shouldSkip)
+            {
+                Skip = $"Test is supposed to be run only on platforms '{onPlatforms.ToContentString()}'";
+            }
+        }
+    }
+
+    public class WindowsTheoryAttribute : OSTheoryAttribute
+    {
+        public WindowsTheoryAttribute() : base(OSPlatform.Windows)
+        {
+        }
+    }
+
+    public class LinuxTheoryAttribute : OSTheoryAttribute
+    {
+        public LinuxTheoryAttribute() : base(OSPlatform.Linux)
+        {
+        }
+    }
+
+    public class OSXTheoryAttribute : OSTheoryAttribute
+    {
+        public OSXTheoryAttribute() : base(OSPlatform.OSX)
+        {
+        }
+    }
+
+    public class UnixTheoryAttribute : OSTheoryAttribute
+    {
+        public UnixTheoryAttribute() : base(OSPlatform.Linux, OSPlatform.OSX)
+        {
+        }
     }
 }

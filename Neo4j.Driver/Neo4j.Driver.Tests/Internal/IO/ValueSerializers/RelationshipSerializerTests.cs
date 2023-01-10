@@ -23,101 +23,102 @@ using Xunit;
 
 #pragma warning disable CS0618
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers;
-
-public class RelationshipSerializerTests : PackStreamSerializerTests
+namespace Neo4j.Driver.Internal.IO.ValueSerializers
 {
-    internal override IPackStreamSerializer SerializerUnderTest => new RelationshipSerializer();
-
-    [Fact]
-    public void ShouldDeserialize()
+    public class RelationshipSerializerTests : PackStreamSerializerTests
     {
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+        internal override IPackStreamSerializer SerializerUnderTest => new RelationshipSerializer();
 
-        SerializeRelationship(writer);
+        [Fact]
+        public void ShouldDeserialize()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var value = readerMachine.Reader().Read();
+            SerializeRelationship(writer);
 
-        VerifySerializedRelationship(value);
-    }
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var value = readerMachine.Reader().Read();
 
-    [Fact]
-    public void ShouldDeserializeWhenInList()
-    {
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+            VerifySerializedRelationship(value);
+        }
 
-        writer.WriteListHeader(1);
-        SerializeRelationship(writer);
+        [Fact]
+        public void ShouldDeserializeWhenInList()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var value = readerMachine.Reader().Read();
+            writer.WriteListHeader(1);
+            SerializeRelationship(writer);
 
-        value.Should().NotBeNull();
-        value.Should().BeAssignableTo<IList>().Which.Should().HaveCount(1);
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var value = readerMachine.Reader().Read();
 
-        VerifySerializedRelationship(value.Should().BeAssignableTo<IList>().Which[0]);
-    }
+            value.Should().NotBeNull();
+            value.Should().BeAssignableTo<IList>().Which.Should().HaveCount(1);
 
-    [Fact]
-    public void ShouldDeserializeWhenInMap()
-    {
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+            VerifySerializedRelationship(value.Should().BeAssignableTo<IList>().Which[0]);
+        }
 
-        writer.WriteMapHeader(1);
-        writer.Write("x");
-        SerializeRelationship(writer);
+        [Fact]
+        public void ShouldDeserializeWhenInMap()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var value = readerMachine.Reader().Read();
+            writer.WriteMapHeader(1);
+            writer.Write("x");
+            SerializeRelationship(writer);
 
-        value.Should().NotBeNull();
-        value.Should()
-            .BeAssignableTo<IDictionary<string, object>>()
-            .Which.Should()
-            .HaveCount(1)
-            .And
-            .ContainKey("x");
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var value = readerMachine.Reader().Read();
 
-        VerifySerializedRelationship(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
-    }
+            value.Should().NotBeNull();
+            value.Should()
+                .BeAssignableTo<IDictionary<string, object>>()
+                .Which.Should()
+                .HaveCount(1)
+                .And
+                .ContainKey("x");
 
-    private static void SerializeRelationship(PackStreamWriter writer)
-    {
-        writer.WriteStructHeader(5, RelationshipSerializer.Relationship);
-        writer.Write(1);
-        writer.Write(2);
-        writer.Write(3);
-        writer.Write("RELATES_TO");
-        writer.Write(
-            new Dictionary<string, object>
-            {
-                { "prop1", "something" },
-                { "prop2", 2.0 },
-                { "prop3", false }
-            });
-    }
+            VerifySerializedRelationship(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
+        }
 
-    private static void VerifySerializedRelationship(object value)
-    {
-        value.Should().NotBeNull();
-        value.Should().BeOfType<Relationship>().Which.Id.Should().Be(1L);
-        value.Should().BeOfType<Relationship>().Which.StartNodeId.Should().Be(2L);
-        value.Should().BeOfType<Relationship>().Which.EndNodeId.Should().Be(3L);
-        value.Should().BeOfType<Relationship>().Which.Type.Should().Be("RELATES_TO");
-        value.Should()
-            .BeOfType<Relationship>()
-            .Which.Properties.Should()
-            .HaveCount(3)
-            .And.Contain(
-                new[]
+        private static void SerializeRelationship(PackStreamWriter writer)
+        {
+            writer.WriteStructHeader(5, RelationshipSerializer.Relationship);
+            writer.Write(1);
+            writer.Write(2);
+            writer.Write(3);
+            writer.Write("RELATES_TO");
+            writer.Write(
+                new Dictionary<string, object>
                 {
-                    new KeyValuePair<string, object>("prop1", "something"),
-                    new KeyValuePair<string, object>("prop2", 2.0),
-                    new KeyValuePair<string, object>("prop3", false)
+                    { "prop1", "something" },
+                    { "prop2", 2.0 },
+                    { "prop3", false }
                 });
+        }
+
+        private static void VerifySerializedRelationship(object value)
+        {
+            value.Should().NotBeNull();
+            value.Should().BeOfType<Relationship>().Which.Id.Should().Be(1L);
+            value.Should().BeOfType<Relationship>().Which.StartNodeId.Should().Be(2L);
+            value.Should().BeOfType<Relationship>().Which.EndNodeId.Should().Be(3L);
+            value.Should().BeOfType<Relationship>().Which.Type.Should().Be("RELATES_TO");
+            value.Should()
+                .BeOfType<Relationship>()
+                .Which.Properties.Should()
+                .HaveCount(3)
+                .And.Contain(
+                    new[]
+                    {
+                        new KeyValuePair<string, object>("prop1", "something"),
+                        new KeyValuePair<string, object>("prop2", 2.0),
+                        new KeyValuePair<string, object>("prop3", false)
+                    });
+        }
     }
 }

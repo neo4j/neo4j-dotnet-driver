@@ -24,323 +24,328 @@ using Moq;
 using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO;
-
-public class ChunkWriterTests
+namespace Neo4j.Driver.Internal.IO
 {
-    private readonly Mock<ILogger> _logger = new();
-    private readonly BufferSettings _settings = new(Config.Default);
-
-    [Fact]
-    public void ShouldThrowWhenConstructedUsingUnreadableStream()
+    public class ChunkWriterTests
     {
-        var mockStream = new Mock<Stream>();
-        mockStream.Setup(l => l.CanWrite).Returns(false);
+        private readonly Mock<ILogger> _logger = new();
+        private readonly BufferSettings _settings = new(Config.Default);
 
-        var ex = Record.Exception(
-            () =>
-                new ChunkWriter(mockStream.Object, _settings, _logger.Object));
+        [Fact]
+        public void ShouldThrowWhenConstructedUsingUnreadableStream()
+        {
+            var mockStream = new Mock<Stream>();
+            mockStream.Setup(l => l.CanWrite).Returns(false);
 
-        ex.Should().NotBeNull();
-        ex.Should().BeOfType<ArgumentOutOfRangeException>();
-    }
+            var ex = Record.Exception(
+                () =>
+                    new ChunkWriter(mockStream.Object, _settings, _logger.Object));
 
-    [Fact]
-    public async Task ShouldWriteToUnderlyingStreamUponSend()
-    {
-        var buffer = new byte[1024];
-        var stream = new MemoryStream();
-        var writer = new ChunkWriter(stream, _settings, _logger.Object);
+            ex.Should().NotBeNull();
+            ex.Should().BeOfType<ArgumentOutOfRangeException>();
+        }
 
-        // Write data
-        writer.OpenChunk();
-        writer.Write(buffer, 0, buffer.Length);
-        writer.CloseChunk();
+        [Fact]
+        public async Task ShouldWriteToUnderlyingStreamUponSend()
+        {
+            var buffer = new byte[1024];
+            var stream = new MemoryStream();
+            var writer = new ChunkWriter(stream, _settings, _logger.Object);
 
-        stream.Length.Should().Be(0);
+            // Write data
+            writer.OpenChunk();
+            writer.Write(buffer, 0, buffer.Length);
+            writer.CloseChunk();
 
-        await writer.SendAsync();
+            stream.Length.Should().Be(0);
 
-        stream.Length.Should().Be(buffer.Length + 2);
-    }
+            await writer.SendAsync();
 
-    [Fact]
-    public async Task ShouldWriteToUnderlyingStreamUponSendAsync()
-    {
-        var buffer = new byte[1024];
-        var stream = new MemoryStream();
-        var writer = new ChunkWriter(stream, _settings, _logger.Object);
+            stream.Length.Should().Be(buffer.Length + 2);
+        }
 
-        // Write data
-        writer.OpenChunk();
-        writer.Write(buffer, 0, buffer.Length);
-        writer.CloseChunk();
+        [Fact]
+        public async Task ShouldWriteToUnderlyingStreamUponSendAsync()
+        {
+            var buffer = new byte[1024];
+            var stream = new MemoryStream();
+            var writer = new ChunkWriter(stream, _settings, _logger.Object);
 
-        stream.Length.Should().Be(0);
+            // Write data
+            writer.OpenChunk();
+            writer.Write(buffer, 0, buffer.Length);
+            writer.CloseChunk();
 
-        await writer.SendAsync();
+            stream.Length.Should().Be(0);
 
-        stream.Length.Should().Be(buffer.Length + 2);
-    }
+            await writer.SendAsync();
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(3)]
-    [InlineData(Constants.ChunkBufferSize)]
-    [InlineData(Constants.MaxChunkSize)]
-    [InlineData(Constants.MaxChunkSize * 3)]
-    public async Task ShouldCloseTheChunkWithCorrectSize(int chunkSize)
-    {
-        var buffer = Enumerable.Range(0, chunkSize).Select(i => i % byte.MaxValue).Select(i => (byte)i).ToArray();
-        var stream = new MemoryStream();
-        var writer = new ChunkWriter(stream, _settings, _logger.Object);
+            stream.Length.Should().Be(buffer.Length + 2);
+        }
 
-        // Write data
-        writer.OpenChunk();
-        writer.Write(buffer, 0, buffer.Length);
-        writer.CloseChunk();
+        [Theory]
+        [InlineData(0)]
+        [InlineData(3)]
+        [InlineData(Constants.ChunkBufferSize)]
+        [InlineData(Constants.MaxChunkSize)]
+        [InlineData(Constants.MaxChunkSize * 3)]
+        public async Task ShouldCloseTheChunkWithCorrectSize(int chunkSize)
+        {
+            var buffer = Enumerable.Range(0, chunkSize).Select(i => i % byte.MaxValue).Select(i => (byte)i).ToArray();
+            var stream = new MemoryStream();
+            var writer = new ChunkWriter(stream, _settings, _logger.Object);
 
-        // End Of Message Marker
-        writer.OpenChunk();
-        writer.CloseChunk();
+            // Write data
+            writer.OpenChunk();
+            writer.Write(buffer, 0, buffer.Length);
+            writer.CloseChunk();
 
-        // Write To Underlying Stream
-        await writer.SendAsync();
+            // End Of Message Marker
+            writer.OpenChunk();
+            writer.CloseChunk();
 
-        var constructed = await ConstructMessage(stream.ToArray());
+            // Write To Underlying Stream
+            await writer.SendAsync();
 
-        constructed.Should().HaveCount(chunkSize);
-        constructed.Should().Equal(buffer);
-    }
+            var constructed = await ConstructMessage(stream.ToArray());
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(3)]
-    [InlineData(Constants.ChunkBufferSize)]
-    [InlineData(Constants.MaxChunkSize)]
-    [InlineData(Constants.MaxChunkSize * 3)]
-    public async Task ShouldCloseTheChunkWithCorrectSizeAsync(int chunkSize)
-    {
-        var buffer = Enumerable.Range(0, chunkSize).Select(i => i % byte.MaxValue).Select(i => (byte)i).ToArray();
-        var stream = new MemoryStream();
-        var writer = new ChunkWriter(stream, _settings, _logger.Object);
+            constructed.Should().HaveCount(chunkSize);
+            constructed.Should().Equal(buffer);
+        }
 
-        // Write data
-        writer.OpenChunk();
-        writer.Write(buffer, 0, buffer.Length);
-        writer.CloseChunk();
+        [Theory]
+        [InlineData(0)]
+        [InlineData(3)]
+        [InlineData(Constants.ChunkBufferSize)]
+        [InlineData(Constants.MaxChunkSize)]
+        [InlineData(Constants.MaxChunkSize * 3)]
+        public async Task ShouldCloseTheChunkWithCorrectSizeAsync(int chunkSize)
+        {
+            var buffer = Enumerable.Range(0, chunkSize).Select(i => i % byte.MaxValue).Select(i => (byte)i).ToArray();
+            var stream = new MemoryStream();
+            var writer = new ChunkWriter(stream, _settings, _logger.Object);
 
-        // End Of Message Marker
-        writer.OpenChunk();
-        writer.CloseChunk();
+            // Write data
+            writer.OpenChunk();
+            writer.Write(buffer, 0, buffer.Length);
+            writer.CloseChunk();
 
-        // Write To Underlying Stream
-        await writer.SendAsync();
+            // End Of Message Marker
+            writer.OpenChunk();
+            writer.CloseChunk();
 
-        var constructed = await ConstructMessage(stream.ToArray());
+            // Write To Underlying Stream
+            await writer.SendAsync();
 
-        constructed.Should().HaveCount(chunkSize);
-        constructed.Should().Equal(buffer);
-    }
+            var constructed = await ConstructMessage(stream.ToArray());
 
-    [Fact]
-    public async Task ShouldLogDataOnSend()
-    {
-        var buffer = Enumerable.Range(0, 10).Select(i => (byte)i).ToArray();
-        var stream = new MemoryStream();
-        var logger = LoggingHelper.GetTraceEnabledLogger();
-        var writer = new ChunkWriter(stream, _settings, logger.Object);
+            constructed.Should().HaveCount(chunkSize);
+            constructed.Should().Equal(buffer);
+        }
 
-        // Write data
-        writer.OpenChunk();
-        writer.Write(buffer, 0, buffer.Length);
-        writer.CloseChunk();
+        [Fact]
+        public async Task ShouldLogDataOnSend()
+        {
+            var buffer = Enumerable.Range(0, 10).Select(i => (byte)i).ToArray();
+            var stream = new MemoryStream();
+            var logger = LoggingHelper.GetTraceEnabledLogger();
+            var writer = new ChunkWriter(stream, _settings, logger.Object);
 
-        logger.Verify(x => x.Trace("C: {0}", It.IsAny<string>()), Times.Never);
+            // Write data
+            writer.OpenChunk();
+            writer.Write(buffer, 0, buffer.Length);
+            writer.CloseChunk();
 
-        await writer.SendAsync();
+            logger.Verify(x => x.Trace("C: {0}", It.IsAny<string>()), Times.Never);
 
-        logger.Verify(x => x.Trace("C: {0}", It.IsAny<string>()), Times.Once);
-    }
+            await writer.SendAsync();
 
-    [Fact]
-    public async Task ShouldLogDataOnSendAsync()
-    {
-        var buffer = Enumerable.Range(0, 10).Select(i => (byte)i).ToArray();
-        var stream = new MemoryStream();
-        var logger = LoggingHelper.GetTraceEnabledLogger();
-        var writer = new ChunkWriter(stream, _settings, logger.Object);
+            logger.Verify(x => x.Trace("C: {0}", It.IsAny<string>()), Times.Once);
+        }
 
-        // Write data
-        writer.OpenChunk();
-        writer.Write(buffer, 0, buffer.Length);
-        writer.CloseChunk();
+        [Fact]
+        public async Task ShouldLogDataOnSendAsync()
+        {
+            var buffer = Enumerable.Range(0, 10).Select(i => (byte)i).ToArray();
+            var stream = new MemoryStream();
+            var logger = LoggingHelper.GetTraceEnabledLogger();
+            var writer = new ChunkWriter(stream, _settings, logger.Object);
 
-        logger.Verify(x => x.Trace("C: {0}", It.IsAny<string>()), Times.Never);
+            // Write data
+            writer.OpenChunk();
+            writer.Write(buffer, 0, buffer.Length);
+            writer.CloseChunk();
 
-        await writer.SendAsync();
+            logger.Verify(x => x.Trace("C: {0}", It.IsAny<string>()), Times.Never);
 
-        logger.Verify(x => x.Trace("C: {0}", It.IsAny<string>()), Times.Once);
-    }
+            await writer.SendAsync();
 
-    [Theory]
-    [InlineData(100, 200, 5)]
-    [InlineData(100, 200, 10)]
-    [InlineData(100, 200, 50)]
-    [InlineData(100, 200, 98)]
-    public async Task ShouldNotResetCapacityWhenBelowMaxBufferSize(
-        int defaultBufferSize,
-        int maxBufferSize,
-        int messageSize)
-    {
-        var buffer = new byte[messageSize];
-        var stream = new MemoryStream();
-        var logger = new Mock<ILogger>();
-        var settings = new BufferSettings(defaultBufferSize, maxBufferSize, defaultBufferSize, maxBufferSize);
-        var writer = new ChunkWriter(stream, settings, logger.Object);
+            logger.Verify(x => x.Trace("C: {0}", It.IsAny<string>()), Times.Once);
+        }
 
-        writer.OpenChunk();
-        writer.Write(buffer, 0, buffer.Length);
-        writer.CloseChunk();
-        await writer.SendAsync();
+        [Theory]
+        [InlineData(100, 200, 5)]
+        [InlineData(100, 200, 10)]
+        [InlineData(100, 200, 50)]
+        [InlineData(100, 200, 98)]
+        public async Task ShouldNotResetCapacityWhenBelowMaxBufferSize(
+            int defaultBufferSize,
+            int maxBufferSize,
+            int messageSize)
+        {
+            var buffer = new byte[messageSize];
+            var stream = new MemoryStream();
+            var logger = new Mock<ILogger>();
+            var settings = new BufferSettings(defaultBufferSize, maxBufferSize, defaultBufferSize, maxBufferSize);
+            var writer = new ChunkWriter(stream, settings, logger.Object);
 
-        logger.Verify(l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()), Times.Never);
-    }
+            writer.OpenChunk();
+            writer.Write(buffer, 0, buffer.Length);
+            writer.CloseChunk();
+            await writer.SendAsync();
 
-    [Theory]
-    [InlineData(100, 200, 5)]
-    [InlineData(100, 200, 10)]
-    [InlineData(100, 200, 50)]
-    [InlineData(100, 200, 98)]
-    public async void ShouldNotResetCapacityWhenBelowMaxBufferSizeAsync(
-        int defaultBufferSize,
-        int maxBufferSize,
-        int messageSize)
-    {
-        var buffer = new byte[messageSize];
-        var stream = new MemoryStream();
-        var logger = new Mock<ILogger>();
-        var writer = new ChunkWriter(
-            stream,
-            new BufferSettings(defaultBufferSize, maxBufferSize, defaultBufferSize, maxBufferSize),
-            logger.Object);
+            logger.Verify(
+                l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()),
+                Times.Never);
+        }
 
-        writer.OpenChunk();
-        writer.Write(buffer, 0, buffer.Length);
-        writer.CloseChunk();
+        [Theory]
+        [InlineData(100, 200, 5)]
+        [InlineData(100, 200, 10)]
+        [InlineData(100, 200, 50)]
+        [InlineData(100, 200, 98)]
+        public async void ShouldNotResetCapacityWhenBelowMaxBufferSizeAsync(
+            int defaultBufferSize,
+            int maxBufferSize,
+            int messageSize)
+        {
+            var buffer = new byte[messageSize];
+            var stream = new MemoryStream();
+            var logger = new Mock<ILogger>();
+            var writer = new ChunkWriter(
+                stream,
+                new BufferSettings(defaultBufferSize, maxBufferSize, defaultBufferSize, maxBufferSize),
+                logger.Object);
 
-        await writer.SendAsync();
+            writer.OpenChunk();
+            writer.Write(buffer, 0, buffer.Length);
+            writer.CloseChunk();
 
-        logger.Verify(l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()), Times.Never);
-    }
+            await writer.SendAsync();
 
-    [Theory]
-    [InlineData(100, 200, 100)]
-    [InlineData(100, 200, 150)]
-    [InlineData(100, 200, 200)]
-    [InlineData(100, 200, 500)]
-    public async Task ShouldResetCapacityWhenAboveMaxBufferSize(
-        int defaultBufferSize,
-        int maxBufferSize,
-        int messageSize)
-    {
-        var buffer = new byte[messageSize];
-        var stream = new MemoryStream();
-        var logger = new Mock<ILogger>();
-        var settings = new BufferSettings(defaultBufferSize, maxBufferSize, defaultBufferSize, maxBufferSize);
-        var writer = new ChunkWriter(stream, settings, logger.Object);
+            logger.Verify(
+                l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()),
+                Times.Never);
+        }
 
-        writer.OpenChunk();
-        writer.Write(buffer, 0, buffer.Length);
-        writer.CloseChunk();
-        await writer.SendAsync();
+        [Theory]
+        [InlineData(100, 200, 100)]
+        [InlineData(100, 200, 150)]
+        [InlineData(100, 200, 200)]
+        [InlineData(100, 200, 500)]
+        public async Task ShouldResetCapacityWhenAboveMaxBufferSize(
+            int defaultBufferSize,
+            int maxBufferSize,
+            int messageSize)
+        {
+            var buffer = new byte[messageSize];
+            var stream = new MemoryStream();
+            var logger = new Mock<ILogger>();
+            var settings = new BufferSettings(defaultBufferSize, maxBufferSize, defaultBufferSize, maxBufferSize);
+            var writer = new ChunkWriter(stream, settings, logger.Object);
 
-        logger.Verify(l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()), Times.Once);
-    }
+            writer.OpenChunk();
+            writer.Write(buffer, 0, buffer.Length);
+            writer.CloseChunk();
+            await writer.SendAsync();
 
-    [Theory]
-    [InlineData(100, 200, 100)]
-    [InlineData(100, 200, 150)]
-    [InlineData(100, 200, 200)]
-    [InlineData(100, 200, 500)]
-    public async void ShouldResetCapacityWhenAboveMaxBufferSizeAsync(
-        int defaultBufferSize,
-        int maxBufferSize,
-        int messageSize)
-    {
-        var buffer = new byte[messageSize];
-        var stream = new MemoryStream();
-        var logger = new Mock<ILogger>();
-        var settings = new BufferSettings(defaultBufferSize, maxBufferSize, defaultBufferSize, maxBufferSize);
+            logger.Verify(l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()), Times.Once);
+        }
 
-        var writer = new ChunkWriter(stream, settings, logger.Object);
+        [Theory]
+        [InlineData(100, 200, 100)]
+        [InlineData(100, 200, 150)]
+        [InlineData(100, 200, 200)]
+        [InlineData(100, 200, 500)]
+        public async void ShouldResetCapacityWhenAboveMaxBufferSizeAsync(
+            int defaultBufferSize,
+            int maxBufferSize,
+            int messageSize)
+        {
+            var buffer = new byte[messageSize];
+            var stream = new MemoryStream();
+            var logger = new Mock<ILogger>();
+            var settings = new BufferSettings(defaultBufferSize, maxBufferSize, defaultBufferSize, maxBufferSize);
 
-        writer.OpenChunk();
-        writer.Write(buffer, 0, buffer.Length);
-        writer.CloseChunk();
+            var writer = new ChunkWriter(stream, settings, logger.Object);
 
-        await writer.SendAsync();
+            writer.OpenChunk();
+            writer.Write(buffer, 0, buffer.Length);
+            writer.CloseChunk();
 
-        logger.Verify(l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()), Times.Once);
-    }
+            await writer.SendAsync();
 
-    [Fact]
-    public async Task ShouldResetCapacityWhenAboveMaxBufferSizeAfterEachSend()
-    {
-        var buffer = new byte[1536];
-        var stream = new MemoryStream();
-        var logger = new Mock<ILogger>();
-        var settings = new BufferSettings(512, 1024, 512, 1024);
+            logger.Verify(l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()), Times.Once);
+        }
 
-        var writer = new ChunkWriter(stream, settings, logger.Object);
+        [Fact]
+        public async Task ShouldResetCapacityWhenAboveMaxBufferSizeAfterEachSend()
+        {
+            var buffer = new byte[1536];
+            var stream = new MemoryStream();
+            var logger = new Mock<ILogger>();
+            var settings = new BufferSettings(512, 1024, 512, 1024);
 
-        writer.OpenChunk();
-        writer.Write(buffer, 0, buffer.Length);
-        writer.CloseChunk();
-        await writer.SendAsync();
+            var writer = new ChunkWriter(stream, settings, logger.Object);
 
-        writer.OpenChunk();
-        writer.Write(buffer, 0, buffer.Length);
-        writer.CloseChunk();
-        await writer.SendAsync();
+            writer.OpenChunk();
+            writer.Write(buffer, 0, buffer.Length);
+            writer.CloseChunk();
+            await writer.SendAsync();
 
-        logger.Verify(
-            l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()),
-            Times.Exactly(2));
-    }
+            writer.OpenChunk();
+            writer.Write(buffer, 0, buffer.Length);
+            writer.CloseChunk();
+            await writer.SendAsync();
 
-    [Fact]
-    public async Task ShouldResetCapacityWhenAboveMaxBufferSizeAfterEachSendAsync()
-    {
-        var buffer = new byte[1536];
-        var stream = new MemoryStream();
-        var logger = new Mock<ILogger>();
-        var settings = new BufferSettings(512, 1024, 512, 1024);
+            logger.Verify(
+                l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()),
+                Times.Exactly(2));
+        }
 
-        var writer = new ChunkWriter(stream, settings, logger.Object);
+        [Fact]
+        public async Task ShouldResetCapacityWhenAboveMaxBufferSizeAfterEachSendAsync()
+        {
+            var buffer = new byte[1536];
+            var stream = new MemoryStream();
+            var logger = new Mock<ILogger>();
+            var settings = new BufferSettings(512, 1024, 512, 1024);
 
-        writer.OpenChunk();
-        writer.Write(buffer, 0, buffer.Length);
-        writer.CloseChunk();
-        await writer.SendAsync();
+            var writer = new ChunkWriter(stream, settings, logger.Object);
 
-        writer.OpenChunk();
-        writer.Write(buffer, 0, buffer.Length);
-        writer.CloseChunk();
-        await writer.SendAsync();
+            writer.OpenChunk();
+            writer.Write(buffer, 0, buffer.Length);
+            writer.CloseChunk();
+            await writer.SendAsync();
 
-        logger.Verify(
-            l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()),
-            Times.Exactly(2));
-    }
+            writer.OpenChunk();
+            writer.Write(buffer, 0, buffer.Length);
+            writer.CloseChunk();
+            await writer.SendAsync();
 
-    private static async Task<byte[]> ConstructMessage(byte[] buffer)
-    {
-        var stream = new MemoryStream();
-        var reader = new ChunkReader(new MemoryStream(buffer));
+            logger.Verify(
+                l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()),
+                Times.Exactly(2));
+        }
 
-        await reader.ReadMessageChunksToBufferStreamAsync(stream);
+        private static async Task<byte[]> ConstructMessage(byte[] buffer)
+        {
+            var stream = new MemoryStream();
+            var reader = new ChunkReader(new MemoryStream(buffer));
 
-        return stream.ToArray();
+            await reader.ReadMessageChunksToBufferStreamAsync(stream);
+
+            return stream.ToArray();
+        }
     }
 }

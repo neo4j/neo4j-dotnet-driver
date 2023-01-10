@@ -22,12 +22,13 @@ using System.Reactive;
 using System.Reactive.Linq;
 using Microsoft.Reactive.Testing;
 
-namespace Neo4j.Driver.Reactive;
-
-public static class Extensions
+namespace Neo4j.Driver.Reactive
 {
-    public static IEnumerable<Recorded<Notification<T>>> WaitForCompletion<T>(this IObservable<T> observable)
+    public static class Extensions
     {
-        return observable.Materialize().Select(n => new Recorded<Notification<T>>(0, n)).ToEnumerable().ToList();
+        public static IEnumerable<Recorded<Notification<T>>> WaitForCompletion<T>(this IObservable<T> observable)
+        {
+            return observable.Materialize().Select(n => new Recorded<Notification<T>>(0, n)).ToEnumerable().ToList();
+        }
     }
 }

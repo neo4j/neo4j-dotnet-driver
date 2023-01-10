@@ -21,32 +21,33 @@ using FluentAssertions;
 using Neo4j.Driver.Experimental;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.BookmarkManager;
-
-public class BookmarkManagerFactoryTests
+namespace Neo4j.Driver.Internal.BookmarkManager
 {
-    [Fact]
-    public void ShouldReturnNewBookmarkManager()
+    public class BookmarkManagerFactoryTests
     {
-        var factory = new BookmarkManagerFactory();
+        [Fact]
+        public void ShouldReturnNewBookmarkManager()
+        {
+            var factory = new BookmarkManagerFactory();
 
-        var config = new BookmarkManagerConfig(
-            Array.Empty<string>(),
-            _ => Task.FromResult(Array.Empty<string>()),
-            (_, _) => Task.CompletedTask);
+            var config = new BookmarkManagerConfig(
+                Array.Empty<string>(),
+                _ => Task.FromResult(Array.Empty<string>()),
+                (_, _) => Task.CompletedTask);
 
-        var bookmarkManager = factory.NewBookmarkManager(config);
+            var bookmarkManager = factory.NewBookmarkManager(config);
 
-        bookmarkManager.Should().BeAssignableTo<DefaultBookmarkManager>();
-    }
+            bookmarkManager.Should().BeAssignableTo<DefaultBookmarkManager>();
+        }
 
-    [Fact]
-    public void ShouldReturnDefaultBookmarkManagerWhenNoConfigSupplied()
-    {
-        var factory = new BookmarkManagerFactory();
+        [Fact]
+        public void ShouldReturnDefaultBookmarkManagerWhenNoConfigSupplied()
+        {
+            var factory = new BookmarkManagerFactory();
 
-        var bookmarkManager = factory.NewBookmarkManager();
+            var bookmarkManager = factory.NewBookmarkManager();
 
-        bookmarkManager.Should().BeAssignableTo<DefaultBookmarkManager>();
+            bookmarkManager.Should().BeAssignableTo<DefaultBookmarkManager>();
+        }
     }
 }

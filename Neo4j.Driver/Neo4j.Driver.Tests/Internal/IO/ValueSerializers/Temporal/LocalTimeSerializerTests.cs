@@ -20,66 +20,68 @@ using System.Diagnostics;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
-
-public class LocalTimeSerializerTests : PackStreamSerializerTests
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
 {
-    internal override IPackStreamSerializer SerializerUnderTest => new LocalTimeSerializer();
-
-    [Fact]
-    public void ShouldSerializeTime()
+    public class LocalTimeSerializerTests : PackStreamSerializerTests
     {
-        var time = new LocalTime(12, 35, 59, 128000987);
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+        internal override IPackStreamSerializer SerializerUnderTest => new LocalTimeSerializer();
 
-        writer.Write(time);
+        [Fact]
+        public void ShouldSerializeTime()
+        {
+            var time = new LocalTime(12, 35, 59, 128000987);
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var reader = readerMachine.Reader();
+            writer.Write(time);
 
-        reader.PeekNextType().Should().Be(PackStreamType.Struct);
-        reader.ReadStructHeader().Should().Be(1);
-        reader.ReadStructSignature().Should().Be((byte)'t');
-        reader.Read().Should().Be(45359128000987L);
-    }
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var reader = readerMachine.Reader();
 
-    [Fact]
-    public void ShouldDeserializeTime()
-    {
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
+            reader.ReadStructHeader().Should().Be(1);
+            reader.ReadStructSignature().Should().Be((byte)'t');
+            reader.Read().Should().Be(45359128000987L);
+        }
 
-        writer.WriteStructHeader(LocalTimeSerializer.StructSize, LocalTimeSerializer.StructType);
-        writer.Write(45359128000987);
+        [Fact]
+        public void ShouldDeserializeTime()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var reader = readerMachine.Reader();
-        var value = reader.Read();
+            writer.WriteStructHeader(LocalTimeSerializer.StructSize, LocalTimeSerializer.StructType);
+            writer.Write(45359128000987);
 
-        value.Should().NotBeNull();
-        value.Should().BeOfType<LocalTime>().Which.Hour.Should().Be(12);
-        value.Should().BeOfType<LocalTime>().Which.Minute.Should().Be(35);
-        value.Should().BeOfType<LocalTime>().Which.Second.Should().Be(59);
-        value.Should().BeOfType<LocalTime>().Which.Nanosecond.Should().Be(128000987);
-    }
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var reader = readerMachine.Reader();
+            var value = reader.Read();
 
-    [Fact]
-    [Conditional("NET6_0_OR_GREATER")]
-    public void ShouldSerializeTimeOnly()
-    {
-        var time = new TimeOnly(12, 35, 59, 128);
-        var writerMachine = CreateWriterMachine();
-        var writer = writerMachine.Writer;
+            value.Should().NotBeNull();
+            value.Should().BeOfType<LocalTime>().Which.Hour.Should().Be(12);
+            value.Should().BeOfType<LocalTime>().Which.Minute.Should().Be(35);
+            value.Should().BeOfType<LocalTime>().Which.Second.Should().Be(59);
+            value.Should().BeOfType<LocalTime>().Which.Nanosecond.Should().Be(128000987);
+        }
+#if NET6_0_OR_GREATER
+        [Fact]
+        public void ShouldSerializeTimeOnly()
+        {
+            var time = new TimeOnly(12, 35, 59, 128);
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
 
-        writer.Write(time);
+            writer.Write(time);
 
-        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-        var reader = readerMachine.Reader();
+            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+            var reader = readerMachine.Reader();
 
-        reader.PeekNextType().Should().Be(PackStreamType.Struct);
-        reader.ReadStructHeader().Should().Be(1);
-        reader.ReadStructSignature().Should().Be((byte)'t');
-        reader.Read().Should().Be(45359128000000L);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
+            reader.ReadStructHeader().Should().Be(1);
+            reader.ReadStructSignature().Should().Be((byte)'t');
+            reader.Read().Should().Be(45359128000000L);
+        }
+#endif
+
     }
 }

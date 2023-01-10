@@ -19,55 +19,56 @@ using System;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.Util;
-
-public class ConfigBuildersTests
+namespace Neo4j.Driver.Internal.Util
 {
-    public class BuildTransactionOptions
+    public class ConfigBuildersTests
     {
-        [Fact]
-        public void ShouldReturnEmptyTxOptionsWhenBuilderIsNull()
+        public class BuildTransactionOptions
         {
-            var options = ConfigBuilders.BuildTransactionConfig(null);
-            options.Should().Be(TransactionConfig.Default);
+            [Fact]
+            public void ShouldReturnEmptyTxOptionsWhenBuilderIsNull()
+            {
+                var options = ConfigBuilders.BuildTransactionConfig(null);
+                options.Should().Be(TransactionConfig.Default);
+            }
+
+            [Fact]
+            public void ShouldReturnNewTxOptions()
+            {
+                var options1 = ConfigBuilders.BuildTransactionConfig(o => o.WithTimeout(TimeSpan.FromSeconds(5)));
+                var options2 = ConfigBuilders.BuildTransactionConfig(o => o.WithTimeout(TimeSpan.FromSeconds(30)));
+                options1.Timeout.Should().Be(TimeSpan.FromSeconds(5));
+                options2.Timeout.Should().Be(TimeSpan.FromSeconds(30));
+
+                // When I reset to another value
+                options1.Timeout = TimeSpan.FromMinutes(1);
+                options1.Timeout.Should().Be(TimeSpan.FromMinutes(1));
+                options2.Timeout.Should().Be(TimeSpan.FromSeconds(30));
+            }
         }
 
-        [Fact]
-        public void ShouldReturnNewTxOptions()
+        public class BuildSessionOptions
         {
-            var options1 = ConfigBuilders.BuildTransactionConfig(o => o.WithTimeout(TimeSpan.FromSeconds(5)));
-            var options2 = ConfigBuilders.BuildTransactionConfig(o => o.WithTimeout(TimeSpan.FromSeconds(30)));
-            options1.Timeout.Should().Be(TimeSpan.FromSeconds(5));
-            options2.Timeout.Should().Be(TimeSpan.FromSeconds(30));
+            [Fact]
+            public void ShouldReturnEmptySessionOptionsWhenBuilderIsNull()
+            {
+                var options = ConfigBuilders.BuildSessionConfig(null);
+                options.Should().Be(SessionConfig.Default);
+            }
 
-            // When I reset to another value
-            options1.Timeout = TimeSpan.FromMinutes(1);
-            options1.Timeout.Should().Be(TimeSpan.FromMinutes(1));
-            options2.Timeout.Should().Be(TimeSpan.FromSeconds(30));
-        }
-    }
+            [Fact]
+            public void ShouldReturnNewSessionOptions()
+            {
+                var options1 = ConfigBuilders.BuildSessionConfig(o => o.WithDatabase("neo4j"));
+                var options2 = ConfigBuilders.BuildSessionConfig(o => o.WithDatabase("system"));
+                options1.Database.Should().Be("neo4j");
+                options2.Database.Should().Be("system");
 
-    public class BuildSessionOptions
-    {
-        [Fact]
-        public void ShouldReturnEmptySessionOptionsWhenBuilderIsNull()
-        {
-            var options = ConfigBuilders.BuildSessionConfig(null);
-            options.Should().Be(SessionConfig.Default);
-        }
-
-        [Fact]
-        public void ShouldReturnNewSessionOptions()
-        {
-            var options1 = ConfigBuilders.BuildSessionConfig(o => o.WithDatabase("neo4j"));
-            var options2 = ConfigBuilders.BuildSessionConfig(o => o.WithDatabase("system"));
-            options1.Database.Should().Be("neo4j");
-            options2.Database.Should().Be("system");
-
-            // When I reset to another value
-            options1.Database = "foo";
-            options1.Database.Should().Be("foo");
-            options2.Database.Should().Be("system");
+                // When I reset to another value
+                options1.Database = "foo";
+                options1.Database.Should().Be("foo");
+                options2.Database.Should().Be("system");
+            }
         }
     }
 }

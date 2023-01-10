@@ -23,40 +23,41 @@ using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.Connector;
-
-public class DelegatedConnectionTests
+namespace Neo4j.Driver.Tests.Connector
 {
-    internal class TestDelegatedConnection : DelegatedConnection
+    public class DelegatedConnectionTests
     {
-        public TestDelegatedConnection(IConnection connection) : base(connection)
+        internal class TestDelegatedConnection : DelegatedConnection
         {
+            public TestDelegatedConnection(IConnection connection) : base(connection)
+            {
+            }
+
+            public IList<Exception> ErrorList { get; } = new List<Exception>();
+
+            internal override Task OnErrorAsync(Exception error)
+            {
+                ErrorList.Add(error);
+                return Task.FromException(error);
+            }
         }
 
-        public IList<Exception> ErrorList { get; } = new List<Exception>();
-
-        internal override Task OnErrorAsync(Exception error)
+        public class ModeProperty
         {
-            ErrorList.Add(error);
-            return Task.FromException(error);
-        }
-    }
+            [Theory]
+            [InlineData(AccessMode.Read)]
+            [InlineData(AccessMode.Write)]
+            public void ShouldGetModeFromDelegate(AccessMode mode)
+            {
+                var connMock = new Mock<IConnection>();
+                connMock.Setup(x => x.Mode).Returns(mode);
 
-    public class ModeProperty
-    {
-        [Theory]
-        [InlineData(AccessMode.Read)]
-        [InlineData(AccessMode.Write)]
-        public void ShouldGetModeFromDelegate(AccessMode mode)
-        {
-            var connMock = new Mock<IConnection>();
-            connMock.Setup(x => x.Mode).Returns(mode);
+                var delegateConnection = new TestDelegatedConnection(connMock.Object);
 
-            var delegateConnection = new TestDelegatedConnection(connMock.Object);
+                delegateConnection.Mode.Should().Be(mode);
 
-            delegateConnection.Mode.Should().Be(mode);
-
-            connMock.VerifyGet(x => x.Mode);
+                connMock.VerifyGet(x => x.Mode);
+            }
         }
     }
 }

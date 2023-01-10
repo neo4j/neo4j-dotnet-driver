@@ -21,44 +21,45 @@ using FluentAssertions;
 using Moq;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling;
-
-public class MetadataCollectingResponseHandlerTests
+namespace Neo4j.Driver.Internal.MessageHandling
 {
-    [Fact]
-    public void ShouldCallCollectOnCollector()
+    public class MetadataCollectingResponseHandlerTests
     {
-        var collector = new Mock<IMetadataCollector<long>>();
-
-        var handler = new TestHandler();
-        handler.AddCollector<IMetadataCollector<long>, long>(collector.Object);
-
-        var metadata = new Dictionary<string, object> { { "x", 1 }, { "y", false } };
-
-        handler.OnSuccess(metadata);
-
-        collector.Verify(x => x.Collect(metadata), Times.Once);
-    }
-
-    [Fact]
-    public void ShouldNotAddSameCollectorTypeTwice()
-    {
-        var (collector1, collector2) = (new Mock<IMetadataCollector<long>>(), new Mock<IMetadataCollector<long>>());
-
-        var handler = new TestHandler();
-        handler.AddCollector<IMetadataCollector<long>, long>(collector1.Object);
-
-        var exc = Record.Exception(() => handler.AddCollector<IMetadataCollector<long>, long>(collector2.Object));
-
-        exc.Should().BeOfType<InvalidOperationException>();
-    }
-
-    private class TestHandler : MetadataCollectingResponseHandler
-    {
-        public void AddCollector<TCollector, TMetadata>(TCollector collector)
-            where TCollector : class, IMetadataCollector<TMetadata>
+        [Fact]
+        public void ShouldCallCollectOnCollector()
         {
-            AddMetadata<TCollector, TMetadata>(collector);
+            var collector = new Mock<IMetadataCollector<long>>();
+
+            var handler = new TestHandler();
+            handler.AddCollector<IMetadataCollector<long>, long>(collector.Object);
+
+            var metadata = new Dictionary<string, object> { { "x", 1 }, { "y", false } };
+
+            handler.OnSuccess(metadata);
+
+            collector.Verify(x => x.Collect(metadata), Times.Once);
+        }
+
+        [Fact]
+        public void ShouldNotAddSameCollectorTypeTwice()
+        {
+            var (collector1, collector2) = (new Mock<IMetadataCollector<long>>(), new Mock<IMetadataCollector<long>>());
+
+            var handler = new TestHandler();
+            handler.AddCollector<IMetadataCollector<long>, long>(collector1.Object);
+
+            var exc = Record.Exception(() => handler.AddCollector<IMetadataCollector<long>, long>(collector2.Object));
+
+            exc.Should().BeOfType<InvalidOperationException>();
+        }
+
+        private class TestHandler : MetadataCollectingResponseHandler
+        {
+            public void AddCollector<TCollector, TMetadata>(TCollector collector)
+                where TCollector : class, IMetadataCollector<TMetadata>
+            {
+                AddMetadata<TCollector, TMetadata>(collector);
+            }
         }
     }
 }

@@ -21,70 +21,71 @@ using Neo4j.Driver.Internal.Result;
 using Xunit;
 using Record = Xunit.Record;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
-
-public class DatabaseInfoCollectorTests
+namespace Neo4j.Driver.Internal.MessageHandling.Metadata
 {
-    private const string Key = DatabaseInfoCollector.DbKey;
-
-    internal static KeyValuePair<string, object> TestMetadata => new(Key, "foo");
-
-    internal static IDatabaseInfo TestMetadataCollected => new DatabaseInfo("foo");
-
-    [Fact]
-    public void ShouldCollectFalseIfMetadataIsNull()
+    public class DatabaseInfoCollectorTests
     {
-        var collector = new DatabaseInfoCollector();
+        private const string Key = DatabaseInfoCollector.DbKey;
 
-        collector.Collect(null);
+        internal static KeyValuePair<string, object> TestMetadata => new(Key, "foo");
 
-        collector.Collected.Name.Should().BeNull();
-    }
+        internal static IDatabaseInfo TestMetadataCollected => new DatabaseInfo("foo");
 
-    [Fact]
-    public void ShouldCollectFalseIfNoValueIsGiven()
-    {
-        var collector = new DatabaseInfoCollector();
+        [Fact]
+        public void ShouldCollectFalseIfMetadataIsNull()
+        {
+            var collector = new DatabaseInfoCollector();
 
-        collector.Collect(new Dictionary<string, object>());
+            collector.Collect(null);
 
-        collector.Collected.Name.Should().BeNull();
-    }
+            collector.Collected.Name.Should().BeNull();
+        }
 
-    [Fact]
-    public void ShouldThrowIfValueIsOfWrongType()
-    {
-        var metadata = new Dictionary<string, object> { { Key, 1L } };
-        var collector = new DatabaseInfoCollector();
+        [Fact]
+        public void ShouldCollectFalseIfNoValueIsGiven()
+        {
+            var collector = new DatabaseInfoCollector();
 
-        var ex = Record.Exception(() => collector.Collect(metadata));
+            collector.Collect(new Dictionary<string, object>());
 
-        ex.Should()
-            .BeOfType<ProtocolException>()
-            .Which
-            .Message.Should()
-            .Contain($"Expected '{Key}' metadata to be of type 'string', but got 'Int64'.");
-    }
+            collector.Collected.Name.Should().BeNull();
+        }
 
-    [Fact]
-    public void ShouldCollect()
-    {
-        var metadata = new Dictionary<string, object> { { Key, "my-database" } };
-        var collector = new DatabaseInfoCollector();
+        [Fact]
+        public void ShouldThrowIfValueIsOfWrongType()
+        {
+            var metadata = new Dictionary<string, object> { { Key, 1L } };
+            var collector = new DatabaseInfoCollector();
 
-        collector.Collect(metadata);
+            var ex = Record.Exception(() => collector.Collect(metadata));
 
-        collector.Collected.Name.Should().Be("my-database");
-    }
+            ex.Should()
+                .BeOfType<ProtocolException>()
+                .Which
+                .Message.Should()
+                .Contain($"Expected '{Key}' metadata to be of type 'string', but got 'Int64'.");
+        }
 
-    [Fact]
-    public void ShouldReturnSameCollected()
-    {
-        var metadata = new Dictionary<string, object> { { Key, "my-database" } };
-        var collector = new DatabaseInfoCollector();
+        [Fact]
+        public void ShouldCollect()
+        {
+            var metadata = new Dictionary<string, object> { { Key, "my-database" } };
+            var collector = new DatabaseInfoCollector();
 
-        collector.Collect(metadata);
+            collector.Collect(metadata);
 
-        ((IMetadataCollector)collector).Collected.Should().Be(collector.Collected);
+            collector.Collected.Name.Should().Be("my-database");
+        }
+
+        [Fact]
+        public void ShouldReturnSameCollected()
+        {
+            var metadata = new Dictionary<string, object> { { Key, "my-database" } };
+            var collector = new DatabaseInfoCollector();
+
+            collector.Collect(metadata);
+
+            ((IMetadataCollector)collector).Collected.Should().Be(collector.Collected);
+        }
     }
 }

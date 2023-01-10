@@ -25,414 +25,415 @@ using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Result;
 using Xunit;
 
-namespace Neo4j.Driver.Tests;
-
-public class ResultCursorBuilderTests
+namespace Neo4j.Driver.Tests
 {
-    [Fact]
-    public void ShouldStartInRunRequestedStateRx()
+    public class ResultCursorBuilderTests
     {
-        var builder =
-            new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null, reactive: true);
-
-        builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunRequested);
-    }
-
-    [Fact]
-    public void ShouldStartInRunAndRecordsRequestedState()
-    {
-        var builder =
-            new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null);
-
-        builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunAndRecordsRequested);
-    }
-
-    [Fact]
-    public void ShouldTransitionToRunCompletedWhenRunCompletedRx()
-    {
-        var builder =
-            new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null, reactive: true);
-
-        builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunRequested);
-
-        builder.RunCompleted(0, new[] { "a", "b", "c" }, null);
-        builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunCompleted);
-    }
-
-    [Fact]
-    public void ShouldNotTransitionToRunCompletedWhenRunCompleted()
-    {
-        var builder =
-            new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null);
-
-        builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunAndRecordsRequested);
-
-        builder.RunCompleted(0, new[] { "a", "b", "c" }, null);
-        builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunAndRecordsRequested);
-    }
-
-    [Fact]
-    public void ShouldTransitionToRecordsStreamingStreamingWhenRecordIsPushedRx()
-    {
-        var builder =
-            new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null, reactive: true);
-
-        builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunRequested);
-
-        builder.RunCompleted(0, new[] { "a", "b", "c" }, null);
-        builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunCompleted);
-
-        builder.PushRecord(new object[] { 1, 2, 3 });
-        builder.CurrentState.Should().Be(ResultCursorBuilder.State.RecordsStreaming);
-    }
-
-    [Fact]
-    public void ShouldTransitionToRecordsStreamingStreamingWhenRecordIsPushed()
-    {
-        var builder =
-            new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null);
-
-        builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunAndRecordsRequested);
-
-        builder.RunCompleted(0, new[] { "a", "b", "c" }, null);
-        builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunAndRecordsRequested);
-
-        builder.PushRecord(new object[] { 1, 2, 3 });
-        builder.CurrentState.Should().Be(ResultCursorBuilder.State.RecordsStreaming);
-    }
-
-    [Fact]
-    public void ShouldTransitionToRunCompletedWhenPullCompletedWithHasMore()
-    {
-        var builder =
-            new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null)
-            {
-                CurrentState = ResultCursorBuilder.State.RecordsStreaming
-            };
-
-        builder.PullCompleted(true, null);
-        builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunCompleted);
-    }
-
-    [Fact]
-    public void ShouldTransitionToCompletedWhenPullCompleted()
-    {
-        var builder =
-            new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null)
-            {
-                CurrentState = ResultCursorBuilder.State.RecordsStreaming
-            };
-
-        builder.PullCompleted(false, null);
-        builder.CurrentState.Should().Be(ResultCursorBuilder.State.Completed);
-    }
-
-    [Fact]
-    public async Task ShouldInvokeResourceHandlerWhenCompleted()
-    {
-        var actions = new Queue<Action>();
-        var resourceHandler = new Mock<IResultResourceHandler>();
-        var builder =
-            new ResultCursorBuilder(
-                CreateSummaryBuilder(),
-                CreateTaskQueue(actions),
-                null,
-                null,
-                resourceHandler.Object);
-
-        actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
-        actions.Enqueue(() => builder.PushRecord(new object[] { 1 }));
-        actions.Enqueue(() => builder.PushRecord(new object[] { 2 }));
-        actions.Enqueue(() => builder.PushRecord(new object[] { 3 }));
-        actions.Enqueue(() => builder.PullCompleted(false, null));
-
-        var cursor = builder.CreateCursor();
-
-        var hasNext = await cursor.FetchAsync();
-        hasNext.Should().BeTrue();
-        resourceHandler.Verify(x => x.OnResultConsumedAsync(), Times.Never);
-
-        hasNext = await cursor.FetchAsync();
-        hasNext.Should().BeTrue();
-        resourceHandler.Verify(x => x.OnResultConsumedAsync(), Times.Never);
-
-        hasNext = await cursor.FetchAsync();
-        hasNext.Should().BeTrue();
-        resourceHandler.Verify(x => x.OnResultConsumedAsync(), Times.Never);
-
-        hasNext = await cursor.FetchAsync();
-        hasNext.Should().BeFalse();
-        resourceHandler.Verify(x => x.OnResultConsumedAsync(), Times.Once);
-    }
-
-    [Fact]
-    public async Task ShouldPauseAndResumeStreamingWithWatermarks()
-    {
-        var actions = new Queue<Action>();
-        var resourceHandler = new Mock<IResultResourceHandler>();
-        var builder =
-            new ResultCursorBuilder(
-                CreateSummaryBuilder(),
-                CreateTaskQueue(),
-                CreateMoreTaskQueue(actions),
-                null,
-                resourceHandler.Object,
-                2);
-
-        var counter = 0;
-        builder.RunCompleted(0, new[] { "a" }, null);
-        builder.PullCompleted(true, null);
-        builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunCompleted);
-        actions.Enqueue(
-            () =>
-            {
-                builder.PushRecord(new object[] { 1 });
-                counter++;
-                builder.PushRecord(new object[] { 2 });
-                counter++;
-                builder.PullCompleted(true, null);
-            });
-
-        actions.Enqueue(
-            () =>
-            {
-                builder.PushRecord(new object[] { 3 });
-                counter++;
-                builder.PullCompleted(false, null);
-            });
-
-        var cursor = builder.CreateCursor();
-
-        var hasNext = await cursor.FetchAsync();
-        hasNext.Should().BeTrue();
-        resourceHandler.Verify(x => x.OnResultConsumedAsync(), Times.Never);
-        counter.Should().Be(2);
-
-        hasNext = await cursor.FetchAsync();
-        hasNext.Should().BeTrue();
-        resourceHandler.Verify(x => x.OnResultConsumedAsync(), Times.Once);
-        counter.Should().Be(3);
-
-        hasNext = await cursor.FetchAsync();
-        hasNext.Should().BeTrue();
-        counter.Should().Be(3);
-
-        hasNext = await cursor.FetchAsync();
-        hasNext.Should().BeFalse();
-        counter.Should().Be(3);
-    }
-
-    private static SummaryBuilder CreateSummaryBuilder()
-    {
-        return new SummaryBuilder(new Query("Fake"), Mock.Of<IServerInfo>());
-    }
-
-    private static Func<Task> CreateTaskQueue(Queue<Action> actions = null)
-    {
-        if (actions == null)
+        [Fact]
+        public void ShouldStartInRunRequestedStateRx()
         {
-            actions = new Queue<Action>();
+            var builder =
+                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null, reactive: true);
+
+            builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunRequested);
         }
 
-        return () =>
+        [Fact]
+        public void ShouldStartInRunAndRecordsRequestedState()
         {
-            if (actions.TryDequeue(out var action))
-            {
-                action();
-            }
+            var builder =
+                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null);
 
-            return Task.CompletedTask;
-        };
-    }
-
-    private static Func<IResultStreamBuilder, long, long, Task> CreateMoreTaskQueue(Queue<Action> actions)
-    {
-        return (b, id, n) =>
-        {
-            if (actions.TryDequeue(out var action))
-            {
-                action();
-            }
-
-            return Task.CompletedTask;
-        };
-    }
-
-    public class Reactive
-    {
-        private int cancelCallCount;
-        private int moreCallCount;
+            builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunAndRecordsRequested);
+        }
 
         [Fact]
-        public async Task ShouldCallMoreOnceAndReturnRecords()
+        public void ShouldTransitionToRunCompletedWhenRunCompletedRx()
+        {
+            var builder =
+                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null, reactive: true);
+
+            builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunRequested);
+
+            builder.RunCompleted(0, new[] { "a", "b", "c" }, null);
+            builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunCompleted);
+        }
+
+        [Fact]
+        public void ShouldNotTransitionToRunCompletedWhenRunCompleted()
+        {
+            var builder =
+                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null);
+
+            builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunAndRecordsRequested);
+
+            builder.RunCompleted(0, new[] { "a", "b", "c" }, null);
+            builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunAndRecordsRequested);
+        }
+
+        [Fact]
+        public void ShouldTransitionToRecordsStreamingStreamingWhenRecordIsPushedRx()
+        {
+            var builder =
+                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null, reactive: true);
+
+            builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunRequested);
+
+            builder.RunCompleted(0, new[] { "a", "b", "c" }, null);
+            builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunCompleted);
+
+            builder.PushRecord(new object[] { 1, 2, 3 });
+            builder.CurrentState.Should().Be(ResultCursorBuilder.State.RecordsStreaming);
+        }
+
+        [Fact]
+        public void ShouldTransitionToRecordsStreamingStreamingWhenRecordIsPushed()
+        {
+            var builder =
+                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null);
+
+            builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunAndRecordsRequested);
+
+            builder.RunCompleted(0, new[] { "a", "b", "c" }, null);
+            builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunAndRecordsRequested);
+
+            builder.PushRecord(new object[] { 1, 2, 3 });
+            builder.CurrentState.Should().Be(ResultCursorBuilder.State.RecordsStreaming);
+        }
+
+        [Fact]
+        public void ShouldTransitionToRunCompletedWhenPullCompletedWithHasMore()
+        {
+            var builder =
+                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null)
+                {
+                    CurrentState = ResultCursorBuilder.State.RecordsStreaming
+                };
+
+            builder.PullCompleted(true, null);
+            builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunCompleted);
+        }
+
+        [Fact]
+        public void ShouldTransitionToCompletedWhenPullCompleted()
+        {
+            var builder =
+                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null)
+                {
+                    CurrentState = ResultCursorBuilder.State.RecordsStreaming
+                };
+
+            builder.PullCompleted(false, null);
+            builder.CurrentState.Should().Be(ResultCursorBuilder.State.Completed);
+        }
+
+        [Fact]
+        public async Task ShouldInvokeResourceHandlerWhenCompleted()
         {
             var actions = new Queue<Action>();
+            var resourceHandler = new Mock<IResultResourceHandler>();
             var builder =
                 new ResultCursorBuilder(
                     CreateSummaryBuilder(),
                     CreateTaskQueue(actions),
-                    MoreFunction(),
-                    CancelFunction(),
                     null,
-                    reactive: true);
+                    null,
+                    resourceHandler.Object);
 
             actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
             actions.Enqueue(() => builder.PushRecord(new object[] { 1 }));
             actions.Enqueue(() => builder.PushRecord(new object[] { 2 }));
             actions.Enqueue(() => builder.PushRecord(new object[] { 3 }));
-            actions.Enqueue(() => builder.PullCompleted(false, null));
-
-            var list = await builder.CreateCursor().ToListAsync(r => r[0].As<int>());
-
-            list.Should().BeEquivalentTo(1, 2, 3);
-            moreCallCount.Should().Be(1);
-            cancelCallCount.Should().Be(0);
-        }
-
-        [Fact]
-        public async Task ShouldCallMoreTwiceAndReturnRecords()
-        {
-            var actions = new Queue<Action>();
-            var builder =
-                new ResultCursorBuilder(
-                    CreateSummaryBuilder(),
-                    CreateTaskQueue(actions),
-                    MoreFunction(),
-                    CancelFunction(),
-                    null,
-                    reactive: true);
-
-            actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
-            actions.Enqueue(() => builder.PushRecord(new object[] { 1 }));
-            actions.Enqueue(() => builder.PullCompleted(true, null));
-            actions.Enqueue(() => builder.PushRecord(new object[] { 2 }));
-            actions.Enqueue(() => builder.PushRecord(new object[] { 3 }));
-            actions.Enqueue(() => builder.PullCompleted(false, null));
-
-            var list = await builder.CreateCursor().ToListAsync(r => r[0].As<int>());
-
-            list.Should().BeEquivalentTo(1, 2, 3);
-            moreCallCount.Should().Be(2);
-            cancelCallCount.Should().Be(0);
-        }
-
-        [Fact]
-        public async Task ShouldCallMoreThreeTimesAndReturnRecords()
-        {
-            var actions = new Queue<Action>();
-            var builder =
-                new ResultCursorBuilder(
-                    CreateSummaryBuilder(),
-                    CreateTaskQueue(actions),
-                    MoreFunction(),
-                    CancelFunction(),
-                    null,
-                    reactive: true);
-
-            actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
-            actions.Enqueue(() => builder.PushRecord(new object[] { 1 }));
-            actions.Enqueue(() => builder.PullCompleted(true, null));
-            actions.Enqueue(() => builder.PushRecord(new object[] { 2 }));
-            actions.Enqueue(() => builder.PullCompleted(true, null));
-            actions.Enqueue(() => builder.PushRecord(new object[] { 3 }));
-            actions.Enqueue(() => builder.PullCompleted(false, null));
-
-            var list = await builder.CreateCursor().ToListAsync(r => r[0].As<int>());
-
-            list.Should().BeEquivalentTo(1, 2, 3);
-            moreCallCount.Should().Be(3);
-            cancelCallCount.Should().Be(0);
-        }
-
-        [Fact]
-        public async Task ShouldCallCancelAndReturnNoRecords()
-        {
-            var actions = new Queue<Action>();
-            var builder =
-                new ResultCursorBuilder(
-                    CreateSummaryBuilder(),
-                    CreateTaskQueue(actions),
-                    MoreFunction(),
-                    CancelFunction(),
-                    null,
-                    reactive: true);
-
-            actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
             actions.Enqueue(() => builder.PullCompleted(false, null));
 
             var cursor = builder.CreateCursor();
 
-            var keys = await cursor.KeysAsync();
-            keys.Should().BeEquivalentTo("a");
+            var hasNext = await cursor.FetchAsync();
+            hasNext.Should().BeTrue();
+            resourceHandler.Verify(x => x.OnResultConsumedAsync(), Times.Never);
 
-            cursor.Cancel();
+            hasNext = await cursor.FetchAsync();
+            hasNext.Should().BeTrue();
+            resourceHandler.Verify(x => x.OnResultConsumedAsync(), Times.Never);
 
-            var list = await cursor.ToListAsync(r => r[0].As<int>());
+            hasNext = await cursor.FetchAsync();
+            hasNext.Should().BeTrue();
+            resourceHandler.Verify(x => x.OnResultConsumedAsync(), Times.Never);
 
-            list.Should().BeEmpty();
-            moreCallCount.Should().Be(0);
-            cancelCallCount.Should().Be(1);
+            hasNext = await cursor.FetchAsync();
+            hasNext.Should().BeFalse();
+            resourceHandler.Verify(x => x.OnResultConsumedAsync(), Times.Once);
         }
 
         [Fact]
-        public async Task ShouldReturnFirstBatchOfRecordsAndCancel()
+        public async Task ShouldPauseAndResumeStreamingWithWatermarks()
         {
             var actions = new Queue<Action>();
+            var resourceHandler = new Mock<IResultResourceHandler>();
             var builder =
                 new ResultCursorBuilder(
                     CreateSummaryBuilder(),
-                    CreateTaskQueue(actions),
-                    MoreFunction(),
-                    CancelFunction(),
+                    CreateTaskQueue(),
+                    CreateMoreTaskQueue(actions),
                     null,
-                    reactive: true);
+                    resourceHandler.Object,
+                    2);
 
-            actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
-            actions.Enqueue(() => builder.PushRecord(new object[] { 1 }));
-            actions.Enqueue(() => builder.PushRecord(new object[] { 2 }));
-            actions.Enqueue(() => builder.PullCompleted(true, null));
-            actions.Enqueue(() => builder.PullCompleted(false, null));
+            var counter = 0;
+            builder.RunCompleted(0, new[] { "a" }, null);
+            builder.PullCompleted(true, null);
+            builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunCompleted);
+            actions.Enqueue(
+                () =>
+                {
+                    builder.PushRecord(new object[] { 1 });
+                    counter++;
+                    builder.PushRecord(new object[] { 2 });
+                    counter++;
+                    builder.PullCompleted(true, null);
+                });
+
+            actions.Enqueue(
+                () =>
+                {
+                    builder.PushRecord(new object[] { 3 });
+                    counter++;
+                    builder.PullCompleted(false, null);
+                });
 
             var cursor = builder.CreateCursor();
 
-            var keys = await cursor.KeysAsync();
-            keys.Should().BeEquivalentTo("a");
+            var hasNext = await cursor.FetchAsync();
+            hasNext.Should().BeTrue();
+            resourceHandler.Verify(x => x.OnResultConsumedAsync(), Times.Never);
+            counter.Should().Be(2);
 
-            var hasRecord1 = await cursor.FetchAsync();
-            var record1 = cursor.Current;
-            hasRecord1.Should().BeTrue();
-            record1[0].Should().Be(1);
+            hasNext = await cursor.FetchAsync();
+            hasNext.Should().BeTrue();
+            resourceHandler.Verify(x => x.OnResultConsumedAsync(), Times.Once);
+            counter.Should().Be(3);
 
-            var hasRecord2 = await cursor.FetchAsync();
-            var record2 = cursor.Current;
-            hasRecord2.Should().BeTrue();
-            record2[0].Should().Be(2);
+            hasNext = await cursor.FetchAsync();
+            hasNext.Should().BeTrue();
+            counter.Should().Be(3);
 
-            cursor.Cancel();
-
-            var list = await cursor.ToListAsync(r => r[0].As<int>());
-
-            list.Should().BeEmpty();
-            moreCallCount.Should().Be(1);
-            cancelCallCount.Should().Be(1);
+            hasNext = await cursor.FetchAsync();
+            hasNext.Should().BeFalse();
+            counter.Should().Be(3);
         }
 
-        private Func<IResultStreamBuilder, long, long, Task> MoreFunction()
+        private static SummaryBuilder CreateSummaryBuilder()
         {
-            return (cursorBuilder, id, n) =>
+            return new SummaryBuilder(new Query("Fake"), Mock.Of<IServerInfo>());
+        }
+
+        private static Func<Task> CreateTaskQueue(Queue<Action> actions = null)
+        {
+            if (actions == null)
             {
-                Interlocked.Increment(ref moreCallCount);
+                actions = new Queue<Action>();
+            }
+
+            return () =>
+            {
+                if (actions.TryDequeue(out var action))
+                {
+                    action();
+                }
+
                 return Task.CompletedTask;
             };
         }
 
-        private Func<IResultStreamBuilder, long, Task> CancelFunction()
+        private static Func<IResultStreamBuilder, long, long, Task> CreateMoreTaskQueue(Queue<Action> actions)
         {
-            return (cursorBuilder, id) =>
+            return (b, id, n) =>
             {
-                Interlocked.Increment(ref cancelCallCount);
+                if (actions.TryDequeue(out var action))
+                {
+                    action();
+                }
+
                 return Task.CompletedTask;
             };
+        }
+
+        public class Reactive
+        {
+            private int cancelCallCount;
+            private int moreCallCount;
+
+            [Fact]
+            public async Task ShouldCallMoreOnceAndReturnRecords()
+            {
+                var actions = new Queue<Action>();
+                var builder =
+                    new ResultCursorBuilder(
+                        CreateSummaryBuilder(),
+                        CreateTaskQueue(actions),
+                        MoreFunction(),
+                        CancelFunction(),
+                        null,
+                        reactive: true);
+
+                actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 1 }));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 2 }));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 3 }));
+                actions.Enqueue(() => builder.PullCompleted(false, null));
+
+                var list = await builder.CreateCursor().ToListAsync(r => r[0].As<int>());
+
+                list.Should().BeEquivalentTo(1, 2, 3);
+                moreCallCount.Should().Be(1);
+                cancelCallCount.Should().Be(0);
+            }
+
+            [Fact]
+            public async Task ShouldCallMoreTwiceAndReturnRecords()
+            {
+                var actions = new Queue<Action>();
+                var builder =
+                    new ResultCursorBuilder(
+                        CreateSummaryBuilder(),
+                        CreateTaskQueue(actions),
+                        MoreFunction(),
+                        CancelFunction(),
+                        null,
+                        reactive: true);
+
+                actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 1 }));
+                actions.Enqueue(() => builder.PullCompleted(true, null));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 2 }));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 3 }));
+                actions.Enqueue(() => builder.PullCompleted(false, null));
+
+                var list = await builder.CreateCursor().ToListAsync(r => r[0].As<int>());
+
+                list.Should().BeEquivalentTo(1, 2, 3);
+                moreCallCount.Should().Be(2);
+                cancelCallCount.Should().Be(0);
+            }
+
+            [Fact]
+            public async Task ShouldCallMoreThreeTimesAndReturnRecords()
+            {
+                var actions = new Queue<Action>();
+                var builder =
+                    new ResultCursorBuilder(
+                        CreateSummaryBuilder(),
+                        CreateTaskQueue(actions),
+                        MoreFunction(),
+                        CancelFunction(),
+                        null,
+                        reactive: true);
+
+                actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 1 }));
+                actions.Enqueue(() => builder.PullCompleted(true, null));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 2 }));
+                actions.Enqueue(() => builder.PullCompleted(true, null));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 3 }));
+                actions.Enqueue(() => builder.PullCompleted(false, null));
+
+                var list = await builder.CreateCursor().ToListAsync(r => r[0].As<int>());
+
+                list.Should().BeEquivalentTo(1, 2, 3);
+                moreCallCount.Should().Be(3);
+                cancelCallCount.Should().Be(0);
+            }
+
+            [Fact]
+            public async Task ShouldCallCancelAndReturnNoRecords()
+            {
+                var actions = new Queue<Action>();
+                var builder =
+                    new ResultCursorBuilder(
+                        CreateSummaryBuilder(),
+                        CreateTaskQueue(actions),
+                        MoreFunction(),
+                        CancelFunction(),
+                        null,
+                        reactive: true);
+
+                actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
+                actions.Enqueue(() => builder.PullCompleted(false, null));
+
+                var cursor = builder.CreateCursor();
+
+                var keys = await cursor.KeysAsync();
+                keys.Should().BeEquivalentTo("a");
+
+                cursor.Cancel();
+
+                var list = await cursor.ToListAsync(r => r[0].As<int>());
+
+                list.Should().BeEmpty();
+                moreCallCount.Should().Be(0);
+                cancelCallCount.Should().Be(1);
+            }
+
+            [Fact]
+            public async Task ShouldReturnFirstBatchOfRecordsAndCancel()
+            {
+                var actions = new Queue<Action>();
+                var builder =
+                    new ResultCursorBuilder(
+                        CreateSummaryBuilder(),
+                        CreateTaskQueue(actions),
+                        MoreFunction(),
+                        CancelFunction(),
+                        null,
+                        reactive: true);
+
+                actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 1 }));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 2 }));
+                actions.Enqueue(() => builder.PullCompleted(true, null));
+                actions.Enqueue(() => builder.PullCompleted(false, null));
+
+                var cursor = builder.CreateCursor();
+
+                var keys = await cursor.KeysAsync();
+                keys.Should().BeEquivalentTo("a");
+
+                var hasRecord1 = await cursor.FetchAsync();
+                var record1 = cursor.Current;
+                hasRecord1.Should().BeTrue();
+                record1[0].Should().Be(1);
+
+                var hasRecord2 = await cursor.FetchAsync();
+                var record2 = cursor.Current;
+                hasRecord2.Should().BeTrue();
+                record2[0].Should().Be(2);
+
+                cursor.Cancel();
+
+                var list = await cursor.ToListAsync(r => r[0].As<int>());
+
+                list.Should().BeEmpty();
+                moreCallCount.Should().Be(1);
+                cancelCallCount.Should().Be(1);
+            }
+
+            private Func<IResultStreamBuilder, long, long, Task> MoreFunction()
+            {
+                return (cursorBuilder, id, n) =>
+                {
+                    Interlocked.Increment(ref moreCallCount);
+                    return Task.CompletedTask;
+                };
+            }
+
+            private Func<IResultStreamBuilder, long, Task> CancelFunction()
+            {
+                return (cursorBuilder, id) =>
+                {
+                    Interlocked.Increment(ref cancelCallCount);
+                    return Task.CompletedTask;
+                };
+            }
         }
     }
 }

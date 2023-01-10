@@ -20,113 +20,114 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.IO.Utils;
-
-internal class AsyncTestStream : Stream
+namespace Neo4j.Driver.Internal.IO.Utils
 {
-    private readonly Exception _cause;
-    private readonly Task<int> _result;
-    private readonly MemoryStream _stream = new();
-
-    private AsyncTestStream(Task<int> result)
+    internal class AsyncTestStream : Stream
     {
-        _result = result;
-        _cause = null;
-    }
+        private readonly Exception _cause;
+        private readonly Task<int> _result;
+        private readonly MemoryStream _stream = new();
 
-    private AsyncTestStream(Exception cause)
-    {
-        _cause = cause;
-        _result = null;
-    }
-
-    public override bool CanRead => _stream.CanRead;
-    public override bool CanSeek => _stream.CanSeek;
-    public override bool CanWrite => _stream.CanWrite;
-    public override long Length => _stream.Length;
-
-    public override long Position
-    {
-        get => _stream.Position;
-        set => _stream.Position = value;
-    }
-
-    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-    {
-        if (_cause != null)
+        private AsyncTestStream(Task<int> result)
         {
-            throw _cause;
+            _result = result;
+            _cause = null;
         }
 
-        return _result;
-    }
-
-    public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-    {
-        if (_cause != null)
+        private AsyncTestStream(Exception cause)
         {
-            throw _cause;
+            _cause = cause;
+            _result = null;
         }
 
-        return _result;
-    }
+        public override bool CanRead => _stream.CanRead;
+        public override bool CanSeek => _stream.CanSeek;
+        public override bool CanWrite => _stream.CanWrite;
+        public override long Length => _stream.Length;
 
-    public override Task FlushAsync(CancellationToken cancellationToken)
-    {
-        if (_cause != null)
+        public override long Position
         {
-            throw _cause;
+            get => _stream.Position;
+            set => _stream.Position = value;
         }
 
-        return _result;
-    }
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            if (_cause != null)
+            {
+                throw _cause;
+            }
 
-    public override void Flush()
-    {
-        _stream.Flush();
-    }
+            return _result;
+        }
 
-    public override long Seek(long offset, SeekOrigin origin)
-    {
-        return _stream.Seek(offset, origin);
-    }
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            if (_cause != null)
+            {
+                throw _cause;
+            }
 
-    public override void SetLength(long value)
-    {
-        _stream.SetLength(value);
-    }
+            return _result;
+        }
 
-    public override int Read(byte[] buffer, int offset, int count)
-    {
-        return _stream.Read(buffer, offset, count);
-    }
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            if (_cause != null)
+            {
+                throw _cause;
+            }
 
-    public override void Write(byte[] buffer, int offset, int count)
-    {
-        _stream.Write(buffer, offset, count);
-    }
+            return _result;
+        }
 
-    public static Stream CreateCancellingStream()
-    {
-        var tcs = new TaskCompletionSource<int>();
-        tcs.SetCanceled();
-        return new AsyncTestStream(tcs.Task);
-    }
+        public override void Flush()
+        {
+            _stream.Flush();
+        }
 
-    public static Stream CreateFailingStream(Exception cause)
-    {
-        var tcs = new TaskCompletionSource<int>();
-        tcs.SetException(cause);
-        return new AsyncTestStream(tcs.Task);
-    }
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            return _stream.Seek(offset, origin);
+        }
 
-    public static Stream CreateSyncFailingStream(Exception cause)
-    {
-        return new AsyncTestStream(cause);
-    }
+        public override void SetLength(long value)
+        {
+            _stream.SetLength(value);
+        }
 
-    public static Stream CreateStream(Task<int> result)
-    {
-        return new AsyncTestStream(result);
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            return _stream.Read(buffer, offset, count);
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            _stream.Write(buffer, offset, count);
+        }
+
+        public static Stream CreateCancellingStream()
+        {
+            var tcs = new TaskCompletionSource<int>();
+            tcs.SetCanceled();
+            return new AsyncTestStream(tcs.Task);
+        }
+
+        public static Stream CreateFailingStream(Exception cause)
+        {
+            var tcs = new TaskCompletionSource<int>();
+            tcs.SetException(cause);
+            return new AsyncTestStream(tcs.Task);
+        }
+
+        public static Stream CreateSyncFailingStream(Exception cause)
+        {
+            return new AsyncTestStream(cause);
+        }
+
+        public static Stream CreateStream(Task<int> result)
+        {
+            return new AsyncTestStream(result);
+        }
     }
 }

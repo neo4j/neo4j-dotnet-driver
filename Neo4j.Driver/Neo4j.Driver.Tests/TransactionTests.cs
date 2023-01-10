@@ -24,274 +24,275 @@ using Xunit;
 using static Neo4j.Driver.Tests.AsyncSessionTests;
 using static Xunit.Record;
 
-namespace Neo4j.Driver.Tests;
-
-public class TransactionTests
+namespace Neo4j.Driver.Tests
 {
-    public class Constructor
+    public class TransactionTests
     {
-        [Fact]
-        public async Task ShouldSaveBookmark()
+        public class Constructor
         {
-            var mockProtocol = new Mock<IBoltProtocol>();
-            var mockConn = NewMockedConnection(mockProtocol);
-            var bookmarks = Bookmarks.From(FakeABookmark(123));
-            var tx = new AsyncTransaction(
-                mockConn.Object,
-                Mock.Of<ITransactionResourceHandler>(),
-                null,
-                null,
-                bookmarks);
+            [Fact]
+            public async Task ShouldSaveBookmark()
+            {
+                var mockProtocol = new Mock<IBoltProtocol>();
+                var mockConn = NewMockedConnection(mockProtocol);
+                var bookmarks = Bookmarks.From(FakeABookmark(123));
+                var tx = new AsyncTransaction(
+                    mockConn.Object,
+                    Mock.Of<ITransactionResourceHandler>(),
+                    null,
+                    null,
+                    bookmarks);
 
-            await tx.BeginTransactionAsync(null);
-            mockProtocol.Verify(
-                x => x.BeginTransactionAsync(
-                    It.IsAny<IConnection>(),
-                    It.IsAny<string>(),
-                    bookmarks,
-                    It.IsAny<TransactionConfig>(),
-                    null),
-                Times.Once);
-        }
-    }
-
-    public class BeginTransactionAsyncMethod
-    {
-        [Fact]
-        public async Task ShouldDelegateToProtocolBeginTxMethod()
-        {
-            var protocol = new Mock<IBoltProtocol>();
-            var mockConn = NewMockedConnection(protocol);
-            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
-
-            await tx.BeginTransactionAsync(TransactionConfig.Default);
-
-            protocol.Verify(
-                x => x.BeginTransactionAsync(
-                    It.IsAny<IConnection>(),
-                    It.IsAny<string>(),
-                    It.IsAny<Bookmarks>(),
-                    It.IsAny<TransactionConfig>(),
-                    null),
-                Times.Once);
-        }
-    }
-
-    public class RunAsyncMethod
-    {
-        [Fact]
-        public async void ShouldDelegateToBoltProtocol()
-        {
-            var mockProtocol = new Mock<IBoltProtocol>();
-            var mockConn = NewMockedConnection(mockProtocol);
-            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
-
-            var query = new Query("lala");
-            await tx.RunAsync(query);
-
-            mockProtocol.Verify(
-                x =>
-                    x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), query, false, It.IsAny<long>()));
+                await tx.BeginTransactionAsync(null);
+                mockProtocol.Verify(
+                    x => x.BeginTransactionAsync(
+                        It.IsAny<IConnection>(),
+                        It.IsAny<string>(),
+                        bookmarks,
+                        It.IsAny<TransactionConfig>(),
+                        null),
+                    Times.Once);
+            }
         }
 
-        [Fact]
-        public async void ShouldThrowExceptionIfPreviousTxFailed()
+        public class BeginTransactionAsyncMethod
         {
-            var mockConn = new Mock<IConnection>();
-            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
-            await tx.MarkToCloseAsync();
+            [Fact]
+            public async Task ShouldDelegateToProtocolBeginTxMethod()
+            {
+                var protocol = new Mock<IBoltProtocol>();
+                var mockConn = NewMockedConnection(protocol);
+                var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
-            var error = await ExceptionAsync(() => tx.RunAsync("ttt"));
-            error.Should().BeOfType<TransactionClosedException>();
+                await tx.BeginTransactionAsync(TransactionConfig.Default);
+
+                protocol.Verify(
+                    x => x.BeginTransactionAsync(
+                        It.IsAny<IConnection>(),
+                        It.IsAny<string>(),
+                        It.IsAny<Bookmarks>(),
+                        It.IsAny<TransactionConfig>(),
+                        null),
+                    Times.Once);
+            }
         }
 
-        [Fact]
-        public async void ShouldThrowExceptionIfFailedToRunAndFetchResult()
+        public class RunAsyncMethod
         {
-            var mockProtocol = new Mock<IBoltProtocol>();
-            var mockConn = NewMockedConnection(mockProtocol);
-            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
-            var query = new Query("lala");
+            [Fact]
+            public async void ShouldDelegateToBoltProtocol()
+            {
+                var mockProtocol = new Mock<IBoltProtocol>();
+                var mockConn = NewMockedConnection(mockProtocol);
+                var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
-            mockProtocol.Setup(
+                var query = new Query("lala");
+                await tx.RunAsync(query);
+
+                mockProtocol.Verify(
                     x =>
-                        x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), query, false, It.IsAny<long>()))
-                .Throws<Neo4jException>();
+                        x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), query, false, It.IsAny<long>()));
+            }
 
-            var error = await ExceptionAsync(() => tx.RunAsync(query));
-            error.Should().BeOfType<Neo4jException>();
-        }
-    }
+            [Fact]
+            public async void ShouldThrowExceptionIfPreviousTxFailed()
+            {
+                var mockConn = new Mock<IConnection>();
+                var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
+                await tx.MarkToCloseAsync();
 
-    public class CloseAsyncMethod
-    {
-        [Fact]
-        public async void ShouldCommitOnSuccess()
-        {
-            var mockProtocol = new Mock<IBoltProtocol>();
-            var mockConn = NewMockedConnection(mockProtocol);
-            var mockHandler = new Mock<ITransactionResourceHandler>();
-            var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object);
+                var error = await ExceptionAsync(() => tx.RunAsync("ttt"));
+                error.Should().BeOfType<TransactionClosedException>();
+            }
 
-            mockConn.Invocations.Clear();
-            await tx.CommitAsync();
+            [Fact]
+            public async void ShouldThrowExceptionIfFailedToRunAndFetchResult()
+            {
+                var mockProtocol = new Mock<IBoltProtocol>();
+                var mockConn = NewMockedConnection(mockProtocol);
+                var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
+                var query = new Query("lala");
 
-            mockProtocol.Verify(x => x.CommitTransactionAsync(It.IsAny<IConnection>(), tx));
-            mockHandler.Verify(x => x.OnTransactionDisposeAsync(It.IsAny<Bookmarks>(), null), Times.Once);
-        }
+                mockProtocol.Setup(
+                        x =>
+                            x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), query, false, It.IsAny<long>()))
+                    .Throws<Neo4jException>();
 
-        [Fact]
-        public async void ShouldRollbackOnFailure()
-        {
-            var mockProtocol = new Mock<IBoltProtocol>();
-            var mockConn = NewMockedConnection(mockProtocol);
-            var mockHandler = new Mock<ITransactionResourceHandler>();
-            var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object);
-
-            mockConn.Invocations.Clear();
-            await tx.RollbackAsync();
-            mockProtocol.Verify(x => x.RollbackTransactionAsync(It.IsAny<IConnection>()));
-            mockHandler.Verify(x => x.OnTransactionDisposeAsync(It.IsAny<Bookmarks>(), null), Times.Once);
+                var error = await ExceptionAsync(() => tx.RunAsync(query));
+                error.Should().BeOfType<Neo4jException>();
+            }
         }
 
-        [Fact]
-        public async Task ShouldNotDisposeIfAlreadyClosed()
+        public class CloseAsyncMethod
         {
-            var mockConn = NewMockedConnection();
-            var mockHandler = new Mock<ITransactionResourceHandler>();
-            var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object);
+            [Fact]
+            public async void ShouldCommitOnSuccess()
+            {
+                var mockProtocol = new Mock<IBoltProtocol>();
+                var mockConn = NewMockedConnection(mockProtocol);
+                var mockHandler = new Mock<ITransactionResourceHandler>();
+                var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object);
 
-            mockConn.Invocations.Clear();
-            await tx.CommitAsync();
-            mockHandler.Verify(x => x.OnTransactionDisposeAsync(It.IsAny<Bookmarks>(), null), Times.Once);
-        }
-    }
+                mockConn.Invocations.Clear();
+                await tx.CommitAsync();
 
-    public class MarkToClosedMethod
-    {
-        [Fact]
-        public async Task ShouldNotEnqueueMoreMessagesAfterMarkToClosed()
-        {
-            var mockConn = NewMockedConnection();
-            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
-            mockConn.Invocations.Clear();
+                mockProtocol.Verify(x => x.CommitTransactionAsync(It.IsAny<IConnection>(), tx));
+                mockHandler.Verify(x => x.OnTransactionDisposeAsync(It.IsAny<Bookmarks>(), null), Times.Once);
+            }
 
-            await tx.MarkToCloseAsync();
+            [Fact]
+            public async void ShouldRollbackOnFailure()
+            {
+                var mockProtocol = new Mock<IBoltProtocol>();
+                var mockConn = NewMockedConnection(mockProtocol);
+                var mockHandler = new Mock<ITransactionResourceHandler>();
+                var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object);
 
-            mockConn.Verify(x => x.RollbackTransactionAsync(), Times.Never);
-            mockConn.Verify(x => x.SyncAsync(), Times.Never);
-        }
+                mockConn.Invocations.Clear();
+                await tx.RollbackAsync();
+                mockProtocol.Verify(x => x.RollbackTransactionAsync(It.IsAny<IConnection>()));
+                mockHandler.Verify(x => x.OnTransactionDisposeAsync(It.IsAny<Bookmarks>(), null), Times.Once);
+            }
 
-        [Fact]
-        public async Task ShouldThrowExceptionToRunAfterMarkToClosed()
-        {
-            var mockConn = NewMockedConnection();
-            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
-            mockConn.Invocations.Clear();
+            [Fact]
+            public async Task ShouldNotDisposeIfAlreadyClosed()
+            {
+                var mockConn = NewMockedConnection();
+                var mockHandler = new Mock<ITransactionResourceHandler>();
+                var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object);
 
-            await tx.MarkToCloseAsync();
-
-            tx.Awaiting(t => t.RunAsync("should not run"))
-                .Should()
-                .Throw<ClientException>()
-                .Which.Message.Should()
-                .StartWith("Cannot run query in this transaction");
-
-            mockConn.Verify(x => x.RollbackTransactionAsync(), Times.Never);
-            mockConn.Verify(x => x.SyncAsync(), Times.Never);
+                mockConn.Invocations.Clear();
+                await tx.CommitAsync();
+                mockHandler.Verify(x => x.OnTransactionDisposeAsync(It.IsAny<Bookmarks>(), null), Times.Once);
+            }
         }
 
-        [Fact]
-        public async Task ShouldNotEnqueueMoreMessagesAfterMarkToClosedInCommitAsync()
+        public class MarkToClosedMethod
         {
-            var mockConn = NewMockedConnection();
-            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
-            mockConn.Invocations.Clear();
+            [Fact]
+            public async Task ShouldNotEnqueueMoreMessagesAfterMarkToClosed()
+            {
+                var mockConn = NewMockedConnection();
+                var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
+                mockConn.Invocations.Clear();
 
-            await tx.MarkToCloseAsync();
-            tx.Awaiting(t => t.CommitAsync())
-                .Should()
-                .Throw<ClientException>()
-                .Which.Message.Should()
-                .Contain("Cannot commit this transaction");
+                await tx.MarkToCloseAsync();
 
-            mockConn.Verify(x => x.CommitTransactionAsync(tx), Times.Never);
-            mockConn.Verify(x => x.SyncAsync(), Times.Never);
+                mockConn.Verify(x => x.RollbackTransactionAsync(), Times.Never);
+                mockConn.Verify(x => x.SyncAsync(), Times.Never);
+            }
+
+            [Fact]
+            public async Task ShouldThrowExceptionToRunAfterMarkToClosed()
+            {
+                var mockConn = NewMockedConnection();
+                var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
+                mockConn.Invocations.Clear();
+
+                await tx.MarkToCloseAsync();
+
+                tx.Awaiting(t => t.RunAsync("should not run"))
+                    .Should()
+                    .Throw<ClientException>()
+                    .Which.Message.Should()
+                    .StartWith("Cannot run query in this transaction");
+
+                mockConn.Verify(x => x.RollbackTransactionAsync(), Times.Never);
+                mockConn.Verify(x => x.SyncAsync(), Times.Never);
+            }
+
+            [Fact]
+            public async Task ShouldNotEnqueueMoreMessagesAfterMarkToClosedInCommitAsync()
+            {
+                var mockConn = NewMockedConnection();
+                var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
+                mockConn.Invocations.Clear();
+
+                await tx.MarkToCloseAsync();
+                tx.Awaiting(t => t.CommitAsync())
+                    .Should()
+                    .Throw<ClientException>()
+                    .Which.Message.Should()
+                    .Contain("Cannot commit this transaction");
+
+                mockConn.Verify(x => x.CommitTransactionAsync(tx), Times.Never);
+                mockConn.Verify(x => x.SyncAsync(), Times.Never);
+            }
+
+            [Fact]
+            public async Task ShouldNotEnqueueMoreMessagesAfterMarkToClosedInRollbackAsync()
+            {
+                var mockConn = NewMockedConnection();
+                var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
+                mockConn.Invocations.Clear();
+
+                await tx.MarkToCloseAsync();
+                tx.Awaiting(t => t.RollbackAsync()).Should().NotThrow();
+                mockConn.Verify(x => x.RollbackTransactionAsync(), Times.Never);
+                mockConn.Verify(x => x.SyncAsync(), Times.Never);
+            }
         }
 
-        [Fact]
-        public async Task ShouldNotEnqueueMoreMessagesAfterMarkToClosedInRollbackAsync()
+        public class IsOpenTests
         {
-            var mockConn = NewMockedConnection();
-            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
-            mockConn.Invocations.Clear();
+            [Fact]
+            public async Task ShouldBeOpenWhenConstructed()
+            {
+                var mockConn = NewMockedConnection();
+                var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
-            await tx.MarkToCloseAsync();
-            tx.Awaiting(t => t.RollbackAsync()).Should().NotThrow();
-            mockConn.Verify(x => x.RollbackTransactionAsync(), Times.Never);
-            mockConn.Verify(x => x.SyncAsync(), Times.Never);
-        }
-    }
+                await tx.BeginTransactionAsync(TransactionConfig.Default);
 
-    public class IsOpenTests
-    {
-        [Fact]
-        public async Task ShouldBeOpenWhenConstructed()
-        {
-            var mockConn = NewMockedConnection();
-            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
+                tx.IsOpen.Should().BeTrue();
+            }
 
-            await tx.BeginTransactionAsync(TransactionConfig.Default);
+            [Fact]
+            public async Task ShouldBeOpenWhenRun()
+            {
+                var mockConn = NewMockedConnection();
+                var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
-            tx.IsOpen.Should().BeTrue();
-        }
+                await tx.BeginTransactionAsync(TransactionConfig.Default);
+                await tx.RunAsync("RETURN 1");
 
-        [Fact]
-        public async Task ShouldBeOpenWhenRun()
-        {
-            var mockConn = NewMockedConnection();
-            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
+                tx.IsOpen.Should().BeTrue();
+            }
 
-            await tx.BeginTransactionAsync(TransactionConfig.Default);
-            await tx.RunAsync("RETURN 1");
+            [Fact]
+            public async Task ShouldBeClosedWhenFailed()
+            {
+                var mockConn = NewMockedConnection();
+                var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
-            tx.IsOpen.Should().BeTrue();
-        }
+                await tx.BeginTransactionAsync(TransactionConfig.Default);
+                await tx.MarkToCloseAsync();
 
-        [Fact]
-        public async Task ShouldBeClosedWhenFailed()
-        {
-            var mockConn = NewMockedConnection();
-            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
+                tx.IsOpen.Should().BeFalse();
+            }
 
-            await tx.BeginTransactionAsync(TransactionConfig.Default);
-            await tx.MarkToCloseAsync();
+            [Fact]
+            public async Task ShouldBeClosedWhenCommitted()
+            {
+                var mockConn = NewMockedConnection();
+                var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
-            tx.IsOpen.Should().BeFalse();
-        }
+                await tx.BeginTransactionAsync(TransactionConfig.Default);
+                await tx.CommitAsync();
 
-        [Fact]
-        public async Task ShouldBeClosedWhenCommitted()
-        {
-            var mockConn = NewMockedConnection();
-            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
+                tx.IsOpen.Should().BeFalse();
+            }
 
-            await tx.BeginTransactionAsync(TransactionConfig.Default);
-            await tx.CommitAsync();
+            [Fact]
+            public async Task ShouldBeClosedWhenRollBacked()
+            {
+                var mockConn = NewMockedConnection();
+                var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
-            tx.IsOpen.Should().BeFalse();
-        }
+                await tx.BeginTransactionAsync(TransactionConfig.Default);
+                await tx.RollbackAsync();
 
-        [Fact]
-        public async Task ShouldBeClosedWhenRollBacked()
-        {
-            var mockConn = NewMockedConnection();
-            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
-
-            await tx.BeginTransactionAsync(TransactionConfig.Default);
-            await tx.RollbackAsync();
-
-            tx.IsOpen.Should().BeFalse();
+                tx.IsOpen.Should().BeFalse();
+            }
         }
     }
 }
