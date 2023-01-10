@@ -31,14 +31,16 @@ namespace Neo4j.Driver.Internal;
 internal sealed class BoltProtocol : IBoltProtocol
 {
     public static readonly IBoltProtocol Instance = new BoltProtocol();
-    private readonly LegacyBoltProtocol _legacyProtocol;
-
-    internal BoltProtocol(IBoltProtocolMessageFactory protocolMessageFactory = null,
+    private readonly IBoltProtocol _v3BoltProtocol;
+    
+    internal BoltProtocol(
+        IBoltProtocol v3BoltProtocol = null,
+        IBoltProtocolMessageFactory protocolMessageFactory = null,
         IBoltProtocolHandlerFactory protocolHandlerFactory = null)
     {
         _protocolMessageFactory = protocolMessageFactory ?? new BoltProtocolMessageFactory();
-        _protocolHandlerFactory = protocolHandlerFactory ?? new BoltProtocolResponseHandlerFactory();
-        _legacyProtocol = LegacyBoltProtocol.Instance;
+        _protocolHandlerFactory = protocolHandlerFactory ?? new BoltProtocolHandlerFactory();
+        _v3BoltProtocol = v3BoltProtocol ?? V3BoltProtocol.Instance;
     }
 
     private readonly IBoltProtocolMessageFactory _protocolMessageFactory;
@@ -48,7 +50,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         IConnection connection,
         AutoCommitParams autoCommitParams)
     {
-        LegacyBoltProtocol.ValidateImpersonatedUserForVersion(connection, autoCommitParams.ImpersonatedUser);
+        V3BoltProtocol.ValidateImpersonatedUserForVersion(connection, autoCommitParams.ImpersonatedUser);
 
         var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
 
@@ -64,11 +66,12 @@ internal sealed class BoltProtocol : IBoltProtocol
             autoCommitParams);
 
         var runHandler = _protocolHandlerFactory.NewRunHandler(cursorBuilder, summaryBuilder);
+        
         await connection.EnqueueAsync(runMessage, runHandler).ConfigureAwait(false);
         
         if (autoCommitParams.Reactive)
         {
-            var pullMessage = new PullMessage(autoCommitParams.FetchSize);
+            var pullMessage = _protocolMessageFactory.NewPullMessage(autoCommitParams.FetchSize);
             var pullHandler = new PullResponseHandler(cursorBuilder, summaryBuilder, autoCommitParams.BookmarksTracker);
 
             await connection.EnqueueAsync(pullMessage, pullHandler).ConfigureAwait(false);
@@ -86,8 +89,8 @@ internal sealed class BoltProtocol : IBoltProtocol
         TransactionConfig config,
         string impersonatedUser)
     {
-        LegacyBoltProtocol.ValidateImpersonatedUserForVersion(connection, impersonatedUser);
-        return _legacyProtocol.BeginTransactionAsync(connection, database, bookmarks, config, impersonatedUser);
+        V3BoltProtocol.ValidateImpersonatedUserForVersion(connection, impersonatedUser);
+        return _v3BoltProtocol.BeginTransactionAsync(connection, database, bookmarks, config, impersonatedUser);
     }
 
     public async Task<IResultCursor> RunInExplicitTransactionAsync(
@@ -107,44 +110,49 @@ internal sealed class BoltProtocol : IBoltProtocol
             reactive);
 
         var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
-
-        var pullMessage = reactive ? null : new PullMessage(fetchSize);
-        var pullHandler = reactive ? null : new PullResponseHandler(streamBuilder, summaryBuilder, null);
-
+        
         await connection.EnqueueAsync(
                 new RunWithMetadataMessage(connection.Version, query),
                 runHandler)
             .ConfigureAwait(false);
-        await connection.EnqueueAsync(
-            pullMessage,
-            pullHandler).ConfigureAwait(false);
+        
+        if (reactive)
+        {
+            var pullMessage = new PullMessage(fetchSize);
+            var pullHandler = new PullResponseHandler(streamBuilder, summaryBuilder, null);
+            await connection.EnqueueAsync(
+                    pullMessage,
+                    pullHandler)
+                .ConfigureAwait(false);
+        }
+
         await connection.SendAsync().ConfigureAwait(false);
         return streamBuilder.CreateCursor();
     }
 
     public Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker)
     {
-        return _legacyProtocol.CommitTransactionAsync(connection, bookmarksTracker);
+        return _v3BoltProtocol.CommitTransactionAsync(connection, bookmarksTracker);
     }
 
     public Task RollbackTransactionAsync(IConnection connection)
     {
-        return _legacyProtocol.RollbackTransactionAsync(connection);
+        return _v3BoltProtocol.RollbackTransactionAsync(connection);
     }
 
     public Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
     {
-        return _legacyProtocol.LoginAsync(connection, userAgent, authToken);
+        return _v3BoltProtocol.LoginAsync(connection, userAgent, authToken);
     }
 
     public Task LogoutAsync(IConnection connection)
     {
-        return _legacyProtocol.LogoutAsync(connection);
+        return _v3BoltProtocol.LogoutAsync(connection);
     }
 
     public Task ResetAsync(IConnection connection)
     {
-        return _legacyProtocol.ResetAsync(connection);
+        return _v3BoltProtocol.ResetAsync(connection);
     }
 
     public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
@@ -156,7 +164,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
 
-        LegacyBoltProtocol.ValidateImpersonatedUserForVersion(connection, impersonatedUser);
+        V3BoltProtocol.ValidateImpersonatedUserForVersion(connection, impersonatedUser);
 
         return connection.Version >= BoltProtocolVersion.V4_3
             ? GetRoutingTableWithRouteMessageAsync(connection, database, impersonatedUser, bookmarks)

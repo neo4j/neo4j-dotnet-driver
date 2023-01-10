@@ -21,6 +21,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.MessageHandling.V3;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
 using Xunit;
@@ -84,6 +85,7 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
                 var msgFactory = new Mock<IBoltProtocolMessageFactory>();
                 var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
                 var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
+                var mockV3 = new Mock<IBoltProtocol>();
 
                 handlerFactory.Setup(
                         x => x.NewResultCursorBuilder(
@@ -96,7 +98,7 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
                                 Func<IResultStreamBuilder, long, Task>>>()))
                     .Returns(resultCursorBuilderMock.Object);
 
-                var protocol = new BoltProtocol(msgFactory.Object, handlerFactory.Object);
+                var protocol = new BoltProtocol(mockV3.Object, msgFactory.Object, handlerFactory.Object);
 
                 var acp = new AutoCommitParams
                 {
@@ -117,11 +119,13 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
                     x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()),
                     Times.Once);
 
-                resultCursorBuilderMock.Verify(x => x.CreateCursor(), Times.Once);
+                mockConn.Verify(
+                    x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<RunResponseHandler>()),
+                    Times.Once);
             }
 
             [Fact]
-            public async Task ShouldEnqueueTwiceWithReactive()
+            public async Task ShouldEnqueuePullMessageWithReactive()
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(5, 0));
@@ -129,6 +133,7 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
                 var msgFactory = new Mock<IBoltProtocolMessageFactory>();
                 var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
                 var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
+                var mockV3 = new Mock<IBoltProtocol>();
 
                 handlerFactory.Setup(
                         x => x.NewResultCursorBuilder(
@@ -141,7 +146,7 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
                                 Func<IResultStreamBuilder, long, Task>>>()))
                     .Returns(resultCursorBuilderMock.Object);
 
-                var protocol = new BoltProtocol(msgFactory.Object, handlerFactory.Object);
+                var protocol = new BoltProtocol(mockV3.Object, msgFactory.Object, handlerFactory.Object);
 
                 var acp = new AutoCommitParams
                 {
@@ -163,7 +168,80 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
                     x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()),
                     Times.Exactly(2));
 
-                resultCursorBuilderMock.Verify(x => x.CreateCursor(), Times.Once);
+                mockConn.Verify(
+                    x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<RunResponseHandler>()),
+                    Times.Once);
+
+                mockConn.Verify(
+                    x => x.EnqueueAsync(It.IsAny<PullMessage>(), It.IsAny<PullResponseHandler>()),
+                    Times.Once);
+            }
+        }
+
+        public class BeginTransactionAsyncTests
+        {
+            [Theory]
+            [InlineData(4, 3)]
+            [InlineData(4, 2)]
+            [InlineData(4, 1)]
+            [InlineData(4, 0)]
+            public async Task ShouldThrowWhenUsingImpersonatedUserWithBoltVersionLessThan44(int major, int minor)
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
+
+                var exception = await Record.ExceptionAsync(
+                    () => BoltProtocol.Instance.BeginTransactionAsync(mockConn.Object,
+                        "db",
+                        Bookmarks.Empty,
+                        TransactionConfig.Default,
+                        "Douglas Fir"));
+
+                exception.Should().BeOfType<ArgumentException>();
+            }
+
+            [Theory]
+            [InlineData(4, 4)]
+            [InlineData(5, 0)]
+            [InlineData(6, 0)]
+            public async Task ShouldNotThrowWhenImpersonatingUserWithBoltVersionGreaterThan43(int major, int minor)
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
+                mockConn.SetupGet(x => x.Mode).Returns(AccessMode.Read);
+
+                var exception = await Record.ExceptionAsync(
+                    () => BoltProtocol.Instance.BeginTransactionAsync(
+                        mockConn.Object,
+                        "db",
+                        Bookmarks.Empty,
+                        TransactionConfig.Default,
+                        "Douglas Fir"));
+
+                exception.Should().BeNull();
+            }
+            
+            [Fact]
+            public async Task ShouldDelegateLogicToV3()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(5, 0));
+                var bookmarks = new InternalBookmarks();
+                var config = new TransactionConfig();
+
+                var mockV3 = new Mock<IBoltProtocol>();
+                var protocol = new BoltProtocol(mockV3.Object);
+                
+                await protocol.BeginTransactionAsync(
+                    mockConn.Object,
+                    "db",
+                    bookmarks,
+                    config,
+                    "user");
+
+                mockV3.Verify(x =>
+                    x.BeginTransactionAsync(mockConn.Object, "db", bookmarks, config, "user"),
+                    Times.Once);
             }
         }
     }

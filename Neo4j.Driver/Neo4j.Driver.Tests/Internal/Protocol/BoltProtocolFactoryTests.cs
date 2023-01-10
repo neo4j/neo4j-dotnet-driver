@@ -29,7 +29,7 @@ namespace Neo4j.Driver.Internal.Protocol
             public void ShouldCreateLegacyBoltProtocol()
             {
                 var boltProtocol = BoltProtocolFactory.Default.ForVersion(BoltProtocolVersion.V30);
-                boltProtocol.Should().Be(LegacyBoltProtocol.Instance);
+                boltProtocol.Should().Be(V3BoltProtocol.Instance);
             }
 
             [Theory]

@@ -26,12 +26,17 @@ using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal;
 
-internal sealed class LegacyBoltProtocol : IBoltProtocol
+internal sealed class V3BoltProtocol : IBoltProtocol
 {
-    public static readonly LegacyBoltProtocol Instance = new();
+    public static readonly V3BoltProtocol Instance = new();
+    private readonly IBoltProtocolMessageFactory _protocolMessageFactory;
+    private readonly IBoltProtocolHandlerFactory _protocolHandlerFactory;
 
-    private LegacyBoltProtocol()
+    private V3BoltProtocol(IBoltProtocolMessageFactory protocolMessageFactory = null,
+        IBoltProtocolHandlerFactory protocolHandlerFactory = null)
     {
+        _protocolMessageFactory = protocolMessageFactory ?? new BoltProtocolMessageFactory();
+        _protocolHandlerFactory = protocolHandlerFactory ?? new BoltProtocolHandlerFactory();
     }
 
     public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
@@ -173,8 +178,7 @@ internal sealed class LegacyBoltProtocol : IBoltProtocol
 
         var message = new RunWithMetadataMessage(connection.Version, query);
 
-        await connection.EnqueueAsync(message, runHandler)
-            .ConfigureAwait(false);
+        await connection.EnqueueAsync(message, runHandler).ConfigureAwait(false);
         await connection.EnqueueAsync(PullAllMessage.Instance, pullAllHandler).ConfigureAwait(false);
         await connection.SendAsync().ConfigureAwait(false);
 

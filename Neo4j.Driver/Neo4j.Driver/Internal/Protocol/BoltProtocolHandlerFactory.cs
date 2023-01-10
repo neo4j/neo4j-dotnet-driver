@@ -35,7 +35,7 @@ internal interface IBoltProtocolHandlerFactory
         Func<IConnection, SummaryBuilder, IBookmarksTracker, Func<IResultStreamBuilder,long,Task>> cancelRequest);
 }
 
-internal class BoltProtocolResponseHandlerFactory : IBoltProtocolHandlerFactory
+internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
 {
     public IResultCursorBuilder NewResultCursorBuilder(
         SummaryBuilder summaryBuilder,

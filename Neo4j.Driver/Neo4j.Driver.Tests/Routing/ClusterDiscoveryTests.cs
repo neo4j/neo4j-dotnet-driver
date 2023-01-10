@@ -189,7 +189,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 MockConn.Setup(x => x.Mode).Returns(mode);
 
-                IBoltProtocol protocol = LegacyBoltProtocol.Instance;
+                IBoltProtocol protocol = V3BoltProtocol.Instance;
 
                 if (serverInfo != null)
                 {

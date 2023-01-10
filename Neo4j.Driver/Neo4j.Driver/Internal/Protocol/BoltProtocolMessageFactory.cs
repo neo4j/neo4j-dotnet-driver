@@ -24,14 +24,14 @@ namespace Neo4j.Driver.Internal;
 
 internal interface IBoltProtocolMessageFactory
 {
-    IRequestMessage NewRunWithMetadataMessage(SummaryBuilder summaryBuilder, IConnection connection, AutoCommitParams autoCommitParams);
+    RunWithMetadataMessage NewRunWithMetadataMessage(SummaryBuilder summaryBuilder, IConnection connection, AutoCommitParams autoCommitParams);
+    PullMessage NewPullMessage(long fetchSize);
 }
 internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
 {
-    public IRequestMessage NewRunWithMetadataMessage(SummaryBuilder summaryBuilder, IConnection connection, AutoCommitParams autoCommitParams)
+    public RunWithMetadataMessage NewRunWithMetadataMessage(SummaryBuilder summaryBuilder, IConnection connection, AutoCommitParams autoCommitParams)
     {
-        return // Refactor to take AC Params
-            new RunWithMetadataMessage(
+        return new (
             connection.Version,
             autoCommitParams.Query,
             autoCommitParams.Bookmarks,
@@ -39,5 +39,10 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
             connection.Mode ?? throw new InvalidOperationException("Connection should have its Mode property set."),
             autoCommitParams.Database,
             autoCommitParams.ImpersonatedUser);
+    }
+
+    public PullMessage NewPullMessage(long fetchSize)
+    {
+        return new(fetchSize);
     }
 }
