@@ -31,7 +31,7 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
 {
     public class BoltProtocolTests
     {
-        public class RunInAutoCommitTransactionAsync
+        public class RunInAutoCommitTransactionAsyncTests
         {
             [Theory]
             [InlineData(4, 3)]
@@ -273,7 +273,7 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
             }
         }
 
-        public class BeginTransactionAsync
+        public class BeginTransactionAsyncTests
         {
             [Theory]
             [InlineData(4, 3)]
@@ -351,7 +351,7 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
             }
         }
 
-        public class RunInExplicitTransactionAsync
+        public class RunInExplicitTransactionAsyncTests
         {
             [Fact]
             public async Task ShouldBuildCursor()
@@ -528,7 +528,7 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
             }
         }
 
-        public class CommitTransactionAsync
+        public class CommitTransactionAsyncTests
         {
             [Fact]
             public async Task ShouldDelegateToV3()
@@ -545,7 +545,7 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
             }
         }
 
-        public class RollbackTransactionAsync
+        public class RollbackTransactionAsyncTests
         {
             [Fact]
             public async Task ShouldDelegateToV3()
@@ -561,7 +561,7 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
             }
         }
 
-        public class LoginAsync
+        public class LoginAsyncTests
         {
             [Fact]
             public async Task ShouldDelegateToV3()
@@ -579,7 +579,7 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
             }
         }
 
-        public class LogoutAsync
+        public class LogoutAsyncTests
         {
             [Fact]
             public async Task ShouldDelegateToV3()
@@ -595,7 +595,7 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
             }
         }
 
-        public class ResetAsync
+        public class ResetAsyncTests
         {
             [Fact]
             public async Task ShouldDelegateToV3()
@@ -611,7 +611,7 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
             }
         }
 
-        public class GetRoutingTableAsync
+        public class GetRoutingTableAsyncTests
         {
             [Fact]
             public async Task ShouldThrowAnExceptionWhneNullConnection()
@@ -651,6 +651,85 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
                     () => BoltProtocol.Instance.GetRoutingTableAsync(mockConn.Object, null, "douglas fir", null));
 
                 exception.Should().BeNull();
+            }
+
+            [Theory]
+            [InlineData(4, 3)]
+            [InlineData(5, 0)]
+            [InlineData(6, 0)]
+            public async Task ShouldGetWithMessageWhenUsingMoreThanBolt43(int major, int minor)
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
+
+                var msgFactory = new Mock<IBoltProtocolMessageFactory>();
+                msgFactory
+                    .Setup(x => x.NewRunWithMetadataMessage(mockConn.Object))
+                    .Returns(new RoutMe(mockConn.Object.Version, new Query("...")));
+
+                var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
+                var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
+                handlerFactory.Setup(
+                        x => x.NewRunResponseHandler(
+                            resultCursorBuilderMock.Object,
+                            It.IsNotNull<SummaryBuilder>()))
+                    .Returns(
+                        new RunResponseHandler(
+                            resultCursorBuilderMock.Object,
+                            new SummaryBuilder(new Query("..."), new ServerInfo(new Uri("http://0.0.0.0")))));
+
+                handlerFactory.Setup(
+                        x => x.NewResultCursorBuilder(
+                            It.IsAny<SummaryBuilder>(),
+                            It.IsAny<IConnection>(),
+                            It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                                Func<IResultStreamBuilder, long, long, Task>>>(),
+                            It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                                Func<IResultStreamBuilder, long, Task>>>(),
+                            It.IsAny<IBookmarksTracker>(),
+                            It.IsAny<IResultResourceHandler>(),
+                            It.IsAny<long>(),
+                            It.IsAny<bool>()))
+                    .Returns(resultCursorBuilderMock.Object);
+
+                var mockV3 = new Mock<IBoltProtocol>();
+                var protocol = new BoltProtocol(mockV3.Object, msgFactory.Object, handlerFactory.Object);
+                await protocol.RunInAutoCommitTransactionAsync(mockConn.Object, acp);
+
+                msgFactory.Verify(
+                    x => x.NewRunWithMetadataMessage(
+                        mockConn.Object,
+                        acp),
+                    Times.Once);
+
+                handlerFactory.Verify(
+                    x => x.NewResultCursorBuilder(
+                        It.IsAny<SummaryBuilder>(),
+                        mockConn.Object,
+                        It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                            Func<IResultStreamBuilder, long, long, Task>>>(),
+                        It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                            Func<IResultStreamBuilder, long, Task>>>(),
+                        mockBt.Object,
+                        mockRrh.Object,
+                        10,
+                        false),
+                    Times.Once);
+
+                handlerFactory.Verify(
+                    x => x.NewRunResponseHandler(resultCursorBuilderMock.Object, It.IsNotNull<SummaryBuilder>()),
+                    Times.Once);
+
+                mockConn.Verify(
+                    x => x.EnqueueAsync(It.IsNotNull<IRequestMessage>(), It.IsNotNull<IResponseHandler>()),
+                    Times.Once);
+
+                mockConn.Verify(
+                    x => x.EnqueueAsync(It.IsNotNull<RunWithMetadataMessage>(), It.IsNotNull<RunResponseHandler>()),
+                    Times.Once);
+
+                mockConn.Verify(x => x.SendAsync(), Times.Once);
+                mockConn.Verify(x => x.SyncAsync(), Times.Never);
             }
         }
     }
