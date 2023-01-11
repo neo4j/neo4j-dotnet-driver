@@ -54,33 +54,36 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
 
-        var cursorBuilder = _protocolHandlerFactory.NewResultCursorBuilder(summaryBuilder,
+        var streamBuilder = _protocolHandlerFactory.NewResultCursorBuilder(summaryBuilder,
             connection,
-            autoCommitParams,
             RequestMore,
-            CancelRequest);
+            CancelRequest,
+            autoCommitParams.BookmarksTracker,
+            autoCommitParams.ResultResourceHandler,
+            autoCommitParams.FetchSize,
+            autoCommitParams.Reactive);
 
-        var runMessage = _protocolMessageFactory.NewRunWithMetadataMessage(
-            summaryBuilder,
-            connection,
-            autoCommitParams);
-
-        var runHandler = _protocolHandlerFactory.NewRunHandler(cursorBuilder, summaryBuilder);
+        var runMessage = _protocolMessageFactory.NewRunWithMetadataMessage(connection, autoCommitParams);
+        var runHandler = _protocolHandlerFactory.NewRunResponseHandler(streamBuilder, summaryBuilder);
         
         await connection.EnqueueAsync(runMessage, runHandler).ConfigureAwait(false);
         
         if (autoCommitParams.Reactive)
         {
             var pullMessage = _protocolMessageFactory.NewPullMessage(autoCommitParams.FetchSize);
-            var pullHandler = new PullResponseHandler(cursorBuilder, summaryBuilder, autoCommitParams.BookmarksTracker);
+            var pullHandler = _protocolHandlerFactory.NewPullResponseHandler(
+                autoCommitParams.BookmarksTracker,
+                streamBuilder,
+                summaryBuilder);
 
             await connection.EnqueueAsync(pullMessage, pullHandler).ConfigureAwait(false);
         }
 
         await connection.SendAsync().ConfigureAwait(false);
 
-        return cursorBuilder.CreateCursor();
+        return streamBuilder.CreateCursor();
     }
+
 
     public Task BeginTransactionAsync(
         IConnection connection,
@@ -100,30 +103,27 @@ internal sealed class BoltProtocol : IBoltProtocol
         long fetchSize = Config.Infinite)
     {
         var summaryBuilder = new SummaryBuilder(query, connection.Server);
-        var streamBuilder = new ResultCursorBuilder(
+        
+        var streamBuilder = _protocolHandlerFactory.NewResultCursorBuilder(
             summaryBuilder,
-            connection.ReceiveOneAsync,
-            RequestMore(connection, summaryBuilder, null),
-            CancelRequest(connection, summaryBuilder, null),
+            connection,
+            RequestMore,
+            CancelRequest,
+            null,
             null,
             fetchSize,
             reactive);
 
-        var runHandler = new RunResponseHandler(streamBuilder, summaryBuilder);
+        var runMessage = _protocolMessageFactory.NewRunWithMetadataMessage(connection, query);
+        var runHandler = _protocolHandlerFactory.NewRunResponseHandler(streamBuilder, summaryBuilder);
         
-        await connection.EnqueueAsync(
-                new RunWithMetadataMessage(connection.Version, query),
-                runHandler)
-            .ConfigureAwait(false);
+        await connection.EnqueueAsync(runMessage, runHandler).ConfigureAwait(false);
         
         if (reactive)
         {
-            var pullMessage = new PullMessage(fetchSize);
-            var pullHandler = new PullResponseHandler(streamBuilder, summaryBuilder, null);
-            await connection.EnqueueAsync(
-                    pullMessage,
-                    pullHandler)
-                .ConfigureAwait(false);
+            var pullMessage = _protocolMessageFactory.NewPullMessage(fetchSize);
+            var pullHandler = _protocolHandlerFactory.NewPullResponseHandler(null, streamBuilder, summaryBuilder);
+            await connection.EnqueueAsync(pullMessage, pullHandler).ConfigureAwait(false);
         }
 
         await connection.SendAsync().ConfigureAwait(false);

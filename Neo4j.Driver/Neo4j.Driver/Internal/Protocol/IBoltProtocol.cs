@@ -47,7 +47,7 @@ internal interface IBoltProtocol
         IConnection connection,
         Query query,
         bool reactive,
-        long fetchSize);
+        long fetchSize = Config.Infinite);
 
     Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker);
     Task RollbackTransactionAsync(IConnection connection);

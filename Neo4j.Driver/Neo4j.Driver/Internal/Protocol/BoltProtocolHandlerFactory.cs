@@ -26,39 +26,55 @@ namespace Neo4j.Driver.Internal;
 
 internal interface IBoltProtocolHandlerFactory
 {       
-    IResponseHandler NewRunHandler(IResultCursorBuilder streamBuilder, SummaryBuilder summaryBuilder);
+    IResponseHandler NewRunResponseHandler(IResultCursorBuilder streamBuilder, SummaryBuilder summaryBuilder);
 
-    IResultCursorBuilder NewResultCursorBuilder(SummaryBuilder summaryBuilder, 
-        IConnection connection, 
-        AutoCommitParams autoCommitParams,
-        Func<IConnection, SummaryBuilder, IBookmarksTracker, Func<IResultStreamBuilder,long,long,Task>> requestMore,
-        Func<IConnection, SummaryBuilder, IBookmarksTracker, Func<IResultStreamBuilder,long,Task>> cancelRequest);
+    IResultCursorBuilder NewResultCursorBuilder(SummaryBuilder summaryBuilder,
+        IConnection connection,
+        Func<IConnection, SummaryBuilder, IBookmarksTracker, Func<IResultStreamBuilder, long, long, Task>> requestMore,
+        Func<IConnection, SummaryBuilder, IBookmarksTracker, Func<IResultStreamBuilder, long, Task>> cancelRequest,
+        IBookmarksTracker bookmarksTracker,
+        IResultResourceHandler resultResourceHandler,
+        long fetchSize,
+        bool reactive);
+
+    PullResponseHandler NewPullResponseHandler(
+        IBookmarksTracker bookmarksTracker,
+        IResultCursorBuilder cursorBuilder,
+        SummaryBuilder summaryBuilder);
 }
 
 internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
 {
-    public IResultCursorBuilder NewResultCursorBuilder(
-        SummaryBuilder summaryBuilder,
+    public IResultCursorBuilder NewResultCursorBuilder(SummaryBuilder summaryBuilder,
         IConnection connection,
-        AutoCommitParams autoCommitParams,
         Func<IConnection, SummaryBuilder, IBookmarksTracker, Func<IResultStreamBuilder, long, long, Task>> requestMore,
-        Func<IConnection, SummaryBuilder, IBookmarksTracker, Func<IResultStreamBuilder, long, Task>> cancelRequest)
+        Func<IConnection, SummaryBuilder, IBookmarksTracker, Func<IResultStreamBuilder, long, Task>> cancelRequest,
+        IBookmarksTracker bookmarksTracker,
+        IResultResourceHandler resultResourceHandler,
+        long fetchSize,
+        bool reactive)
     {
         return new ResultCursorBuilder(
             summaryBuilder,
             connection.ReceiveOneAsync,
-            requestMore(connection, summaryBuilder, autoCommitParams.BookmarksTracker),
-            cancelRequest(
-                connection,
-                summaryBuilder,
-                autoCommitParams.BookmarksTracker),
-            autoCommitParams.ResultResourceHandler,
-            autoCommitParams.FetchSize,
-            autoCommitParams.Reactive);
+            requestMore(connection, summaryBuilder, bookmarksTracker),
+            cancelRequest(connection, summaryBuilder, bookmarksTracker),
+            resultResourceHandler,
+            fetchSize,
+            reactive);
     }
 
-    public IResponseHandler NewRunHandler(IResultCursorBuilder streamBuilder, SummaryBuilder summaryBuilder)
+    public IResponseHandler NewRunResponseHandler(IResultCursorBuilder streamBuilder, SummaryBuilder summaryBuilder)
     {
         return new RunResponseHandler(streamBuilder, summaryBuilder);
     }
+
+    public PullResponseHandler NewPullResponseHandler(
+        IBookmarksTracker bookmarksTracker,
+        IResultCursorBuilder cursorBuilder,
+        SummaryBuilder summaryBuilder)
+    {
+        return new PullResponseHandler(cursorBuilder, summaryBuilder, bookmarksTracker);
+    }
+    
 }
