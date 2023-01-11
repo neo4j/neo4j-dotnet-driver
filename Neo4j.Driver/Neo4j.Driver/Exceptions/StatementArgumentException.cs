@@ -26,13 +26,13 @@ namespace Neo4j.Driver;
 /// </summary>
 [DataContract]
 [ClientErrorCode("Neo.ClientError.Statement.ArgumentError")]
-public class ArgumentErrorException : ClientException
+public class StatementArgumentException : ClientException
 {
     /// <summary>
-    /// Create a new <see cref="ArgumentErrorException" /> with an error message.
+    /// Create a new <see cref="StatementArgumentException" /> with an error message.
     /// </summary>
     /// <param name="message">The error message.</param>
-    public ArgumentErrorException(string message) : base(message)
+    public StatementArgumentException(string message) : base(message)
     {
     }
 }

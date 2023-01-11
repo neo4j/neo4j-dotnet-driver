@@ -51,7 +51,7 @@ namespace Neo4j.Driver.Tests.TestBackend
             { typeof(NotSupportedException), "NotSupportedException" },
             { typeof(ArgumentException), "ArgumentError" },
             { typeof(InvalidBookmarkMixtureException), "InvalidBookmarkMixtureError" },
-            { typeof(ArgumentErrorException), "ArgumentError" },
+            { typeof(StatementArgumentException), "ArgumentError" },
             { typeof(TypeException), "TypeError" },
             { typeof(ForbiddenException), "ForbiddenError" },
             { typeof(UnknownSecurityException), "OtherSecurityException" }

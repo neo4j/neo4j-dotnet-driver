@@ -19,7 +19,7 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal;
 
-public class SimpleWildcardHelper
+internal class SimpleWildcardHelper
 {
     /// <summary>
     /// Returns true if the two strings are the same, or if <see cref="y"/> ends with an asterisk (*),

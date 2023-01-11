@@ -27,7 +27,7 @@ public class Neo4jExceptionFactoryTests
 {
     public static IEnumerable<object[]> CodeToTypeMapping = new[]
     {
-        new object[] { "Neo.ClientError.Statement.ArgumentError", typeof(ArgumentErrorException) },
+        new object[] { "Neo.ClientError.Statement.ArgumentError", typeof(StatementArgumentException) },
         new object[] { "Neo.ClientError.Security.Unauthorized", typeof(AuthenticationException) },
         new object[] { "Neo.ClientError.Security.AuthorizationExpired", typeof(AuthorizationException) },
         new object[] { "Neo.ClientError.Database.DatabaseNotFound", typeof(FatalDiscoveryException) },
