@@ -30,6 +30,7 @@ internal interface IBoltProtocolMessageFactory
     PullMessage NewPullMessage(long id, long fetchSize);
     RouteMessage NewRouteMessage(IConnection connection, Bookmarks bookmarks, string database, string impersonatedUser);
     RouteMessageV43 NewRouteMessageV43(IConnection connection, Bookmarks bookmarks, string database);
+    DiscardMessage NewDiscardMessage(long id, long discardSize);
 }
 internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
 {
@@ -71,5 +72,10 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
         string database)
     {
         return new RouteMessageV43(connection.RoutingContext, bookmarks, database);
+    }
+
+    public DiscardMessage NewDiscardMessage(long id, long discardSize)
+    {
+        return new DiscardMessage(id, discardSize);
     }
 }

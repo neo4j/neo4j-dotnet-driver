@@ -990,5 +990,127 @@ namespace Neo4j.Driver.Internal.Protocol
                     Times.Once);
             }
         }
+
+        public class RequestMoreTests
+        {
+            [Fact]
+            public void ShouldEnqueuePull()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(4, 4));
+                var sb = new SummaryBuilder(new Query("..."), new ServerInfo(new Uri("http://0.0.0.0")));
+
+                var mockBt = new Mock<IBookmarksTracker>();
+                var msgFactory = new Mock<IBoltProtocolMessageFactory>();
+                msgFactory
+                    .Setup(x => x.NewPullMessage(10))
+                    .Returns(new PullMessage(10));
+
+                var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
+                var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
+                handlerFactory
+                    .Setup(
+                        x => x.NewRunResponseHandler(
+                            resultCursorBuilderMock.Object,
+                            It.IsNotNull<SummaryBuilder>()))
+                    .Returns(new RunResponseHandler(resultCursorBuilderMock.Object, sb));
+
+                handlerFactory
+                    .Setup(
+                        x => x.NewPullResponseHandler(
+                            mockBt.Object,
+                            resultCursorBuilderMock.Object,
+                            It.IsNotNull<SummaryBuilder>()))
+                    .Returns(new PullResponseHandler(resultCursorBuilderMock.Object, sb, mockBt.Object));
+
+                handlerFactory.Setup(
+                        x => x.NewResultCursorBuilder(
+                            It.IsAny<SummaryBuilder>(),
+                            It.IsAny<IConnection>(),
+                            It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                                Func<IResultStreamBuilder, long, long, Task>>>(),
+                            It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                                Func<IResultStreamBuilder, long, Task>>>(),
+                            It.IsAny<IBookmarksTracker>(),
+                            It.IsAny<IResultResourceHandler>(),
+                            It.IsAny<long>(),
+                            It.IsAny<bool>()))
+                    .Returns(resultCursorBuilderMock.Object);
+
+                var protocol = new BoltProtocol(null, msgFactory.Object, handlerFactory.Object);
+                
+                protocol.RequestMore(mockConn.Object, sb, mockBt.Object)(resultCursorBuilderMock.Object, 1, 10);
+                
+                msgFactory.Verify(x => x.NewPullMessage(1, 10), Times.Once);
+                handlerFactory.Verify(x => x.NewPullResponseHandler(mockBt.Object, resultCursorBuilderMock.Object, sb),
+                    Times.Once);
+
+                mockConn.Verify(x => x.EnqueueAsync(It.IsAny<PullMessage>(), It.IsAny<PullResponseHandler>()),
+                    Times.Once);
+                mockConn.Verify(x => x.SendAsync(), Times.Once);
+                mockConn.VerifyNoOtherCalls();
+            }
+        }
+        
+        public class CancelRequest
+        {
+            [Fact]
+            public void ShouldEnqueueDiscard()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(4, 4));
+                var sb = new SummaryBuilder(new Query("..."), new ServerInfo(new Uri("http://0.0.0.0")));
+
+                var mockBt = new Mock<IBookmarksTracker>();
+                var msgFactory = new Mock<IBoltProtocolMessageFactory>();
+                msgFactory
+                    .Setup(x => x.NewDiscardMessage(1, -1))
+                    .Returns(new DiscardMessage(1));
+
+                var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
+                var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
+                handlerFactory
+                    .Setup(
+                        x => x.NewRunResponseHandler(
+                            resultCursorBuilderMock.Object,
+                            It.IsNotNull<SummaryBuilder>()))
+                    .Returns(new RunResponseHandler(resultCursorBuilderMock.Object, sb));
+
+                handlerFactory
+                    .Setup(
+                        x => x.NewPullResponseHandler(
+                            mockBt.Object,
+                            resultCursorBuilderMock.Object,
+                            It.IsNotNull<SummaryBuilder>()))
+                    .Returns(new PullResponseHandler(resultCursorBuilderMock.Object, sb, mockBt.Object));
+
+                handlerFactory.Setup(
+                        x => x.NewResultCursorBuilder(
+                            It.IsAny<SummaryBuilder>(),
+                            It.IsAny<IConnection>(),
+                            It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                                Func<IResultStreamBuilder, long, long, Task>>>(),
+                            It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                                Func<IResultStreamBuilder, long, Task>>>(),
+                            It.IsAny<IBookmarksTracker>(),
+                            It.IsAny<IResultResourceHandler>(),
+                            It.IsAny<long>(),
+                            It.IsAny<bool>()))
+                    .Returns(resultCursorBuilderMock.Object);
+
+                var protocol = new BoltProtocol(null, msgFactory.Object, handlerFactory.Object);
+                
+                protocol.CancelRequest(mockConn.Object, sb, mockBt.Object)(resultCursorBuilderMock.Object, 1);
+                
+                msgFactory.Verify(x => x.NewDiscardMessage(1, -1), Times.Once);
+                handlerFactory.Verify(x => x.NewPullResponseHandler(mockBt.Object, resultCursorBuilderMock.Object, sb),
+                    Times.Once);
+
+                mockConn.Verify(x => x.EnqueueAsync(It.IsAny<DiscardMessage>(), It.IsAny<PullResponseHandler>()),
+                    Times.Once);
+                mockConn.Verify(x => x.SendAsync(), Times.Once);
+                mockConn.VerifyNoOtherCalls();
+            }
+        }
     }
 }

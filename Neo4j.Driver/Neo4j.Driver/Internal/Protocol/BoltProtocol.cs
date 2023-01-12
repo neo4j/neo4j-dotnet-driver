@@ -265,11 +265,11 @@ internal sealed class BoltProtocol : IBoltProtocol
     {
         return async (streamBuilder, id) =>
         {
-            var pullResponseHandler = new PullResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
-            await connection
-                .EnqueueAsync(new DiscardMessage(id, ResultHandleMessage.All), pullResponseHandler)
-                .ConfigureAwait(false);
-
+            var pullResponseHandler = _protocolHandlerFactory.NewPullResponseHandler(bookmarksTracker,
+                streamBuilder,
+                summaryBuilder);
+            var discardMessage = _protocolMessageFactory.NewDiscardMessage(id, ResultHandleMessage.All);
+            await connection.EnqueueAsync(discardMessage, pullResponseHandler).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
         };
     }
