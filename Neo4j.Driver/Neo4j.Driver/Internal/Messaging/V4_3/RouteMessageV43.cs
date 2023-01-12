@@ -19,47 +19,30 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal.IO.MessageSerializers.V4_4;
+using Neo4j.Driver.Internal.IO.MessageSerializers.V4_3;
 
-namespace Neo4j.Driver.Internal.Messaging.V4_4;
+namespace Neo4j.Driver.Internal.Messaging.V4_3;
 
-internal sealed class RouteMessage : IRequestMessage
+internal sealed class RouteMessageV43 : IRequestMessage
 {
-    private const string DBNameKey = "db";
-    private const string ImpersonatedUserKey = "imp_user";
-
-    public RouteMessage(
-        IDictionary<string, string> routingContext,
-        Bookmarks bookmarks,
-        string databaseName,
-        string impersonatedUser)
+    public RouteMessageV43(IDictionary<string, string> routingContext, Bookmarks bookmarks, string db)
     {
         Routing = routingContext ?? new Dictionary<string, string>();
         Bookmarks = bookmarks ?? Bookmarks.From(Array.Empty<string>());
-        DatabaseContext = new Dictionary<string, string>();
-
-        if (!string.IsNullOrEmpty(databaseName))
-        {
-            DatabaseContext.Add(DBNameKey, databaseName);
-        }
-
-        if (!string.IsNullOrEmpty(impersonatedUser))
-        {
-            DatabaseContext.Add(ImpersonatedUserKey, impersonatedUser);
-        }
+        DatabaseParam = db;
     }
 
     public IDictionary<string, string> Routing { get; }
     public Bookmarks Bookmarks { get; }
-    public IDictionary<string, string> DatabaseContext { get; }
+    public string DatabaseParam { get; }
 
     public IPackStreamSerializer Serializer => RouteMessageSerializer.Instance;
 
     public override string ToString()
     {
         var stringBuilder = new StringBuilder(64);
-        stringBuilder.Append("ROUTE {");
 
+        stringBuilder.Append("ROUTE {");
         foreach (var data in Routing)
         {
             stringBuilder.Append(" '")
@@ -82,17 +65,16 @@ internal sealed class RouteMessage : IRequestMessage
             stringBuilder.Append("[]");
         }
 
-        stringBuilder.Append(" {");
-        foreach (var data in DatabaseContext)
+        if (!string.IsNullOrEmpty(DatabaseParam))
         {
             stringBuilder.Append(" '")
-                .Append(data.Key)
-                .Append("':'")
-                .Append(data.Value)
+                .Append(DatabaseParam)
                 .Append("'");
         }
-
-        stringBuilder.Append(" }");
+        else
+        {
+            stringBuilder.Append(" None");
+        }
 
         return stringBuilder.ToString();
     }

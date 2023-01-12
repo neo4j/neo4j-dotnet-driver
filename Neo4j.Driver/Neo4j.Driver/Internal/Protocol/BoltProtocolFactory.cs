@@ -77,7 +77,7 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
         {
             // no matching versions
             { MajorVersion: 0, MinorVersion: 0 } => throw new NotSupportedException(NoAgreedVersion),
-            { MajorVersion: 3, MinorVersion: 0 } => V3BoltProtocol.Instance,
+            { MajorVersion: 3, MinorVersion: 0 } => BoltProtocolV3.Instance,
             { MajorVersion: 4, MinorVersion: 1 } => BoltProtocol.Instance,
             { MajorVersion: 4, MinorVersion: 2 } => BoltProtocol.Instance,
             { MajorVersion: 4, MinorVersion: 3 } => BoltProtocol.Instance,

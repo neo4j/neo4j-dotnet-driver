@@ -18,7 +18,7 @@
 using System;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.Internal.Messaging.V4_3;
 
 namespace Neo4j.Driver.Internal;
 
@@ -27,6 +27,8 @@ internal interface IBoltProtocolMessageFactory
     RunWithMetadataMessage NewRunWithMetadataMessage(IConnection connection, AutoCommitParams autoCommitParams);
     RunWithMetadataMessage NewRunWithMetadataMessage(IConnection connection, Query query);
     PullMessage NewPullMessage(long fetchSize);
+    RouteMessage NewRouteMessage(IConnection connection, Bookmarks bookmarks, string database, string impersonatedUser);
+    RouteMessageV43 NewRouteMessageV43(IConnection connection, Bookmarks bookmarks, string database);
 }
 internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
 {
@@ -50,5 +52,18 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
     public PullMessage NewPullMessage(long fetchSize)
     {
         return new(fetchSize);
+    }
+
+    public RouteMessage NewRouteMessage(IConnection connection, Bookmarks bookmarks, string database, string impersonatedUser)
+    {
+        return new RouteMessage(connection.RoutingContext, bookmarks, database, impersonatedUser);
+    }
+
+    public RouteMessageV43 NewRouteMessageV43(
+        IConnection connection,
+        Bookmarks bookmarks,
+        string database)
+    {
+        return new RouteMessageV43(connection.RoutingContext, bookmarks, database);
     }
 }

@@ -25,15 +25,15 @@ internal class RouteMessageSerializer : WriteOnlySerializer
 {
     internal static RouteMessageSerializer Instance = new();
 
-    private static readonly Type[] Types = { typeof(RouteMessage) };
+    private static readonly Type[] Types = { typeof(RouteMessageV43) };
     public override IEnumerable<Type> WritableTypes => Types;
 
     public override void Serialize(PackStreamWriter writer, object value)
     {
-        if (value is not RouteMessage msg)
+        if (value is not RouteMessageV43 msg)
         {
             throw new ArgumentOutOfRangeException(
-                $"Encountered {value?.GetType().Name} where {nameof(RouteMessage)} was expected");
+                $"Encountered {value?.GetType().Name} where {nameof(RouteMessageV43)} was expected");
         }
 
         writer.WriteStructHeader(3, MessageFormat.MsgRoute);

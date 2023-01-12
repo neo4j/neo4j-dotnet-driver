@@ -26,13 +26,13 @@ using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal;
 
-internal sealed class V3BoltProtocol : IBoltProtocol
+internal sealed class BoltProtocolV3 : IBoltProtocol
 {
-    public static readonly V3BoltProtocol Instance = new();
+    public static readonly BoltProtocolV3 Instance = new();
     private readonly IBoltProtocolMessageFactory _protocolMessageFactory;
     private readonly IBoltProtocolHandlerFactory _protocolHandlerFactory;
 
-    private V3BoltProtocol(IBoltProtocolMessageFactory protocolMessageFactory = null,
+    private BoltProtocolV3(IBoltProtocolMessageFactory protocolMessageFactory = null,
         IBoltProtocolHandlerFactory protocolHandlerFactory = null)
     {
         _protocolMessageFactory = protocolMessageFactory ?? new BoltProtocolMessageFactory();

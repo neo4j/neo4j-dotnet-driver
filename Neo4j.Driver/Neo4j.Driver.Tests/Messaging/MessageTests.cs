@@ -20,7 +20,6 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Messaging.V4_4;
 using Xunit;
 
 namespace Neo4j.Driver.Tests
@@ -53,7 +52,7 @@ namespace Neo4j.Driver.Tests
                 },
                 new object[]
                 {
-                    new Internal.Messaging.V4_3.RouteMessage(
+                    new Internal.Messaging.V4_3.RouteMessageV43(
                         new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "Empty" } },
                         Bookmarks.From("bookmark-1"),
                         ""),
@@ -61,7 +60,7 @@ namespace Neo4j.Driver.Tests
                 },
                 new object[]
                 {
-                    new Internal.Messaging.V4_3.RouteMessage(
+                    new Internal.Messaging.V4_3.RouteMessageV43(
                         new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "Null" } },
                         Bookmarks.From("bookmark-1"),
                         null),
@@ -69,7 +68,7 @@ namespace Neo4j.Driver.Tests
                 },
                 new object[]
                 {
-                    new Internal.Messaging.V4_3.RouteMessage(
+                    new Internal.Messaging.V4_3.RouteMessageV43(
                         new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "adb" } },
                         Bookmarks.From("bookmark-1"),
                         "adb"),
@@ -77,7 +76,7 @@ namespace Neo4j.Driver.Tests
                 },
                 new object[]
                 {
-                    new Internal.Messaging.V4_3.RouteMessage(
+                    new Internal.Messaging.V4_3.RouteMessageV43(
                         new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "adb" } },
                         null,
                         "adb"),

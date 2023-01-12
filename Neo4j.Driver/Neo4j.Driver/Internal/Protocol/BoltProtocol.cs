@@ -22,25 +22,24 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.MessageHandling.V4;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Messaging.V4_3;
 using Neo4j.Driver.Internal.Result;
-using V43 = Neo4j.Driver.Internal.Messaging.V4_3;
-using V44 = Neo4j.Driver.Internal.Messaging.V4_4;
 
 namespace Neo4j.Driver.Internal;
 
 internal sealed class BoltProtocol : IBoltProtocol
 {
     public static readonly IBoltProtocol Instance = new BoltProtocol();
-    private readonly IBoltProtocol _v3BoltProtocol;
+    private readonly IBoltProtocol _boltProtocolV3;
     
     internal BoltProtocol(
-        IBoltProtocol v3BoltProtocol = null,
+        IBoltProtocol boltProtocolV3 = null,
         IBoltProtocolMessageFactory protocolMessageFactory = null,
         IBoltProtocolHandlerFactory protocolHandlerFactory = null)
     {
         _protocolMessageFactory = protocolMessageFactory ?? new BoltProtocolMessageFactory();
         _protocolHandlerFactory = protocolHandlerFactory ?? new BoltProtocolHandlerFactory();
-        _v3BoltProtocol = v3BoltProtocol ?? V3BoltProtocol.Instance;
+        _boltProtocolV3 = boltProtocolV3 ?? BoltProtocolV3.Instance;
     }
 
     private readonly IBoltProtocolMessageFactory _protocolMessageFactory;
@@ -50,7 +49,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         IConnection connection,
         AutoCommitParams autoCommitParams)
     {
-        V3BoltProtocol.ValidateImpersonatedUserForVersion(connection, autoCommitParams.ImpersonatedUser);
+        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, autoCommitParams.ImpersonatedUser);
 
         var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
 
@@ -92,8 +91,8 @@ internal sealed class BoltProtocol : IBoltProtocol
         TransactionConfig config,
         string impersonatedUser)
     {
-        V3BoltProtocol.ValidateImpersonatedUserForVersion(connection, impersonatedUser);
-        return _v3BoltProtocol.BeginTransactionAsync(connection, database, bookmarks, config, impersonatedUser);
+        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, impersonatedUser);
+        return _boltProtocolV3.BeginTransactionAsync(connection, database, bookmarks, config, impersonatedUser);
     }
 
     public async Task<IResultCursor> RunInExplicitTransactionAsync(
@@ -132,27 +131,27 @@ internal sealed class BoltProtocol : IBoltProtocol
 
     public Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker)
     {
-        return _v3BoltProtocol.CommitTransactionAsync(connection, bookmarksTracker);
+        return _boltProtocolV3.CommitTransactionAsync(connection, bookmarksTracker);
     }
 
     public Task RollbackTransactionAsync(IConnection connection)
     {
-        return _v3BoltProtocol.RollbackTransactionAsync(connection);
+        return _boltProtocolV3.RollbackTransactionAsync(connection);
     }
 
     public Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
     {
-        return _v3BoltProtocol.LoginAsync(connection, userAgent, authToken);
+        return _boltProtocolV3.LoginAsync(connection, userAgent, authToken);
     }
 
     public Task LogoutAsync(IConnection connection)
     {
-        return _v3BoltProtocol.LogoutAsync(connection);
+        return _boltProtocolV3.LogoutAsync(connection);
     }
 
     public Task ResetAsync(IConnection connection)
     {
-        return _v3BoltProtocol.ResetAsync(connection);
+        return _boltProtocolV3.ResetAsync(connection);
     }
 
     public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
@@ -164,7 +163,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
 
-        V3BoltProtocol.ValidateImpersonatedUserForVersion(connection, impersonatedUser);
+        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, impersonatedUser);
 
         return connection.Version >= BoltProtocolVersion.V4_3
             ? GetRoutingTableWithRouteMessageAsync(connection, database, impersonatedUser, bookmarks)
@@ -213,11 +212,18 @@ internal sealed class BoltProtocol : IBoltProtocol
         string impersonatedUser,
         Bookmarks bookmarks)
     {
+        //TODO: Consider refactoring logic of v43 into message factory.
         IRequestMessage message = connection.Version == BoltProtocolVersion.V4_3
-            ? new V43.RouteMessage(connection.RoutingContext, bookmarks, database)
-            : new V44.RouteMessage(connection.RoutingContext, bookmarks, database, impersonatedUser);
+            ? _protocolMessageFactory.NewRouteMessageV43(
+                connection,
+                bookmarks,
+                database)
+            : _protocolMessageFactory.NewRouteMessage(connection,
+                bookmarks,
+                database,
+                impersonatedUser);
 
-        var responseHandler = new RouteResponseHandler();
+        var responseHandler = _protocolHandlerFactory.NewRouteHandler();
 
         await connection.EnqueueAsync(message, responseHandler).ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);

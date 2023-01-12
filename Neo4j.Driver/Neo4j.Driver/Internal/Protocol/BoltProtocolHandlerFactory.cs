@@ -41,6 +41,8 @@ internal interface IBoltProtocolHandlerFactory
         IBookmarksTracker bookmarksTracker,
         IResultCursorBuilder cursorBuilder,
         SummaryBuilder summaryBuilder);
+
+    RouteResponseHandler NewRouteHandler();
 }
 
 internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
@@ -76,5 +78,9 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
     {
         return new PullResponseHandler(cursorBuilder, summaryBuilder, bookmarksTracker);
     }
-    
+
+    public RouteResponseHandler NewRouteHandler()
+    {
+        return new RouteResponseHandler();
+    }
 }
