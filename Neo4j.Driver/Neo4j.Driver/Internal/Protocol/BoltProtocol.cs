@@ -22,7 +22,6 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.MessageHandling.V4;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Messaging.V4_3;
 using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal;
@@ -179,7 +178,7 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         var bookmarkTracker = new BookmarksTracker(bookmarks);
         var resourceHandler = new ConnectionResourceHandler(connection);
-        var databaseParameter = string.IsNullOrEmpty(database) ? null : database;
+        var databaseParameter = string.IsNullOrWhiteSpace(database) ? null : database;
         var autoCommitParams = new AutoCommitParams
         {
             Query = new Query(
@@ -212,15 +211,16 @@ internal sealed class BoltProtocol : IBoltProtocol
         string impersonatedUser,
         Bookmarks bookmarks)
     {
+        var dbParameter = string.IsNullOrWhiteSpace(database) ? null : database;
         //TODO: Consider refactoring logic of v43 into message factory.
         IRequestMessage message = connection.Version == BoltProtocolVersion.V4_3
             ? _protocolMessageFactory.NewRouteMessageV43(
                 connection,
                 bookmarks,
-                database)
+                dbParameter)
             : _protocolMessageFactory.NewRouteMessage(connection,
                 bookmarks,
-                database,
+                dbParameter,
                 impersonatedUser);
 
         var responseHandler = _protocolHandlerFactory.NewRouteHandler();
@@ -237,8 +237,9 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         return (IReadOnlyDictionary<string, object>)responseHandler.RoutingInformation;
     }
-
-    private static Func<IResultStreamBuilder, long, long, Task> RequestMore(
+    
+    // Internal for tests.
+    internal static Func<IResultStreamBuilder, long, long, Task> RequestMore(
         IConnection connection,
         SummaryBuilder summaryBuilder,
         IBookmarksTracker bookmarksTracker)
@@ -253,8 +254,9 @@ internal sealed class BoltProtocol : IBoltProtocol
             await connection.SendAsync().ConfigureAwait(false);
         };
     }
-
-    private static Func<IResultStreamBuilder, long, Task> CancelRequest(
+    
+    // Internal for tests.
+    internal static Func<IResultStreamBuilder, long, Task> CancelRequest(
         IConnection connection,
         SummaryBuilder summaryBuilder,
         IBookmarksTracker bookmarksTracker)

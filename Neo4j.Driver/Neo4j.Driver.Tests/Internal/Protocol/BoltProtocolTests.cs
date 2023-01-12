@@ -29,7 +29,7 @@ using Neo4j.Driver.Internal.Result;
 using Xunit;
 using Record = Xunit.Record;
 
-namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
+namespace Neo4j.Driver.Internal.Protocol
 {
     public class BoltProtocolTests
     {
@@ -659,7 +659,8 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
             [InlineData(4, 4)]
             [InlineData(5, 0)]
             [InlineData(6, 0)]
-            public async Task ShouldAcquireRtWithRouteMessageWhenUsingBoltVersionGreaterThan43(int major, int minor)
+            public async Task ShouldAcquireRoutingTableWithRouteMessageWhenUsingBoltVersionGreaterThan43(int major, 
+                int minor)
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
@@ -681,14 +682,13 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
                 var protocol = new BoltProtocol(mockV3.Object, msgFactory.Object, handlerFactory.Object);
 
                 await protocol.GetRoutingTableAsync(mockConn.Object, "db", "dougy", new InternalBookmarks());
-                
+
                 msgFactory.Verify(
                     x => x.NewRouteMessage(
                         mockConn.Object,
                         It.IsNotNull<Bookmarks>(),
                         "db",
-                        "dougy"
-                        ),
+                        "dougy"),
                     Times.Once);
 
                 handlerFactory.Verify(x => x.NewRouteHandler(), Times.Once);
@@ -704,9 +704,9 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
                 mockConn.Verify(x => x.SendAsync(), Times.Never);
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
             }
-            
+
             [Fact]
-            public async Task ShouldAcquireRtWithRouteMessageV43WhenUsingBoltVersion43()
+            public async Task ShouldAcquireRoutingTableWithRouteMessageV43WhenUsingBoltVersion43()
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(4, 3));
@@ -726,13 +726,12 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
                 var protocol = new BoltProtocol(mockV3.Object, msgFactory.Object, handlerFactory.Object);
 
                 await protocol.GetRoutingTableAsync(mockConn.Object, "db", null, new InternalBookmarks());
-                
+
                 msgFactory.Verify(
                     x => x.NewRouteMessageV43(
                         mockConn.Object,
                         It.IsNotNull<Bookmarks>(),
-                        "db"
-                    ),
+                        "db"),
                     Times.Once);
 
                 handlerFactory.Verify(x => x.NewRouteHandler(), Times.Once);
@@ -774,7 +773,7 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
                 await protocol.GetRoutingTableAsync(mockConn.Object, "test", null, new InternalBookmarks());
 
                 mockRt.Verify(x => x.Add("db", "test"), Times.Once);
-                
+
                 msgFactory.Verify(
                     x => x.NewRouteMessageV43(
                         mockConn.Object,
@@ -783,6 +782,9 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
                     Times.Once);
 
                 handlerFactory.Verify(x => x.NewRouteHandler(), Times.Once);
+                handlerFactory.Verify(
+                    x => x.NewRunResponseHandler(It.IsAny<IResultCursorBuilder>(), It.IsAny<SummaryBuilder>()),
+                    Times.Never);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsNotNull<IRequestMessage>(), It.IsNotNull<IResponseHandler>()),
@@ -794,6 +796,198 @@ namespace Neo4j.Driver.Internal.Protocol.BoltProtocolTests
 
                 mockConn.Verify(x => x.SendAsync(), Times.Never);
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
+            }
+
+            [Theory]
+            [InlineData(4, 0)]
+            [InlineData(4, 1)]
+            [InlineData(4, 2)]
+            public async Task ShouldUseQueryToFetchRoutingTableForBoltVersionLessThan43(int major, int minor)
+            {
+                var mockRoutingContext = new Mock<IDictionary<string, string>>();
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
+                mockConn.SetupGet(x => x.RoutingContext).Returns(mockRoutingContext.Object);
+                
+                var mockRtResult = new Mock<IRecord>();
+                mockRtResult.SetupGet(x => x.Values).Returns(new Dictionary<string, object>());
+                
+                var mockCursor = new Mock<IInternalResultCursor>();
+                mockCursor.SetupSequence(x => x.FetchAsync()).ReturnsAsync(true).ReturnsAsync(false);
+                mockCursor.SetupGet(x => x.Current).Returns(mockRtResult.Object);
+                
+                var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
+                resultCursorBuilderMock.Setup(x => x.CreateCursor()).Returns(mockCursor.Object);
+                    
+                var msgFactory = new Mock<IBoltProtocolMessageFactory>();
+
+                AutoCommitParams queryParams = null;
+                msgFactory.Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, It.IsAny<AutoCommitParams>()))
+                    .Callback<IConnection, AutoCommitParams>((_, y) => queryParams = y);
+                
+                var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
+                handlerFactory.Setup(
+                        x => x.NewResultCursorBuilder(
+                            It.IsAny<SummaryBuilder>(),
+                            It.IsAny<IConnection>(),
+                            It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                                Func<IResultStreamBuilder, long, long, Task>>>(),
+                            It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                                Func<IResultStreamBuilder, long, Task>>>(),
+                            It.IsAny<IBookmarksTracker>(),
+                            It.IsAny<IResultResourceHandler>(),
+                            It.IsAny<long>(),
+                            It.IsAny<bool>()))
+                    .Returns(resultCursorBuilderMock.Object);
+                
+                var mockV3 = new Mock<IBoltProtocol>();
+                var protocol = new BoltProtocol(mockV3.Object, msgFactory.Object, handlerFactory.Object);
+
+                Bookmarks bm = new InternalBookmarks();
+                var routingTable = await protocol.GetRoutingTableAsync(mockConn.Object,
+                    "test",
+                    null,
+                    bm);
+
+                routingTable.Should().Contain(new KeyValuePair<string, object>("db", "test"));
+                
+                handlerFactory.Verify(x => x.NewRouteHandler(), Times.Never);
+                
+                msgFactory.Verify(x => 
+                    x.NewRouteMessage(It.IsAny<IConnection>(), 
+                        It.IsAny<Bookmarks>(), 
+                        It.IsAny<string>(), 
+                        It.IsAny<string>()),
+                    Times.Never);
+
+                queryParams.Should().NotBeNull();
+                queryParams.Query.Text.Should().Be("CALL dbms.routing.getRoutingTable($context, $database)");
+                queryParams.Query.Parameters.Should().HaveCount(2).And.ContainKeys("context", "database");
+                queryParams.Query.Parameters["database"].Should().Be("test");
+                queryParams.Query.Parameters["context"].Should().Be(mockRoutingContext.Object);
+                queryParams.Database.Should().Be("system");
+                queryParams.BookmarksTracker.Should().NotBeNull();
+                queryParams.ResultResourceHandler.Should().NotBeNull();
+                queryParams.Bookmarks.Should().Be(bm);
+                
+                msgFactory.Verify(
+                    x => x.NewRouteMessageV43(It.IsAny<IConnection>(), It.IsAny<Bookmarks>(), It.IsAny<string>()),
+                    Times.Never);
+
+                mockConn.Verify(x => x.ConfigureMode(AccessMode.Read), Times.Once);
+                
+                mockConn.Verify(
+                    x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()),
+                    Times.Once);
+            }
+            
+            [Theory]
+            [InlineData("")]
+            [InlineData("\t")]
+            public async Task ShouldProtectAgainstEmptyDatabaseStringWhenUsingQuery(string dbName)
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(4, 1));
+                
+                var mockRtResult = new Mock<IRecord>();
+                mockRtResult.SetupGet(x => x.Values).Returns(new Dictionary<string, object>());
+                
+                var mockCursor = new Mock<IInternalResultCursor>();
+                mockCursor.SetupSequence(x => x.FetchAsync()).ReturnsAsync(true).ReturnsAsync(false);
+                mockCursor.SetupGet(x => x.Current).Returns(mockRtResult.Object);
+                
+                var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
+                resultCursorBuilderMock.Setup(x => x.CreateCursor()).Returns(mockCursor.Object);
+                    
+                var msgFactory = new Mock<IBoltProtocolMessageFactory>();
+
+                AutoCommitParams queryParams = null;
+                msgFactory.Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, It.IsAny<AutoCommitParams>()))
+                    .Callback<IConnection, AutoCommitParams>((_, y) => queryParams = y);
+                
+                var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
+                handlerFactory.Setup(
+                        x => x.NewResultCursorBuilder(
+                            It.IsAny<SummaryBuilder>(),
+                            It.IsAny<IConnection>(),
+                            It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                                Func<IResultStreamBuilder, long, long, Task>>>(),
+                            It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                                Func<IResultStreamBuilder, long, Task>>>(),
+                            It.IsAny<IBookmarksTracker>(),
+                            It.IsAny<IResultResourceHandler>(),
+                            It.IsAny<long>(),
+                            It.IsAny<bool>()))
+                    .Returns(resultCursorBuilderMock.Object);
+                
+                var mockV3 = new Mock<IBoltProtocol>();
+                var protocol = new BoltProtocol(mockV3.Object, msgFactory.Object, handlerFactory.Object);
+
+                await protocol.GetRoutingTableAsync(mockConn.Object,
+                    dbName,
+                    null,
+                    null);
+
+                queryParams.Should().NotBeNull();
+                queryParams.Query.Parameters.Should().HaveCount(2).And.ContainKeys("context", "database");
+                queryParams.Query.Parameters["database"].Should().BeNull();
+            }
+
+            [Theory]
+            [InlineData("")]
+            [InlineData("\t")]
+            public async Task ShouldProtectAgainstEmptyDatabaseStringWhenUsingRouteMessageV43(string dbName)
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(4, 3));
+
+                var msgFactory = new Mock<IBoltProtocolMessageFactory>();
+                var rrHandler = new RouteResponseHandler
+                {
+                    RoutingInformation = new Dictionary<string, object>()
+                };
+                var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
+                handlerFactory.Setup(x => x.NewRouteHandler())
+                    .Returns(rrHandler);
+
+                var mockV3 = new Mock<IBoltProtocol>();
+                var protocol = new BoltProtocol(mockV3.Object, msgFactory.Object, handlerFactory.Object);
+
+                await protocol.GetRoutingTableAsync(mockConn.Object, dbName, null, null);
+
+                msgFactory.Verify(
+                    x => x.NewRouteMessageV43(
+                        mockConn.Object,
+                        It.IsAny<Bookmarks>(),
+                        null),
+                    Times.Once);
+            }
+
+            [Theory]
+            [InlineData("")]
+            [InlineData("\t")]
+            public async Task ShouldProtectAgainstEmptyDatabaseStringWhenUsingRouteMessage(string dbName)
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(4, 4));
+
+                var msgFactory = new Mock<IBoltProtocolMessageFactory>();
+                var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
+                handlerFactory.Setup(x => x.NewRouteHandler())
+                    .Returns(new RouteResponseHandler());
+
+                var mockV3 = new Mock<IBoltProtocol>();
+                var protocol = new BoltProtocol(mockV3.Object, msgFactory.Object, handlerFactory.Object);
+
+                await protocol.GetRoutingTableAsync(mockConn.Object, dbName, null, null);
+
+                msgFactory.Verify(
+                    x => x.NewRouteMessage(
+                        mockConn.Object,
+                        It.IsAny<Bookmarks>(),
+                        null,
+                        null),
+                    Times.Once);
             }
         }
     }
