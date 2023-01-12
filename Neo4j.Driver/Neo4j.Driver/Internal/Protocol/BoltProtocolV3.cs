@@ -118,8 +118,8 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             null,
             autoCommitParams.ResultResourceHandler);
 
-        var runHandler = new V3RunResponseHandler(streamBuilder, summaryBuilder);
-        var pullAllHandler = new V3PullResponseHandler(streamBuilder,
+        var runHandler = new RunResponseHandlerV3(streamBuilder, summaryBuilder);
+        var pullAllHandler = new PullResponseHandlerV3(streamBuilder,
             summaryBuilder,
             autoCommitParams.BookmarksTracker);
 
@@ -175,8 +175,8 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         var summaryBuilder = new SummaryBuilder(query, connection.Server);
         var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, null);
 
-        var runHandler = new V3RunResponseHandler(streamBuilder, summaryBuilder);
-        var pullAllHandler = new V3PullResponseHandler(streamBuilder, summaryBuilder, null);
+        var runHandler = new RunResponseHandlerV3(streamBuilder, summaryBuilder);
+        var pullAllHandler = new PullResponseHandlerV3(streamBuilder, summaryBuilder, null);
 
         var message = new RunWithMetadataMessage(connection.Version, query);
 

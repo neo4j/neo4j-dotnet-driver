@@ -23,12 +23,12 @@ using static Neo4j.Driver.Internal.Messaging.ResultHandleMessage;
 
 namespace Neo4j.Driver.Internal.MessageHandling.V3;
 
-internal sealed class V3RunResponseHandler : MetadataCollectingResponseHandler
+internal sealed class RunResponseHandlerV3 : MetadataCollectingResponseHandler
 {
     private readonly IResultStreamBuilder _streamBuilder;
     private readonly SummaryBuilder _summaryBuilder;
 
-    public V3RunResponseHandler(IResultStreamBuilder streamBuilder, SummaryBuilder summaryBuilder)
+    public RunResponseHandlerV3(IResultStreamBuilder streamBuilder, SummaryBuilder summaryBuilder)
     {
         _streamBuilder = streamBuilder ?? throw new ArgumentNullException(nameof(streamBuilder));
         _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
