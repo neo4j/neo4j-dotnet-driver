@@ -39,7 +39,7 @@ internal interface IBoltProtocolHandlerFactory
 
     PullResponseHandler NewPullResponseHandler(
         IBookmarksTracker bookmarksTracker,
-        IResultCursorBuilder cursorBuilder,
+        IResultStreamBuilder cursorBuilder,
         SummaryBuilder summaryBuilder);
 
     RouteResponseHandler NewRouteHandler();
@@ -73,7 +73,7 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
 
     public PullResponseHandler NewPullResponseHandler(
         IBookmarksTracker bookmarksTracker,
-        IResultCursorBuilder cursorBuilder,
+        IResultStreamBuilder cursorBuilder,
         SummaryBuilder summaryBuilder)
     {
         return new PullResponseHandler(cursorBuilder, summaryBuilder, bookmarksTracker);

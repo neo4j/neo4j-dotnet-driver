@@ -27,6 +27,7 @@ internal interface IBoltProtocolMessageFactory
     RunWithMetadataMessage NewRunWithMetadataMessage(IConnection connection, AutoCommitParams autoCommitParams);
     RunWithMetadataMessage NewRunWithMetadataMessage(IConnection connection, Query query);
     PullMessage NewPullMessage(long fetchSize);
+    PullMessage NewPullMessage(long id, long fetchSize);
     RouteMessage NewRouteMessage(IConnection connection, Bookmarks bookmarks, string database, string impersonatedUser);
     RouteMessageV43 NewRouteMessageV43(IConnection connection, Bookmarks bookmarks, string database);
 }
@@ -52,6 +53,11 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
     public PullMessage NewPullMessage(long fetchSize)
     {
         return new(fetchSize);
+    }
+
+    public PullMessage NewPullMessage(long id, long fetchSize)
+    {
+        return new(id, fetchSize);
     }
 
     public RouteMessage NewRouteMessage(IConnection connection, Bookmarks bookmarks, string database, string impersonatedUser)

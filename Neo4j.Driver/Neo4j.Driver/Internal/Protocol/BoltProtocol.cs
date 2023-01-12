@@ -239,24 +239,26 @@ internal sealed class BoltProtocol : IBoltProtocol
     }
     
     // Internal for tests.
-    internal static Func<IResultStreamBuilder, long, long, Task> RequestMore(
+    internal Func<IResultStreamBuilder, long, long, Task> RequestMore(
         IConnection connection,
         SummaryBuilder summaryBuilder,
         IBookmarksTracker bookmarksTracker)
     {
         return async (streamBuilder, id, n) =>
         {
-            var pullResponseHandler = new PullResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
-            await connection
-                .EnqueueAsync(new PullMessage(id, n), pullResponseHandler)
-                .ConfigureAwait(false);
+            var pullResponseHandler = _protocolHandlerFactory.NewPullResponseHandler(
+                bookmarksTracker,
+                streamBuilder,
+                summaryBuilder);
 
+            var pullMessage = _protocolMessageFactory.NewPullMessage(id, n);
+            await connection.EnqueueAsync(pullMessage, pullResponseHandler).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
         };
     }
     
     // Internal for tests.
-    internal static Func<IResultStreamBuilder, long, Task> CancelRequest(
+    internal Func<IResultStreamBuilder, long, Task> CancelRequest(
         IConnection connection,
         SummaryBuilder summaryBuilder,
         IBookmarksTracker bookmarksTracker)
