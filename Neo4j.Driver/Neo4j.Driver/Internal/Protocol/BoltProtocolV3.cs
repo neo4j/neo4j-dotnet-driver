@@ -29,10 +29,11 @@ namespace Neo4j.Driver.Internal;
 internal sealed class BoltProtocolV3 : IBoltProtocol
 {
     internal static readonly BoltProtocolV3 Instance = new();
-    private readonly IBoltProtocolMessageFactory _protocolMessageFactory;
     private readonly IBoltProtocolHandlerFactory _protocolHandlerFactory;
+    private readonly IBoltProtocolMessageFactory _protocolMessageFactory;
 
-    internal BoltProtocolV3(IBoltProtocolMessageFactory protocolMessageFactory = null,
+    internal BoltProtocolV3(
+        IBoltProtocolMessageFactory protocolMessageFactory = null,
         IBoltProtocolHandlerFactory protocolHandlerFactory = null)
     {
         _protocolMessageFactory = protocolMessageFactory ?? BoltProtocolMessageFactory.Instance;
@@ -67,7 +68,6 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
     {
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
-
         ValidateImpersonatedUserForVersion(connection, impersonatedUser);
 
         connection.ConfigureMode(AccessMode.Read);
@@ -106,30 +106,27 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         ValidateDatabase(connection, autoCommitParams.Database);
 
         var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
-        var streamBuilder = new ResultCursorBuilder(
+        var streamBuilder = _protocolHandlerFactory.NewResultCursorBuilder(
             summaryBuilder,
-            connection.ReceiveOneAsync,
+            connection,
             null,
             null,
-            autoCommitParams.ResultResourceHandler);
+            null,
+            autoCommitParams.ResultResourceHandler,
+            Config.Infinite,
+            false);
 
-        var runHandler = new RunResponseHandlerV3(streamBuilder, summaryBuilder);
-        var pullAllHandler = new PullResponseHandlerV3(streamBuilder,
+        var runHandler = _protocolHandlerFactory.NewRunResponseHandlerV3(streamBuilder, summaryBuilder);
+        var pullAllHandler = _protocolHandlerFactory.NewPullAllResponseHandler(
+            streamBuilder,
             summaryBuilder,
             autoCommitParams.BookmarksTracker);
 
-        var autoCommitMessage = new RunWithMetadataMessage(
-            connection.Version,
-            autoCommitParams.Query,
-            autoCommitParams.Bookmarks,
-            autoCommitParams.Config,
-            connection.Mode ?? throw new InvalidOperationException("Connection should have its Mode property set."),
-            autoCommitParams.Database,
-            autoCommitParams.ImpersonatedUser);
+        var autoCommitMessage = _protocolMessageFactory.NewRunWithMetadataMessage(connection, autoCommitParams);
 
         await connection.EnqueueAsync(autoCommitMessage, runHandler).ConfigureAwait(false);
         await connection.EnqueueAsync(PullAllMessage.Instance, pullAllHandler).ConfigureAwait(false);
-        
+
         await connection.SendAsync().ConfigureAwait(false);
         return streamBuilder.CreateCursor();
     }
@@ -147,17 +144,15 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         var mode = connection.Mode ??
             throw new InvalidOperationException("Connection should have its Mode property set.");
 
-        await connection.EnqueueAsync(
-                new BeginMessage(
-                    connection.Version,
-                    database,
-                    bookmarks,
-                    config,
-                    mode,
-                    impersonatedUser),
-                NoOpResponseHandler.Instance)
-            .ConfigureAwait(false);
+        var message = _protocolMessageFactory.NewBeginMessage(
+            connection,
+            database,
+            bookmarks,
+            config,
+            mode,
+            impersonatedUser);
 
+        await connection.EnqueueAsync(message, NoOpResponseHandler.Instance).ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);
     }
 
@@ -168,12 +163,20 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         long fetchSize = Config.Infinite)
     {
         var summaryBuilder = new SummaryBuilder(query, connection.Server);
-        var streamBuilder = new ResultCursorBuilder(summaryBuilder, connection.ReceiveOneAsync, null, null, null);
+        var streamBuilder = _protocolHandlerFactory.NewResultCursorBuilder(
+            summaryBuilder,
+            connection,
+            null,
+            null,
+            null,
+            null,
+            Config.Infinite,
+            false);
 
-        var runHandler = new RunResponseHandlerV3(streamBuilder, summaryBuilder);
-        var pullAllHandler = new PullResponseHandlerV3(streamBuilder, summaryBuilder, null);
+        var runHandler = _protocolHandlerFactory.NewRunResponseHandlerV3(streamBuilder, summaryBuilder);
+        var pullAllHandler = _protocolHandlerFactory.NewPullAllResponseHandler(streamBuilder, summaryBuilder, null);
 
-        var message = new RunWithMetadataMessage(connection.Version, query);
+        var message = _protocolMessageFactory.NewRunWithMetadataMessage(connection, query);
 
         await connection.EnqueueAsync(message, runHandler).ConfigureAwait(false);
         await connection.EnqueueAsync(PullAllMessage.Instance, pullAllHandler).ConfigureAwait(false);
@@ -192,9 +195,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
 
     public async Task RollbackTransactionAsync(IConnection connection)
     {
-        await connection.EnqueueAsync(RollbackMessage.Instance, NoOpResponseHandler.Instance)
-            .ConfigureAwait(false);
-
+        await connection.EnqueueAsync(RollbackMessage.Instance, NoOpResponseHandler.Instance).ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);
     }
 
@@ -208,7 +209,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         if (!string.IsNullOrEmpty(database))
         {
             throw new ClientException(
-                "Driver is connected to a server t  hat does not support multiple databases. " +
+                "Driver is connected to a server that does not support multiple databases. " +
                 "Please upgrade to neo4j 4.0.0 or later in order to use this functionality");
         }
     }

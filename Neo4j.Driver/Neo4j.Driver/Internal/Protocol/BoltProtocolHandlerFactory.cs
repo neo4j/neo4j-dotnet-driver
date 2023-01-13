@@ -19,16 +19,16 @@ using System;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.MessageHandling.V3;
 using Neo4j.Driver.Internal.MessageHandling.V4;
 using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal;
 
 internal interface IBoltProtocolHandlerFactory
-{       
-    IResponseHandler NewRunResponseHandler(IResultCursorBuilder streamBuilder, SummaryBuilder summaryBuilder);
-
-    IResultCursorBuilder NewResultCursorBuilder(SummaryBuilder summaryBuilder,
+{
+    IResultCursorBuilder NewResultCursorBuilder(
+        SummaryBuilder summaryBuilder,
         IConnection connection,
         Func<IConnection, SummaryBuilder, IBookmarksTracker, Func<IResultStreamBuilder, long, long, Task>> requestMore,
         Func<IConnection, SummaryBuilder, IBookmarksTracker, Func<IResultStreamBuilder, long, Task>> cancelRequest,
@@ -37,21 +37,33 @@ internal interface IBoltProtocolHandlerFactory
         long fetchSize,
         bool reactive);
 
+    RunResponseHandler NewRunResponseHandler(IResultCursorBuilder streamBuilder, SummaryBuilder summaryBuilder);
+
     PullResponseHandler NewPullResponseHandler(
         IBookmarksTracker bookmarksTracker,
         IResultStreamBuilder cursorBuilder,
         SummaryBuilder summaryBuilder);
 
-    RouteResponseHandler NewRouteHandler();
+    RouteResponseHandler NewRouteResponseHandler();
     HelloResponseHandler NewHelloResponseHandler(IConnection connection);
+
     CommitResponseHandler NewCommitResponseHandler(IBookmarksTracker bookmarksTracker);
+
+    //Bolt V3
+    RunResponseHandlerV3 NewRunResponseHandlerV3(IResultCursorBuilder streamBuilder, SummaryBuilder summaryBuilder);
+
+    PullAllResponseHandler NewPullAllResponseHandler(
+        IResultCursorBuilder streamBuilder,
+        SummaryBuilder summaryBuilder,
+        IBookmarksTracker bookmarksTracker);
 }
 
 internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
 {
     internal static readonly BoltProtocolHandlerFactory Instance = new();
-    
-    public IResultCursorBuilder NewResultCursorBuilder(SummaryBuilder summaryBuilder,
+
+    public IResultCursorBuilder NewResultCursorBuilder(
+        SummaryBuilder summaryBuilder,
         IConnection connection,
         Func<IConnection, SummaryBuilder, IBookmarksTracker, Func<IResultStreamBuilder, long, long, Task>> requestMore,
         Func<IConnection, SummaryBuilder, IBookmarksTracker, Func<IResultStreamBuilder, long, Task>> cancelRequest,
@@ -70,7 +82,7 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
             reactive);
     }
 
-    public IResponseHandler NewRunResponseHandler(IResultCursorBuilder streamBuilder, SummaryBuilder summaryBuilder)
+    public RunResponseHandler NewRunResponseHandler(IResultCursorBuilder streamBuilder, SummaryBuilder summaryBuilder)
     {
         return new RunResponseHandler(streamBuilder, summaryBuilder);
     }
@@ -83,7 +95,7 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
         return new PullResponseHandler(cursorBuilder, summaryBuilder, bookmarksTracker);
     }
 
-    public RouteResponseHandler NewRouteHandler()
+    public RouteResponseHandler NewRouteResponseHandler()
     {
         return new RouteResponseHandler();
     }
@@ -96,5 +108,20 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
     public CommitResponseHandler NewCommitResponseHandler(IBookmarksTracker bookmarksTracker)
     {
         return new CommitResponseHandler(bookmarksTracker);
+    }
+
+    public RunResponseHandlerV3 NewRunResponseHandlerV3(
+        IResultCursorBuilder streamBuilder,
+        SummaryBuilder summaryBuilder)
+    {
+        return new RunResponseHandlerV3(streamBuilder, summaryBuilder);
+    }
+
+    public PullAllResponseHandler NewPullAllResponseHandler(
+        IResultCursorBuilder streamBuilder,
+        SummaryBuilder summaryBuilder,
+        IBookmarksTracker bookmarksTracker)
+    {
+        return new PullAllResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
     }
 }

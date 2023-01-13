@@ -223,7 +223,7 @@ internal sealed class BoltProtocol : IBoltProtocol
                 dbParameter,
                 impersonatedUser);
 
-        var responseHandler = _protocolHandlerFactory.NewRouteHandler();
+        var responseHandler = _protocolHandlerFactory.NewRouteResponseHandler();
 
         await connection.EnqueueAsync(message, responseHandler).ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);

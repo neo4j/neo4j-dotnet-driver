@@ -32,14 +32,23 @@ internal interface IBoltProtocolMessageFactory
     RouteMessageV43 NewRouteMessageV43(IConnection connection, Bookmarks bookmarks, string database);
     DiscardMessage NewDiscardMessage(long id, long discardSize);
     HelloMessage NewHelloMessage(IConnection connection, string userAgent, IAuthToken authToken);
+
+    BeginMessage NewBeginMessage(
+        IConnection connection,
+        string database,
+        Bookmarks bookmarks,
+        TransactionConfig config,
+        AccessMode mode,
+        string impersonatedUser);
 }
+
 internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
 {
     internal static readonly BoltProtocolMessageFactory Instance = new();
-        
+
     public RunWithMetadataMessage NewRunWithMetadataMessage(IConnection connection, AutoCommitParams autoCommitParams)
     {
-        return new (
+        return new RunWithMetadataMessage(
             connection.Version,
             autoCommitParams.Query,
             autoCommitParams.Bookmarks,
@@ -51,20 +60,24 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
 
     public RunWithMetadataMessage NewRunWithMetadataMessage(IConnection connection, Query query)
     {
-        return new(connection.Version, query);
+        return new RunWithMetadataMessage(connection.Version, query);
     }
 
     public PullMessage NewPullMessage(long fetchSize)
     {
-        return new(fetchSize);
+        return new PullMessage(fetchSize);
     }
 
     public PullMessage NewPullMessage(long id, long fetchSize)
     {
-        return new(id, fetchSize);
+        return new PullMessage(id, fetchSize);
     }
 
-    public RouteMessage NewRouteMessage(IConnection connection, Bookmarks bookmarks, string database, string impersonatedUser)
+    public RouteMessage NewRouteMessage(
+        IConnection connection,
+        Bookmarks bookmarks,
+        string database,
+        string impersonatedUser)
     {
         return new RouteMessage(connection.RoutingContext, bookmarks, database, impersonatedUser);
     }
@@ -89,5 +102,22 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
             userAgent,
             authToken.AsDictionary(),
             connection.RoutingContext);
+    }
+
+    public BeginMessage NewBeginMessage(
+        IConnection connection,
+        string database,
+        Bookmarks bookmarks,
+        TransactionConfig config,
+        AccessMode mode,
+        string impersonatedUser)
+    {
+        return new BeginMessage(
+            connection.Version,
+            database,
+            bookmarks,
+            config,
+            mode,
+            impersonatedUser);
     }
 }

@@ -22,13 +22,13 @@ using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal.MessageHandling.V3;
 
-internal sealed class PullResponseHandlerV3 : MetadataCollectingResponseHandler
+internal sealed class PullAllResponseHandler : MetadataCollectingResponseHandler
 {
     private readonly IBookmarksTracker _bookmarksTracker;
     private readonly IResultStreamBuilder _streamBuilder;
     private readonly SummaryBuilder _summaryBuilder;
 
-    public PullResponseHandlerV3(
+    public PullAllResponseHandler(
         IResultStreamBuilder streamBuilder,
         SummaryBuilder summaryBuilder,
         IBookmarksTracker bookmarksTracker)

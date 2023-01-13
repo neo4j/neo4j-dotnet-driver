@@ -674,7 +674,7 @@ namespace Neo4j.Driver.Internal.Protocol
                     .Returns(new RouteMessage(null, null, null, null));
 
                 var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
-                handlerFactory.Setup(x => x.NewRouteHandler())
+                handlerFactory.Setup(x => x.NewRouteResponseHandler())
                     .Returns(new RouteResponseHandler());
 
                 var mockV3 = new Mock<IBoltProtocol>();
@@ -690,7 +690,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         "dougy"),
                     Times.Once);
 
-                handlerFactory.Verify(x => x.NewRouteHandler(), Times.Once);
+                handlerFactory.Verify(x => x.NewRouteResponseHandler(), Times.Once);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsNotNull<IRequestMessage>(), It.IsNotNull<IResponseHandler>()),
@@ -718,7 +718,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var rrHandler = new RouteResponseHandler();
                 rrHandler.RoutingInformation = new Dictionary<string, object>();
                 var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
-                handlerFactory.Setup(x => x.NewRouteHandler())
+                handlerFactory.Setup(x => x.NewRouteResponseHandler())
                     .Returns(rrHandler);
 
                 var mockV3 = new Mock<IBoltProtocol>();
@@ -733,7 +733,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         "db"),
                     Times.Once);
 
-                handlerFactory.Verify(x => x.NewRouteHandler(), Times.Once);
+                handlerFactory.Verify(x => x.NewRouteResponseHandler(), Times.Once);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsNotNull<IRequestMessage>(), It.IsNotNull<IResponseHandler>()),
@@ -763,7 +763,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var rrHandler = new RouteResponseHandler();
                 rrHandler.RoutingInformation = mockRt.Object;
                 var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
-                handlerFactory.Setup(x => x.NewRouteHandler())
+                handlerFactory.Setup(x => x.NewRouteResponseHandler())
                     .Returns(rrHandler);
 
                 var mockV3 = new Mock<IBoltProtocol>();
@@ -780,7 +780,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         "test"),
                     Times.Once);
 
-                handlerFactory.Verify(x => x.NewRouteHandler(), Times.Once);
+                handlerFactory.Verify(x => x.NewRouteResponseHandler(), Times.Once);
                 handlerFactory.Verify(
                     x => x.NewRunResponseHandler(It.IsAny<IResultCursorBuilder>(), It.IsAny<SummaryBuilder>()),
                     Times.Never);
@@ -850,7 +850,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 routingTable.Should().Contain(new KeyValuePair<string, object>("db", "test"));
                 
-                handlerFactory.Verify(x => x.NewRouteHandler(), Times.Never);
+                handlerFactory.Verify(x => x.NewRouteResponseHandler(), Times.Never);
                 
                 msgFactory.Verify(x => 
                     x.NewRouteMessage(It.IsAny<IConnection>(), 
@@ -946,7 +946,7 @@ namespace Neo4j.Driver.Internal.Protocol
                     RoutingInformation = new Dictionary<string, object>()
                 };
                 var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
-                handlerFactory.Setup(x => x.NewRouteHandler())
+                handlerFactory.Setup(x => x.NewRouteResponseHandler())
                     .Returns(rrHandler);
 
                 var mockV3 = new Mock<IBoltProtocol>();
@@ -972,7 +972,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 var msgFactory = new Mock<IBoltProtocolMessageFactory>();
                 var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
-                handlerFactory.Setup(x => x.NewRouteHandler())
+                handlerFactory.Setup(x => x.NewRouteResponseHandler())
                     .Returns(new RouteResponseHandler());
 
                 var mockV3 = new Mock<IBoltProtocol>();
