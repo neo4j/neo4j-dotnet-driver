@@ -43,10 +43,14 @@ internal interface IBoltProtocolHandlerFactory
         SummaryBuilder summaryBuilder);
 
     RouteResponseHandler NewRouteHandler();
+    HelloResponseHandler NewHelloResponseHandler(IConnection connection);
+    CommitResponseHandler NewCommitResponseHandler(IBookmarksTracker bookmarksTracker);
 }
 
 internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
 {
+    internal static readonly BoltProtocolHandlerFactory Instance = new();
+    
     public IResultCursorBuilder NewResultCursorBuilder(SummaryBuilder summaryBuilder,
         IConnection connection,
         Func<IConnection, SummaryBuilder, IBookmarksTracker, Func<IResultStreamBuilder, long, long, Task>> requestMore,
@@ -82,5 +86,15 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
     public RouteResponseHandler NewRouteHandler()
     {
         return new RouteResponseHandler();
+    }
+
+    public HelloResponseHandler NewHelloResponseHandler(IConnection connection)
+    {
+        return new HelloResponseHandler(connection);
+    }
+
+    public CommitResponseHandler NewCommitResponseHandler(IBookmarksTracker bookmarksTracker)
+    {
+        return new CommitResponseHandler(bookmarksTracker);
     }
 }

@@ -31,9 +31,12 @@ internal interface IBoltProtocolMessageFactory
     RouteMessage NewRouteMessage(IConnection connection, Bookmarks bookmarks, string database, string impersonatedUser);
     RouteMessageV43 NewRouteMessageV43(IConnection connection, Bookmarks bookmarks, string database);
     DiscardMessage NewDiscardMessage(long id, long discardSize);
+    HelloMessage NewHelloMessage(IConnection connection, string userAgent, IAuthToken authToken);
 }
 internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
 {
+    internal static readonly BoltProtocolMessageFactory Instance = new();
+        
     public RunWithMetadataMessage NewRunWithMetadataMessage(IConnection connection, AutoCommitParams autoCommitParams)
     {
         return new (
@@ -77,5 +80,14 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
     public DiscardMessage NewDiscardMessage(long id, long discardSize)
     {
         return new DiscardMessage(id, discardSize);
+    }
+
+    public HelloMessage NewHelloMessage(IConnection connection, string userAgent, IAuthToken authToken)
+    {
+        return new HelloMessage(
+            connection.Version,
+            userAgent,
+            authToken.AsDictionary(),
+            connection.RoutingContext);
     }
 }

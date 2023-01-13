@@ -79,7 +79,7 @@ namespace Neo4j.Driver.Internal.Protocol
             }
 
             [Fact]
-            public async Task ShouldBuildCursor()
+            public async Task ShouldSendRunWithMetadataMessage()
             {
                 var mockBt = new Mock<IBookmarksTracker>();
                 var mockRrh = new Mock<IResultResourceHandler>();
@@ -167,7 +167,7 @@ namespace Neo4j.Driver.Internal.Protocol
             }
 
             [Fact]
-            public async Task ShouldEnqueuePullMessageWithReactive()
+            public async Task ShouldSendPullMessageWithReactive()
             {
                 var mockBt = new Mock<IBookmarksTracker>();
                 var mockRrh = new Mock<IResultResourceHandler>();
@@ -356,7 +356,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public class RunInExplicitTransactionAsyncTests
         {
             [Fact]
-            public async Task ShouldBuildCursor()
+            public async Task ShouldSendRunWithMetadataMessage()
             {
                 var query = new Query("...");
                 var mockConn = new Mock<IConnection>();
@@ -433,7 +433,7 @@ namespace Neo4j.Driver.Internal.Protocol
             }
 
             [Fact]
-            public async Task ShouldEnqueuePullForReactive()
+            public async Task ShouldSendPullMessageWhenUsingReactive()
             {
                 var query = new Query("...");
                 var mockConn = new Mock<IConnection>();
@@ -659,8 +659,7 @@ namespace Neo4j.Driver.Internal.Protocol
             [InlineData(4, 4)]
             [InlineData(5, 0)]
             [InlineData(6, 0)]
-            public async Task ShouldAcquireRoutingTableWithRouteMessageWhenUsingBoltVersionGreaterThan43(int major, 
-                int minor)
+            public async Task ShouldSyncRouteMessageWhenUsingBoltVersionGreaterThan43(int major, int minor)
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
@@ -706,7 +705,7 @@ namespace Neo4j.Driver.Internal.Protocol
             }
 
             [Fact]
-            public async Task ShouldAcquireRoutingTableWithRouteMessageV43WhenUsingBoltVersion43()
+            public async Task ShouldSyncRouteMessageV43WhenUsingBoltVersion43()
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(4, 3));
@@ -875,10 +874,10 @@ namespace Neo4j.Driver.Internal.Protocol
                     Times.Never);
 
                 mockConn.Verify(x => x.ConfigureMode(AccessMode.Read), Times.Once);
-                
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()),
                     Times.Once);
+                mockConn.Verify(x => x.SendAsync(), Times.Once);
             }
             
             [Theory]
@@ -994,7 +993,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public class RequestMoreTests
         {
             [Fact]
-            public void ShouldEnqueuePull()
+            public void ShouldSendPullMessage()
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(4, 4));
@@ -1052,10 +1051,10 @@ namespace Neo4j.Driver.Internal.Protocol
             }
         }
         
-        public class CancelRequest
+        public class CancelRequestTests
         {
             [Fact]
-            public void ShouldEnqueueDiscard()
+            public void ShouldSendDiscardMessage()
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(4, 4));

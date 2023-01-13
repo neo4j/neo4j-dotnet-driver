@@ -28,28 +28,23 @@ namespace Neo4j.Driver.Internal;
 
 internal sealed class BoltProtocolV3 : IBoltProtocol
 {
-    public static readonly BoltProtocolV3 Instance = new();
+    internal static readonly BoltProtocolV3 Instance = new();
     private readonly IBoltProtocolMessageFactory _protocolMessageFactory;
     private readonly IBoltProtocolHandlerFactory _protocolHandlerFactory;
 
-    private BoltProtocolV3(IBoltProtocolMessageFactory protocolMessageFactory = null,
+    internal BoltProtocolV3(IBoltProtocolMessageFactory protocolMessageFactory = null,
         IBoltProtocolHandlerFactory protocolHandlerFactory = null)
     {
-        _protocolMessageFactory = protocolMessageFactory ?? new BoltProtocolMessageFactory();
-        _protocolHandlerFactory = protocolHandlerFactory ?? new BoltProtocolHandlerFactory();
+        _protocolMessageFactory = protocolMessageFactory ?? BoltProtocolMessageFactory.Instance;
+        _protocolHandlerFactory = protocolHandlerFactory ?? BoltProtocolHandlerFactory.Instance;
     }
 
     public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
     {
-        await connection.EnqueueAsync(
-                new HelloMessage(
-                    connection.Version,
-                    userAgent,
-                    authToken.AsDictionary(),
-                    connection.RoutingContext),
-                new HelloResponseHandler(connection))
-            .ConfigureAwait(false);
+        var message = _protocolMessageFactory.NewHelloMessage(connection, userAgent, authToken);
+        var handler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
 
+        await connection.EnqueueAsync(message, handler).ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);
     }
 
@@ -189,9 +184,9 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
 
     public async Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker)
     {
-        await connection.EnqueueAsync(CommitMessage.Instance, new CommitResponseHandler(bookmarksTracker))
-            .ConfigureAwait(false);
+        var handler = _protocolHandlerFactory.NewCommitResponseHandler(bookmarksTracker);
 
+        await connection.EnqueueAsync(CommitMessage.Instance, handler).ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);
     }
 
@@ -203,7 +198,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         await connection.SyncAsync().ConfigureAwait(false);
     }
 
-    private static void ValidateDatabase(IConnection connection, string database)
+    internal static void ValidateDatabase(IConnection connection, string database)
     {
         if (connection.Version >= BoltProtocolVersion.V4_0)
         {
@@ -213,12 +208,12 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         if (!string.IsNullOrEmpty(database))
         {
             throw new ClientException(
-                "Driver is connected to a server that does not support multiple databases. " +
+                "Driver is connected to a server t  hat does not support multiple databases. " +
                 "Please upgrade to neo4j 4.0.0 or later in order to use this functionality");
         }
     }
 
-    public static void ValidateImpersonatedUserForVersion(IConnection conn, string impersonatedUser)
+    internal static void ValidateImpersonatedUserForVersion(IConnection conn, string impersonatedUser)
     {
         if (conn.Version >= BoltProtocolVersion.V4_4)
         {

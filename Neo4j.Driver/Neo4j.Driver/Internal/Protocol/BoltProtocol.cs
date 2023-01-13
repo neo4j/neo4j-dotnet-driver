@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal;
 
 internal sealed class BoltProtocol : IBoltProtocol
 {
-    public static readonly IBoltProtocol Instance = new BoltProtocol();
+    internal static readonly IBoltProtocol Instance = new BoltProtocol();
     private readonly IBoltProtocol _boltProtocolV3;
     
     internal BoltProtocol(
@@ -36,8 +36,8 @@ internal sealed class BoltProtocol : IBoltProtocol
         IBoltProtocolMessageFactory protocolMessageFactory = null,
         IBoltProtocolHandlerFactory protocolHandlerFactory = null)
     {
-        _protocolMessageFactory = protocolMessageFactory ?? new BoltProtocolMessageFactory();
-        _protocolHandlerFactory = protocolHandlerFactory ?? new BoltProtocolHandlerFactory();
+        _protocolMessageFactory = protocolMessageFactory ?? BoltProtocolMessageFactory.Instance;
+        _protocolHandlerFactory = protocolHandlerFactory ?? BoltProtocolHandlerFactory.Instance;
         _boltProtocolV3 = boltProtocolV3 ?? BoltProtocolV3.Instance;
     }
 
