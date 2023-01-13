@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Tests
 {
     public class SocketClientTests
     {
-        private static readonly BoltProtocolVersion Version = BoltProtocolVersion.V30;
+        private static readonly BoltProtocolVersion Version = BoltProtocolVersion.V3_0;
         private static Uri FakeUri => new("bolt://foo.bar:7878");
         private static BufferSettings DefaultBuffers => new(Config.Default);
 

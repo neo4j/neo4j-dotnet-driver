@@ -45,14 +45,14 @@ namespace Neo4j.Driver.Internal.IO
 
         internal override PackStreamWriterMachine CreateWriterMachine(BoltProtocolVersion version = null)
         {
-            return CreateWriterMachine(new MessageFormat(version ?? BoltProtocolVersion.V30).WriteStructHandlers);
+            return CreateWriterMachine(new MessageFormat(version ?? BoltProtocolVersion.V3_0).WriteStructHandlers);
         }
 
         internal override PackStreamReaderMachine CreateReaderMachine(byte[] data, BoltProtocolVersion version = null)
         {
             return CreateReaderMachine(
                 data,
-                new MessageFormat(version ?? BoltProtocolVersion.V30).ReaderStructHandlers);
+                new MessageFormat(version ?? BoltProtocolVersion.V3_0).ReaderStructHandlers);
         }
 
         internal virtual PackStreamWriterMachine CreateWriterMachine(

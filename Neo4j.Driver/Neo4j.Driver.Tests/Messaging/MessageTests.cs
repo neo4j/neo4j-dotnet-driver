@@ -161,7 +161,7 @@ namespace Neo4j.Driver.Tests
                 },
                 new object[]
                 {
-                    new HelloMessage(BoltProtocolVersion.V30, "mydriver", null, null), "HELLO [{user_agent, mydriver}]"
+                    new HelloMessage(BoltProtocolVersion.V3_0, "mydriver", null, null), "HELLO [{user_agent, mydriver}]"
                 },
                 new object[] { new SuccessMessage(new Dictionary<string, object>()), "SUCCESS []" },
                 new object[] { IgnoredMessage.Instance, "IGNORED" },
@@ -175,7 +175,7 @@ namespace Neo4j.Driver.Tests
                 new object[]
                 {
                     new RunWithMetadataMessage(
-                        BoltProtocolVersion.V30,
+                        BoltProtocolVersion.V3_0,
                         new Query(
                             "A query",
                             new Dictionary<string, object>

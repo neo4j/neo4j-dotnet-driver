@@ -55,7 +55,7 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
                     BoltProtocolVersion.V5_0.PackToInt(),
                     BoltProtocolVersion.V4_4.PackToIntRange(BoltProtocolVersion.V4_2),
                     BoltProtocolVersion.V4_1.PackToInt(),
-                    BoltProtocolVersion.V30.PackToInt()
+                    BoltProtocolVersion.V3_0.PackToInt()
                 };
 
                 return versions.SelectMany(PackStreamBitConverter.GetBytes).ToArray();

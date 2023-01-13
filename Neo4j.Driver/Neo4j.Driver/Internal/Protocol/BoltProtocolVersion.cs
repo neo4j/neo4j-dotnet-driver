@@ -28,7 +28,7 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
 
     private const int PackingIntValue = 0x00FF;
 
-    public static readonly BoltProtocolVersion V30 = new(3, 0);
+    public static readonly BoltProtocolVersion V3_0 = new(3, 0);
     public static readonly BoltProtocolVersion V4_0 = new(4, 0);
     public static readonly BoltProtocolVersion V4_1 = new(4, 1);
     public static readonly BoltProtocolVersion V4_2 = new(4, 2);

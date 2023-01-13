@@ -44,6 +44,37 @@ internal sealed class BoltProtocol : IBoltProtocol
     private readonly IBoltProtocolMessageFactory _protocolMessageFactory;
     private readonly IBoltProtocolHandlerFactory _protocolHandlerFactory;
 
+    public Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
+    {
+        return _boltProtocolV3.LoginAsync(connection, userAgent, authToken);
+    }
+
+    public Task LogoutAsync(IConnection connection)
+    {
+        return _boltProtocolV3.LogoutAsync(connection);
+    }
+
+    public Task ResetAsync(IConnection connection)
+    {
+        return _boltProtocolV3.ResetAsync(connection);
+    }
+
+    public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
+        IConnection connection,
+        string database,
+        string impersonatedUser,
+        Bookmarks bookmarks)
+    {
+        connection = connection ??
+            throw new ProtocolException("Attempting to get a routing table on a null connection");
+
+        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, impersonatedUser);
+
+        return connection.Version >= BoltProtocolVersion.V4_3
+            ? GetRoutingTableWithRouteMessageAsync(connection, database, impersonatedUser, bookmarks)
+            : GetRoutingTableWithQueryAsync(connection, database, bookmarks);
+    }
+
     public async Task<IResultCursor> RunInAutoCommitTransactionAsync(
         IConnection connection,
         AutoCommitParams autoCommitParams)
@@ -136,37 +167,6 @@ internal sealed class BoltProtocol : IBoltProtocol
     public Task RollbackTransactionAsync(IConnection connection)
     {
         return _boltProtocolV3.RollbackTransactionAsync(connection);
-    }
-
-    public Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
-    {
-        return _boltProtocolV3.LoginAsync(connection, userAgent, authToken);
-    }
-
-    public Task LogoutAsync(IConnection connection)
-    {
-        return _boltProtocolV3.LogoutAsync(connection);
-    }
-
-    public Task ResetAsync(IConnection connection)
-    {
-        return _boltProtocolV3.ResetAsync(connection);
-    }
-
-    public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
-        IConnection connection,
-        string database,
-        string impersonatedUser,
-        Bookmarks bookmarks)
-    {
-        connection = connection ??
-            throw new ProtocolException("Attempting to get a routing table on a null connection");
-
-        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, impersonatedUser);
-
-        return connection.Version >= BoltProtocolVersion.V4_3
-            ? GetRoutingTableWithRouteMessageAsync(connection, database, impersonatedUser, bookmarks)
-            : GetRoutingTableWithQueryAsync(connection, database, bookmarks);
     }
 
     private async Task<IReadOnlyDictionary<string, object>> GetRoutingTableWithQueryAsync(

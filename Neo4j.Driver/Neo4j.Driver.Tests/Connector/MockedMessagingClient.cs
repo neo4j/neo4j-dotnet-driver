@@ -111,7 +111,7 @@ namespace Neo4j.Driver.Tests.Routing
         {
             auth ??= AuthTokens.None;
             return new HelloMessage(
-                BoltProtocolVersion.V30,
+                BoltProtocolVersion.V3_0,
                 ConnectionSettings.DefaultUserAgent,
                 auth.AsDictionary(),
                 null);

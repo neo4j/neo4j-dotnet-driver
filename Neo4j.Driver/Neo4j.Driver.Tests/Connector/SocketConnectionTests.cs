@@ -67,11 +67,11 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mockClient = new Mock<ISocketClient>();
-                mockClient.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V30);
+                mockClient.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V3_0);
 
                 var protocolMock = new Mock<IBoltProtocol>();
                 var bpFactory = new Mock<IBoltProtocolFactory>();
-                bpFactory.Setup(x => x.ForVersion(BoltProtocolVersion.V30)).Returns(protocolMock.Object);
+                bpFactory.Setup(x => x.ForVersion(BoltProtocolVersion.V3_0)).Returns(protocolMock.Object);
 
                 var conn = NewSocketConnection(mockClient.Object, boltProtocolFactory: bpFactory.Object);
 
@@ -135,7 +135,7 @@ namespace Neo4j.Driver.Tests
                 var con = NewSocketConnection(mock.Object);
 
                 await con.EnqueueAsync(
-                    new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("A query"), mode: AccessMode.Read),
+                    new RunWithMetadataMessage(BoltProtocolVersion.V3_0, new Query("A query"), mode: AccessMode.Read),
                     NoOpResponseHandler.Instance);
 
                 await con.SyncAsync();
@@ -155,7 +155,7 @@ namespace Neo4j.Driver.Tests
 
                 // When
                 await con.EnqueueAsync(
-                    new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("a query"), mode: AccessMode.Write),
+                    new RunWithMetadataMessage(BoltProtocolVersion.V3_0, new Query("a query"), mode: AccessMode.Write),
                     NoOpResponseHandler.Instance);
 
                 // Then
@@ -184,7 +184,7 @@ namespace Neo4j.Driver.Tests
 
                 // When
                 await con.EnqueueAsync(
-                    new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("a query"), mode: AccessMode.Read),
+                    new RunWithMetadataMessage(BoltProtocolVersion.V3_0, new Query("a query"), mode: AccessMode.Read),
                     NoOpResponseHandler.Instance);
 
                 await con.EnqueueAsync(PullAllMessage.Instance, NoOpResponseHandler.Instance);
@@ -202,7 +202,7 @@ namespace Neo4j.Driver.Tests
                 var con = NewSocketConnection(pipeline: pipeline.Object);
 
                 await con.EnqueueAsync(
-                    new RunWithMetadataMessage(BoltProtocolVersion.V30, new Query("query"), mode: AccessMode.Read),
+                    new RunWithMetadataMessage(BoltProtocolVersion.V3_0, new Query("query"), mode: AccessMode.Read),
                     NoOpResponseHandler.Instance);
 
                 await con.EnqueueAsync(PullAllMessage.Instance, NoOpResponseHandler.Instance);
