@@ -62,7 +62,8 @@ public class Neo4jException : Exception
         Code = code;
     }
 
-    internal virtual bool CanBeRetried => false;
+    /// <summary>Gets whether the exception retriable or not.</summary>
+    public virtual bool IsRetriable => false;
 
     /// <summary>Gets or sets the code of a Neo4j exception.</summary>
     public string Code { get; set; }
@@ -140,7 +141,7 @@ public class TransientException : Neo4jException
     {
     }
 
-    internal override bool CanBeRetried => true;
+    public override bool IsRetriable => true;
 }
 
 /// <summary>
@@ -195,7 +196,7 @@ public class ServiceUnavailableException : Neo4jException
     {
     }
 
-    internal override bool CanBeRetried => true;
+    public override bool IsRetriable => true;
 }
 
 /// <summary>
@@ -219,7 +220,7 @@ public class SessionExpiredException : Neo4jException
     {
     }
 
-    internal override bool CanBeRetried => true;
+    public override bool IsRetriable => true;
 }
 
 /// <summary>
@@ -242,7 +243,7 @@ public class ConnectionReadTimeoutException : Neo4jException
     {
     }
 
-    internal override bool CanBeRetried => true;
+    public override bool IsRetriable => true;
 }
 
 /// <summary>
@@ -341,7 +342,7 @@ public class AuthorizationException : SecurityException
     {
     }
 
-    internal override bool CanBeRetried => true;
+    public override bool IsRetriable => true;
 
     internal static bool IsAuthorizationError(string code)
     {
