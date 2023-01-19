@@ -55,7 +55,7 @@ internal sealed class FailureMessageSerializer : ReadOnlySerializer
         return new FailureMessage(code, message);
     }
 
-    public override object Deserialize(PackStreamReader reader, byte signature, long size)
+    public override object Deserialize(PackStreamReader reader)
     {
         // overload not required for this serializer.
         throw new NotImplementedException();

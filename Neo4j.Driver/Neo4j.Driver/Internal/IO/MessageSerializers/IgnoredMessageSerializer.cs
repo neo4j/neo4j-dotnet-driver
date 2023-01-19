@@ -27,7 +27,7 @@ internal sealed class IgnoredMessageSerializer : ReadOnlySerializer
     private static readonly byte[] StructTags = { MessageFormat.MsgIgnored };
     public override IEnumerable<byte> ReadableStructs => StructTags;
 
-    public override object Deserialize(PackStreamReader _, byte __, long ___)
+    public override object Deserialize(PackStreamReader _)
     {
         return IgnoredMessage.Instance;
     }

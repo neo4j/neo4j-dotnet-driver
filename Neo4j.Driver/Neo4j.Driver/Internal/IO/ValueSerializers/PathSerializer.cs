@@ -27,7 +27,7 @@ internal class PathSerializer : ReadOnlySerializer
     internal static readonly PathSerializer Instance = new();
     public override IEnumerable<byte> ReadableStructs => new[] { Path };
 
-    public override object Deserialize(PackStreamReader reader, byte signature, long size)
+    public override object Deserialize(PackStreamReader reader)
     {
         // List of unique nodes
         var uniqNodes = new INode[(int)reader.ReadListHeader()];

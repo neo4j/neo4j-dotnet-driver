@@ -24,12 +24,12 @@ using Xunit;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers
 {
-    public class SuccessMessageSerializerTests
+    public class RecordMessageSerializerTests
     {
         [Fact]
         public void StructTagsAreSuccess()
         {
-            SuccessMessageSerializer.Instance.ReadableStructs.Should().ContainEquivalentOf(MessageFormat.MsgSuccess);
+            RecordMessageSerializer.Instance.ReadableStructs.Should().ContainEquivalentOf(MessageFormat.MsgRecord);
         }
 
         [Theory]
@@ -49,22 +49,14 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
             var format = new MessageFormat(boltProtocolVersion);
 
             var psw = new PackStreamWriter(format, memory);
-
-            var value = new Dictionary<string, object>() as IDictionary<string, object>;
-            value.Add("unknown", 1);
-            psw.WriteDictionary(value);
+            psw.WriteList(new List<object> { 0, "a" });
             memory.Position = 0;
-
+            
             var reader = new PackStreamReader(format, memory, new ByteBuffers());
 
-            var message = SuccessMessageSerializer.Instance.Deserialize(reader);
+            var message = RecordMessageSerializer.Instance.Deserialize(reader);
 
-            message.Should()
-                .BeOfType<SuccessMessage>()
-                .Which.Meta.Should()
-                .ContainKey("unknown")
-                .WhichValue.Should()
-                .Be(1L);
+            message.Should().BeOfType<RecordMessage>().Which.Fields.Should().BeEquivalentTo(0L, "a");
         }
     }
 }

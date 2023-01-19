@@ -30,6 +30,12 @@ internal sealed class RollbackMessageSerializer : WriteOnlySerializer
 
     public override void Serialize(PackStreamWriter writer, object value)
     {
+        if (value is not RollbackMessage)
+        {
+            throw new ArgumentOutOfRangeException(
+                $"Encountered {value?.GetType().Name} where {nameof(RollbackMessage)} was expected");
+        }
+        
         writer.WriteStructHeader(0, MessageFormat.MsgRollback);
     }
 }

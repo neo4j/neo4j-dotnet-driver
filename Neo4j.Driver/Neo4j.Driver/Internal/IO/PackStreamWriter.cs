@@ -77,11 +77,11 @@ internal sealed class PackStreamWriter
                 break;
 
             case float floatValue:
-                WriteDouble(Convert.ToDouble(floatValue, CultureInfo.InvariantCulture));
+                WriteDouble(Convert.ToDouble(floatValue));
                 break;
 
             case decimal decimalValue:
-                WriteDouble(Convert.ToDouble(decimalValue, CultureInfo.InvariantCulture));
+                WriteDouble(Convert.ToDouble(decimalValue));
                 break;
 
             case char charValue:

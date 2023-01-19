@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
+using System;
 using System.IO;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Connector;
@@ -24,14 +24,22 @@ using Xunit;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers
 {
-    public class SuccessMessageSerializerTests
+    public class PullMessageSerializerTests
     {
         [Fact]
-        public void StructTagsAreSuccess()
+        public void ShouldHaveWritableTypesAsPullMessage()
         {
-            SuccessMessageSerializer.Instance.ReadableStructs.Should().ContainEquivalentOf(MessageFormat.MsgSuccess);
+            PullMessageSerializer.Instance.WritableTypes.Should().ContainEquivalentOf(typeof(PullMessage));
         }
 
+        [Fact]
+        public void ShouldThrowIfPassedWrongMessage()
+        {
+            Record.Exception(() => PullMessageSerializer.Instance.Serialize(null, RollbackMessage.Instance))
+                .Should()
+                .BeOfType<ArgumentOutOfRangeException>();
+        }
+        
         [Theory]
         [InlineData(3, 0)]
         [InlineData(4, 0)]
@@ -41,7 +49,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
         [InlineData(4, 4)]
         [InlineData(5, 0)]
         [InlineData(6, 0)]
-        public void ShouldDeserialize(int major, int minor)
+        public void ShouldSerialize(int major, int minor)
         {
             using var memory = new MemoryStream();
 
@@ -50,21 +58,19 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
 
             var psw = new PackStreamWriter(format, memory);
 
-            var value = new Dictionary<string, object>() as IDictionary<string, object>;
-            value.Add("unknown", 1);
-            psw.WriteDictionary(value);
+            PullMessageSerializer.Instance.Serialize(psw, new PullMessage(42, 10));
             memory.Position = 0;
 
             var reader = new PackStreamReader(format, memory, new ByteBuffers());
 
-            var message = SuccessMessageSerializer.Instance.Deserialize(reader);
+            var bytes = reader.ReadBytes(2);
+            bytes[0].Should().Be(0xB1);
+            bytes[1].Should().Be(0x3F);
 
-            message.Should()
-                .BeOfType<SuccessMessage>()
-                .Which.Meta.Should()
-                .ContainKey("unknown")
-                .WhichValue.Should()
-                .Be(1L);
+            var metadata = reader.ReadMap();
+
+            metadata.Should().ContainKey("qid").WhichValue.Should().Be(42);
+            metadata.Should().ContainKey("n").WhichValue.Should().Be(10);
         }
     }
 }

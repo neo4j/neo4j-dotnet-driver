@@ -15,21 +15,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Messaging.V4_3;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers
+namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
 {
-    public class SuccessMessageSerializerTests
+    public class RouteMessageSerializerTests
     {
         [Fact]
-        public void StructTagsAreSuccess()
+        public void ShouldHaveWriteableTypesAsRouteMessageV43Message()
         {
-            SuccessMessageSerializer.Instance.ReadableStructs.Should().ContainEquivalentOf(MessageFormat.MsgSuccess);
+            RouteMessageSerializer.Instance.WritableTypes.Should().BeEquivalentTo(typeof(RouteMessageV43));
+        }
+
+        [Fact]
+        public void ShouldThrowWhenNotRouteMessageV43Message()
+        {
+            Record.Exception(() => RouteMessageSerializer.Instance.Serialize(null, RollbackMessage.Instance))
+                .Should()
+                .BeOfType<ArgumentOutOfRangeException>();
         }
 
         [Theory]
@@ -41,30 +51,37 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
         [InlineData(4, 4)]
         [InlineData(5, 0)]
         [InlineData(6, 0)]
-        public void ShouldDeserialize(int major, int minor)
+        public void ShouldSerialize(int major, int minor)
         {
             using var memory = new MemoryStream();
 
             var boltProtocolVersion = new BoltProtocolVersion(major, minor);
             var format = new MessageFormat(boltProtocolVersion);
-
             var psw = new PackStreamWriter(format, memory);
 
-            var value = new Dictionary<string, object>() as IDictionary<string, object>;
-            value.Add("unknown", 1);
-            psw.WriteDictionary(value);
+            var message = new RouteMessageV43(
+                new Dictionary<string, string> { ["a"] = "b" },
+                new InternalBookmarks("bm:a"),
+                "neo4j");
+
+            RouteMessageSerializer.Instance.Serialize(psw, message);
             memory.Position = 0;
 
             var reader = new PackStreamReader(format, memory, new ByteBuffers());
 
-            var message = SuccessMessageSerializer.Instance.Deserialize(reader);
+            var headerBytes = reader.ReadBytes(2);
+            // size 
+            headerBytes[0].Should().Be(0xB3);
+            // message tag
+            headerBytes[1].Should().Be(0x66);
 
-            message.Should()
-                .BeOfType<SuccessMessage>()
-                .Which.Meta.Should()
-                .ContainKey("unknown")
-                .WhichValue.Should()
-                .Be(1L);
+            var meta = reader.ReadMap();
+            meta.Should().ContainKey("a").WhichValue.Should().Be("b");
+
+            var bookmarks = reader.ReadList();
+            bookmarks.Should().BeEquivalentTo(new []{"bm:a"});
+            var db = reader.ReadString();
+            db.Should().Be("neo4j");
         }
     }
 }

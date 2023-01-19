@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using FluentAssertions;
@@ -24,12 +25,20 @@ using Xunit;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers
 {
-    public class SuccessMessageSerializerTests
+    public class DiscardMessageSerializerTests
     {
         [Fact]
-        public void StructTagsAreSuccess()
+        public void ShouldHaveWriteableTypesAsDiscardMessage()
         {
-            SuccessMessageSerializer.Instance.ReadableStructs.Should().ContainEquivalentOf(MessageFormat.MsgSuccess);
+            DiscardMessageSerializer.Instance.WritableTypes.Should().BeEquivalentTo(typeof(DiscardMessage));
+        }
+
+        [Fact]
+        public void ShouldThrowWhenNotDiscardMessage()
+        {
+            Record.Exception(() => DiscardMessageSerializer.Instance.Serialize(null, RollbackMessage.Instance))
+                .Should()
+                .BeOfType<ArgumentOutOfRangeException>();
         }
 
         [Theory]
@@ -41,30 +50,33 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
         [InlineData(4, 4)]
         [InlineData(5, 0)]
         [InlineData(6, 0)]
-        public void ShouldDeserialize(int major, int minor)
+        public void ShouldSerialize(int major, int minor)
         {
             using var memory = new MemoryStream();
 
             var boltProtocolVersion = new BoltProtocolVersion(major, minor);
             var format = new MessageFormat(boltProtocolVersion);
-
             var psw = new PackStreamWriter(format, memory);
 
-            var value = new Dictionary<string, object>() as IDictionary<string, object>;
-            value.Add("unknown", 1);
-            psw.WriteDictionary(value);
+            var discardMesssage = new DiscardMessage(21, 42);
+            
+            DiscardMessageSerializer.Instance.Serialize(psw, discardMesssage);
             memory.Position = 0;
 
             var reader = new PackStreamReader(format, memory, new ByteBuffers());
 
-            var message = SuccessMessageSerializer.Instance.Deserialize(reader);
+            var headerBytes = reader.ReadBytes(2);
+            // size 
+            headerBytes[0].Should().Be(0xB1);
+            // message tag
+            headerBytes[1].Should().Be(0x2f);
 
-            message.Should()
-                .BeOfType<SuccessMessage>()
-                .Which.Meta.Should()
-                .ContainKey("unknown")
-                .WhichValue.Should()
-                .Be(1L);
+            var meta = reader.ReadMap();
+            meta.Should().BeEquivalentTo(new Dictionary<string, object>()
+            {
+                ["qid"] = 21,
+                ["n"] = 42
+            });
         }
     }
 }

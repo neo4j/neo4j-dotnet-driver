@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
+using System;
 using System.IO;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Connector;
@@ -24,12 +24,20 @@ using Xunit;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers
 {
-    public class SuccessMessageSerializerTests
+    public class BeginMessageSerializerTests
     {
         [Fact]
-        public void StructTagsAreSuccess()
+        public void ShouldHaveWriteableTypesAsCommitMessage()
         {
-            SuccessMessageSerializer.Instance.ReadableStructs.Should().ContainEquivalentOf(MessageFormat.MsgSuccess);
+            BeginMessageSerializer.Instance.WritableTypes.Should().BeEquivalentTo(typeof(BeginMessage));
+        }
+
+        [Fact]
+        public void ShouldThrowWhenNotCommitMessage()
+        {
+            Record.Exception(() => BeginMessageSerializer.Instance.Serialize(null, RollbackMessage.Instance))
+                .Should()
+                .BeOfType<ArgumentOutOfRangeException>();
         }
 
         [Theory]
@@ -41,30 +49,37 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
         [InlineData(4, 4)]
         [InlineData(5, 0)]
         [InlineData(6, 0)]
-        public void ShouldDeserialize(int major, int minor)
+        public void ShouldSerialize(int major, int minor)
         {
             using var memory = new MemoryStream();
 
             var boltProtocolVersion = new BoltProtocolVersion(major, minor);
             var format = new MessageFormat(boltProtocolVersion);
-
             var psw = new PackStreamWriter(format, memory);
 
-            var value = new Dictionary<string, object>() as IDictionary<string, object>;
-            value.Add("unknown", 1);
-            psw.WriteDictionary(value);
+            var message = new BeginMessage(
+                boltProtocolVersion,
+                "neo4j",
+                new InternalBookmarks("a"),
+                null,
+                null,
+                AccessMode.Read,
+                null);
+
+            BeginMessageSerializer.Instance.Serialize(psw, message);
             memory.Position = 0;
 
             var reader = new PackStreamReader(format, memory, new ByteBuffers());
 
-            var message = SuccessMessageSerializer.Instance.Deserialize(reader);
+            var headerBytes = reader.ReadBytes(2);
+            // size 
+            headerBytes[0].Should().Be(0xB1);
+            // message tag
+            headerBytes[1].Should().Be(0x11);
 
-            message.Should()
-                .BeOfType<SuccessMessage>()
-                .Which.Meta.Should()
-                .ContainKey("unknown")
-                .WhichValue.Should()
-                .Be(1L);
+            var meta = reader.ReadMap();
+            meta.Should().ContainKey("db").WhichValue.Should().Be("neo4j");
+            meta.Should().ContainKey("bookmarks").WhichValue.Should().BeEquivalentTo(new [] {"a"});
         }
     }
 }

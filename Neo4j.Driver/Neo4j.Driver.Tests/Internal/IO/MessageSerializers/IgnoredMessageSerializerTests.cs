@@ -15,27 +15,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
+using FluentAssertions;
 using Neo4j.Driver.Internal.Messaging;
+using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers;
-
-internal sealed class RecordMessageSerializer : ReadOnlySerializer
+namespace Neo4j.Driver.Internal.IO.MessageSerializers
 {
-    internal static RecordMessageSerializer Instance = new();
-
-    private static readonly byte[] StructTags = { MessageFormat.MsgRecord };
-    public override IEnumerable<byte> ReadableStructs => StructTags;
-
-    public override object Deserialize(PackStreamReader reader)
+    public class IgnoredMessageSerializerTests
     {
-        var fieldCount = (int)reader.ReadListHeader();
-        var fields = new object[fieldCount];
-        for (var i = 0; i < fieldCount; i++)
+        [Fact]
+        public void StructTagsAreSuccess()
         {
-            fields[i] = reader.Read();
+            IgnoredMessageSerializer.Instance.ReadableStructs.Should().ContainEquivalentOf(MessageFormat.MsgIgnored);
         }
 
-        return new RecordMessage(fields);
+        [Fact]
+        public void ShouldReturnIgnoredMessage()
+        {
+            var message = SuccessMessageSerializer.Instance.Deserialize(null);
+            message.Should().Be(IgnoredMessage.Instance);
+        }
     }
 }

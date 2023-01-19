@@ -27,7 +27,7 @@ internal sealed class SuccessMessageSerializer : ReadOnlySerializer
     private static readonly byte[] StructTags = { MessageFormat.MsgSuccess };
     public override IEnumerable<byte> ReadableStructs => StructTags;
 
-    public override object Deserialize(PackStreamReader reader, byte _, long __)
+    public override object Deserialize(PackStreamReader reader)
     {
         var map = reader.ReadMap();
 

@@ -29,8 +29,14 @@ internal sealed class PullAllMessageSerializer : WriteOnlySerializer
     private static readonly Type[] Types = { typeof(PullAllMessage) };
     public override IEnumerable<Type> WritableTypes => Types;
 
-    public override void Serialize(PackStreamWriter writer, object _)
+    public override void Serialize(PackStreamWriter writer, object value)
     {
+        if (value is not PullAllMessage)
+        {
+            throw new ArgumentOutOfRangeException(
+                $"Encountered {value?.GetType().Name} where {nameof(PullAllMessage)} was expected");
+        }
+        
         writer.WriteStructHeader(0, MsgPull);
     }
 }

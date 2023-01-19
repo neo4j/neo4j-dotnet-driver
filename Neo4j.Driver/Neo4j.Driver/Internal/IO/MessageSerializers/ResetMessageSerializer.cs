@@ -31,6 +31,11 @@ internal sealed class ResetMessageSerializer : WriteOnlySerializer
 
     public override void Serialize(PackStreamWriter writer, object value)
     {
+        if (value is not ResetMessage)
+        {
+            throw new ArgumentOutOfRangeException(
+                $"Encountered {value?.GetType().Name} where {nameof(ResetMessage)} was expected");
+        }
         writer.WriteStructHeader(0, MsgReset);
     }
 }
