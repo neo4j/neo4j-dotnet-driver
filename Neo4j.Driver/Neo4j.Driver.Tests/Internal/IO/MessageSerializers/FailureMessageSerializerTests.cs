@@ -27,32 +27,35 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
     public class FailureMessageSerializerTests
     {
         [Fact]
-        public void StructTagsAreSuccess()
+        public void StructTagsAreFailure()
         {
             FailureMessageSerializer.Instance.ReadableStructs.Should().ContainEquivalentOf(MessageFormat.MsgFailure);
         }
 
         [Theory]
-        [InlineData(3, 0, "Neo.TransientError.Transaction.Terminated", "Neo.TransientError.Transaction.Terminated")]
-        [InlineData(4, 0, "Neo.TransientError.Transaction.Terminated", "Neo.TransientError.Transaction.Terminated")]
-        [InlineData(4, 1, "Neo.TransientError.Transaction.Terminated", "Neo.TransientError.Transaction.Terminated")]
-        [InlineData(4, 2, "Neo.TransientError.Transaction.Terminated", "Neo.TransientError.Transaction.Terminated")]
-        [InlineData(4, 3, "Neo.TransientError.Transaction.Terminated", "Neo.TransientError.Transaction.Terminated")]
-        [InlineData(4, 4, "Neo.TransientError.Transaction.Terminated", "Neo.TransientError.Transaction.Terminated")]
-        [InlineData(5, 0, "Neo.TransientError.Transaction.Terminated", "Neo.ClientError.Transaction.Terminated")]
+        [InlineData(5, 0, "Neo.TransientError.Transaction.Terminated", "Neo.TransientError.Transaction.Terminated")]
+        [InlineData(6, 0, "Neo.TransientError.Transaction.Terminated", "Neo.TransientError.Transaction.Terminated")]
+        [InlineData(3, 0, "Neo.TransientError.Transaction.Terminated", "Neo.ClientError.Transaction.Terminated")]
         [InlineData(
-            5,
+            3,
             0,
             "Neo.TransientError.Transaction.LockClientStopped",
             "Neo.ClientError.Transaction.LockClientStopped")]
-        [InlineData(5, 0, "Neo.TransientError.Transaction.Unrelated", "Neo.ClientError.Transaction.Unrelated")]
-        [InlineData(6, 0, "Neo.TransientError.Transaction.Terminated", "Neo.ClientError.Transaction.Terminated")]
+        [InlineData(3, 0, "Neo.TransientError.Transaction.Unrelated", "Neo.TransientError.Transaction.Unrelated")]
+        [InlineData(4, 0, "Neo.TransientError.Transaction.Terminated", "Neo.ClientError.Transaction.Terminated")]
         [InlineData(
-            6,
+            4,
             0,
             "Neo.TransientError.Transaction.LockClientStopped",
             "Neo.ClientError.Transaction.LockClientStopped")]
-        [InlineData(6, 0, "Neo.TransientError.Transaction.Unrelated", "Neo.ClientError.Transaction.Unrelated")]
+        [InlineData(4, 0, "Neo.TransientError.Transaction.Unrelated", "Neo.TransientError.Transaction.Unrelated")]
+        [InlineData(4, 1, "Neo.TransientError.Transaction.Terminated", "Neo.ClientError.Transaction.Terminated")]
+        [InlineData(
+            4,
+            1,
+            "Neo.TransientError.Transaction.LockClientStopped",
+            "Neo.ClientError.Transaction.LockClientStopped")]
+        [InlineData(4, 1, "Neo.TransientError.Transaction.Unrelated", "Neo.TransientError.Transaction.Unrelated")]
         public void ShouldDeserialize(int major, int minor, string inCode, string outCode)
         {
             using var memory = new MemoryStream();

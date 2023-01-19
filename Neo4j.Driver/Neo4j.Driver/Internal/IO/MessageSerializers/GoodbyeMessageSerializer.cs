@@ -28,8 +28,14 @@ internal sealed class GoodbyeMessageSerializer : WriteOnlySerializer
     private static readonly Type[] Types = { typeof(GoodbyeMessage) };
     public override IEnumerable<Type> WritableTypes => Types;
 
-    public override void Serialize(PackStreamWriter writer, object _)
+    public override void Serialize(PackStreamWriter writer, object value)
     {
+        if (value is not GoodbyeMessage)
+        {
+            throw new ArgumentOutOfRangeException(
+                $"Encountered {value?.GetType().Name} where {nameof(GoodbyeMessage)} was expected");
+        }
+        
         writer.WriteStructHeader(0, MessageFormat.MsgGoodbye);
     }
 }

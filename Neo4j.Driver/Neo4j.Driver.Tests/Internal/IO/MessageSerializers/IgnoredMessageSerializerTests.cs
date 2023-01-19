@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
         [Fact]
         public void ShouldReturnIgnoredMessage()
         {
-            var message = SuccessMessageSerializer.Instance.Deserialize(null);
+            var message = IgnoredMessageSerializer.Instance.Deserialize(null);
             message.Should().Be(IgnoredMessage.Instance);
         }
     }
