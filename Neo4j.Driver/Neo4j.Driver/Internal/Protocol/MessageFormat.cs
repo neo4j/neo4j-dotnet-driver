@@ -127,7 +127,7 @@ internal sealed class MessageFormat
 
     public BoltProtocolVersion Version { get; }
 
-    private void AddHandler<T>(T instance) where T : IPackStreamSerializer
+    private void AddHandler<T>(T instance) where T : class, IPackStreamSerializer
     {
         foreach (var readableStruct in instance.ReadableStructs)
         {
