@@ -96,7 +96,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         
         await connection.EnqueueAsync(runMessage, runHandler).ConfigureAwait(false);
         
-        if (autoCommitParams.Reactive)
+        if (!autoCommitParams.Reactive)
         {
             var pullMessage = _protocolMessageFactory.NewPullMessage(autoCommitParams.FetchSize);
             var pullHandler = _protocolHandlerFactory.NewPullResponseHandler(
@@ -147,7 +147,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         
         await connection.EnqueueAsync(runMessage, runHandler).ConfigureAwait(false);
         
-        if (reactive)
+        if (!reactive)
         {
             var pullMessage = _protocolMessageFactory.NewPullMessage(fetchSize);
             var pullHandler = _protocolHandlerFactory.NewPullResponseHandler(null, streamBuilder, summaryBuilder);
