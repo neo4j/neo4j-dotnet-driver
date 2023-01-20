@@ -52,9 +52,20 @@ internal sealed class BeginMessage : TransactionStartingMessage
         string impersonatedUser)
         : base(database, bookmarks, txTimeout, txMetadata, mode)
     {
-        if (!string.IsNullOrEmpty(impersonatedUser) && version >= BoltProtocolVersion.V4_4)
+        if (string.IsNullOrEmpty(impersonatedUser))
+        {
+            return;
+        }
+
+        if (version >= BoltProtocolVersion.V4_4)
         {
             Metadata.Add("imp_user", impersonatedUser);
+        }
+        else
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(impersonatedUser),
+                "Impersonated users can not be used with bolt version less than 4.4");
         }
     }
 
