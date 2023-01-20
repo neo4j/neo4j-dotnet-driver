@@ -17,28 +17,28 @@
 
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.Messaging.V4_3;
+using Neo4j.Driver.Internal.Messaging;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3;
+namespace Neo4j.Driver.Internal.IO.MessageSerializers;
 
-internal class RouteMessageSerializer : WriteOnlySerializer
+internal sealed class RouteMessageSerializer : WriteOnlySerializer
 {
     internal static RouteMessageSerializer Instance = new();
 
-    private static readonly Type[] Types = { typeof(RouteMessageV43) };
-    public override IEnumerable<Type> WritableTypes => Types;
+    private static readonly Type[] MessageSerializer = { typeof(RouteMessage) };
+    public override IEnumerable<Type> WritableTypes => MessageSerializer;
 
     public override void Serialize(PackStreamWriter writer, object value)
     {
-        if (value is not RouteMessageV43 msg)
+        if (value is not RouteMessage msg)
         {
             throw new ArgumentOutOfRangeException(
-                $"Encountered {value?.GetType().Name} where {nameof(RouteMessageV43)} was expected");
+                $"Encountered {value?.GetType().Name} where {nameof(RouteMessage)} was expected.");
         }
 
         writer.WriteStructHeader(3, MessageFormat.MsgRoute);
         writer.WriteDictionary(msg.Routing);
         writer.WriteList(msg.Bookmarks.Values);
-        writer.WriteString(string.IsNullOrEmpty(msg.DatabaseParam) ? null : msg.DatabaseParam);
+        writer.WriteDictionary(msg.DatabaseContext);
     }
 }

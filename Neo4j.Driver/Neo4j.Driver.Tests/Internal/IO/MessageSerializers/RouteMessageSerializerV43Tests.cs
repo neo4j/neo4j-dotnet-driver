@@ -23,20 +23,20 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_4
+namespace Neo4j.Driver.Internal.IO.MessageSerializers
 {
-    public class RouteMessageSerializerTests
+    public class RouteMessageSerializerV43Tests
     {
         [Fact]
         public void ShouldHaveWriteableTypesAsRouteMessageV43Message()
         {
-            RouteMessageSerializer.Instance.WritableTypes.Should().BeEquivalentTo(typeof(RouteMessage));
+            RouteMessageSerializerV43.Instance.WritableTypes.Should().BeEquivalentTo(typeof(RouteMessageV43));
         }
 
         [Fact]
         public void ShouldThrowWhenNotRouteMessageV43Message()
         {
-            Record.Exception(() => RouteMessageSerializer.Instance.Serialize(null, RollbackMessage.Instance))
+            Record.Exception(() => RouteMessageSerializerV43.Instance.Serialize(null, RollbackMessage.Instance))
                 .Should()
                 .BeOfType<ArgumentOutOfRangeException>();
         }
@@ -58,13 +58,12 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_4
             var format = new MessageFormat(boltProtocolVersion);
             var psw = new PackStreamWriter(format, memory);
 
-            var message = new RouteMessage(
+            var message = new RouteMessageV43(
                 new Dictionary<string, string> { ["a"] = "b" },
                 new InternalBookmarks("bm:a"),
-                "neo4j",
-                "user");
+                "neo4j");
 
-            RouteMessageSerializer.Instance.Serialize(psw, message);
+            RouteMessageSerializerV43.Instance.Serialize(psw, message);
             memory.Position = 0;
 
             var reader = new PackStreamReader(format, memory, new ByteBuffers());
@@ -79,9 +78,9 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_4
             meta.Should().ContainKey("a").WhichValue.Should().Be("b");
 
             var bookmarks = reader.ReadList();
-            bookmarks.Should().BeEquivalentTo(new[] { "bm:a" });
-            var ctx = reader.ReadMap();
-            ctx.Should().BeEquivalentTo(new Dictionary<string, string> { ["db"] = "neo4j", ["imp_user"] = "user" });
+            bookmarks.Should().BeEquivalentTo(new []{"bm:a"});
+            var db = reader.ReadString();
+            db.Should().Be("neo4j");
         }
     }
 }

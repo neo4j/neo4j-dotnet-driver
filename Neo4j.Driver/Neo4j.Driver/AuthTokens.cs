@@ -62,7 +62,7 @@ public class AuthTokens
     /// <returns>An authentication token that can be used to connect to Neo4j.</returns>
     /// <remarks>
     ///     <see
-    ///         cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder}(Neo4j.Driver.ConfigBuilder))"/>
+    ///         cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder})"/>
     /// </remarks>
     public static IAuthToken Basic(string username, string password, string realm)
     {
@@ -86,7 +86,7 @@ public class AuthTokens
     /// <returns>an authentication token that can be used to connect to Neo4j.</returns>
     /// <remarks>
     ///     <see
-    ///         cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder}(Neo4j.Driver.ConfigBuilder))"/>
+    ///         cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder})"/>
     /// </remarks>
     public static IAuthToken Kerberos(string base64EncodedTicket)
     {
@@ -106,7 +106,7 @@ public class AuthTokens
     /// </summary>
     /// <remarks>
     ///     <see
-    ///         cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder}(Neo4j.Driver.ConfigBuilder))"/>
+    ///         cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder})"/>
     /// </remarks>
     /// <param name="principal">This is used to identify who this token represents.</param>
     /// <param name="credentials">This is credentials authenticating the principal.</param>
@@ -124,7 +124,7 @@ public class AuthTokens
     /// </summary>
     /// <remarks>
     ///     <see
-    ///         cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder}(Neo4j.Driver.ConfigBuilder))"/>
+    ///         cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder})"/>
     /// </remarks>
     /// <param name="principal">This is used to identify who this token represents.</param>
     /// <param name="credentials">This is credentials authenticating the principal.</param>

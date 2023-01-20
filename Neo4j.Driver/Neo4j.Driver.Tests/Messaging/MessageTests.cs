@@ -52,7 +52,7 @@ namespace Neo4j.Driver.Tests
                 },
                 new object[]
                 {
-                    new Internal.Messaging.V4_3.RouteMessageV43(
+                    new RouteMessageV43(
                         new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "Empty" } },
                         Bookmarks.From("bookmark-1"),
                         ""),
@@ -60,7 +60,7 @@ namespace Neo4j.Driver.Tests
                 },
                 new object[]
                 {
-                    new Internal.Messaging.V4_3.RouteMessageV43(
+                    new RouteMessageV43(
                         new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "Null" } },
                         Bookmarks.From("bookmark-1"),
                         null),
@@ -68,7 +68,7 @@ namespace Neo4j.Driver.Tests
                 },
                 new object[]
                 {
-                    new Internal.Messaging.V4_3.RouteMessageV43(
+                    new RouteMessageV43(
                         new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "adb" } },
                         Bookmarks.From("bookmark-1"),
                         "adb"),
@@ -76,7 +76,7 @@ namespace Neo4j.Driver.Tests
                 },
                 new object[]
                 {
-                    new Internal.Messaging.V4_3.RouteMessageV43(
+                    new RouteMessageV43(
                         new Dictionary<string, string> { { "RoutingKey", "RoutingValue" }, { "Bob", "adb" } },
                         null,
                         "adb"),
@@ -194,7 +194,7 @@ namespace Neo4j.Driver.Tests
                 new object[] { new DiscardMessage(1, 2), "DISCARD [{n, 2}, {qid, 1}]" },
                 new object[] { new DiscardMessage(2), "DISCARD [{n, 2}]" }
             };
-
+            
             private static TransactionConfig TransactionConfigGenerator()
             {
                 var config = new TransactionConfig();

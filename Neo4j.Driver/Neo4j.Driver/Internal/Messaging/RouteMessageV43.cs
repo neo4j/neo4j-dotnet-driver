@@ -19,9 +19,9 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal.IO.MessageSerializers.V4_3;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
 
-namespace Neo4j.Driver.Internal.Messaging.V4_3;
+namespace Neo4j.Driver.Internal.Messaging;
 
 internal sealed class RouteMessageV43 : IRequestMessage
 {
@@ -36,7 +36,7 @@ internal sealed class RouteMessageV43 : IRequestMessage
     public Bookmarks Bookmarks { get; }
     public string DatabaseParam { get; }
 
-    public IPackStreamSerializer Serializer => RouteMessageSerializer.Instance;
+    public IPackStreamSerializer Serializer => RouteMessageSerializerV43.Instance;
 
     public override string ToString()
     {

@@ -21,17 +21,16 @@ using System.IO;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Messaging.V4_3;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
+namespace Neo4j.Driver.Internal.IO.MessageSerializers
 {
     public class RouteMessageSerializerTests
     {
         [Fact]
         public void ShouldHaveWriteableTypesAsRouteMessageV43Message()
         {
-            RouteMessageSerializer.Instance.WritableTypes.Should().BeEquivalentTo(typeof(RouteMessageV43));
+            RouteMessageSerializer.Instance.WritableTypes.Should().BeEquivalentTo(typeof(RouteMessage));
         }
 
         [Fact]
@@ -59,10 +58,11 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
             var format = new MessageFormat(boltProtocolVersion);
             var psw = new PackStreamWriter(format, memory);
 
-            var message = new RouteMessageV43(
+            var message = new RouteMessage(
                 new Dictionary<string, string> { ["a"] = "b" },
                 new InternalBookmarks("bm:a"),
-                "neo4j");
+                "neo4j",
+                "user");
 
             RouteMessageSerializer.Instance.Serialize(psw, message);
             memory.Position = 0;
@@ -79,9 +79,9 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers.V4_3
             meta.Should().ContainKey("a").WhichValue.Should().Be("b");
 
             var bookmarks = reader.ReadList();
-            bookmarks.Should().BeEquivalentTo(new []{"bm:a"});
-            var db = reader.ReadString();
-            db.Should().Be("neo4j");
+            bookmarks.Should().BeEquivalentTo(new[] { "bm:a" });
+            var ctx = reader.ReadMap();
+            ctx.Should().BeEquivalentTo(new Dictionary<string, string> { ["db"] = "neo4j", ["imp_user"] = "user" });
         }
     }
 }

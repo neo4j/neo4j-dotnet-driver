@@ -19,13 +19,13 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal.IO.MessageSerializers.V4_4;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
 
 namespace Neo4j.Driver.Internal.Messaging;
 
 internal sealed class RouteMessage : IRequestMessage
 {
-    private const string DBNameKey = "db";
+    private const string DbNameKey = "db";
     private const string ImpersonatedUserKey = "imp_user";
 
     public RouteMessage(
@@ -40,7 +40,7 @@ internal sealed class RouteMessage : IRequestMessage
 
         if (!string.IsNullOrEmpty(databaseName))
         {
-            DatabaseContext.Add(DBNameKey, databaseName);
+            DatabaseContext.Add(DbNameKey, databaseName);
         }
 
         if (!string.IsNullOrEmpty(impersonatedUser))
