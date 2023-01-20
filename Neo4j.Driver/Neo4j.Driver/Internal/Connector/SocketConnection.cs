@@ -243,16 +243,14 @@ internal sealed class SocketConnection : IConnection
         }
     }
 
-    public async Task EnqueueAsync(
-        IRequestMessage message1,
-        IResponseHandler handler1)
+    public async Task EnqueueAsync(IRequestMessage message, IResponseHandler handler)
     {
         await _sendLock.WaitAsync().ConfigureAwait(false);
 
         try
         {
-            _messages.Enqueue(message1);
-            _responsePipeline.Enqueue(handler1);
+            _messages.Enqueue(message);
+            _responsePipeline.Enqueue(handler);
         }
         finally
         {

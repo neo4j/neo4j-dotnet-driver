@@ -42,9 +42,7 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
     // receive one
     Task ReceiveOneAsync();
 
-    Task EnqueueAsync(
-        IRequestMessage message1,
-        IResponseHandler handler1);
+    Task EnqueueAsync(IRequestMessage message, IResponseHandler handler);
 
     // Enqueue a reset message
     Task ResetAsync();
