@@ -245,12 +245,12 @@ internal sealed class BoltProtocol : IBoltProtocol
     {
         return async (streamBuilder, id, n) =>
         {
+            var pullMessage = _protocolMessageFactory.NewPullMessage(id, n);
             var pullResponseHandler = _protocolHandlerFactory.NewPullResponseHandler(
                 bookmarksTracker,
                 streamBuilder,
                 summaryBuilder);
 
-            var pullMessage = _protocolMessageFactory.NewPullMessage(id, n);
             await connection.EnqueueAsync(pullMessage, pullResponseHandler).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
         };
@@ -264,10 +264,10 @@ internal sealed class BoltProtocol : IBoltProtocol
     {
         return async (streamBuilder, id) =>
         {
+            var discardMessage = _protocolMessageFactory.NewDiscardMessage(id, ResultHandleMessage.All);
             var pullResponseHandler = _protocolHandlerFactory.NewPullResponseHandler(bookmarksTracker,
                 streamBuilder,
                 summaryBuilder);
-            var discardMessage = _protocolMessageFactory.NewDiscardMessage(id, ResultHandleMessage.All);
             await connection.EnqueueAsync(discardMessage, pullResponseHandler).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
         };
