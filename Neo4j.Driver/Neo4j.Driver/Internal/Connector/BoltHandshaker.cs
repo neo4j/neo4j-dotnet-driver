@@ -55,7 +55,8 @@ internal class BoltHandshaker : IBoltHandshaker
 
         if (read < responseBytes.Length)
         {
-            throw new IOException($"Unexpected end of stream when performing handshake, read returned {read}");
+            throw new IOException(
+                $"Unexpected end of stream when performing handshake, read only returned {read} bytes but expected {responseBytes.Length} bytes.");
         }
 
         var agreedVersion = BoltProtocolFactory.UnpackAgreedVersion(responseBytes);
