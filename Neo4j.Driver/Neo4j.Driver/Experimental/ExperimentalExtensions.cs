@@ -15,6 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.Experimental.FluentQueries;
+using Neo4j.Driver.Internal;
+
 namespace Neo4j.Driver.Experimental;
 
 /// <summary>
@@ -33,5 +36,10 @@ public static class ExperimentalExtensions
     public static SessionConfigBuilder WithBookmarkManager(this SessionConfigBuilder builder, IBookmarkManager bookmarkManager)
     {
         return builder.WithBookmarkManager(bookmarkManager);
+    }
+
+    public static IExecutableQuery ExecutableQuery(this IDriver driver, string cypher)
+    {
+        return new ExecutableQuery((IInternalDriver)driver, cypher);
     }
 }

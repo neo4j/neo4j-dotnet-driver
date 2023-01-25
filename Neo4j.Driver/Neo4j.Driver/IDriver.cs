@@ -16,8 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver;
@@ -92,71 +90,4 @@ public interface IDriver : IDisposable, IAsyncDisposable
     /// Gets Encrypted status
     /// </summary>
     bool Encrypted { get; }
-
-    /// <summary>
-    /// Execute a query in a transaction and collect all results.
-    /// </summary>
-    /// <param name="query">A query to be executed on the server.</param>
-    /// <param name="config">a Configuration object for how to execute query.</param>
-    /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation. (Not completely observed.)</param>
-    /// <returns> A task that represents the asynchronous query operation. <br/>
-    /// The task result contains a <see cref="QueryResult"/>.</returns>
-    Task<QueryResult> ExecuteQueryAsync(Query query, QueryConfig config = null, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Execute a query in a transaction and collect all results.
-    /// </summary>
-    /// <param name="query">A query to be executed on the server.</param>
-    /// <param name="queryParameters">A set of parameters to be passed to the server with query.</param>
-    /// <param name="config">a Configuration object for how to execute query.</param>
-    /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation. (Not completely observed.)</param>
-    /// <returns> A task that represents the asynchronous query operation. <br/>
-    /// The task result contains a <see cref="QueryResult"/>.</returns>
-    Task<QueryResult> ExecuteQueryAsync(string query, object queryParameters = null, QueryConfig config = null, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Execute a query in a transaction and collect all results.
-    /// </summary>
-    /// <param name="query">A query to be executed on the server.</param>
-    /// <param name="queryParameters">A set of parameters to be passed to the server with query.</param>
-    /// <param name="config">a Configuration object for how to execute query.</param>
-    /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation. (Not completely observed.)</param>
-    /// <returns> A task that represents the asynchronous query operation. <br/>
-    /// The task result contains a <see cref="QueryResult"/>.</returns>
-    Task<QueryResult> ExecuteQueryAsync(string query, Dictionary<string, object> queryParameters, QueryConfig config = null, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Execute query in a transaction, using user-defined cursor processing.
-    /// </summary>
-    /// <param name="query">Query to be executed.</param>
-    /// <param name="config">a Configuration object for how to execute query and process results.</param>
-    /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation. (Not completely observed.)</param>
-    /// <typeparam name="TResult">return value of user-defined cursor processor.</typeparam>
-    /// <returns> A task that represents the asynchronous query operation. <br/>
-    /// The task result contains the result of <see cref="QueryConfig{T}.CursorProcessor"/>.</returns>
-    Task<TResult> ExecuteQueryAsync<TResult>(Query query, QueryConfig<TResult> config, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Execute query in a transaction, using user-defined cursor processing.
-    /// </summary>
-    /// <param name="query">A query to be executed on the server.</param>
-    /// <param name="queryParameters">A set of parameters to be passed to the server with query.</param>
-    /// <param name="config">a Configuration object for how to execute query and process results.</param>
-    /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation. (Not completely observed.)</param>
-    /// <typeparam name="TResult">return value of user-defined cursor processor.</typeparam>
-    /// <returns> A task that represents the asynchronous query operation. <br/>
-    /// The task result contains the result of <see cref="QueryConfig{T}.CursorProcessor"/>.</returns>
-    Task<TResult> ExecuteQueryAsync<TResult>(string query, object queryParameters, QueryConfig<TResult> config, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Execute query in a transaction, using user-defined cursor processing.
-    /// </summary>
-    /// <param name="query">A query to be executed on the server.</param>
-    /// <param name="queryParameters">A set of parameters to be passed to the server with query.</param>
-    /// <param name="config">a Configuration object for how to execute query and process results.</param>
-    /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation. (Not completely observed.)</param>
-    /// <typeparam name="TResult">return value of user-defined cursor processor.</typeparam>
-    /// <returns> A task that represents the asynchronous query operation. <br/>
-    /// The task result contains the result of <see cref="QueryConfig{T}.CursorProcessor"/>.</returns>
-    Task<TResult> ExecuteQueryAsync<TResult>(string query, Dictionary<string, object> queryParameters, QueryConfig<TResult> config, CancellationToken cancellationToken = default);
 }

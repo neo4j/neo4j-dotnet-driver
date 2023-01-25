@@ -14,10 +14,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-using System;
+
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver
@@ -27,7 +25,7 @@ namespace Neo4j.Driver
     /// The records in the result is lazily retrieved and could only be visited once in a sequential order.
     /// </summary>
     /// <remarks> Calling <see cref="ResultCursorExtensions.ToListAsync"/> will enumerate the entire stream.</remarks>
-    public interface IResultCursor
+    public interface IResultCursor : IAsyncEnumerable<IRecord>, IAsyncEnumerator<IRecord>
     {
         /// <summary>
         /// Gets the keys in the result.
@@ -59,14 +57,6 @@ namespace Neo4j.Driver
         /// </summary>
         /// <returns>A task returning a <see cref="bool"/>. Task's result is true if there is any result to be consumed, false otherwise.</returns>
         Task<bool> FetchAsync();
-
-        /// <summary>
-        /// Returns the current record that has already been read via <see cref="FetchAsync"/>.
-        /// </summary>
-        /// <value>A <see cref="IRecord"/> holding the data sent by the server.</value>
-        /// <remarks>Throws <exception cref="InvalidOperationException"></exception>
-        /// if accessed without calling <see cref="FetchAsync"/> or <see cref="PeekAsync"/>.</remarks>
-        IRecord Current { get; }
 
         /// <summary>
         /// Get whether the cursor is open to read records, a cursor will be considered open if <see cref="ConsumeAsync"/> has not been called.<br/>

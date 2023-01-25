@@ -17,10 +17,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Result
 {
@@ -117,6 +115,11 @@ namespace Neo4j.Driver.Internal.Result
             return _current != null;
         }
 
+        public ValueTask<bool> MoveNextAsync()
+        {
+            return new ValueTask<bool>(FetchAsync());
+        }
+
         public IRecord Current
         {
             get
@@ -135,6 +138,18 @@ namespace Neo4j.Driver.Internal.Result
         public void Cancel()
         {
             _resultStream.Cancel();
+        }
+
+        public IAsyncEnumerator<IRecord> GetAsyncEnumerator(
+            CancellationToken cancellationToken = new())
+        {
+            return this;
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            // should we ConsumeAsync here? Probably not.
+            return new ValueTask(Task.CompletedTask);
         }
     }
 }

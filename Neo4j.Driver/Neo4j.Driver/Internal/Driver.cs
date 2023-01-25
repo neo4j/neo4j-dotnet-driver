@@ -16,12 +16,12 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Experimental;
 using Neo4j.Driver.Internal.Metrics;
-using Neo4j.Driver.Internal.Util;
 using Neo4j.Driver.Internal.Routing;
+using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal;
 
@@ -163,7 +163,11 @@ internal sealed class Driver : IInternalDriver
         return _metrics;
     }
 
-    public async Task<QueryResult> ExecuteQueryAsync(Query query, QueryConfig config = null, CancellationToken cancellationToken = default)
+    private async Task<T> ExecuteQueryAsyncInternal<T>(
+        Query query,
+        QueryConfig config,
+        CancellationToken cancellationToken,
+        Func<IResultCursor, CancellationToken, Task<T>> cursorProcessor)
     {
         query = query ?? throw new ArgumentNullException(nameof(query));
         config ??= new QueryConfig();
@@ -172,49 +176,55 @@ internal sealed class Driver : IInternalDriver
         await using (session.ConfigureAwait(false))
         {
             if (config.Routing == RoutingControl.Readers)
-                return await session.ExecuteReadAsync(x => Work(query, x, ProcessCursorAsync, cancellationToken)).ConfigureAwait(false);
-            return await session.ExecuteWriteAsync(x => Work(query, x, ProcessCursorAsync, cancellationToken)).ConfigureAwait(false);
+                return await session.ExecuteReadAsync(x => Work(query, x, cursorProcessor, cancellationToken))
+                    .ConfigureAwait(false);
+
+            return await session.ExecuteWriteAsync(x => Work(query, x, cursorProcessor, cancellationToken))
+                .ConfigureAwait(false);
         }
     }
 
-    public async Task<T> ExecuteQueryAsync<T>(Query query, QueryConfig<T> config, CancellationToken cancellationToken = default)
+    public Task<EagerResult> ExecuteQueryAsync(Query query, QueryConfig config = null, CancellationToken cancellationToken = default)
     {
-        query = query ?? throw new ArgumentNullException(nameof(query));
-        config = config ?? throw new ArgumentNullException(nameof(config));
+        return ExecuteQueryAsyncInternal(query, config, cancellationToken, ProcessCursorAsync);
+    }
 
-        var session = AsyncSession(x => ApplyConfig(config, x));
-        await using (session.ConfigureAwait(false))
+    private static async Task<EagerResult> ProcessCursorAsync(IResultCursor cursor, CancellationToken cancellationToken)
+    {
+        var records = await cursor.ToListAsync(cancellationToken).ConfigureAwait(false);
+        var keys = await cursor.KeysAsync().ConfigureAwait(false);
+        var summary = await cursor.ConsumeAsync().ConfigureAwait(false);
+
+        return new EagerResult { Keys = keys, Records = records.ToArray(), Summary = summary };
+    }
+
+    public Task<TResult> ExecuteQueryAsync<TResult>(
+        Query query,
+        Func<IResultTransformer<TResult>> createTransformer,
+        QueryConfig config = null,
+        CancellationToken cancellationToken = default)
+    {
+        return ExecuteQueryAsyncInternal(query, config, cancellationToken, TransformCursor(createTransformer));
+    }
+
+    private static Func<IResultCursor, CancellationToken, Task<TResult>> TransformCursor<TResult>(
+        Func<IResultTransformer<TResult>> createTransformer)
+    {
+        async Task<TResult> TransformCursorImpl(
+            IResultCursor cursor,
+            CancellationToken cancellationToken)
         {
-            if (config.Routing == RoutingControl.Readers)
-                return await session.ExecuteReadAsync(x => Work(query, x, config.CursorProcessor, cancellationToken)).ConfigureAwait(false);
-            return await session.ExecuteWriteAsync(x => Work(query, x, config.CursorProcessor, cancellationToken)).ConfigureAwait(false);
+            var transformer = createTransformer();
+            await foreach (var record in cursor)
+            {
+                await transformer.OnRecordAsync(record).ConfigureAwait(false);
+            }
+
+            var summary = await cursor.ConsumeAsync().ConfigureAwait(false);
+            return await transformer.OnFinishAsync(summary);
         }
-    }
 
-    public Task<QueryResult> ExecuteQueryAsync(string query, object queryParameters = null, QueryConfig config = null, CancellationToken cancellationToken = default)
-    {
-        return ExecuteQueryAsync(new Query(query, queryParameters), config, cancellationToken);
-    }
-
-    public Task<QueryResult> ExecuteQueryAsync(string query, Dictionary<string, object> queryParameters, QueryConfig config = null, CancellationToken cancellationToken = default)
-    {
-        return ExecuteQueryAsync(new Query(query, queryParameters), config, cancellationToken);
-    }
-
-    public Task<T> ExecuteQueryAsync<T>(string query, object queryParameters, QueryConfig<T> config, CancellationToken cancellationToken = default)
-    {
-        query = query ?? throw new ArgumentNullException(nameof(query));
-        config = config ?? throw new ArgumentNullException(nameof(config));
-
-        return ExecuteQueryAsync(new Query(query, queryParameters), config, cancellationToken);
-    }
-
-    public Task<T> ExecuteQueryAsync<T>(string query, Dictionary<string, object> queryParameters, QueryConfig<T> config, CancellationToken cancellationToken = default)
-    {
-        query = query ?? throw new ArgumentNullException(nameof(query));
-        config = config ?? throw new ArgumentNullException(nameof(config));
-
-        return ExecuteQueryAsync(new Query(query, queryParameters), config, cancellationToken);
+        return TransformCursorImpl;
     }
 
     private void ApplyConfig(QueryConfig config, SessionConfigBuilder sessionConfigBuilder)
@@ -240,14 +250,5 @@ internal sealed class Driver : IInternalDriver
     {
         var cursor = await x.RunAsync(q).ConfigureAwait(false);
         return await process(cursor, cancellationToken).ConfigureAwait(false);
-    }
-
-    private static async Task<QueryResult> ProcessCursorAsync(IResultCursor cursor, CancellationToken cancellationToken)
-    {
-        var records = await cursor.ToListAsync(cancellationToken).ConfigureAwait(false);
-        var keys = await cursor.KeysAsync().ConfigureAwait(false);
-        var summary = await cursor.ConsumeAsync().ConfigureAwait(false);
-
-        return new QueryResult { Keys = keys, Records = records.ToArray(), Summary = summary };
     }
 }

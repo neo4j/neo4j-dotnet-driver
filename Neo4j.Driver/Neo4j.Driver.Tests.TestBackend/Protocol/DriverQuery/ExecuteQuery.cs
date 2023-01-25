@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Neo4j.Driver.Experimental;
 using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
@@ -10,7 +11,7 @@ internal class ExecuteQuery : IProtocolObject
 {
     public ExecuteQueryDto data { get; set; }
     [JsonIgnore]
-    public QueryResult Result { get; set; }
+    public EagerResult Result { get; set; }
 
     public class ExecuteQueryDto
     {
@@ -35,7 +36,11 @@ internal class ExecuteQuery : IProtocolObject
         var driver = ObjManager.GetObject<NewDriver>(data.driverId).Driver;
         var queryConfig = BuildConfig();
 
-        Result = await driver.ExecuteQueryAsync(data.cypher, data.parameters, queryConfig);
+        Result = await driver
+            .ExecutableQuery(data.cypher)
+            .WithParameters(data.parameters)
+            .WithConfig(queryConfig)
+            .ExecuteAsync();
     }
 
     private QueryConfig BuildConfig()
