@@ -53,11 +53,12 @@ internal class ExecutableQuery : IExecutableQuery
         return this;
     }
 
-    public IExecutableQuery WithParameter(string name, object value)
-    {
-        _query.Parameters[name] = value;
-        return this;
-    }
+    // removing since behaviour is different to WithParameters, pending discussion
+    // public IExecutableQuery WithParameter(string name, object value)
+    // {
+    //     _query.Parameters[name] = value;
+    //     return this;
+    // }
 
     public Task<EagerResult> ExecuteAsync(CancellationToken cancellationToken = default)
     {

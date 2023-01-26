@@ -41,10 +41,8 @@ public interface IExecutableQuery
     /// </summary>
     IExecutableQuery WithParameters(Dictionary<string, object> parameters);
 
-    /// <summary>
-    /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
-    /// </summary>
-    IExecutableQuery WithParameter(string name, object value);
+    // removing since behaviour is different to WithParameters, pending discussion
+    // IExecutableQuery WithParameter(string name, object value);
 
     /// <summary>
     /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
