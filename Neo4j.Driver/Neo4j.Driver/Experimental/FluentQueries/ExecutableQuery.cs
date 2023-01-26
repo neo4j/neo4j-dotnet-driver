@@ -69,6 +69,10 @@ internal class ExecutableQuery : IExecutableQuery
         Func<IRecord, T> transform,
         CancellationToken cancellationToken = default)
     {
-        return _driver.ExecuteQueryAsync(_query, MapTransformer<T>.GetFactoryMethod(transform), _queryConfig, cancellationToken);
+        return _driver.ExecuteQueryAsync(
+            _query,
+            MapTransformer<T>.GetFactoryMethod(transform),
+            _queryConfig,
+            cancellationToken);
     }
 }
