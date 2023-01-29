@@ -52,6 +52,7 @@
     <EmbeddedResource Include="Internal\Temporal\windowsZones.xml" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="AsyncKeyedLock" Version="6.1.1" />
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="5.0.0" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>

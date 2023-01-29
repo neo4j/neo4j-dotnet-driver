@@ -19,9 +19,8 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver;
+using AsyncKeyedLock;
 
 namespace Neo4j.Driver.Internal.Routing
 {
@@ -34,8 +33,7 @@ namespace Neo4j.Driver.Internal.Routing
         private readonly IInitialServerAddressProvider _initialServerAddressProvider;
         private readonly TimeSpan _routingTablePurgeDelay;
 
-        private readonly ConcurrentDictionary<string, SemaphoreSlim> _routingTableLocks =
-            new ConcurrentDictionary<string, SemaphoreSlim>();
+        private AsyncKeyedLocker<string> _routingTableLocks = InitializeLocker;
 
         private readonly ConcurrentDictionary<string, IRoutingTable> _routingTables =
             new ConcurrentDictionary<string, IRoutingTable>();
@@ -70,16 +68,18 @@ namespace Neo4j.Driver.Internal.Routing
             }
         }
 
+        private static AsyncKeyedLocker<string> InitializeLocker => new(o =>
+        {
+            o.PoolSize = 20;
+            o.PoolInitialFill = 1;
+        });
+
         public async Task<IRoutingTable> EnsureRoutingTableForModeAsync(AccessMode mode, string database,
             string impersonatedUser, Bookmarks bookmarks)
         {
             database = database ?? string.Empty;
 
-            var semaphore = GetLock(database);
-
-            // now lock
-            await semaphore.WaitAsync().ConfigureAwait(false);
-            try
+            using (await _routingTableLocks.LockAsync(database).ConfigureAwait(false))
             {
                 if (_routingTables.TryGetValue(database, out var existingTable) &&
                     !existingTable.IsStale(mode))
@@ -91,11 +91,6 @@ namespace Neo4j.Driver.Internal.Routing
                     .ConfigureAwait(false);
                 await UpdateAsync(refreshedTable).ConfigureAwait(false);
                 return refreshedTable;
-            }
-            finally
-            {
-                // no matter whether we succeeded to update or not, we release the lock
-                semaphore.Release();
             }
         }
 
@@ -134,7 +129,7 @@ namespace Neo4j.Driver.Internal.Routing
         public void Clear()
         {
             _routingTables.Clear();
-            _routingTableLocks.Clear();
+            _routingTableLocks = InitializeLocker;
         }
 
         public void ForgetServer(Uri uri, string database)
@@ -152,11 +147,6 @@ namespace Neo4j.Driver.Internal.Routing
         public IRoutingTable RoutingTableFor(string database)
         {
             return _routingTables.TryGetValue(database ?? string.Empty, out var routingTable) ? routingTable : null;
-        }
-
-        private SemaphoreSlim GetLock(string database)
-        {
-            return _routingTableLocks.GetOrAdd(database, _ => new SemaphoreSlim(1, 1));
         }
 
         private async Task UpdateAsync(IRoutingTable newRoutingTable)
@@ -193,7 +183,6 @@ namespace Neo4j.Driver.Internal.Routing
                 }
 
                 _routingTables.TryRemove(routingTable.Database, out _);
-                _routingTableLocks.TryRemove(routingTable.Database, out _);
             }
         }
 
