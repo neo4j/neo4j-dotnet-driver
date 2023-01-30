@@ -55,6 +55,27 @@ namespace Neo4j.Driver.Internal
 					{
 						error = new InvalidBookmarkException(message);
 					}
+                    else if (InvalidBookmarkMixtureException.IsInvalidBookmarkMixtureException(code))
+                    {
+                        error = new InvalidBookmarkMixtureException(message);
+                    }
+                    else if (ArgumentErrorException.IsArgumentErrorException(code))
+                    {
+                        error = new ArgumentErrorException(message);
+                    }
+                    else if (TypeException.IsTypeException(code))
+                    {
+                        error = new TypeException(message);
+                    }
+                    else if (ForbiddenException.IsForbiddenException(code))
+                    {
+                        error = new ForbiddenException(message);
+                    }
+                    // this one needs to come after it has checked all other possibilities
+                    else if (UnknownSecurityException.IsUnknownSecurityException(code))
+                    {
+                        return new UnknownSecurityException(message, code);
+                    }
                     else
                     {
                         error = new ClientException(code, message);
@@ -74,7 +95,7 @@ namespace Neo4j.Driver.Internal
 
         public static bool CanBeRetried(this Exception error)
         {
-            return error is Neo4jException neo4JException && neo4JException.CanBeRetried;
+            return error is Neo4jException neo4JException && neo4JException.IsRetriable;
         }
 
         public static bool IsRecoverableError(this Exception error)

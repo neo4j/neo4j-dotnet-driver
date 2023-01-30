@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Experimental;
 using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
@@ -15,7 +16,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public class NewBookmarkManagerDto
         {
-            public Dictionary<string, string[]> initialBookmarks { get; set; }
+            public string[] initialBookmarks { get; set; }
             public bool bookmarksSupplierRegistered { get; set; }
             public bool bookmarksConsumerRegistered { get; set; }
         }
@@ -23,30 +24,30 @@ namespace Neo4j.Driver.Tests.TestBackend
         public override Task Process(Controller controller)
         {
             var initialBookmarks =
-                data.initialBookmarks?.ToDictionary(x => x.Key, x => x.Value as IEnumerable<string>)
-                ?? new Dictionary<string, IEnumerable<string>>();
+                data.initialBookmarks
+                ?? Array.Empty<string>();
 
-            async Task<string[]> BookmarkSupplier(string database, CancellationToken _)
+            async Task<string[]> BookmarkSupplier(CancellationToken _)
             {
                 if (!data.bookmarksSupplierRegistered)
                     return Array.Empty<string>();
 
                 var request = new BookmarkManagerSupplierRequest(ObjManager);
                 
-                await controller.SendResponse(GetSupplyRequest(database, request));
+                await controller.SendResponse(GetSupplyRequest(request));
                 var result = await controller.TryConsumeStreamObjectOfType<BookmarksSupplierCompleted>();
 
                 return result.data.bookmarks;
             }
 
-            async Task NotifyBookmarks(string database, string[] bookmarks, CancellationToken _)
+            async Task NotifyBookmarks(string[] bookmarks, CancellationToken _)
             {
                 if (!data.bookmarksConsumerRegistered)
                     return;
 
                 var request = new BookmarkManagerConsumerRequest(ObjManager);
 
-                await controller.SendResponse(GetConsumeRequest(database, bookmarks, request));
+                await controller.SendResponse(GetConsumeRequest(bookmarks, request));
                 await controller.TryConsumeStreamObjectOfType<BookmarksConsumerCompleted>();
             }
 
@@ -57,16 +58,16 @@ namespace Neo4j.Driver.Tests.TestBackend
             return Task.CompletedTask;
         }
 
-        private string GetConsumeRequest(string database, string[] bookmarks, BookmarkManagerConsumerRequest request)
+        private string GetConsumeRequest(string[] bookmarks, BookmarkManagerConsumerRequest request)
         {
             return new ProtocolResponse("BookmarksConsumerRequest",
-                new {database, bookmarks, bookmarkManagerId = uniqueId, id = request.uniqueId}).Encode();
+                new {bookmarks, bookmarkManagerId = uniqueId, id = request.uniqueId}).Encode();
         }
 
-        private string GetSupplyRequest(string database, BookmarkManagerSupplierRequest request)
+        private string GetSupplyRequest(BookmarkManagerSupplierRequest request)
         {
             return new ProtocolResponse("BookmarksSupplierRequest",
-                new {database, bookmarkManagerId = uniqueId, id = request.uniqueId}).Encode();
+                new {bookmarkManagerId = uniqueId, id = request.uniqueId}).Encode();
         }
 
         public override string Respond()

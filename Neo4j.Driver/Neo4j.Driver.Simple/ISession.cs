@@ -35,11 +35,17 @@ namespace Neo4j.Driver
     public interface ISession : IQueryRunner
     {
         /// <summary>
-        /// Gets the bookmark received following the last successfully completed <see cref="IAsyncTransaction"/>.
+        /// Gets the bookmark received following the last successfully completed <see cref="ITransaction"/>.
         /// If no bookmark was received or if this transaction was rolled back, the bookmark value will not be changed.
         /// </summary>
         Bookmarks LastBookmarks { get; }
-
+        
+        /// <summary>
+        /// Gets the bookmark received following the last successfully completed <see cref="ITransaction"/>.
+        /// If no bookmark was received or if this transaction was rolled back, the bookmark value will not be changed.
+        /// </summary>
+        [Obsolete("Deprecated, Replaced by LastBookmarks. LastBookmark will be removed in 6.0.")]
+        Bookmark LastBookmark { get; }
 
         /// <summary>
         /// Begin a new transaction in this session using server default transaction configurations.

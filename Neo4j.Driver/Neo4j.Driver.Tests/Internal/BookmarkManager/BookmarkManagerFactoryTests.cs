@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 using FluentAssertions;
+using Neo4j.Driver.Experimental;
 
 namespace Neo4j.Driver.Internal.BookmarkManager;
 
@@ -31,9 +32,9 @@ public class BookmarkManagerFactoryTests
         var factory = new BookmarkManagerFactory();
 
         var config = new BookmarkManagerConfig(
-            new Dictionary<string, IEnumerable<string>>(),
-            (_, _) => Task.FromResult(Array.Empty<string>()),
-            (_, _, _) => Task.CompletedTask);
+            Array.Empty<string>(),
+            (_) => Task.FromResult(Array.Empty<string>()),
+            (_, _) => Task.CompletedTask);
 
         var bookmarkManager = factory.NewBookmarkManager(config);
 
