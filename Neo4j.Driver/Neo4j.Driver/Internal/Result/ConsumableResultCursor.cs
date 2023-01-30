@@ -83,7 +83,7 @@ namespace Neo4j.Driver.Internal.Result
             }
         }
 
-        public IAsyncEnumerator<IRecord> GetAsyncEnumerator(CancellationToken cancellationToken = new CancellationToken())
+        public IAsyncEnumerator<IRecord> GetAsyncEnumerator(CancellationToken cancellationToken = default)
         {
             return this;
         }
