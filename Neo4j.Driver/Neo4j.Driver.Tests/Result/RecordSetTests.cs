@@ -29,7 +29,7 @@ using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests
 {
-    internal class ListBasedRecordCursor : IInternalResultCursor
+    internal class ListBasedRecordCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
     {
         private readonly string[] _keys;
         private readonly Func<IResultSummary> _summaryFunc;

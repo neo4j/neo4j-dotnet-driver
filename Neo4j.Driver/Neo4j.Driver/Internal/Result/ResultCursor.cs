@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    internal class ResultCursor : IInternalResultCursor
+    internal class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
     {
         private bool _atEnd;
         private IRecord _peeked;
@@ -115,7 +115,7 @@ namespace Neo4j.Driver.Internal.Result
             return _current != null;
         }
 
-        public ValueTask<bool> MoveNextAsync()
+        ValueTask<bool> IAsyncEnumerator<IRecord>.MoveNextAsync()
         {
             return new ValueTask<bool>(FetchAsync());
         }

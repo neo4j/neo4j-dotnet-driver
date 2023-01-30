@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    internal class ConsumableResultCursor : IInternalResultCursor
+    internal class ConsumableResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
     {
         private readonly IInternalResultCursor _cursor;
         private bool _isConsumed;
