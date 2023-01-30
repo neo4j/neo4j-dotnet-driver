@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -64,7 +65,7 @@ namespace Neo4j.Driver
         /// <value>A <see cref="IRecord"/> holding the data sent by the server.</value>
         /// <remarks>Throws <exception cref="InvalidOperationException"></exception>
         /// if accessed without calling <see cref="FetchAsync"/> or <see cref="PeekAsync"/>.</remarks>
-        new IRecord Current { get; }
+        IRecord Current { get; }
 
         /// <summary>
         /// Get whether the cursor is open to read records, a cursor will be considered open if <see cref="ConsumeAsync"/> has not been called.<br/>
