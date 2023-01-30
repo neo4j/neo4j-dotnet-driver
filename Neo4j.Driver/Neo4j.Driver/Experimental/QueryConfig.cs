@@ -19,10 +19,10 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver;
+namespace Neo4j.Driver.Experimental;
 
 /// <summary>
-/// Configuration for running queries using <see cref="IDriver.ExecuteQueryAsync"/>
+/// Configuration for running queries using the simplified api.
 /// </summary>
 public class QueryConfig
 {
@@ -53,7 +53,7 @@ public class QueryConfig
     public bool EnableBookmarkManager { get; }
 
     /// <summary>
-    /// Construct new instance for configuration for running queries using <see cref="IDriver.ExecuteQueryAsync"/>.
+    /// Construct new instance for configuration for running queries using the simplified API.
     /// </summary>
     /// <param name="routing">Routing for query.</param>
     /// <param name="database">Database name of database query should be executed against.</param>
@@ -73,12 +73,12 @@ public class QueryConfig
 }
 
 /// <summary>
-/// Configuration for running queries using <see cref="IDriver.ExecuteQueryAsync{TResult}"/>
+/// Configuration for running queries using the simplified API.
 /// </summary>
 public class QueryConfig<T> : QueryConfig
 {
     /// <summary>
-    /// Construct new instance for configuration for running queries using <see cref="IDriver.ExecuteQueryAsync{TResult}"/>.
+    /// Construct new instance for configuration for running queries using the simplified API.
     /// </summary>
     /// <param name="cursorProcessor">Function for processing an <see cref="IResultCursor"/>.<br/>
     /// The cursor processor will execute inside the scope of an open transaction.<br/>

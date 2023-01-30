@@ -57,7 +57,7 @@ internal class ExecuteQuery : IProtocolObject
 
         if (!string.IsNullOrEmpty(data.config.bookmarkManagerId))
         {
-            if (data.config.bookmarkManagerId != "-1")
+            if (data.config.bookmarkManagerId == "-1")
                 enableBookmarkManager = false;
             else
                 bookmarkManager = ObjManager.GetObject<NewBookmarkManager>(data.config.bookmarkManagerId).BookmarkManager;
