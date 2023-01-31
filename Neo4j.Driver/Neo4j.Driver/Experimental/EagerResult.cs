@@ -26,6 +26,16 @@ namespace Neo4j.Driver.Experimental;
 /// </summary>
 public sealed class EagerResult : IReadOnlyList<IRecord>
 {
+    public static implicit operator (IRecord[] Records, IResultSummary Summary)(EagerResult result)
+    {
+        return (result.Records, result.Summary);
+    }
+    
+    public static implicit operator (IRecord[] Records, IResultSummary Summary, string[] Keys)(EagerResult result)
+    {
+        return (result.Records, result.Summary, result.Keys);
+    }
+    
     /// <summary>
     /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
     /// Least common set of fields in <see cref="Records"/>.
