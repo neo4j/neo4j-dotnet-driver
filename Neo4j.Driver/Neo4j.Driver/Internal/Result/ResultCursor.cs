@@ -17,14 +17,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver;
 
 namespace Neo4j.Driver.Internal.Result
 {
-    internal class ResultCursor : IInternalResultCursor
+    internal class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
     {
         private bool _atEnd;
         private IRecord _peeked;
@@ -117,6 +115,11 @@ namespace Neo4j.Driver.Internal.Result
             return _current != null;
         }
 
+        ValueTask<bool> IAsyncEnumerator<IRecord>.MoveNextAsync()
+        {
+            return new ValueTask<bool>(FetchAsync());
+        }
+
         public IRecord Current
         {
             get
@@ -135,6 +138,17 @@ namespace Neo4j.Driver.Internal.Result
         public void Cancel()
         {
             _resultStream.Cancel();
+        }
+
+        public IAsyncEnumerator<IRecord> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+        {
+            return this;
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            // should we ConsumeAsync here? Probably not.
+            return new ValueTask(Task.CompletedTask);
         }
     }
 }

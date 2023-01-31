@@ -36,4 +36,34 @@ namespace Neo4j.Driver.Tests.TestBackend
             return JsonCypherParameterParser.ParseParameters(token);
         }
     }
+
+    internal class FullQueryParameterConverter : JsonConverter<Dictionary<string, object>>
+    {
+        public override void WriteJson(JsonWriter writer, Dictionary<string, object> value, JsonSerializer serializer)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Dictionary<string, object> ReadJson(JsonReader reader, Type objectType, Dictionary<string, object> existingValue, bool hasExistingValue,
+            JsonSerializer serializer)
+        {
+            var token = JObject.Load(reader);
+            var parameters = JsonCypherParameterParser.ParseParameters(token);
+            return ConvertParameters(parameters);
+        }
+
+        public static Dictionary<string, object> ConvertParameters(Dictionary<string, CypherToNativeObject> source)
+        {
+            if (source == null) return null;
+            Dictionary<string, object> newParams = new Dictionary<string, object>();
+
+            foreach (KeyValuePair<string, CypherToNativeObject> element in source)
+            {
+                newParams.Add(element.Key, CypherToNative.Convert(element.Value));
+            }
+
+            return newParams;
+        }
+
+    }
 }

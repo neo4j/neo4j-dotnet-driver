@@ -6,12 +6,11 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend
 {
-	internal class SessionRun : IProtocolObject
+    internal class SessionRun : IProtocolObject
     {
         public SessionRunType data { get; set; } = new SessionRunType();
 
-        [JsonIgnore]
-        private string ResultId { get; set; }
+        [JsonIgnore] private string ResultId { get; set; }
 
         [JsonConverter(typeof(SessionTypeJsonConverter))]
         public class SessionRunType : BaseSessionType
@@ -20,7 +19,8 @@ namespace Neo4j.Driver.Tests.TestBackend
 
             [JsonProperty("params")]
             [JsonConverter(typeof(QueryParameterConverter))]
-            public Dictionary<string, CypherToNativeObject> parameters { get; set; } = new Dictionary<string, CypherToNativeObject>();
+            public Dictionary<string, CypherToNativeObject> parameters { get; set; } =
+                new Dictionary<string, CypherToNativeObject>();
         }
 
         public override async Task Process()

@@ -15,6 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.Experimental.FluentQueries;
+using Neo4j.Driver.Internal;
+
 namespace Neo4j.Driver.Experimental;
 
 /// <summary>
@@ -33,6 +36,34 @@ public static class ExperimentalExtensions
     public static SessionConfigBuilder WithBookmarkManager(this SessionConfigBuilder builder, IBookmarkManager bookmarkManager)
     {
         return builder.WithBookmarkManager(bookmarkManager);
+    }
+
+    /// <summary>
+    /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
+    /// Gets an <see cref="IExecutableQuery"/> that can be used to configure and execute a query using
+    /// fluent method chaining.
+    /// </summary>
+    /// <example>
+    /// The following example configures and executes a simple query, then iterates over the results.
+    /// <code language="cs">
+    /// var queryResult = await driver
+    ///     .ExecutableQuery("MATCH (m:Movie) WHERE m.released > $releaseYear RETURN m.title AS title")
+    ///     .WithParameters(new { releaseYear = 2005 })
+    ///     .ExecuteAsync();
+    ///
+    /// foreach(var record in queryResult)
+    /// {
+    ///     Console.WriteLine(record["title"].As&lt;string&gt;());
+    /// }
+    /// </code>
+    /// </example>
+    /// <param name="driver">The driver.</param>
+    /// <param name="cypher">The cypher of the query.</param>
+    /// <returns>An <see cref="IExecutableQuery"/> that can be used to configure and execute a query using
+    /// fluent method chaining.</returns>
+    public static IExecutableQuery ExecutableQuery(this IDriver driver, string cypher)
+    {
+        return new ExecutableQuery((IInternalDriver)driver, cypher);
     }
     
     /// <summary>

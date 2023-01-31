@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) 2002-2022 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,12 +15,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
+namespace Neo4j.Driver;
 
-namespace Neo4j.Driver.Internal
+/// <summary>
+/// Used for specifying which members of a neo4j cluster will process the workload.<br/>
+/// default: <see cref="Writers"/>
+/// </summary>
+public enum RoutingControl
 {
-    internal interface IInternalResultCursor : IResultCursor
-    {
-        void Cancel();
-    }
+    /// <summary>
+    /// Send work to member of cluster that is capable of processing read and write workloads.
+    /// </summary>
+    Writers = 0,
+    /// <summary>
+    /// Send work to a member of cluster capable of processing read workloads.
+    /// </summary>
+    Readers = 1
 }

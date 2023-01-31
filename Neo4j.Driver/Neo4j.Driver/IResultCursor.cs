@@ -14,10 +14,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver
@@ -27,7 +26,7 @@ namespace Neo4j.Driver
     /// The records in the result is lazily retrieved and could only be visited once in a sequential order.
     /// </summary>
     /// <remarks> Calling <see cref="ResultCursorExtensions.ToListAsync"/> will enumerate the entire stream.</remarks>
-    public interface IResultCursor
+    public interface IResultCursor : IAsyncEnumerable<IRecord>
     {
         /// <summary>
         /// Gets the keys in the result.

@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal;
 
@@ -81,6 +82,26 @@ namespace Neo4j.Driver
             List<IRecord> list = new List<IRecord>();
             while (await result.FetchAsync().ConfigureAwait(false))
             {
+                list.Add(result.Current);
+            }
+
+            return list;
+        }
+
+
+        /// <summary>
+        /// Pull all records in the result stream into memory and return in a list.
+        /// </summary>
+        /// <param name="result"> The result stream.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <returns>A list with all records in the result stream.</returns>
+        public static async Task<List<IRecord>> ToListAsync(this IResultCursor result, CancellationToken cancellationToken)
+        {
+            Throw.ArgumentNullException.IfNull(result, nameof(result));
+            List<IRecord> list = new List<IRecord>();
+            while (await result.FetchAsync().ConfigureAwait(false))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
                 list.Add(result.Current);
             }
 
