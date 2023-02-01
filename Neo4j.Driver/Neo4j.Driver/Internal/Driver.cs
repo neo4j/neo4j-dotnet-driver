@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Experimental;
@@ -39,7 +40,8 @@ internal sealed class Driver : IInternalDriver
     public Uri Uri { get; }
     public bool Encrypted { get; }
 
-    internal Driver(Uri uri,
+    internal Driver(
+        Uri uri,
         bool encrypted,
         IConnectionProvider connectionProvider,
         IAsyncRetryLogic retryLogic,
@@ -82,7 +84,8 @@ internal sealed class Driver : IInternalDriver
 
         var sessionConfig = ConfigBuilders.BuildSessionConfig(action);
 
-        var session = new AsyncSession(_connectionProvider, 
+        var session = new AsyncSession(
+            _connectionProvider,
             _logger,
             _retryLogic,
             _config.FetchSize,
@@ -104,7 +107,7 @@ internal sealed class Driver : IInternalDriver
 
     public Task CloseAsync()
     {
-        return Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0 
+        return Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0
             ? _connectionProvider.CloseAsync()
             : Task.CompletedTask;
     }
@@ -122,7 +125,7 @@ internal sealed class Driver : IInternalDriver
     //Non public facing api. Used for testing with testkit only
     public IRoutingTable GetRoutingTable(string database)
     {
-        return _connectionProvider.GetRoutingTable(database);		
+        return _connectionProvider.GetRoutingTable(database);
     }
 
     public void Dispose()
@@ -148,7 +151,8 @@ internal sealed class Driver : IInternalDriver
 
     private static void ThrowDriverClosedException()
     {
-        throw new ObjectDisposedException(nameof(Driver), 
+        throw new ObjectDisposedException(
+            nameof(Driver),
             "Cannot open a new session on a driver that is already disposed.");
     }
 
@@ -163,11 +167,11 @@ internal sealed class Driver : IInternalDriver
         return _metrics;
     }
 
-    private async Task<T> ExecuteQueryAsyncInternal<T>(
+    private async Task<EagerResult<T>> ExecuteQueryAsyncInternal<T>(
         Query query,
         QueryConfig config,
         CancellationToken cancellationToken,
-        Func<IResultCursor, CancellationToken, Task<T>> cursorProcessor)
+        Func<IResultCursor, CancellationToken, Task<EagerResult<T>>> cursorProcessor)
     {
         query = query ?? throw new ArgumentNullException(nameof(query));
         config ??= new QueryConfig();
@@ -184,44 +188,30 @@ internal sealed class Driver : IInternalDriver
         }
     }
 
-    public Task<EagerResult> ExecuteQueryAsync(Query query, QueryConfig config = null, CancellationToken cancellationToken = default)
-    {
-        return ExecuteQueryAsyncInternal(query, config, cancellationToken, ProcessCursorAsync);
-    }
-
-    private static async Task<EagerResult> ProcessCursorAsync(IResultCursor cursor, CancellationToken cancellationToken)
-    {
-        var records = await cursor.ToListAsync(cancellationToken).ConfigureAwait(false);
-        var keys = await cursor.KeysAsync().ConfigureAwait(false);
-        var summary = await cursor.ConsumeAsync().ConfigureAwait(false);
-
-        return new EagerResult { Keys = keys, Records = records.ToArray(), Summary = summary };
-    }
-
-    public Task<TResult> ExecuteQueryAsync<TResult>(
+    public Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
         Query query,
-        Func<IResultTransformer<TResult>> createTransformer,
+        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor,
         QueryConfig config = null,
         CancellationToken cancellationToken = default)
     {
-        return ExecuteQueryAsyncInternal(query, config, cancellationToken, TransformCursor(createTransformer));
+        return ExecuteQueryAsyncInternal(
+            query,
+            config,
+            cancellationToken,
+            TransformCursor(streamProcessor));
     }
 
-    private static Func<IResultCursor, CancellationToken, Task<TResult>> TransformCursor<TResult>(
-        Func<IResultTransformer<TResult>> createTransformer)
+    private static Func<IResultCursor, CancellationToken, Task<EagerResult<TResult>>> TransformCursor<TResult>(
+        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor)
     {
-        async Task<TResult> TransformCursorImpl(
+        async Task<EagerResult<TResult>> TransformCursorImpl(
             IResultCursor cursor,
             CancellationToken cancellationToken)
         {
-            var transformer = createTransformer();
-            await foreach (var record in cursor)
-            {
-                await transformer.OnRecordAsync(record).ConfigureAwait(false);
-            }
-
+            var processedStream = await streamProcessor(cursor);
             var summary = await cursor.ConsumeAsync().ConfigureAwait(false);
-            return await transformer.OnFinishAsync(summary);
+            var keys = await cursor.KeysAsync();
+            return new EagerResult<TResult>(processedStream, summary, keys);
         }
 
         return TransformCursorImpl;
@@ -235,18 +225,23 @@ internal sealed class Driver : IInternalDriver
         if (!string.IsNullOrWhiteSpace(config.ImpersonatedUser))
             sessionConfigBuilder.WithImpersonatedUser(config.ImpersonatedUser);
 
-        if(config.EnableBookmarkManager)
+        if (config.EnableBookmarkManager)
             sessionConfigBuilder.WithBookmarkManager(config.BookmarkManager ?? _bookmarkManager);
 
-        sessionConfigBuilder.WithDefaultAccessMode(config.Routing switch
-        {
-            RoutingControl.Readers => AccessMode.Read,
-            RoutingControl.Writers => AccessMode.Write,
-            _ => throw new ArgumentOutOfRangeException()
-        });
+        sessionConfigBuilder.WithDefaultAccessMode(
+            config.Routing switch
+            {
+                RoutingControl.Readers => AccessMode.Read,
+                RoutingControl.Writers => AccessMode.Write,
+                _ => throw new ArgumentOutOfRangeException()
+            });
     }
 
-    private static async Task<T> Work<T>(Query q, IAsyncQueryRunner x, Func<IResultCursor, CancellationToken, Task<T>> process, CancellationToken cancellationToken)
+    private static async Task<T> Work<T>(
+        Query q,
+        IAsyncQueryRunner x,
+        Func<IResultCursor, CancellationToken, Task<T>> process,
+        CancellationToken cancellationToken)
     {
         var cursor = await x.RunAsync(q).ConfigureAwait(false);
         return await process(cursor, cancellationToken).ConfigureAwait(false);

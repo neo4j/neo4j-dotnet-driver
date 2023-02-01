@@ -15,6 +15,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.Collections.Generic;
 using Neo4j.Driver.Experimental.FluentQueries;
 using Neo4j.Driver.Internal;
 
@@ -40,7 +42,7 @@ public static class ExperimentalExtensions
 
     /// <summary>
     /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
-    /// Gets an <see cref="IExecutableQuery"/> that can be used to configure and execute a query using
+    /// Gets an <see cref="IExecutableQuery&lt;IRecord&gt;"/> that can be used to configure and execute a query using
     /// fluent method chaining.
     /// </summary>
     /// <example>
@@ -59,13 +61,13 @@ public static class ExperimentalExtensions
     /// </example>
     /// <param name="driver">The driver.</param>
     /// <param name="cypher">The cypher of the query.</param>
-    /// <returns>An <see cref="IExecutableQuery"/> that can be used to configure and execute a query using
+    /// <returns>An <see cref="IExecutableQuery&lt;IRecord&gt;"/> that can be used to configure and execute a query using
     /// fluent method chaining.</returns>
-    public static IExecutableQuery ExecutableQuery(this IDriver driver, string cypher)
+    public static IExecutableQuery<IReadOnlyList<IRecord>> ExecutableQuery(this IDriver driver, string cypher)
     {
-        return new ExecutableQuery((IInternalDriver)driver, cypher);
+        return ExecutableQuery<IReadOnlyList<IRecord>>.GetDefault((IInternalDriver)driver, cypher);
     }
-    
+
     /// <summary>
     /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.<br/>
     /// Experimental: This method will be removed and replaced with a readonly property "BookmarkManager" on the

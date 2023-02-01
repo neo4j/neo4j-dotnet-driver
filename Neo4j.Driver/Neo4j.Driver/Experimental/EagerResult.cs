@@ -24,11 +24,42 @@ namespace Neo4j.Driver.Experimental;
 /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
 /// Complete result from a cypher query.
 /// </summary>
-public sealed class EagerResult : IReadOnlyList<IRecord>
+public sealed class EagerResult<T>
 {
+    internal EagerResult(T result, IResultSummary summary, string[] keys)
+    {
+        Result = result;
+        Summary = summary;
+        Keys = keys;
+    }
+
+    /// <summary>
+    /// Deconstructs the result into its constituent parts.
+    /// </summary>
+    /// <param name="result">The result returned from the query.</param>
+    /// <param name="summary">The summary of the result.</param>
+    /// <param name="keys">The keys present in the result.</param>
+    public void Deconstruct(out T result, out IResultSummary summary, out string[] keys)
+    {
+        keys = Keys;
+        result = Result;
+        summary = Summary;
+    }
+
+    /// <summary>
+    /// Deconstructs the result into its constituent parts.
+    /// </summary>
+    /// <param name="result">The result returned from the query.</param>
+    /// <param name="summary">The summary of the result.</param>
+    public void Deconstruct(out T result, out IResultSummary summary)
+    {
+        result = Result;
+        summary = Summary;
+    }
+
     /// <summary>
     /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
-    /// Least common set of fields in <see cref="Records"/>.
+    /// Least common set of fields in <see cref="Result"/>.
     /// </summary>
     public string[] Keys { get; init; }
 
@@ -36,29 +67,11 @@ public sealed class EagerResult : IReadOnlyList<IRecord>
     /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
     /// All Records from query.
     /// </summary>
-    public IRecord[] Records { get; init; }
+    public T Result { get; init; }
 
     /// <summary>
     /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
     /// Query summary.
     /// </summary>
     public IResultSummary Summary { get; init; }
-
-    /// <inheritdoc />
-    public IEnumerator<IRecord> GetEnumerator()
-    {
-        return ((IEnumerable<IRecord>)Records).GetEnumerator();
-    }
-
-    /// <inheritdoc />
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return Records.GetEnumerator();
-    }
-
-    /// <inheritdoc />
-    public int Count => Records.Length;
-
-    /// <inheritdoc />
-    public IRecord this[int index] => Records[index];
 }

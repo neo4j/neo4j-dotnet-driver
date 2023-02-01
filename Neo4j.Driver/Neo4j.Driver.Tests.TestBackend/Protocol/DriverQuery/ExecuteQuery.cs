@@ -11,7 +11,7 @@ internal class ExecuteQuery : IProtocolObject
 {
     public ExecuteQueryDto data { get; set; }
     [JsonIgnore]
-    public EagerResult Result { get; set; }
+    public EagerResult<IRecord> Result { get; set; }
 
     public class ExecuteQueryDto
     {
@@ -73,7 +73,7 @@ internal class ExecuteQuery : IProtocolObject
 
     public override string Respond()
     {
-        var mappedList = Result.Records
+        var mappedList = Result.Result
             .Select(x => new
             {
                 values = x.Values

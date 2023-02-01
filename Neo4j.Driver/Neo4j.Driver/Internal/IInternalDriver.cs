@@ -16,9 +16,11 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Experimental;
+using Neo4j.Driver.Experimental.FluentQueries;
 
 namespace Neo4j.Driver.Internal
 {
@@ -26,14 +28,9 @@ namespace Neo4j.Driver.Internal
     {
         IInternalAsyncSession Session(Action<SessionConfigBuilder> action, bool reactive);
 
-        Task<TResult> ExecuteQueryAsync<TResult>(
+        Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
             Query query,
-            Func<IResultTransformer<TResult>> createTransformer,
-            QueryConfig config = null,
-            CancellationToken cancellationToken = default);
-
-        internal Task<EagerResult> ExecuteQueryAsync(
-            Query query,
+            Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor,
             QueryConfig config = null,
             CancellationToken cancellationToken = default);
     }
