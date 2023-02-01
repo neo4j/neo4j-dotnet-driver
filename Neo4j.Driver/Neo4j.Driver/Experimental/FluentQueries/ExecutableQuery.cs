@@ -23,34 +23,70 @@ using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.Experimental.FluentQueries;
 
-internal class ExecutableQuery : IExecutableQuery
+internal class ExecutableQuery<T> : IExecutableQuery<T>
 {
     private IInternalDriver _driver;
+    private Func<IRecord, T> _transformFunc;
     private Query _query;
     private QueryConfig _queryConfig;
 
     public ExecutableQuery(IInternalDriver driver, string cypher)
     {
         _driver = driver;
+        _transformFunc = r => (T)r;
         _query = new Query(cypher, new {});
     }
 
-    public IExecutableQuery WithConfig(QueryConfig config)
+    private ExecutableQuery(
+        Query query,
+        IInternalDriver driver,
+        QueryConfig queryConfig,
+        Func<IRecord, T> transformFunc)
+    {
+        _query = query;
+        _driver = driver;
+        _queryConfig = queryConfig;
+        _transformFunc = transformFunc;
+    }
+
+    private static ExecutableQuery<TOut> Create<TIn, TOut>(
+        IExecutableQuery<TIn> executableQuery,
+        Func<TIn, TOut> transform)
+    {
+        var other = (ExecutableQuery<TIn>)executableQuery;
+
+        return new ExecutableQuery<TOut>(
+            other._query,
+            other._driver,
+            other._queryConfig,
+            record =>
+            {
+                var inValue = other._transformFunc(record);
+                return transform(inValue);
+            });
+    }
+
+    public IExecutableQuery<T> WithConfig(QueryConfig config)
     {
         _queryConfig = config;
         return this;
     }
 
-    public IExecutableQuery WithParameters(object parameters)
+    public IExecutableQuery<T> WithParameters(object parameters)
     {
         _query = new Query(_query.Text, parameters);
         return this;
     }
 
-    public IExecutableQuery WithParameters(Dictionary<string, object> parameters)
+    public IExecutableQuery<T> WithParameters(Dictionary<string, object> parameters)
     {
         _query = new Query(_query.Text, parameters);
         return this;
+    }
+
+    public IExecutableQuery<TResult> WithTransformation<TResult>(Func<T, TResult> transform)
+    {
+        return Create(this, transform);
     }
 
     // removing since behaviour is different to WithParameters, pending discussion
@@ -60,18 +96,11 @@ internal class ExecutableQuery : IExecutableQuery
     //     return this;
     // }
 
-    public Task<EagerResult> ExecuteAsync(CancellationToken cancellationToken = default)
-    {
-        return _driver.ExecuteQueryAsync(_query, _queryConfig, cancellationToken);
-    }
-
-    private Task<IReadOnlyList<T>> TransformRecordsAsync<T>(
-        Func<IRecord, T> transform,
-        CancellationToken cancellationToken = default)
+    public Task<EagerResult<T>> ExecuteAsync(CancellationToken cancellationToken = default)
     {
         return _driver.ExecuteQueryAsync(
             _query,
-            MapTransformer<T>.GetFactoryMethod(transform),
+            MapTransformer<T>.GetFactoryMethod(_transformFunc),
             _queryConfig,
             cancellationToken);
     }

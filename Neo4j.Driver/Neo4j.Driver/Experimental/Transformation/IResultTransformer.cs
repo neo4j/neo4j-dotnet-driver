@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Experimental;
@@ -22,5 +23,5 @@ namespace Neo4j.Driver.Experimental;
 internal interface IResultTransformer<T>
 {
     Task OnRecordAsync(IRecord record);
-    Task<T> OnFinishAsync(IResultSummary resultSummary);
+    Task<EagerResult<T>> OnFinishAsync(IResultSummary resultSummary, string[] keys);
 }

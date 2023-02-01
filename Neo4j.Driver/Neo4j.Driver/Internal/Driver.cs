@@ -163,11 +163,11 @@ internal sealed class Driver : IInternalDriver
         return _metrics;
     }
 
-    private async Task<T> ExecuteQueryAsyncInternal<T>(
+    private async Task<EagerResult<T>> ExecuteQueryAsyncInternal<T>(
         Query query,
         QueryConfig config,
         CancellationToken cancellationToken,
-        Func<IResultCursor, CancellationToken, Task<T>> cursorProcessor)
+        Func<IResultCursor, CancellationToken, Task<EagerResult<T>>> cursorProcessor)
     {
         query = query ?? throw new ArgumentNullException(nameof(query));
         config ??= new QueryConfig();
@@ -184,21 +184,16 @@ internal sealed class Driver : IInternalDriver
         }
     }
 
-    public Task<EagerResult> ExecuteQueryAsync(Query query, QueryConfig config = null, CancellationToken cancellationToken = default)
-    {
-        return ExecuteQueryAsyncInternal(query, config, cancellationToken, ProcessCursorAsync);
-    }
-
-    private static async Task<EagerResult> ProcessCursorAsync(IResultCursor cursor, CancellationToken cancellationToken)
+    private static async Task<EagerResult<IRecord>> ProcessCursorAsync(IResultCursor cursor, CancellationToken cancellationToken)
     {
         var records = await cursor.ToListAsync(cancellationToken).ConfigureAwait(false);
         var keys = await cursor.KeysAsync().ConfigureAwait(false);
         var summary = await cursor.ConsumeAsync().ConfigureAwait(false);
 
-        return new EagerResult { Keys = keys, Records = records.ToArray(), Summary = summary };
+        return new(records.ToArray(), summary, keys);
     }
 
-    public Task<TResult> ExecuteQueryAsync<TResult>(
+    public Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
         Query query,
         Func<IResultTransformer<TResult>> createTransformer,
         QueryConfig config = null,
@@ -207,10 +202,10 @@ internal sealed class Driver : IInternalDriver
         return ExecuteQueryAsyncInternal(query, config, cancellationToken, TransformCursor(createTransformer));
     }
 
-    private static Func<IResultCursor, CancellationToken, Task<TResult>> TransformCursor<TResult>(
+    private static Func<IResultCursor, CancellationToken, Task<EagerResult<TResult>>> TransformCursor<TResult>(
         Func<IResultTransformer<TResult>> createTransformer)
     {
-        async Task<TResult> TransformCursorImpl(
+        async Task<EagerResult<TResult>> TransformCursorImpl(
             IResultCursor cursor,
             CancellationToken cancellationToken)
         {
@@ -221,7 +216,8 @@ internal sealed class Driver : IInternalDriver
             }
 
             var summary = await cursor.ConsumeAsync().ConfigureAwait(false);
-            return await transformer.OnFinishAsync(summary);
+            var keys = await cursor.KeysAsync();
+            return await transformer.OnFinishAsync(summary, keys);
         }
 
         return TransformCursorImpl;

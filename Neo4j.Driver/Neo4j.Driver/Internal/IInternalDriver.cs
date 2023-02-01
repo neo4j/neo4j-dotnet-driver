@@ -26,14 +26,9 @@ namespace Neo4j.Driver.Internal
     {
         IInternalAsyncSession Session(Action<SessionConfigBuilder> action, bool reactive);
 
-        Task<TResult> ExecuteQueryAsync<TResult>(
+        Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
             Query query,
             Func<IResultTransformer<TResult>> createTransformer,
-            QueryConfig config = null,
-            CancellationToken cancellationToken = default);
-
-        internal Task<EagerResult> ExecuteQueryAsync(
-            Query query,
             QueryConfig config = null,
             CancellationToken cancellationToken = default);
     }

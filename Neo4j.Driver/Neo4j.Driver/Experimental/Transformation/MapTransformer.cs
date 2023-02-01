@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Experimental;
 
-internal class MapTransformer<T> : IResultTransformer<IReadOnlyList<T>>
+internal class MapTransformer<T> : IResultTransformer<T>
 {
     private readonly Func<IRecord, T> _transformFunc;
     private List<T> _list;
@@ -34,7 +34,7 @@ internal class MapTransformer<T> : IResultTransformer<IReadOnlyList<T>>
     public MapTransformer(Func<IRecord, T> transformFunc)
     {
         _transformFunc = transformFunc;
-        _list = new();
+        _list = new List<T>();
     }
 
     public Task OnRecordAsync(IRecord record)
@@ -43,8 +43,8 @@ internal class MapTransformer<T> : IResultTransformer<IReadOnlyList<T>>
         return Task.CompletedTask;
     }
 
-    public Task<IReadOnlyList<T>> OnFinishAsync(IResultSummary resultSummary)
+    public Task<EagerResult<T>> OnFinishAsync(IResultSummary resultSummary, string[] keys)
     {
-        return Task.FromResult((IReadOnlyList<T>)_list);
+        return Task.FromResult(new EagerResult<T>(_list, resultSummary, keys));
     }
 }

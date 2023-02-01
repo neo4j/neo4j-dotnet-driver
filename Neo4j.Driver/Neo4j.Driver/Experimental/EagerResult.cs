@@ -24,8 +24,39 @@ namespace Neo4j.Driver.Experimental;
 /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
 /// Complete result from a cypher query.
 /// </summary>
-public sealed class EagerResult : IReadOnlyList<IRecord>
+public sealed class EagerResult<T> : IReadOnlyList<T>
 {
+    internal EagerResult(IReadOnlyList<T> records, IResultSummary summary, string[] keys)
+    {
+        Records = records;
+        Summary = summary;
+        Keys = keys;
+    }
+
+    /// <summary>
+    /// Deconstructs the result into its constituent parts.
+    /// </summary>
+    /// <param name="records">The records returned from the query.</param>
+    /// <param name="summary">The summary of the result.</param>
+    /// <param name="keys">The keys present in the result.</param>
+    public void Deconstruct(out IReadOnlyList<T> records, out IResultSummary summary, out string[] keys)
+    {
+        keys = Keys;
+        records = Records;
+        summary = Summary;
+    }
+
+    /// <summary>
+    /// Deconstructs the result into its constituent parts.
+    /// </summary>
+    /// <param name="records">The records returned from the query.</param>
+    /// <param name="summary">The summary of the result.</param>
+    public void Deconstruct(out IReadOnlyList<T> records, out IResultSummary summary)
+    {
+        records = Records;
+        summary = Summary;
+    }
+
     /// <summary>
     /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
     /// Least common set of fields in <see cref="Records"/>.
@@ -36,7 +67,7 @@ public sealed class EagerResult : IReadOnlyList<IRecord>
     /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
     /// All Records from query.
     /// </summary>
-    public IRecord[] Records { get; init; }
+    public IReadOnlyList<T> Records { get; init; }
 
     /// <summary>
     /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
@@ -45,9 +76,9 @@ public sealed class EagerResult : IReadOnlyList<IRecord>
     public IResultSummary Summary { get; init; }
 
     /// <inheritdoc />
-    public IEnumerator<IRecord> GetEnumerator()
+    public IEnumerator<T> GetEnumerator()
     {
-        return ((IEnumerable<IRecord>)Records).GetEnumerator();
+        return ((IEnumerable<T>)Records).GetEnumerator();
     }
 
     /// <inheritdoc />
@@ -57,8 +88,8 @@ public sealed class EagerResult : IReadOnlyList<IRecord>
     }
 
     /// <inheritdoc />
-    public int Count => Records.Length;
+    public int Count => Records.Count;
 
     /// <inheritdoc />
-    public IRecord this[int index] => Records[index];
+    public T this[int index] => Records[index];
 }
