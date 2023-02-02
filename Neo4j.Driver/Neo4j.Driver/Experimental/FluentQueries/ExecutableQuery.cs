@@ -23,34 +23,63 @@ using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.Experimental.FluentQueries;
 
-internal class ExecutableQuery : IExecutableQuery
+internal class ExecutableQuery<T> : IExecutableQuery<T>
 {
     private IInternalDriver _driver;
+    private Func<IAsyncEnumerable<IRecord>, ValueTask<T>> _streamProcessor;
     private Query _query;
     private QueryConfig _queryConfig;
 
-    public ExecutableQuery(IInternalDriver driver, string cypher)
+    public static ExecutableQuery<IReadOnlyList<IRecord>> GetDefault(IInternalDriver driver, string cypher)
     {
-        _driver = driver;
-        _query = new Query(cypher, new {});
+        return new ExecutableQuery<IReadOnlyList<IRecord>>(new Query(cypher), driver, null, ToListAsync);
     }
 
-    public IExecutableQuery WithConfig(QueryConfig config)
+    private ExecutableQuery(
+        Query query,
+        IInternalDriver driver,
+        QueryConfig queryConfig,
+        Func<IAsyncEnumerable<IRecord>, ValueTask<T>> streamProcessor)
+    {
+        _query = query;
+        _driver = driver;
+        _queryConfig = queryConfig;
+        _streamProcessor = streamProcessor;
+    }
+
+    private static async ValueTask<IReadOnlyList<T>> ToListAsync<T>(IAsyncEnumerable<T> enumerable)
+    {
+        var result = new List<T>();
+        await foreach (var item in enumerable)
+        {
+            result.Add(item);
+        }
+
+        return result;
+    }
+
+    public IExecutableQuery<T> WithConfig(QueryConfig config)
     {
         _queryConfig = config;
         return this;
     }
 
-    public IExecutableQuery WithParameters(object parameters)
+    public IExecutableQuery<T> WithParameters(object parameters)
     {
         _query = new Query(_query.Text, parameters);
         return this;
     }
 
-    public IExecutableQuery WithParameters(Dictionary<string, object> parameters)
+    public IExecutableQuery<T> WithParameters(Dictionary<string, object> parameters)
     {
         _query = new Query(_query.Text, parameters);
         return this;
+    }
+
+    public IExecutableQuery<TResult> WithStreamProcessor<TResult>(
+        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor)
+    {
+        return new ExecutableQuery<TResult>(_query, _driver, _queryConfig, streamProcessor);
     }
 
     // removing since behaviour is different to WithParameters, pending discussion
@@ -60,18 +89,11 @@ internal class ExecutableQuery : IExecutableQuery
     //     return this;
     // }
 
-    public Task<EagerResult> ExecuteAsync(CancellationToken cancellationToken = default)
-    {
-        return _driver.ExecuteQueryAsync(_query, _queryConfig, cancellationToken);
-    }
-
-    private Task<IReadOnlyList<T>> TransformRecordsAsync<T>(
-        Func<IRecord, T> transform,
-        CancellationToken cancellationToken = default)
+    public Task<EagerResult<T>> ExecuteAsync(CancellationToken cancellationToken = default)
     {
         return _driver.ExecuteQueryAsync(
             _query,
-            MapTransformer<T>.GetFactoryMethod(transform),
+            _streamProcessor,
             _queryConfig,
             cancellationToken);
     }

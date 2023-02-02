@@ -11,7 +11,7 @@ internal class ExecuteQuery : IProtocolObject
 {
     public ExecuteQueryDto data { get; set; }
     [JsonIgnore]
-    public EagerResult Result { get; set; }
+    public EagerResult<IReadOnlyList<IRecord>> Result { get; set; }
 
     public class ExecuteQueryDto
     {
@@ -36,11 +36,13 @@ internal class ExecuteQuery : IProtocolObject
         var driver = ObjManager.GetObject<NewDriver>(data.driverId).Driver;
         var queryConfig = BuildConfig();
 
-        Result = await driver
+        var queryResult = await driver
             .ExecutableQuery(data.cypher)
             .WithParameters(data.parameters)
             .WithConfig(queryConfig)
             .ExecuteAsync();
+
+        Result = queryResult;
     }
 
     private QueryConfig BuildConfig()
@@ -73,7 +75,7 @@ internal class ExecuteQuery : IProtocolObject
 
     public override string Respond()
     {
-        var mappedList = Result.Records
+        var mappedList = Result.Result
             .Select(x => new
             {
                 values = x.Values
