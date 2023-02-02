@@ -36,6 +36,7 @@ internal sealed class ResetMessageSerializer : WriteOnlySerializer
             throw new ArgumentOutOfRangeException(
                 $"Encountered {value?.GetType().Name} where {nameof(ResetMessage)} was expected");
         }
+
         writer.WriteStructHeader(0, MsgReset);
     }
 }

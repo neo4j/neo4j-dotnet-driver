@@ -29,7 +29,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
         public void ShouldHaveCorrectSerializer()
         {
             var rm = new RouteMessageV43(null, null, null);
-            
+
             rm.Serializer.Should().BeOfType<RouteMessageSerializerV43>();
         }
 
@@ -42,7 +42,6 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
             rm.Bookmarks.Should().NotBeNull();
             rm.DatabaseParam.Should().BeNull();
             rm.ToString().Should().Be("ROUTE { } [] None");
-
         }
 
         [Fact]
@@ -52,15 +51,16 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
             {
                 ["a"] = "b"
             };
+
             var bm = new InternalBookmarks("bm:a");
             var db = "neo4j";
-            
+
             var rm = new RouteMessageV43(rc, bm, db);
 
             rm.Routing.Should().BeEquivalentTo(rc);
             rm.Bookmarks.Values.Should().BeEquivalentTo(bm.Values);
             rm.DatabaseParam.Should().Be("neo4j");
-            
+
             rm.ToString().Should().Be("ROUTE { 'a':'b' } { bookmarks, [bm:a] } 'neo4j'");
         }
     }

@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
             var message = new DiscardMessage(10);
             message.ToString().Should().Be("DISCARD [{n, 10}]");
         }
-        
+
         [Fact]
         public void ShouldHandleValues()
         {

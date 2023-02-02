@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections;
-using System.Diagnostics;
 using FluentAssertions;
 using Xunit;
 
@@ -41,7 +40,7 @@ namespace Neo4j.Driver.Tests.Types
 
             cypherTime.ToTimeSpan().Should().Be(time);
         }
-        
+
 #if NET6_0_OR_GREATER
         [Fact]
         public void ShouldCreateTimeWithTimeOnly()
@@ -109,7 +108,7 @@ namespace Neo4j.Driver.Tests.Types
 
             ex.Should().NotBeNull().And.BeOfType<ValueTruncationException>();
         }
-        
+
 #if NET6_0_OR_GREATER
         [Theory]
         [InlineData(1)]

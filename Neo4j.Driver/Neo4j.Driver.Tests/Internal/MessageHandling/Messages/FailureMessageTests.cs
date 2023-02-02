@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
             var mockPipeline = new Mock<IResponsePipeline>();
             var message = new FailureMessage("e.g.Code", "e.g.Message");
             message.Dispatch(mockPipeline.Object);
-            
+
             mockPipeline.Verify(x => x.OnFailure("e.g.Code", "e.g.Message"));
         }
     }

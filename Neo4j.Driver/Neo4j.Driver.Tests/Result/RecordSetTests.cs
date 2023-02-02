@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
@@ -26,7 +27,7 @@ using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests
 {
-    internal class ListBasedRecordCursor : IInternalResultCursor
+    internal class ListBasedRecordCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
     {
         private readonly string[] _keys;
         private readonly Func<IEnumerable<IRecord>> _recordsFunc;
@@ -44,6 +45,16 @@ namespace Neo4j.Driver.Tests
             _keys = keys.ToArray();
             _recordsFunc = recordsFunc;
             _summaryFunc = summaryFunc;
+        }
+
+        public ValueTask<bool> MoveNextAsync()
+        {
+            return new ValueTask<bool>(FetchAsync());
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            return new ValueTask(Task.CompletedTask);
         }
 
         public Task<string[]> KeysAsync()
@@ -103,6 +114,11 @@ namespace Neo4j.Driver.Tests
 
         public void Cancel()
         {
+        }
+
+        public IAsyncEnumerator<IRecord> GetAsyncEnumerator(CancellationToken cancellationToken = new())
+        {
+            return this;
         }
 
         private Task<IResultSummary> GetSummaryAsync()

@@ -36,7 +36,7 @@ internal sealed class PullAllMessageSerializer : WriteOnlySerializer
             throw new ArgumentOutOfRangeException(
                 $"Encountered {value?.GetType().Name} where {nameof(PullAllMessage)} was expected");
         }
-        
+
         writer.WriteStructHeader(0, MsgPull);
     }
 }

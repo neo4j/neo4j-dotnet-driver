@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver;
@@ -25,7 +26,7 @@ namespace Neo4j.Driver;
 /// is lazily retrieved and could only be visited once in a sequential order.
 /// </summary>
 /// <remarks> Calling <see cref="ResultCursorExtensions.ToListAsync"/> will enumerate the entire stream.</remarks>
-public interface IResultCursor
+public interface IResultCursor : IAsyncEnumerable<IRecord>
 {
     /// <summary>Returns the current record that has already been read via <see cref="FetchAsync"/>.</summary>
     /// <value>A <see cref="IRecord"/> holding the data sent by the server.</value>

@@ -16,8 +16,10 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Experimental;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;
@@ -26,6 +28,8 @@ namespace Neo4j.Driver.Internal;
 
 internal sealed class Driver : IInternalDriver
 {
+    private readonly DefaultBookmarkManager _bookmarkManager;
+
     private readonly IConnectionProvider _connectionProvider;
     private readonly ILogger _logger;
     private readonly IMetrics _metrics;
@@ -48,6 +52,7 @@ internal sealed class Driver : IInternalDriver
         _retryLogic = retryLogic;
         _metrics = metrics;
         Config = config;
+        _bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig());
     }
 
     public Uri Uri { get; }
@@ -94,15 +99,9 @@ internal sealed class Driver : IInternalDriver
 
     public Task CloseAsync()
     {
-        return DisposeAsync().AsTask();
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
-        {
-            await _connectionProvider.DisposeAsync().ConfigureAwait(false);
-        }
+        return Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0
+            ? _connectionProvider.DisposeAsync().AsTask()
+            : Task.CompletedTask;
     }
 
     public Task<IServerInfo> GetServerInfoAsync()
@@ -122,12 +121,32 @@ internal sealed class Driver : IInternalDriver
 
     public void Dispose()
     {
-        if (IsClosed)
-        {
-            return;
-        }
+        Dispose(true);
+    }
 
-        DisposeAsync().GetAwaiter().GetResult();
+    public ValueTask DisposeAsync()
+    {
+        return Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0
+            ? _connectionProvider.DisposeAsync()
+            : new ValueTask(Task.CompletedTask);
+    }
+
+    public Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
+        Query query,
+        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor,
+        QueryConfig config = null,
+        CancellationToken cancellationToken = default)
+    {
+        return ExecuteQueryAsyncInternal(
+            query,
+            config,
+            cancellationToken,
+            TransformCursor(streamProcessor));
+    }
+
+    private void Close()
+    {
+        CloseAsync().GetAwaiter().GetResult();
     }
 
     //Non public facing api. Used for testing with testkit only
@@ -136,10 +155,23 @@ internal sealed class Driver : IInternalDriver
         return _connectionProvider.GetRoutingTable(database);
     }
 
-    private void ThrowDriverClosedException()
+    private void Dispose(bool disposing)
+    {
+        if (IsClosed)
+        {
+            return;
+        }
+
+        if (disposing)
+        {
+            Close();
+        }
+    }
+
+    private static void ThrowDriverClosedException()
     {
         throw new ObjectDisposedException(
-            GetType().Name,
+            nameof(Driver),
             "Cannot open a new session on a driver that is already disposed.");
     }
 
@@ -152,5 +184,80 @@ internal sealed class Driver : IInternalDriver
         }
 
         return _metrics;
+    }
+
+    private async Task<EagerResult<T>> ExecuteQueryAsyncInternal<T>(
+        Query query,
+        QueryConfig config,
+        CancellationToken cancellationToken,
+        Func<IResultCursor, CancellationToken, Task<EagerResult<T>>> cursorProcessor)
+    {
+        query = query ?? throw new ArgumentNullException(nameof(query));
+        config ??= new QueryConfig();
+
+        var session = AsyncSession(x => ApplyConfig(config, x));
+        await using (session.ConfigureAwait(false))
+        {
+            if (config.Routing == RoutingControl.Readers)
+            {
+                return await session.ExecuteReadAsync(x => Work(query, x, cursorProcessor, cancellationToken))
+                    .ConfigureAwait(false);
+            }
+
+            return await session.ExecuteWriteAsync(x => Work(query, x, cursorProcessor, cancellationToken))
+                .ConfigureAwait(false);
+        }
+    }
+
+    private static Func<IResultCursor, CancellationToken, Task<EagerResult<TResult>>> TransformCursor<TResult>(
+        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor)
+    {
+        async Task<EagerResult<TResult>> TransformCursorImpl(
+            IResultCursor cursor,
+            CancellationToken cancellationToken)
+        {
+            var processedStream = await streamProcessor(cursor);
+            var summary = await cursor.ConsumeAsync().ConfigureAwait(false);
+            var keys = await cursor.KeysAsync();
+            return new EagerResult<TResult>(processedStream, summary, keys);
+        }
+
+        return TransformCursorImpl;
+    }
+
+    private void ApplyConfig(QueryConfig config, SessionConfigBuilder sessionConfigBuilder)
+    {
+        if (!string.IsNullOrWhiteSpace(config.Database))
+        {
+            sessionConfigBuilder.WithDatabase(config.Database);
+        }
+
+        if (!string.IsNullOrWhiteSpace(config.ImpersonatedUser))
+        {
+            sessionConfigBuilder.WithImpersonatedUser(config.ImpersonatedUser);
+        }
+
+        if (config.EnableBookmarkManager)
+        {
+            sessionConfigBuilder.WithBookmarkManager(config.BookmarkManager ?? _bookmarkManager);
+        }
+
+        sessionConfigBuilder.WithDefaultAccessMode(
+            config.Routing switch
+            {
+                RoutingControl.Readers => AccessMode.Read,
+                RoutingControl.Writers => AccessMode.Write,
+                _ => throw new ArgumentOutOfRangeException()
+            });
+    }
+
+    private static async Task<T> Work<T>(
+        Query q,
+        IAsyncQueryRunner x,
+        Func<IResultCursor, CancellationToken, Task<T>> process,
+        CancellationToken cancellationToken)
+    {
+        var cursor = await x.RunAsync(q).ConfigureAwait(false);
+        return await process(cursor, cancellationToken).ConfigureAwait(false);
     }
 }

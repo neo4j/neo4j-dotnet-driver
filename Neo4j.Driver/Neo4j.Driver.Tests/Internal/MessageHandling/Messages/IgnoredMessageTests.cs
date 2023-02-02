@@ -35,9 +35,9 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
         public void ShouldCallPipelineOnIgnored()
         {
             var pipeline = new Mock<IResponsePipeline>();
-            
+
             IgnoredMessage.Instance.Dispatch(pipeline.Object);
-            
+
             pipeline.Verify(x => x.OnIgnored());
         }
 

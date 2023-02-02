@@ -384,6 +384,7 @@ namespace Neo4j.Driver.Internal.Protocol
                             It.IsAny<AccessMode>(),
                             It.IsAny<string>()))
                     .Returns(fakeMessage);
+
                 var protocol = new BoltProtocolV3(msgFactory.Object);
 
                 var tc = new TransactionConfig();
@@ -394,11 +395,13 @@ namespace Neo4j.Driver.Internal.Protocol
                     bookmarks,
                     tc,
                     null);
-                
-                msgFactory.Verify(x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
+
+                msgFactory.Verify(
+                    x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
                     Times.Once);
-                
-                mockConn.Verify(x => x.EnqueueAsync(fakeMessage, NoOpResponseHandler.Instance),
+
+                mockConn.Verify(
+                    x => x.EnqueueAsync(fakeMessage, NoOpResponseHandler.Instance),
                     Times.Once);
 
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);

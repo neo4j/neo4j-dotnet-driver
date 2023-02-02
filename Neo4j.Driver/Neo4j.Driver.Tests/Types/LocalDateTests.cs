@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections;
-using System.Diagnostics;
 using FluentAssertions;
 using Xunit;
 
@@ -99,7 +98,7 @@ namespace Neo4j.Driver.Tests.Types
 
             ex.Should().NotBeNull().And.BeOfType<ValueOverflowException>();
         }
-        
+
 #if NET6_0_OR_GREATER
         [Theory]
         [InlineData(-9999)]

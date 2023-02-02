@@ -35,7 +35,7 @@ internal sealed class CommitMessageSerializer : WriteOnlySerializer
             throw new ArgumentOutOfRangeException(
                 $"Encountered {value?.GetType().Name} where {nameof(CommitMessage)} was expected");
         }
-        
+
         writer.WriteStructHeader(0, MessageFormat.MsgCommit);
     }
 }

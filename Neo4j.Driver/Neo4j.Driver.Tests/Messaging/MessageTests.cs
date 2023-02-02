@@ -194,7 +194,7 @@ namespace Neo4j.Driver.Tests
                 new object[] { new DiscardMessage(1, 2), "DISCARD [{n, 2}, {qid, 1}]" },
                 new object[] { new DiscardMessage(2), "DISCARD [{n, 2}]" }
             };
-            
+
             private static TransactionConfig TransactionConfigGenerator()
             {
                 var config = new TransactionConfig();

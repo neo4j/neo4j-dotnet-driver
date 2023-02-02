@@ -15,6 +15,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
+using Neo4j.Driver.Experimental.FluentQueries;
+using Neo4j.Driver.Internal;
+
 namespace Neo4j.Driver.Experimental;
 
 /// <summary>
@@ -35,6 +39,47 @@ public static class ExperimentalExtensions
         IBookmarkManager bookmarkManager)
     {
         return builder.WithBookmarkManager(bookmarkManager);
+    }
+
+    /// <summary>
+    /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
+    /// Gets an <see cref="IExecutableQuery&lt;IRecord&gt;"/> that can be used to configure and execute a query using fluent
+    /// method chaining.
+    /// </summary>
+    /// <example>
+    /// The following example configures and executes a simple query, then iterates over the results.
+    /// <code language="cs">
+    ///  var eagerResult = await driver
+    ///      .ExecutableQuery("MATCH (m:Movie) WHERE m.released > $releaseYear RETURN m.title AS title")
+    ///      .WithParameters(new { releaseYear = 2005 })
+    ///      .ExecuteAsync();
+    ///  <para></para>
+    ///  foreach(var record in eagerResult.Result)
+    ///  {
+    ///      Console.WriteLine(record["title"].As&lt;string&gt;());
+    ///  }
+    ///  </code>
+    /// <para></para>
+    /// The following example gets a single scalar value from a query.
+    /// <code>
+    ///  var born = await driver
+    ///      .ExecutableQuery("MATCH (p:Person WHERE p.name = $name) RETURN p.born AS born")
+    ///      .WithStreamProcessor(async stream => (await stream.Where(_ => true).FirstAsync())["born"].As&lt;int&gt;())
+    ///      .WithParameters(new Dictionary&lt;string, object&gt; { ["name"] = "Tom Hanks" })
+    ///      .ExecuteAsync();
+    ///  <para></para>
+    ///  Console.WriteLine($"Tom Hanks born {born.Result}");
+    ///  </code>
+    /// </example>
+    /// <param name="driver">The driver.</param>
+    /// <param name="cypher">The cypher of the query.</param>
+    /// <returns>
+    /// An <see cref="IExecutableQuery&lt;IRecord&gt;"/> that can be used to configure and execute a query using
+    /// fluent method chaining.
+    /// </returns>
+    public static IExecutableQuery<IReadOnlyList<IRecord>> ExecutableQuery(this IDriver driver, string cypher)
+    {
+        return ExecutableQuery<IReadOnlyList<IRecord>>.GetDefault((IInternalDriver)driver, cypher);
     }
 
     /// <summary>

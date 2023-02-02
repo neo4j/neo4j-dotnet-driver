@@ -79,7 +79,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
 
             var meta = reader.ReadMap();
             meta.Should().ContainKey("db").WhichValue.Should().Be("neo4j");
-            meta.Should().ContainKey("bookmarks").WhichValue.Should().BeEquivalentTo(new [] {"a"});
+            meta.Should().ContainKey("bookmarks").WhichValue.Should().BeEquivalentTo(new[] { "a" });
         }
     }
 }

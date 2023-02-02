@@ -35,12 +35,11 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
         public void ShouldHandleNullValue()
         {
             var message = new PullMessage(10);
-            
+
             message.Metadata.Should().ContainKey("n").WhichValue.Should().Be(10);
             message.Metadata.Should().NotContainKey("qid");
             message.ToString().Should().Be("PULL [{n, 10}]");
         }
-
 
         [Fact]
         public void ShouldHandleQueryId()

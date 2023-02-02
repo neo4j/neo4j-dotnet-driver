@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
         [Fact]
         public void ShouldHaveCorrectSerializer()
         {
-            var message = new RecordMessage(new object[]{});
+            var message = new RecordMessage(new object[] {});
             message.Serializer.Should().BeOfType<RecordMessageSerializer>();
         }
 
@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
         public void ShouldDispatchToPipelineOnRecord()
         {
             var pipeline = new Mock<IResponsePipeline>();
-            var fields = new object[] {1, "hello"};
+            var fields = new object[] { 1, "hello" };
             var message = new RecordMessage(fields);
 
             message.Dispatch(pipeline.Object);

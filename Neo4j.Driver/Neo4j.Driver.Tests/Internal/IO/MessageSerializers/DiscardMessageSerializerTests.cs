@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
             var psw = new PackStreamWriter(format, memory);
 
             var discardMesssage = new DiscardMessage(21, 42);
-            
+
             DiscardMessageSerializer.Instance.Serialize(psw, discardMesssage);
             memory.Position = 0;
 
@@ -72,11 +72,13 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
             headerBytes[1].Should().Be(0x2f);
 
             var meta = reader.ReadMap();
-            meta.Should().BeEquivalentTo(new Dictionary<string, object>()
-            {
-                ["qid"] = 21,
-                ["n"] = 42
-            });
+            meta.Should()
+                .BeEquivalentTo(
+                    new Dictionary<string, object>
+                    {
+                        ["qid"] = 21,
+                        ["n"] = 42
+                    });
         }
     }
 }

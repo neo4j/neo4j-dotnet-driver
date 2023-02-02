@@ -51,7 +51,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
             var psw = new PackStreamWriter(format, memory);
             psw.WriteList(new List<object> { 0, "a" });
             memory.Position = 0;
-            
+
             var reader = new PackStreamReader(format, memory, new ByteBuffers());
 
             var message = RecordMessageSerializer.Instance.Deserialize(reader);

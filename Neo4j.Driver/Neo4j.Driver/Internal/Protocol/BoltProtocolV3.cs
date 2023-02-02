@@ -67,6 +67,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
     {
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
+
         ValidateImpersonatedUserForVersion(connection, impersonatedUser);
 
         connection.ConfigureMode(AccessMode.Read);

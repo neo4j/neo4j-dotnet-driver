@@ -18,7 +18,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using Neo4j.Driver.Internal.Messaging;
 using static Neo4j.Driver.Internal.IO.PackStream;

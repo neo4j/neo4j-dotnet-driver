@@ -16,11 +16,13 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Result;
 
-internal class ResultCursor : IInternalResultCursor
+internal class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
 {
     private readonly IResultStream _resultStream;
     private bool _atEnd;
@@ -33,6 +35,17 @@ internal class ResultCursor : IInternalResultCursor
     public ResultCursor(IResultStream resultStream)
     {
         _resultStream = resultStream ?? throw new ArgumentNullException(nameof(resultStream));
+    }
+
+    ValueTask<bool> IAsyncEnumerator<IRecord>.MoveNextAsync()
+    {
+        return new ValueTask<bool>(FetchAsync());
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        // should we ConsumeAsync here? Probably not.
+        return new ValueTask(Task.CompletedTask);
     }
 
     public Task<string[]> KeysAsync()
@@ -129,5 +142,10 @@ internal class ResultCursor : IInternalResultCursor
     public void Cancel()
     {
         _resultStream.Cancel();
+    }
+
+    public IAsyncEnumerator<IRecord> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+    {
+        return this;
     }
 }

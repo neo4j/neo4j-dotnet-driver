@@ -39,7 +39,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
                 .Should()
                 .BeOfType<ArgumentOutOfRangeException>();
         }
-        
+
         [Theory]
         [InlineData(3, 0)]
         [InlineData(4, 0)]

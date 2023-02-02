@@ -16,7 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Diagnostics;
 using FluentAssertions;
 using Xunit;
 
@@ -82,6 +81,5 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             reader.Read().Should().Be(45359128000000L);
         }
 #endif
-
     }
 }

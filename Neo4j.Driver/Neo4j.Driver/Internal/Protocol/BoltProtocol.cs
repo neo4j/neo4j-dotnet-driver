@@ -29,7 +29,10 @@ internal sealed class BoltProtocol : IBoltProtocol
 {
     internal static readonly IBoltProtocol Instance = new BoltProtocol();
     private readonly IBoltProtocol _boltProtocolV3;
-    
+    private readonly IBoltProtocolHandlerFactory _protocolHandlerFactory;
+
+    private readonly IBoltProtocolMessageFactory _protocolMessageFactory;
+
     internal BoltProtocol(
         IBoltProtocol boltProtocolV3 = null,
         IBoltProtocolMessageFactory protocolMessageFactory = null,
@@ -39,9 +42,6 @@ internal sealed class BoltProtocol : IBoltProtocol
         _protocolHandlerFactory = protocolHandlerFactory ?? BoltProtocolHandlerFactory.Instance;
         _boltProtocolV3 = boltProtocolV3 ?? BoltProtocolV3.Instance;
     }
-
-    private readonly IBoltProtocolMessageFactory _protocolMessageFactory;
-    private readonly IBoltProtocolHandlerFactory _protocolHandlerFactory;
 
     public Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
     {
@@ -82,7 +82,8 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
 
-        var streamBuilder = _protocolHandlerFactory.NewResultCursorBuilder(summaryBuilder,
+        var streamBuilder = _protocolHandlerFactory.NewResultCursorBuilder(
+            summaryBuilder,
             connection,
             RequestMore,
             CancelRequest,
@@ -93,9 +94,9 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         var runMessage = _protocolMessageFactory.NewRunWithMetadataMessage(connection, autoCommitParams);
         var runHandler = _protocolHandlerFactory.NewRunResponseHandler(streamBuilder, summaryBuilder);
-        
+
         await connection.EnqueueAsync(runMessage, runHandler).ConfigureAwait(false);
-        
+
         if (!autoCommitParams.Reactive)
         {
             var pullMessage = _protocolMessageFactory.NewPullMessage(autoCommitParams.FetchSize);
@@ -111,7 +112,6 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         return streamBuilder.CreateCursor();
     }
-
 
     public Task BeginTransactionAsync(
         IConnection connection,
@@ -131,7 +131,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         long fetchSize = Config.Infinite)
     {
         var summaryBuilder = new SummaryBuilder(query, connection.Server);
-        
+
         var streamBuilder = _protocolHandlerFactory.NewResultCursorBuilder(
             summaryBuilder,
             connection,
@@ -144,9 +144,9 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         var runMessage = _protocolMessageFactory.NewRunWithMetadataMessage(connection, query);
         var runHandler = _protocolHandlerFactory.NewRunResponseHandler(streamBuilder, summaryBuilder);
-        
+
         await connection.EnqueueAsync(runMessage, runHandler).ConfigureAwait(false);
-        
+
         if (!reactive)
         {
             var pullMessage = _protocolMessageFactory.NewPullMessage(fetchSize);
@@ -217,7 +217,8 @@ internal sealed class BoltProtocol : IBoltProtocol
                 connection,
                 bookmarks,
                 dbParameter)
-            : _protocolMessageFactory.NewRouteMessage(connection,
+            : _protocolMessageFactory.NewRouteMessage(
+                connection,
                 bookmarks,
                 dbParameter,
                 impersonatedUser);
@@ -236,7 +237,7 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         return (IReadOnlyDictionary<string, object>)responseHandler.RoutingInformation;
     }
-    
+
     // Internal for tests.
     internal Func<IResultStreamBuilder, long, long, Task> RequestMore(
         IConnection connection,
@@ -255,7 +256,7 @@ internal sealed class BoltProtocol : IBoltProtocol
             await connection.SendAsync().ConfigureAwait(false);
         };
     }
-    
+
     // Internal for tests.
     internal Func<IResultStreamBuilder, long, Task> CancelRequest(
         IConnection connection,
@@ -265,9 +266,11 @@ internal sealed class BoltProtocol : IBoltProtocol
         return async (streamBuilder, id) =>
         {
             var discardMessage = _protocolMessageFactory.NewDiscardMessage(id, ResultHandleMessage.All);
-            var pullResponseHandler = _protocolHandlerFactory.NewPullResponseHandler(bookmarksTracker,
+            var pullResponseHandler = _protocolHandlerFactory.NewPullResponseHandler(
+                bookmarksTracker,
                 streamBuilder,
                 summaryBuilder);
+
             await connection.EnqueueAsync(discardMessage, pullResponseHandler).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
         };

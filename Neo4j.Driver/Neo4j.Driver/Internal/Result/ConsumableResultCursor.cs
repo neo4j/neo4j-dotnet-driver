@@ -15,11 +15,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Result;
 
-internal class ConsumableResultCursor : IInternalResultCursor
+internal class ConsumableResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
 {
     private readonly IInternalResultCursor _cursor;
     private bool _isConsumed;
@@ -27,6 +29,16 @@ internal class ConsumableResultCursor : IInternalResultCursor
     public ConsumableResultCursor(IInternalResultCursor cursor)
     {
         _cursor = cursor;
+    }
+
+    public ValueTask<bool> MoveNextAsync()
+    {
+        return new ValueTask<bool>(FetchAsync());
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        return new ValueTask(Task.CompletedTask);
     }
 
     public Task<string[]> KeysAsync()
@@ -66,6 +78,11 @@ internal class ConsumableResultCursor : IInternalResultCursor
     public void Cancel()
     {
         _cursor.Cancel();
+    }
+
+    public IAsyncEnumerator<IRecord> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+    {
+        return this;
     }
 
     private void AssertNotConsumed()

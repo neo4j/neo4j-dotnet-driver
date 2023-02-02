@@ -176,7 +176,8 @@ public class AuthTokens
     /// an authentication token that can be used to connect to Neo4j.
     /// </summary>
     /// <remarks>
-    ///     <see cref="GraphDatabase.Driver(string, IAuthToken, Action{ConfigBuilder})"/>
+    ///     <see
+    ///         cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder}(Neo4j.Driver.ConfigBuilder))"/>
     /// </remarks>
     /// <param name="token">Base64 encoded token</param>
     /// <returns>An authentication token that can be used to connect to Neo4j.</returns>

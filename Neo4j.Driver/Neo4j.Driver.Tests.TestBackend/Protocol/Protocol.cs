@@ -78,7 +78,8 @@ public static class Protocol
             typeof(BookmarkManagerConsumerRequest),
             typeof(BookmarkManagerSupplierRequest),
             typeof(BookmarksConsumerCompleted),
-            typeof(BookmarksSupplierCompleted)
+            typeof(BookmarksSupplierCompleted),
+            typeof(ExecuteQuery)
         };
 
     static Protocol()

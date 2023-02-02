@@ -81,7 +81,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 mockConn.Verify(x => x.ResetAsync(), Times.Never());
             }
         }
-        
+
         public class GetRoutingTableAsyncTests
         {
             [Fact]
@@ -276,23 +276,23 @@ namespace Neo4j.Driver.Internal.Protocol
                 var mockConn = new Mock<IConnection>();
                 mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
                 mockConn.SetupGet(x => x.RoutingContext).Returns(mockRoutingContext.Object);
-                
+
                 var mockRtResult = new Mock<IRecord>();
                 mockRtResult.SetupGet(x => x.Values).Returns(new Dictionary<string, object>());
-                
+
                 var mockCursor = new Mock<IInternalResultCursor>();
                 mockCursor.SetupSequence(x => x.FetchAsync()).ReturnsAsync(true).ReturnsAsync(false);
                 mockCursor.SetupGet(x => x.Current).Returns(mockRtResult.Object);
-                
+
                 var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
                 resultCursorBuilderMock.Setup(x => x.CreateCursor()).Returns(mockCursor.Object);
-                    
+
                 var msgFactory = new Mock<IBoltProtocolMessageFactory>();
 
                 AutoCommitParams queryParams = null;
                 msgFactory.Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, It.IsAny<AutoCommitParams>()))
                     .Callback<IConnection, AutoCommitParams>((_, y) => queryParams = y);
-                
+
                 var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
                 handlerFactory.Setup(
                         x => x.NewResultCursorBuilder(
@@ -307,25 +307,28 @@ namespace Neo4j.Driver.Internal.Protocol
                             It.IsAny<long>(),
                             It.IsAny<bool>()))
                     .Returns(resultCursorBuilderMock.Object);
-                
+
                 var mockV3 = new Mock<IBoltProtocol>();
                 var protocol = new BoltProtocol(mockV3.Object, msgFactory.Object, handlerFactory.Object);
 
                 var bm = new InternalBookmarks();
-                var routingTable = await protocol.GetRoutingTableAsync(mockConn.Object,
+                var routingTable = await protocol.GetRoutingTableAsync(
+                    mockConn.Object,
                     "test",
                     null,
                     bm);
 
                 routingTable.Should().Contain(new KeyValuePair<string, object>("db", "test"));
-                
+
                 handlerFactory.Verify(x => x.NewRouteResponseHandler(), Times.Never);
-                
-                msgFactory.Verify(x => 
-                    x.NewRouteMessage(It.IsAny<IConnection>(), 
-                        It.IsAny<Bookmarks>(), 
-                        It.IsAny<string>(), 
-                        It.IsAny<string>()),
+
+                msgFactory.Verify(
+                    x =>
+                        x.NewRouteMessage(
+                            It.IsAny<IConnection>(),
+                            It.IsAny<Bookmarks>(),
+                            It.IsAny<string>(),
+                            It.IsAny<string>()),
                     Times.Never);
 
                 queryParams.Should().NotBeNull();
@@ -337,7 +340,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 queryParams.BookmarksTracker.Should().NotBeNull();
                 queryParams.ResultResourceHandler.Should().NotBeNull();
                 queryParams.Bookmarks.Should().Be(bm);
-                
+
                 msgFactory.Verify(
                     x => x.NewRouteMessageV43(It.IsAny<IConnection>(), It.IsAny<Bookmarks>(), It.IsAny<string>()),
                     Times.Never);
@@ -346,9 +349,10 @@ namespace Neo4j.Driver.Internal.Protocol
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()),
                     Times.Exactly(2));
+
                 mockConn.Verify(x => x.SendAsync(), Times.Once);
             }
-            
+
             [Theory]
             [InlineData("")]
             [InlineData("\t")]
@@ -356,23 +360,23 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(4, 1));
-                
+
                 var mockRtResult = new Mock<IRecord>();
                 mockRtResult.SetupGet(x => x.Values).Returns(new Dictionary<string, object>());
-                
+
                 var mockCursor = new Mock<IInternalResultCursor>();
                 mockCursor.SetupSequence(x => x.FetchAsync()).ReturnsAsync(true).ReturnsAsync(false);
                 mockCursor.SetupGet(x => x.Current).Returns(mockRtResult.Object);
-                
+
                 var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
                 resultCursorBuilderMock.Setup(x => x.CreateCursor()).Returns(mockCursor.Object);
-                    
+
                 var msgFactory = new Mock<IBoltProtocolMessageFactory>();
 
                 AutoCommitParams queryParams = null;
                 msgFactory.Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, It.IsAny<AutoCommitParams>()))
                     .Callback<IConnection, AutoCommitParams>((_, y) => queryParams = y);
-                
+
                 var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
                 handlerFactory.Setup(
                         x => x.NewResultCursorBuilder(
@@ -387,11 +391,12 @@ namespace Neo4j.Driver.Internal.Protocol
                             It.IsAny<long>(),
                             It.IsAny<bool>()))
                     .Returns(resultCursorBuilderMock.Object);
-                
+
                 var mockV3 = new Mock<IBoltProtocol>();
                 var protocol = new BoltProtocol(mockV3.Object, msgFactory.Object, handlerFactory.Object);
 
-                await protocol.GetRoutingTableAsync(mockConn.Object,
+                await protocol.GetRoutingTableAsync(
+                    mockConn.Object,
                     dbName,
                     null,
                     null);
@@ -414,6 +419,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 {
                     RoutingInformation = new Dictionary<string, object>()
                 };
+
                 var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
                 handlerFactory.Setup(x => x.NewRouteResponseHandler())
                     .Returns(rrHandler);
@@ -611,8 +617,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 mockConn.Verify(x => x.SendAsync(), Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Never);
             }
-            
-            
+
             [Fact]
             public async Task ShouldSendOnlyRunWhenReactive()
             {
@@ -700,7 +705,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 mockConn.Verify(x => x.SendAsync(), Times.Once);
                 mockConn.VerifyGet(x => x.Version);
                 mockConn.VerifyGet(x => x.Server);
-                
+
                 mockConn.VerifyNoOtherCalls();
             }
         }
@@ -1045,20 +1050,23 @@ namespace Neo4j.Driver.Internal.Protocol
                     .Returns(resultCursorBuilderMock.Object);
 
                 var protocol = new BoltProtocol(null, msgFactory.Object, handlerFactory.Object);
-                
+
                 protocol.RequestMore(mockConn.Object, sb, mockBt.Object)(resultCursorBuilderMock.Object, 1, 10);
-                
+
                 msgFactory.Verify(x => x.NewPullMessage(1, 10), Times.Once);
-                handlerFactory.Verify(x => x.NewPullResponseHandler(mockBt.Object, resultCursorBuilderMock.Object, sb),
+                handlerFactory.Verify(
+                    x => x.NewPullResponseHandler(mockBt.Object, resultCursorBuilderMock.Object, sb),
                     Times.Once);
 
-                mockConn.Verify(x => x.EnqueueAsync(It.IsAny<PullMessage>(), It.IsAny<PullResponseHandler>()),
+                mockConn.Verify(
+                    x => x.EnqueueAsync(It.IsAny<PullMessage>(), It.IsAny<PullResponseHandler>()),
                     Times.Once);
+
                 mockConn.Verify(x => x.SendAsync(), Times.Once);
                 mockConn.VerifyNoOtherCalls();
             }
         }
-        
+
         public class CancelRequestTests
         {
             [Fact]
@@ -1106,15 +1114,18 @@ namespace Neo4j.Driver.Internal.Protocol
                     .Returns(resultCursorBuilderMock.Object);
 
                 var protocol = new BoltProtocol(null, msgFactory.Object, handlerFactory.Object);
-                
+
                 protocol.CancelRequest(mockConn.Object, sb, mockBt.Object)(resultCursorBuilderMock.Object, 1);
-                
+
                 msgFactory.Verify(x => x.NewDiscardMessage(1, -1), Times.Once);
-                handlerFactory.Verify(x => x.NewPullResponseHandler(mockBt.Object, resultCursorBuilderMock.Object, sb),
+                handlerFactory.Verify(
+                    x => x.NewPullResponseHandler(mockBt.Object, resultCursorBuilderMock.Object, sb),
                     Times.Once);
 
-                mockConn.Verify(x => x.EnqueueAsync(It.IsAny<DiscardMessage>(), It.IsAny<PullResponseHandler>()),
+                mockConn.Verify(
+                    x => x.EnqueueAsync(It.IsAny<DiscardMessage>(), It.IsAny<PullResponseHandler>()),
                     Times.Once);
+
                 mockConn.Verify(x => x.SendAsync(), Times.Once);
                 mockConn.VerifyNoOtherCalls();
             }

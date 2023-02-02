@@ -35,7 +35,7 @@ internal sealed class GoodbyeMessageSerializer : WriteOnlySerializer
             throw new ArgumentOutOfRangeException(
                 $"Encountered {value?.GetType().Name} where {nameof(GoodbyeMessage)} was expected");
         }
-        
+
         writer.WriteStructHeader(0, MessageFormat.MsgGoodbye);
     }
 }

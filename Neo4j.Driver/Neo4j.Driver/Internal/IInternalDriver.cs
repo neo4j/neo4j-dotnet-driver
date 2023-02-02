@@ -16,10 +16,20 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Neo4j.Driver.Experimental;
 
 namespace Neo4j.Driver.Internal;
 
 internal interface IInternalDriver : IDriver
 {
     IInternalAsyncSession Session(Action<SessionConfigBuilder> action, bool reactive);
+
+    Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
+        Query query,
+        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor,
+        QueryConfig config = null,
+        CancellationToken cancellationToken = default);
 }

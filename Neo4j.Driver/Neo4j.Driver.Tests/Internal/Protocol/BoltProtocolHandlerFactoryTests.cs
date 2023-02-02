@@ -32,7 +32,9 @@ namespace Neo4j.Driver.Internal.Protocol
             [Fact]
             public void ShouldAllowNullFunctions()
             {
-                var summaryBuilder = new SummaryBuilder(new Query("..."), new ServerInfo(new Uri("bolt://127.0.0.1:7687")));
+                var summaryBuilder = new SummaryBuilder(
+                    new Query("..."),
+                    new ServerInfo(new Uri("bolt://127.0.0.1:7687")));
 
                 var ex = Record.Exception(
                     () =>
@@ -51,6 +53,5 @@ namespace Neo4j.Driver.Internal.Protocol
                 ex.Should().BeNull();
             }
         }
-        
     }
 }

@@ -15,11 +15,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// ReSharper disable once CheckNamespace
+namespace Neo4j.Driver;
 
-namespace System.Runtime.CompilerServices;
-
-/// <summary>adds init and record types.</summary>
-public class IsExternalInit
+/// <summary>
+/// Used for specifying which members of a neo4j cluster will process the workload.<br/> default:
+/// <see cref="Writers"/>
+/// </summary>
+public enum RoutingControl
 {
+    /// <summary>Send work to member of cluster that is capable of processing read and write workloads.</summary>
+    Writers = 0,
+
+    /// <summary>Send work to a member of cluster capable of processing read workloads.</summary>
+    Readers = 1
 }

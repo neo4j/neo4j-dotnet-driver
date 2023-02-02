@@ -56,7 +56,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
             var boltProtocolVersion = new BoltProtocolVersion(major, minor);
             var format = new MessageFormat(boltProtocolVersion);
             var psw = new PackStreamWriter(format, memory);
-            
+
             GoodbyeMessageSerializer.Instance.Serialize(psw, GoodbyeMessage.Instance);
             memory.Position = 0;
 

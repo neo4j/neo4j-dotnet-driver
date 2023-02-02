@@ -16,7 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Diagnostics;
 using FluentAssertions;
 using Xunit;
 
@@ -62,7 +61,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             value.Should().BeOfType<LocalDate>().Which.Month.Should().Be(8);
             value.Should().BeOfType<LocalDate>().Which.Day.Should().Be(31);
         }
-        
+
 #if NET6_0_OR_GREATER
         [Fact]
         public void ShouldSerializeDateOnly()

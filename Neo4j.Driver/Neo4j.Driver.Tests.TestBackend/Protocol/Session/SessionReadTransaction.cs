@@ -27,11 +27,6 @@ internal class SessionReadTransaction : IProtocolObject
 
     [JsonIgnore] private string TransactionId { get; set; }
 
-    [JsonConverter(typeof(BaseSessionTypeJsonConverter<SessionReadTransactionType>))]
-    public class SessionReadTransactionType : BaseSessionType
-    {
-    }
-
     public override async Task Process(Controller controller)
     {
         var sessionContainer = (NewSession)ObjManager.GetObject(data.sessionId);
@@ -104,5 +99,10 @@ internal class SessionReadTransaction : IProtocolObject
         }
 
         return new ProtocolResponse("RetryableDone", new {}).Encode();
+    }
+
+    [JsonConverter(typeof(BaseSessionTypeJsonConverter<SessionReadTransactionType>))]
+    public class SessionReadTransactionType : BaseSessionType
+    {
     }
 }

@@ -306,7 +306,7 @@ internal class RoutingTableManager : IRoutingTableManager
             try
             {
                 var conn = await _poolManager.CreateClusterConnectionAsync(router).ConfigureAwait(false);
-                
+
                 if (conn == null)
                 {
                     routingTable.Remove(router);

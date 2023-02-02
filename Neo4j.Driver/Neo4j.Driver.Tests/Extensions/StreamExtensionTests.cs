@@ -23,8 +23,6 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Xunit;
-using Xunit.Abstractions;
-using Xunit.Sdk;
 
 namespace Neo4j.Driver.Tests
 {
@@ -59,7 +57,7 @@ namespace Neo4j.Driver.Tests
             streamMock.Verify(x => x.Close(), Times.Once);
         }
 #endif
-        
+
         [Theory]
         [InlineData(300)]
         [InlineData(0)]

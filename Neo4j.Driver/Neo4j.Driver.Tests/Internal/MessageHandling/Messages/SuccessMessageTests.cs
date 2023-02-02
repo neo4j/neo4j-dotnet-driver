@@ -41,6 +41,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
             {
                 ["a"] = "b"
             };
+
             var message = new SuccessMessage(meta);
 
             message.Dispatch(pipeline.Object);
@@ -55,7 +56,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
             {
                 ["a"] = "b"
             };
-            
+
             new SuccessMessage(meta).ToString().Should().Be("SUCCESS [{a, b}]");
         }
     }

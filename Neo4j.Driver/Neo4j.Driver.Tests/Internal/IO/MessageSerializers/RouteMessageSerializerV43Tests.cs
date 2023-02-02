@@ -78,7 +78,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
             meta.Should().ContainKey("a").WhichValue.Should().Be("b");
 
             var bookmarks = reader.ReadList();
-            bookmarks.Should().BeEquivalentTo(new []{"bm:a"});
+            bookmarks.Should().BeEquivalentTo(new[] { "bm:a" });
             var db = reader.ReadString();
             db.Should().Be("neo4j");
         }
