@@ -30,7 +30,6 @@ internal sealed class BoltProtocol : IBoltProtocol
     internal static readonly IBoltProtocol Instance = new BoltProtocol();
     private readonly IBoltProtocol _boltProtocolV3;
     private readonly IBoltProtocolHandlerFactory _protocolHandlerFactory;
-
     private readonly IBoltProtocolMessageFactory _protocolMessageFactory;
 
     internal BoltProtocol(
@@ -45,7 +44,22 @@ internal sealed class BoltProtocol : IBoltProtocol
 
     public Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
     {
-        return _boltProtocolV3.LoginAsync(connection, userAgent, authToken);
+        return connection.Version >= BoltProtocolVersion.V5_1
+            ? LoginV51Async(connection, userAgent, authToken)
+            : _boltProtocolV3.LoginAsync(connection, userAgent, authToken);
+    }
+
+    private async Task LoginV51Async(IConnection connection, string userAgent, IAuthToken authToken)
+    {
+        var helloMessage = _protocolMessageFactory.NewHelloMessageV51(connection, userAgent);
+        var helloHandler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
+        await connection.EnqueueAsync(helloMessage, helloHandler).ConfigureAwait(false);
+
+        var logonMessage = _protocolMessageFactory.NewLogonMessage(connection, authToken);
+        var logonHandler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
+        await connection.EnqueueAsync(logonMessage, logonHandler).ConfigureAwait(false);
+
+        await connection.SyncAsync().ConfigureAwait(false);
     }
 
     public Task LogoutAsync(IConnection connection)

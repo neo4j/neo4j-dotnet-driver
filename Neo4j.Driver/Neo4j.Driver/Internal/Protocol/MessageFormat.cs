@@ -49,6 +49,11 @@ internal sealed class MessageFormat
 
     //4.3+
     public const byte MsgRoute = 0x66;
+    
+    //5.1+
+    public const byte MsgLogon = 0x6A;
+    public const byte MsgLogoff = 0x6B;
+
     private readonly Dictionary<byte, IPackStreamSerializer> _readerStructHandlers = new();
     private readonly Dictionary<Type, IPackStreamSerializer> _writerStructHandlers = new();
 

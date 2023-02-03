@@ -31,6 +31,8 @@ internal interface IBoltProtocolMessageFactory
     RouteMessageV43 NewRouteMessageV43(IConnection connection, Bookmarks bookmarks, string database);
     DiscardMessage NewDiscardMessage(long id, long discardSize);
     HelloMessage NewHelloMessage(IConnection connection, string userAgent, IAuthToken authToken);
+    HelloMessage NewHelloMessageV51(IConnection connection, string userAgent);
+    LogonMessage NewLogonMessage(IConnection connection, IAuthToken authToken);
 
     BeginMessage NewBeginMessage(
         IConnection connection,
@@ -101,6 +103,19 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
             userAgent,
             authToken.AsDictionary(),
             connection.RoutingContext);
+    }
+
+    public HelloMessage NewHelloMessageV51(IConnection connection, string userAgent)
+    {
+        return new HelloMessage(
+            connection.Version,
+            userAgent,
+            connection.RoutingContext);
+    }
+
+    public LogonMessage NewLogonMessage(IConnection connection, IAuthToken authToken)
+    {
+        return new LogonMessage(connection.Version, authToken);
     }
 
     public BeginMessage NewBeginMessage(
