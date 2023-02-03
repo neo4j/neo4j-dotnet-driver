@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -29,7 +29,9 @@ namespace Neo4j.Driver.Simple.Internal
             public void ShouldDelegateToAsyncSession()
             {
                 var asyncSession = new Mock<IInternalAsyncSession>();
-                var session = new InternalSession(asyncSession.Object, Mock.Of<IRetryLogic>(),
+                var session = new InternalSession(
+                    asyncSession.Object,
+                    Mock.Of<IRetryLogic>(),
                     Mock.Of<BlockingExecutor>());
 
                 var bookmark = session.LastBookmarks;
@@ -37,27 +39,35 @@ namespace Neo4j.Driver.Simple.Internal
                 asyncSession.Verify(x => x.LastBookmarks, Times.Once);
             }
         }
+
         public class LastBookmark
         {
             [Fact]
             public void ShouldDelegateToAsyncSession()
             {
                 var asyncSession = new Mock<IInternalAsyncSession>();
-                var session = new InternalSession(asyncSession.Object, Mock.Of<IRetryLogic>(),
+                var session = new InternalSession(
+                    asyncSession.Object,
+                    Mock.Of<IRetryLogic>(),
                     Mock.Of<BlockingExecutor>());
 
                 var bookmark = session.LastBookmark;
 
+#pragma warning disable CS0618
                 asyncSession.Verify(x => x.LastBookmark, Times.Once);
+#pragma warning restore CS0618
             }
         }
+
         public class SessionConfig
         {
             [Fact]
             public void ShouldDelegateToAsyncSession()
             {
                 var asyncSession = new Mock<IInternalAsyncSession>();
-                var session = new InternalSession(asyncSession.Object, Mock.Of<IRetryLogic>(),
+                var session = new InternalSession(
+                    asyncSession.Object,
+                    Mock.Of<IRetryLogic>(),
                     Mock.Of<BlockingExecutor>());
 
                 var config = session.SessionConfig;

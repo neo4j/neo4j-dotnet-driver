@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Messaging;
@@ -46,36 +45,25 @@ namespace Neo4j.Driver.Internal.MessageHandling
         }
 
         [Fact]
-        public void ShouldThrowIfEnqueuedMessageIsNull()
-        {
-            var handler = new Mock<IResponseHandler>();
-            var pipeline = new ResponsePipeline(null);
-
-            var exc = Record.Exception(() => pipeline.Enqueue(null, handler.Object));
-
-            exc.Should().BeOfType<ArgumentNullException>()
-                .Which.ParamName.Should().Be("message");
-        }
-
-        [Fact]
         public void ShouldThrowIfEnqueuedHandlerIsNull()
         {
-            var msg = new Mock<IRequestMessage>();
             var pipeline = new ResponsePipeline(null);
 
-            var exc = Record.Exception(() => pipeline.Enqueue(msg.Object, null));
+            var exc = Record.Exception(() => pipeline.Enqueue(null));
 
-            exc.Should().BeOfType<ArgumentNullException>()
-                .Which.ParamName.Should().Be("handler");
+            exc.Should()
+                .BeOfType<ArgumentNullException>()
+                .Which.ParamName.Should()
+                .Be("handler");
         }
 
         [Fact]
         public void ShouldEnqueueResponseHandlers()
         {
-            var (msg, handler) = (new Mock<IRequestMessage>(), new Mock<IResponseHandler>());
+            var handler = new Mock<IResponseHandler>();
             var pipeline = new ResponsePipeline(null);
 
-            pipeline.Enqueue(msg.Object, handler.Object);
+            pipeline.Enqueue(handler.Object);
 
             pipeline.HasNoPendingMessages.Should().BeFalse();
             pipeline.Peek().Should().Be(handler.Object);
@@ -84,10 +72,10 @@ namespace Neo4j.Driver.Internal.MessageHandling
         [Fact]
         public void ShouldDequeueResponseHandlers()
         {
-            var (msg, handler) = (new Mock<IRequestMessage>(), new Mock<IResponseHandler>());
+            var handler = new Mock<IResponseHandler>();
             var pipeline = new ResponsePipeline(null);
 
-            pipeline.Enqueue(msg.Object, handler.Object);
+            pipeline.Enqueue(handler.Object);
             pipeline.HasNoPendingMessages.Should().BeFalse();
 
             pipeline.Dequeue();
@@ -97,12 +85,12 @@ namespace Neo4j.Driver.Internal.MessageHandling
         [Fact]
         public void ShouldDequeueResponseHandlersInOrder()
         {
-            var (msg1, handler1) = (new Mock<IRequestMessage>(), new Mock<IResponseHandler>());
-            var (msg2, handler2) = (new Mock<IRequestMessage>(), new Mock<IResponseHandler>());
+            var handler1 = new Mock<IResponseHandler>();
+            var handler2 = new Mock<IResponseHandler>();
             var pipeline = new ResponsePipeline(null);
 
-            pipeline.Enqueue(msg1.Object, handler1.Object);
-            pipeline.Enqueue(msg2.Object, handler2.Object);
+            pipeline.Enqueue(handler1.Object);
+            pipeline.Enqueue(handler2.Object);
 
             pipeline.HasNoPendingMessages.Should().BeFalse();
             pipeline.Peek().Should().Be(handler1.Object);
@@ -115,6 +103,16 @@ namespace Neo4j.Driver.Internal.MessageHandling
             pipeline.HasNoPendingMessages.Should().BeTrue();
         }
 
+        private static ResponsePipeline CreatePipelineWithHandler(ILogger logger)
+        {
+            var pipeline = new ResponsePipeline(logger);
+
+            var handler = new Mock<IResponseHandler>();
+            pipeline.Enqueue(handler.Object);
+
+            return pipeline;
+        }
+
         public class OnSuccessAsync
         {
             [Fact]
@@ -124,7 +122,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 log.Setup(x => x.IsDebugEnabled()).Returns(true);
 
                 var pipeline = CreatePipelineWithHandler(log.Object);
-                var metadata = new Dictionary<string, object> {{"x", 1}, {"y", true}};
+                var metadata = new Dictionary<string, object> { { "x", 1 }, { "y", true } };
 
                 pipeline.OnSuccess(metadata);
 
@@ -138,7 +136,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 log.Setup(x => x.IsDebugEnabled()).Returns(false);
 
                 var pipeline = CreatePipelineWithHandler(log.Object);
-                var metadata = new Dictionary<string, object> {{"x", 1}, {"y", true}};
+                var metadata = new Dictionary<string, object> { { "x", 1 }, { "y", true } };
 
                 pipeline.OnSuccess(metadata);
 
@@ -149,7 +147,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             public void ShouldDequeue()
             {
                 var pipeline = CreatePipelineWithHandler(null);
-                var metadata = new Dictionary<string, object> {{"x", 1}, {"y", true}};
+                var metadata = new Dictionary<string, object> { { "x", 1 }, { "y", true } };
 
                 pipeline.HasNoPendingMessages.Should().BeFalse();
 
@@ -163,10 +161,10 @@ namespace Neo4j.Driver.Internal.MessageHandling
             {
                 var pipeline = new ResponsePipeline(null);
 
-                var (msg, handler) = (new Mock<IRequestMessage>(), new Mock<IResponseHandler>());
-                pipeline.Enqueue(msg.Object, handler.Object);
+                var handler = new Mock<IResponseHandler>();
+                pipeline.Enqueue(handler.Object);
 
-                var metadata = new Dictionary<string, object> {{"x", 1}, {"y", true}};
+                var metadata = new Dictionary<string, object> { { "x", 1 }, { "y", true } };
                 pipeline.OnSuccess(metadata);
 
                 handler.Verify(x => x.OnSuccess(metadata), Times.Once);
@@ -182,7 +180,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 log.Setup(x => x.IsDebugEnabled()).Returns(true);
 
                 var pipeline = CreatePipelineWithHandler(log.Object);
-                var fields = new object[] {1, true, "string"};
+                var fields = new object[] { 1, true, "string" };
 
                 pipeline.OnRecord(fields);
 
@@ -196,7 +194,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 log.Setup(x => x.IsDebugEnabled()).Returns(false);
 
                 var pipeline = CreatePipelineWithHandler(log.Object);
-                var fields = new object[] {1, true, "string"};
+                var fields = new object[] { 1, true, "string" };
 
                 pipeline.OnRecord(fields);
 
@@ -207,7 +205,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             public void ShouldNotDequeue()
             {
                 var pipeline = CreatePipelineWithHandler(null);
-                var fields = new object[] {1, true, "string"};
+                var fields = new object[] { 1, true, "string" };
 
                 pipeline.HasNoPendingMessages.Should().BeFalse();
                 pipeline.OnRecord(fields);
@@ -223,10 +221,10 @@ namespace Neo4j.Driver.Internal.MessageHandling
             {
                 var pipeline = new ResponsePipeline(null);
 
-                var (msg, handler) = (new Mock<IRequestMessage>(), new Mock<IResponseHandler>());
-                pipeline.Enqueue(msg.Object, handler.Object);
+                var handler = new Mock<IResponseHandler>();
+                pipeline.Enqueue(handler.Object);
 
-                var fields = new object[] {1, true, "string"};
+                var fields = new object[] { 1, true, "string" };
                 pipeline.OnRecord(fields);
 
                 handler.Verify(x => x.OnRecord(fields), Times.Once);
@@ -247,8 +245,10 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 pipeline.OnFailure(code, message);
 
                 log.Verify(
-                    x => x.Debug("S: {0}",
-                        It.Is<FailureMessage>(m => m.Code.Equals(code) && m.Message.Equals(message))), Times.Once);
+                    x => x.Debug(
+                        "S: {0}",
+                        It.Is<FailureMessage>(m => m.Code.Equals(code) && m.Message.Equals(message))),
+                    Times.Once);
             }
 
             [Fact]
@@ -284,14 +284,13 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 var pipeline = new ResponsePipeline(null);
                 var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
 
-                var (msg, handler) = (new Mock<IRequestMessage>(), new Mock<IResponseHandler>());
-                pipeline.Enqueue(msg.Object, handler.Object);
+                var handler = new Mock<IResponseHandler>();
+                pipeline.Enqueue(handler.Object);
 
                 pipeline.OnFailure(code, message);
 
                 handler.Verify(
-                    x => x.OnFailure(It.Is<IResponsePipelineError>(e =>
-                        e.Is(t => t is TransientException && t.Message.Equals("transaction terminated.")))),
+                    x => x.OnFailure(It.IsNotNull<ResponsePipelineError>()),
                     Times.Once);
             }
 
@@ -305,8 +304,11 @@ namespace Neo4j.Driver.Internal.MessageHandling
 
                 var exc = Record.Exception(() => pipeline.AssertNoFailure());
 
-                exc.Should().BeOfType<TransientException>().Which
-                    .Message.Should().Be("transaction terminated.");
+                exc.Should()
+                    .BeOfType<TransientException>()
+                    .Which
+                    .Message.Should()
+                    .Be("transaction terminated.");
             }
 
             [Fact]
@@ -328,15 +330,18 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 var pipeline = new ResponsePipeline(null);
                 var (code, message) = ("Neo.ClientError.Request.Invalid", "protocol exception.");
 
-                var (msg, handler) = (new Mock<IRequestMessage>(), new Mock<IResponseHandler>());
-                pipeline.Enqueue(msg.Object, handler.Object);
+                var handler = new Mock<IResponseHandler>();
+                pipeline.Enqueue(handler.Object);
 
                 pipeline.OnFailure(code, message);
 
                 var exc = Record.Exception(() => pipeline.AssertNoProtocolViolation());
 
-                exc.Should().BeOfType<ProtocolException>().Which
-                    .Message.Should().Be("protocol exception.");
+                exc.Should()
+                    .BeOfType<ProtocolException>()
+                    .Which
+                    .Message.Should()
+                    .Be("protocol exception.");
             }
         }
 
@@ -385,8 +390,8 @@ namespace Neo4j.Driver.Internal.MessageHandling
             {
                 var pipeline = new ResponsePipeline(null);
 
-                var (msg, handler) = (new Mock<IRequestMessage>(), new Mock<IResponseHandler>());
-                pipeline.Enqueue(msg.Object, handler.Object);
+                var handler = new Mock<IResponseHandler>();
+                pipeline.Enqueue(handler.Object);
 
                 pipeline.OnIgnored();
 
@@ -400,26 +405,15 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
                 pipeline.OnFailure(code, message);
 
-                var (msg, handler) = (new Mock<IRequestMessage>(), new Mock<IResponseHandler>());
-                pipeline.Enqueue(msg.Object, handler.Object);
+                var handler = new Mock<IResponseHandler>();
+                pipeline.Enqueue(handler.Object);
 
                 pipeline.OnIgnored();
 
                 handler.Verify(
-                    x => x.OnFailure(It.Is<IResponsePipelineError>(e =>
-                        e.Is(t => t is TransientException && t.Message.Equals("transaction terminated.")))),
+                    x => x.OnFailure(It.IsNotNull<ResponsePipelineError>()),
                     Times.Once);
             }
-        }
-
-        private static ResponsePipeline CreatePipelineWithHandler(ILogger logger)
-        {
-            var pipeline = new ResponsePipeline(logger);
-
-            var (msg, handler) = (new Mock<IRequestMessage>(), new Mock<IResponseHandler>());
-            pipeline.Enqueue(msg.Object, handler.Object);
-
-            return pipeline;
         }
     }
 }

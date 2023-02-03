@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -15,20 +15,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
+namespace Neo4j.Driver.Internal.MessageHandling;
 
-namespace Neo4j.Driver.Internal.MessageHandling
+internal interface IResponsePipelineError
 {
-    internal interface IResponsePipelineError
-    {
-        bool Is<T>();
-
-        bool Is(Func<Exception, bool> predicate);
-
-        void EnsureThrown();
-
-        void EnsureThrownIf<T>();
-
-        void EnsureThrownIf(Func<Exception, bool> predicate);
-    }
+    void EnsureThrown();
+    void EnsureThrownIf<T>();
 }

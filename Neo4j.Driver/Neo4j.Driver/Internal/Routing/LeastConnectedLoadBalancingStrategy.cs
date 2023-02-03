@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -17,86 +17,86 @@
 
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.Internal.Routing
+namespace Neo4j.Driver.Internal.Routing;
+
+internal class LeastConnectedLoadBalancingStrategy : ILoadBalancingStrategy
 {
-    internal class LeastConnectedLoadBalancingStrategy : ILoadBalancingStrategy
+    private readonly IClusterConnectionPool _connectionPool;
+    private readonly ILogger _logger;
+    private readonly RoundRobinArrayIndex _readersIndex = new();
+    private readonly RoundRobinArrayIndex _writersIndex = new();
+
+    public LeastConnectedLoadBalancingStrategy(IClusterConnectionPool connectionPool, ILogger logger)
     {
-        private readonly RoundRobinArrayIndex _readersIndex = new RoundRobinArrayIndex();
-        private readonly RoundRobinArrayIndex _writersIndex = new RoundRobinArrayIndex();
+        _connectionPool = connectionPool;
+        _logger = logger;
+    }
 
-        private readonly IClusterConnectionPool _connectionPool;
-        private readonly ILogger _logger;
+    public Uri SelectReader(IList<Uri> knownReaders, string forDatabase)
+    {
+        return Select(knownReaders, _readersIndex, forDatabase, "reader");
+    }
 
-        public LeastConnectedLoadBalancingStrategy(IClusterConnectionPool connectionPool, ILogger logger)
+    public Uri SelectWriter(IList<Uri> knownWriters, string forDatabase)
+    {
+        return Select(knownWriters, _writersIndex, forDatabase, "writer");
+    }
+
+    private Uri Select(
+        IList<Uri> addresses,
+        RoundRobinArrayIndex roundRobinIndex,
+        string forDatabase,
+        string addressType)
+    {
+        var count = addresses.Count;
+        if (count == 0)
         {
-            _connectionPool = connectionPool;
-            _logger = logger;
+            LogDebug($"Unable to select {addressType} for database '{forDatabase}', no known addresses given");
+            return null;
         }
 
-        public Uri SelectReader(IList<Uri> knownReaders, string forDatabase)
-        {
-            return Select(knownReaders, _readersIndex, forDatabase, "reader");
-        }
+        // choose start index for iteration in round-robin fashion
+        var startIndex = roundRobinIndex.Next(count);
+        var index = startIndex;
 
-        public Uri SelectWriter(IList<Uri> knownWriters, string forDatabase)
-        {
-            return Select(knownWriters, _writersIndex, forDatabase, "writer");
-        }
+        Uri leastConnectedAddress = null;
+        var leastActiveConnections = int.MaxValue;
 
-        private Uri Select(IList<Uri> addresses, RoundRobinArrayIndex roundRobinIndex, string forDatabase,
-            string addressType)
+        // iterate over the array to find least connected address
+        do
         {
-            var count = addresses.Count;
-            if (count == 0)
+            var address = addresses[index];
+            var inUseConnections = _connectionPool.NumberOfInUseConnections(address);
+
+            if (inUseConnections < leastActiveConnections)
             {
-                LogDebug($"Unable to select {addressType} for database '{forDatabase}', no known addresses given");
-                return null;
+                leastConnectedAddress = address;
+                leastActiveConnections = inUseConnections;
             }
 
-            // choose start index for iteration in round-robin fashion
-            var startIndex = roundRobinIndex.Next(count);
-            var index = startIndex;
-
-            Uri leastConnectedAddress = null;
-            var leastActiveConnections = Int32.MaxValue;
-
-            // iterate over the array to find least connected address
-            do
+            // loop over to the start of the array when end is reached
+            if (index == count - 1)
             {
-                Uri address = addresses[index];
-                int inUseConnections = _connectionPool.NumberOfInUseConnections(address);
-
-                if (inUseConnections < leastActiveConnections)
-                {
-                    leastConnectedAddress = address;
-                    leastActiveConnections = inUseConnections;
-                }
-
-                // loop over to the start of the array when end is reached
-                if (index == count - 1)
-                {
-                    index = 0;
-                }
-                else
-                {
-                    index++;
-                }
-            } while (index != startIndex);
-
-            LogDebug(
-                $"Selected {addressType} for database '{forDatabase}' with least connected address: '{leastConnectedAddress}' and active connections: {leastActiveConnections}");
-
-            return leastConnectedAddress;
-        }
-
-        private void LogDebug(string message)
-        {
-            if (_logger.IsDebugEnabled())
-            {
-                _logger.Debug(message);
+                index = 0;
             }
+            else
+            {
+                index++;
+            }
+        } while (index != startIndex);
+
+        LogDebug(
+            $"Selected {addressType} for database '{forDatabase}' with least connected address: '{leastConnectedAddress}' and active connections: {leastActiveConnections}");
+
+        return leastConnectedAddress;
+    }
+
+    private void LogDebug(string message)
+    {
+        if (_logger.IsDebugEnabled())
+        {
+            _logger.Debug(message);
         }
     }
 }

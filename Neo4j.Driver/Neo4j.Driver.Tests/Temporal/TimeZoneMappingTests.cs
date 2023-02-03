@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -17,7 +17,6 @@
 
 using System;
 using System.Globalization;
-using System.Threading;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Temporal;
 using Neo4j.Driver.Tests.TestUtil;
@@ -27,7 +26,6 @@ namespace Neo4j.Driver.Tests.Temporal
 {
     public class TimeZoneMappingTests
     {
-
         [WindowsTheory]
         [InlineData("America/Vancouver", "Pacific Standard Time")]
         [InlineData("America/Phoenix", "US Mountain Standard Time")]
@@ -46,7 +44,7 @@ namespace Neo4j.Driver.Tests.Temporal
             tzInfo.Should().NotBeNull();
             tzInfo.Id.Should().Be(expectedWindowsId);
         }
-        
+
         [UnixTheory]
         [InlineData("America/Vancouver")]
         [InlineData("America/Phoenix")]
@@ -79,13 +77,15 @@ namespace Neo4j.Driver.Tests.Temporal
         [InlineData("Turkey Standard Time", null, "Europe/Istanbul")]
         public void ShouldFindIanaFromWindows(string windowsId, string cultureName, string ianaId)
         {
-            ExecuteWithCulture(cultureName, () =>
-            {
-                var tzInfo = TimeZoneMapping.Get(windowsId);
+            ExecuteWithCulture(
+                cultureName,
+                () =>
+                {
+                    var tzInfo = TimeZoneMapping.Get(windowsId);
 
-                tzInfo.Should().NotBeNull();
-                tzInfo.Id.Should().Be(ianaId);
-            });
+                    tzInfo.Should().NotBeNull();
+                    tzInfo.Id.Should().Be(ianaId);
+                });
         }
 
         [Theory]
@@ -94,8 +94,9 @@ namespace Neo4j.Driver.Tests.Temporal
         [InlineData("tr-TR")]
         public void ShouldThrowExceptionWhenNonExistent(string culture)
         {
-            var exc = Record.Exception(() =>
-                ExecuteWithCulture(culture, () => TimeZoneMapping.Get("Some non-existent time zone id")));
+            var exc = Record.Exception(
+                () =>
+                    ExecuteWithCulture(culture, () => TimeZoneMapping.Get("Some non-existent time zone id")));
 
             // System.TimeZoneNotFoundException is not public in .net standard 1.3
             exc.Should().NotBeNull();
@@ -107,8 +108,9 @@ namespace Neo4j.Driver.Tests.Temporal
             var cInfo = cultureName == null
                 ? CultureInfo.CurrentCulture
                 : new CultureInfo(cultureName);
+
             var original = CultureInfo.CurrentCulture;
-            
+
             try
             {
                 SetCulture(cInfo);

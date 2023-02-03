@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -17,13 +17,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 
-namespace Neo4j.Driver.Internal.Routing
+namespace Neo4j.Driver.Internal.Routing;
+
+internal interface ILoadBalancingStrategy
 {
-    internal interface ILoadBalancingStrategy
-    {
-        Uri SelectReader(IList<Uri> knownReaders, string forDatabase);
-        Uri SelectWriter(IList<Uri> knownWriters, string forDatabase);
-    }
+    Uri SelectReader(IList<Uri> knownReaders, string forDatabase);
+    Uri SelectWriter(IList<Uri> knownWriters, string forDatabase);
 }

@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -17,51 +17,54 @@
 
 using System;
 
-namespace Neo4j.Driver.Internal.MessageHandling
+namespace Neo4j.Driver.Internal.MessageHandling;
+
+internal sealed class ResponsePipelineError : IResponsePipelineError
 {
-    internal class ResponsePipelineError : IResponsePipelineError
+    private readonly Exception _exception;
+    private volatile bool _thrown;
+
+    public ResponsePipelineError(Exception exception)
     {
-        private readonly Exception _exception;
-        private volatile bool _thrown;
+        _exception = exception ?? throw new ArgumentNullException(nameof(exception));
+        _thrown = false;
+    }
 
-        public ResponsePipelineError(Exception exception)
+    public void EnsureThrown()
+    {
+        if (_thrown)
         {
-            _exception = exception ?? throw new ArgumentNullException(nameof(exception));
-            _thrown = false;
+            return;
         }
 
-        public bool Is<T>()
+        lock (this)
         {
-            return _exception is T;
-        }
-
-        public bool Is(Func<Exception, bool> predicate)
-        {
-            return predicate(_exception);
-        }
-
-        public void EnsureThrown()
-        {
-            EnsureThrownIf(e => true);
-        }
-
-        public void EnsureThrownIf<T>()
-        {
-            EnsureThrownIf(e => e is T);
-        }
-
-        public void EnsureThrownIf(Func<Exception, bool> predicate)
-        {
-            if (_thrown || !Is(predicate)) return;
-
-            lock (this)
+            if (_thrown)
             {
-                if (!_thrown)
-                {
-                    _thrown = true;
-                    throw _exception;
-                }
+                return;
             }
+
+            _thrown = true;
+            throw _exception;
+        }
+    }
+
+    public void EnsureThrownIf<T>()
+    {
+        if (_thrown || _exception is not T)
+        {
+            return;
+        }
+
+        lock (this)
+        {
+            if (_thrown)
+            {
+                return;
+            }
+
+            _thrown = true;
+            throw _exception;
         }
     }
 }

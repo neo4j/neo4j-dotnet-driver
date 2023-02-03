@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,9 +18,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using FluentAssertions;
-using Moq;
+using Neo4j.Driver.Internal.IO.Utils;
 using Neo4j.Driver.Internal.Types;
 using Xunit;
+
+#pragma warning disable CS0618
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers
 {
@@ -28,24 +30,16 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
     {
         internal override IPackStreamSerializer SerializerUnderTest => new UnboundRelationshipSerializer();
 
-        [Fact]
-        public void ShouldThrowOnSerialize()
+        private new PackStreamWriterMachine CreateWriterMachine()
         {
-            var handler = SerializerUnderTest;
-
-            var ex = Record.Exception(() =>
-                handler.Serialize(Mock.Of<IPackStreamWriter>(),
-                    new Relationship(0, -1, -1, "RELATES_TO", new Dictionary<string, object>())));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ProtocolException>();
+            return CreateWriterMachine(BoltProtocolVersion.V4_0);
         }
 
         [Fact]
         public void ShouldDeserialize()
         {
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             SerializeUnboundRelationship(writer);
 
@@ -59,7 +53,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
         public void ShouldDeserializeWhenInList()
         {
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             writer.WriteListHeader(1);
             SerializeUnboundRelationship(writer);
@@ -77,7 +71,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
         public void ShouldDeserializeWhenInMap()
         {
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             writer.WriteMapHeader(1);
             writer.Write("x");
@@ -87,23 +81,28 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             var value = readerMachine.Reader().Read();
 
             value.Should().NotBeNull();
-            value.Should().BeAssignableTo<IDictionary<string, object>>().Which.Should().HaveCount(1).And
+            value.Should()
+                .BeAssignableTo<IDictionary<string, object>>()
+                .Which.Should()
+                .HaveCount(1)
+                .And
                 .ContainKey("x");
 
             VerifySerializedUnboundRelationship(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
         }
 
-        private static void SerializeUnboundRelationship(IPackStreamWriter writer)
+        private static void SerializeUnboundRelationship(PackStreamWriter writer)
         {
             writer.WriteStructHeader(3, UnboundRelationshipSerializer.UnboundRelationship);
             writer.Write(1);
             writer.Write("RELATES_TO");
-            writer.Write(new Dictionary<string, object>
-            {
-                {"prop1", "something"},
-                {"prop2", 2.0},
-                {"prop3", false}
-            });
+            writer.Write(
+                new Dictionary<string, object>
+                {
+                    { "prop1", "something" },
+                    { "prop2", 2.0 },
+                    { "prop3", false }
+                });
         }
 
         private static void VerifySerializedUnboundRelationship(object value)
@@ -113,13 +112,17 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             value.Should().BeOfType<Relationship>().Which.StartNodeId.Should().Be(-1L);
             value.Should().BeOfType<Relationship>().Which.EndNodeId.Should().Be(-1L);
             value.Should().BeOfType<Relationship>().Which.Type.Should().Be("RELATES_TO");
-            value.Should().BeOfType<Relationship>().Which.Properties.Should().HaveCount(3).And.Contain(new[]
-            {
-                new KeyValuePair<string, object>("prop1", "something"),
-                new KeyValuePair<string, object>("prop2", 2.0),
-                new KeyValuePair<string, object>("prop3", false),
-            });
+            value.Should()
+                .BeOfType<Relationship>()
+                .Which.Properties.Should()
+                .HaveCount(3)
+                .And.Contain(
+                    new[]
+                    {
+                        new KeyValuePair<string, object>("prop1", "something"),
+                        new KeyValuePair<string, object>("prop2", 2.0),
+                        new KeyValuePair<string, object>("prop3", false)
+                    });
         }
-
     }
 }

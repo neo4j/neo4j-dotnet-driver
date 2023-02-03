@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -20,49 +20,52 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Microsoft.Reactive.Testing;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
+namespace Neo4j.Driver.IntegrationTests.Stress;
+
+public abstract class RxCommand<TContext> : ReactiveTest, IRxCommand<TContext>
+    where TContext : StressTestContext
 {
-    public abstract class RxCommand<TContext> : ReactiveTest, IRxCommand<TContext>
-        where TContext : StressTestContext
+    protected readonly IDriver _driver;
+    protected readonly bool _useBookmark;
+
+    protected RxCommand(IDriver driver, bool useBookmark)
     {
-        protected readonly IDriver _driver;
-        protected readonly bool _useBookmark;
+        _driver = driver ?? throw new ArgumentNullException(nameof(driver));
+        _useBookmark = useBookmark;
+    }
 
-        protected RxCommand(IDriver driver, bool useBookmark)
-        {
-            _driver = driver ?? throw new ArgumentNullException(nameof(driver));
-            _useBookmark = useBookmark;
-        }
+    public abstract Task ExecuteAsync(TContext context);
 
-        public IRxSession NewSession(AccessMode mode, TContext context)
-        {
-            return _driver.RxSession(o =>
+    public IRxSession NewSession(AccessMode mode, TContext context)
+    {
+        return _driver.RxSession(
+            o =>
                 o.WithDefaultAccessMode(mode)
-                    .WithBookmarks(_useBookmark ? new[] {context.Bookmarks } : Array.Empty<Bookmarks>()));
-        }
+                    .WithBookmarks(_useBookmark ? new[] { context.Bookmarks } : Array.Empty<Bookmarks>()));
+    }
 
-        public IObservable<IRxTransaction> BeginTransaction(IRxSession session, TContext context)
+    public IObservable<IRxTransaction> BeginTransaction(IRxSession session, TContext context)
+    {
+        if (_useBookmark)
         {
-            if (_useBookmark)
-            {
-                return session.BeginTransaction().RetryWhen(failed =>
-                {
-                    return failed.SelectMany(exc =>
+            return session.BeginTransaction()
+                .RetryWhen(
+                    failed =>
                     {
-                        if (exc is TransientException)
-                        {
-                            context.BookmarkFailed();
-                            return Observable.Return(1);
-                        }
+                        return failed.SelectMany(
+                            exc =>
+                            {
+                                if (exc is TransientException)
+                                {
+                                    context.BookmarkFailed();
+                                    return Observable.Return(1);
+                                }
 
-                        return Observable.Throw<int>(exc);
+                                return Observable.Throw<int>(exc);
+                            });
                     });
-                });
-            }
-
-            return session.BeginTransaction();
         }
 
-        public abstract Task ExecuteAsync(TContext context);
+        return session.BeginTransaction();
     }
 }

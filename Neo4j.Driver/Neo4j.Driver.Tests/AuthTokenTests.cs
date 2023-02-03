@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -14,10 +14,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver;
 using Xunit;
 
 namespace Neo4j.Driver.Tests
@@ -83,13 +83,18 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldCreateCustomAuthTokenWithParameters()
             {
-                var authToken = AuthTokens.Custom("zhenli", "toufu", "foo", "custom",
+                var authToken = AuthTokens.Custom(
+                    "zhenli",
+                    "toufu",
+                    "foo",
+                    "custom",
                     new Dictionary<string, object>
                     {
-                        {"One", 1},
-                        {"Two", 2},
-                        {"Three", 3}
+                        { "One", 1 },
+                        { "Two", 2 },
+                        { "Three", 3 }
                     });
+
                 var dict = authToken.AsDictionary();
 
                 dict.Count.Should().Be(5);
@@ -104,20 +109,20 @@ namespace Neo4j.Driver.Tests
                 nums["Three"].Should().Be(3);
             }
 
-			[Fact]
-			public void ShouldNotAddPrincipalIfNull()
-			{
-				var authToken = AuthTokens.Custom(null, "toufu", "foo", "custom");
-				var dict = authToken.AsDictionary();
-				
-				dict.Count.Should().Be(3);
-				dict["scheme"].Should().Be("custom");
-				dict["credentials"].Should().Be("toufu");
-				dict["realm"].Should().Be("foo");
-				
-				dict.ContainsKey("parameters").Should().BeFalse();
-				dict.ContainsKey("principal").Should().BeFalse();
-			}
+            [Fact]
+            public void ShouldNotAddPrincipalIfNull()
+            {
+                var authToken = AuthTokens.Custom(null, "toufu", "foo", "custom");
+                var dict = authToken.AsDictionary();
+
+                dict.Count.Should().Be(3);
+                dict["scheme"].Should().Be("custom");
+                dict["credentials"].Should().Be("toufu");
+                dict["realm"].Should().Be("foo");
+
+                dict.ContainsKey("parameters").Should().BeFalse();
+                dict.ContainsKey("principal").Should().BeFalse();
+            }
         }
     }
 }

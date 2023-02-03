@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -16,55 +16,55 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.IO;
 using FluentAssertions;
-using Moq;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers
 {
-    public class SuccessMessageSerializerTests : PackStreamSerializerTests
+    public class SuccessMessageSerializerTests
     {
-        internal override IPackStreamSerializer SerializerUnderTest => new SuccessMessageSerializer();
-
         [Fact]
-        public void ShouldThrowOnSerialize()
+        public void StructTagsAreSuccess()
         {
-            var handler = SerializerUnderTest;
-
-            var ex = Record.Exception(() =>
-                handler.Serialize(Mock.Of<IPackStreamWriter>(),
-                    new SuccessMessage(new Dictionary<string, object> {{"fields", 1}})));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ProtocolException>();
+            SuccessMessageSerializer.Instance.ReadableStructs.Should().ContainEquivalentOf(MessageFormat.MsgSuccess);
         }
 
-        [Fact]
-        public void ShouldDeserialize()
+        [Theory]
+        [InlineData(3, 0)]
+        [InlineData(4, 0)]
+        [InlineData(4, 1)]
+        [InlineData(4, 2)]
+        [InlineData(4, 3)]
+        [InlineData(4, 4)]
+        [InlineData(5, 0)]
+        [InlineData(6, 0)]
+        public void ShouldDeserialize(int major, int minor)
         {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            using var memory = new MemoryStream();
 
-            writer.WriteStructHeader(1, BoltProtocolV3MessageFormat.MsgSuccess);
-            writer.WriteMapHeader(2);
-            writer.Write("fields");
-            writer.Write(1L);
-            writer.Write("statistics");
-            writer.Write(true);
+            var boltProtocolVersion = new BoltProtocolVersion(major, minor);
+            var format = new MessageFormat(boltProtocolVersion);
 
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var value = readerMachine.Reader().Read();
+            var psw = new PackStreamWriter(format, memory);
 
-            value.Should().NotBeNull();
-            value.Should().BeOfType<SuccessMessage>().Which.Meta.Should()
-                .HaveCount(2).And
-                .Contain(new[]
-                {
-                    new KeyValuePair<string, object>("fields", 1L), new KeyValuePair<string, object>("statistics", true)
-                });
+            var value = new Dictionary<string, object>() as IDictionary<string, object>;
+            value.Add("unknown", 1);
+            psw.WriteDictionary(value);
+            memory.Position = 0;
+
+            var reader = new PackStreamReader(format, memory, new ByteBuffers());
+
+            var message = SuccessMessageSerializer.Instance.Deserialize(reader);
+
+            message.Should()
+                .BeOfType<SuccessMessage>()
+                .Which.Meta.Should()
+                .ContainKey("unknown")
+                .WhichValue.Should()
+                .Be(1L);
         }
-
     }
 }

@@ -1,14 +1,14 @@
 ﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
-//
+// 
 // This file is part of Neo4j.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// 
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-//
+// 
 //     http://www.apache.org/licenses/LICENSE-2.0
-//
+// 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,14 +17,13 @@
 
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal interface IConnectionPool : IConnectionProvider, IConnectionReleaseManager
 {
-    internal interface IConnectionPool : IConnectionProvider, IConnectionReleaseManager
-    {
-        int NumberOfInUseConnections { get; }
-        int NumberOfIdleConnections { get; }
-        ConnectionPoolStatus Status { get; }
-        Task DeactivateAsync();
-        void Activate();
-	}
+    int NumberOfInUseConnections { get; }
+    int NumberOfIdleConnections { get; }
+    ConnectionPoolStatus Status { get; }
+    Task DeactivateAsync();
+    void Activate();
 }

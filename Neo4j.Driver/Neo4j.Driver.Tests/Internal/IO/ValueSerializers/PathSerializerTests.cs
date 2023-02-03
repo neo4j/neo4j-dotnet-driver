@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,9 +18,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using FluentAssertions;
-using Moq;
 using Neo4j.Driver.Internal.Types;
 using Xunit;
+
+#pragma warning disable CS0618
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers
 {
@@ -29,26 +30,13 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
         internal override IPackStreamSerializer SerializerUnderTest => new PathSerializer();
 
         internal override IEnumerable<IPackStreamSerializer> SerializersNeeded =>
-            new IPackStreamSerializer[] {new NodeSerializer(), new UnboundRelationshipSerializer()};
-
-        [Fact]
-        public void ShouldThrowOnSerialize()
-        {
-            var handler = SerializerUnderTest;
-
-            var ex = Record.Exception(() =>
-                handler.Serialize(Mock.Of<IPackStreamWriter>(),
-                    new Path(new List<ISegment>(), new List<INode>(), new List<IRelationship>())));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ProtocolException>();
-        }
+            new IPackStreamSerializer[] { new NodeSerializer(), new UnboundRelationshipSerializer() };
 
         [Fact]
         public void ShouldDeserialize()
         {
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             SerializePath(writer);
 
@@ -62,7 +50,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
         public void ShouldDeserializeReverse()
         {
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             SerializePath(writer, true);
 
@@ -76,7 +64,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
         public void ShouldDeserializeWhenInList()
         {
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             writer.WriteListHeader(1);
             SerializePath(writer);
@@ -94,7 +82,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
         public void ShouldDeserializeWhenInMap()
         {
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             writer.WriteMapHeader(1);
             writer.Write("x");
@@ -104,16 +92,20 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             var value = readerMachine.Reader().Read();
 
             value.Should().NotBeNull();
-            value.Should().BeAssignableTo<IDictionary<string, object>>().Which.Should().HaveCount(1).And
+            value.Should()
+                .BeAssignableTo<IDictionary<string, object>>()
+                .Which.Should()
+                .HaveCount(1)
+                .And
                 .ContainKey("x");
 
             VerifySerializedPath(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
         }
 
-        private static void SerializePath(IPackStreamWriter writer, bool reverse = false)
+        private static void SerializePath(PackStreamWriter writer, bool reverse = false)
         {
             writer.WriteStructHeader(3, PathSerializer.Path);
-            
+
             writer.WriteListHeader(3);
             for (var i = 0; i < 3; i++)
             {
@@ -134,26 +126,28 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             writer.Write(0);
         }
 
-        private static void SerializeNode(IPackStreamWriter writer, int id)
+        private static void SerializeNode(PackStreamWriter writer, int id)
         {
             writer.WriteStructHeader(3, NodeSerializer.Node);
             writer.Write(id);
-            writer.Write(new List<string> {$"Label{id}"});
-            writer.Write(new Dictionary<string, object>
-            {
-                {"nProp1", $"something{id}"}
-            });
+            writer.Write(new List<string> { $"Label{id}" });
+            writer.Write(
+                new Dictionary<string, object>
+                {
+                    { "nProp1", $"something{id}" }
+                });
         }
 
-        private static void SerializeUnboundedRelationship(IPackStreamWriter writer, int id)
+        private static void SerializeUnboundedRelationship(PackStreamWriter writer, int id)
         {
             writer.WriteStructHeader(3, UnboundRelationshipSerializer.UnboundRelationship);
             writer.Write(id);
             writer.Write($"RELATES_TO_{id}");
-            writer.Write(new Dictionary<string, object>
-            {
-                {"rProp1", $"something{id}"}
-            });
+            writer.Write(
+                new Dictionary<string, object>
+                {
+                    { "rProp1", $"something{id}" }
+                });
         }
 
         private static void VerifySerializedPath(object value)
@@ -193,19 +187,30 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             value.Should().NotBeNull();
             value.Should().BeOfType<Node>().Which.Id.Should().Be(expectedId);
             value.Should().BeOfType<Node>().Which.Labels.Should().HaveCount(1).And.Contain($"Label{expectedId}");
-            value.Should().BeOfType<Node>().Which.Properties.Should().HaveCount(1).And
+            value.Should()
+                .BeOfType<Node>()
+                .Which.Properties.Should()
+                .HaveCount(1)
+                .And
                 .Contain(new KeyValuePair<string, object>("nProp1", $"something{expectedId}"));
         }
 
-        private static void VerifySerializedUnboundedRelationship(object value, int expectedId, int expectedStartNodeId, int expectedEndNodeId)
+        private static void VerifySerializedUnboundedRelationship(
+            object value,
+            int expectedId,
+            int expectedStartNodeId,
+            int expectedEndNodeId)
         {
             value.Should().BeOfType<Relationship>().Which.Id.Should().Be(expectedId);
             value.Should().BeOfType<Relationship>().Which.StartNodeId.Should().Be(expectedStartNodeId);
             value.Should().BeOfType<Relationship>().Which.EndNodeId.Should().Be(expectedEndNodeId);
             value.Should().BeOfType<Relationship>().Which.Type.Should().Be($"RELATES_TO_{expectedId}");
-            value.Should().BeOfType<Relationship>().Which.Properties.Should().HaveCount(1).And
+            value.Should()
+                .BeOfType<Relationship>()
+                .Which.Properties.Should()
+                .HaveCount(1)
+                .And
                 .Contain(new KeyValuePair<string, object>("rProp1", $"something{expectedId}"));
         }
-
     }
 }

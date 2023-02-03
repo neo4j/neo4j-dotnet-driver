@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -28,17 +28,13 @@ namespace Neo4j.Driver.Internal;
 
 internal sealed class Driver : IInternalDriver
 {
-    private int _closedMarker = 0;
-
-    private readonly IConnectionProvider _connectionProvider;
-    private readonly IAsyncRetryLogic _retryLogic;
-    private readonly ILogger _logger;
-    private readonly IMetrics _metrics;
-    private readonly Config _config;
     private readonly DefaultBookmarkManager _bookmarkManager;
 
-    public Uri Uri { get; }
-    public bool Encrypted { get; }
+    private readonly IConnectionProvider _connectionProvider;
+    private readonly ILogger _logger;
+    private readonly IMetrics _metrics;
+    private readonly IAsyncRetryLogic _retryLogic;
+    private int _closedMarker;
 
     internal Driver(
         Uri uri,
@@ -49,21 +45,22 @@ internal sealed class Driver : IInternalDriver
         IMetrics metrics = null,
         Config config = null)
     {
-        Throw.ArgumentNullException.IfNull(connectionProvider, nameof(connectionProvider));
-
         Uri = uri;
         Encrypted = encrypted;
         _logger = logger;
-        _connectionProvider = connectionProvider;
+        _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
         _retryLogic = retryLogic;
         _metrics = metrics;
-        _config = config;
-        _bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig(null, null, null));
+        Config = config;
+        _bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig());
     }
 
-    private bool IsClosed => _closedMarker > 0;
+    public Uri Uri { get; }
 
-    public Config Config => _config;
+    private bool IsClosed => _closedMarker > 0;
+    public bool Encrypted { get; }
+
+    public Config Config { get; }
 
     public IAsyncSession AsyncSession()
     {
@@ -88,7 +85,7 @@ internal sealed class Driver : IInternalDriver
             _connectionProvider,
             _logger,
             _retryLogic,
-            _config.FetchSize,
+            Config.FetchSize,
             sessionConfig,
             reactive);
 
@@ -100,26 +97,56 @@ internal sealed class Driver : IInternalDriver
         return session;
     }
 
-    private void Close()
-    {
-        CloseAsync().GetAwaiter().GetResult();
-    }
-
     public Task CloseAsync()
     {
         return Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0
-            ? _connectionProvider.CloseAsync()
+            ? _connectionProvider.DisposeAsync().AsTask()
             : Task.CompletedTask;
     }
 
-    public Task<IServerInfo> GetServerInfoAsync() =>
-        _connectionProvider.VerifyConnectivityAndGetInfoAsync();
+    public Task<IServerInfo> GetServerInfoAsync()
+    {
+        return _connectionProvider.VerifyConnectivityAndGetInfoAsync();
+    }
 
-    public Task VerifyConnectivityAsync() => GetServerInfoAsync();
+    public Task VerifyConnectivityAsync()
+    {
+        return GetServerInfoAsync();
+    }
 
     public Task<bool> SupportsMultiDbAsync()
     {
         return _connectionProvider.SupportsMultiDbAsync();
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        return Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0
+            ? _connectionProvider.DisposeAsync()
+            : new ValueTask(Task.CompletedTask);
+    }
+
+    public Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
+        Query query,
+        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor,
+        QueryConfig config = null,
+        CancellationToken cancellationToken = default)
+    {
+        return ExecuteQueryAsyncInternal(
+            query,
+            config,
+            cancellationToken,
+            TransformCursor(streamProcessor));
+    }
+
+    private void Close()
+    {
+        CloseAsync().GetAwaiter().GetResult();
     }
 
     //Non public facing api. Used for testing with testkit only
@@ -128,25 +155,17 @@ internal sealed class Driver : IInternalDriver
         return _connectionProvider.GetRoutingTable(database);
     }
 
-    public void Dispose()
-    {
-        Dispose(true);
-    }
-
     private void Dispose(bool disposing)
     {
         if (IsClosed)
+        {
             return;
+        }
 
         if (disposing)
         {
             Close();
         }
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        return IsClosed ? default : new ValueTask(CloseAsync());
     }
 
     private static void ThrowDriverClosedException()
@@ -180,25 +199,14 @@ internal sealed class Driver : IInternalDriver
         await using (session.ConfigureAwait(false))
         {
             if (config.Routing == RoutingControl.Readers)
+            {
                 return await session.ExecuteReadAsync(x => Work(query, x, cursorProcessor, cancellationToken))
                     .ConfigureAwait(false);
+            }
 
             return await session.ExecuteWriteAsync(x => Work(query, x, cursorProcessor, cancellationToken))
                 .ConfigureAwait(false);
         }
-    }
-
-    public Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
-        Query query,
-        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor,
-        QueryConfig config = null,
-        CancellationToken cancellationToken = default)
-    {
-        return ExecuteQueryAsyncInternal(
-            query,
-            config,
-            cancellationToken,
-            TransformCursor(streamProcessor));
     }
 
     private static Func<IResultCursor, CancellationToken, Task<EagerResult<TResult>>> TransformCursor<TResult>(
@@ -220,13 +228,19 @@ internal sealed class Driver : IInternalDriver
     private void ApplyConfig(QueryConfig config, SessionConfigBuilder sessionConfigBuilder)
     {
         if (!string.IsNullOrWhiteSpace(config.Database))
+        {
             sessionConfigBuilder.WithDatabase(config.Database);
+        }
 
         if (!string.IsNullOrWhiteSpace(config.ImpersonatedUser))
+        {
             sessionConfigBuilder.WithImpersonatedUser(config.ImpersonatedUser);
+        }
 
         if (config.EnableBookmarkManager)
+        {
             sessionConfigBuilder.WithBookmarkManager(config.BookmarkManager ?? _bookmarkManager);
+        }
 
         sessionConfigBuilder.WithDefaultAccessMode(
             config.Routing switch

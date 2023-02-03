@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -22,39 +22,131 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;
-using Neo4j.Driver.Internal.Messaging.V3;
-using Neo4j.Driver.Internal.Protocol;
+using Neo4j.Driver.Internal.Messaging;
 using Xunit;
-using static Xunit.Record;
-using Record = Xunit.Record;
 
 namespace Neo4j.Driver.Tests
 {
     public class SocketClientTests
     {
-        private static Uri FakeUri => new Uri("bolt://foo.bar:7878");
+        private static readonly BoltProtocolVersion Version = BoltProtocolVersion.V3_0;
+        private static Uri FakeUri => new("bolt://foo.bar:7878");
+        private static BufferSettings DefaultBuffers => new(Config.Default);
+
+        private static SocketSettings SocketSetting => new(
+            Mock.Of<IHostResolver>(),
+            new EncryptionManager(false, TrustManager.CreateInsecure()));
+
+        private static SocketClient NewClient(
+            Mock<IConnectionIoFactory> factory = null,
+            Mock<IPackStreamFactory> mockPackstreamFactory = null,
+            Mock<IBoltHandshaker> boltHandshaker = null)
+        {
+            factory ??= CreateMockIoFactory(null, null).Item2;
+            mockPackstreamFactory ??= new Mock<IPackStreamFactory>();
+
+            if (boltHandshaker == null)
+            {
+                boltHandshaker = new Mock<IBoltHandshaker>();
+                boltHandshaker
+                    .Setup(
+                        x => x.DoHandshakeAsync(
+                            It.IsAny<ITcpSocketClient>(),
+                            It.IsAny<ILogger>(),
+                            It.IsAny<CancellationToken>()))
+                    .Returns(Task.FromResult(Version));
+            }
+
+            return new SocketClient(
+                FakeUri,
+                SocketSetting,
+                DefaultBuffers,
+                Mock.Of<ILogger>(),
+                factory.Object,
+                mockPackstreamFactory.Object,
+                boltHandshaker.Object);
+        }
+
+        private static (Mock<ITcpSocketClient>, Mock<IConnectionIoFactory>) CreateMockIoFactory(
+            Action<Mock<ITcpSocketClient>> configureMock,
+            Action<Mock<IConnectionIoFactory>> configureFactory)
+        {
+            var connMock = new Mock<ITcpSocketClient>();
+            configureMock?.Invoke(connMock);
+
+            var mockIoFactory = new Mock<IConnectionIoFactory>();
+            mockIoFactory
+                .Setup(x => x.TcpSocketClient(It.IsAny<SocketSettings>(), It.IsAny<ILogger>()))
+                .Returns(connMock.Object);
+
+            configureFactory?.Invoke(mockIoFactory);
+
+            return (connMock, mockIoFactory);
+        }
+
+        private static void SetupFactory(
+            Mock<IConnectionIoFactory> factory,
+            MessageFormat format = null,
+            IChunkWriter writer = null,
+            IMessageReader messageReader = null,
+            IMessageWriter messageWriter = null)
+        {
+            var fmt = format ?? new MessageFormat(Version);
+            var cw = writer ??
+                new ChunkWriter(
+                    new MemoryStream(),
+                    DefaultBuffers,
+                    Mock.Of<ILogger>());
+
+            var mr = messageReader ?? Mock.Of<IMessageReader>();
+            var mw = messageWriter ?? Mock.Of<IMessageWriter>();
+
+            factory
+                .Setup(x => x.Readers(It.IsAny<ITcpSocketClient>(), It.IsAny<BufferSettings>(), It.IsAny<ILogger>()))
+                .Returns(mr);
+
+            factory
+                .Setup(x => x.Writers(It.IsAny<ITcpSocketClient>(), It.IsAny<BufferSettings>(), It.IsAny<ILogger>()))
+                .Returns((cw, mw));
+
+            factory.Setup(x => x.Format(Version)).Returns(fmt);
+        }
 
         public class ConnectMethod
         {
             [Fact]
-            public async void ShouldThrowIOExceptionIfFailedToReadOnHandshakeAsync()
+            public async void ShouldNotCatchHandshakeFailuresOrConstructIoTypes()
             {
-                var bufferSettings = new BufferSettings(Config.Default);
+                var (_, io) = CreateMockIoFactory(null, null);
+                var mockHandshaker = new Mock<IBoltHandshaker>();
+                var exception = new IOException();
+                mockHandshaker
+                    .Setup(
+                        x => x.DoHandshakeAsync(
+                            It.IsAny<ITcpSocketClient>(),
+                            It.IsAny<ILogger>(),
+                            It.IsAny<CancellationToken>()))
+                    .ThrowsAsync(exception);
 
-                var connMock = new Mock<ITcpSocketClient>();
-                TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
+                var client = NewClient(io, null, mockHandshaker);
 
-                var client = new SocketClient(FakeUri, null, bufferSettings, socketClient: connMock.Object);
+                var ex = await Record.ExceptionAsync(
+                    () => client.ConnectAsync(new Dictionary<string, string>(), CancellationToken.None));
 
-                var ex = await Record.ExceptionAsync(() => client.ConnectAsync(new Dictionary<string, string>(), CancellationToken.None));
+                mockHandshaker.Verify(
+                    x => x.DoHandshakeAsync(
+                        It.IsAny<ITcpSocketClient>(),
+                        It.IsAny<ILogger>(),
+                        It.IsAny<CancellationToken>()),
+                    Times.Once);
 
-                ex.Should().NotBeNull().And.BeOfType<IOException>();
+                ex.Should().NotBeNull().And.Be(exception);
+
+                io.Verify(x => x.Format(It.IsAny<BoltProtocolVersion>()), Times.Never);
             }
         }
 
@@ -63,16 +155,20 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task ShouldConnectServerAsync()
             {
-                var bufferSettings = new BufferSettings(Config.Default);
                 var version = new BoltProtocolVersion(4, 1);
-                var connMock = new Mock<ITcpSocketClient>();
-                
-                TcpSocketClientTestSetup.CreateReadStreamMock(connMock, PackStreamBitConverter.GetBytes(version.PackToInt()));
-                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
 
-                PackStreamBitConverter.GetBytes((int)0x14);
+                var (connMock, factory) = CreateMockIoFactory(
+                    x =>
+                    {
+                        TcpSocketClientTestSetup.CreateReadStreamMock(
+                            x,
+                            PackStreamBitConverter.GetBytes(version.PackToInt()));
 
-                var client = new SocketClient(FakeUri, null, bufferSettings, socketClient: connMock.Object);
+                        TcpSocketClientTestSetup.CreateWriteStreamMock(x);
+                    },
+                    null);
+
+                var client = NewClient(factory);
 
                 await client.ConnectAsync(new Dictionary<string, string>());
 
@@ -88,37 +184,44 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var writerMock = new Mock<IMessageWriter>();
+                var chunkerMock = new Mock<IChunkWriter>();
 
-                var m1 = new RunWithMetadataMessage(new Query("Run message 1"), AccessMode.Write);
-                var m2 = new RunWithMetadataMessage(new Query("Run message 2"), AccessMode.Read);
-                var messages = new IRequestMessage[] {m1, m2};
-                var client = new SocketClient(null, writerMock.Object);
+                var (_, factory) = CreateMockIoFactory(
+                    null,
+                    x => SetupFactory(x, writer: chunkerMock.Object, messageWriter: writerMock.Object));
+
+                var m1 = new RunWithMetadataMessage(Version, new Query("Run message 1"));
+                var m2 = new RunWithMetadataMessage(Version, new Query("Run message 2"));
+                var messages = new IRequestMessage[] { m1, m2 };
+
+                var client = NewClient(factory, new Mock<IPackStreamFactory>());
+                await client.ConnectAsync(null);
 
                 // When
                 await client.SendAsync(messages);
 
                 // Then
-                writerMock.Verify(x => x.Write(m1), Times.Once);
-                writerMock.Verify(x => x.Write(m2), Times.Once);
-                writerMock.Verify(x => x.FlushAsync(), Times.Once);
+                writerMock.Verify(x => x.Write(m1, It.IsAny<PackStreamWriter>()), Times.Once);
+                writerMock.Verify(x => x.Write(m2, It.IsAny<PackStreamWriter>()), Times.Once);
+
+                chunkerMock.Verify(x => x.SendAsync(), Times.Once);
             }
 
             [Fact]
             public async Task ShouldCloseConnectionIfErrorAsync()
             {
-                // Given
-                var connMock = new Mock<ITcpSocketClient>();
+                var (connMock, factory) = CreateMockIoFactory(null, null);
 
-                var client = new SocketClient(null, null, connMock.Object);
-                client.SetOpened();
+                // Given
+                var client = NewClient(factory);
+                await client.ConnectAsync(null);
 
                 // When
-                var exception = await ExceptionAsync(() =>
-                    client.SendAsync(null /*cause null point exception in send method*/));
+                var exception = await Record.ExceptionAsync(() => client.SendAsync(null));
 
                 // Then
                 exception.Should().BeOfType<NullReferenceException>();
-                connMock.Verify(x => x.DisconnectAsync(), Times.Once);
+                connMock.Verify(x => x.Dispose(), Times.Once);
             }
         }
 
@@ -128,60 +231,80 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldReadMessageAsync()
             {
                 // Given
+                var pipeline = new Mock<IResponsePipeline>();
                 var readerMock = new Mock<IMessageReader>();
 
-                var client = new SocketClient(readerMock.Object, null);
-                var pipeline = new Mock<IResponsePipeline>();
+                var (_, factory) = CreateMockIoFactory(null, x => SetupFactory(x, messageReader: readerMock.Object));
+
+                var psFactory = new Mock<IPackStreamFactory>();
+                psFactory.Setup(
+                        x => x.BuildReader(
+                            It.IsAny<MessageFormat>(),
+                            It.IsAny<MemoryStream>(),
+                            It.IsAny<ByteBuffers>()))
+                    .Returns(new PackStreamReader(null, null, null));
+
+                var client = NewClient(factory, psFactory);
+                await client.ConnectAsync(null);
 
                 // When
                 await client.ReceiveOneAsync(pipeline.Object);
 
                 // Then
-                readerMock.Verify(x => x.ReadAsync(pipeline.Object), Times.Once);
+                readerMock.Verify(x => x.ReadAsync(pipeline.Object, It.IsAny<PackStreamReader>()), Times.Once);
             }
 
             [Fact]
             public async Task ShouldCloseConnectionIfErrorAsync()
             {
                 // Given
+                var mockPipeline = new Mock<IResponsePipeline>();
+
                 var readerMock = new Mock<IMessageReader>();
-                var connMock = new Mock<ITcpSocketClient>();
+                readerMock
+                    .Setup(x => x.ReadAsync(mockPipeline.Object, It.IsAny<PackStreamReader>()))
+                    .Throws<IOException>();
 
-                var client = new SocketClient(readerMock.Object, null, connMock.Object);
-                client.SetOpened();
+                var (connMock, factory) = CreateMockIoFactory(
+                    null,
+                    x => SetupFactory(x, messageReader: readerMock.Object));
 
-                var pipeline = new Mock<IResponsePipeline>();
-                // Throw error when try to read
-                readerMock.Setup(x => x.ReadAsync(pipeline.Object)).Throws<IOException>();
+                var client = NewClient(factory);
+                await client.ConnectAsync(null);
 
                 // When
-                var exception = await ExceptionAsync(() => client.ReceiveOneAsync(pipeline.Object));
+                var exception = await Record.ExceptionAsync(() => client.ReceiveOneAsync(mockPipeline.Object));
 
                 // Then
                 exception.Should().BeOfType<IOException>();
-                connMock.Verify(x => x.DisconnectAsync(), Times.Once);
+                readerMock.Verify(x => x.ReadAsync(mockPipeline.Object, It.IsAny<PackStreamReader>()), Times.Once);
+                connMock.Verify(x => x.Dispose(), Times.Once);
             }
 
             [Fact]
             public async Task ShouldCloseConnectionOnProtocolException()
             {
                 // Given
+                var mockPipeline = new Mock<IResponsePipeline>();
+
                 var readerMock = new Mock<IMessageReader>();
-                var connMock = new Mock<ITcpSocketClient>();
+                readerMock.Setup(x => x.ReadAsync(mockPipeline.Object, It.IsAny<PackStreamReader>()))
+                    .Throws(new ProtocolException("test"));
 
-                var client = new SocketClient(readerMock.Object, null, connMock.Object);
-                client.SetOpened();
+                var (connMock, factory) = CreateMockIoFactory(
+                    null,
+                    x => SetupFactory(x, messageReader: readerMock.Object));
 
-                var pipeline = new Mock<IResponsePipeline>();
-                pipeline.Setup(x => x.AssertNoProtocolViolation()).Throws(new ProtocolException("some protocol error"));
+                var client = NewClient(factory);
+                await client.ConnectAsync(null);
 
                 // When
-                var exception = await ExceptionAsync(() => client.ReceiveOneAsync(pipeline.Object));
+                var exception = await Record.ExceptionAsync(() => client.ReceiveOneAsync(mockPipeline.Object));
 
                 // Then
                 exception.Should().BeOfType<ProtocolException>();
-                readerMock.Verify(x => x.ReadAsync(pipeline.Object), Times.Once);
-                connMock.Verify(x => x.DisconnectAsync(), Times.Once);
+                readerMock.Verify(x => x.ReadAsync(mockPipeline.Object, It.IsAny<PackStreamReader>()), Times.Once);
+                connMock.Verify(x => x.Dispose(), Times.Once);
             }
 
             [Fact]
@@ -189,21 +312,25 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var readerMock = new Mock<IMessageReader>();
-                var connMock = new Mock<ITcpSocketClient>();
                 var pipeline = new Mock<IResponsePipeline>();
 
-                var client = new SocketClient(readerMock.Object, null, connMock.Object);
-                client.SetOpened();
+                var (connMock, factory) = CreateMockIoFactory(
+                    null,
+                    x => SetupFactory(x, messageReader: readerMock.Object));
 
-                readerMock.Setup(x => x.ReadAsync(pipeline.Object)).ThrowsAsync(new DatabaseException());
+                var client = NewClient(factory);
+                await client.ConnectAsync(null);
+
+                readerMock.Setup(x => x.ReadAsync(pipeline.Object, It.IsAny<PackStreamReader>()))
+                    .ThrowsAsync(new DatabaseException());
 
                 // When
-                var exception = await ExceptionAsync(() => client.ReceiveOneAsync(pipeline.Object));
+                var exception = await Record.ExceptionAsync(() => client.ReceiveOneAsync(pipeline.Object));
 
                 // Then
                 exception.Should().BeOfType<DatabaseException>();
-                readerMock.Verify(x => x.ReadAsync(pipeline.Object), Times.Once);
-                connMock.Verify(x => x.DisconnectAsync(), Times.Once);
+                readerMock.Verify(x => x.ReadAsync(pipeline.Object, It.IsAny<PackStreamReader>()), Times.Once);
+                connMock.Verify(x => x.Dispose(), Times.Once);
             }
         }
 
@@ -212,15 +339,16 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task ShouldCallDisconnectAsyncOnTheTcpSocketClientWhenStoppedAsync()
             {
-                var connMock = new Mock<ITcpSocketClient>();
-                var client = new SocketClient(null, null, connMock.Object);
-                client.SetOpened();
+                var (connMock, factory) = CreateMockIoFactory(null, null);
+
+                var client = NewClient(factory);
+                await client.ConnectAsync(null);
 
                 // When
-                await client.StopAsync();
+                await client.DisposeAsync();
 
                 // Then
-                connMock.Verify(x => x.DisconnectAsync(), Times.Once);
+                connMock.Verify(x => x.Dispose(), Times.Once);
                 client.IsOpen.Should().BeFalse();
             }
         }

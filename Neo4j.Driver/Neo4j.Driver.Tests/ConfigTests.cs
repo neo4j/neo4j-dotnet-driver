@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -17,10 +17,8 @@
 
 using System;
 using FluentAssertions;
-using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.Logging;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal.Connector.Trust;
+using Neo4j.Driver.Internal.Logging;
 using Xunit;
 
 namespace Neo4j.Driver.Tests
@@ -43,7 +41,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldUseMaxConnectionValueIfMaxIdleValueIsNotSpecified()
             {
-                var config = new Config {MaxConnectionPoolSize = 50};
+                var config = new Config { MaxConnectionPoolSize = 50 };
                 config.MaxConnectionPoolSize.Should().Be(50);
                 config.MaxIdleConnectionPoolSize.Should().Be(50);
             }
@@ -51,7 +49,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldSetMaxIdleValueWhenSetSeparately()
             {
-                var config = new Config {MaxIdleConnectionPoolSize = 20, MaxConnectionPoolSize = 50};
+                var config = new Config { MaxIdleConnectionPoolSize = 20, MaxConnectionPoolSize = 50 };
                 config.MaxConnectionPoolSize.Should().Be(50);
                 config.MaxIdleConnectionPoolSize.Should().Be(20);
             }
@@ -73,6 +71,7 @@ namespace Neo4j.Driver.Tests
                     EncryptionLevel = EncryptionLevel.None,
                     TrustManager = null
                 };
+
                 config.NullableEncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeNull();
@@ -84,7 +83,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldUseDefaultValueIfNotSpecified()
             {
-                var config = new Config {EncryptionLevel = EncryptionLevel.Encrypted};
+                var config = new Config { EncryptionLevel = EncryptionLevel.Encrypted };
 
                 config.EncryptionLevel.Should().Be(EncryptionLevel.Encrypted);
                 config.TrustManager.Should().BeNull();
@@ -166,7 +165,7 @@ namespace Neo4j.Driver.Tests
                 config.TrustManager.Should().BeNull();
                 config.Logger.Should().BeOfType<NullLogger>();
                 config.MaxIdleConnectionPoolSize.Should().Be(100);
-            }			
+            }
         }
     }
 }

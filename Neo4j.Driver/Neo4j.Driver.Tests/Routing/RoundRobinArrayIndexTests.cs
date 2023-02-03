@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -15,7 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Routing;
 using Xunit;
@@ -29,7 +28,7 @@ namespace Neo4j.Driver.Tests.Routing
         {
             var roundRobinIndex = new RoundRobinArrayIndex();
 
-            int index = roundRobinIndex.Next(0);
+            var index = roundRobinIndex.Next(0);
 
             index.Should().Be(-1);
         }
@@ -37,17 +36,17 @@ namespace Neo4j.Driver.Tests.Routing
         [Fact]
         public void ShouldReturnIndexesInRoundRobinOrder()
         {
-            RoundRobinArrayIndex roundRobinIndex = new RoundRobinArrayIndex();
+            var roundRobinIndex = new RoundRobinArrayIndex();
 
-            for (int i = 0; i < 10; i++)
+            for (var i = 0; i < 10; i++)
             {
-                int index = roundRobinIndex.Next(10);
+                var index = roundRobinIndex.Next(10);
                 index.Should().Be(i);
             }
 
-            for (int i = 0; i < 5; i++)
+            for (var i = 0; i < 5; i++)
             {
-                int index = roundRobinIndex.Next(5);
+                var index = roundRobinIndex.Next(5);
                 index.Should().Be(i);
             }
         }
@@ -55,11 +54,11 @@ namespace Neo4j.Driver.Tests.Routing
         [Fact]
         public void ShouldHandleOverflow()
         {
-            int arrayLength = 10;
-            RoundRobinArrayIndex roundRobinIndex = new RoundRobinArrayIndex(Int32.MaxValue - 2);
+            var arrayLength = 10;
+            var roundRobinIndex = new RoundRobinArrayIndex(int.MaxValue - 2);
 
-            roundRobinIndex.Next(arrayLength).Should().Be((Int32.MaxValue - 1) % arrayLength);
-            roundRobinIndex.Next(arrayLength).Should().Be(Int32.MaxValue % arrayLength);
+            roundRobinIndex.Next(arrayLength).Should().Be((int.MaxValue - 1) % arrayLength);
+            roundRobinIndex.Next(arrayLength).Should().Be(int.MaxValue % arrayLength);
             roundRobinIndex.Next(arrayLength).Should().Be(0);
             roundRobinIndex.Next(arrayLength).Should().Be(1);
             roundRobinIndex.Next(arrayLength).Should().Be(2);

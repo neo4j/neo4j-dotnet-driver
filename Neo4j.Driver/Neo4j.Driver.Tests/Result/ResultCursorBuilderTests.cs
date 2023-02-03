@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -34,6 +34,7 @@ namespace Neo4j.Driver.Tests
         {
             var builder =
                 new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null, reactive: true);
+
             builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunRequested);
         }
 
@@ -42,6 +43,7 @@ namespace Neo4j.Driver.Tests
         {
             var builder =
                 new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null);
+
             builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunAndRecordsRequested);
         }
 
@@ -50,9 +52,10 @@ namespace Neo4j.Driver.Tests
         {
             var builder =
                 new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null, reactive: true);
+
             builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunRequested);
 
-            builder.RunCompleted(0, new[] {"a", "b", "c"}, null);
+            builder.RunCompleted(0, new[] { "a", "b", "c" }, null);
             builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunCompleted);
         }
 
@@ -61,9 +64,10 @@ namespace Neo4j.Driver.Tests
         {
             var builder =
                 new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null);
+
             builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunAndRecordsRequested);
 
-            builder.RunCompleted(0, new[] {"a", "b", "c"}, null);
+            builder.RunCompleted(0, new[] { "a", "b", "c" }, null);
             builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunAndRecordsRequested);
         }
 
@@ -72,12 +76,13 @@ namespace Neo4j.Driver.Tests
         {
             var builder =
                 new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null, reactive: true);
+
             builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunRequested);
 
-            builder.RunCompleted(0, new[] {"a", "b", "c"}, null);
+            builder.RunCompleted(0, new[] { "a", "b", "c" }, null);
             builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunCompleted);
 
-            builder.PushRecord(new object[] {1, 2, 3});
+            builder.PushRecord(new object[] { 1, 2, 3 });
             builder.CurrentState.Should().Be(ResultCursorBuilder.State.RecordsStreaming);
         }
 
@@ -86,12 +91,13 @@ namespace Neo4j.Driver.Tests
         {
             var builder =
                 new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null);
+
             builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunAndRecordsRequested);
 
-            builder.RunCompleted(0, new[] {"a", "b", "c"}, null);
+            builder.RunCompleted(0, new[] { "a", "b", "c" }, null);
             builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunAndRecordsRequested);
 
-            builder.PushRecord(new object[] {1, 2, 3});
+            builder.PushRecord(new object[] { 1, 2, 3 });
             builder.CurrentState.Should().Be(ResultCursorBuilder.State.RecordsStreaming);
         }
 
@@ -127,13 +133,17 @@ namespace Neo4j.Driver.Tests
             var actions = new Queue<Action>();
             var resourceHandler = new Mock<IResultResourceHandler>();
             var builder =
-                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(actions), null, null,
+                new ResultCursorBuilder(
+                    CreateSummaryBuilder(),
+                    CreateTaskQueue(actions),
+                    null,
+                    null,
                     resourceHandler.Object);
 
-            actions.Enqueue(() => builder.RunCompleted(0, new[] {"a"}, null));
-            actions.Enqueue(() => builder.PushRecord(new object[] {1}));
-            actions.Enqueue(() => builder.PushRecord(new object[] {2}));
-            actions.Enqueue(() => builder.PushRecord(new object[] {3}));
+            actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
+            actions.Enqueue(() => builder.PushRecord(new object[] { 1 }));
+            actions.Enqueue(() => builder.PushRecord(new object[] { 2 }));
+            actions.Enqueue(() => builder.PushRecord(new object[] { 3 }));
             actions.Enqueue(() => builder.PullCompleted(false, null));
 
             var cursor = builder.CreateCursor();
@@ -161,29 +171,35 @@ namespace Neo4j.Driver.Tests
             var actions = new Queue<Action>();
             var resourceHandler = new Mock<IResultResourceHandler>();
             var builder =
-                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(),
+                new ResultCursorBuilder(
+                    CreateSummaryBuilder(),
+                    CreateTaskQueue(),
                     CreateMoreTaskQueue(actions),
                     null,
-                    resourceHandler.Object, 2);
+                    resourceHandler.Object,
+                    2);
 
             var counter = 0;
-            builder.RunCompleted(0, new[] {"a"}, null);
+            builder.RunCompleted(0, new[] { "a" }, null);
             builder.PullCompleted(true, null);
             builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunCompleted);
-            actions.Enqueue(() =>
-            {
-                builder.PushRecord(new object[] {1});
-                counter++;
-                builder.PushRecord(new object[] {2});
-                counter++;
-                builder.PullCompleted(true, null);
-            });
-            actions.Enqueue(() =>
-            {
-                builder.PushRecord(new object[] {3});
-                counter++;
-                builder.PullCompleted(false, null);
-            });
+            actions.Enqueue(
+                () =>
+                {
+                    builder.PushRecord(new object[] { 1 });
+                    counter++;
+                    builder.PushRecord(new object[] { 2 });
+                    counter++;
+                    builder.PullCompleted(true, null);
+                });
+
+            actions.Enqueue(
+                () =>
+                {
+                    builder.PushRecord(new object[] { 3 });
+                    counter++;
+                    builder.PullCompleted(false, null);
+                });
 
             var cursor = builder.CreateCursor();
 
@@ -206,23 +222,64 @@ namespace Neo4j.Driver.Tests
             counter.Should().Be(3);
         }
 
+        private static SummaryBuilder CreateSummaryBuilder()
+        {
+            return new SummaryBuilder(new Query("Fake"), Mock.Of<IServerInfo>());
+        }
+
+        private static Func<Task> CreateTaskQueue(Queue<Action> actions = null)
+        {
+            if (actions == null)
+            {
+                actions = new Queue<Action>();
+            }
+
+            return () =>
+            {
+                if (actions.TryDequeue(out var action))
+                {
+                    action();
+                }
+
+                return Task.CompletedTask;
+            };
+        }
+
+        private static Func<IResultStreamBuilder, long, long, Task> CreateMoreTaskQueue(Queue<Action> actions)
+        {
+            return (b, id, n) =>
+            {
+                if (actions.TryDequeue(out var action))
+                {
+                    action();
+                }
+
+                return Task.CompletedTask;
+            };
+        }
+
         public class Reactive
         {
-            private int moreCallCount;
             private int cancelCallCount;
+            private int moreCallCount;
 
             [Fact]
             public async Task ShouldCallMoreOnceAndReturnRecords()
             {
                 var actions = new Queue<Action>();
                 var builder =
-                    new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(actions),
-                        MoreFunction(), CancelFunction(), null, reactive: true);
+                    new ResultCursorBuilder(
+                        CreateSummaryBuilder(),
+                        CreateTaskQueue(actions),
+                        MoreFunction(),
+                        CancelFunction(),
+                        null,
+                        reactive: true);
 
-                actions.Enqueue(() => builder.RunCompleted(0, new[] {"a"}, null));
-                actions.Enqueue(() => builder.PushRecord(new object[] {1}));
-                actions.Enqueue(() => builder.PushRecord(new object[] {2}));
-                actions.Enqueue(() => builder.PushRecord(new object[] {3}));
+                actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 1 }));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 2 }));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 3 }));
                 actions.Enqueue(() => builder.PullCompleted(false, null));
 
                 var list = await builder.CreateCursor().ToListAsync(r => r[0].As<int>());
@@ -237,14 +294,19 @@ namespace Neo4j.Driver.Tests
             {
                 var actions = new Queue<Action>();
                 var builder =
-                    new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(actions),
-                        MoreFunction(), CancelFunction(), null, reactive: true);
+                    new ResultCursorBuilder(
+                        CreateSummaryBuilder(),
+                        CreateTaskQueue(actions),
+                        MoreFunction(),
+                        CancelFunction(),
+                        null,
+                        reactive: true);
 
-                actions.Enqueue(() => builder.RunCompleted(0, new[] {"a"}, null));
-                actions.Enqueue(() => builder.PushRecord(new object[] {1}));
+                actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 1 }));
                 actions.Enqueue(() => builder.PullCompleted(true, null));
-                actions.Enqueue(() => builder.PushRecord(new object[] {2}));
-                actions.Enqueue(() => builder.PushRecord(new object[] {3}));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 2 }));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 3 }));
                 actions.Enqueue(() => builder.PullCompleted(false, null));
 
                 var list = await builder.CreateCursor().ToListAsync(r => r[0].As<int>());
@@ -259,15 +321,20 @@ namespace Neo4j.Driver.Tests
             {
                 var actions = new Queue<Action>();
                 var builder =
-                    new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(actions),
-                        MoreFunction(), CancelFunction(), null, reactive: true);
+                    new ResultCursorBuilder(
+                        CreateSummaryBuilder(),
+                        CreateTaskQueue(actions),
+                        MoreFunction(),
+                        CancelFunction(),
+                        null,
+                        reactive: true);
 
-                actions.Enqueue(() => builder.RunCompleted(0, new[] {"a"}, null));
-                actions.Enqueue(() => builder.PushRecord(new object[] {1}));
+                actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 1 }));
                 actions.Enqueue(() => builder.PullCompleted(true, null));
-                actions.Enqueue(() => builder.PushRecord(new object[] {2}));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 2 }));
                 actions.Enqueue(() => builder.PullCompleted(true, null));
-                actions.Enqueue(() => builder.PushRecord(new object[] {3}));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 3 }));
                 actions.Enqueue(() => builder.PullCompleted(false, null));
 
                 var list = await builder.CreateCursor().ToListAsync(r => r[0].As<int>());
@@ -282,10 +349,15 @@ namespace Neo4j.Driver.Tests
             {
                 var actions = new Queue<Action>();
                 var builder =
-                    new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(actions),
-                        MoreFunction(), CancelFunction(), null, reactive: true);
+                    new ResultCursorBuilder(
+                        CreateSummaryBuilder(),
+                        CreateTaskQueue(actions),
+                        MoreFunction(),
+                        CancelFunction(),
+                        null,
+                        reactive: true);
 
-                actions.Enqueue(() => builder.RunCompleted(0, new[] {"a"}, null));
+                actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
                 actions.Enqueue(() => builder.PullCompleted(false, null));
 
                 var cursor = builder.CreateCursor();
@@ -307,12 +379,17 @@ namespace Neo4j.Driver.Tests
             {
                 var actions = new Queue<Action>();
                 var builder =
-                    new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(actions),
-                        MoreFunction(), CancelFunction(), null, reactive: true);
+                    new ResultCursorBuilder(
+                        CreateSummaryBuilder(),
+                        CreateTaskQueue(actions),
+                        MoreFunction(),
+                        CancelFunction(),
+                        null,
+                        reactive: true);
 
-                actions.Enqueue(() => builder.RunCompleted(0, new[] {"a"}, null));
-                actions.Enqueue(() => builder.PushRecord(new object[] {1}));
-                actions.Enqueue(() => builder.PushRecord(new object[] {2}));
+                actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 1 }));
+                actions.Enqueue(() => builder.PushRecord(new object[] { 2 }));
                 actions.Enqueue(() => builder.PullCompleted(true, null));
                 actions.Enqueue(() => builder.PullCompleted(false, null));
 
@@ -358,42 +435,5 @@ namespace Neo4j.Driver.Tests
                 };
             }
         }
-
-        private static SummaryBuilder CreateSummaryBuilder()
-        {
-            return new SummaryBuilder(new Query("Fake"), Mock.Of<IServerInfo>());
-        }
-
-        private static Func<Task> CreateTaskQueue(Queue<Action> actions = null)
-        {
-            if (actions == null)
-            {
-                actions = new Queue<Action>();
-            }
-
-            return () =>
-            {
-                if (actions.TryDequeue(out var action))
-                {
-                    action();
-                }
-
-                return Task.CompletedTask;
-            };
-        }
-
-        private static Func<IResultStreamBuilder, long, long, Task> CreateMoreTaskQueue(Queue<Action> actions)
-        {
-            return (b, id, n) =>
-            {
-                if (actions.TryDequeue(out var action))
-                {
-                    action();
-                }
-
-                return Task.CompletedTask;
-            };
-        }
-
     }
 }

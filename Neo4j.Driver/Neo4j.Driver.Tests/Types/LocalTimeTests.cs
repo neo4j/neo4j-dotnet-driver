@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections;
-using System.Diagnostics;
 using FluentAssertions;
 using Xunit;
 
@@ -25,7 +24,6 @@ namespace Neo4j.Driver.Tests.Types
 {
     public class LocalTimeTests
     {
-
         [Fact]
         public void ShouldCreateTimeWithTimeComponents()
         {
@@ -43,8 +41,8 @@ namespace Neo4j.Driver.Tests.Types
             cypherTime.ToTimeSpan().Should().Be(time);
         }
 
+#if NET6_0_OR_GREATER
         [Fact]
-        [Conditional("NET6_0_OR_GREATER")]
         public void ShouldCreateTimeWithTimeOnly()
         {
             var time = new TimeOnly(13, 59, 59, 255);
@@ -52,6 +50,7 @@ namespace Neo4j.Driver.Tests.Types
 
             cypherTime.ToTimeOnly().Should().Be(time);
         }
+#endif
 
         [Theory]
         [InlineData(-1)]
@@ -110,6 +109,7 @@ namespace Neo4j.Driver.Tests.Types
             ex.Should().NotBeNull().And.BeOfType<ValueTruncationException>();
         }
 
+#if NET6_0_OR_GREATER
         [Theory]
         [InlineData(1)]
         [InlineData(20)]
@@ -117,7 +117,6 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(999000727)]
         [InlineData(999000750)]
         [InlineData(999000001)]
-        [Conditional("NET6_0_OR_GREATER")]
         public void ShouldThrowOnTimeOnlyTruncation(int nanosecond)
         {
             var time = new LocalTime(0, 0, 0, nanosecond);
@@ -125,6 +124,7 @@ namespace Neo4j.Driver.Tests.Types
 
             ex.Should().NotBeNull().And.BeOfType<ValueTruncationException>();
         }
+#endif
 
         [Theory]
         [InlineData(13, 15, 59, 274000000, "13:15:59.274000000")]
@@ -239,7 +239,7 @@ namespace Neo4j.Driver.Tests.Types
 
             comp.Should().Be(0);
         }
-        
+
         [Fact]
         public void ShouldReportSmallerOnCompareTo()
         {

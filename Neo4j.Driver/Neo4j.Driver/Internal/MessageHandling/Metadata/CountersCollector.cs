@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -16,56 +16,58 @@
 // limitations under the License.
 
 using System.Collections.Generic;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Result;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata
+namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
+
+internal class CountersCollector : IMetadataCollector<ICounters>
 {
-    internal class CountersCollector : IMetadataCollector<ICounters>
+    internal const string CountersKey = "stats";
+
+    object IMetadataCollector.Collected => Collected;
+
+    public ICounters Collected { get; private set; }
+
+    public void Collect(IDictionary<string, object> metadata)
     {
-        internal const string CountersKey = "stats";
-
-        object IMetadataCollector.Collected => Collected;
-
-        public ICounters Collected { get; private set; }
-
-        public void Collect(IDictionary<string, object> metadata)
+        if (metadata == null || !metadata.TryGetValue(CountersKey, out var countersValue))
         {
-            if (metadata != null && metadata.TryGetValue(CountersKey, out var countersValue))
-            {
-                switch (countersValue)
-                {
-                    case null:
-                        Collected = null;
-                        break;
-                    case IDictionary<string, object> countersDict:
-                        Collected = new Counters(
-                            CountersValue(countersDict, "nodes-created"),
-                            CountersValue(countersDict, "nodes-deleted"),
-                            CountersValue(countersDict, "relationships-created"),
-                            CountersValue(countersDict, "relationships-deleted"),
-                            CountersValue(countersDict, "properties-set"),
-                            CountersValue(countersDict, "labels-added"),
-                            CountersValue(countersDict, "labels-removed"),
-                            CountersValue(countersDict, "indexes-added"),
-                            CountersValue(countersDict, "indexes-removed"),
-                            CountersValue(countersDict, "constraints-added"),
-                            CountersValue(countersDict, "constraints-removed"),
-                            CountersValue(countersDict, "system-updates"),
-                            countersDict.GetValue<bool?>("contains-system-updates", null),
-                            countersDict.GetValue<bool?>("contains-updates", null)
-                        );
-                        break;
-                    default:
-                        throw new ProtocolException(
-                            $"Expected '{CountersKey}' metadata to be of type 'IDictionary<String,Object>', but got '{countersValue?.GetType().Name}'.");
-                }
-            }
+            return;
         }
 
-        private static int CountersValue(IDictionary<string, object> counters, string name)
+        switch (countersValue)
         {
-            return (int) counters.GetValue(name, 0L);
+            case null:
+                Collected = null;
+                break;
+
+            case IDictionary<string, object> countersDict:
+                Collected = new Counters(
+                    CountersValue(countersDict, "nodes-created"),
+                    CountersValue(countersDict, "nodes-deleted"),
+                    CountersValue(countersDict, "relationships-created"),
+                    CountersValue(countersDict, "relationships-deleted"),
+                    CountersValue(countersDict, "properties-set"),
+                    CountersValue(countersDict, "labels-added"),
+                    CountersValue(countersDict, "labels-removed"),
+                    CountersValue(countersDict, "indexes-added"),
+                    CountersValue(countersDict, "indexes-removed"),
+                    CountersValue(countersDict, "constraints-added"),
+                    CountersValue(countersDict, "constraints-removed"),
+                    CountersValue(countersDict, "system-updates"),
+                    countersDict.GetValue<bool?>("contains-system-updates", null),
+                    countersDict.GetValue<bool?>("contains-updates", null));
+
+                break;
+
+            default:
+                throw new ProtocolException(
+                    $"Expected '{CountersKey}' metadata to be of type 'IDictionary<String,Object>', but got '{countersValue?.GetType().Name}'.");
         }
+    }
+
+    private static int CountersValue(IDictionary<string, object> counters, string name)
+    {
+        return (int)counters.GetValue(name, 0L);
     }
 }

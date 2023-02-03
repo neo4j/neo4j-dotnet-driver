@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -15,81 +15,77 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Protocol;
-using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Util;
 
-namespace Neo4j.Driver.Internal.Connector
+namespace Neo4j.Driver.Internal.Connector;
+
+internal interface IConnection : IConnectionDetails, IConnectionRunner
 {
-    internal interface IConnection
-    {
-        Task InitAsync(CancellationToken cancellationToken = default);
+    IBoltProtocol BoltProtocol { get; }
 
-        // send all and receive all
-        Task SyncAsync();
+    void ConfigureMode(AccessMode? mode);
+    void Configure(string database, AccessMode? mode);
 
-        // send all
-        Task SendAsync();
+    Task InitAsync(CancellationToken cancellationToken = default);
 
-        // receive one
-        Task ReceiveOneAsync();
+    // send all and receive all
+    Task SyncAsync();
 
-        Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1, IRequestMessage message2 = null,
-            IResponseHandler handler2 = null);
+    // send all
+    Task SendAsync();
 
-        // Enqueue a reset message
-        Task ResetAsync();
+    // receive one
+    Task ReceiveOneAsync();
 
-        /// <summary>
-        /// Close and release related resources
-        /// </summary>
-        Task DestroyAsync();
+    Task EnqueueAsync(IRequestMessage message, IResponseHandler handler);
 
-        /// <summary>
-        /// Close connection
-        /// </summary>
-        Task CloseAsync();
+    // Enqueue a reset message
+    Task ResetAsync();
 
-        /// <summary>
-        /// Return true if the underlying socket connection is till open, otherwise false.
-        /// </summary>
-        bool IsOpen { get; }
+    /// <summary>Close and release related resources</summary>
+    Task DestroyAsync();
 
-        /// <summary>
-        /// The info of the server the connection connected to.
-        /// </summary>
-        IServerInfo Server { get; }
+    /// <summary>Close connection</summary>
+    Task CloseAsync();
 
-        /// <summary>
-        /// The Bolt protocol that the connection is talking with.
-        /// </summary>
-        IBoltProtocol BoltProtocol { get; }
+    void UpdateId(string newConnId);
 
-        /// <summary>
-        /// The AccessMode this connection is operating in.
-        /// </summary>
-        AccessMode? Mode { get; set; }
+    void UpdateVersion(ServerVersion newVersion);
 
-        /// <summary>
-        /// The Database this connection is acquired for.
-        /// </summary>
-        string Database { get; set; }
+    void SetReadTimeoutInSeconds(int seconds);
 
-        void UpdateId(string newConnId);
+    void SetUseUtcEncodedDateTime();
+}
 
-        void UpdateVersion(ServerVersion newVersion);
+internal interface IConnectionRunner
+{
+    Task LoginAsync(string userAgent, IAuthToken authToken);
+    Task LogoutAsync();
 
-        IDictionary<string, string> RoutingContext { get; set; }
+    Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
+        string database,
+        string impersonatedUser,
+        Bookmarks bookmarks);
 
-		void SetRecvTimeOut(int seconds);
+    Task<IResultCursor> RunInAutoCommitTransactionAsync(AutoCommitParams autoCommitParams);
+    Task BeginTransactionAsync(string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser);
+    Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize);
+    Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker);
+    Task RollbackTransactionAsync();
+}
 
-        void SetUseUtcEncodedDateTime();
-    }
+internal interface IConnectionDetails
+{
+    bool IsOpen { get; }
+    string Database { get; }
+    AccessMode? Mode { get; }
+    IServerInfo Server { get; }
+    IDictionary<string, string> RoutingContext { get; }
+    BoltProtocolVersion Version { get; }
+    bool UtcEncodedDateTime { get; }
 }

@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -16,7 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Diagnostics;
 using FluentAssertions;
 using Xunit;
 
@@ -31,24 +30,24 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
         {
             var date = new LocalDate(1950, 8, 31);
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             writer.Write(date);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(1);
-            reader.ReadStructSignature().Should().Be((byte) 'D');
+            reader.ReadStructSignature().Should().Be((byte)'D');
             reader.Read().Should().Be(-7063L);
         }
-        
+
         [Fact]
         public void ShouldDeserializeDate()
         {
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             writer.WriteStructHeader(LocalDateSerializer.StructSize, LocalDateSerializer.StructType);
             writer.Write(-7063L);
@@ -63,22 +62,23 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             value.Should().BeOfType<LocalDate>().Which.Day.Should().Be(31);
         }
 
+#if NET6_0_OR_GREATER
         [Fact]
-        [Conditional("NET6_0_OR_GREATER")]
         public void ShouldSerializeDateOnly()
         {
             var date = new DateOnly(1950, 8, 31);
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             writer.Write(date);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(1);
             reader.ReadStructSignature().Should().Be((byte)'D');
             reader.Read().Should().Be(-7063L);
         }
+#endif
     }
 }

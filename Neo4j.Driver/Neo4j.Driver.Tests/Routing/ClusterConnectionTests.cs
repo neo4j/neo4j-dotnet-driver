@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -22,14 +22,13 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Routing;
-using Neo4j.Driver;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Routing
 {
     public class ClusterConnectionTests
     {
-        private static Uri Uri => new Uri("https://neo4j.com");
+        private static Uri Uri => new("https://neo4j.com");
 
         public class OnErrorMethod
         {

@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,54 +18,55 @@
 using System;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
+
+internal sealed class LocalTimeSerializer : IPackStreamSerializer
 {
-    internal class LocalTimeSerializer : IPackStreamSerializer
-    {
-        public const byte StructType = (byte) 't';
-        public const int StructSize = 1;
+    internal static readonly LocalTimeSerializer Instance = new();
 
-        public IEnumerable<byte> ReadableStructs => new[] {StructType};
+    public const byte StructType = (byte)'t';
+    public const int StructSize = 1;
+
+    public IEnumerable<byte> ReadableStructs => new[] { StructType };
 #if NET6_0_OR_GREATER
-        public IEnumerable<Type> WritableTypes => new[] {typeof(LocalTime), typeof(TimeOnly)};
+    public IEnumerable<Type> WritableTypes => new[] { typeof(LocalTime), typeof(TimeOnly) };
 #else
-        public IEnumerable<Type> WritableTypes => new[] {typeof(LocalTime)};
+    public IEnumerable<Type> WritableTypes => new[] { typeof(LocalTime) };
 #endif
 
-        public object Deserialize(IPackStreamReader reader, byte signature, long size)
-        {
-            PackStream.EnsureStructSize("LocalTime", StructSize, size);
+    public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
+    {
+        PackStream.EnsureStructSize("LocalTime", StructSize, size);
 
-            var nanosOfDay = reader.ReadLong();
+        var nanosOfDay = reader.ReadLong();
 
-            return TemporalHelpers.NanoOfDayToTime(nanosOfDay);
-        }
+        return TemporalHelpers.NanoOfDayToTime(nanosOfDay);
+    }
 
-        public void Serialize(IPackStreamWriter writer, object value)
-        {
+    public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
+    {
 #if NET6_0_OR_GREATER
-            if (value is TimeOnly time)
-            {
-                WriteTimeOnly(writer, time);
-                return;
-            }
-#endif
-            WriteLocalTime(writer, value);
+        if (value is TimeOnly time)
+        {
+            WriteTimeOnly(writer, time);
+            return;
         }
+#endif
+        WriteLocalTime(writer, value);
+    }
 
 #if NET6_0_OR_GREATER
-        private void WriteTimeOnly(IPackStreamWriter writer, TimeOnly time)
-        {
-            writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(time.ToNanoOfDay());
-        }
+    private void WriteTimeOnly(PackStreamWriter writer, TimeOnly time)
+    {
+        writer.WriteStructHeader(StructSize, StructType);
+        writer.WriteLong(time.ToNanoOfDay());
+    }
 #endif
 
-        private static void WriteLocalTime(IPackStreamWriter writer, object value)
-        {
-            var time = value.CastOrThrow<LocalTime>();
-            writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(time.ToNanoOfDay());
-        }
+    private static void WriteLocalTime(PackStreamWriter writer, object value)
+    {
+        var time = value.CastOrThrow<LocalTime>();
+        writer.WriteStructHeader(StructSize, StructType);
+        writer.WriteLong(time.ToNanoOfDay());
     }
 }

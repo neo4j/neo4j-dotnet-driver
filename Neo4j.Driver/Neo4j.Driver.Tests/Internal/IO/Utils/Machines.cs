@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -23,13 +23,14 @@ namespace Neo4j.Driver.Internal.IO.Utils
     public class PackStreamWriterMachine
     {
         private readonly MemoryStream _output;
-        private readonly IPackStreamWriter _writer;
 
-        internal PackStreamWriterMachine(Func<Stream, IPackStreamWriter> writerFactory)
+        internal PackStreamWriterMachine(Func<Stream, PackStreamWriter> writerFactory)
         {
-            this._output = new MemoryStream();
-            this._writer = writerFactory(_output);
+            _output = new MemoryStream();
+            Writer = writerFactory(_output);
         }
+
+        internal PackStreamWriter Writer { get; }
 
         public void Reset()
         {
@@ -40,29 +41,22 @@ namespace Neo4j.Driver.Internal.IO.Utils
         {
             return _output.ToArray();
         }
-
-        internal IPackStreamWriter Writer()
-        {
-            return _writer;
-        }
-
     }
 
     public class PackStreamReaderMachine
     {
         private readonly MemoryStream _input;
-        private readonly IPackStreamReader _reader;
+        private readonly PackStreamReader _reader;
 
-        internal PackStreamReaderMachine(byte[] bytes, Func<Stream, IPackStreamReader> readerFactory)
+        internal PackStreamReaderMachine(byte[] bytes, Func<MemoryStream, PackStreamReader> readerFactory)
         {
-            this._input = new MemoryStream(bytes);
-            this._reader = readerFactory(_input);
+            _input = new MemoryStream(bytes);
+            _reader = readerFactory(_input);
         }
 
-        internal IPackStreamReader Reader()
+        internal PackStreamReader Reader()
         {
             return _reader;
         }
-
     }
 }

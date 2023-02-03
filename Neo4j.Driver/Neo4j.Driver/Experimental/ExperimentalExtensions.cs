@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License"):
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -23,17 +23,17 @@ namespace Neo4j.Driver.Experimental;
 
 /// <summary>
 /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
-/// <br /> This class provides access to experimental APIs on existing non-static classes.
+/// <br/> This class provides access to experimental APIs on existing non-static classes.
 /// </summary>
 public static class ExperimentalExtensions
 {
     /// <summary>
     /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
-    /// <br /> Sets the <see cref="IBookmarkManager" /> for maintaining bookmarks for the lifetime of the session.
+    /// <br/> Sets the <see cref="IBookmarkManager"/> for maintaining bookmarks for the lifetime of the session.
     /// </summary>
-    /// <param name="builder">This <see cref="SessionConfigBuilder" /> instance.</param>
-    /// <param name="bookmarkManager">An instance of <see cref="IBookmarkManager" /> to use in the session.</param>
-    /// <returns>this <see cref="SessionConfigBuilder" /> instance.</returns>
+    /// <param name="builder">This <see cref="SessionConfigBuilder"/> instance.</param>
+    /// <param name="bookmarkManager">An instance of <see cref="IBookmarkManager"/> to use in the session.</param>
+    /// <returns>this <see cref="SessionConfigBuilder"/> instance.</returns>
     public static SessionConfigBuilder WithBookmarkManager(
         this SessionConfigBuilder builder,
         IBookmarkManager bookmarkManager)
@@ -43,7 +43,7 @@ public static class ExperimentalExtensions
 
     /// <summary>
     /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
-    /// Gets an <see cref="IExecutableQuery&lt;IRecord&gt;" /> that can be used to configure and execute a query using fluent
+    /// Gets an <see cref="IExecutableQuery&lt;IRecord&gt;"/> that can be used to configure and execute a query using fluent
     /// method chaining.
     /// </summary>
     /// <example>
@@ -74,7 +74,7 @@ public static class ExperimentalExtensions
     /// <param name="driver">The driver.</param>
     /// <param name="cypher">The cypher of the query.</param>
     /// <returns>
-    /// An <see cref="IExecutableQuery&lt;IRecord&gt;" /> that can be used to configure and execute a query using
+    /// An <see cref="IExecutableQuery&lt;IRecord&gt;"/> that can be used to configure and execute a query using
     /// fluent method chaining.
     /// </returns>
     public static IExecutableQuery<IReadOnlyList<IRecord>> ExecutableQuery(this IDriver driver, string cypher)
@@ -84,13 +84,13 @@ public static class ExperimentalExtensions
 
     /// <summary>
     /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
-    /// <br /> Experimental: This method will be removed and replaced with a readonly property "BookmarkManager" on the
-    /// <see cref="SessionConfig" /> class.<br /> Gets the configured experimental bookmark manager from this
-    /// <see cref="SessionConfig" /> instance.
+    /// <br/> Experimental: This method will be removed and replaced with a readonly property "BookmarkManager" on the
+    /// <see cref="SessionConfig"/> class.<br/> Gets the configured experimental bookmark manager from this
+    /// <see cref="SessionConfig"/> instance.
     /// </summary>
-    /// <seealso cref="WithBookmarkManager" />
-    /// <param name="config">This <see cref="SessionConfig" /> instance.</param>
-    /// <returns>This <see cref="SessionConfig" />'s configured <see cref="IBookmarkManager" /> instance.</returns>
+    /// <seealso cref="WithBookmarkManager"/>
+    /// <param name="config">This <see cref="SessionConfig"/> instance.</param>
+    /// <returns>This <see cref="SessionConfig"/>'s configured <see cref="IBookmarkManager"/> instance.</returns>
     public static IBookmarkManager GetBookmarkManager(this SessionConfig config)
     {
         return config.BookmarkManager;

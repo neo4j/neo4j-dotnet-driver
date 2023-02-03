@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,16 +18,11 @@
 using System;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver;
+
+/// <summary>Represents a <c>Node</c> in the Neo4j graph database.</summary>
+public interface INode : IEntity, IEquatable<INode>
 {
-    /// <summary>
-    /// Represents a <c>Node</c> in the Neo4j graph database.
-    /// </summary>
-    public interface INode : IEntity, IEquatable<INode>
-    {
-        /// <summary>
-        /// Gets the lables of the node.
-        /// </summary>
-        IReadOnlyList<string> Labels { get; }
-    }
+    /// <summary>Gets the lables of the node.</summary>
+    IReadOnlyList<string> Labels { get; }
 }

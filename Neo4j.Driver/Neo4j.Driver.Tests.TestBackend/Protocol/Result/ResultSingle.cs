@@ -1,10 +1,10 @@
-﻿// Copyright (c) 2002-2022 "Neo4j,"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -19,40 +19,41 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Tests.TestBackend
+namespace Neo4j.Driver.Tests.TestBackend;
+
+internal class ResultSingle : IProtocolObject
 {
-    internal class ResultSingle : IProtocolObject
+    public ResultSingleType data { get; set; } = new();
+
+    public IRecord Records { get; set; }
+
+    public override async Task Process()
     {
-        public ResultSingleType data { get; set; } = new ResultSingleType();
-
-        public IRecord Records { get; set; }
-
-        public class ResultSingleType
+        var result = (Result)ObjManager.GetObject(data.resultId);
+        try
         {
-            public string resultId { get; set; }
+            Records = await result.SingleAsync();
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new DriverExceptionWrapper(ex);
+        }
+    }
+
+    public override string Respond()
+    {
+        if (Records is null)
+        {
+            return new ProtocolResponse("NullRecord", (object)null).Encode();
         }
 
-        public override async Task Process()
-        {
-            var result = (Result)ObjManager.GetObject(data.resultId);
-            try
-            {
-                Records = await result.SingleAsync();
-            }
-            catch (InvalidOperationException ex)
-            {
-                throw new DriverExceptionWrapper(ex);
-            }
-        }
+        //Generate list of ordered records
+        var valuesList = Records.Values.Select(v => NativeToCypher.Convert(v.Value)).ToList();
+        return new ProtocolResponse("Record", new { values = valuesList }).Encode();
+    }
 
-        public override string Respond()
-        {
-            if (Records is null)
-                return new ProtocolResponse("NullRecord", (object)null).Encode();
-
-            //Generate list of ordered records
-            var valuesList = Records.Values.Select(v => NativeToCypher.Convert(v.Value)).ToList();
-            return new ProtocolResponse("Record", new { values = valuesList }).Encode();
-        }
+    public class ResultSingleType
+    {
+        public string resultId { get; set; }
     }
 }

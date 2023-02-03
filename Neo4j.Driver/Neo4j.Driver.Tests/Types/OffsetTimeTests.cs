@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,14 +18,12 @@
 using System;
 using System.Collections;
 using FluentAssertions;
-using Neo4j.Driver;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Types
 {
     public class OffsetTimeTests
     {
-
         [Fact]
         public void ShouldCreateTimeWithOffsetWithTimeComponents()
         {
@@ -124,7 +122,13 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(0, 1, 2, 750000000, 10805, "00:01:02.750000000+03:00:05")]
         [InlineData(0, 1, 2, 750000000, 10795, "00:01:02.750000000+02:59:55")]
         [InlineData(0, 1, 2, 750000000, 0, "00:01:02.750000000Z")]
-        public void ShouldGenerateCorrectString(int hour, int minute, int second, int nanosecond, int offsetSeconds, string expected)
+        public void ShouldGenerateCorrectString(
+            int hour,
+            int minute,
+            int second,
+            int nanosecond,
+            int offsetSeconds,
+            string expected)
         {
             var cypherTime = new OffsetTime(hour, minute, second, nanosecond, offsetSeconds);
             var cypherTimeStr = cypherTime.ToString();

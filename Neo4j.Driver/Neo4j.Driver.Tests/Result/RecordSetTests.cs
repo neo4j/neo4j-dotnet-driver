@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -21,8 +21,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal;
 using Xunit;
 using Record = Neo4j.Driver.Internal.Result.Record;
@@ -32,15 +30,16 @@ namespace Neo4j.Driver.Tests
     internal class ListBasedRecordCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
     {
         private readonly string[] _keys;
-        private readonly Func<IResultSummary> _summaryFunc;
         private readonly Func<IEnumerable<IRecord>> _recordsFunc;
-
-        private IResultSummary _summary;
+        private readonly Func<IResultSummary> _summaryFunc;
         private IEnumerator<IRecord> _enum;
-        private IRecord _record;
         private IRecord _peeked;
 
-        public ListBasedRecordCursor(IEnumerable<string> keys, Func<IEnumerable<IRecord>> recordsFunc,
+        private IResultSummary _summary;
+
+        public ListBasedRecordCursor(
+            IEnumerable<string> keys,
+            Func<IEnumerable<IRecord>> recordsFunc,
             Func<IResultSummary> summaryFunc = null)
         {
             _keys = keys.ToArray();
@@ -48,19 +47,19 @@ namespace Neo4j.Driver.Tests
             _summaryFunc = summaryFunc;
         }
 
+        public ValueTask<bool> MoveNextAsync()
+        {
+            return new ValueTask<bool>(FetchAsync());
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            return new ValueTask(Task.CompletedTask);
+        }
+
         public Task<string[]> KeysAsync()
         {
             return Task.FromResult(_keys);
-        }
-
-        private Task<IResultSummary> GetSummaryAsync()
-        {
-            if (_summary == null && _summaryFunc != null)
-            {
-                _summary = _summaryFunc();
-            }
-
-            return Task.FromResult(_summary);
         }
 
         public Task<IRecord> PeekAsync()
@@ -99,22 +98,17 @@ namespace Neo4j.Driver.Tests
 
             if (_peeked != null)
             {
-                _record = _peeked;
+                Current = _peeked;
                 _peeked = null;
                 return Task.FromResult(true);
             }
 
             var hasNext = _enum.MoveNext();
-            _record = hasNext ? _enum.Current : null;
+            Current = hasNext ? _enum.Current : null;
             return Task.FromResult(hasNext);
         }
 
-        public ValueTask<bool> MoveNextAsync()
-        {
-            return new ValueTask<bool>(FetchAsync());
-        }
-
-        public IRecord Current => _record;
+        public IRecord Current { get; private set; }
 
         public bool IsOpen => true;
 
@@ -122,14 +116,19 @@ namespace Neo4j.Driver.Tests
         {
         }
 
-        public IAsyncEnumerator<IRecord> GetAsyncEnumerator(CancellationToken cancellationToken = new CancellationToken())
+        public IAsyncEnumerator<IRecord> GetAsyncEnumerator(CancellationToken cancellationToken = new())
         {
             return this;
         }
 
-        public ValueTask DisposeAsync()
+        private Task<IResultSummary> GetSummaryAsync()
         {
-            return new ValueTask(Task.CompletedTask);
+            if (_summary == null && _summaryFunc != null)
+            {
+                _summary = _summaryFunc();
+            }
+
+            return Task.FromResult(_summary);
         }
     }
 
@@ -150,7 +149,8 @@ namespace Neo4j.Driver.Tests
         {
             return Enumerable.Range(0, recordSize)
                 .Select(i => new Record(keys, keys.Select(k => $"record{i}:{k}").Cast<object>().ToArray()))
-                .Cast<IRecord>().ToList();
+                .Cast<IRecord>()
+                .ToList();
         }
     }
 
@@ -162,9 +162,9 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldReturnRecordsInOrder()
             {
                 var records = RecordCreator.CreateRecords(5);
-                var cursor = new ListBasedRecordCursor(new[] {"key1"}, () => records);
+                var cursor = new ListBasedRecordCursor(new[] { "key1" }, () => records);
 
-                int i = 0;
+                var i = 0;
                 while (await cursor.FetchAsync())
                 {
                     cursor.Current[0].As<string>().Should().Be($"record{i++}:key0");
@@ -181,10 +181,10 @@ namespace Neo4j.Driver.Tests
                 var cursor = new ListBasedRecordCursor(keys, () => records);
 
                 // I add a new record after RecordSet is created
-                var newRecord = new Record(keys, new object[] {"record5:key0"});
+                var newRecord = new Record(keys, new object[] { "record5:key0" });
                 records.Add(newRecord);
 
-                int i = 0;
+                var i = 0;
                 while (await cursor.FetchAsync())
                 {
                     cursor.Current[0].As<string>().Should().Be($"record{i++}:key0");
@@ -200,7 +200,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldReturnNextRecordWithoutMovingCurrentRecord()
             {
                 var records = RecordCreator.CreateRecords(5);
-                var cursor = new ListBasedRecordCursor(new[] {"key1"}, () => records);
+                var cursor = new ListBasedRecordCursor(new[] { "key1" }, () => records);
 
                 var record = await cursor.PeekAsync();
                 record.Should().NotBeNull();
@@ -216,7 +216,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldReturnNextRecordAfterNextWithoutMovingCurrentRecord()
             {
                 var records = RecordCreator.CreateRecords(5);
-                var cursor = new ListBasedRecordCursor(new[] {"key0"}, () => records);
+                var cursor = new ListBasedRecordCursor(new[] { "key0" }, () => records);
 
                 await cursor.FetchAsync();
 
@@ -234,7 +234,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldReturnNullIfAtEnd()
             {
                 var records = RecordCreator.CreateRecords(5);
-                var cursor = new ListBasedRecordCursor(new[] {"key0"}, () => records);
+                var cursor = new ListBasedRecordCursor(new[] { "key0" }, () => records);
 
                 // [0, 1, 2, 3]
                 await cursor.FetchAsync();
@@ -260,11 +260,11 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldBeTheSameWithEnumeratorMoveNextCurrent()
             {
                 var records = RecordCreator.CreateRecords(2);
-                var cursor = new ListBasedRecordCursor(new[] {"key0"}, () => records);
+                var cursor = new ListBasedRecordCursor(new[] { "key0" }, () => records);
 
                 IRecord record;
                 bool hasNext;
-                for (int i = 0; i < 2; i++)
+                for (var i = 0; i < 2; i++)
                 {
                     record = await cursor.PeekAsync();
                     record.Should().NotBeNull();

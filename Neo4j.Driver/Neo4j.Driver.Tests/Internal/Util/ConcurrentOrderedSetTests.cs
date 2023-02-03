@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -17,8 +17,6 @@
 
 using System.Linq;
 using FluentAssertions;
-using Neo4j.Driver.Internal.Routing;
-using Neo4j.Driver.Internal.Util;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.Util
@@ -41,7 +39,7 @@ namespace Neo4j.Driver.Internal.Util
             public void ShouldNotAddIfAlreadyExists()
             {
                 // ReSharper disable once UseObjectOrCollectionInitializer
-                var set = new ConcurrentOrderedSet<int> {0, 1, 2, 3};
+                var set = new ConcurrentOrderedSet<int> { 0, 1, 2, 3 };
                 set.Add(0);
                 set.Add(1);
                 set.Add(2);
@@ -56,7 +54,7 @@ namespace Neo4j.Driver.Internal.Util
             [Fact]
             public void ShouldRemove()
             {
-                var set = new ConcurrentOrderedSet<int> {0, 1, 2, 3};
+                var set = new ConcurrentOrderedSet<int> { 0, 1, 2, 3 };
                 set.Remove(0);
                 set.Remove(2);
                 set.ToList().Should().ContainInOrder(1, 3);
@@ -65,7 +63,7 @@ namespace Neo4j.Driver.Internal.Util
             [Fact]
             public void ShouldNotMoveIfNotExists()
             {
-                var set = new ConcurrentOrderedSet<int> {0, 1};
+                var set = new ConcurrentOrderedSet<int> { 0, 1 };
                 set.Remove(3);
                 set.Count.Should().Be(2);
                 set.ToList().Should().ContainInOrder(0, 1);
@@ -78,7 +76,7 @@ namespace Neo4j.Driver.Internal.Util
             public void ShouldClear()
             {
                 // Given
-                var set = new ConcurrentOrderedSet<int> {0, 1, 2, 3};
+                var set = new ConcurrentOrderedSet<int> { 0, 1, 2, 3 };
 
                 set.Should().NotBeEmpty();
 
@@ -109,7 +107,7 @@ namespace Neo4j.Driver.Internal.Util
             public void ShouldProvideSnapshot()
             {
                 // Given
-                var set = new ConcurrentOrderedSet<int> {0, 1, 2};
+                var set = new ConcurrentOrderedSet<int> { 0, 1, 2 };
 
                 // When
                 var snapshot = set.Snapshot;
@@ -123,7 +121,7 @@ namespace Neo4j.Driver.Internal.Util
             public void ShouldProvideSnapshotAfterUpdate()
             {
                 // Given
-                var set = new ConcurrentOrderedSet<int> {0, 1, 2};
+                var set = new ConcurrentOrderedSet<int> { 0, 1, 2 };
 
                 // When
                 set.Remove(1);
@@ -143,7 +141,7 @@ namespace Neo4j.Driver.Internal.Util
             [InlineData(30)]
             public void ShouldBeAbleToAccessNewlyAddedItem(int times)
             {
-                var set = new ConcurrentOrderedSet<int> {0, 1, 2, 3};
+                var set = new ConcurrentOrderedSet<int> { 0, 1, 2, 3 };
 
                 // we loop several turns on the full set
                 for (var j = 0; j < times; j++)
@@ -177,7 +175,7 @@ namespace Neo4j.Driver.Internal.Util
             [InlineData(40)]
             public void ShouldBeAbleToRemoveItem(int times)
             {
-                var set = new ConcurrentOrderedSet<int> {0, 1, 2, 3};
+                var set = new ConcurrentOrderedSet<int> { 0, 1, 2, 3 };
                 for (var j = 0; j < times; j++)
                 {
                     for (var i = 0; i < set.Count; i++)

@@ -1,14 +1,14 @@
 ﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
-//
+// 
 // This file is part of Neo4j.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// 
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-//
+// 
 //     http://www.apache.org/licenses/LICENSE-2.0
-//
+// 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,6 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver;
 using Xunit;
 
 namespace Neo4j.Driver.Tests
@@ -28,7 +27,8 @@ namespace Neo4j.Driver.Tests
     public class ConnectionValidatorTests
     {
         private static ConnectionValidator NewConnectionValidator(
-            TimeSpan? connIdleTimeout = null, TimeSpan? maxConnLifetime = null)
+            TimeSpan? connIdleTimeout = null,
+            TimeSpan? maxConnLifetime = null)
         {
             if (connIdleTimeout == null)
             {
@@ -62,6 +62,7 @@ namespace Neo4j.Driver.Tests
                 conn.Setup(x => x.IsOpen).Returns(true);
                 conn.Setup(x => x.ClearConnectionAsync())
                     .Returns(Task.FromException(new InvalidOperationException()));
+
                 var validator = NewConnectionValidator();
                 var result = await validator.OnReleaseAsync(conn.Object);
                 result.Should().BeFalse();

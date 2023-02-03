@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Xunit;
@@ -34,26 +33,11 @@ namespace Neo4j.Driver.Internal.MessageHandling
             var handler = new TestHandler();
             handler.AddCollector<IMetadataCollector<long>, long>(collector.Object);
 
-            var metadata = new Dictionary<string, object> {{"x", 1}, {"y", false}};
+            var metadata = new Dictionary<string, object> { { "x", 1 }, { "y", false } };
 
             handler.OnSuccess(metadata);
 
             collector.Verify(x => x.Collect(metadata), Times.Once);
-        }
-
-        [Fact]
-        public void ShouldAddRemoveCollector()
-        {
-            var collector = new Mock<IMetadataCollector<long>>();
-
-            var handler = new TestHandler();
-            handler.AddCollector<IMetadataCollector<long>, long>(collector.Object);
-            handler.RemoveCollector<IMetadataCollector<long>, long>();
-
-            var metadata = new Dictionary<string, object> {{"x", 1}, {"y", false}};
-            handler.OnSuccess(metadata);
-
-            collector.Verify(x => x.Collect(metadata), Times.Never);
         }
 
         [Fact]
@@ -71,20 +55,10 @@ namespace Neo4j.Driver.Internal.MessageHandling
 
         private class TestHandler : MetadataCollectingResponseHandler
         {
-            public TestHandler()
-            {
-            }
-
             public void AddCollector<TCollector, TMetadata>(TCollector collector)
                 where TCollector : class, IMetadataCollector<TMetadata>
             {
                 AddMetadata<TCollector, TMetadata>(collector);
-            }
-
-            public void RemoveCollector<TCollector, TMetadata>()
-                where TCollector : class, IMetadataCollector<TMetadata>
-            {
-                RemoveMetadata<TCollector, TMetadata>();
             }
         }
     }

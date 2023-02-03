@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -27,6 +27,8 @@ using Neo4j.Driver.Tests;
 using Xunit;
 using static Microsoft.Reactive.Testing.ReactiveAssert;
 using static Neo4j.Driver.Tests.Assertions;
+
+#pragma warning disable CS0618
 
 namespace Neo4j.Driver.Reactive.Internal
 {
@@ -63,33 +65,47 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldInvokeSessionRunAsyncOnlyOnce()
             {
-                VerifyLazyRunAsync(r =>
-                {
-                    r.Keys().WaitForCompletion();
-                    r.Records().WaitForCompletion();
-                    r.Consume().WaitForCompletion();
-                });
+                VerifyLazyRunAsync(
+                    r =>
+                    {
+                        r.Keys().WaitForCompletion();
+                        r.Records().WaitForCompletion();
+                        r.Consume().WaitForCompletion();
+                    });
             }
 
             private static void VerifyLazyRunAsync(Action<IRxResult> action)
             {
                 var asyncSession = new Mock<IInternalAsyncSession>();
-                asyncSession.Setup(x => x.RunAsync(It.IsAny<Query>(), It.IsAny<Action<TransactionConfigBuilder>>(),
-                        It.IsAny<bool>()))
-                    .ReturnsAsync(new ListBasedRecordCursor(new[] {"x"}, Enumerable.Empty<IRecord>,
-                        Mock.Of<IResultSummary>));
+                asyncSession.Setup(
+                        x => x.RunAsync(
+                            It.IsAny<Query>(),
+                            It.IsAny<Action<TransactionConfigBuilder>>(),
+                            It.IsAny<bool>()))
+                    .ReturnsAsync(
+                        new ListBasedRecordCursor(
+                            new[] { "x" },
+                            Enumerable.Empty<IRecord>,
+                            Mock.Of<IResultSummary>));
+
                 var session = new InternalRxSession(asyncSession.Object, Mock.Of<IRxRetryLogic>());
                 var result = session.Run("RETURN 1");
 
                 asyncSession.Verify(
-                    x => x.RunAsync(It.IsAny<Query>(), It.IsAny<Action<TransactionConfigBuilder>>(),
-                        It.IsAny<bool>()), Times.Never);
+                    x => x.RunAsync(
+                        It.IsAny<Query>(),
+                        It.IsAny<Action<TransactionConfigBuilder>>(),
+                        It.IsAny<bool>()),
+                    Times.Never);
 
                 action(result);
 
                 asyncSession.Verify(
-                    x => x.RunAsync(It.IsAny<Query>(), It.IsAny<Action<TransactionConfigBuilder>>(),
-                        It.IsAny<bool>()), Times.Once);
+                    x => x.RunAsync(
+                        It.IsAny<Query>(),
+                        It.IsAny<Action<TransactionConfigBuilder>>(),
+                        It.IsAny<bool>()),
+                    Times.Once);
             }
         }
 
@@ -99,16 +115,21 @@ namespace Neo4j.Driver.Reactive.Internal
             public void ShouldReturnObservable()
             {
                 var session = new Mock<IInternalAsyncSession>();
-                session.Setup(x => x.BeginTransactionAsync(It.IsAny<Action<TransactionConfigBuilder>>(), It.IsAny<bool>()))
+                session.Setup(
+                        x => x.BeginTransactionAsync(It.IsAny<Action<TransactionConfigBuilder>>(), It.IsAny<bool>()))
                     .ReturnsAsync(Mock.Of<IInternalAsyncTransaction>());
 
                 var rxSession = new InternalRxSession(session.Object, Mock.Of<IRxRetryLogic>());
 
-                rxSession.BeginTransaction().WaitForCompletion()
+                rxSession.BeginTransaction()
+                    .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, Matches<IRxTransaction>(t => t.Should().BeOfType<InternalRxTransaction>())),
                         OnCompleted<IRxTransaction>(0));
-                session.Verify(x => x.BeginTransactionAsync(It.IsAny<Action<TransactionConfigBuilder>>(), It.IsAny<bool>()), Times.Once);
+
+                session.Verify(
+                    x => x.BeginTransactionAsync(It.IsAny<Action<TransactionConfigBuilder>>(), It.IsAny<bool>()),
+                    Times.Once);
             }
         }
 
@@ -145,10 +166,9 @@ namespace Neo4j.Driver.Reactive.Internal
                 rxSession
                     .RunTransaction(mode, t => Observable.Throw<int>(error), null)
                     .WaitForCompletion()
-                    .AssertEqual(
-                        OnError<int>(0, error));
+                    .AssertEqual(OnError<int>(0, error));
 
-                session.Verify(x => x.BeginTransactionAsync(mode, null,false), Times.Once);
+                session.Verify(x => x.BeginTransactionAsync(mode, null, false), Times.Once);
                 session.VerifyNoOtherCalls();
 
                 txc.Verify(x => x.RollbackAsync(), Times.Once);
@@ -166,10 +186,9 @@ namespace Neo4j.Driver.Reactive.Internal
                 rxSession
                     .RunTransaction<int>(mode, t => throw error, null)
                     .WaitForCompletion()
-                    .AssertEqual(
-                        OnError<int>(0, error));
+                    .AssertEqual(OnError<int>(0, error));
 
-                session.Verify(x => x.BeginTransactionAsync(mode, null,false), Times.Once);
+                session.Verify(x => x.BeginTransactionAsync(mode, null, false), Times.Once);
                 session.VerifyNoOtherCalls();
 
                 txc.Verify(x => x.RollbackAsync(), Times.Once);
@@ -177,8 +196,11 @@ namespace Neo4j.Driver.Reactive.Internal
                 txc.VerifyNoOtherCalls();
             }
 
-            private static InternalRxSession CreateSession(AccessMode mode, Action<TransactionConfigBuilder> action,
-                out Mock<IInternalAsyncSession> session, out Mock<IInternalAsyncTransaction> txc)
+            private static InternalRxSession CreateSession(
+                AccessMode mode,
+                Action<TransactionConfigBuilder> action,
+                out Mock<IInternalAsyncSession> session,
+                out Mock<IInternalAsyncTransaction> txc)
             {
                 var isOpen = true;
 
@@ -201,7 +223,6 @@ namespace Neo4j.Driver.Reactive.Internal
                     AccessMode.Write
                 };
             }
-
 
             private class SingleRetryLogic : IRxRetryLogic
             {
@@ -243,6 +264,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 asyncSession.Verify(x => x.LastBookmarks, Times.Once);
             }
         }
+
         public class LastBookmark
         {
             [Fact]
@@ -256,6 +278,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 asyncSession.Verify(x => x.LastBookmark, Times.Once);
             }
         }
+
         public class SessionConfig
         {
             [Fact]

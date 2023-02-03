@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -19,7 +19,6 @@ using System;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver;
 using Xunit;
 
 namespace Neo4j.Driver.Tests
@@ -48,7 +47,7 @@ namespace Neo4j.Driver.Tests
                 mock.SetupSequence(x => x.FetchAsync()).ReturnsAsync(true).ReturnsAsync(true);
                 mock.Setup(x => x.Current).Returns(recordMock.Object);
 
-                var exception = await Record.ExceptionAsync(()=>mock.Object.SingleAsync());
+                var exception = await Record.ExceptionAsync(() => mock.Object.SingleAsync());
                 exception.Should().BeOfType<InvalidOperationException>();
                 exception.Message.Should().Contain("more than one");
             }
@@ -70,7 +69,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldThrowExceptionIfNullResult()
             {
                 IResultCursor result = null;
-                var exception = await Record.ExceptionAsync(()=>result.SingleAsync());
+                var exception = await Record.ExceptionAsync(() => result.SingleAsync());
                 exception.Should().BeOfType<ArgumentNullException>();
             }
         }
@@ -91,8 +90,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldReturnList()
             {
                 var mock = new Mock<IResultCursor>();
-                mock.SetupSequence(x => x.FetchAsync()).
-                    ReturnsAsync(true).ReturnsAsync(true).ReturnsAsync(false);
+                mock.SetupSequence(x => x.FetchAsync()).ReturnsAsync(true).ReturnsAsync(true).ReturnsAsync(false);
                 var record0 = new Mock<IRecord>().Object;
                 var record1 = new Mock<IRecord>().Object;
                 mock.SetupSequence(x => x.Current).Returns(record0).Returns(record1);
@@ -118,7 +116,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldThrowExceptionIfNullResult()
             {
                 IResultCursor result = null;
-                var exception = await Record.ExceptionAsync(() => result.ForEachAsync(r => { }));
+                var exception = await Record.ExceptionAsync(() => result.ForEachAsync(r => {}));
                 exception.Should().BeOfType<ArgumentNullException>();
             }
 
@@ -126,8 +124,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldApplyOnEachElement()
             {
                 var mock = new Mock<IResultCursor>();
-                mock.SetupSequence(x => x.FetchAsync()).
-                    ReturnsAsync(true).ReturnsAsync(true).ReturnsAsync(false);
+                mock.SetupSequence(x => x.FetchAsync()).ReturnsAsync(true).ReturnsAsync(true).ReturnsAsync(false);
                 var record = new Mock<IRecord>().Object;
                 mock.SetupSequence(x => x.Current).Returns(record).Returns(record);
 

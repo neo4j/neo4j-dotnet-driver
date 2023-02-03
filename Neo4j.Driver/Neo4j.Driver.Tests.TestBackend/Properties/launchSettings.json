@@ -1,8 +1,8 @@
 {
-  "profiles": {
-    "NutKitDotNet": {
-      "commandName": "Project",
-      "commandLineArgs": "0.0.0.0 9876"
+    "profiles": {
+        "NutKitDotNet": {
+            "commandName": "Project",
+            "commandLineArgs": "0.0.0.0 9876"
+        }
     }
-  }
 }

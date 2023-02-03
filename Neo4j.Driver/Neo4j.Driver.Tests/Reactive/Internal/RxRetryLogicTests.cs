@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -42,8 +42,12 @@ namespace Neo4j.Driver.Reactive.Internal
                     OnNext(250, 3),
                     OnError<int>(350, error));
 
-            var observer = Scheduler.Start(() =>
-                retryLogic.Retry(observable), 0, 100, 500);
+            var observer = Scheduler.Start(
+                () =>
+                    retryLogic.Retry(observable),
+                0,
+                100,
+                500);
 
             observer.Messages.AssertEqual(
                 OnNext(200, 1),
@@ -90,14 +94,18 @@ namespace Neo4j.Driver.Reactive.Internal
             var retryLogic = new RxRetryLogic(TimeSpan.FromMinutes(1), logger.Object);
 
             retryLogic
-                .Retry(CreateFailingObservable(1,
-                    Enumerable.Range(1, errorCount).Select(x => error).Cast<Exception>().ToArray()))
+                .Retry(
+                    CreateFailingObservable(
+                        1,
+                        Enumerable.Range(1, errorCount).Select(x => error).Cast<Exception>().ToArray()))
                 .WaitForCompletion()
                 .AssertEqual(
                     OnNext(0, 1),
                     OnCompleted<int>(0));
 
-            logger.Verify(x => x.Warn(error,
+            logger.Verify(
+                x => x.Warn(
+                    error,
                     It.Is<string>(s => s.StartsWith("Transaction failed and will be retried in"))),
                 Times.Exactly(errorCount));
         }
@@ -116,7 +124,9 @@ namespace Neo4j.Driver.Reactive.Internal
                     OnNext(0, 1),
                     OnCompleted<int>(0));
 
-            logger.Verify(x => x.Warn(error,
+            logger.Verify(
+                x => x.Warn(
+                    error,
                     It.Is<string>(s => s.StartsWith("Transaction failed and will be retried in"))),
                 Times.Once);
         }
@@ -125,8 +135,11 @@ namespace Neo4j.Driver.Reactive.Internal
         public void ShouldThrowServiceUnavailableWhenRetriesTimedOut()
         {
             var errorCount = 3;
-            var exceptions = Enumerable.Range(1, errorCount).Select(i => new TransientException($"{i}", $"{i}"))
-                .Cast<Exception>().ToArray();
+            var exceptions = Enumerable.Range(1, errorCount)
+                .Select(i => new TransientException($"{i}", $"{i}"))
+                .Cast<Exception>()
+                .ToArray();
+
             var logger = new Mock<ILogger>();
             var retryLogic = new RxRetryLogic(TimeSpan.FromSeconds(2), logger.Object);
 
@@ -134,11 +147,16 @@ namespace Neo4j.Driver.Reactive.Internal
                 .Retry(CreateFailingObservable(TimeSpan.FromSeconds(1), 1, exceptions))
                 .WaitForCompletion()
                 .AssertEqual(
-                    OnError<int>(0,
-                        e => Matches(() =>
-                            e.Should().BeOfType<ServiceUnavailableException>()
-                                .Which.InnerException.Should().BeOfType<AggregateException>()
-                                .Which.InnerExceptions.Should().BeSubsetOf(exceptions))));
+                    OnError<int>(
+                        0,
+                        e => Matches(
+                            () =>
+                                e.Should()
+                                    .BeOfType<ServiceUnavailableException>()
+                                    .Which.InnerException.Should()
+                                    .BeOfType<AggregateException>()
+                                    .Which.InnerExceptions.Should()
+                                    .BeSubsetOf(exceptions))));
         }
 
         private static IObservable<T> CreateFailingObservable<T>(T success, params Exception[] exceptions)
@@ -146,15 +164,18 @@ namespace Neo4j.Driver.Reactive.Internal
             return CreateFailingObservable(TimeSpan.Zero, success, exceptions);
         }
 
-        private static IObservable<T> CreateFailingObservable<T>(TimeSpan delay, T success,
+        private static IObservable<T> CreateFailingObservable<T>(
+            TimeSpan delay,
+            T success,
             params Exception[] exceptions)
         {
             var index = 0;
 
-            return Observable.Defer(() =>
-                index < exceptions.Length
-                    ? Observable.Throw<T>(exceptions[index++]).Delay(delay)
-                    : Observable.Return(success).Delay(delay));
+            return Observable.Defer(
+                () =>
+                    index < exceptions.Length
+                        ? Observable.Throw<T>(exceptions[index++]).Delay(delay)
+                        : Observable.Return(success).Delay(delay));
         }
 
         public static TheoryData<Exception> NonTransientErrors()
@@ -175,7 +196,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 new TransientException("Neo.TransientError.Database.Unavailable", "database unavailable"),
                 new SessionExpiredException("session expired"),
-                new ServiceUnavailableException("service unavailable"),
+                new ServiceUnavailableException("service unavailable")
             };
         }
     }

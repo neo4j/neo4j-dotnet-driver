@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -15,30 +15,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.MessageHandling;
 
-namespace Neo4j.Driver.Internal.Messaging
+namespace Neo4j.Driver.Internal.Messaging;
+
+internal sealed class FailureMessage : IResponseMessage
 {
-    internal class FailureMessage : IResponseMessage
+    public FailureMessage(string code, string message)
     {
-        public FailureMessage(string code, string message)
-        {
-            Code = code;
-            Message = message;
-        }
+        Code = code;
+        Message = message;
+    }
 
-        public string Code { get; }
+    public string Code { get; }
 
-        public string Message { get; }
+    public string Message { get; }
 
-        public override string ToString()
-        {
-            return $"FAILURE code={Code}, message={Message}";
-        }
+    public void Dispatch(IResponsePipeline pipeline)
+    {
+        pipeline.OnFailure(Code, Message);
+    }
 
-        public void Dispatch(IResponsePipeline pipeline)
-        {
-            pipeline.OnFailure(Code, Message);
-        }
+    public IPackStreamSerializer Serializer => FailureMessageSerializer.Instance;
+
+    public override string ToString()
+    {
+        return $"FAILURE code={Code}, message={Message}";
     }
 }

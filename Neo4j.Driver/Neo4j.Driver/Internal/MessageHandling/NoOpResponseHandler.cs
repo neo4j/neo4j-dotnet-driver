@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -15,33 +15,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.MessageHandling
+namespace Neo4j.Driver.Internal.MessageHandling;
+
+internal sealed class NoOpResponseHandler : IResponseHandler
 {
-    internal class NoOpResponseHandler : IResponseHandler
+    public static readonly NoOpResponseHandler Instance = new();
+
+    private NoOpResponseHandler()
     {
-        public NoOpResponseHandler()
-        {
-        }
+    }
 
-        public virtual void OnSuccess(IDictionary<string, object> metadata)
-        {
-        }
+    public void OnSuccess(IDictionary<string, object> metadata)
+    {
+    }
 
-        public virtual void OnRecord(object[] fieldValues)
-        {
-            throw new ProtocolException($"{nameof(OnRecord)} is not expected at this time.");
-        }
+    public void OnRecord(object[] fieldValues)
+    {
+        throw new ProtocolException($"{nameof(OnRecord)} is not expected at this time.");
+    }
 
-        public virtual void OnFailure(IResponsePipelineError error)
-        {
-        }
+    public void OnFailure(IResponsePipelineError error)
+    {
+    }
 
-        public virtual void OnIgnored()
-        {
-        }
+    public void OnIgnored()
+    {
     }
 }

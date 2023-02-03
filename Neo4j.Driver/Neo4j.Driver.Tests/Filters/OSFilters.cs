@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -22,10 +22,8 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.TestUtil
 {
-
     public class OSFactAttribute : FactAttribute
     {
-
         public OSFactAttribute(params OSPlatform[] onPlatforms)
         {
             var shouldSkip = onPlatforms.All(platform => !RuntimeInformation.IsOSPlatform(platform));
@@ -35,14 +33,12 @@ namespace Neo4j.Driver.Tests.TestUtil
                 Skip = $"Test is supposed to be run only on platforms '{onPlatforms.ToContentString()}'";
             }
         }
-
     }
 
-    public class WindowsFactAttribute: OSFactAttribute
+    public class WindowsFactAttribute : OSFactAttribute
     {
         public WindowsFactAttribute() : base(OSPlatform.Windows)
         {
-
         }
     }
 
@@ -50,7 +46,6 @@ namespace Neo4j.Driver.Tests.TestUtil
     {
         public LinuxFactAttribute() : base(OSPlatform.Linux)
         {
-
         }
     }
 
@@ -58,7 +53,6 @@ namespace Neo4j.Driver.Tests.TestUtil
     {
         public OSXFactAttribute() : base(OSPlatform.OSX)
         {
-
         }
     }
 
@@ -66,13 +60,11 @@ namespace Neo4j.Driver.Tests.TestUtil
     {
         public UnixFactAttribute() : base(OSPlatform.Linux, OSPlatform.OSX)
         {
-
         }
     }
 
     public class OSTheoryAttribute : TheoryAttribute
     {
-
         public OSTheoryAttribute(params OSPlatform[] onPlatforms)
         {
             var shouldSkip = onPlatforms.All(platform => !RuntimeInformation.IsOSPlatform(platform));
@@ -82,14 +74,12 @@ namespace Neo4j.Driver.Tests.TestUtil
                 Skip = $"Test is supposed to be run only on platforms '{onPlatforms.ToContentString()}'";
             }
         }
-
     }
 
     public class WindowsTheoryAttribute : OSTheoryAttribute
     {
         public WindowsTheoryAttribute() : base(OSPlatform.Windows)
         {
-
         }
     }
 
@@ -97,7 +87,6 @@ namespace Neo4j.Driver.Tests.TestUtil
     {
         public LinuxTheoryAttribute() : base(OSPlatform.Linux)
         {
-
         }
     }
 
@@ -105,7 +94,6 @@ namespace Neo4j.Driver.Tests.TestUtil
     {
         public OSXTheoryAttribute() : base(OSPlatform.OSX)
         {
-
         }
     }
 
@@ -113,9 +101,6 @@ namespace Neo4j.Driver.Tests.TestUtil
     {
         public UnixTheoryAttribute() : base(OSPlatform.Linux, OSPlatform.OSX)
         {
-
         }
     }
-
-
 }

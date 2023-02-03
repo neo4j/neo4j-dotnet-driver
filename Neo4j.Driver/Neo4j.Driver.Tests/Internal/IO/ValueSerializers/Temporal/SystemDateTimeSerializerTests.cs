@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -36,16 +36,16 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
         {
             var dateTime = new DateTime(1978, 12, 16, 12, 35, 59, 999, DateTimeKind.Local);
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             writer.Write(dateTime);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(2);
-            reader.ReadStructSignature().Should().Be((byte) 'd');
+            reader.ReadStructSignature().Should().Be((byte)'d');
             reader.Read().Should().Be(282659759L);
             reader.Read().Should().Be(999000000L);
         }
@@ -55,14 +55,14 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
         {
             var dateTime = new DateTime(1978, 12, 16, 12, 35, 59, 999, DateTimeKind.Unspecified);
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             writer.Write(dateTime);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(2);
             reader.ReadStructSignature().Should().Be((byte)'d');
             reader.Read().Should().Be(282659759L);
@@ -74,20 +74,19 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
         {
             var dateTime = new DateTime(1978, 12, 16, 12, 35, 59, 999, DateTimeKind.Utc);
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             writer.Write(dateTime);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be((byte)'F');
             reader.Read().Should().Be(282659759L);
             reader.Read().Should().Be(999000000L);
             reader.Read().Should().Be(0L);
         }
-
     }
 }

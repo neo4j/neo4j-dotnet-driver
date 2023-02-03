@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -14,18 +14,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector.Trust;
 using Xunit;
-using static Neo4j.Driver.Internal.NetworkExtensions;
 
 namespace Neo4j.Driver.Tests
 {
@@ -36,7 +31,7 @@ namespace Neo4j.Driver.Tests
             private const int DefaultBoltPort = 7687;
 
             [Theory]
-            [InlineData("bolt")]            
+            [InlineData("bolt")]
             public void ShouldParseEmptyRoutingContext(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost/?");
@@ -84,7 +79,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldErrorIfMissingValue(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost:7687/cat?name=");
-                var exception = Record.Exception(()=> raw.ParseRoutingContext(DefaultBoltPort));
+                var exception = Record.Exception(() => raw.ParseRoutingContext(DefaultBoltPort));
                 exception.Should().BeOfType<ArgumentException>();
                 exception.Message.Should().Contain("Invalid parameters: 'name=' in URI");
             }
@@ -99,11 +94,11 @@ namespace Neo4j.Driver.Tests
                 exception.Message.Should().Contain("Duplicated query parameters with key 'name'");
             }
 
-            [Theory]            
-            [InlineData("neo4j", "localhost:1234",      "localhost:1234")]
-            [InlineData("neo4j", "g.example.com",       "g.example.com:7687")]
-            [InlineData("neo4j", "203.0.113.254",       "203.0.113.254:7687")]
-            [InlineData("neo4j", "[2001:DB8::]",        "[2001:db8::]:7687")]
+            [Theory]
+            [InlineData("neo4j", "localhost:1234", "localhost:1234")]
+            [InlineData("neo4j", "g.example.com", "g.example.com:7687")]
+            [InlineData("neo4j", "203.0.113.254", "203.0.113.254:7687")]
+            [InlineData("neo4j", "[2001:DB8::]", "[2001:db8::]:7687")]
             [InlineData("neo4j", "localhost", "localhost:7687")]
             public void ShouldContainAddressContext(string scheme, string address, string expectedAddress)
             {

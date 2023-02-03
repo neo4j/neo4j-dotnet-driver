@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -15,61 +15,48 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
+using System.IO;
 using FluentAssertions;
-using Moq;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers
 {
-    public class RecordMessageSerializerTests : PackStreamSerializerTests
+    public class RecordMessageSerializerTests
     {
-        internal override IPackStreamSerializer SerializerUnderTest => new RecordMessageSerializer();
-
         [Fact]
-        public void ShouldThrowOnSerialize()
+        public void StructTagsAreSuccess()
         {
-            var handler = SerializerUnderTest;
-
-            var ex = Record.Exception(() =>
-                handler.Serialize(Mock.Of<IPackStreamWriter>(),
-                    new RecordMessage(new object[] {"val1", 2, true})));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ProtocolException>();
+            RecordMessageSerializer.Instance.ReadableStructs.Should().ContainEquivalentOf(MessageFormat.MsgRecord);
         }
 
-        [Fact]
-        public void ShouldDeserialize()
+        [Theory]
+        [InlineData(3, 0)]
+        [InlineData(4, 0)]
+        [InlineData(4, 1)]
+        [InlineData(4, 2)]
+        [InlineData(4, 3)]
+        [InlineData(4, 4)]
+        [InlineData(5, 0)]
+        [InlineData(6, 0)]
+        public void ShouldDeserialize(int major, int minor)
         {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            using var memory = new MemoryStream();
 
-            writer.WriteStructHeader(1, BoltProtocolV3MessageFormat.MsgRecord);
-            writer.WriteListHeader(6);
-            writer.WriteNull();
-            writer.Write(true);
-            writer.Write(1);
-            writer.Write(1.2);
-            writer.Write('A');
-            writer.Write("value");
+            var boltProtocolVersion = new BoltProtocolVersion(major, minor);
+            var format = new MessageFormat(boltProtocolVersion);
 
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var value = readerMachine.Reader().Read();
+            var psw = new PackStreamWriter(format, memory);
+            psw.WriteList(new List<object> { 0, "a" });
+            memory.Position = 0;
 
-            value.Should().NotBeNull();
-            value.Should().BeOfType<RecordMessage>().Which.Fields.Should()
-                .HaveCount(6).And
-                .Contain(new object[]
-                {
-                    true,
-                    1L,
-                    1.2,
-                    "A",
-                    "value"
-                });
+            var reader = new PackStreamReader(format, memory, new ByteBuffers());
+
+            var message = RecordMessageSerializer.Instance.Deserialize(reader);
+
+            message.Should().BeOfType<RecordMessage>().Which.Fields.Should().BeEquivalentTo(0L, "a");
         }
-
     }
 }

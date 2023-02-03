@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,34 +18,34 @@
 using System;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
+
+internal sealed class OffsetTimeSerializer : IPackStreamSerializer
 {
-    internal class OffsetTimeSerializer : IPackStreamSerializer
+    public const byte StructType = (byte)'T';
+    public const int StructSize = 2;
+    internal static readonly OffsetTimeSerializer Instance = new();
+
+    public IEnumerable<byte> ReadableStructs => new[] { StructType };
+
+    public IEnumerable<Type> WritableTypes => new[] { typeof(OffsetTime) };
+
+    public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
     {
-        public const byte StructType = (byte) 'T';
-        public const int StructSize = 2;
+        PackStream.EnsureStructSize("Time", StructSize, size);
 
-        public IEnumerable<byte> ReadableStructs => new[] {StructType};
+        var nanosOfDay = reader.ReadLong();
+        var offsetSeconds = reader.ReadInteger();
 
-        public IEnumerable<Type> WritableTypes => new[] {typeof(OffsetTime)};
+        return new OffsetTime(TemporalHelpers.NanoOfDayToTime(nanosOfDay), offsetSeconds);
+    }
 
-        public object Deserialize(IPackStreamReader reader, byte signature, long size)
-        {
-            PackStream.EnsureStructSize("Time", StructSize, size);
+    public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
+    {
+        var time = value.CastOrThrow<OffsetTime>();
 
-            var nanosOfDay = reader.ReadLong();
-            var offsetSeconds = reader.ReadInteger();
-
-            return new OffsetTime(TemporalHelpers.NanoOfDayToTime(nanosOfDay), offsetSeconds);
-        }
-
-        public void Serialize(IPackStreamWriter writer, object value)
-        {
-            var time = value.CastOrThrow<OffsetTime>();
-
-            writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(time.ToNanoOfDay());
-            writer.Write(time.OffsetSeconds);
-        }
+        writer.WriteStructHeader(StructSize, StructType);
+        writer.WriteLong(time.ToNanoOfDay());
+        writer.WriteInt(time.OffsetSeconds);
     }
 }

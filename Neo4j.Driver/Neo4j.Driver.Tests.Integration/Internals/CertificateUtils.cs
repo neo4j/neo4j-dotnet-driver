@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -33,131 +33,144 @@ using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
 using X509Certificate = Org.BouncyCastle.X509.X509Certificate;
 
-namespace Neo4j.Driver.IntegrationTests.Internals
+namespace Neo4j.Driver.IntegrationTests.Internals;
+
+public static class CertificateUtils
 {
-    public static class CertificateUtils
+    public static Pkcs12Store CreateCert(
+        string commonName,
+        DateTime notBefore,
+        DateTime notAfter,
+        IEnumerable<string> dnsAltNames,
+        IEnumerable<string> ipAddressAltNames,
+        Pkcs12Store signBy)
     {
-        public static Pkcs12Store CreateCert(string commonName, DateTime notBefore, DateTime notAfter,
-            IEnumerable<string> dnsAltNames, IEnumerable<string> ipAddressAltNames, Pkcs12Store signBy)
+        var keyPairGen = new RsaKeyPairGenerator();
+        keyPairGen.Init(new KeyGenerationParameters(new SecureRandom(), 2048));
+
+        var keyPair = keyPairGen.GenerateKeyPair();
+
+        var certGenerator = new X509V3CertificateGenerator();
+        certGenerator.SetSubjectDN(new X509Name("CN=" + commonName));
+        if (signBy == null)
         {
-            var keyPairGen = new RsaKeyPairGenerator();
-            keyPairGen.Init(new KeyGenerationParameters(new SecureRandom(), 2048));
-
-            var keyPair = keyPairGen.GenerateKeyPair();
-
-            var certGenerator = new X509V3CertificateGenerator();
-            certGenerator.SetSubjectDN(new X509Name("CN=" + commonName));
-            if (signBy == null)
-            {
-                certGenerator.SetIssuerDN(new X509Name("CN=" + commonName));
-            }
-            else
-            {
-                certGenerator.SetIssuerDN(signBy.GetCertificate().SubjectDN);
-            }
-
-            certGenerator.SetSerialNumber(BigInteger.ProbablePrime(64, new Random()));
-            certGenerator.SetNotBefore(notBefore);
-            certGenerator.SetNotAfter(notAfter);
-            certGenerator.SetPublicKey(keyPair.Public);
-
-            if ((dnsAltNames?.Any() ?? false) || (ipAddressAltNames?.Any() ?? false))
-            {
-                var alternativeNames = new List<Asn1Encodable>();
-                alternativeNames.AddRange(dnsAltNames?.Select(name => new GeneralName(GeneralName.DnsName, name)) ??
-                                          Enumerable.Empty<Asn1Encodable>());
-                alternativeNames.AddRange(ipAddressAltNames?.Select(ip => new GeneralName(GeneralName.IPAddress, ip)) ??
-                                          Enumerable.Empty<Asn1Encodable>());
-
-                certGenerator.AddExtension(
-                    X509Extensions.SubjectAlternativeName,
-                    false,
-                    new DerSequence(alternativeNames.ToArray())
-                );
-            }
-
-            var signatureKeyPair = signBy != null
-                ? new AsymmetricCipherKeyPair(signBy.GetCertificate().GetPublicKey(), signBy.GetKey())
-                : keyPair;
-            var signer = new Asn1SignatureFactory("SHA256WITHRSA", signatureKeyPair.Private);
-            var certificate = certGenerator.Generate(signer);
-
-            return ToPkcs12(certificate, keyPair.Private);
+            certGenerator.SetIssuerDN(new X509Name("CN=" + commonName));
+        }
+        else
+        {
+            certGenerator.SetIssuerDN(signBy.GetCertificate().SubjectDN);
         }
 
-        public static Pkcs12Store ToPkcs12(X509Certificate certificate, AsymmetricKeyParameter privateKey)
-        {
-            var pkcs12Store = new Pkcs12Store();
-            var certificateEntry = new X509CertificateEntry(certificate);
-            var certificateAlias = certificate.SubjectDN.ToString();
+        certGenerator.SetSerialNumber(BigInteger.ProbablePrime(64, new Random()));
+        certGenerator.SetNotBefore(notBefore);
+        certGenerator.SetNotAfter(notAfter);
+        certGenerator.SetPublicKey(keyPair.Public);
 
-            pkcs12Store.SetCertificateEntry(certificateAlias, certificateEntry);
-            pkcs12Store.SetKeyEntry(certificate.SubjectDN.ToString(), new AsymmetricKeyEntry(privateKey),
-                new[] {certificateEntry});
-            return pkcs12Store;
+        if ((dnsAltNames?.Any() ?? false) || (ipAddressAltNames?.Any() ?? false))
+        {
+            var alternativeNames = new List<Asn1Encodable>();
+            alternativeNames.AddRange(
+                dnsAltNames?.Select(name => new GeneralName(GeneralName.DnsName, name)) ??
+                Enumerable.Empty<Asn1Encodable>());
+
+            alternativeNames.AddRange(
+                ipAddressAltNames?.Select(ip => new GeneralName(GeneralName.IPAddress, ip)) ??
+                Enumerable.Empty<Asn1Encodable>());
+
+            certGenerator.AddExtension(
+                X509Extensions.SubjectAlternativeName,
+                false,
+                new DerSequence(alternativeNames.ToArray()));
         }
 
-        public static X509Certificate GetCertificate(this Pkcs12Store store)
+        var signatureKeyPair = signBy != null
+            ? new AsymmetricCipherKeyPair(signBy.GetCertificate().GetPublicKey(), signBy.GetKey())
+            : keyPair;
+
+        var signer = new Asn1SignatureFactory("SHA256WITHRSA", signatureKeyPair.Private);
+        var certificate = certGenerator.Generate(signer);
+
+        return ToPkcs12(certificate, keyPair.Private);
+    }
+
+    public static Pkcs12Store ToPkcs12(X509Certificate certificate, AsymmetricKeyParameter privateKey)
+    {
+        var pkcs12Store = new Pkcs12Store();
+        var certificateEntry = new X509CertificateEntry(certificate);
+        var certificateAlias = certificate.SubjectDN.ToString();
+
+        pkcs12Store.SetCertificateEntry(certificateAlias, certificateEntry);
+        pkcs12Store.SetKeyEntry(
+            certificate.SubjectDN.ToString(),
+            new AsymmetricKeyEntry(privateKey),
+            new[] { certificateEntry });
+
+        return pkcs12Store;
+    }
+
+    public static X509Certificate GetCertificate(this Pkcs12Store store)
+    {
+        foreach (string alias in store.Aliases)
         {
-            foreach (string alias in store.Aliases)
+            var keyEntry = store.GetKey(alias);
+            if (keyEntry.Key.IsPrivate)
             {
-                var keyEntry = store.GetKey(alias);
-                if (keyEntry.Key.IsPrivate)
-                {
-                    return store.GetCertificate(alias).Certificate;
-                }
-            }
-
-            throw new ArgumentException("Invalid store.");
-        }
-
-        public static X509Certificate2 GetDotnetCertificate(this Pkcs12Store store)
-        {
-            var stream = new MemoryStream();
-            var password = "password";
-
-            store.Save(stream, password.ToCharArray(), SecureRandom.GetInstance("SHA256PRNG"));
-
-            var dotnetCertificate = new X509Certificate2(stream.ToArray(), password,
-                X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable);
-            return dotnetCertificate;
-        }
-
-        public static AsymmetricKeyParameter GetKey(this Pkcs12Store store)
-        {
-            foreach (string alias in store.Aliases)
-            {
-                var keyEntry = store.GetKey(alias);
-                if (keyEntry.Key.IsPrivate)
-                {
-                    return keyEntry.Key;
-                }
-            }
-
-            throw new ArgumentException("Invalid store.");
-        }
-
-        public static void DumpPem(AsymmetricKeyParameter value, string target)
-        {
-            using (var targetStream = new FileStream(target, FileMode.OpenOrCreate))
-            {
-                using (var targetWriter = new StreamWriter(targetStream, Encoding.ASCII))
-                {
-                    var pemWriter = new PemWriter(targetWriter);
-                    pemWriter.WriteObject(new Pkcs8Generator(value));
-                }
+                return store.GetCertificate(alias).Certificate;
             }
         }
 
-        public static void DumpPem(X509Certificate value, string target)
+        throw new ArgumentException("Invalid store.");
+    }
+
+    public static X509Certificate2 GetDotnetCertificate(this Pkcs12Store store)
+    {
+        var stream = new MemoryStream();
+        var password = "password";
+
+        store.Save(stream, password.ToCharArray(), SecureRandom.GetInstance("SHA256PRNG"));
+
+        var dotnetCertificate = new X509Certificate2(
+            stream.ToArray(),
+            password,
+            X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable);
+
+        return dotnetCertificate;
+    }
+
+    public static AsymmetricKeyParameter GetKey(this Pkcs12Store store)
+    {
+        foreach (string alias in store.Aliases)
         {
-            using (var targetStream = new FileStream(target, FileMode.OpenOrCreate))
+            var keyEntry = store.GetKey(alias);
+            if (keyEntry.Key.IsPrivate)
             {
-                using (var targetWriter = new StreamWriter(targetStream, Encoding.ASCII))
-                {
-                    var pemWriter = new PemWriter(targetWriter);
-                    pemWriter.WriteObject(new MiscPemGenerator(value));
-                }
+                return keyEntry.Key;
+            }
+        }
+
+        throw new ArgumentException("Invalid store.");
+    }
+
+    public static void DumpPem(AsymmetricKeyParameter value, string target)
+    {
+        using (var targetStream = new FileStream(target, FileMode.OpenOrCreate))
+        {
+            using (var targetWriter = new StreamWriter(targetStream, Encoding.ASCII))
+            {
+                var pemWriter = new PemWriter(targetWriter);
+                pemWriter.WriteObject(new Pkcs8Generator(value));
+            }
+        }
+    }
+
+    public static void DumpPem(X509Certificate value, string target)
+    {
+        using (var targetStream = new FileStream(target, FileMode.OpenOrCreate))
+        {
+            using (var targetWriter = new StreamWriter(targetStream, Encoding.ASCII))
+            {
+                var pemWriter = new PemWriter(targetWriter);
+                pemWriter.WriteObject(new MiscPemGenerator(value));
             }
         }
     }

@@ -1,10 +1,10 @@
-﻿// Copyright (c) 2002-2022 "Neo4j,"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -15,19 +15,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal sealed class ConnectionPoolStatus
 {
-    internal sealed class ConnectionPoolStatus
+    public static readonly ConnectionPoolStatus Active = new(PoolStatus.Open);
+    public static readonly ConnectionPoolStatus Closed = new(PoolStatus.Closed);
+    public static readonly ConnectionPoolStatus Inactive = new(PoolStatus.Inactive);
+
+    private readonly PoolStatus _code;
+
+    private ConnectionPoolStatus(PoolStatus code)
     {
-        public static readonly ConnectionPoolStatus Active = new ConnectionPoolStatus(PoolStatus.Open);
-        public static readonly ConnectionPoolStatus Closed = new ConnectionPoolStatus(PoolStatus.Closed);
-        public static readonly ConnectionPoolStatus Inactive = new ConnectionPoolStatus(PoolStatus.Inactive);
-
-        private readonly PoolStatus _code;
-
-        private ConnectionPoolStatus(PoolStatus code)
-        {
-            _code = code;
-        }
+        _code = code;
     }
 }

@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -32,7 +32,8 @@ namespace Neo4j.Driver.Reactive
         {
             if (keys.Length != fields.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(keys),
+                throw new ArgumentOutOfRangeException(
+                    nameof(keys),
                     $"{nameof(keys)} and {nameof(fields)} should be of same size.");
             }
 
@@ -45,7 +46,8 @@ namespace Neo4j.Driver.Reactive
             {
                 Keys = keys,
                 Values = Enumerable.Range(0, keys.Length)
-                    .Select(i => new KeyValuePair<string, object>(keys[i], fields[i])).ToDictionary(),
+                    .Select(i => new KeyValuePair<string, object>(keys[i], fields[i]))
+                    .ToDictionary()
             };
         }
 
@@ -58,11 +60,12 @@ namespace Neo4j.Driver.Reactive
         {
             return r => Matches(() => r.Should().BeEquivalentTo(Record(keys, fields)));
         }
-        
-        public static Func<IResultSummary, bool> MatchesSummary(object sample,
+
+        public static Func<IResultSummary, bool> MatchesSummary(
+            object sample,
             Func<EquivalencyAssertionOptions<object>, EquivalencyAssertionOptions<object>> options = null)
         {
-            return s => Matches(() => s.Should().BeEquivalentTo<object>(sample, options ?? (o => o)));
+            return s => Matches(() => s.Should().BeEquivalentTo(sample, options ?? (o => o)));
         }
 
         public static Func<Exception, bool> MatchesException<TExpected>()

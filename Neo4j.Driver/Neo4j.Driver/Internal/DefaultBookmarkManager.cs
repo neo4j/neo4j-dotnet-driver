@@ -1,10 +1,10 @@
-﻿// Copyright (c) 2002-2022 "Neo4j,"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -28,38 +28,48 @@ internal class DefaultBookmarkManager : IBookmarkManager
 {
     private readonly HashSet<string> _bookmarkSet;
     private readonly Func<CancellationToken, Task<string[]>> _bookmarkSupplier;
-    private readonly Func<string[], CancellationToken, Task> _onBookmarks;
     private readonly SemaphoreSlim _lock;
+    private readonly Func<string[], CancellationToken, Task> _onBookmarks;
 
     public DefaultBookmarkManager(BookmarkManagerConfig config)
     {
-        _bookmarkSet = config.InitialBookmarks == null 
+        _bookmarkSet = config.InitialBookmarks == null
             ? new HashSet<string>()
             : new HashSet<string>(config.InitialBookmarks);
+
         _bookmarkSupplier = config.BookmarkSupplierAsync;
         _onBookmarks = config.NotifyBookmarksAsync;
         _lock = new SemaphoreSlim(1, 1);
     }
 
-    public async Task UpdateBookmarksAsync(string[] previousBookmarks, string[] newBookmarks, CancellationToken cancellationToken = default)
+    public async Task UpdateBookmarksAsync(
+        string[] previousBookmarks,
+        string[] newBookmarks,
+        CancellationToken cancellationToken = default)
     {
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             previousBookmarks ??= Array.Empty<string>();
             foreach (var bookmarkToRemove in previousBookmarks)
+            {
                 _bookmarkSet.Remove(bookmarkToRemove);
+            }
 
             foreach (var newBookmark in newBookmarks)
+            {
                 _bookmarkSet.Add(newBookmark);
+            }
         }
         finally
         {
             _lock.Release();
         }
-        
-        if(_onBookmarks != null) 
+
+        if (_onBookmarks != null)
+        {
             await _onBookmarks(newBookmarks, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     public async Task<string[]> GetBookmarksAsync(CancellationToken cancellationToken = default)
@@ -74,9 +84,11 @@ internal class DefaultBookmarkManager : IBookmarkManager
         {
             _lock.Release();
         }
-            
+
         if (_bookmarkSupplier == null)
+        {
             return set.ToArray();
+        }
 
         set.UnionWith(await _bookmarkSupplier(cancellationToken).ConfigureAwait(false));
 

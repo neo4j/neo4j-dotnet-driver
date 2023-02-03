@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,14 +18,12 @@
 using System;
 using System.Collections;
 using FluentAssertions;
-using Neo4j.Driver;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Types
 {
     public class DurationTests
     {
-
         [Fact]
         public void ShouldCreateDuration()
         {
@@ -142,7 +140,7 @@ namespace Neo4j.Driver.Tests.Types
         public void ShouldNotBeEqualToNull()
         {
             var duration = new Duration(15, 32, 785, 789215800);
-            var other = (object) null;
+            var other = (object)null;
 
             duration.Equals(other).Should().BeFalse();
         }

@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -16,15 +16,12 @@
 // limitations under the License.
 
 using System;
-using Neo4j.Driver.Internal;
-using System.CodeDom;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using FluentAssertions;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector.Trust;
-using Neo4j.Driver;
 using Xunit;
-using Xunit.Sdk;
 
 namespace Neo4j.Driver.Tests.Connector
 {
@@ -71,7 +68,6 @@ namespace Neo4j.Driver.Tests.Connector
                 encryption.UseTls.Should().BeFalse();
                 encryption.TrustManager.Should().NotBeNull().And.BeOfType<CustomTrustManager>();
             }
-
         }
 
         public class CreateMethod
@@ -128,7 +124,9 @@ namespace Neo4j.Driver.Tests.Connector
                 encryption.TrustManager.Should().BeOfType<InsecureTrustManager>();
 
                 if (encryption.TrustManager is InsecureTrustManager insecureTrustManager)
+                {
                     insecureTrustManager.VerifyHostName.Should().BeFalse();
+                }
             }
 
             [Theory]
@@ -166,7 +164,10 @@ namespace Neo4j.Driver.Tests.Connector
 
         private class CustomTrustManager : TrustManager
         {
-            public override bool ValidateServerCertificate(Uri uri, X509Certificate2 certificate, X509Chain chain,
+            public override bool ValidateServerCertificate(
+                Uri uri,
+                X509Certificate2 certificate,
+                X509Chain chain,
                 SslPolicyErrors sslPolicyErrors)
             {
                 throw new NotImplementedException();

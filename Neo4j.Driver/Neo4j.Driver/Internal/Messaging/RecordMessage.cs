@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -15,32 +15,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.MessageHandling;
 
-namespace Neo4j.Driver.Internal.Messaging
+namespace Neo4j.Driver.Internal.Messaging;
+
+internal sealed class RecordMessage : IResponseMessage
 {
-    internal class RecordMessage : IResponseMessage
+    public RecordMessage(object[] fields)
     {
-        public RecordMessage(object[] fields)
-        {
-            Fields = fields;
-        }
+        Fields = fields;
+    }
 
-        public object[] Fields { get; }
+    public object[] Fields { get; }
 
-        public override string ToString()
-        {
-            return $"RECORD {Fields.ToContentString()}";
-        }
+    public void Dispatch(IResponsePipeline pipeline)
+    {
+        pipeline.OnRecord(Fields);
+    }
 
-        public void Dispatch(IResponsePipeline pipeline)
-        {
-            pipeline.OnRecord(Fields);
-        }
+    public IPackStreamSerializer Serializer => RecordMessageSerializer.Instance;
+
+    public override string ToString()
+    {
+        return $"RECORD {Fields.ToContentString()}";
     }
 }

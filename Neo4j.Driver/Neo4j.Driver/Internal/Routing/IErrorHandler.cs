@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -17,13 +17,11 @@
 
 using System;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Connector;
 
-namespace Neo4j.Driver.Internal.Routing
+namespace Neo4j.Driver.Internal.Routing;
+
+internal interface IErrorHandler
 {
-    internal interface IErrorHandler
-    {
-        Task OnConnectionErrorAsync(Uri uri, string database, Exception e);
-        void OnWriteError(Uri uri, string database);
-	}
+    Task OnConnectionErrorAsync(Uri uri, string database, Exception e);
+    void OnWriteError(Uri uri, string database);
 }

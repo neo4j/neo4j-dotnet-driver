@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -17,15 +17,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using FluentAssertions;
-using Moq;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Routing;
-using Neo4j.Driver;
 using Xunit;
-using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.Routing
 {
@@ -48,10 +43,10 @@ namespace Neo4j.Driver.Tests.Routing
             public void ShouldEnsureInitialRouter()
             {
                 var initUri = new Uri("bolt://123:456");
-                var routers = new HashSet<Uri> {initUri};
+                var routers = new HashSet<Uri> { initUri };
                 var table = new RoutingTable(null, routers);
 
-                Uri uri = table.Routers.Single();
+                var uri = table.Routers.Single();
                 uri.Should().Be(initUri);
 
                 table.All().Single().Should().Be(initUri);
@@ -60,7 +55,7 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public void ShouldNormalizeNullDatabaseToEmptyString()
             {
-                var routingTable = new RoutingTable(null, new[] {new Uri("bolt://my-router"),}, 1);
+                var routingTable = new RoutingTable(null, new[] { new Uri("bolt://my-router") }, 1);
 
                 routingTable.Database.Should().BeEmpty();
             }
@@ -74,8 +69,12 @@ namespace Neo4j.Driver.Tests.Routing
             [InlineData(2, 2, 0, 5 * 60, false)] // no writer
             [InlineData(2, 0, 2, 5 * 60, true)] // no reader
             [InlineData(1, 2, 1, -1, true)] // expire immediately
-            public void ShouldBeStaleInReadModeIfOnlyHaveOneRouter(int routerCount, int readerCount, int writerCount,
-                long expireAfterSeconds, bool isStale)
+            public void ShouldBeStaleInReadModeIfOnlyHaveOneRouter(
+                int routerCount,
+                int readerCount,
+                int writerCount,
+                long expireAfterSeconds,
+                bool isStale)
             {
                 var table = new RoutingTable(
                     null,
@@ -83,6 +82,7 @@ namespace Neo4j.Driver.Tests.Routing
                     CreateUriArray(readerCount),
                     CreateUriArray(writerCount),
                     expireAfterSeconds);
+
                 table.IsStale(AccessMode.Read).Should().Be(isStale);
             }
 
@@ -92,8 +92,12 @@ namespace Neo4j.Driver.Tests.Routing
             [InlineData(2, 2, 0, 5 * 60, true)] // no writer
             [InlineData(2, 0, 2, 5 * 60, false)] // no reader
             [InlineData(1, 2, 1, -1, true)] // expire immediately
-            public void ShouldBeStaleInWriteModeIfOnlyHaveOneRouter(int routerCount, int readerCount, int writerCount,
-                long expireAfterSeconds, bool isStale)
+            public void ShouldBeStaleInWriteModeIfOnlyHaveOneRouter(
+                int routerCount,
+                int readerCount,
+                int writerCount,
+                long expireAfterSeconds,
+                bool isStale)
             {
                 var table = new RoutingTable(
                     null,
@@ -101,6 +105,7 @@ namespace Neo4j.Driver.Tests.Routing
                     CreateUriArray(readerCount),
                     CreateUriArray(writerCount),
                     expireAfterSeconds);
+
                 table.IsStale(AccessMode.Write).Should().Be(isStale);
             }
         }
@@ -117,14 +122,15 @@ namespace Neo4j.Driver.Tests.Routing
                     CreateUriArray(0),
                     CreateUriArray(0),
                     5 * 60);
-                Uri router = table.Routers[0];
+
+                var router = table.Routers[0];
                 var head = new Uri("http://neo4j:10");
                 router.Should().Be(head);
 
                 // When
                 var first = new Uri("me://12");
                 var second = new Uri("me://22");
-                table.PrependRouters(new List<Uri> {first, second});
+                table.PrependRouters(new List<Uri> { first, second });
 
                 // Then
                 router = table.Routers[0];
@@ -141,8 +147,12 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public void ShouldReturnTrue()
             {
-                var routingTable = new RoutingTable(null, new[] {new Uri("neo4j://my-router")},
-                    new[] {new Uri("neo4j://my-reader")}, Enumerable.Empty<Uri>(), 10);
+                var routingTable = new RoutingTable(
+                    null,
+                    new[] { new Uri("neo4j://my-router") },
+                    new[] { new Uri("neo4j://my-reader") },
+                    Enumerable.Empty<Uri>(),
+                    10);
 
                 routingTable.IsReadingInAbsenceOfWriter(AccessMode.Read).Should().BeTrue();
             }
@@ -150,8 +160,12 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public void ShouldReturnFalseWhenExpired()
             {
-                var routingTable = new RoutingTable(null, new[] {new Uri("neo4j://my-router")},
-                    new[] {new Uri("neo4j://my-reader")}, Enumerable.Empty<Uri>(), -1);
+                var routingTable = new RoutingTable(
+                    null,
+                    new[] { new Uri("neo4j://my-router") },
+                    new[] { new Uri("neo4j://my-reader") },
+                    Enumerable.Empty<Uri>(),
+                    -1);
 
                 routingTable.IsReadingInAbsenceOfWriter(AccessMode.Read).Should().BeFalse();
             }
@@ -159,8 +173,12 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public void ShouldReturnFalseWhenAccessModeIsWrite()
             {
-                var routingTable = new RoutingTable(null, new[] {new Uri("neo4j://my-router")},
-                    new[] {new Uri("neo4j://my-reader")}, Enumerable.Empty<Uri>(), 10);
+                var routingTable = new RoutingTable(
+                    null,
+                    new[] { new Uri("neo4j://my-router") },
+                    new[] { new Uri("neo4j://my-reader") },
+                    Enumerable.Empty<Uri>(),
+                    10);
 
                 routingTable.IsReadingInAbsenceOfWriter(AccessMode.Write).Should().BeFalse();
             }
@@ -168,8 +186,12 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public void ShouldReturnFalseWhenThereIsAWriter()
             {
-                var routingTable = new RoutingTable(null, new[] {new Uri("neo4j://my-router")},
-                    new[] {new Uri("neo4j://my-reader")}, new[] {new Uri("neo4j://my-writer")}, 10);
+                var routingTable = new RoutingTable(
+                    null,
+                    new[] { new Uri("neo4j://my-router") },
+                    new[] { new Uri("neo4j://my-reader") },
+                    new[] { new Uri("neo4j://my-writer") },
+                    10);
 
                 routingTable.IsReadingInAbsenceOfWriter(AccessMode.Read).Should().BeFalse();
             }
@@ -177,8 +199,12 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public void ShouldReturnFalseWhenNoReaders()
             {
-                var routingTable = new RoutingTable(null, new[] {new Uri("neo4j://my-router")},
-                    Enumerable.Empty<Uri>(), Enumerable.Empty<Uri>(), 10);
+                var routingTable = new RoutingTable(
+                    null,
+                    new[] { new Uri("neo4j://my-router") },
+                    Enumerable.Empty<Uri>(),
+                    Enumerable.Empty<Uri>(),
+                    10);
 
                 routingTable.IsReadingInAbsenceOfWriter(AccessMode.Read).Should().BeFalse();
             }
@@ -186,8 +212,12 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public void ShouldReturnFalseWhenNoReadersButWriters()
             {
-                var routingTable = new RoutingTable(null, new[] {new Uri("neo4j://my-router")},
-                    Enumerable.Empty<Uri>(), new[] {new Uri("neo4j://my-writer"),}, 10);
+                var routingTable = new RoutingTable(
+                    null,
+                    new[] { new Uri("neo4j://my-router") },
+                    Enumerable.Empty<Uri>(),
+                    new[] { new Uri("neo4j://my-writer") },
+                    10);
 
                 routingTable.IsReadingInAbsenceOfWriter(AccessMode.Read).Should().BeFalse();
             }
@@ -195,8 +225,12 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public void ShouldReturnFalseWhenNoRouters()
             {
-                var routingTable = new RoutingTable(null, Enumerable.Empty<Uri>(),
-                    new[] {new Uri("neo4j://my-reader"),}, new[] {new Uri("neo4j://my-writer"),}, 10);
+                var routingTable = new RoutingTable(
+                    null,
+                    Enumerable.Empty<Uri>(),
+                    new[] { new Uri("neo4j://my-reader") },
+                    new[] { new Uri("neo4j://my-writer") },
+                    10);
 
                 routingTable.IsReadingInAbsenceOfWriter(AccessMode.Read).Should().BeFalse();
             }
@@ -207,20 +241,23 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public void ShouldGenerateCorrectString()
             {
-                var routingTable = new RoutingTable("foo",
-                    new[] {new Uri("bolt://my-router-1"), new Uri("neo4j://my-router-2")},
-                    new[] {new Uri("bolt://my-reader-1"), new Uri("neo4j://my-reader-2")},
-                    new[] {new Uri("bolt://my-writer-1"), new Uri("neo4j://my-writer-2")},
+                var routingTable = new RoutingTable(
+                    "foo",
+                    new[] { new Uri("bolt://my-router-1"), new Uri("neo4j://my-router-2") },
+                    new[] { new Uri("bolt://my-reader-1"), new Uri("neo4j://my-reader-2") },
+                    new[] { new Uri("bolt://my-writer-1"), new Uri("neo4j://my-writer-2") },
                     10);
 
-                routingTable.ToString().Should().Be(
-                    "RoutingTable{" +
-                    "database=foo, " +
-                    "routers=[bolt://my-router-1/, neo4j://my-router-2/], " +
-                    "writers=[bolt://my-writer-1/, neo4j://my-writer-2/], " +
-                    "readers=[bolt://my-reader-1/, neo4j://my-reader-2/], " +
-                    "expiresAfter=10s" +
-                    "}");
+                routingTable.ToString()
+                    .Should()
+                    .Be(
+                        "RoutingTable{" +
+                        "database=foo, " +
+                        "routers=[bolt://my-router-1/, neo4j://my-router-2/], " +
+                        "writers=[bolt://my-writer-1/, neo4j://my-writer-2/], " +
+                        "readers=[bolt://my-reader-1/, neo4j://my-reader-2/], " +
+                        "expiresAfter=10s" +
+                        "}");
             }
         }
 
@@ -229,18 +266,19 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public void ShouldRemoveFromAll()
             {
-                var routingTable = new RoutingTable("foo",
+                var routingTable = new RoutingTable(
+                    "foo",
                     new[]
                     {
-                        new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"), new Uri("http://my-server-3"),
+                        new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"), new Uri("http://my-server-3")
                     },
                     new[]
                     {
-                        new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"), new Uri("http://my-server-3"),
+                        new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"), new Uri("http://my-server-3")
                     },
                     new[]
                     {
-                        new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"), new Uri("http://my-server-3"),
+                        new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"), new Uri("http://my-server-3")
                     },
                     10);
 
@@ -249,20 +287,24 @@ namespace Neo4j.Driver.Tests.Routing
                 routingTable.Database.Should().Be("foo");
                 routingTable.Routers.Should()
                     .BeEquivalentTo(new Uri("bolt://my-server-1"), new Uri("http://my-server-3"));
+
                 routingTable.Writers.Should()
                     .BeEquivalentTo(new Uri("bolt://my-server-1"), new Uri("http://my-server-3"));
+
                 routingTable.Readers.Should()
                     .BeEquivalentTo(new Uri("bolt://my-server-1"), new Uri("http://my-server-3"));
+
                 routingTable.ExpireAfterSeconds.Should().Be(10);
             }
 
             [Fact]
             public void ShouldNotRemoveIfNotPresent()
             {
-                var routingTable = new RoutingTable("foo",
-                    new[] {new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2")},
-                    new[] {new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2")},
-                    new[] {new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2")},
+                var routingTable = new RoutingTable(
+                    "foo",
+                    new[] { new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2") },
+                    new[] { new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2") },
+                    new[] { new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2") },
                     10);
 
                 routingTable.Remove(new Uri("neo4j://my-server-3"));
@@ -270,10 +312,13 @@ namespace Neo4j.Driver.Tests.Routing
                 routingTable.Database.Should().Be("foo");
                 routingTable.Routers.Should()
                     .BeEquivalentTo(new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"));
+
                 routingTable.Writers.Should()
                     .BeEquivalentTo(new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"));
+
                 routingTable.Readers.Should()
                     .BeEquivalentTo(new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"));
+
                 routingTable.ExpireAfterSeconds.Should().Be(10);
             }
         }
@@ -283,18 +328,19 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public void ShouldRemoveFromWritersOnly()
             {
-                var routingTable = new RoutingTable("foo",
+                var routingTable = new RoutingTable(
+                    "foo",
                     new[]
                     {
-                        new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"), new Uri("http://my-server-3"),
+                        new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"), new Uri("http://my-server-3")
                     },
                     new[]
                     {
-                        new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"), new Uri("http://my-server-3"),
+                        new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"), new Uri("http://my-server-3")
                     },
                     new[]
                     {
-                        new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"), new Uri("http://my-server-3"),
+                        new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"), new Uri("http://my-server-3")
                     },
                     10);
 
@@ -302,23 +348,31 @@ namespace Neo4j.Driver.Tests.Routing
 
                 routingTable.Database.Should().Be("foo");
                 routingTable.Routers.Should()
-                    .BeEquivalentTo(new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"),
+                    .BeEquivalentTo(
+                        new Uri("bolt://my-server-1"),
+                        new Uri("neo4j://my-server-2"),
                         new Uri("http://my-server-3"));
+
                 routingTable.Writers.Should()
                     .BeEquivalentTo(new Uri("bolt://my-server-1"), new Uri("http://my-server-3"));
+
                 routingTable.Readers.Should()
-                    .BeEquivalentTo(new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"),
+                    .BeEquivalentTo(
+                        new Uri("bolt://my-server-1"),
+                        new Uri("neo4j://my-server-2"),
                         new Uri("http://my-server-3"));
+
                 routingTable.ExpireAfterSeconds.Should().Be(10);
             }
 
             [Fact]
             public void ShouldNotRemoveIfNotPresent()
             {
-                var routingTable = new RoutingTable("foo",
-                    new[] {new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2")},
-                    new[] {new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2")},
-                    new[] {new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2")},
+                var routingTable = new RoutingTable(
+                    "foo",
+                    new[] { new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2") },
+                    new[] { new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2") },
+                    new[] { new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2") },
                     10);
 
                 routingTable.RemoveWriter(new Uri("neo4j://my-server-3"));
@@ -326,10 +380,13 @@ namespace Neo4j.Driver.Tests.Routing
                 routingTable.Database.Should().Be("foo");
                 routingTable.Routers.Should()
                     .BeEquivalentTo(new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"));
+
                 routingTable.Writers.Should()
                     .BeEquivalentTo(new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"));
+
                 routingTable.Readers.Should()
                     .BeEquivalentTo(new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"));
+
                 routingTable.ExpireAfterSeconds.Should().Be(10);
             }
         }
@@ -339,25 +396,33 @@ namespace Neo4j.Driver.Tests.Routing
             [Fact]
             public void ShouldUnionAll()
             {
-                var routingTable = new RoutingTable("foo",
+                var routingTable = new RoutingTable(
+                    "foo",
                     new[]
                     {
-                        new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"), new Uri("http://my-server-3"),
+                        new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"), new Uri("http://my-server-3")
                     },
-                    new[] {new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2")},
-                    new[] {new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2")},
+                    new[] { new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2") },
+                    new[] { new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2") },
                     10);
 
-                routingTable.All().Should().BeEquivalentTo(
-                    new Uri("bolt://my-server-1"), new Uri("neo4j://my-server-2"), new Uri("http://my-server-3")
-                );
+                routingTable.All()
+                    .Should()
+                    .BeEquivalentTo(
+                        new Uri("bolt://my-server-1"),
+                        new Uri("neo4j://my-server-2"),
+                        new Uri("http://my-server-3"));
             }
 
             [Fact]
             public void ShouldReturnEmptyWhenEmpty()
             {
-                var routingTable = new RoutingTable("foo", Enumerable.Empty<Uri>(), Enumerable.Empty<Uri>(),
-                    Enumerable.Empty<Uri>(), 10);
+                var routingTable = new RoutingTable(
+                    "foo",
+                    Enumerable.Empty<Uri>(),
+                    Enumerable.Empty<Uri>(),
+                    Enumerable.Empty<Uri>(),
+                    10);
 
                 routingTable.All().Should().BeEmpty();
             }
@@ -373,15 +438,15 @@ namespace Neo4j.Driver.Tests.Routing
             {
                 var timer = new Mock<ITimer>();
                 timer.Setup(x => x.ElapsedMilliseconds).Returns(0);
-
+    
                 var routingTable = new RoutingTable(null, new[] {new Uri("neo4j://my-router")},
                     new[] {new Uri("neo4j://my-reader")}, Enumerable.Empty<Uri>(), expiresAfterSecs);
-
-
-				await System.Threading.Tasks.Task.Delay(delayMs); // this needs fixing. Also remove the timer.Object constructor from the routingTable class.
+    
+    
+                await System.Threading.Tasks.Task.Delay(delayMs); // this needs fixing. Also remove the timer.Object constructor from the routingTable class.
                 routingTable.IsExpiredFor(TimeSpan.FromSeconds(expiredForCheckSecs)).Should().Be(expected);
             }
-			*/
+            */
         }
     }
 }

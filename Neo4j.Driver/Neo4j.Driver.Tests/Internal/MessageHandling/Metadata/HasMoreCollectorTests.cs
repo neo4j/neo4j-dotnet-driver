@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -24,6 +24,10 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
     public class HasMoreCollectorTests
     {
         private const string Key = HasMoreCollector.HasMoreKey;
+
+        internal static KeyValuePair<string, object> TestMetadata => new(Key, true);
+
+        internal static bool TestMetadataCollected => true;
 
         [Fact]
         public void ShouldCollectFalseIfMetadataIsNull()
@@ -48,12 +52,14 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         [Fact]
         public void ShouldThrowIfValueIsOfWrongType()
         {
-            var metadata = new Dictionary<string, object> {{Key, "some string"}};
+            var metadata = new Dictionary<string, object> { { Key, "some string" } };
             var collector = new HasMoreCollector();
 
             var ex = Record.Exception(() => collector.Collect(metadata));
 
-            ex.Should().BeOfType<ProtocolException>().Which
+            ex.Should()
+                .BeOfType<ProtocolException>()
+                .Which
                 .Message.Should()
                 .Contain($"Expected '{Key}' metadata to be of type 'Boolean', but got 'String'.");
         }
@@ -61,7 +67,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         [Fact]
         public void ShouldCollect()
         {
-            var metadata = new Dictionary<string, object> {{Key, true}};
+            var metadata = new Dictionary<string, object> { { Key, true } };
             var collector = new HasMoreCollector();
 
             collector.Collect(metadata);
@@ -72,17 +78,12 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         [Fact]
         public void ShouldReturnSameCollected()
         {
-            var metadata = new Dictionary<string, object> {{Key, true}};
+            var metadata = new Dictionary<string, object> { { Key, true } };
             var collector = new HasMoreCollector();
 
             collector.Collect(metadata);
 
-            ((IMetadataCollector) collector).Collected.Should().Be(collector.Collected);
+            ((IMetadataCollector)collector).Collected.Should().Be(collector.Collected);
         }
-
-        internal static KeyValuePair<string, object> TestMetadata =>
-            new KeyValuePair<string, object>(Key, true);
-
-        internal static bool TestMetadataCollected => true;
     }
 }

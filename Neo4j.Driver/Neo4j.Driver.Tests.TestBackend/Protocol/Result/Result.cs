@@ -1,65 +1,82 @@
-﻿using System;
+﻿// Copyright (c) "Neo4j"
+// Neo4j Sweden AB [http://neo4j.com]
+// 
+// This file is part of Neo4j.
+// 
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using Neo4j.Driver;
-using System.Collections.Generic;
-using System.Diagnostics;
 
+namespace Neo4j.Driver.Tests.TestBackend;
 
-namespace Neo4j.Driver.Tests.TestBackend
+internal class Result : IProtocolObject
 {
-	internal class Result : IProtocolObject
-	{
-		[JsonIgnore]
-		public IResultCursor ResultCursor { get; set; }
+    [JsonIgnore] public IResultCursor ResultCursor { get; set; }
 
-		public ResultType data { get; set; } = new ResultType();
+    public ResultType data { get; set; } = new();
 
-        public class ResultType
+    public override async Task Process()
+    {
+        //Currently does nothing
+        await Task.CompletedTask;
+    }
+
+    public override string Respond()
+    {
+        var keys = ResultCursor.KeysAsync().GetAwaiter().GetResult();
+        return new ProtocolResponse("Result", new { id = uniqueId, keys }).Encode();
+    }
+
+    public async Task<IRecord> GetNextRecord()
+    {
+        if (await ResultCursor.FetchAsync())
         {
-            public string id { get; set; }
+            return await Task.FromResult(ResultCursor.Current);
         }
 
-        public override async Task Process()
-        {
-            //Currently does nothing
-            await Task.CompletedTask;
-        }
+        return await Task.FromResult<IRecord>(null);
+    }
 
-        public override string Respond()
-        {
-            var keys = ResultCursor.KeysAsync().GetAwaiter().GetResult();
-            return new ProtocolResponse("Result", new { id = uniqueId, keys }).Encode();
-        }
+    public Task<IRecord> PeekRecord()
+    {
+        return ResultCursor.PeekAsync();
+    }
 
-		public async Task<IRecord> GetNextRecord()
-		{
-			if(await ResultCursor.FetchAsync())
-			{
-				return await Task.FromResult<IRecord>(ResultCursor.Current);
-			}
+    public Task<IRecord> SingleAsync()
+    {
+        return ResultCursor.SingleAsync();
+    }
 
-			return await Task.FromResult<IRecord>(null);
-		}
+    public async Task<IResultSummary> ConsumeResults()
+    {
+        return await ResultCursor.ConsumeAsync().ConfigureAwait(false);
+    }
 
-        public Task<IRecord> PeekRecord()
-        {
-            return ResultCursor.PeekAsync();
-        }
+    public Task<List<IRecord>> ToListAsync()
+    {
+        return ResultCursor.ToListAsync();
+    }
 
-        public Task<IRecord> SingleAsync() => ResultCursor.SingleAsync();
+    public async Task PopulateRecords(IResultCursor cursor)
+    {
+        ResultCursor = cursor;
+        await Task.CompletedTask;
+    }
 
-        public async Task<IResultSummary> ConsumeResults()
-		{
-			return await ResultCursor.ConsumeAsync().ConfigureAwait(false);
-		}
-
-        public Task<List<IRecord>> ToListAsync() => ResultCursor.ToListAsync();
-
-		public async Task PopulateRecords(IResultCursor cursor)
-		{
-			ResultCursor = cursor;
-			await Task.CompletedTask;
-		}
-	}
+    public class ResultType
+    {
+        public string id { get; set; }
+    }
 }

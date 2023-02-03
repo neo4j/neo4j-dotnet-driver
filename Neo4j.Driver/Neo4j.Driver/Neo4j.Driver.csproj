@@ -1,58 +1,59 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\common.props" />
-  <PropertyGroup>
-    <TargetFrameworks>net6.0;netstandard2.0</TargetFrameworks>
-	  <AssemblyName>Neo4j.Driver</AssemblyName>
-    <PackageId>Neo4j.Driver$(PackageIdSuffix)</PackageId>
-    <Authors>Neo4j</Authors>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/neo4j/neo4j-dotnet-driver</PackageProjectUrl>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <Description>The official .NET driver for the Neo4j Graph Database over the Bolt protocol.</Description>
-    <PackageIconUrl>https://avatars3.githubusercontent.com/u/201120?v=3&amp;s=64</PackageIconUrl>
-    <PackageTags>Cypher NoSql Graph Bolt Neo4j</PackageTags>
-    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
-    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
-    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
-    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
-    <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
-    <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
-    <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
-    <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
-    <LangVersion>latest</LangVersion>
-    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Neo4j.Driver.xml</DocumentationFile>
-    <Version>5.5.0</Version>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net6.0|AnyCPU'">
-    <WarningLevel>2</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net6.0|AnyCPU'">
-    <WarningLevel>2</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='ReleaseSigned|net6.0|AnyCPU'">
-    <WarningLevel>2</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='DebugDelaySigned|net6.0|AnyCPU'">
-    <WarningLevel>2</WarningLevel>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net5.0'">
-    <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
-    <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
-    <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
-    <PackageReference Include="System.Net.Security" Version="4.3.2" />
-    <PackageReference Include="System.Net.Sockets" Version="4.3.0" />
-    <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Remove="Internal\Temporal\windowsZones.xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Internal\Temporal\windowsZones.xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="5.0.0" />
-    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
-  </ItemGroup>
+    <Import Project="..\common.props"/>
+    <PropertyGroup>
+        <TargetFrameworks>net6.0;netstandard2.0</TargetFrameworks>
+        <AssemblyName>Neo4j.Driver</AssemblyName>
+        <PackageId>Neo4j.Driver$(PackageIdSuffix)</PackageId>
+        <Authors>Neo4j</Authors>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <PackageProjectUrl>https://github.com/neo4j/neo4j-dotnet-driver</PackageProjectUrl>
+        <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+        <Description>The official .NET driver for the Neo4j Graph Database over the Bolt protocol.</Description>
+        <PackageIconUrl>https://avatars3.githubusercontent.com/u/201120?v=3&amp;s=64</PackageIconUrl>
+        <PackageTags>Cypher NoSql Graph Bolt Neo4j</PackageTags>
+        <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+        <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
+        <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+        <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+        <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+        <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
+        <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
+        <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
+        <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
+        <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
+        <LangVersion>latest</LangVersion>
+        <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Neo4j.Driver.xml</DocumentationFile>
+        <Version>5.5.0</Version>
+        <LangVersion>10.0</LangVersion>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net6.0|AnyCPU'">
+        <WarningLevel>2</WarningLevel>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net6.0|AnyCPU'">
+        <WarningLevel>2</WarningLevel>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='ReleaseSigned|net6.0|AnyCPU'">
+        <WarningLevel>2</WarningLevel>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='DebugDelaySigned|net6.0|AnyCPU'">
+        <WarningLevel>2</WarningLevel>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(TargetFramework)' == 'net5.0'">
+        <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0"/>
+        <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0"/>
+        <PackageReference Include="System.Net.NameResolution" Version="4.3.0"/>
+        <PackageReference Include="System.Net.Security" Version="4.3.2"/>
+        <PackageReference Include="System.Net.Sockets" Version="4.3.0"/>
+        <PackageReference Include="System.Threading.Thread" Version="4.3.0"/>
+    </ItemGroup>
+    <ItemGroup>
+        <None Remove="Internal\Temporal\windowsZones.xml"/>
+    </ItemGroup>
+    <ItemGroup>
+        <EmbeddedResource Include="Internal\Temporal\windowsZones.xml"/>
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="5.0.0"/>
+        <PackageReference Include="System.ValueTuple" Version="4.5.0"/>
+    </ItemGroup>
 </Project>

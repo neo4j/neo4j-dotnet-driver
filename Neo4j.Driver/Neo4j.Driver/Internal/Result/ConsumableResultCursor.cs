@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -19,78 +19,77 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.Result
+namespace Neo4j.Driver.Internal.Result;
+
+internal class ConsumableResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
 {
-    internal class ConsumableResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
+    private readonly IInternalResultCursor _cursor;
+    private bool _isConsumed;
+
+    public ConsumableResultCursor(IInternalResultCursor cursor)
     {
-        private readonly IInternalResultCursor _cursor;
-        private bool _isConsumed;
+        _cursor = cursor;
+    }
 
-        public ConsumableResultCursor(IInternalResultCursor cursor)
-        {
-            _cursor = cursor;
-        }
+    public ValueTask<bool> MoveNextAsync()
+    {
+        return new ValueTask<bool>(FetchAsync());
+    }
 
-        public Task<string[]> KeysAsync()
-        {
-            return _cursor.KeysAsync();
-        }
+    public ValueTask DisposeAsync()
+    {
+        return new ValueTask(Task.CompletedTask);
+    }
 
-        public Task<IResultSummary> ConsumeAsync()
-        {
-            _isConsumed = true;
-            return _cursor.ConsumeAsync();
-        }
+    public Task<string[]> KeysAsync()
+    {
+        return _cursor.KeysAsync();
+    }
 
-        public Task<IRecord> PeekAsync()
+    public Task<IResultSummary> ConsumeAsync()
+    {
+        _isConsumed = true;
+        return _cursor.ConsumeAsync();
+    }
+
+    public Task<IRecord> PeekAsync()
+    {
+        AssertNotConsumed();
+        return _cursor.PeekAsync();
+    }
+
+    public Task<bool> FetchAsync()
+    {
+        AssertNotConsumed();
+        return _cursor.FetchAsync();
+    }
+
+    public IRecord Current
+    {
+        get
         {
             AssertNotConsumed();
-            return _cursor.PeekAsync();
+            return _cursor.Current;
         }
+    }
 
-        public Task<bool> FetchAsync()
+    public bool IsOpen => !_isConsumed;
+
+    public void Cancel()
+    {
+        _cursor.Cancel();
+    }
+
+    public IAsyncEnumerator<IRecord> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+    {
+        return this;
+    }
+
+    private void AssertNotConsumed()
+    {
+        if (_isConsumed)
         {
-            AssertNotConsumed();
-            return _cursor.FetchAsync();
-        }
-
-        public ValueTask<bool> MoveNextAsync()
-        {
-            return new ValueTask<bool>(FetchAsync());
-        }
-
-        public IRecord Current
-        {
-            get
-            {
-                AssertNotConsumed();
-                return _cursor.Current;
-            }
-        }
-
-        public bool IsOpen => !_isConsumed;
-
-        public void Cancel()
-        {
-            _cursor.Cancel();
-        }
-
-        private void AssertNotConsumed()
-        {
-            if (_isConsumed)
-            {
-                throw ErrorExtensions.NewResultConsumedException();
-            }
-        }
-
-        public IAsyncEnumerator<IRecord> GetAsyncEnumerator(CancellationToken cancellationToken = default)
-        {
-            return this;
-        }
-
-        public ValueTask DisposeAsync()
-        {
-            return new ValueTask(Task.CompletedTask);
+            throw ErrorExtensions.NewResultConsumedException();
         }
     }
 }

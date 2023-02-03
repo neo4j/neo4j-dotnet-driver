@@ -1,10 +1,10 @@
-﻿// Copyright (c) 2002-2022 "Neo4j,"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,17 +18,14 @@
 namespace Neo4j.Driver;
 
 /// <summary>
-/// Used for specifying which members of a neo4j cluster will process the workload.<br/>
-/// default: <see cref="Writers"/>
+/// Used for specifying which members of a neo4j cluster will process the workload.<br/> default:
+/// <see cref="Writers"/>
 /// </summary>
 public enum RoutingControl
 {
-    /// <summary>
-    /// Send work to member of cluster that is capable of processing read and write workloads.
-    /// </summary>
+    /// <summary>Send work to member of cluster that is capable of processing read and write workloads.</summary>
     Writers = 0,
-    /// <summary>
-    /// Send work to a member of cluster capable of processing read workloads.
-    /// </summary>
+
+    /// <summary>Send work to a member of cluster capable of processing read workloads.</summary>
     Readers = 1
 }

@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -19,9 +19,10 @@ using System;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal;
 using Xunit;
+
+#pragma warning disable CS0618
 
 namespace Neo4j.Driver.Tests
 {
@@ -70,7 +71,9 @@ namespace Neo4j.Driver.Tests
         [Fact]
         public void ShouldErrorIfBoltSchemeWithRoutingContext()
         {
-            var exception = Record.Exception(() => GraphDatabase.Driver("bolt://localhost/?name=molly&age=1&color=white"));
+            var exception = Record.Exception(
+                () => GraphDatabase.Driver("bolt://localhost/?name=molly&age=1&color=white"));
+
             exception.Should().BeOfType<ArgumentException>();
             exception.Message.Should().Contain("Routing context are not supported with scheme 'bolt'");
         }
@@ -78,7 +81,8 @@ namespace Neo4j.Driver.Tests
         [Fact]
         public void ShouldAcceptIfRoutingSchemeWithRoutingContext()
         {
-            using (var driver = (Internal.Driver) GraphDatabase.Driver("neo4j://localhost/?name=molly&age=1&color=white"))
+            using (var driver =
+                   (Internal.Driver)GraphDatabase.Driver("neo4j://localhost/?name=molly&age=1&color=white"))
             {
                 driver.Uri.Port.Should().Be(7687);
                 driver.Uri.Scheme.Should().Be("neo4j");
@@ -119,7 +123,7 @@ namespace Neo4j.Driver.Tests
             ex.Should().BeOfType<ObjectDisposedException>();
         }
 
-        [Fact] 
+        [Fact]
         public async void MultipleCloseAndDisposeIsValidOnDriver()
         {
             var driver = GraphDatabase.Driver("bolt://localhost");
@@ -138,6 +142,7 @@ namespace Neo4j.Driver.Tests
             var mock = new Mock<IConnectionProvider>();
             mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
                 .Returns(Task.FromResult(new Mock<IServerInfo>().Object));
+
             var driver = new Internal.Driver(new Uri("bolt://localhost"), false, mock.Object, null);
             await driver.VerifyConnectivityAsync();
 
@@ -151,13 +156,15 @@ namespace Neo4j.Driver.Tests
             var mock = new Mock<IConnectionProvider>();
             mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
                 .Returns(Task.FromResult(mockServerInfo));
+
             var driver = new Internal.Driver(new Uri("bolt://localhost"), false, mock.Object, null);
-            
+
             var info = await driver.GetServerInfoAsync();
 
             mock.Verify(x => x.VerifyConnectivityAndGetInfoAsync(), Times.Once);
             info.Should().Be(mockServerInfo);
         }
+
         [Fact]
         public async void ShouldTestSupportMultiDb()
         {
@@ -168,6 +175,5 @@ namespace Neo4j.Driver.Tests
 
             mock.Verify(x => x.SupportsMultiDbAsync(), Times.Once);
         }
-
     }
 }

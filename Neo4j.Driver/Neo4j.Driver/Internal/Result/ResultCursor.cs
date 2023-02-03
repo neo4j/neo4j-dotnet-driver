@@ -1,14 +1,14 @@
 ﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
-//
+// 
 // This file is part of Neo4j.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// 
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-//
+// 
 //     http://www.apache.org/licenses/LICENSE-2.0
-//
+// 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,135 +20,132 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.Result
+namespace Neo4j.Driver.Internal.Result;
+
+internal class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
 {
-    internal class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
+    private readonly IResultStream _resultStream;
+    private bool _atEnd;
+    private IRecord _current;
+
+    private Task<string[]> _keys;
+    private IRecord _peeked;
+    private Task<IResultSummary> _summary;
+
+    public ResultCursor(IResultStream resultStream)
     {
-        private bool _atEnd;
-        private IRecord _peeked;
-        private IRecord _current;
+        _resultStream = resultStream ?? throw new ArgumentNullException(nameof(resultStream));
+    }
 
-        private Task<string[]> _keys;
-        private readonly IResultStream _resultStream;
-        private Task<IResultSummary> _summary;
+    ValueTask<bool> IAsyncEnumerator<IRecord>.MoveNextAsync()
+    {
+        return new ValueTask<bool>(FetchAsync());
+    }
 
-        public ResultCursor(IResultStream resultStream)
+    public ValueTask DisposeAsync()
+    {
+        // should we ConsumeAsync here? Probably not.
+        return new ValueTask(Task.CompletedTask);
+    }
+
+    public Task<string[]> KeysAsync()
+    {
+        if (_keys == null)
         {
-            Throw.ArgumentNullException.IfNull(resultStream, nameof(resultStream));
-
-            _resultStream = resultStream;
+            _keys = _resultStream.GetKeysAsync();
         }
 
-        public Task<string[]> KeysAsync()
-        {
-            if (_keys == null)
-            {
-                _keys = _resultStream.GetKeysAsync();
-            }
+        return _keys;
+    }
 
-            return _keys;
+    public Task<IResultSummary> ConsumeAsync()
+    {
+        if (_summary == null)
+        {
+            Cancel();
+            _summary = _resultStream.ConsumeAsync();
         }
-
-        public Task<IResultSummary> ConsumeAsync()
+        else
         {
-            if (_summary == null)
+            if (_summary.IsFaulted)
             {
-                Cancel();
                 _summary = _resultStream.ConsumeAsync();
             }
-            else
-            {
-                if (_summary.IsFaulted)
-                {
-                    _summary = _resultStream.ConsumeAsync();
-                }
-            }
-
-            return _summary;
         }
 
-        public async Task<IRecord> PeekAsync()
+        return _summary;
+    }
+
+    public async Task<IRecord> PeekAsync()
+    {
+        if (_peeked != null)
         {
-            if (_peeked != null)
-            {
-                return _peeked;
-            }
-
-            if (_atEnd)
-            {
-                return null;
-            }
-
-            _peeked = await _resultStream.NextRecordAsync().ConfigureAwait(false);
-            if (_peeked == null)
-            {
-                _atEnd = true;
-
-                return null;
-            }
-
             return _peeked;
         }
 
-        public async Task<bool> FetchAsync()
+        if (_atEnd)
         {
-            if (_peeked != null)
-            {
-                _current = _peeked;
-                _peeked = null;
-            }
-            else
-            {
-                try
-                {
-                    _current = await _resultStream.NextRecordAsync().ConfigureAwait(false);
-                }
-                finally
-                {
-                    if (_current == null)
-                    {
-                        _atEnd = true;
-                    }
-                }
-            }
-
-            return _current != null;
+            return null;
         }
 
-        ValueTask<bool> IAsyncEnumerator<IRecord>.MoveNextAsync()
+        _peeked = await _resultStream.NextRecordAsync().ConfigureAwait(false);
+        if (_peeked == null)
         {
-            return new ValueTask<bool>(FetchAsync());
+            _atEnd = true;
+
+            return null;
         }
 
-        public IRecord Current
-        {
-            get
-            {
-                if (!_atEnd && _current == null && _peeked == null)
-                {
-                    throw new InvalidOperationException("Tried to access Current without calling FetchAsync.");
-                }
+        return _peeked;
+    }
 
-                return _current;
+    public async Task<bool> FetchAsync()
+    {
+        if (_peeked != null)
+        {
+            _current = _peeked;
+            _peeked = null;
+        }
+        else
+        {
+            try
+            {
+                _current = await _resultStream.NextRecordAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                if (_current == null)
+                {
+                    _atEnd = true;
+                }
             }
         }
 
-        public bool IsOpen => _summary == null;
+        return _current != null;
+    }
 
-        public void Cancel()
+    public IRecord Current
+    {
+        get
         {
-            _resultStream.Cancel();
-        }
+            if (!_atEnd && _current == null && _peeked == null)
+            {
+                throw new InvalidOperationException("Tried to access Current without calling FetchAsync.");
+            }
 
-        public IAsyncEnumerator<IRecord> GetAsyncEnumerator(CancellationToken cancellationToken = default)
-        {
-            return this;
+            return _current;
         }
+    }
 
-        public ValueTask DisposeAsync()
-        {
-            // should we ConsumeAsync here? Probably not.
-            return new ValueTask(Task.CompletedTask);
-        }
+    public bool IsOpen => _summary == null;
+
+    public void Cancel()
+    {
+        _resultStream.Cancel();
+    }
+
+    public IAsyncEnumerator<IRecord> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+    {
+        return this;
     }
 }

@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -16,47 +16,39 @@
 // limitations under the License.
 
 using System;
-using System.Linq;
 using System.Runtime.InteropServices;
-using Neo4j.Driver.Internal;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.TestUtil
 {
-
     public class MonoFactAttribute : FactAttribute
     {
-
         public MonoFactAttribute()
         {
             var shouldSkip = Type.GetType("Mono.Runtime") == null;
 
             if (shouldSkip)
             {
-                Skip = $"Test is supposed to be run only on mono runtimes";
+                Skip = "Test is supposed to be run only on mono runtimes";
             }
         }
-
     }
 
     public class MonoTheoryAttribute : TheoryAttribute
     {
-
         public MonoTheoryAttribute()
         {
             var shouldSkip = Type.GetType("Mono.Runtime") == null;
 
             if (shouldSkip)
             {
-                Skip = $"Test is supposed to be run only on mono runtimes";
+                Skip = "Test is supposed to be run only on mono runtimes";
             }
         }
-
     }
 
     public class DotnetCoreFactAttribute : FactAttribute
     {
-
         public DotnetCoreFactAttribute()
         {
             var shouldSkip =
@@ -65,16 +57,13 @@ namespace Neo4j.Driver.Tests.TestUtil
 
             if (shouldSkip)
             {
-                Skip = $"Test is supposed to be run only on .net core runtimes";
+                Skip = "Test is supposed to be run only on .net core runtimes";
             }
         }
-
     }
-
 
     public class DotnetCoreTheoryAttribute : TheoryAttribute
     {
-
         public DotnetCoreTheoryAttribute()
         {
             var shouldSkip =
@@ -83,9 +72,8 @@ namespace Neo4j.Driver.Tests.TestUtil
 
             if (shouldSkip)
             {
-                Skip = $"Test is supposed to be run only on .net core runtimes";
+                Skip = "Test is supposed to be run only on .net core runtimes";
             }
         }
-
     }
 }

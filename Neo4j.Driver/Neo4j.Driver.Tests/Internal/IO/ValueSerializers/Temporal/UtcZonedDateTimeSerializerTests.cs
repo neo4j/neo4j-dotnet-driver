@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
 {
     public class UtcZonedDateTimeSerializerTests : PackStreamSerializerTests
     {
-        public static object[][] IdPairs = new[]
+        public static object[][] IdPairs =
         {
             new object[]
             {
@@ -42,7 +42,8 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
                 (seconds: 1592231400L, nanos: 183_000_000L, zoneId: "Pacific/Honolulu")
             }
         };
-        public static object[][] OffsetPairs = new[]
+
+        public static object[][] OffsetPairs =
         {
             new object[]
             {
@@ -63,32 +64,41 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
 
         internal override IPackStreamSerializer SerializerUnderTest => new UtcZonedDateTimeSerializer();
 
-        [Theory, MemberData(nameof(OffsetPairs))]
-        public void ShouldSerializeDateTimeWithOffset(ZonedDateTime inDate, (long seconds, long nanos, ZoneOffset offset) expected)
+        [Theory]
+        [MemberData(nameof(OffsetPairs))]
+        public void ShouldSerializeDateTimeWithOffset(
+            ZonedDateTime inDate,
+            (long seconds, long nanos, ZoneOffset offset) expected)
         {
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             writer.Write(inDate);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(3);
-            reader.ReadStructSignature().Should().Be((byte) 'I');
+            reader.ReadStructSignature().Should().Be((byte)'I');
             writer.Write(expected.seconds);
             writer.Write(expected.nanos);
             writer.Write(expected.offset.OffsetSeconds);
         }
 
-        [Theory, MemberData(nameof(OffsetPairs))]
-        public void ShouldDeserializeDateTimeWithOffset(ZonedDateTime expected, (long seconds, long nanos, ZoneOffset offset) inDate)
+        [Theory]
+        [MemberData(nameof(OffsetPairs))]
+        public void ShouldDeserializeDateTimeWithOffset(
+            ZonedDateTime expected,
+            (long seconds, long nanos, ZoneOffset offset) inDate)
         {
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
-            writer.WriteStructHeader(UtcZonedDateTimeSerializer.StructSize, UtcZonedDateTimeSerializer.StructTypeWithOffset);
+            writer.WriteStructHeader(
+                UtcZonedDateTimeSerializer.StructSize,
+                UtcZonedDateTimeSerializer.StructTypeWithOffset);
+
             writer.Write(inDate.seconds);
             writer.Write(inDate.nanos);
             writer.Write(inDate.offset.OffsetSeconds);
@@ -100,8 +110,10 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             var dateTime = value.Should().BeOfType<ZonedDateTime>();
             dateTime.Which.Should().Be(expected);
 
-            dateTime.Which.Zone.Should().BeOfType<ZoneOffset>()
-                .Which.Should().Be(inDate.offset);
+            dateTime.Which.Zone.Should()
+                .BeOfType<ZoneOffset>()
+                .Which.Should()
+                .Be(inDate.offset);
         }
 
         [WindowsFact]
@@ -110,13 +122,13 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             var inDate = new ZonedDateTime(1978, 12, 16, 12, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
             var expected = (seconds: 282652559L, nanos: 128000987L, zoneId: "Europe/Istanbul");
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
             writer.Write(inDate);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be((byte)'i');
             reader.Read().Should().Be(expected.seconds);
@@ -130,9 +142,12 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             var expected = new ZonedDateTime(1978, 12, 16, 12, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
             var inDate = (seconds: 282652559L, nanos: 128000987L, zoneId: "Europe/Istanbul");
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
-            writer.WriteStructHeader(UtcZonedDateTimeSerializer.StructSize, UtcZonedDateTimeSerializer.StructTypeWithId);
+            writer.WriteStructHeader(
+                UtcZonedDateTimeSerializer.StructSize,
+                UtcZonedDateTimeSerializer.StructTypeWithId);
+
             writer.Write(inDate.seconds);
             writer.Write(inDate.nanos);
             writer.Write(inDate.zoneId);
@@ -150,13 +165,13 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             var inDate = new ZonedDateTime(1978, 12, 16, 13, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
             var expected = (seconds: 282652559L, nanos: 128000987L, zoneId: "Europe/Istanbul");
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
             writer.Write(inDate);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be((byte)'i');
             reader.Read().Should().Be(expected.seconds);
@@ -170,9 +185,12 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             var expected = new ZonedDateTime(1978, 12, 16, 13, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
             var inDate = (seconds: 282652559L, nanos: 128000987L, zoneId: "Europe/Istanbul");
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
-            writer.WriteStructHeader(UtcZonedDateTimeSerializer.StructSize, UtcZonedDateTimeSerializer.StructTypeWithId);
+            writer.WriteStructHeader(
+                UtcZonedDateTimeSerializer.StructSize,
+                UtcZonedDateTimeSerializer.StructTypeWithId);
+
             writer.Write(inDate.seconds);
             writer.Write(inDate.nanos);
             writer.Write(inDate.zoneId);
@@ -184,17 +202,20 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             value.Should().NotBeNull().And.Be(expected);
         }
 
-        [Theory, MemberData(nameof(IdPairs))]
-        public void ShouldSerializeDateTimeWithZoneId(ZonedDateTime inDate, (long seconds, long nanos, string zoneId) expected)
+        [Theory]
+        [MemberData(nameof(IdPairs))]
+        public void ShouldSerializeDateTimeWithZoneId(
+            ZonedDateTime inDate,
+            (long seconds, long nanos, string zoneId) expected)
         {
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
             writer.Write(inDate);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be((byte)'i');
             reader.Read().Should().Be(expected.seconds);
@@ -202,13 +223,19 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             reader.Read().Should().Be(expected.zoneId);
         }
 
-        [Theory, MemberData(nameof(IdPairs))]
-        public void ShouldDeserializeDateTimeWithZoneId(ZonedDateTime expected, (long seconds, long nanos, string zoneId) inDate)
+        [Theory]
+        [MemberData(nameof(IdPairs))]
+        public void ShouldDeserializeDateTimeWithZoneId(
+            ZonedDateTime expected,
+            (long seconds, long nanos, string zoneId) inDate)
         {
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
-            writer.WriteStructHeader(UtcZonedDateTimeSerializer.StructSize, UtcZonedDateTimeSerializer.StructTypeWithId);
+            writer.WriteStructHeader(
+                UtcZonedDateTimeSerializer.StructSize,
+                UtcZonedDateTimeSerializer.StructTypeWithId);
+
             writer.Write(inDate.seconds);
             writer.Write(inDate.nanos);
             writer.Write(inDate.zoneId);
@@ -229,22 +256,21 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             var zonedUtc = new ZonedDateTime(utc);
 
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
             writer.Write(zoned);
             writer.Write(zonedUtc);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be((byte)'I');
             var bstSecs = reader.Read();
             reader.Read();
             reader.Read().Should().Be(3600);
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be((byte)'I');
             var utcSecs = reader.Read();

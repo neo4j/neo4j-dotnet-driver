@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -17,6 +17,7 @@
 
 using System;
 using FluentAssertions;
+using Neo4j.Driver.Internal.IO.Utils;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
@@ -25,32 +26,45 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
     {
         internal override IPackStreamSerializer SerializerUnderTest => new ZonedDateTimeSerializer();
 
+        private new PackStreamWriterMachine CreateWriterMachine()
+        {
+            return CreateWriterMachine(BoltProtocolVersion.V4_0);
+        }
+
         [Fact]
         public void ShouldSerializeDateTimeWithOffset()
         {
-            var dateTime = new ZonedDateTime(1978, 12, 16, 12, 35, 59, 128000987,
-                Zone.Of((int) TimeSpan.FromMinutes(-150).TotalSeconds));
+            var dateTime = new ZonedDateTime(
+                1978,
+                12,
+                16,
+                12,
+                35,
+                59,
+                128000987,
+                Zone.Of((int)TimeSpan.FromMinutes(-150).TotalSeconds));
+
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             writer.Write(dateTime);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(3);
-            reader.ReadStructSignature().Should().Be((byte) 'F');
+            reader.ReadStructSignature().Should().Be((byte)'F');
             reader.Read().Should().Be(282659759L);
             reader.Read().Should().Be(128000987L);
             reader.Read().Should().Be(-9000L);
         }
-        
+
         [Fact]
         public void ShouldDeserializeDateTimeWithOffset()
         {
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             writer.WriteStructHeader(ZonedDateTimeSerializer.StructSize, ZonedDateTimeSerializer.StructTypeWithOffset);
             writer.Write(282659759);
@@ -69,7 +83,12 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             value.Should().BeOfType<ZonedDateTime>().Which.Minute.Should().Be(35);
             value.Should().BeOfType<ZonedDateTime>().Which.Second.Should().Be(59);
             value.Should().BeOfType<ZonedDateTime>().Which.Nanosecond.Should().Be(128000987);
-            value.Should().BeOfType<ZonedDateTime>().Which.Zone.Should().BeOfType<ZoneOffset>().Which.OffsetSeconds.Should().Be((int)TimeSpan.FromMinutes(-150).TotalSeconds);
+            value.Should()
+                .BeOfType<ZonedDateTime>()
+                .Which.Zone.Should()
+                .BeOfType<ZoneOffset>()
+                .Which.OffsetSeconds.Should()
+                .Be((int)TimeSpan.FromMinutes(-150).TotalSeconds);
         }
 
         [Fact]
@@ -77,14 +96,14 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
         {
             var dateTime = new ZonedDateTime(1978, 12, 16, 12, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             writer.Write(dateTime);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(3);
             reader.ReadStructSignature().Should().Be((byte)'f');
             reader.Read().Should().Be(282659759L);
@@ -96,7 +115,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
         public void ShouldDeserializeDateTimeWithZoneId()
         {
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             writer.WriteStructHeader(ZonedDateTimeSerializer.StructSize, ZonedDateTimeSerializer.StructTypeWithId);
             writer.Write(282659759);
@@ -115,7 +134,12 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             value.Should().BeOfType<ZonedDateTime>().Which.Minute.Should().Be(35);
             value.Should().BeOfType<ZonedDateTime>().Which.Second.Should().Be(59);
             value.Should().BeOfType<ZonedDateTime>().Which.Nanosecond.Should().Be(128000987);
-            value.Should().BeOfType<ZonedDateTime>().Which.Zone.Should().BeOfType<ZoneId>().Which.Id.Should().Be("Europe/Istanbul");
+            value.Should()
+                .BeOfType<ZonedDateTime>()
+                .Which.Zone.Should()
+                .BeOfType<ZoneId>()
+                .Which.Id.Should()
+                .Be("Europe/Istanbul");
         }
     }
 }

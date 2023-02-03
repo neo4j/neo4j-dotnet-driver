@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,63 +18,67 @@
 using System;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
+
+internal sealed class ZonedDateTimeSerializer : IPackStreamSerializer
 {
-    internal class ZonedDateTimeSerializer : IPackStreamSerializer
+    public const byte StructTypeWithOffset = (byte)'F';
+    public const byte StructTypeWithId = (byte)'f';
+    public const int StructSize = 3;
+    internal static readonly ZonedDateTimeSerializer Instance = new();
+
+    public IEnumerable<byte> ReadableStructs => new[] { StructTypeWithId, StructTypeWithOffset };
+
+    public IEnumerable<Type> WritableTypes => new[] { typeof(ZonedDateTime) };
+
+    public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
     {
-        public const byte StructTypeWithOffset = (byte) 'F';
-        public const byte StructTypeWithId = (byte) 'f';
-        public const int StructSize = 3;
+        PackStream.EnsureStructSize($"ZonedDateTime[{(char)signature}]", StructSize, size);
 
-        public IEnumerable<byte> ReadableStructs => new[] {StructTypeWithId, StructTypeWithOffset};
+        var epochSecondsUtc = reader.ReadLong();
+        var nanosOfSecond = reader.ReadInteger();
 
-        public IEnumerable<Type> WritableTypes => new[] {typeof(ZonedDateTime)};
-
-        public object Deserialize(IPackStreamReader reader, byte signature, long size)
+        switch (signature)
         {
-            PackStream.EnsureStructSize($"ZonedDateTime[{(char) signature}]", StructSize, size);
+            case StructTypeWithId:
+                return new ZonedDateTime(
+                    TemporalHelpers.EpochSecondsAndNanoToDateTime(epochSecondsUtc, nanosOfSecond),
+                    Zone.Of(reader.ReadString()));
 
-            var epochSecondsUtc = reader.ReadLong();
-            var nanosOfSecond = reader.ReadInteger();
+            case StructTypeWithOffset:
+                return new ZonedDateTime(
+                    TemporalHelpers.EpochSecondsAndNanoToDateTime(epochSecondsUtc, nanosOfSecond),
+                    Zone.Of(reader.ReadInteger()));
 
-            switch (signature)
-            {
-                case StructTypeWithId:
-                    return new ZonedDateTime(
-                        TemporalHelpers.EpochSecondsAndNanoToDateTime(epochSecondsUtc, nanosOfSecond),
-                        Zone.Of(reader.ReadString()));
-                case StructTypeWithOffset:
-                    return new ZonedDateTime(
-                        TemporalHelpers.EpochSecondsAndNanoToDateTime(epochSecondsUtc, nanosOfSecond),
-                        Zone.Of(reader.ReadInteger()));
-                default:
-                    throw new ProtocolException(
-                        $"Unsupported struct signature {signature} passed to {nameof(ZonedDateTimeSerializer)}!");
-            }
+            default:
+                throw new ProtocolException(
+                    $"Unsupported struct signature {signature} passed to {nameof(ZonedDateTimeSerializer)}!");
         }
+    }
 
-        public void Serialize(IPackStreamWriter writer, object value)
+    public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
+    {
+        var dateTime = value.CastOrThrow<ZonedDateTime>();
+
+        switch (dateTime.Zone)
         {
-            var dateTime = value.CastOrThrow<ZonedDateTime>();
+            case ZoneId zone:
+                writer.WriteStructHeader(StructSize, StructTypeWithId);
+                writer.WriteLong(dateTime.ToEpochSeconds());
+                writer.WriteInt(dateTime.Nanosecond);
+                writer.WriteString(zone.Id);
+                break;
 
-            switch (dateTime.Zone)
-            {
-                case ZoneId zone:
-                    writer.WriteStructHeader(StructSize, StructTypeWithId);
-                    writer.Write(dateTime.ToEpochSeconds());
-                    writer.Write(dateTime.Nanosecond);
-                    writer.Write(zone.Id);
-                    break;
-                case ZoneOffset zone:
-                    writer.WriteStructHeader(StructSize, StructTypeWithOffset);
-                    writer.Write(dateTime.ToEpochSeconds());
-                    writer.Write(dateTime.Nanosecond);
-                    writer.Write(zone.OffsetSeconds);
-                    break;
-                default:
-                    throw new ProtocolException(
-                        $"{GetType().Name}: Zone('{dateTime.Zone.GetType().Name}') is not supported.");
-            }
+            case ZoneOffset zone:
+                writer.WriteStructHeader(StructSize, StructTypeWithOffset);
+                writer.WriteLong(dateTime.ToEpochSeconds());
+                writer.WriteInt(dateTime.Nanosecond);
+                writer.WriteInt(zone.OffsetSeconds);
+                break;
+
+            default:
+                throw new ProtocolException(
+                    $"{GetType().Name}: Zone('{dateTime.Zone.GetType().Name}') is not supported.");
         }
     }
 }

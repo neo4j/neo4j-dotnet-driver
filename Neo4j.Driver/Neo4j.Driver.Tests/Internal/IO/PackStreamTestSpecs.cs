@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -29,29 +29,31 @@ namespace Neo4j.Driver.Internal.IO
 {
     public abstract class PackStreamTestSpecs
     {
-        internal abstract PackStreamWriterMachine CreateWriterMachine();
-        internal abstract PackStreamReaderMachine CreateReaderMachine(byte[] bytes);
+        internal abstract PackStreamWriterMachine CreateWriterMachine(BoltProtocolVersion version = null);
+        internal abstract PackStreamReaderMachine CreateReaderMachine(byte[] data, BoltProtocolVersion version = null);
 
-        [Fact]
-        public void ShouldReadWriteNull()
+        [Theory]
+        [InlineData(3, 0)]
+        public void ShouldReadWriteNull(int major, int minor)
         {
+            var version = new BoltProtocolVersion(major, minor);
             // Given
-            var writerMachine = CreateWriterMachine();
+            var writerMachine = CreateWriterMachine(version);
 
             // When
-            writerMachine.Writer().WriteNull();
+            writerMachine.Writer.WriteNull();
 
             // Then
             var bytes = writerMachine.GetOutput();
-            Assert.Equal(bytes, new byte[] {0xC0});
+            bytes.Should().Equal(0xC0);
 
             // When
-            var readerMachine = CreateReaderMachine(bytes);
+            var readerMachine = CreateReaderMachine(bytes, version);
             var packedType = readerMachine.Reader().PeekNextType();
             var packedValue = readerMachine.Reader().Read();
 
             // Then
-            packedType.Should().Be(PackStream.PackType.Null);
+            packedType.Should().Be(PackStreamType.Null);
             packedValue.Should().BeNull();
         }
 
@@ -62,19 +64,20 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            writerMachine.Writer().Write(true);
+            writerMachine.Writer.Write(true);
 
             // Then
             var bytes = writerMachine.GetOutput();
-            Assert.Equal(bytes, new byte[] {0xC3});
+            Assert.Equal(bytes, new byte[] { 0xC3 });
 
             // When
             var readerMachine = CreateReaderMachine(bytes);
+
             var packedType = readerMachine.Reader().PeekNextType();
             var packedValue = readerMachine.Reader().ReadBoolean();
 
             // Then
-            packedType.Should().Be(PackStream.PackType.Boolean);
+            packedType.Should().Be(PackStreamType.Boolean);
             packedValue.Should().BeTrue();
         }
 
@@ -85,11 +88,11 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            writerMachine.Writer().Write(false);
+            writerMachine.Writer.Write(false);
 
             // Then
             var bytes = writerMachine.GetOutput();
-            Assert.Equal(bytes, new byte[] {0xC2});
+            Assert.Equal(bytes, new byte[] { 0xC2 });
 
             // When
             var readerMachine = CreateReaderMachine(bytes);
@@ -97,7 +100,7 @@ namespace Neo4j.Driver.Internal.IO
             var packedValue = readerMachine.Reader().ReadBoolean();
 
             // Then
-            packedType.Should().Be(PackStream.PackType.Boolean);
+            packedType.Should().Be(PackStreamType.Boolean);
             packedValue.Should().BeFalse();
         }
 
@@ -111,7 +114,7 @@ namespace Neo4j.Driver.Internal.IO
             {
                 // When
                 writerMachine.Reset();
-                writerMachine.Writer().Write(i);
+                writerMachine.Writer.Write(i);
 
                 // Then
                 var bytes = writerMachine.GetOutput();
@@ -123,7 +126,7 @@ namespace Neo4j.Driver.Internal.IO
                 var packedValue = readerMachine.Reader().ReadLong();
 
                 // Then
-                packedType.Should().Be(PackStream.PackType.Integer);
+                packedType.Should().Be(PackStreamType.Integer);
                 packedValue.Should().Be(i);
             }
         }
@@ -138,7 +141,7 @@ namespace Neo4j.Driver.Internal.IO
             {
                 // When
                 writerMachine.Reset();
-                writerMachine.Writer().Write(i);
+                writerMachine.Writer.Write(i);
 
                 // Then
                 var bytes = writerMachine.GetOutput();
@@ -150,7 +153,7 @@ namespace Neo4j.Driver.Internal.IO
                 var packedValue = readerMachine.Reader().ReadLong();
 
                 // Then
-                packedType.Should().Be(PackStream.PackType.Integer);
+                packedType.Should().Be(PackStreamType.Integer);
                 packedValue.Should().Be(i);
             }
         }
@@ -163,11 +166,11 @@ namespace Neo4j.Driver.Internal.IO
 
             for (var i = 0; i < 32; i++)
             {
-                var n = (long) Math.Pow(2, i);
+                var n = (long)Math.Pow(2, i);
 
                 // When
                 writerMachine.Reset();
-                writerMachine.Writer().Write(n);
+                writerMachine.Writer.Write(n);
 
                 // When
                 var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -175,7 +178,7 @@ namespace Neo4j.Driver.Internal.IO
                 var packedValue = readerMachine.Reader().ReadLong();
 
                 // Then
-                packedType.Should().Be(PackStream.PackType.Integer);
+                packedType.Should().Be(PackStreamType.Integer);
                 packedValue.Should().Be(n);
             }
         }
@@ -188,11 +191,11 @@ namespace Neo4j.Driver.Internal.IO
 
             for (var i = 0; i < 31; i++)
             {
-                var n = (long) Math.Pow(2, i);
+                var n = (long)Math.Pow(2, i);
 
                 // When
                 writerMachine.Reset();
-                writerMachine.Writer().Write(n);
+                writerMachine.Writer.Write(n);
 
                 // When
                 var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -200,8 +203,8 @@ namespace Neo4j.Driver.Internal.IO
                 var packedValue = readerMachine.Reader().ReadInteger();
 
                 // Then
-                packedType.Should().Be(PackStream.PackType.Integer);
-                packedValue.Should().Be((int) n);
+                packedType.Should().Be(PackStreamType.Integer);
+                packedValue.Should().Be((int)n);
             }
         }
 
@@ -211,11 +214,11 @@ namespace Neo4j.Driver.Internal.IO
             // Given
             var writerMachine = CreateWriterMachine();
 
-            var n = (long) Math.Pow(2, 32);
+            var n = (long)Math.Pow(2, 32);
 
             // When
             writerMachine.Reset();
-            writerMachine.Writer().Write(n);
+            writerMachine.Writer.Write(n);
 
             // When
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -237,7 +240,7 @@ namespace Neo4j.Driver.Internal.IO
 
                 // When
                 writerMachine.Reset();
-                writerMachine.Writer().Write(n);
+                writerMachine.Writer.Write(n);
 
                 // When
                 var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -245,7 +248,7 @@ namespace Neo4j.Driver.Internal.IO
                 var packedValue = readerMachine.Reader().ReadDouble();
 
                 // Then
-                packedType.Should().Be(PackStream.PackType.Float);
+                packedType.Should().Be(PackStreamType.Float);
                 packedValue.Should().Be(n);
             }
         }
@@ -262,7 +265,7 @@ namespace Neo4j.Driver.Internal.IO
 
                 // When
                 writerMachine.Reset();
-                writerMachine.Writer().Write(n);
+                writerMachine.Writer.Write(n);
 
                 // When
                 var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -270,7 +273,7 @@ namespace Neo4j.Driver.Internal.IO
                 var packedValue = readerMachine.Reader().ReadDouble();
 
                 // Then
-                packedType.Should().Be(PackStream.PackType.Float);
+                packedType.Should().Be(PackStreamType.Float);
                 packedValue.Should().Be(n);
             }
         }
@@ -283,11 +286,11 @@ namespace Neo4j.Driver.Internal.IO
 
             for (var i = 0; i < 24; i++)
             {
-                var str = new string(' ', (int) Math.Pow(2, i));
+                var str = new string(' ', (int)Math.Pow(2, i));
 
                 // When
                 writerMachine.Reset();
-                writerMachine.Writer().Write(str);
+                writerMachine.Writer.Write(str);
 
                 // When
                 var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -295,7 +298,7 @@ namespace Neo4j.Driver.Internal.IO
                 var packedValue = readerMachine.Reader().ReadString();
 
                 // Then
-                packedType.Should().Be(PackStream.PackType.String);
+                packedType.Should().Be(PackStreamType.String);
                 packedValue.Should().Be(str);
             }
         }
@@ -309,7 +312,7 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
             writer.Write(bytes);
 
             // When
@@ -318,7 +321,7 @@ namespace Neo4j.Driver.Internal.IO
             var packedValue = readerMachine.Reader().ReadBytes();
 
             // Then
-            packedType.Should().Be(PackStream.PackType.Bytes);
+            packedType.Should().Be(PackStreamType.Bytes);
             packedValue.Should().Equal(bytes);
         }
 
@@ -331,7 +334,7 @@ namespace Neo4j.Driver.Internal.IO
             VerifyReadWriteByteArray(writerMachine, 0);
             for (var i = 0; i < 24; i++)
             {
-                VerifyReadWriteByteArray(writerMachine, (int) Math.Pow(2, i));
+                VerifyReadWriteByteArray(writerMachine, (int)Math.Pow(2, i));
             }
         }
 
@@ -342,7 +345,7 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            writerMachine.Writer().Write('A');
+            writerMachine.Writer.Write('A');
 
             // When
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -350,7 +353,7 @@ namespace Neo4j.Driver.Internal.IO
             var packedValue = readerMachine.Reader().ReadString();
 
             // Then
-            packedType.Should().Be(PackStream.PackType.String);
+            packedType.Should().Be(PackStreamType.String);
             packedValue.Should().Be("A");
         }
 
@@ -361,7 +364,7 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            writerMachine.Writer().Write("ABCDEFGHIJ");
+            writerMachine.Writer.Write("ABCDEFGHIJ");
 
             // When
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -369,7 +372,7 @@ namespace Neo4j.Driver.Internal.IO
             var packedValue = readerMachine.Reader().ReadString();
 
             // Then
-            packedType.Should().Be(PackStream.PackType.String);
+            packedType.Should().Be(PackStreamType.String);
             packedValue.Should().Be("ABCDEFGHIJ");
         }
 
@@ -380,7 +383,7 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            writerMachine.Writer().Write("Mjölnir");
+            writerMachine.Writer.Write("Mjölnir");
 
             // When
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -388,7 +391,7 @@ namespace Neo4j.Driver.Internal.IO
             var packedValue = readerMachine.Reader().ReadString();
 
             // Then
-            packedType.Should().Be(PackStream.PackType.String);
+            packedType.Should().Be(PackStreamType.String);
             packedValue.Should().Be("Mjölnir");
         }
 
@@ -399,7 +402,7 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
             writer.WriteListHeader(3);
             writer.Write(12);
             writer.Write(13);
@@ -410,7 +413,7 @@ namespace Neo4j.Driver.Internal.IO
             var reader = readerMachine.Reader();
 
             // Then
-            reader.PeekNextType().Should().Be(PackStream.PackType.List);
+            reader.PeekNextType().Should().Be(PackStreamType.List);
             reader.ReadListHeader().Should().Be(3);
             reader.ReadLong().Should().Be(12);
             reader.ReadLong().Should().Be(13);
@@ -424,15 +427,15 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
-            writer.Write(new List<string>(new[] {"one", "two", "three"}));
+            var writer = writerMachine.Writer;
+            writer.Write(new List<string>(new[] { "one", "two", "three" }));
 
             // When
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
             // Then
-            reader.PeekNextType().Should().Be(PackStream.PackType.List);
+            reader.PeekNextType().Should().Be(PackStreamType.List);
             reader.ReadListHeader().Should().Be(3);
             reader.ReadString().Should().Be("one");
             reader.ReadString().Should().Be("two");
@@ -446,7 +449,7 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
             writer.WriteListHeader(3);
             writer.Write("one");
             writer.Write("two");
@@ -457,7 +460,7 @@ namespace Neo4j.Driver.Internal.IO
             var reader = readerMachine.Reader();
 
             // Then
-            reader.PeekNextType().Should().Be(PackStream.PackType.List);
+            reader.PeekNextType().Should().Be(PackStreamType.List);
             reader.ReadListHeader().Should().Be(3);
             reader.ReadString().Should().Be("one");
             reader.ReadString().Should().Be("two");
@@ -471,15 +474,15 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
-            writer.Write(new object[] {1, 2.0, "three", false, 'A'}.ToList());
+            var writer = writerMachine.Writer;
+            writer.Write(new object[] { 1, 2.0, "three", false, 'A' }.ToList());
 
             // When
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
             // Then
-            reader.PeekNextType().Should().Be(PackStream.PackType.List);
+            reader.PeekNextType().Should().Be(PackStreamType.List);
             reader.ReadListHeader().Should().Be(5);
             reader.ReadLong().Should().Be(1);
             reader.ReadDouble().Should().Be(2.0);
@@ -495,7 +498,7 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
             writer.WriteListHeader(4);
             writer.Write(1);
             writer.Write(2.0);
@@ -507,7 +510,7 @@ namespace Neo4j.Driver.Internal.IO
             var reader = readerMachine.Reader();
 
             // Then
-            Assert.Equal(PackStream.PackType.List, reader.PeekNextType());
+            Assert.Equal(PackStreamType.List, reader.PeekNextType());
             reader.ReadListHeader().Should().Be(4);
             reader.ReadLong().Should().Be(1);
             reader.ReadDouble().Should().Be(2.0);
@@ -522,7 +525,7 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
             writer.WriteListHeader(3);
             writer.Write("Mjölnir");
             writer.Write("Häagen-Dazs");
@@ -533,7 +536,7 @@ namespace Neo4j.Driver.Internal.IO
             var reader = readerMachine.Reader();
 
             // Then
-            reader.PeekNextType().Should().Be(PackStream.PackType.List);
+            reader.PeekNextType().Should().Be(PackStreamType.List);
             reader.ReadListHeader().Should().Be(3);
             reader.ReadString().Should().Be("Mjölnir");
             reader.ReadString().Should().Be("Häagen-Dazs");
@@ -565,24 +568,25 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
-            writer.WriteStructHeader(3, (byte) 'N');
+            var writer = writerMachine.Writer;
+            writer.WriteStructHeader(3, (byte)'N');
             writer.Write(12);
-            writer.Write(new[] {"Person", "Employee"}.ToList());
-            writer.Write(new Dictionary<string, object>()
-            {
-                {"name", "Alice"},
-                {"age", 33}
-            });
+            writer.Write(new[] { "Person", "Employee" }.ToList());
+            writer.Write(
+                new Dictionary<string, object>
+                {
+                    { "name", "Alice" },
+                    { "age", 33 }
+                });
 
             // When
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
             // Then
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(3);
-            reader.ReadStructSignature().Should().Be((byte) 'N');
+            reader.ReadStructSignature().Should().Be((byte)'N');
 
             reader.ReadLong().Should().Be(12);
 
@@ -616,15 +620,15 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
-            writer.Write(new object[] {1, 2, 3, new[] {4, 5}.ToList()}.ToList());
+            var writer = writerMachine.Writer;
+            writer.Write(new object[] { 1, 2, 3, new[] { 4, 5 }.ToList() }.ToList());
 
             // When
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
             // Then
-            reader.PeekNextType().Should().Be(PackStream.PackType.List);
+            reader.PeekNextType().Should().Be(PackStreamType.List);
             reader.ReadListHeader().Should().Be(4);
             reader.ReadLong().Should().Be(1);
             reader.ReadLong().Should().Be(2);
@@ -641,21 +645,21 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
-            writer.WriteStructHeader(4, (byte) '~');
+            var writer = writerMachine.Writer;
+            writer.WriteStructHeader(4, (byte)'~');
             writer.Write(1);
             writer.Write(2);
             writer.Write(3);
-            writer.Write(new[] {4, 5}.ToList());
+            writer.Write(new[] { 4, 5 }.ToList());
 
             // When
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
             // Then
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(4);
-            reader.ReadStructSignature().Should().Be((byte) '~');
+            reader.ReadStructSignature().Should().Be((byte)'~');
 
             reader.ReadLong().Should().Be(1);
             reader.ReadLong().Should().Be(2);
@@ -672,19 +676,19 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
             writer.WriteMapHeader(2);
             writer.Write("name");
             writer.Write("Bob");
             writer.Write("catages");
-            writer.Write(new object[] {4.3, true}.ToList());
+            writer.Write(new object[] { 4.3, true }.ToList());
 
             // When
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
             // Then
-            reader.PeekNextType().Should().Be(PackStream.PackType.Map);
+            reader.PeekNextType().Should().Be(PackStreamType.Map);
             reader.ReadMapHeader().Should().Be(2);
             reader.ReadString().Should().Be("name");
             reader.ReadString().Should().Be("Bob");
@@ -697,13 +701,13 @@ namespace Neo4j.Driver.Internal.IO
         [Fact]
         public void ShouldPeekNextType()
         {
-            VerifyPeekType(PackStream.PackType.Null, null);
-            VerifyPeekType(PackStream.PackType.String, "a string");
-            VerifyPeekType(PackStream.PackType.Boolean, true);
-            VerifyPeekType(PackStream.PackType.Float, 123.123);
-            VerifyPeekType(PackStream.PackType.Integer, 123);
-            VerifyPeekType(PackStream.PackType.List, new[] {1, 2, 3}.ToList());
-            VerifyPeekType(PackStream.PackType.Map, new Dictionary<string, object> {{"key", 1}});
+            VerifyPeekType(PackStreamType.Null, null);
+            VerifyPeekType(PackStreamType.String, "a string");
+            VerifyPeekType(PackStreamType.Boolean, true);
+            VerifyPeekType(PackStreamType.Float, 123.123);
+            VerifyPeekType(PackStreamType.Integer, 123);
+            VerifyPeekType(PackStreamType.List, new[] { 1, 2, 3 }.ToList());
+            VerifyPeekType(PackStreamType.Map, new Dictionary<string, object> { { "key", 1 } });
         }
 
         [Fact]
@@ -713,12 +717,12 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
-            writer.Write((string) null);
-            writer.Write((IDictionary) null);
-            writer.Write((IList) null);
-            writer.Write((IDictionary<string, int>) null);
-            writer.Write((IList<string>) null);
+            var writer = writerMachine.Writer;
+            writer.Write(null);
+            writer.Write(null);
+            writer.Write(null);
+            writer.Write(null);
+            writer.Write(null);
 
             // When
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -739,8 +743,8 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
-            writer.Write((byte[]) null);
+            var writer = writerMachine.Writer;
+            writer.Write(null);
 
             // When
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -757,7 +761,7 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
             var ex = Record.Exception(() => writer.Write(new UnsupportedType()));
 
             ex.Should().NotBeNull();
@@ -767,27 +771,27 @@ namespace Neo4j.Driver.Internal.IO
         [Fact]
         public void ShouldReadWriteThroughObjectOverload()
         {
-            VerifyReadWriteThroughObjectOverload(PackStream.PackType.Boolean, true);
-            VerifyReadWriteThroughObjectOverload(PackStream.PackType.Boolean, false);
-            VerifyReadWriteThroughObjectOverload(PackStream.PackType.String, "a string");
-            VerifyReadWriteThroughObjectOverload(PackStream.PackType.Float, 123.123);
-            VerifyReadWriteThroughObjectOverload(PackStream.PackType.Integer, 123L);
-            VerifyReadWriteThroughObjectOverload(PackStream.PackType.List, new object[] {1L, 2L, 3L}.ToList());
-            VerifyReadWriteThroughObjectOverload(PackStream.PackType.Map, new Dictionary<string, object> {{"key", 1L}});
+            VerifyReadWriteThroughObjectOverload(PackStreamType.Boolean, true);
+            VerifyReadWriteThroughObjectOverload(PackStreamType.Boolean, false);
+            VerifyReadWriteThroughObjectOverload(PackStreamType.String, "a string");
+            VerifyReadWriteThroughObjectOverload(PackStreamType.Float, 123.123);
+            VerifyReadWriteThroughObjectOverload(PackStreamType.Integer, 123L);
+            VerifyReadWriteThroughObjectOverload(PackStreamType.List, new object[] { 1L, 2L, 3L }.ToList());
+            VerifyReadWriteThroughObjectOverload(PackStreamType.Map, new Dictionary<string, object> { { "key", 1L } });
         }
 
         [Fact]
         public void ShouldWriteGenericListCorrectly()
         {
-            var list = new List<int>{1, 2, 3};
+            var list = new List<int> { 1, 2, 3 };
 
             // Given
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
-            writer.Write((object)list);
+            writer.Write(list);
 
             // When
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -802,13 +806,13 @@ namespace Neo4j.Driver.Internal.IO
         [Fact]
         public void ShouldWriteListOfEnumerableTypeCorrectly()
         {
-            var nums = new CollectionExtensionsTests.MyCollection<int>(new[] {1, 2, 3});
+            var nums = new CollectionExtensionsTests.MyCollection<int>(new[] { 1, 2, 3 });
 
             // Given
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
             writer.Write(nums);
 
             // When
@@ -823,27 +827,28 @@ namespace Neo4j.Driver.Internal.IO
         [Fact]
         public void ShouldWriteListOfEnumerableOfRandomTypeCorrectly()
         {
-            var values = new CollectionExtensionsTests.MyCollection<object>(new object[]
-            {
-                1,
-                new[] {2, 3},
-                'a'
-            });
+            var values = new CollectionExtensionsTests.MyCollection<object>(
+                new object[]
+                {
+                    1,
+                    new[] { 2, 3 },
+                    'a'
+                });
 
             // Given
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
             writer.Write(values);
 
             // When
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.ReadStructSignature().Should().Be((byte) (PackStream.TinyList | values.Count()));
+            reader.ReadStructSignature().Should().Be((byte)(PackStream.TinyList | values.Count()));
             reader.ReadLong().Should().Be(1);
-            reader.ReadStructSignature().Should().Be((byte) (PackStream.TinyList | 2));
+            reader.ReadStructSignature().Should().Be(PackStream.TinyList | 2);
             reader.ReadLong().Should().Be(2);
             reader.ReadLong().Should().Be(3);
             reader.ReadStructSignature().Should().Be(PackStream.TinyString | 1);
@@ -853,7 +858,7 @@ namespace Neo4j.Driver.Internal.IO
         [Fact]
         public virtual void ShouldReadWriteByteArrayThroughObjectOverload()
         {
-            VerifyReadWriteThroughObjectOverload(PackStream.PackType.Bytes, new byte[] {1, 2, 3});
+            VerifyReadWriteThroughObjectOverload(PackStreamType.Bytes, new byte[] { 1, 2, 3 });
         }
 
         private void VerifyReadWriteByteArray(PackStreamWriterMachine machine, int length)
@@ -861,14 +866,14 @@ namespace Neo4j.Driver.Internal.IO
             var array = new byte[length];
 
             machine.Reset();
-            machine.Writer().Write(array);
+            machine.Writer.Write(array);
 
             var readerMachine = CreateReaderMachine(machine.GetOutput());
             var packedType = readerMachine.Reader().PeekNextType();
             var packedValue = readerMachine.Reader().ReadBytes();
 
             // Then
-            packedType.Should().Be(PackStream.PackType.Bytes);
+            packedType.Should().Be(PackStreamType.Bytes);
             packedValue.Should().Equal(array);
         }
 
@@ -878,7 +883,7 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
             writer.Write(Enumerable.Range(0, size).Select(i => value).ToList());
 
             // When
@@ -886,9 +891,9 @@ namespace Neo4j.Driver.Internal.IO
             var reader = readerMachine.Reader();
 
             // Then
-            reader.PeekNextType().Should().Be(PackStream.PackType.List);
+            reader.PeekNextType().Should().Be(PackStreamType.List);
             reader.ReadListHeader().Should().Be(size);
-            for (int i = 0; i < size; i++)
+            for (var i = 0; i < size; i++)
             {
                 reader.ReadString().Should().Be(value);
             }
@@ -900,7 +905,7 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
             var dict = new Dictionary<string, int>();
             for (var i = 0; i < size; i++)
             {
@@ -914,7 +919,7 @@ namespace Neo4j.Driver.Internal.IO
             var reader = readerMachine.Reader();
 
             // Then
-            reader.PeekNextType().Should().Be(PackStream.PackType.Map);
+            reader.PeekNextType().Should().Be(PackStreamType.Map);
             reader.ReadMapHeader().Should().Be(size);
             for (var i = 0; i < size; i++)
             {
@@ -929,8 +934,8 @@ namespace Neo4j.Driver.Internal.IO
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
-            writer.WriteStructHeader(size, (byte) 'N');
+            var writer = writerMachine.Writer;
+            writer.WriteStructHeader(size, (byte)'N');
             for (var i = 0; i < size; i++)
             {
                 writer.Write(i);
@@ -941,22 +946,22 @@ namespace Neo4j.Driver.Internal.IO
             var reader = readerMachine.Reader();
 
             // Then
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(size);
-            reader.ReadStructSignature().Should().Be((byte) 'N');
+            reader.ReadStructSignature().Should().Be((byte)'N');
             for (var i = 0; i < size; i++)
             {
                 reader.ReadLong().Should().Be(i);
             }
         }
 
-        private void VerifyPeekType(PackStream.PackType type, object value)
+        private void VerifyPeekType(PackStreamType type, object value)
         {
             // Given
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
             writer.Write(value);
 
             // When
@@ -967,14 +972,14 @@ namespace Neo4j.Driver.Internal.IO
             reader.PeekNextType().Should().Be(type);
         }
 
-        private void VerifyReadWriteThroughObjectOverload(PackStream.PackType type, object value)
+        private void VerifyReadWriteThroughObjectOverload(PackStreamType type, object value)
         {
             // Given
             var writerMachine = CreateWriterMachine();
 
             // When
-            var writer = writerMachine.Writer();
-            writer.Write((object) value);
+            var writer = writerMachine.Writer;
+            writer.Write(value);
 
             // When
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -989,9 +994,11 @@ namespace Neo4j.Driver.Internal.IO
                 case IDictionary dict:
                     Assert.Equal(dict, packedValue);
                     break;
+
                 case IList list:
                     Assert.Equal(list, packedValue);
                     break;
+
                 default:
                     value.Should().Be(packedValue);
                     break;
@@ -1001,6 +1008,5 @@ namespace Neo4j.Driver.Internal.IO
         private class UnsupportedType
         {
         }
-
     }
 }

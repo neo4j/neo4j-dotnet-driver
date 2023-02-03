@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -24,9 +24,9 @@ namespace Neo4j.Driver.Internal.IO.Utils
 {
     internal class AsyncTestStream : Stream
     {
-        private readonly MemoryStream _stream = new MemoryStream();
-        private readonly Task<int> _result;
         private readonly Exception _cause;
+        private readonly Task<int> _result;
+        private readonly MemoryStream _stream = new();
 
         private AsyncTestStream(Task<int> result)
         {
@@ -38,6 +38,17 @@ namespace Neo4j.Driver.Internal.IO.Utils
         {
             _cause = cause;
             _result = null;
+        }
+
+        public override bool CanRead => _stream.CanRead;
+        public override bool CanSeek => _stream.CanSeek;
+        public override bool CanWrite => _stream.CanWrite;
+        public override long Length => _stream.Length;
+
+        public override long Position
+        {
+            get => _stream.Position;
+            set => _stream.Position = value;
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -93,17 +104,6 @@ namespace Neo4j.Driver.Internal.IO.Utils
         public override void Write(byte[] buffer, int offset, int count)
         {
             _stream.Write(buffer, offset, count);
-        }
-
-        public override bool CanRead => _stream.CanRead;
-        public override bool CanSeek => _stream.CanSeek;
-        public override bool CanWrite => _stream.CanWrite;
-        public override long Length => _stream.Length;
-
-        public override long Position
-        {
-            get => _stream.Position;
-            set => _stream.Position = value;
         }
 
         public static Stream CreateCancellingStream()

@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -31,6 +31,16 @@ namespace Neo4j.Driver.Tests
 {
     public class ResultCursorTests
     {
+        private static Task<IRecord> NextRecordFromEnum(IEnumerator<IRecord> resultEnum)
+        {
+            if (resultEnum.MoveNext())
+            {
+                return Task.FromResult(resultEnum.Current);
+            }
+
+            return Task.FromResult((IRecord)null);
+        }
+
         public class Constructor
         {
             [Fact]
@@ -38,10 +48,11 @@ namespace Neo4j.Driver.Tests
             {
                 var stream = new Mock<IResultStream>();
                 stream.Setup(x => x.NextRecordAsync()).Returns(NextRecordFromEnum(new List<IRecord>().GetEnumerator()));
-                stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(new[] {"test"}));
+                stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(new[] { "test" }));
 
                 var result =
                     new ResultCursor(stream.Object);
+
                 var keys = await result.KeysAsync();
 
                 keys.Should().HaveCount(1).And.Contain("test");
@@ -68,7 +79,6 @@ namespace Neo4j.Driver.Tests
             {
                 _output = output;
             }
-
 
             [Fact]
             public async void ShouldReturnRecords()
@@ -100,18 +110,19 @@ namespace Neo4j.Driver.Tests
                 stream.Setup(x => x.NextRecordAsync()).Returns(() => NextRecordFromEnum(recordYielderEnum));
                 stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(TestRecordYielder.Keys.ToArray()));
 
-                int count = 0;
+                var count = 0;
                 var cursor = new ResultCursor(stream.Object);
-                var t = Task.Factory.StartNew(async () =>
-                {
-                    // ReSharper disable once LoopCanBeConvertedToQuery
-                    while (await cursor.FetchAsync())
+                var t = Task.Factory.StartNew(
+                    async () =>
                     {
-                        count++;
-                    }
+                        // ReSharper disable once LoopCanBeConvertedToQuery
+                        while (await cursor.FetchAsync())
+                        {
+                            count++;
+                        }
 
-                    count.Should().Be(10);
-                });
+                        count.Should().Be(10);
+                    });
 
                 while (count < 5)
                 {
@@ -147,11 +158,9 @@ namespace Neo4j.Driver.Tests
 
             private class TestRecordYielder
             {
-                private readonly IList<Record> _records = new List<Record>();
-                private readonly int _total = 0;
-
                 private readonly ITestOutputHelper _output;
-                public static string[] Keys => new[] {"Test", "Keys"};
+                private readonly IList<Record> _records = new List<Record>();
+                private readonly int _total;
 
                 public TestRecordYielder(int count, int total, ITestOutputHelper output)
                 {
@@ -160,34 +169,25 @@ namespace Neo4j.Driver.Tests
                     _output = output;
                 }
 
-                public void AddNew(int count)
-                {
-                    Add(count);
-                }
-
-                private void Add(int count)
-                {
-                    for (int i = 0; i < count; i++)
-                    {
-                        _records.Add(new Record(Keys, new object[] {"Test", 123}));
-                    }
-                }
+                public static string[] Keys => new[] { "Test", "Keys" };
 
                 public IEnumerable<Record> Records
                 {
                     get
                     {
-                        int i = 0;
+                        var i = 0;
                         while (i < _total)
                         {
                             while (i == _records.Count)
                             {
                                 _output.WriteLine(
                                     $"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
+
                                 Thread.Sleep(50);
                             }
 
                             yield return _records[i];
+
                             i++;
                         }
                     }
@@ -197,21 +197,36 @@ namespace Neo4j.Driver.Tests
                 {
                     get
                     {
-                        int i = 0;
+                        var i = 0;
                         while (i < _total)
                         {
                             while (i == _records.Count)
                             {
                                 _output.WriteLine(
                                     $"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
+
                                 Thread.Sleep(500);
                                 AddNew(1);
                                 _output.WriteLine($"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Record arrived");
                             }
 
                             yield return _records[i];
+
                             i++;
                         }
+                    }
+                }
+
+                public void AddNew(int count)
+                {
+                    Add(count);
+                }
+
+                private void Add(int count)
+                {
+                    for (var i = 0; i < count; i++)
+                    {
+                        _records.Add(new Record(Keys, new object[] { "Test", 123 }));
                     }
                 }
             }
@@ -233,7 +248,6 @@ namespace Neo4j.Driver.Tests
                 record = result.Current;
                 record[0].As<string>().Should().Be("record1:key0");
             }
-
         }
 
         public class ConsumeAsyncMethod
@@ -241,12 +255,15 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async void ShouldCallGetSummary()
             {
-                bool getSummaryCalled = false;
-                var result = ResultCursorCreator.CreateResultCursor(1, 0, () =>
-                {
-                    getSummaryCalled = true;
-                    return Task.FromResult((IResultSummary) null);
-                });
+                var getSummaryCalled = false;
+                var result = ResultCursorCreator.CreateResultCursor(
+                    1,
+                    0,
+                    () =>
+                    {
+                        getSummaryCalled = true;
+                        return Task.FromResult((IResultSummary)null);
+                    });
 
                 // ReSharper disable once UnusedVariable
                 var summary = await result.ConsumeAsync();
@@ -257,11 +274,14 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async void ShouldOnlyThrowErrorOnce()
             {
-                int getSummaryCalled = 0;
-                var result = ResultCursorCreator.CreateResultCursor(1, 0,
+                var getSummaryCalled = 0;
+                var result = ResultCursorCreator.CreateResultCursor(
+                    1,
+                    0,
                     () => getSummaryCalled++ == 0
                         ? Task.FromException<IResultSummary>(new Exception("error!"))
-                        : Task.FromResult((IResultSummary) new FakeSummary()));
+                        : Task.FromResult((IResultSummary)new FakeSummary()));
+
                 var ex = await Xunit.Record.ExceptionAsync(async () => await result.ConsumeAsync());
 
                 ex.Should().NotBeNull();
@@ -272,12 +292,15 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async void ShouldReturnExistingSummaryWhenSummaryHasBeenRetrieved()
             {
-                int getSummaryCalled = 0;
-                var result = ResultCursorCreator.CreateResultCursor(1, 0, () =>
-                {
-                    getSummaryCalled++;
-                    return Task.FromResult((IResultSummary) new FakeSummary());
-                });
+                var getSummaryCalled = 0;
+                var result = ResultCursorCreator.CreateResultCursor(
+                    1,
+                    0,
+                    () =>
+                    {
+                        getSummaryCalled++;
+                        return Task.FromResult((IResultSummary)new FakeSummary());
+                    });
 
                 // ReSharper disable once NotAccessedVariable
                 var summary = await result.ConsumeAsync();
@@ -420,21 +443,11 @@ namespace Neo4j.Driver.Tests
             public IDatabaseInfo Database { get; }
         }
 
-        private static Task<IRecord> NextRecordFromEnum(IEnumerator<IRecord> resultEnum)
-        {
-            if (resultEnum.MoveNext())
-            {
-                return Task.FromResult(resultEnum.Current);
-            }
-            else
-            {
-                return Task.FromResult((IRecord) null);
-            }
-        }
-
         internal static class ResultCursorCreator
         {
-            public static ResultCursor CreateResultCursor(int keySize, int recordSize = 1,
+            public static ResultCursor CreateResultCursor(
+                int keySize,
+                int recordSize = 1,
                 Func<Task<IResultSummary>> getSummaryFunc = null,
                 CancellationTokenSource cancellationTokenSource = null)
             {
@@ -445,8 +458,9 @@ namespace Neo4j.Driver.Tests
                 var stream = new Mock<IResultStream>();
                 if (getSummaryFunc == null)
                 {
-                    getSummaryFunc = () => Task.FromResult((IResultSummary) new FakeSummary());
+                    getSummaryFunc = () => Task.FromResult((IResultSummary)new FakeSummary());
                 }
+
                 stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(keys.ToArray()));
                 stream.Setup(x => x.NextRecordAsync()).Returns(() => NextRecordFromEnum(recordsEnum));
                 stream.Setup(x => x.ConsumeAsync()).Returns(getSummaryFunc);

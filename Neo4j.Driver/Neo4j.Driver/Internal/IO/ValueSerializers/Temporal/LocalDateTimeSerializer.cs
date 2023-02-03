@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,34 +18,34 @@
 using System;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
+
+internal class LocalDateTimeSerializer : IPackStreamSerializer
 {
-    internal class LocalDateTimeSerializer : IPackStreamSerializer
+    public const byte StructType = (byte)'d';
+    public const int StructSize = 2;
+    internal static readonly LocalDateTimeSerializer Instance = new();
+
+    public IEnumerable<byte> ReadableStructs => new[] { StructType };
+
+    public IEnumerable<Type> WritableTypes => new[] { typeof(LocalDateTime) };
+
+    public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
     {
-        public const byte StructType = (byte) 'd';
-        public const int StructSize = 2;
+        PackStream.EnsureStructSize("LocalDateTime", StructSize, size);
 
-        public IEnumerable<byte> ReadableStructs => new[] {StructType};
+        var epochSeconds = reader.ReadLong();
+        var nanosOfSecond = reader.ReadInteger();
 
-        public IEnumerable<Type> WritableTypes => new[] {typeof(LocalDateTime)};
+        return TemporalHelpers.EpochSecondsAndNanoToDateTime(epochSeconds, nanosOfSecond);
+    }
 
-        public object Deserialize(IPackStreamReader reader, byte signature, long size)
-        {
-            PackStream.EnsureStructSize("LocalDateTime", StructSize, size);
+    public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
+    {
+        var dateTime = value.CastOrThrow<LocalDateTime>();
 
-            var epochSeconds = reader.ReadLong();
-            var nanosOfSecond = reader.ReadInteger();
-
-            return TemporalHelpers.EpochSecondsAndNanoToDateTime(epochSeconds, nanosOfSecond);
-        }
-
-        public void Serialize(IPackStreamWriter writer, object value)
-        {
-            var dateTime = value.CastOrThrow<LocalDateTime>();
-
-            writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(dateTime.ToEpochSeconds());
-            writer.Write(dateTime.Nanosecond);
-        }
+        writer.WriteStructHeader(StructSize, StructType);
+        writer.WriteLong(dateTime.ToEpochSeconds());
+        writer.WriteInt(dateTime.Nanosecond);
     }
 }

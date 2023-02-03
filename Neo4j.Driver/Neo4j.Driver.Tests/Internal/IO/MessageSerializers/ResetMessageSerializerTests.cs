@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -15,44 +15,60 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.IO;
 using FluentAssertions;
-using Moq;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers
 {
-    public class ResetMessageSerializerTests : PackStreamSerializerTests
+    public class ResetMessageSerializerTests
     {
-        internal override IPackStreamSerializer SerializerUnderTest => new ResetMessageSerializer();
-
         [Fact]
-        public void ShouldThrowOnDeserialize()
+        public void ShouldBeAbleToWriteRunWithMetadataMessage()
         {
-            var handler = SerializerUnderTest;
-
-            var ex = Record.Exception(() =>
-                handler.Deserialize(Mock.Of<IPackStreamReader>(), BoltProtocolV3MessageFormat.MsgReset, 0));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ProtocolException>();
+            ResetMessageSerializer.Instance.WritableTypes
+                .Should()
+                .BeEquivalentTo(typeof(ResetMessage));
         }
 
         [Fact]
-        public void ShouldSerialize()
+        public void ShouldThrowIfPassedWrongMessage()
         {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            Record.Exception(() => ResetMessageSerializer.Instance.Serialize(null, RollbackMessage.Instance))
+                .Should()
+                .BeOfType<ArgumentOutOfRangeException>();
+        }
 
-            writer.Write(ResetMessage.Reset);
+        [Theory]
+        [InlineData(3, 0)]
+        [InlineData(4, 0)]
+        [InlineData(4, 1)]
+        [InlineData(4, 2)]
+        [InlineData(4, 3)]
+        [InlineData(4, 4)]
+        [InlineData(5, 0)]
+        [InlineData(6, 0)]
+        public void ShouldSerialize(int major, int minor)
+        {
+            using var memory = new MemoryStream();
 
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var reader = readerMachine.Reader();
+            var boltProtocolVersion = new BoltProtocolVersion(major, minor);
+            var format = new MessageFormat(boltProtocolVersion);
+            var psw = new PackStreamWriter(format, memory);
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-            reader.ReadStructHeader().Should().Be(0);
-            reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgReset);
+            ResetMessageSerializer.Instance.Serialize(psw, ResetMessage.Instance);
+            memory.Position = 0;
+
+            var reader = new PackStreamReader(format, memory, new ByteBuffers());
+
+            var headerBytes = reader.ReadBytes(2);
+            // size 
+            headerBytes[0].Should().Be(0xB0);
+            // message tag
+            headerBytes[1].Should().Be(0x0F);
         }
     }
 }

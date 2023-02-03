@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -15,21 +15,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver
-{
-    /// <summary>
-    /// Used by driver to route a cypher query to a write server or a read server.
-    /// </summary>
-    public enum AccessMode
-    {
-        /// <summary>
-        /// Requires cypher query to be carried out on a read server
-        /// </summary>
-        Read,
+namespace Neo4j.Driver;
 
-        /// <summary>
-        /// Requires cypher query to be executed on a write server
-        /// </summary>
-        Write
-    }
+/// <summary>Used by driver to route a cypher query to a write server or a read server.</summary>
+public enum AccessMode
+{
+    /// <summary>Requires cypher query to be carried out on a read server</summary>
+    Read,
+
+    /// <summary>Requires cypher query to be executed on a write server</summary>
+    Write
 }

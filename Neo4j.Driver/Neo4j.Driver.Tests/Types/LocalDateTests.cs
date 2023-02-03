@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -17,16 +17,13 @@
 
 using System;
 using System.Collections;
-using System.Diagnostics;
 using FluentAssertions;
-using Neo4j.Driver;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Types
 {
     public class LocalDateTests
     {
-
         [Fact]
         public void ShouldCreateDateWithDateTimeComponents()
         {
@@ -44,8 +41,8 @@ namespace Neo4j.Driver.Tests.Types
             cypherDate.ToDateTime().Should().Be(date);
         }
 
+#if NET6_0_OR_GREATER
         [Fact]
-        [Conditional("NET6_0_OR_GREATER")]
         public void ShouldCreateDateWithDateOnly()
         {
             var date = new DateOnly(1947, 12, 17);
@@ -53,6 +50,7 @@ namespace Neo4j.Driver.Tests.Types
 
             cypherDate.ToDateOnly().Should().Be(date);
         }
+#endif
 
         [Theory]
         [InlineData(-1000000000)]
@@ -101,14 +99,13 @@ namespace Neo4j.Driver.Tests.Types
             ex.Should().NotBeNull().And.BeOfType<ValueOverflowException>();
         }
 
-
+#if NET6_0_OR_GREATER
         [Theory]
         [InlineData(-9999)]
         [InlineData(-1)]
         [InlineData(0)]
         [InlineData(10000)]
         [InlineData(9999999)]
-        [Conditional("NET6_0_OR_GREATER")]
         public void ShouldThrowOnOverflowDateOnly(int year)
         {
             var date = new LocalDate(year, 1, 1);
@@ -116,6 +113,7 @@ namespace Neo4j.Driver.Tests.Types
 
             ex.Should().NotBeNull().And.BeOfType<ValueOverflowException>();
         }
+#endif
 
         [Theory]
         [InlineData(1947, 12, 17, "1947-12-17")]
@@ -182,7 +180,7 @@ namespace Neo4j.Driver.Tests.Types
         public void ShouldNotBeEqualToNull()
         {
             var date = new LocalDate(1947, 12, 17);
-            var other = (object) null;
+            var other = (object)null;
 
             date.Equals(other).Should().BeFalse();
         }

@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -26,6 +26,27 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
     public class PlanCollectorTests
     {
         public const string Key = PlanCollector.PlanKey;
+
+        internal static KeyValuePair<string, object> TestMetadata =>
+            new(
+                Key,
+                new Dictionary<string, object>
+                {
+                    { "operatorType", "opType" },
+                    { "args", new Dictionary<string, object> { { "a", 1L } } },
+                    {
+                        "identifiers", new List<object>
+                        {
+                            "a", "b", "c"
+                        }
+                    }
+                });
+
+        internal static IPlan TestMetadataCollected => new Plan(
+            "opType",
+            new Dictionary<string, object> { { "a", 1L } },
+            new List<string> { "a", "b", "c" },
+            new List<IPlan>());
 
         [Fact]
         public void ShouldNotCollectIfMetadataIsNull()
@@ -52,7 +73,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         {
             var collector = new PlanCollector();
 
-            collector.Collect(new Dictionary<string, object> {{Key, null}});
+            collector.Collect(new Dictionary<string, object> { { Key, null } });
 
             collector.Collected.Should().BeNull();
         }
@@ -62,7 +83,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         {
             var collector = new PlanCollector();
 
-            collector.Collect(new Dictionary<string, object> {{Key, new Dictionary<string, object>()}});
+            collector.Collect(new Dictionary<string, object> { { Key, new Dictionary<string, object>() } });
 
             collector.Collected.Should().BeNull();
         }
@@ -70,12 +91,14 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         [Fact]
         public void ShouldThrowIfValueIsOfWrongType()
         {
-            var metadata = new Dictionary<string, object> {{Key, true}};
+            var metadata = new Dictionary<string, object> { { Key, true } };
             var collector = new PlanCollector();
 
             var ex = Record.Exception(() => collector.Collect(metadata));
 
-            ex.Should().BeOfType<ProtocolException>().Which
+            ex.Should()
+                .BeOfType<ProtocolException>()
+                .Which
                 .Message.Should()
                 .Contain($"Expected '{Key}' metadata to be of type 'IDictionary<String,Object>', but got 'Boolean'.");
         }
@@ -88,15 +111,18 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                 {
                     Key, new Dictionary<string, object>
                     {
-                        {"args", new Dictionary<string, object>()}
+                        { "args", new Dictionary<string, object>() }
                     }
                 }
             };
+
             var collector = new PlanCollector();
 
             var ex = Record.Exception(() => collector.Collect(metadata));
 
-            ex.Should().BeOfType<ProtocolException>().Which
+            ex.Should()
+                .BeOfType<ProtocolException>()
+                .Which
                 .Message.Should()
                 .Be("Expected key 'operatorType' to be present in the dictionary, but could not find.");
         }
@@ -109,16 +135,22 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                 {
                     Key, new Dictionary<string, object>
                     {
-                        {"operatorType", "opType"}
+                        { "operatorType", "opType" }
                     }
                 }
             };
+
             var collector = new PlanCollector();
 
             collector.Collect(metadata);
 
-            collector.Collected.Should().BeEquivalentTo(new Plan("opType", new Dictionary<string, object>(),
-                new List<string>(), new List<IPlan>()));
+            collector.Collected.Should()
+                .BeEquivalentTo(
+                    new Plan(
+                        "opType",
+                        new Dictionary<string, object>(),
+                        new List<string>(),
+                        new List<IPlan>()));
         }
 
         [Fact]
@@ -129,8 +161,8 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                 {
                     Key, new Dictionary<string, object>
                     {
-                        {"operatorType", "opType"},
-                        {"args", new Dictionary<string, object> {{"a", 1L}}},
+                        { "operatorType", "opType" },
+                        { "args", new Dictionary<string, object> { { "a", 1L } } },
                         {
                             "identifiers", new List<object>
                             {
@@ -140,12 +172,18 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                     }
                 }
             };
+
             var collector = new PlanCollector();
 
             collector.Collect(metadata);
 
-            collector.Collected.Should().BeEquivalentTo(new Plan("opType", new Dictionary<string, object> {{"a", 1L}},
-                new List<string> {"a", "b", "c"}, new List<IPlan>()));
+            collector.Collected.Should()
+                .BeEquivalentTo(
+                    new Plan(
+                        "opType",
+                        new Dictionary<string, object> { { "a", 1L } },
+                        new List<string> { "a", "b", "c" },
+                        new List<IPlan>()));
         }
 
         [Fact]
@@ -156,8 +194,8 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                 {
                     Key, new Dictionary<string, object>
                     {
-                        {"operatorType", "opType"},
-                        {"args", new Dictionary<string, object> {{"a", 1L}}},
+                        { "operatorType", "opType" },
+                        { "args", new Dictionary<string, object> { { "a", 1L } } },
                         {
                             "identifiers", new List<object>
                             {
@@ -169,8 +207,8 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                             {
                                 new Dictionary<string, object>
                                 {
-                                    {"operatorType", "childOpType"},
-                                    {"args", new Dictionary<string, object> {{"b", 2L}}},
+                                    { "operatorType", "childOpType" },
+                                    { "args", new Dictionary<string, object> { { "b", 2L } } },
                                     {
                                         "identifiers", new List<object>
                                         {
@@ -183,17 +221,25 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                     }
                 }
             };
+
             var collector = new PlanCollector();
 
             collector.Collect(metadata);
 
-            collector.Collected.Should().BeEquivalentTo(new Plan("opType", new Dictionary<string, object> {{"a", 1L}},
-                new List<string> {"a", "b", "c"},
-                new List<IPlan>
-                {
-                    new Plan("childOpType", new Dictionary<string, object> {{"b", 2L}}, new List<string> {"d", "e"},
-                        new List<IPlan>())
-                }));
+            collector.Collected.Should()
+                .BeEquivalentTo(
+                    new Plan(
+                        "opType",
+                        new Dictionary<string, object> { { "a", 1L } },
+                        new List<string> { "a", "b", "c" },
+                        new List<IPlan>
+                        {
+                            new Plan(
+                                "childOpType",
+                                new Dictionary<string, object> { { "b", 2L } },
+                                new List<string> { "d", "e" },
+                                new List<IPlan>())
+                        }));
         }
 
         [Fact]
@@ -204,8 +250,8 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                 {
                     Key, new Dictionary<string, object>
                     {
-                        {"operatorType", "opType"},
-                        {"args", new Dictionary<string, object> {{"a", 1L}}},
+                        { "operatorType", "opType" },
+                        { "args", new Dictionary<string, object> { { "a", 1L } } },
                         {
                             "identifiers", new List<object>
                             {
@@ -217,8 +263,8 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                             {
                                 new Dictionary<string, object>
                                 {
-                                    {"operatorType", "childOpType"},
-                                    {"args", new Dictionary<string, object> {{"b", 2L}}},
+                                    { "operatorType", "childOpType" },
+                                    { "args", new Dictionary<string, object> { { "b", 2L } } },
                                     {
                                         "identifiers", new List<object>
                                         {
@@ -230,8 +276,8 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                                         {
                                             new Dictionary<string, object>
                                             {
-                                                {"operatorType", "childChildOpType"},
-                                                {"args", new Dictionary<string, object> {{"c", 3L}}},
+                                                { "operatorType", "childChildOpType" },
+                                                { "args", new Dictionary<string, object> { { "c", 3L } } },
                                                 {
                                                     "identifiers", new List<object>
                                                     {
@@ -247,22 +293,32 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                     }
                 }
             };
+
             var collector = new PlanCollector();
 
             collector.Collect(metadata);
 
-            collector.Collected.Should().BeEquivalentTo(new Plan("opType", new Dictionary<string, object> {{"a", 1L}},
-                new List<string> {"a", "b", "c"},
-                new List<IPlan>
-                {
-                    new Plan("childOpType", new Dictionary<string, object> {{"b", 2L}}, new List<string> {"d", "e"},
+            collector.Collected.Should()
+                .BeEquivalentTo(
+                    new Plan(
+                        "opType",
+                        new Dictionary<string, object> { { "a", 1L } },
+                        new List<string> { "a", "b", "c" },
                         new List<IPlan>
                         {
-                            new Plan("childChildOpType", new Dictionary<string, object> {{"c", 3L}},
-                                new List<string> {"f"},
-                                new List<IPlan>())
-                        })
-                }));
+                            new Plan(
+                                "childOpType",
+                                new Dictionary<string, object> { { "b", 2L } },
+                                new List<string> { "d", "e" },
+                                new List<IPlan>
+                                {
+                                    new Plan(
+                                        "childChildOpType",
+                                        new Dictionary<string, object> { { "c", 3L } },
+                                        new List<string> { "f" },
+                                        new List<IPlan>())
+                                })
+                        }));
         }
 
         [Fact]
@@ -273,31 +329,16 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                 {
                     Key, new Dictionary<string, object>
                     {
-                        {"operatorType", "opType"}
+                        { "operatorType", "opType" }
                     }
                 }
             };
+
             var collector = new PlanCollector();
 
             collector.Collect(metadata);
 
-            ((IMetadataCollector) collector).Collected.Should().BeSameAs(collector.Collected);
+            ((IMetadataCollector)collector).Collected.Should().BeSameAs(collector.Collected);
         }
-
-        internal static KeyValuePair<string, object> TestMetadata =>
-            new KeyValuePair<string, object>(Key, new Dictionary<string, object>
-            {
-                {"operatorType", "opType"},
-                {"args", new Dictionary<string, object> {{"a", 1L}}},
-                {
-                    "identifiers", new List<object>
-                    {
-                        "a", "b", "c"
-                    }
-                }
-            });
-
-        internal static IPlan TestMetadataCollected => new Plan("opType", new Dictionary<string, object> {{"a", 1L}},
-            new List<string> {"a", "b", "c"}, new List<IPlan>());
     }
 }

@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,14 +18,14 @@
 using System;
 using System.Reactive.Linq;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal static class RxExtensions
 {
-    internal static class RxExtensions
+    public static IObservable<TSource> CatchAndThrow<TSource>(
+        this IObservable<TSource> source,
+        Func<Exception, IObservable<TSource>> handler)
     {
-        public static IObservable<TSource> CatchAndThrow<TSource>(this IObservable<TSource> source,
-            Func<Exception, IObservable<TSource>> handler)
-        {
-            return source.Catch((Exception exc) => handler(exc).Concat(Observable.Throw<TSource>(exc)));
-        }
+        return source.Catch((Exception exc) => handler(exc).Concat(Observable.Throw<TSource>(exc)));
     }
 }

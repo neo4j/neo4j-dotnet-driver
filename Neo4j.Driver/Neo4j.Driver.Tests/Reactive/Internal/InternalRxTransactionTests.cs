@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -59,30 +59,33 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldInvokeTxcRunAsyncOnlyOnce()
             {
-                VerifyLazyRunAsync(r =>
-                {
-                    r.Keys().WaitForCompletion();
-                    r.Records().WaitForCompletion();
-                    r.Consume().WaitForCompletion();
-                });
+                VerifyLazyRunAsync(
+                    r =>
+                    {
+                        r.Keys().WaitForCompletion();
+                        r.Records().WaitForCompletion();
+                        r.Consume().WaitForCompletion();
+                    });
             }
 
             private static void VerifyLazyRunAsync(Action<IRxResult> action)
             {
                 var asyncTxc = new Mock<IInternalAsyncTransaction>();
                 asyncTxc.Setup(x => x.RunAsync(It.IsAny<Query>()))
-                    .ReturnsAsync(new ListBasedRecordCursor(new[] {"x"}, Enumerable.Empty<IRecord>,
-                        Mock.Of<IResultSummary>));
+                    .ReturnsAsync(
+                        new ListBasedRecordCursor(
+                            new[] { "x" },
+                            Enumerable.Empty<IRecord>,
+                            Mock.Of<IResultSummary>));
+
                 var txc = new InternalRxTransaction(asyncTxc.Object);
                 var result = txc.Run("RETURN 1");
 
-                asyncTxc.Verify(
-                    x => x.RunAsync(It.IsAny<Query>()), Times.Never);
+                asyncTxc.Verify(x => x.RunAsync(It.IsAny<Query>()), Times.Never);
 
                 action(result);
 
-                asyncTxc.Verify(
-                    x => x.RunAsync(It.IsAny<Query>()), Times.Once);
+                asyncTxc.Verify(x => x.RunAsync(It.IsAny<Query>()), Times.Once);
             }
         }
 

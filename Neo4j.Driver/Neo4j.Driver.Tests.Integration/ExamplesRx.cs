@@ -1,14 +1,14 @@
 ﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
-//
+// 
 // This file is part of Neo4j.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// 
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-//
+// 
 //     http://www.apache.org/licenses/LICENSE-2.0
-//
+// 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -45,7 +45,7 @@ public class ExamplesRx
 
             return session.Run(
                     "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher query
-                    new {id = 0} // Parameters in the query, if any
+                    new { id = 0 } // Parameters in the query, if any
                 )
                 .Records()
                 .Select(record => record[0].ToString())
@@ -58,15 +58,17 @@ public class ExamplesRx
         {
             var session = Driver.RxSession();
 
-            return session.ExecuteRead(tx =>
-            {
-                return tx.Run(
-                        "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher query
-                        new {id = 0} // Parameters in the query, if any
-                    )
-                    .Records()
-                    .Select(record => record[0].ToString());
-            }).OnErrorResumeNext(session.Close<string>());
+            return session.ExecuteRead(
+                    tx =>
+                    {
+                        return tx.Run(
+                                "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher query
+                                new { id = 0 } // Parameters in the query, if any
+                            )
+                            .Records()
+                            .Select(record => record[0].ToString());
+                    })
+                .OnErrorResumeNext(session.Close<string>());
         }
         // end::rx-transaction-function[]
 
@@ -77,22 +79,24 @@ public class ExamplesRx
 
             // Start an explicit transaction
             return session.BeginTransaction()
-                .SelectMany(tx => tx.Run(
-                        "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher query
-                        new {id = 0} // Parameters in the query, if any
-                    )
-                    .Records()
-                    .Select(record => record[0].ToString())
-                    .Concat(tx.Commit<string>())
-                    .Catch(tx.Rollback<string>()));
+                .SelectMany(
+                    tx => tx.Run(
+                            "MATCH (p:Product) WHERE p.id = $id RETURN p.title", // Cypher query
+                            new { id = 0 } // Parameters in the query, if any
+                        )
+                        .Records()
+                        .Select(record => record[0].ToString())
+                        .Concat(tx.Commit<string>())
+                        .Catch(tx.Rollback<string>()));
         }
         // end::rx-explicit-transaction[]
 
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public async void TestAutocommitTransactionExample()
         {
-            await WriteAsync("CREATE (p:Product) SET p.id = $id, p.title = $title",
-                new {id = 0, title = "Product-0"});
+            await WriteAsync(
+                "CREATE (p:Product) SET p.id = $id, p.title = $title",
+                new { id = 0, title = "Product-0" });
 
             var results = ReadProductTitles();
 
@@ -105,8 +109,9 @@ public class ExamplesRx
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public async void TestTransactionFunctionExample()
         {
-            await WriteAsync("CREATE (p:Product) SET p.id = $id, p.title = $title",
-                new {id = 0, title = "Product-0"});
+            await WriteAsync(
+                "CREATE (p:Product) SET p.id = $id, p.title = $title",
+                new { id = 0, title = "Product-0" });
 
             var results = PrintAllProducts();
 
@@ -119,8 +124,9 @@ public class ExamplesRx
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public async void TestExplicitTransactionExample()
         {
-            await WriteAsync("CREATE (p:Product) SET p.id = $id, p.title = $title",
-                new {id = 0, title = "Product-0"});
+            await WriteAsync(
+                "CREATE (p:Product) SET p.id = $id, p.title = $title",
+                new { id = 0, title = "Product-0" });
 
             var results = PrintSingleProduct();
 
@@ -142,12 +148,14 @@ public class ExamplesRx
         public IObservable<string> GetPeople()
         {
             var session = Driver.RxSession();
-            return session.ExecuteRead(tx =>
-            {
-                return tx.Run("MATCH (a:Person) RETURN a.name ORDER BY a.name")
-                    .Records()
-                    .Select(record => record[0].As<string>());
-            }).OnErrorResumeNext(session.Close<string>());
+            return session.ExecuteRead(
+                    tx =>
+                    {
+                        return tx.Run("MATCH (a:Person) RETURN a.name ORDER BY a.name")
+                            .Records()
+                            .Select(record => record[0].As<string>());
+                    })
+                .OnErrorResumeNext(session.Close<string>());
         }
         // end::rx-result-consume[]
 
@@ -173,16 +181,15 @@ public class ExamplesRx
 public abstract class BaseRxExample : AbstractRxTest, IDisposable
 {
     private bool _disposed;
-    protected IDriver Driver { set; get; }
     protected string Uri = Neo4jDefaultInstallation.BoltUri;
     protected string User = Neo4jDefaultInstallation.User;
-
-    ~BaseRxExample() => Dispose(false);
 
     protected BaseRxExample(StandAloneIntegrationTestFixture fixture)
     {
         Driver = fixture.StandAloneSharedInstance.Driver;
     }
+
+    protected IDriver Driver { set; get; }
 
     public void Dispose()
     {
@@ -190,10 +197,17 @@ public abstract class BaseRxExample : AbstractRxTest, IDisposable
         GC.SuppressFinalize(this);
     }
 
+    ~BaseRxExample()
+    {
+        Dispose(false);
+    }
+
     protected virtual void Dispose(bool disposing)
     {
         if (_disposed)
+        {
             return;
+        }
 
         if (disposing)
         {

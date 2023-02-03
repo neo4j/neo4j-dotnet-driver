@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -15,44 +15,57 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.IO;
 using FluentAssertions;
-using Moq;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers
 {
-    public class PullAllMessageSerializerTests : PackStreamSerializerTests
+    public class PullAllMessageSerializerTests
     {
-        internal override IPackStreamSerializer SerializerUnderTest => new PullAllMessageSerializer();
-
         [Fact]
-        public void ShouldThrowOnDeserialize()
+        public void ShouldHaveWritableTypesAsPullAllMessage()
         {
-            var handler = SerializerUnderTest;
-
-            var ex = Record.Exception(() =>
-                handler.Deserialize(Mock.Of<IPackStreamReader>(), BoltProtocolV3MessageFormat.MsgPullAll, 0));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ProtocolException>();
+            PullAllMessageSerializer.Instance.WritableTypes.Should().ContainEquivalentOf(typeof(PullAllMessage));
         }
 
         [Fact]
-        public void ShouldSerialize()
+        public void ShouldThrowIfPassedWrongMessage()
         {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            Record.Exception(() => PullAllMessageSerializer.Instance.Serialize(null, RollbackMessage.Instance))
+                .Should()
+                .BeOfType<ArgumentOutOfRangeException>();
+        }
 
-            writer.Write(PullAllMessage.PullAll);
+        [Theory]
+        [InlineData(3, 0)]
+        [InlineData(4, 0)]
+        [InlineData(4, 1)]
+        [InlineData(4, 2)]
+        [InlineData(4, 3)]
+        [InlineData(4, 4)]
+        [InlineData(5, 0)]
+        [InlineData(6, 0)]
+        public void ShouldSerialize(int major, int minor)
+        {
+            using var memory = new MemoryStream();
 
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var reader = readerMachine.Reader();
+            var boltProtocolVersion = new BoltProtocolVersion(major, minor);
+            var format = new MessageFormat(boltProtocolVersion);
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
-            reader.ReadStructHeader().Should().Be(0);
-            reader.ReadStructSignature().Should().Be(BoltProtocolV3MessageFormat.MsgPullAll);
+            var psw = new PackStreamWriter(format, memory);
+
+            PullAllMessageSerializer.Instance.Serialize(psw, PullAllMessage.Instance);
+            memory.Position = 0;
+
+            var reader = new PackStreamReader(format, memory, new ByteBuffers());
+
+            var bytes = reader.ReadBytes(2);
+            bytes[0].Should().Be(0xB0);
+            bytes[1].Should().Be(0x3F);
         }
     }
 }

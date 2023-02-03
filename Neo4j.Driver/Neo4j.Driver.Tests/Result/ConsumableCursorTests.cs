@@ -1,14 +1,14 @@
 // Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
-//
+// 
 // This file is part of Neo4j.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// 
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-//
+// 
 //     http://www.apache.org/licenses/LICENSE-2.0
-//
+// 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,25 +22,26 @@ using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Result;
 using Xunit;
+using Record = Xunit.Record;
 
 namespace Neo4j.Driver.Tests
 {
-	public class ConsumedException
-	{
-		public static void ThrowsResultConsumedException(Func<object> func)
-		{
-			var ex = Xunit.Record.Exception(func);
-			ex.Should().NotBeNull();
-			ex.Should().BeOfType<ResultConsumedException>();
-		}
+    public class ConsumedException
+    {
+        public static void ThrowsResultConsumedException(Func<object> func)
+        {
+            var ex = Record.Exception(func);
+            ex.Should().NotBeNull();
+            ex.Should().BeOfType<ResultConsumedException>();
+        }
 
-		public static async Task ThrowsResultConsumedException<T>(Func<Task<T>> func)
-		{
-			var ex = await Xunit.Record.ExceptionAsync(func);
-			ex.Should().NotBeNull();
-			ex.Should().BeOfType<ResultConsumedException>();
-		}
-	}
+        public static async Task ThrowsResultConsumedException<T>(Func<Task<T>> func)
+        {
+            var ex = await Record.ExceptionAsync(func);
+            ex.Should().NotBeNull();
+            ex.Should().BeOfType<ResultConsumedException>();
+        }
+    }
 
     public class ConsumableCursorTests
     {
@@ -52,7 +53,7 @@ namespace Neo4j.Driver.Tests
 
             await ConsumedException.ThrowsResultConsumedException(async () => await result.FetchAsync());
             await ConsumedException.ThrowsResultConsumedException(async () => await result.PeekAsync());
-			ConsumedException.ThrowsResultConsumedException(() => result.Current);
+            ConsumedException.ThrowsResultConsumedException(() => result.Current);
         }
 
         [Fact]
@@ -63,7 +64,7 @@ namespace Neo4j.Driver.Tests
 
             await ConsumedException.ThrowsResultConsumedException(async () => await result.SingleAsync());
             await ConsumedException.ThrowsResultConsumedException(async () => await result.ToListAsync());
-            await ConsumedException.ThrowsResultConsumedException(async () => await result.ForEachAsync(r => { }));
+            await ConsumedException.ThrowsResultConsumedException(async () => await result.ForEachAsync(r => {}));
         }
 
         [Fact]
@@ -82,16 +83,22 @@ namespace Neo4j.Driver.Tests
             summary2.Should().Be(summary0);
 
             keys1.Should().BeEquivalentTo(keys2);
-        }       
+        }
 
         private static class ResultCursorCreator
         {
-            public static IInternalResultCursor CreateResultCursor(int keySize, int recordSize = 1,
+            public static IInternalResultCursor CreateResultCursor(
+                int keySize,
+                int recordSize = 1,
                 Func<Task<IResultSummary>> getSummaryFunc = null,
                 CancellationTokenSource cancellationTokenSource = null)
             {
-                var cursor = ResultCursorTests.ResultCursorCreator.
-                    CreateResultCursor(keySize, recordSize, getSummaryFunc, cancellationTokenSource);
+                var cursor = ResultCursorTests.ResultCursorCreator.CreateResultCursor(
+                    keySize,
+                    recordSize,
+                    getSummaryFunc,
+                    cancellationTokenSource);
+
                 return new ConsumableResultCursor(cursor);
             }
         }

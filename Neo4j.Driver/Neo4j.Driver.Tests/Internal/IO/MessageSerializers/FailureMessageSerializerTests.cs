@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -15,50 +15,68 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
+using System.IO;
 using FluentAssertions;
-using Moq;
-using Neo4j.Driver.Internal.IO.MessageSerializers.V3;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers
 {
-    public class FailureMessageSerializerTests : PackStreamSerializerTests
+    public class FailureMessageSerializerTests
     {
-        internal override IPackStreamSerializer SerializerUnderTest => new FailureMessageSerializer();
-
         [Fact]
-        public void ShouldThrowOnSerialize()
+        public void StructTagsAreFailure()
         {
-            var handler = SerializerUnderTest;
-
-            var ex = Record.Exception(() =>
-                handler.Serialize(Mock.Of<IPackStreamWriter>(), new FailureMessage("Code", "Message")));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ProtocolException>();
+            FailureMessageSerializer.Instance.ReadableStructs.Should().ContainEquivalentOf(MessageFormat.MsgFailure);
         }
 
-        [Fact]
-        public void ShouldDeserialize()
+        [Theory]
+        [InlineData(5, 0, "Neo.TransientError.Transaction.Terminated", "Neo.TransientError.Transaction.Terminated")]
+        [InlineData(6, 0, "Neo.TransientError.Transaction.Terminated", "Neo.TransientError.Transaction.Terminated")]
+        [InlineData(3, 0, "Neo.TransientError.Transaction.Terminated", "Neo.ClientError.Transaction.Terminated")]
+        [InlineData(
+            3,
+            0,
+            "Neo.TransientError.Transaction.LockClientStopped",
+            "Neo.ClientError.Transaction.LockClientStopped")]
+        [InlineData(3, 0, "Neo.TransientError.Transaction.Unrelated", "Neo.TransientError.Transaction.Unrelated")]
+        [InlineData(4, 0, "Neo.TransientError.Transaction.Terminated", "Neo.ClientError.Transaction.Terminated")]
+        [InlineData(
+            4,
+            0,
+            "Neo.TransientError.Transaction.LockClientStopped",
+            "Neo.ClientError.Transaction.LockClientStopped")]
+        [InlineData(4, 0, "Neo.TransientError.Transaction.Unrelated", "Neo.TransientError.Transaction.Unrelated")]
+        [InlineData(4, 1, "Neo.TransientError.Transaction.Terminated", "Neo.ClientError.Transaction.Terminated")]
+        [InlineData(
+            4,
+            1,
+            "Neo.TransientError.Transaction.LockClientStopped",
+            "Neo.ClientError.Transaction.LockClientStopped")]
+        [InlineData(4, 1, "Neo.TransientError.Transaction.Unrelated", "Neo.TransientError.Transaction.Unrelated")]
+        public void ShouldDeserialize(int major, int minor, string inCode, string outCode)
         {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            using var memory = new MemoryStream();
 
-            writer.WriteStructHeader(1, BoltProtocolV3MessageFormat.MsgFailure);
-            writer.WriteMapHeader(2);
-            writer.Write("code");
-            writer.Write("Neo.ClientError.Statement.SyntaxError");
-            writer.Write("message");
-            writer.Write("Invalid syntax.");
+            var boltProtocolVersion = new BoltProtocolVersion(major, minor);
+            var format = new MessageFormat(boltProtocolVersion);
 
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var value = readerMachine.Reader().Read();
+            var psw = new PackStreamWriter(format, memory);
 
-            value.Should().NotBeNull();
-            value.Should().BeOfType<FailureMessage>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
-            value.Should().BeOfType<FailureMessage>().Which.Message.Should().Be("Invalid syntax.");
+            var value = new Dictionary<string, object>() as IDictionary<string, object>;
+            value.Add("code", inCode);
+            value.Add("message", "message text.");
+            psw.WriteDictionary(value);
+            memory.Position = 0;
+
+            var reader = new PackStreamReader(format, memory, new ByteBuffers());
+
+            var message = FailureMessageSerializer.Instance.Deserialize(boltProtocolVersion, reader, 0, 0);
+
+            message.Should().BeOfType<FailureMessage>().Which.Message.Should().Be("message text.");
+            message.Should().BeOfType<FailureMessage>().Which.Code.Should().Be(outCode);
         }
     }
 }

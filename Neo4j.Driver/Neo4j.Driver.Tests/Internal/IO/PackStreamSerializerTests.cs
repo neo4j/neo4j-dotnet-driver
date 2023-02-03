@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO.Utils;
 
 namespace Neo4j.Driver.Internal.IO
@@ -29,26 +30,47 @@ namespace Neo4j.Driver.Internal.IO
         internal virtual IEnumerable<IPackStreamSerializer> SerializersNeeded =>
             Enumerable.Empty<IPackStreamSerializer>();
 
-        protected virtual PackStreamWriterMachine CreateWriterMachine()
+        internal virtual PackStreamWriterMachine CreateWriterMachine()
         {
-            var writerHandlersDict = SerializersNeeded.Union(new[] {SerializerUnderTest}).SelectMany(h => h.WritableTypes,
+            var writerHandlersDict = SerializersNeeded.Union(new[] { SerializerUnderTest })
+                .SelectMany(
+                    h => h.WritableTypes,
                     (handler, type) => new KeyValuePair<Type, IPackStreamSerializer>(type, handler))
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
-            return new PackStreamWriterMachine(stream =>
-                new PackStreamWriter(stream, writerHandlersDict));
+            var format = new MessageFormat(writerHandlersDict);
+
+            return new PackStreamWriterMachine(stream => new PackStreamWriter(format, stream));
         }
 
-        protected virtual PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
+        internal virtual PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
         {
-            var readerHandlersDict = SerializersNeeded.Union(new[] { SerializerUnderTest }).SelectMany(h => h.ReadableStructs,
+            var readerHandlersDict = SerializersNeeded.Union(new[] { SerializerUnderTest })
+                .SelectMany(
+                    h => h.ReadableStructs,
                     (handler, signature) => new KeyValuePair<byte, IPackStreamSerializer>(signature, handler))
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
-            return new PackStreamReaderMachine(bytes, stream =>
-                new PackStreamReader(stream, readerHandlersDict));
+            var format = new MessageFormat(null, readerHandlersDict);
+
+            return new PackStreamReaderMachine(
+                bytes,
+                stream => new PackStreamReader(format, stream, new ByteBuffers()));
         }
 
+        internal PackStreamWriterMachine CreateWriterMachine(BoltProtocolVersion version)
+        {
+            var format = new MessageFormat(version);
 
+            return new PackStreamWriterMachine(stream => new PackStreamWriter(format, stream));
+        }
+
+        internal PackStreamReaderMachine CreateReaderMachine(BoltProtocolVersion version, byte[] bytes)
+        {
+            var format = new MessageFormat(version);
+            return new PackStreamReaderMachine(
+                bytes,
+                stream => new PackStreamReader(format, stream, new ByteBuffers()));
+        }
     }
 }

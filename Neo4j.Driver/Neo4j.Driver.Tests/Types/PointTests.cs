@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,14 +18,12 @@
 using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Types;
-using Neo4j.Driver;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Types
 {
     public class PointTests
     {
-
         [Fact]
         public void ShouldCreate2DPoints()
         {
@@ -203,6 +201,5 @@ namespace Neo4j.Driver.Tests.Types
             point1.Equals(new Node(1, new List<string>(), new Dictionary<string, object>())).Should().BeFalse();
             point1.Equals(1).Should().BeFalse();
         }
-
     }
 }

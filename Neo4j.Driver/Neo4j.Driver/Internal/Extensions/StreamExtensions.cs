@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -14,74 +14,114 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Extensions;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal static class StreamExtensions
 {
-    internal static class StreamExtensions
+    /// <summary>
+    /// The standard ReadAsync in .Net does not honor the CancellationToken even if supplied. This method wraps a call
+    /// to ReadAsync in a task that monitors the token, and when detected calls the streams close method.
+    /// </summary>
+    /// <param name="stream">Stream instance that is being extended</param>
+    /// <param name="buffer">Target buffer to write into</param>
+    /// <param name="offset">Offset from which to begin writing data from the stream</param>
+    /// <param name="count">The maximum number of bytes to read</param>
+    /// <param name="timeoutMs">The timeout in milliseconds that the stream will close after if there is no activity.</param>
+    /// <returns>The number of bytes read</returns>
+    public static async Task<int> ReadWithTimeoutAsync(
+        this Stream stream,
+        byte[] buffer,
+        int offset,
+        int count,
+        int timeoutMs)
     {
-        public static void Write(this Stream stream, byte[] bytes)
+        if (timeoutMs <= 0)
         {
-            stream.Write(bytes, 0, bytes.Length);
+            // no timeout and high traffic code, so avoid allocation Cancellation token source.
+            return await ReadWithoutTimeoutAsync(stream, buffer, offset, count).ConfigureAwait(false);
         }
 
-        public static int Read(this Stream stream, byte[] bytes)
-        {
-            int hasRead = 0, offset = 0, toRead = bytes.Length;
-            do
-            {
-                hasRead = stream.Read(bytes, offset, toRead);
-                offset += hasRead;
-                toRead -= hasRead;
-            } while (toRead > 0 && hasRead > 0);
+        using var source = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeoutMs));
 
-            if (hasRead <= 0)
+        try
+        {
+#if NET6_0_OR_GREATER
+            // .netcore 3.0+ network streams support cancellation tokens.
+            return await stream.ReadAsync(buffer.AsMemory(offset, count), source.Token).ConfigureAwait(false);
+#else
+            // .net standard implementation relies on closing stream
+            using var _ = source.Token.Register(stream.Close);
+            return await stream.ReadAsync(buffer, offset, count, source.Token).ConfigureAwait(false);
+#endif
+        }
+        catch (Exception ex)
+        {
+            //if the exception relates to cancellation we should throw a timeout.
+            if (source.IsCancellationRequested && IsCancellationException(ex))
             {
-                throw new IOException($"Failed to read more from input stream. Expected {bytes.Length} bytes, received {offset}.");
+                // close the stream, the stream will be fully disposed later by SocketClient Dispose.
+                stream.Close();
+
+                throw new ConnectionReadTimeoutException(
+                    $"Socket/Stream timed out after {timeoutMs}ms, socket closed.",
+                    ex);
             }
-            return offset;
+
+            throw;
+        }
+    }
+
+    private static Task<int> ReadWithoutTimeoutAsync(Stream stream, byte[] buffer, int offset, int count)
+    {
+#if NET6_0_OR_GREATER
+        // .netcore 3.0+ network streams support cancellation tokens.
+        return stream.ReadAsync(buffer.AsMemory(offset, count)).AsTask();
+#else
+        // .net standard implementation relies on closing stream
+        return stream.ReadAsync(buffer, offset, count);
+#endif
+    }
+
+    private static bool IsCancellationException(Exception ex)
+    {
+#if NET6_0_OR_GREATER
+        return ex is OperationCanceledException;
+#else
+        return ex is OperationCanceledException or ObjectDisposedException or IOException;
+#endif
+    }
+#if !NET6_0_OR_GREATER
+    public static void Write(this Stream stream, byte[] bytes)
+    {
+        stream.Write(bytes, 0, bytes.Length);
+    }
+
+    public static int Read(this Stream stream, byte[] bytes)
+    {
+        var hasRead = 0;
+        var offset = 0;
+        var toRead = bytes.Length;
+
+        do
+        {
+            hasRead = stream.Read(bytes, offset, toRead);
+            offset += hasRead;
+            toRead -= hasRead;
+        } while (toRead > 0 && hasRead > 0);
+
+        if (hasRead <= 0)
+        {
+            throw new IOException(
+                $"Failed to read more from input stream. Expected {bytes.Length} bytes, received {offset}.");
         }
 
-		/// <summary>
-		/// The standard ReadAsync in .Net does not honour the CancellationToken even if supplied. This method wraps a call to ReadAsync in a task that
-		/// monitors the token, and when detected calls the streams close method.
-		/// </summary>
-		/// <param name="stream">Stream instance that is being extended</param>
-		/// <param name="buffer">Target buffer to write into</param>
-		/// <param name="offset">Offset from which to begin writing data from the stream</param>
-		/// <param name="count">The maximum number of bytes to read</param>
-		/// <param name="timeoutMs">The timeout in milliseconds that the stream will close after if there is no activity. </param>
-		/// <returns>The number of bytes read</returns>
-		public static async Task<int> ReadWithTimeoutAsync(this Stream stream, byte[] buffer, int offset, int count, int timeoutMs)
-		{
-			var timeout = timeoutMs <= 0 ? TimeSpan.FromMilliseconds(-1) : TimeSpan.FromMilliseconds(timeoutMs);
-
-            try
-            {
-                // Stream.ReadAsync doesn't honor cancellation token. It only checks it at the beginning. The actual
-                // operation is not guarded. As a result if remote server never responds and connection never closed
-                // it will lead to this operation hanging forever.
-                return await stream.ReadAsync(buffer, offset, count)
-                    .Timeout(timeout, CancellationToken.None)
-                    .ConfigureAwait(false);
-            }
-            catch (TimeoutException timeoutException)
-            {
-                stream.Close();
-                throw new ConnectionReadTimeoutException($"Socket/Stream timed out after {timeoutMs}ms, socket closed.",
-                    timeoutException);
-            }
-            catch (OperationCanceledException)
-            {
-                stream.Close();
-                throw;
-            }
-		}
-	}
+        return offset;
+    }
+#endif
 }

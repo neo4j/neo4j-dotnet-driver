@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -15,138 +15,147 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.IntegrationTests.Internals;
 using System;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests
+namespace Neo4j.Driver.IntegrationTests;
+
+public class StandAloneIntegrationTestFixture : IDisposable
 {
-    public class StandAloneIntegrationTestFixture : IDisposable
+    private bool _disposed;
+
+    public StandAloneIntegrationTestFixture()
     {
-        bool _disposed = false;
-        public IStandAlone StandAloneSharedInstance { get; }
-        
-        ~StandAloneIntegrationTestFixture() => Dispose(false);
+        StandAloneSharedInstance = CreateInstance();
+    }
 
-        public StandAloneIntegrationTestFixture()
+    public IStandAlone StandAloneSharedInstance { get; }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    ~StandAloneIntegrationTestFixture()
+    {
+        Dispose(false);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed)
         {
-            StandAloneSharedInstance = CreateInstance();
+            return;
         }
 
-        public void Dispose()
+        if (disposing)
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            StandAloneSharedInstance?.Dispose();
         }
 
-        protected virtual void Dispose(bool disposing)
+        _disposed = true;
+    }
+
+    private IStandAlone CreateInstance()
+    {
+        if (LocalStandAloneInstance.IsServerProvided())
         {
-            if (_disposed)
+            return new LocalStandAloneInstance();
+        }
+
+        if (!BoltkitHelper.ServerAvailable())
+        {
+            return null;
+        }
+
+        try
+        {
+            return new StandAlone();
+        }
+        catch (Exception)
+        {
+            Dispose();
+            throw;
+        }
+    }
+}
+
+public class CausalClusterIntegrationTestFixture : IDisposable
+{
+    private bool _disposed;
+
+    public CausalClusterIntegrationTestFixture()
+    {
+        if (ExistingCluster.IsClusterProvided())
+        {
+            Cluster = new ExistingCluster();
+        }
+        else
+        {
+            var isClusterSupported = BoltkitHelper.IsClusterSupported();
+            if (!isClusterSupported.Item1)
+            {
                 return;
-
-            if (disposing)
-            {
-                StandAloneSharedInstance?.Dispose();
             }
 
-            _disposed = true;
-        }
-
-        private IStandAlone CreateInstance()
-        {
-            if (LocalStandAloneInstance.IsServerProvided())
+            try
             {
-                return new LocalStandAloneInstance();
+                Cluster = new CausalCluster();
             }
-            else
+            catch (Exception)
             {
-                if (!BoltkitHelper.ServerAvailable())
-                {
-                    return null;
-                }
-
-                try
-                {
-                    return new StandAlone();
-                }
-                catch (Exception)
-                {
-                    Dispose();
-                    throw;
-                }
+                Dispose();
+                throw;
             }
         }
     }
 
-    public class CausalClusterIntegrationTestFixture : IDisposable
+    public ICausalCluster Cluster { get; }
+
+    public void Dispose()
     {
-        private bool _disposed = false;
-        public ICausalCluster Cluster { get; }
-
-        ~CausalClusterIntegrationTestFixture() => Dispose(false);
-
-        public CausalClusterIntegrationTestFixture()
-        {
-            if (ExistingCluster.IsClusterProvided())
-            {
-                Cluster = new ExistingCluster();
-            }
-            else
-            {
-                var isClusterSupported = BoltkitHelper.IsClusterSupported();
-                if (!isClusterSupported.Item1)
-                {
-                    return;
-                }
-
-                try
-                {
-                    Cluster = new CausalCluster();
-                }
-                catch (Exception)
-                {
-                    Dispose();
-                    throw;
-                }
-            }
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_disposed)
-                return;
-
-            if (disposing)
-            {
-                //Dispose managed state (managed objects).                
-                Cluster?.Dispose();
-            }
-
-            _disposed = true;
-        }
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
 
-    [CollectionDefinition(CollectionName)]
-    public class SAIntegrationCollection : ICollectionFixture<StandAloneIntegrationTestFixture>
+    ~CausalClusterIntegrationTestFixture()
     {
-        public const string CollectionName = "StandAloneIntegration";
-        // This class has no code, and is never created. Its purpose is simply
-        // to be the place to apply [CollectionDefinition] and all the
-        // ICollectionFixture<> interfaces.
+        Dispose(false);
     }
 
-    [CollectionDefinition(CollectionName)]
-    public class CCIntegrationCollection : ICollectionFixture<CausalClusterIntegrationTestFixture>
+    protected virtual void Dispose(bool disposing)
     {
-        public const string CollectionName = "CausalClusterIntegration";
-        // This class has no code, and is never created. Its purpose is simply
-        // to be the place to apply [CollectionDefinition] and all the
-        // ICollectionFixture<> interfaces.
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (disposing)
+        {
+            //Dispose managed state (managed objects).                
+            Cluster?.Dispose();
+        }
+
+        _disposed = true;
     }
+}
+
+[CollectionDefinition(CollectionName)]
+public class SAIntegrationCollection : ICollectionFixture<StandAloneIntegrationTestFixture>
+{
+    public const string CollectionName = "StandAloneIntegration";
+    // This class has no code, and is never created. Its purpose is simply
+    // to be the place to apply [CollectionDefinition] and all the
+    // ICollectionFixture<> interfaces.
+}
+
+[CollectionDefinition(CollectionName)]
+public class CCIntegrationCollection : ICollectionFixture<CausalClusterIntegrationTestFixture>
+{
+    public const string CollectionName = "CausalClusterIntegration";
+    // This class has no code, and is never created. Its purpose is simply
+    // to be the place to apply [CollectionDefinition] and all the
+    // ICollectionFixture<> interfaces.
 }

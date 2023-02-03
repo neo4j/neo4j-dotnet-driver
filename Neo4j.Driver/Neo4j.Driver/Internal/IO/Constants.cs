@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -14,23 +14,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Neo4j.Driver.Internal.IO
+namespace Neo4j.Driver.Internal.IO;
+
+internal static class Constants
 {
-    internal static class Constants
-    {
-        public const int MaxChunkSize = ushort.MaxValue;
-        public const int MinChunkSize = 6;
+    public const int MaxChunkSize = ushort.MaxValue;
+    public const int MinChunkSize = 6;
 
-        public const int ChunkBufferSize = 16 * 1024;
-        public const int ChunkBufferResetPositionsWatermark = 1024;
-        public const int DefaultReadBufferSize = 32 * 1024;
-        public const int MaxReadBufferSize = 128 * 1024;
-        public const int DefaultWriteBufferSize = 16 * 1024;
-        public const int MaxWriteBufferSize = 64 * 1024;
-        public const int DefaultFetchSize = 1000;
-    }
+    public const int ChunkBufferSize = 16 * 1024;
+    public const int ChunkBufferResetPositionsWatermark = 1024;
+    public const int DefaultReadBufferSize = 32 * 1024;
+    public const int MaxReadBufferSize = 128 * 1024;
+    public const int DefaultWriteBufferSize = 16 * 1024;
+    public const int MaxWriteBufferSize = 64 * 1024;
+    public const int DefaultFetchSize = 1000;
 }

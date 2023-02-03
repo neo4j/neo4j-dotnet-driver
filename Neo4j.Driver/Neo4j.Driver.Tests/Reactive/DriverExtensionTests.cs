@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -16,10 +16,8 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal;
 using Xunit;
 
@@ -45,8 +43,9 @@ namespace Neo4j.Driver.Reactive
 
         private static IRxSession NewSession(IDriver driver)
         {
-            return driver.RxSession(o =>
-                o.WithDefaultAccessMode(AccessMode.Write).WithBookmarks(Bookmarks.From("1", "3")));
+            return driver.RxSession(
+                o =>
+                    o.WithDefaultAccessMode(AccessMode.Write).WithBookmarks(Bookmarks.From("1", "3")));
         }
     }
 }

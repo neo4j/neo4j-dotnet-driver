@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -14,42 +14,43 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 using System;
 using System.IO;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.IntegrationTests.Internals
+namespace Neo4j.Driver.IntegrationTests.Internals;
+
+public class SingleInstance : ISingleInstance
 {
-    public class SingleInstance : ISingleInstance
+    private const string BoltRoutingScheme = "neo4j://";
+    private const string Username = "neo4j";
+
+    public SingleInstance(string httpUri, string boltUri, string homePath, string password)
     {
-        public Uri HttpUri { get; }
-        public Uri BoltUri { get; }
-        public Uri BoltRoutingUri { get; }
-        public string HomePath { get; }
-        public IAuthToken AuthToken { get; }
-
-        private const string BoltRoutingScheme = "neo4j://";
-        private const string Username = "neo4j";
-
-        public SingleInstance(string httpUri, string boltUri, string homePath, string password)
+        HttpUri = new Uri(httpUri);
+        BoltUri = new Uri(boltUri);
+        BoltRoutingUri = new Uri(BoltRoutingScheme + $"{BoltUri.Host}:{BoltUri.Port}");
+        if (homePath == null)
         {
-            HttpUri = new Uri(httpUri);
-            BoltUri = new Uri(boltUri);
-            BoltRoutingUri = new Uri(BoltRoutingScheme + $"{BoltUri.Host}:{BoltUri.Port}");
-            if (homePath == null)
-            {
-                HomePath = "UNKNOWN";
-            }
-            else
-            {
-                HomePath = new DirectoryInfo(homePath).FullName;
-            }
-            AuthToken = AuthTokens.Basic(Username, password);
+            HomePath = "UNKNOWN";
+        }
+        else
+        {
+            HomePath = new DirectoryInfo(homePath).FullName;
         }
 
-        public override string ToString()
-        {
-            return $"Server at endpoint '{HttpUri}', with bolt enabled at endpoint '{BoltUri}', and home path '{HomePath}'.";
-        }
+        AuthToken = AuthTokens.Basic(Username, password);
+    }
+
+    public Uri HttpUri { get; }
+    public Uri BoltUri { get; }
+    public Uri BoltRoutingUri { get; }
+    public string HomePath { get; }
+    public IAuthToken AuthToken { get; }
+
+    public override string ToString()
+    {
+        return
+            $"Server at endpoint '{HttpUri}', with bolt enabled at endpoint '{BoltUri}', and home path '{HomePath}'.";
     }
 }

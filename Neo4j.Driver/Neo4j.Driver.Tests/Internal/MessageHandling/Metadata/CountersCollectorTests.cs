@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -26,6 +26,28 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
     public class CountersCollectorTests
     {
         public const string Key = CountersCollector.CountersKey;
+
+        internal static KeyValuePair<string, object> TestMetadata =>
+            new(
+                Key,
+                new Dictionary<string, object>
+                {
+                    { "nodes-created", 1L },
+                    { "nodes-deleted", 2L },
+                    { "relationships-created", 3L },
+                    { "relationships-deleted", 4L },
+                    { "properties-set", 5L },
+                    { "labels-added", 6L },
+                    { "labels-removed", 7L },
+                    { "indexes-added", 8L },
+                    { "indexes-removed", 9L },
+                    { "constraints-added", 10L },
+                    { "constraints-removed", 11L },
+                    { "system-updates", 12L }
+                });
+
+        internal static ICounters TestMetadataCollected =>
+            new Counters(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, null, null);
 
         [Fact]
         public void ShouldNotCollectIfMetadataIsNull()
@@ -52,21 +74,22 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         {
             var collector = new CountersCollector();
 
-            collector.Collect(new Dictionary<string, object> {{Key, null}});
+            collector.Collect(new Dictionary<string, object> { { Key, null } });
 
             collector.Collected.Should().BeNull();
         }
 
-
         [Fact]
         public void ShouldThrowIfValueIsOfWrongType()
         {
-            var metadata = new Dictionary<string, object> {{Key, true}};
+            var metadata = new Dictionary<string, object> { { Key, true } };
             var collector = new CountersCollector();
 
             var ex = Record.Exception(() => collector.Collect(metadata));
 
-            ex.Should().BeOfType<ProtocolException>().Which
+            ex.Should()
+                .BeOfType<ProtocolException>()
+                .Which
                 .Message.Should()
                 .Contain($"Expected '{Key}' metadata to be of type 'IDictionary<String,Object>', but got 'Boolean'.");
         }
@@ -79,20 +102,21 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                 {
                     Key, new Dictionary<string, object>
                     {
-                        {"nodes-created", 1L},
-                        {"nodes-deleted", 2L},
-                        {"relationships-created", 3L},
-                        {"relationships-deleted", 4L},
-                        {"properties-set", 5L},
-                        {"labels-added", 6L},
-                        {"labels-removed", 7L},
-                        {"indexes-added", 8L},
-                        {"indexes-removed", 9L},
-                        {"constraints-added", 10L},
-                        {"constraints-removed", 11L},
+                        { "nodes-created", 1L },
+                        { "nodes-deleted", 2L },
+                        { "relationships-created", 3L },
+                        { "relationships-deleted", 4L },
+                        { "properties-set", 5L },
+                        { "labels-added", 6L },
+                        { "labels-removed", 7L },
+                        { "indexes-added", 8L },
+                        { "indexes-removed", 9L },
+                        { "constraints-added", 10L },
+                        { "constraints-removed", 11L }
                     }
                 }
             };
+
             var collector = new CountersCollector();
 
             collector.Collect(metadata);
@@ -119,15 +143,16 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                 {
                     Key, new Dictionary<string, object>
                     {
-                        {"nodes-created", 1L},
-                        {"relationships-created", 2L},
-                        {"properties-set", 3L},
-                        {"labels-added", 4L},
-                        {"indexes-added", 5L},
-                        {"constraints-added", 6L},
+                        { "nodes-created", 1L },
+                        { "relationships-created", 2L },
+                        { "properties-set", 3L },
+                        { "labels-added", 4L },
+                        { "indexes-added", 5L },
+                        { "constraints-added", 6L }
                     }
                 }
             };
+
             var collector = new CountersCollector();
 
             collector.Collect(metadata);
@@ -154,45 +179,27 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
                 {
                     Key, new Dictionary<string, object>
                     {
-                        {"nodes-created", 1L},
-                        {"nodes-deleted", 2L},
-                        {"relationships-created", 3L},
-                        {"relationships-deleted", 4L},
-                        {"properties-set", 5L},
-                        {"labels-added", 6L},
-                        {"labels-removed", 7L},
-                        {"indexes-added", 8L},
-                        {"indexes-removed", 9L},
-                        {"constraints-added", 10L},
-                        {"constraints-removed", 11L},
-                        {"system-updates", 12L},
+                        { "nodes-created", 1L },
+                        { "nodes-deleted", 2L },
+                        { "relationships-created", 3L },
+                        { "relationships-deleted", 4L },
+                        { "properties-set", 5L },
+                        { "labels-added", 6L },
+                        { "labels-removed", 7L },
+                        { "indexes-added", 8L },
+                        { "indexes-removed", 9L },
+                        { "constraints-added", 10L },
+                        { "constraints-removed", 11L },
+                        { "system-updates", 12L }
                     }
                 }
             };
+
             var collector = new CountersCollector();
 
             collector.Collect(metadata);
 
-            ((IMetadataCollector) collector).Collected.Should().BeSameAs(collector.Collected);
+            ((IMetadataCollector)collector).Collected.Should().BeSameAs(collector.Collected);
         }
-
-        internal static KeyValuePair<string, object> TestMetadata =>
-            new KeyValuePair<string, object>(Key, new Dictionary<string, object>
-            {
-                {"nodes-created", 1L},
-                {"nodes-deleted", 2L},
-                {"relationships-created", 3L},
-                {"relationships-deleted", 4L},
-                {"properties-set", 5L},
-                {"labels-added", 6L},
-                {"labels-removed", 7L},
-                {"indexes-added", 8L},
-                {"indexes-removed", 9L},
-                {"constraints-added", 10L},
-                {"constraints-removed", 11L},
-                {"system-updates", 12L},
-            });
-
-        internal static ICounters TestMetadataCollected => new Counters(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, null, null);
     }
 }

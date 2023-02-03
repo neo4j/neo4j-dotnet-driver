@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -30,20 +30,20 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
         {
             new LocalTimeSerializer()
         };
-        
+
         [Fact]
         public void ShouldSerializeTime()
         {
             var time = new TimeSpan(0, 12, 35, 59, 999);
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             writer.Write(time);
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(1);
             reader.ReadStructSignature().Should().Be((byte)'t');
             reader.Read().Should().Be(45359999000000L);
@@ -54,7 +54,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
         {
             var time = new TimeSpan(0, 0, 0, 0, -999);
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             var ex = Record.Exception(() => writer.Write(time));
 
@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
         {
             var time = new TimeSpan(0, 24, 0, 0, 0);
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             var ex = Record.Exception(() => writer.Write(time));
 

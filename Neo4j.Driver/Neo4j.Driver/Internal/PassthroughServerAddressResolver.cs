@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -17,14 +17,13 @@
 
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+// simply pass through the server address as it is in the return resolved address set.
+internal class PassThroughServerAddressResolver : IServerAddressResolver
 {
-    // simply pass through the server address as it is in the return resolved address set.
-    internal class PassThroughServerAddressResolver : IServerAddressResolver
+    public ISet<ServerAddress> Resolve(ServerAddress address)
     {
-        public ISet<ServerAddress> Resolve(ServerAddress address)
-        {
-            return new HashSet<ServerAddress> {address};
-        }
+        return new HashSet<ServerAddress> { address };
     }
 }

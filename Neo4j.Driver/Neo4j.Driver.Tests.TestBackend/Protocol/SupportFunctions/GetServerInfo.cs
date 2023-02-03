@@ -1,10 +1,10 @@
-﻿// Copyright (c) 2002-2022 "Neo4j,"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -17,33 +17,33 @@
 
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Tests.TestBackend
+namespace Neo4j.Driver.Tests.TestBackend;
+
+internal class GetServerInfo : IProtocolObject
 {
-    internal class GetServerInfo : IProtocolObject
+    public GetServerInfoType Data { get; set; } = new();
+    public IServerInfo ServerInfo { get; set; }
+
+    public override async Task Process()
     {
-        public GetServerInfoType Data { get; set; } = new GetServerInfoType();
-        public IServerInfo ServerInfo { get; set; }
+        var driver = ObjManager.GetObject<NewDriver>(Data.driverId).Driver;
+        ServerInfo = await driver.GetServerInfoAsync();
+    }
 
-        public class GetServerInfoType
+    public override string Respond()
+    {
+        var data = new
         {
-            public string driverId { get; set; }
-        }
+            address = ServerInfo.Address,
+            agent = ServerInfo.Agent,
+            protocolVersion = ServerInfo.ProtocolVersion
+        };
 
-        public override async Task Process()
-        {
-            var driver = ObjManager.GetObject<NewDriver>(Data.driverId).Driver;
-            ServerInfo = await driver.GetServerInfoAsync();
-        }
+        return new ProtocolResponse("ServerInfo", data).Encode();
+    }
 
-        public override string Respond()
-        {
-            var data = new
-            {
-                address = ServerInfo.Address,
-                agent = ServerInfo.Agent,
-                protocolVersion = ServerInfo.ProtocolVersion
-            };
-            return new ProtocolResponse("ServerInfo", data).Encode();
-        }
+    public class GetServerInfoType
+    {
+        public string driverId { get; set; }
     }
 }

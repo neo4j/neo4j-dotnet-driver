@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,29 +18,32 @@
 using System;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
+
+internal sealed class SystemDateTimeSerializer : WriteOnlySerializer
 {
-    internal class SystemDateTimeSerializer : WriteOnlySerializer
+    internal static readonly SystemDateTimeSerializer Instance = new();
+
+    public override IEnumerable<Type> WritableTypes => new[] { typeof(DateTime) };
+
+    public override void Serialize(PackStreamWriter writer, object value)
     {
-        public override IEnumerable<Type> WritableTypes => new[] {typeof(DateTime)};
+        var dateTime = value.CastOrThrow<DateTime>();
 
-        public override void Serialize(IPackStreamWriter writer, object value)
+        switch (dateTime.Kind)
         {
-            var dateTime = value.CastOrThrow<DateTime>();
+            case DateTimeKind.Local:
+            case DateTimeKind.Unspecified:
+                writer.Write(new LocalDateTime(dateTime));
+                break;
 
-            switch (dateTime.Kind)
-            {
-                case DateTimeKind.Local:
-                case DateTimeKind.Unspecified:
-                    writer.Write(new LocalDateTime(dateTime));
-                    break;
-                case DateTimeKind.Utc:
-                    writer.Write(new ZonedDateTime(dateTime, 0));
-                    break;
-                default:
-                    throw new ProtocolException(
-                        $"Unsupported DateTimeKind {dateTime.Kind} passed to {nameof(SystemDateTimeSerializer)}!");
-            }
+            case DateTimeKind.Utc:
+                writer.Write(new ZonedDateTime(dateTime, 0));
+                break;
+
+            default:
+                throw new ProtocolException(
+                    $"Unsupported DateTimeKind {dateTime.Kind} passed to {nameof(SystemDateTimeSerializer)}!");
         }
     }
 }

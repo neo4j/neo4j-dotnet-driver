@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -26,30 +26,29 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Routing;
-using Neo4j.Driver;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Routing
 {
     public class ClusterConnectionPoolTests
     {
+        private static Uri ServerUri { get; } = new("neo4j://1234:5678");
+
         public class Constructor
         {
             [Fact]
             public void ShouldEnsureInitialRouter()
             {
                 var uri = new Uri("bolt://123:456");
-                var uris = new HashSet<Uri> {uri};
+                var uris = new HashSet<Uri> { uri };
                 var connFactory = new Mock<IPooledConnectionFactory>().Object;
                 var poolSettings = new ConnectionPoolSettings(Config.Default);
                 var routingSetting = new RoutingSettings(uri, new Dictionary<string, string>(), Config.Default);
                 var pool = new ClusterConnectionPool(uris, connFactory, routingSetting, poolSettings, null);
 
-                pool.ToString().Should().Contain(
-                    "bolt://123:456/");
+                pool.ToString().Should().Contain("bolt://123:456/");
 
-                pool.ToString().Should().Contain(
-                    "_idleConnections: {[]}, _inUseConnections: {[]}");
+                pool.ToString().Should().Contain("_idleConnections: {[]}, _inUseConnections: {[]}");
             }
         }
 
@@ -80,8 +79,10 @@ namespace Neo4j.Driver.Tests.Routing
                 var mockedConnection = new Mock<IPooledConnection>();
                 mockedConnection.Setup(c => c.InitAsync(CancellationToken.None))
                     .Returns(Task.FromException(new InvalidOperationException("An exception")));
-                mockedConnectionPool.Setup(x =>
-                        x.AcquireAsync(It.IsAny<AccessMode>(), It.IsAny<string>(), null, It.IsAny<Bookmarks>()))
+
+                mockedConnectionPool.Setup(
+                        x =>
+                            x.AcquireAsync(It.IsAny<AccessMode>(), It.IsAny<string>(), null, It.IsAny<Bookmarks>()))
                     .ReturnsAsync(mockedConnection.Object);
 
                 var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
@@ -114,14 +115,25 @@ namespace Neo4j.Driver.Tests.Routing
                 // Given
                 var mockedConnectionPool = new Mock<IConnectionPool>();
                 var mockedConnection = new Mock<IConnection>();
-                mockedConnectionPool.Setup(x =>
-                        x.AcquireAsync(It.IsAny<AccessMode>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Bookmarks>()))
+                mockedConnectionPool.Setup(
+                        x =>
+                            x.AcquireAsync(
+                                It.IsAny<AccessMode>(),
+                                It.IsAny<string>(),
+                                It.IsAny<string>(),
+                                It.IsAny<Bookmarks>()))
                     .ReturnsAsync(mockedConnection.Object);
+
                 var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
                 connectionPoolDict.GetOrAdd(new Uri(first), mockedConnectionPool.Object);
 
                 var pool = new ClusterConnectionPool(null, connectionPoolDict);
-                var connection = await pool.AcquireAsync(new Uri(second), AccessMode.Write, null, null, Bookmarks.Empty);
+                var connection = await pool.AcquireAsync(
+                    new Uri(second),
+                    AccessMode.Write,
+                    null,
+                    null,
+                    Bookmarks.Empty);
 
                 if (expectedResult)
                 {
@@ -142,11 +154,12 @@ namespace Neo4j.Driver.Tests.Routing
                 // Given
                 var mockedConnectionPool = new Mock<IConnectionPool>();
                 var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
-                var pool = new ClusterConnectionPool(new MockedPoolFactory(mockedConnectionPool.Object),
+                var pool = new ClusterConnectionPool(
+                    new MockedPoolFactory(mockedConnectionPool.Object),
                     connectionPoolDict);
 
                 // When
-                await pool.UpdateAsync(new[] {ServerUri}, new Uri[0]);
+                await pool.UpdateAsync(new[] { ServerUri }, new Uri[0]);
 
                 // Then
                 connectionPoolDict.Count.Should().Be(1);
@@ -160,15 +173,16 @@ namespace Neo4j.Driver.Tests.Routing
                 // Given
                 var mockedConnectionPool = new Mock<IConnectionPool>();
                 var mockedConnectionPoolDict = new Mock<ConcurrentDictionary<Uri, IConnectionPool>>();
-                var pool = new ClusterConnectionPool(new MockedPoolFactory(mockedConnectionPool.Object),
+                var pool = new ClusterConnectionPool(
+                    new MockedPoolFactory(mockedConnectionPool.Object),
                     mockedConnectionPoolDict.Object);
 
                 // When
                 await pool.CloseAsync();
-                var exception = await Record.ExceptionAsync(() => pool.UpdateAsync(new[] {ServerUri}, new Uri[0]));
+                var exception = await Record.ExceptionAsync(() => pool.UpdateAsync(new[] { ServerUri }, new Uri[0]));
 
                 // Then
-                mockedConnectionPool.Verify(x => x.CloseAsync());
+                mockedConnectionPool.Verify(x => x.DisposeAsync());
 
                 exception.Should().BeOfType<ObjectDisposedException>();
                 exception.Message.Should().Contain("Failed to create connections with server");
@@ -183,11 +197,13 @@ namespace Neo4j.Driver.Tests.Routing
                 connectionPoolDict.GetOrAdd(ServerUri, mockedConnectionPool.Object);
                 mockedConnectionPool.Setup(x => x.NumberOfInUseConnections)
                     .Returns(0); // no need to explicitly config this
-                var pool = new ClusterConnectionPool(new MockedPoolFactory(mockedConnectionPool.Object),
+
+                var pool = new ClusterConnectionPool(
+                    new MockedPoolFactory(mockedConnectionPool.Object),
                     connectionPoolDict);
 
                 // When
-                await pool.UpdateAsync(new Uri[0], new[] {ServerUri});
+                await pool.UpdateAsync(new Uri[0], new[] { ServerUri });
 
                 // Then
                 mockedConnectionPool.Verify(x => x.DeactivateAsync(), Times.Once); // first deactivate then remove
@@ -202,11 +218,12 @@ namespace Neo4j.Driver.Tests.Routing
                 var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
                 connectionPoolDict.GetOrAdd(ServerUri, mockedConnectionPool.Object);
                 mockedConnectionPool.Setup(x => x.NumberOfInUseConnections).Returns(10); // non-zero number
-                var pool = new ClusterConnectionPool(new MockedPoolFactory(mockedConnectionPool.Object),
+                var pool = new ClusterConnectionPool(
+                    new MockedPoolFactory(mockedConnectionPool.Object),
                     connectionPoolDict);
 
                 // When
-                await pool.UpdateAsync(new Uri[0], new[] {ServerUri});
+                await pool.UpdateAsync(new Uri[0], new[] { ServerUri });
 
                 // Then
                 mockedConnectionPool.Verify(x => x.DeactivateAsync(), Times.Once);
@@ -227,7 +244,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var pool = new ClusterConnectionPool(new MockedPoolFactory(), connectionPoolDict);
 
                 // When
-                await pool.AddAsync(new[] {ServerUri});
+                await pool.AddAsync(new[] { ServerUri });
 
                 // Then
                 mockedConnectionPool.Verify(x => x.Activate(), Times.Once);
@@ -245,7 +262,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var pool = new ClusterConnectionPool(new MockedPoolFactory(fakePoolMock.Object), connectionPoolDict);
 
                 // When
-                await pool.AddAsync(new[] {ServerUri});
+                await pool.AddAsync(new[] { ServerUri });
 
                 // Then
                 connectionPoolDict.Count.Should().Be(1);
@@ -304,11 +321,10 @@ namespace Neo4j.Driver.Tests.Routing
 
                 var pool = new ClusterConnectionPool(null, connectionPoolDict);
 
-                // When
-                await pool.CloseAsync();
+                await pool.DisposeAsync();
 
                 // Then
-                mockedConnectionPool.Verify(x => x.CloseAsync(), Times.Once);
+                mockedConnectionPool.Verify(x => x.DisposeAsync(), Times.Once);
                 connectionPoolDict.Count.Should().Be(0);
                 connectionPoolDict.ContainsKey(ServerUri).Should().BeFalse();
             }
@@ -343,8 +359,6 @@ namespace Neo4j.Driver.Tests.Routing
                 numberOfInUseConnections.Should().Be(42);
             }
         }
-
-        private static Uri ServerUri { get; } = new Uri("neo4j://1234:5678");
 
         private class MockedPoolFactory : IConnectionPoolFactory
         {

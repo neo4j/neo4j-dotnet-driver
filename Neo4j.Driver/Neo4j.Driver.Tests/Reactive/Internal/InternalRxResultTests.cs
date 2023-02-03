@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -23,7 +23,6 @@ using System.Reactive.Linq;
 using System.Threading;
 using FluentAssertions;
 using Microsoft.Reactive.Testing;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel.DataCollection;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Result;
@@ -54,7 +53,7 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldReturnKeysAfterRecords()
             {
-                var keys = new[] {"key01", "key02", "key03"};
+                var keys = new[] { "key01", "key02", "key03" };
                 var cursor = CreateResultCursor(3, 0);
                 var result = new RxResult(Observable.Return(cursor));
 
@@ -65,7 +64,7 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldReturnKeysAfterSummary()
             {
-                var keys = new[] {"key01", "key02", "key03"};
+                var keys = new[] { "key01", "key02", "key03" };
                 var cursor = CreateResultCursor(3, 0);
                 var result = new RxResult(Observable.Return(cursor));
 
@@ -88,7 +87,7 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldReturnRecords()
             {
-                var keys = new[] {"key01", "key02", "key03"};
+                var keys = new[] { "key01", "key02", "key03" };
                 var cursor = CreateResultCursor(3, 5);
                 var result = new RxResult(Observable.Return(cursor));
 
@@ -98,7 +97,7 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldNotReturnRecordsIfRecordsIsAlreadyObserved()
             {
-                var keys = new[] {"key01", "key02", "key03"};
+                var keys = new[] { "key01", "key02", "key03" };
                 var cursor = CreateResultCursor(3, 5);
                 var result = new RxResult(Observable.Return(cursor));
 
@@ -140,7 +139,7 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldReturnKeysRecordsAndSummary()
             {
-                var keys = new[] {"key01", "key02", "key03"};
+                var keys = new[] { "key01", "key02", "key03" };
                 var cursor = CreateResultCursor(3, 5, "my query");
                 var result = new RxResult(Observable.Return(cursor));
 
@@ -152,7 +151,7 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldReturnRecordsAndSummary()
             {
-                var keys = new[] {"key01", "key02", "key03"};
+                var keys = new[] { "key01", "key02", "key03" };
                 var cursor = CreateResultCursor(3, 5, "my query");
                 var result = new RxResult(Observable.Return(cursor));
 
@@ -163,7 +162,7 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldReturnsKeysAndSummary()
             {
-                var keys = new[] {"key01", "key02", "key03"};
+                var keys = new[] { "key01", "key02", "key03" };
                 var cursor = CreateResultCursor(3, 5, "my query");
                 var result = new RxResult(Observable.Return(cursor));
 
@@ -180,8 +179,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 result.Records()
                     .Merge(result.Records())
                     .WaitForCompletion()
-                    .AssertEqual(
-                        OnError<IRecord>(0, MatchesException<ClientException>()));
+                    .AssertEqual(OnError<IRecord>(0, MatchesException<ClientException>()));
             }
         }
 
@@ -286,7 +284,7 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldErrorOnRecords()
             {
-                var keys = new[] {"key01", "key02"};
+                var keys = new[] { "key01", "key02" };
                 var failure = new DatabaseException("code", "message");
                 var cursor = CreateFailingResultCursor(failure, 2, 5);
                 var result = new RxResult(Observable.Return(cursor));
@@ -297,7 +295,7 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldErrorOnRecordsRepeatable()
             {
-                var keys = new[] {"key01", "key02"};
+                var keys = new[] { "key01", "key02" };
                 var failure1 = new DatabaseException("code", "message");
                 var cursor = CreateFailingResultCursor(failure1, 2, 5);
                 var result = new RxResult(Observable.Return(cursor));
@@ -332,7 +330,7 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldErrorOnRecordsAndSummary()
             {
-                var keys = new[] {"key01", "key02"};
+                var keys = new[] { "key01", "key02" };
                 var failure = new DatabaseException("code", "message");
                 var cursor = CreateFailingResultCursor(failure, 2, 5);
                 var result = new RxResult(Observable.Return(cursor));
@@ -357,7 +355,7 @@ namespace Neo4j.Driver.Reactive.Internal
             [Fact]
             public void ShouldReturnRecords()
             {
-                var keys = new[] {"key01", "key02"};
+                var keys = new[] { "key01", "key02" };
                 var failure = new DatabaseException("code", "message");
                 var cursor = CreateFailingResultCursor(failure, 2, 5);
                 var result = new RxResult(Observable.Return(cursor));
@@ -409,19 +407,25 @@ namespace Neo4j.Driver.Reactive.Internal
                         Thread.Sleep(delayMs);
                     }
 
-                    yield return new Record(fields,
+                    yield return new Record(
+                        fields,
                         Enumerable.Range(1, fields.Length).Select(f => $"{i:D3}_{f:D2}").Cast<object>().ToArray());
                 }
             }
 
-            public static IInternalResultCursor CreateResultCursor(int keyCount, int recordCount,
-                string query = "fake", int delayMs = 0)
+            public static IInternalResultCursor CreateResultCursor(
+                int keyCount,
+                int recordCount,
+                string query = "fake",
+                int delayMs = 0)
             {
                 var fields = Enumerable.Range(1, keyCount).Select(f => $"key{f:D2}").ToArray();
                 var summaryBuilder =
                     new SummaryBuilder(new Query(query), new ServerInfo(new Uri("bolt://localhost")));
 
-                return new ListBasedRecordCursor(fields, () => CreateRecords(fields, recordCount, delayMs),
+                return new ListBasedRecordCursor(
+                    fields,
+                    () => CreateRecords(fields, recordCount, delayMs),
                     () => summaryBuilder.Build());
             }
 
@@ -439,26 +443,41 @@ namespace Neo4j.Driver.Reactive.Internal
                 result.Records()
                     .WaitForCompletion()
                     .AssertEqual(
-                        Enumerable.Range(1, recordsCount).Select(r =>
-                                OnNext(0,
-                                    MatchesRecord(keys,
-                                        Enumerable.Range(1, keys.Length).Select(f => $"{r:D3}_{f:D2}").Cast<object>()
-                                            .ToArray())))
-                            .Concat(new[] {OnCompleted<IRecord>(0)}));
+                        Enumerable.Range(1, recordsCount)
+                            .Select(
+                                r =>
+                                    OnNext(
+                                        0,
+                                        MatchesRecord(
+                                            keys,
+                                            Enumerable.Range(1, keys.Length)
+                                                .Select(f => $"{r:D3}_{f:D2}")
+                                                .Cast<object>()
+                                                .ToArray())))
+                            .Concat(new[] { OnCompleted<IRecord>(0) }));
             }
 
-            public static void VerifyRecordsAndError(IRxResult result, string[] keys, int recordsCount,
+            public static void VerifyRecordsAndError(
+                IRxResult result,
+                string[] keys,
+                int recordsCount,
                 Exception failure)
             {
                 result.Records()
                     .WaitForCompletion()
                     .AssertEqual(
-                        Enumerable.Range(1, recordsCount).Select(r =>
-                                OnNext(0,
-                                    MatchesRecord(keys,
-                                        Enumerable.Range(1, keys.Length).Select(f => $"{r:D3}_{f:D2}").Cast<object>()
-                                            .ToArray())))
-                            .Concat(new[] {OnError<IRecord>(0, failure)}));
+                        Enumerable.Range(1, recordsCount)
+                            .Select(
+                                r =>
+                                    OnNext(
+                                        0,
+                                        MatchesRecord(
+                                            keys,
+                                            Enumerable.Range(1, keys.Length)
+                                                .Select(f => $"{r:D3}_{f:D2}")
+                                                .Cast<object>()
+                                                .ToArray())))
+                            .Concat(new[] { OnError<IRecord>(0, failure) }));
             }
 
             public static void VerifySummary(IRxResult result, string query = "fake")
@@ -466,8 +485,10 @@ namespace Neo4j.Driver.Reactive.Internal
                 result.Consume()
                     .WaitForCompletion()
                     .AssertEqual(
-                        OnNext(0,
-                            MatchesSummary(new {Query = new Query(query)},
+                        OnNext(
+                            0,
+                            MatchesSummary(
+                                new { Query = new Query(query) },
                                 opts => opts.ExcludingMissingMembers())),
                         OnCompleted<IResultSummary>(0));
             }
@@ -475,17 +496,18 @@ namespace Neo4j.Driver.Reactive.Internal
             public static void VerifyError<T>(IObservable<T> observable, Exception exc)
             {
                 observable.WaitForCompletion()
-                    .AssertEqual(
-                        OnError<T>(0, exc));
+                    .AssertEqual(OnError<T>(0, exc));
             }
 
             public static void VerifyResultConsumedError<T>(IObservable<T> observable)
             {
                 observable.WaitForCompletion()
                     .AssertEqual(
-                        OnError<T>(0,
-                            MatchesException<ResultConsumedException>(e =>
-                                e.Message.StartsWith("Streaming has already started and/or finished"))));
+                        OnError<T>(
+                            0,
+                            MatchesException<ResultConsumedException>(
+                                e =>
+                                    e.Message.StartsWith("Streaming has already started and/or finished"))));
             }
 
             public static void VerifyNoError<T>(IObservable<T> observable)
@@ -493,7 +515,8 @@ namespace Neo4j.Driver.Reactive.Internal
                 observable
                     .WaitForCompletion()
                     .Should()
-                    .NotContain(e => e.Value.Kind == NotificationKind.OnError).And
+                    .NotContain(e => e.Value.Kind == NotificationKind.OnError)
+                    .And
                     .Contain(e => e.Value.Kind == NotificationKind.OnCompleted);
             }
 
@@ -505,7 +528,10 @@ namespace Neo4j.Driver.Reactive.Internal
 
                 return cursor.Object;
             }
-            public static IInternalResultCursor CreateFailingResultCursor(Exception exc, int keyCount,
+
+            public static IInternalResultCursor CreateFailingResultCursor(
+                Exception exc,
+                int keyCount,
                 int recordCount)
             {
                 var keys = Enumerable.Range(1, keyCount).Select(f => $"key{f:D2}").ToArray();
@@ -514,7 +540,8 @@ namespace Neo4j.Driver.Reactive.Internal
                 {
                     for (var r = 1; r <= recordCount; r++)
                     {
-                        yield return new Record(keys,
+                        yield return new Record(
+                            keys,
                             Enumerable.Range(1, keyCount).Select(f => $"{r:D3}_{f:D2}").Cast<object>().ToArray());
                     }
 

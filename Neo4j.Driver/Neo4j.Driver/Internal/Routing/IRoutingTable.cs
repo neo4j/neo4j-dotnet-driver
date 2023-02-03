@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -17,24 +17,22 @@
 
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.Internal.Routing
+namespace Neo4j.Driver.Internal.Routing;
+
+internal interface IRoutingTable
 {
-    internal interface IRoutingTable
-    {
-        string Database { get; }
-        IList<Uri> Readers { get; }
-        IList<Uri> Writers { get; }
-        IList<Uri> Routers { get; }
-        long ExpireAfterSeconds { get; }
+    string Database { get; }
+    IList<Uri> Readers { get; }
+    IList<Uri> Writers { get; }
+    IList<Uri> Routers { get; }
+    long ExpireAfterSeconds { get; }
 
-        IEnumerable<Uri> All();
-        bool IsStale(AccessMode mode);
-        bool IsExpiredFor(TimeSpan duration);
-        void Remove(Uri uri);
-        void RemoveWriter(Uri uri);
-        void PrependRouters(IEnumerable<Uri> uris);
-        bool IsReadingInAbsenceOfWriter(AccessMode mode);
-    }
+    IEnumerable<Uri> All();
+    bool IsStale(AccessMode mode);
+    bool IsExpiredFor(TimeSpan duration);
+    void Remove(Uri uri);
+    void RemoveWriter(Uri uri);
+    void PrependRouters(IEnumerable<Uri> uris);
+    bool IsReadingInAbsenceOfWriter(AccessMode mode);
 }

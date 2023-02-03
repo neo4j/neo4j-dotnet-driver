@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -21,19 +21,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Internal.Connector
+namespace Neo4j.Driver.Internal.Connector;
+
+internal interface ISocketClient : IAsyncDisposable
 {
-    internal interface ISocketClient
-    {
-        Task<IBoltProtocol> ConnectAsync(IDictionary<string, string> routingContext, CancellationToken token = default);
-        Task SendAsync(IEnumerable<IRequestMessage> messages);
-        Task ReceiveAsync(IResponsePipeline responsePipeline);
-        Task ReceiveOneAsync(IResponsePipeline responsePipeline);
-        bool IsOpen { get; }
-        Task StopAsync();
-		void SetRecvTimeOut(int seconds);
-        void SetUseUtcEncodedDateTime(IBoltProtocol protocol);
-    }
+    BoltProtocolVersion Version { get; }
+    bool IsOpen { get; }
+    Task ConnectAsync(IDictionary<string, string> routingContext, CancellationToken token = default);
+    Task SendAsync(IEnumerable<IRequestMessage> messages);
+    Task ReceiveAsync(IResponsePipeline responsePipeline);
+    Task ReceiveOneAsync(IResponsePipeline responsePipeline);
+    void SetReadTimeoutInSeconds(int seconds);
+    void UseUtcEncoded();
 }

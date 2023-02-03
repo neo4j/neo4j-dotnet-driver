@@ -1,10 +1,10 @@
-﻿// Copyright (c) 2002-2022 "Neo4j,"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -20,21 +20,27 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Neo4j.Driver.Tests.TestBackend
-{
-    internal class QueryParameterConverter : JsonConverter<Dictionary<string, CypherToNativeObject>>
-    {
-        public override void WriteJson(JsonWriter writer, Dictionary<string, CypherToNativeObject> value, JsonSerializer serializer)
-        {
-            throw new NotImplementedException();
-        }
+namespace Neo4j.Driver.Tests.TestBackend;
 
-        public override Dictionary<string, CypherToNativeObject> ReadJson(JsonReader reader, Type objectType, Dictionary<string, CypherToNativeObject> existingValue, bool hasExistingValue,
-            JsonSerializer serializer)
-        {
-            var token = JObject.Load(reader);
-            return JsonCypherParameterParser.ParseParameters(token);
-        }
+internal class QueryParameterConverter : JsonConverter<Dictionary<string, CypherToNativeObject>>
+{
+    public override void WriteJson(
+        JsonWriter writer,
+        Dictionary<string, CypherToNativeObject> value,
+        JsonSerializer serializer)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override Dictionary<string, CypherToNativeObject> ReadJson(
+        JsonReader reader,
+        Type objectType,
+        Dictionary<string, CypherToNativeObject> existingValue,
+        bool hasExistingValue,
+        JsonSerializer serializer)
+    {
+        var token = JObject.Load(reader);
+        return JsonCypherParameterParser.ParseParameters(token);
     }
 
     internal class FullQueryParameterConverter : JsonConverter<Dictionary<string, object>>
@@ -44,7 +50,11 @@ namespace Neo4j.Driver.Tests.TestBackend
             throw new NotImplementedException();
         }
 
-        public override Dictionary<string, object> ReadJson(JsonReader reader, Type objectType, Dictionary<string, object> existingValue, bool hasExistingValue,
+        public override Dictionary<string, object> ReadJson(
+            JsonReader reader,
+            Type objectType,
+            Dictionary<string, object> existingValue,
+            bool hasExistingValue,
             JsonSerializer serializer)
         {
             var token = JObject.Load(reader);
@@ -54,16 +64,19 @@ namespace Neo4j.Driver.Tests.TestBackend
 
         public static Dictionary<string, object> ConvertParameters(Dictionary<string, CypherToNativeObject> source)
         {
-            if (source == null) return null;
-            Dictionary<string, object> newParams = new Dictionary<string, object>();
+            if (source == null)
+            {
+                return null;
+            }
 
-            foreach (KeyValuePair<string, CypherToNativeObject> element in source)
+            var newParams = new Dictionary<string, object>();
+
+            foreach (var element in source)
             {
                 newParams.Add(element.Key, CypherToNative.Convert(element.Value));
             }
 
             return newParams;
         }
-
     }
 }

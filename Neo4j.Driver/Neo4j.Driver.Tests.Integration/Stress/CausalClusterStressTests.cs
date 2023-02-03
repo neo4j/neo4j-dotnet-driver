@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -26,319 +26,351 @@ using Neo4j.Driver.Internal;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
+namespace Neo4j.Driver.IntegrationTests.Stress;
+
+[Collection(CCIntegrationCollection.CollectionName)]
+public class CausalClusterStressTests : StressTest<CausalClusterStressTests.Context>
 {
-    [Collection(CCIntegrationCollection.CollectionName)]
-    public class CausalClusterStressTests : StressTest<CausalClusterStressTests.Context>
+    private readonly CausalClusterIntegrationTestFixture _cluster;
+
+    public CausalClusterStressTests(ITestOutputHelper output, CausalClusterIntegrationTestFixture cluster) :
+        base(output, cluster.Cluster.BoltRoutingUri, cluster.Cluster.AuthToken, cluster.Cluster.Configure)
     {
-        private readonly CausalClusterIntegrationTestFixture _cluster;
+        _cluster = cluster;
+    }
 
-        public CausalClusterStressTests(ITestOutputHelper output, CausalClusterIntegrationTestFixture cluster) :
-            base(output, cluster.Cluster.BoltRoutingUri, cluster.Cluster.AuthToken, cluster.Cluster.Configure)
+    protected override Context CreateContext()
+    {
+        return new Context();
+    }
+
+    protected override IEnumerable<IBlockingCommand<Context>> CreateTestSpecificBlockingCommands()
+    {
+        return new List<IBlockingCommand<Context>>
         {
-            _cluster = cluster;
+            new BlockingWriteCommandUsingReadSessionTxFunc<Context>(_driver, false),
+            new BlockingWriteCommandUsingReadSessionTxFunc<Context>(_driver, true)
+        };
+    }
+
+    protected override IEnumerable<IAsyncCommand<Context>> CreateTestSpecificAsyncCommands()
+    {
+        return new List<IAsyncCommand<Context>>
+        {
+            new AsyncWriteCommandUsingReadSessionTxFunc<Context>(_driver, false),
+            new AsyncWriteCommandUsingReadSessionTxFunc<Context>(_driver, true)
+        };
+    }
+
+    protected override IEnumerable<IRxCommand<Context>> CreateTestSpecificRxCommands()
+    {
+        return Enumerable.Empty<IRxCommand<Context>>();
+    }
+
+    protected override void PrintStats(Context context)
+    {
+        _output.WriteLine("{0}", context);
+    }
+
+    protected override void VerifyReadQueryDistribution(Context context)
+    {
+        if (UsingBoltMoreThan5_0())
+            // 5.0 clusters don't provide a mechanism for this kind of inspection,
+            // so we disabled it.
+        {
+            return;
         }
 
-        protected override Context CreateContext()
-        {
-            return new Context();
-        }
+        var clusterAddresses = DiscoverClusterAddresses();
 
-        protected override IEnumerable<IBlockingCommand<Context>> CreateTestSpecificBlockingCommands()
+        VerifyServedReadQueries(context, clusterAddresses);
+        VerifyServedSimilarAmountOfReadQueries(context, clusterAddresses);
+    }
+
+    public override bool HandleWriteFailure(Exception error, Context context)
+    {
+        switch (error)
         {
-            return new List<IBlockingCommand<Context>>
+            case SessionExpiredException _:
             {
-				new BlockingWriteCommandUsingReadSessionTxFunc<Context>(_driver, false),
-				new BlockingWriteCommandUsingReadSessionTxFunc<Context>(_driver, true)
-			};
+                var isLeaderSwitch = error.Message.EndsWith("no longer accepts writes");
+                if (isLeaderSwitch)
+                {
+                    context.LeaderSwitched();
+                    return true;
+                }
+
+                break;
+            }
         }
 
-        protected override IEnumerable<IAsyncCommand<Context>> CreateTestSpecificAsyncCommands()
-        {
-            return new List<IAsyncCommand<Context>>
-            {
-                new AsyncWriteCommandUsingReadSessionTxFunc<Context>(_driver, false),
-                new AsyncWriteCommandUsingReadSessionTxFunc<Context>(_driver, true)
-            };
-        }
+        return false;
+    }
 
-        protected override IEnumerable<IRxCommand<Context>> CreateTestSpecificRxCommands()
-        {
-            return Enumerable.Empty<IRxCommand<Context>>();
-		}
+    private ClusterAddresses DiscoverClusterAddresses()
+    {
+        var followers = new List<string>();
+        var readReplicas = new List<string>();
 
-        protected override void PrintStats(Context context)
+        using (var session = _driver.Session())
         {
-            _output.WriteLine("{0}", context);
-        }
+            var records = session.Run("CALL dbms.cluster.overview()").ToList();
 
-        protected override void VerifyReadQueryDistribution(Context context)
-        {
             if (UsingBoltMoreThan5_0())
-                // 5.0 clusters don't provide a mechanism for this kind of inspection,
-                // so we disabled it.
-                return;
-
-            var clusterAddresses = DiscoverClusterAddresses();
-
-            VerifyServedReadQueries(context, clusterAddresses);
-            VerifyServedSimilarAmountOfReadQueries(context, clusterAddresses);
-        }
-		
-		public override bool HandleWriteFailure(Exception error, Context context)
-        {
-            switch (error)
             {
-                case SessionExpiredException _:
-                {
-                    var isLeaderSwitch = error.Message.EndsWith("no longer accepts writes");
-                    if (isLeaderSwitch)
-                    {
-                        context.LeaderSwitched();
-                        return true;
-                    }
-
-                    break;
-                }
+                return CreateAutonomousClusterAddresses(records);
             }
 
-            return false;
-        }
-
-        private ClusterAddresses DiscoverClusterAddresses()
-        {
-            var followers = new List<string>();
-            var readReplicas = new List<string>();
-
-            using (var session = _driver.Session())
+            foreach (var record in records)
             {
-                var records = session.Run("CALL dbms.cluster.overview()").ToList();
+                var address = record["addresses"].As<IList<object>>().First().As<string>().Replace("bolt://", "");
 
-                if (UsingBoltMoreThan5_0())
+                // Pre 4.0
+                if (record.Keys.Contains("role"))
                 {
-                    return CreateAutonomousClusterAddresses(records);
+                    switch (record["role"].As<string>().ToLowerInvariant())
+                    {
+                        case "follower":
+                            followers.Add(address);
+                            break;
+
+                        case "read_replica":
+                            readReplicas.Add(address);
+                            break;
+                    }
                 }
 
-                foreach (var record in records)
+                // Post 4.0
+                if (record.Keys.Contains("databases"))
                 {
-                    var address = record["addresses"].As<IList<object>>().First().As<string>().Replace("bolt://", "");
-
-                    // Pre 4.0
-                    if (record.Keys.Contains("role"))
+                    switch (record["databases"].As<IDictionary<string, object>>()["neo4j"]
+                                .As<string>()
+                                .ToLowerInvariant())
                     {
-                        switch (record["role"].As<string>().ToLowerInvariant())
-                        {
-                            case "follower":
-                                followers.Add(address);
-                                break;
-                            case "read_replica":
-                                readReplicas.Add(address);
-                                break;
-                        }
-                    }
+                        case "follower":
+                            followers.Add(address);
+                            break;
 
-                    // Post 4.0
-                    if (record.Keys.Contains("databases"))
-                    {
-                        switch (record["databases"].As<IDictionary<string, object>>()["neo4j"].As<string>()
-                            .ToLowerInvariant())
-                        {
-                            case "follower":
-                                followers.Add(address);
-                                break;
-                            case "read_replica":
-                                readReplicas.Add(address);
-                                break;
-                        }
+                        case "read_replica":
+                            readReplicas.Add(address);
+                            break;
                     }
                 }
             }
-
-            return new ClusterAddresses(followers, readReplicas);
         }
 
-        private bool UsingBoltMoreThan5_0()
-        {
-            return _driver.GetServerInfoAsync().GetAwaiter().GetResult().ProtocolVersion
-                .Split('.').Take(1).Select(int.Parse).First() >= 5;
-        }
+        return new ClusterAddresses(followers, readReplicas);
+    }
 
-        private static ClusterAddresses CreateAutonomousClusterAddresses(List<IRecord> records)
-        {
-            var neoDbs = records.Select(x =>
+    private bool UsingBoltMoreThan5_0()
+    {
+        return _driver.GetServerInfoAsync()
+                .GetAwaiter()
+                .GetResult()
+                .ProtocolVersion
+                .Split('.')
+                .Take(1)
+                .Select(int.Parse)
+                .First() >=
+            5;
+    }
+
+    private static ClusterAddresses CreateAutonomousClusterAddresses(List<IRecord> records)
+    {
+        var neoDbs = records.Select(
+                x =>
                 {
                     object role = null;
-                    var exists = x.Values.TryGetValue("databases", out var y) && 
-                                 y.As<IDictionary<string, object>>().TryGetValue("neo4j", out role);
+                    var exists = x.Values.TryGetValue("databases", out var y) &&
+                        y.As<IDictionary<string, object>>().TryGetValue("neo4j", out role);
 
                     if (!exists)
+                    {
                         return (address: null, role: null);
+                    }
 
-                    var address = x.Values["addresses"].As<IList<object>>()
-                        .FirstOrDefault()?.As<string>().Replace("bolt://", "");
+                    var address = x.Values["addresses"]
+                        .As<IList<object>>()
+                        .FirstOrDefault()
+                        ?.As<string>()
+                        .Replace("bolt://", "");
 
                     return (address, role: role.As<string>());
                 })
-                .Where(x => x.role != null)
-                .ToList();
+            .Where(x => x.role != null)
+            .ToList();
 
-            if(neoDbs.Count == 1 && neoDbs[0].role.Equals("standalone", StringComparison.OrdinalIgnoreCase))
-                return new ClusterAddresses(Array.Empty<string>(), Array.Empty<string>());
+        if (neoDbs.Count == 1 && neoDbs[0].role.Equals("standalone", StringComparison.OrdinalIgnoreCase))
+        {
+            return new ClusterAddresses(Array.Empty<string>(), Array.Empty<string>());
+        }
 
-            if (neoDbs.Count > 1)
-                return new ClusterAddresses(neoDbs
+        if (neoDbs.Count > 1)
+        {
+            return new ClusterAddresses(
+                neoDbs
                     .Where(x => x.role.Equals("follower", StringComparison.OrdinalIgnoreCase))
-                    .Select(x => x.address).ToList(), Array.Empty<string>());
-
-            throw new Exception("Invalid cluster");
+                    .Select(x => x.address)
+                    .ToList(),
+                Array.Empty<string>());
         }
 
-        private static void VerifyServedReadQueries(Context context, ClusterAddresses clusterAddresses)
-        {
-            foreach (var address in clusterAddresses.Followers)
-            {
-                context.GetReadQueries(address).Should()
-                    .BePositive("Follower {0} did not serve any read queries", address);
-            }
+        throw new Exception("Invalid cluster");
+    }
 
-            foreach (var address in clusterAddresses.ReadReplicas)
-            {
-                context.GetReadQueries(address).Should()
-                    .BePositive("Read replica {0} did not serve any read queries", address);
-            }
+    private static void VerifyServedReadQueries(Context context, ClusterAddresses clusterAddresses)
+    {
+        foreach (var address in clusterAddresses.Followers)
+        {
+            context.GetReadQueries(address)
+                .Should()
+                .BePositive("Follower {0} did not serve any read queries", address);
         }
 
-        private static void VerifyServedSimilarAmountOfReadQueries(Context context, ClusterAddresses clusterAddresses)
+        foreach (var address in clusterAddresses.ReadReplicas)
         {
-            void Verify(string serverType, IEnumerable<string> addresses)
+            context.GetReadQueries(address)
+                .Should()
+                .BePositive("Read replica {0} did not serve any read queries", address);
+        }
+    }
+
+    private static void VerifyServedSimilarAmountOfReadQueries(Context context, ClusterAddresses clusterAddresses)
+    {
+        void Verify(string serverType, IEnumerable<string> addresses)
+        {
+            var expectedMagnitude = -1;
+            foreach (var address in addresses)
             {
-                var expectedMagnitude = -1;
-                foreach (var address in addresses)
+                var queries = context.GetReadQueries(address);
+                var orderOfMagnitude = GetOrderOfMagnitude(queries);
+                if (expectedMagnitude == -1)
                 {
-                    var queries = context.GetReadQueries(address);
-                    var orderOfMagnitude = GetOrderOfMagnitude(queries);
-                    if (expectedMagnitude == -1)
-                    {
-                        expectedMagnitude = orderOfMagnitude;
-                    }
+                    expectedMagnitude = orderOfMagnitude;
+                }
 
-                    orderOfMagnitude.Should().BeInRange(expectedMagnitude - 1, expectedMagnitude + 1,
-                        "{0} {1} is expected to server similar amount of queries. Context: {2}.", serverType, address,
+                orderOfMagnitude.Should()
+                    .BeInRange(
+                        expectedMagnitude - 1,
+                        expectedMagnitude + 1,
+                        "{0} {1} is expected to server similar amount of queries. Context: {2}.",
+                        serverType,
+                        address,
                         context);
-                }
-            }
-
-            Verify("Follower", clusterAddresses.Followers);
-            Verify("Read-replica", clusterAddresses.ReadReplicas);
-        }
-
-        private static int GetOrderOfMagnitude(long number)
-        {
-            var result = 1;
-            while (number >= 10)
-            {
-                number /= 10;
-                result++;
-            }
-
-            return result;
-        }
-
-        public class Context : StressTestContext
-        {
-            private readonly ConcurrentDictionary<string, AtomicLong> _readQueriesByServer = new
-                ConcurrentDictionary<string, AtomicLong>();
-
-            private long _leaderSwitches;
-
-            protected override void ProcessSummary(IResultSummary summary)
-            {
-                if (summary == null)
-                {
-                    return;
-                }
-
-                _readQueriesByServer.AddOrUpdate(summary.Server.Address, new AtomicLong(1),
-                    (key, value) => value.Increment());
-            }
-
-            public long GetReadQueries(string address)
-            {
-                return _readQueriesByServer.TryGetValue(address, out var value) ? value.Value : 0;
-            }
-
-            public long LeaderSwitches => Interlocked.Read(ref _leaderSwitches);
-
-            public void LeaderSwitched()
-            {
-                Interlocked.Increment(ref _leaderSwitches);
-            }
-
-            public override string ToString()
-            {
-                return new StringBuilder()
-                    .Append("CausalClusterContext{")
-                    .AppendFormat("Bookmark={0}, ", Bookmarks)
-                    .AppendFormat("BookmarkFailures={0}, ", BookmarkFailures)
-                    .AppendFormat("NodesCreated={0}, ", CreatedNodesCount)
-                    .AppendFormat("NodesRead={0}, ", ReadNodesCount)
-                    .AppendFormat("LeaderSwitches={0}, ", LeaderSwitches)
-                    .AppendFormat("ReadsByServers={0}", _readQueriesByServer.ToContentString())
-                    .Append("}")
-                    .ToString();
             }
         }
 
-        public class AtomicLong
+        Verify("Follower", clusterAddresses.Followers);
+        Verify("Read-replica", clusterAddresses.ReadReplicas);
+    }
+
+    private static int GetOrderOfMagnitude(long number)
+    {
+        var result = 1;
+        while (number >= 10)
         {
-            private long _value;
-
-            public AtomicLong(long value)
-            {
-                _value = value;
-            }
-
-            public long Value => Interlocked.Read(ref _value);
-
-            public AtomicLong Increment()
-            {
-                Interlocked.Increment(ref _value);
-                return this;
-            }
-
-            public AtomicLong Decrement()
-            {
-                Interlocked.Decrement(ref _value);
-                return this;
-            }
-
-            public override string ToString()
-            {
-                return Value.ToString();
-            }
+            number /= 10;
+            result++;
         }
 
-        private class ClusterAddresses
+        return result;
+    }
+
+    public class Context : StressTestContext
+    {
+        private readonly ConcurrentDictionary<string, AtomicLong> _readQueriesByServer = new();
+
+        private long _leaderSwitches;
+
+        public long LeaderSwitches => Interlocked.Read(ref _leaderSwitches);
+
+        protected override void ProcessSummary(IResultSummary summary)
         {
-            public ClusterAddresses(IEnumerable<string> followers, IEnumerable<string> readReplicas)
+            if (summary == null)
             {
-                Followers = followers.ToHashSet();
-                ReadReplicas = readReplicas.ToHashSet();
+                return;
             }
 
-            public ISet<string> Followers { get; }
+            _readQueriesByServer.AddOrUpdate(
+                summary.Server.Address,
+                new AtomicLong(1),
+                (key, value) => value.Increment());
+        }
 
-            public ISet<string> ReadReplicas { get; }
+        public long GetReadQueries(string address)
+        {
+            return _readQueriesByServer.TryGetValue(address, out var value) ? value.Value : 0;
+        }
 
-            public override string ToString()
-            {
-                return new StringBuilder()
-                    .Append("ClusterAddresses{")
-                    .AppendFormat("Followers={0}, ", Followers)
-                    .AppendFormat("Read-Replicas={0}", ReadReplicas)
-                    .Append("}")
-                    .ToString();
-            }
+        public void LeaderSwitched()
+        {
+            Interlocked.Increment(ref _leaderSwitches);
+        }
+
+        public override string ToString()
+        {
+            return new StringBuilder()
+                .Append("CausalClusterContext{")
+                .AppendFormat("Bookmark={0}, ", Bookmarks)
+                .AppendFormat("BookmarkFailures={0}, ", BookmarkFailures)
+                .AppendFormat("NodesCreated={0}, ", CreatedNodesCount)
+                .AppendFormat("NodesRead={0}, ", ReadNodesCount)
+                .AppendFormat("LeaderSwitches={0}, ", LeaderSwitches)
+                .AppendFormat("ReadsByServers={0}", _readQueriesByServer.ToContentString())
+                .Append("}")
+                .ToString();
+        }
+    }
+
+    public class AtomicLong
+    {
+        private long _value;
+
+        public AtomicLong(long value)
+        {
+            _value = value;
+        }
+
+        public long Value => Interlocked.Read(ref _value);
+
+        public AtomicLong Increment()
+        {
+            Interlocked.Increment(ref _value);
+            return this;
+        }
+
+        public AtomicLong Decrement()
+        {
+            Interlocked.Decrement(ref _value);
+            return this;
+        }
+
+        public override string ToString()
+        {
+            return Value.ToString();
+        }
+    }
+
+    private class ClusterAddresses
+    {
+        public ClusterAddresses(IEnumerable<string> followers, IEnumerable<string> readReplicas)
+        {
+            Followers = followers.ToHashSet();
+            ReadReplicas = readReplicas.ToHashSet();
+        }
+
+        public ISet<string> Followers { get; }
+
+        public ISet<string> ReadReplicas { get; }
+
+        public override string ToString()
+        {
+            return new StringBuilder()
+                .Append("ClusterAddresses{")
+                .AppendFormat("Followers={0}, ", Followers)
+                .AppendFormat("Read-Replicas={0}", ReadReplicas)
+                .Append("}")
+                .ToString();
         }
     }
 }

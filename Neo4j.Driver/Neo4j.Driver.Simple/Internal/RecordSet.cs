@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -17,36 +17,35 @@
 
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal interface IRecordSet
 {
-    internal interface IRecordSet
+    IEnumerable<IRecord> Records();
+    IRecord Peek();
+}
+
+internal class RecordSet : IRecordSet
+{
+    private readonly IResultCursor _cursor;
+    private readonly BlockingExecutor _executor;
+
+    public RecordSet(IResultCursor cursor, BlockingExecutor executor)
     {
-        IEnumerable<IRecord> Records();
-        IRecord Peek();
+        _cursor = cursor;
+        _executor = executor;
     }
 
-    internal class RecordSet : IRecordSet
+    public IEnumerable<IRecord> Records()
     {
-        private readonly IResultCursor _cursor;
-        private readonly BlockingExecutor _executor;
-
-        public RecordSet(IResultCursor cursor, BlockingExecutor executor)
+        while (_executor.RunSync(() => _cursor.FetchAsync()))
         {
-            _cursor = cursor;
-            _executor = executor;
+            yield return _cursor.Current;
         }
+    }
 
-        public IEnumerable<IRecord> Records()
-        {
-            while (_executor.RunSync(() => _cursor.FetchAsync()))
-            {
-                yield return _cursor.Current;
-            }
-        }
-
-        public IRecord Peek()
-        {
-            return _executor.RunSync(() => _cursor.PeekAsync());
-        }
+    public IRecord Peek()
+    {
+        return _executor.RunSync(() => _cursor.PeekAsync());
     }
 }

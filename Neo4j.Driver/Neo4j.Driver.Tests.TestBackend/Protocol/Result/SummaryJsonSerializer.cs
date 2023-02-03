@@ -1,10 +1,10 @@
-﻿// Copyright (c) 2002-2022 "Neo4j,"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -26,19 +26,21 @@ internal static class SummaryJsonSerializer
 {
     public static JRaw SerializeToRaw(IResultSummary summary)
     {
-        return new JRaw(JsonConvert.SerializeObject(new
-        {
-            query = GetQuery(summary),
-            queryType = GetQueryTypeAsStringCode(summary),
-            plan = GetPlan(summary),
-            notifications = CreateNotificationList(summary),
-            database = summary.Database?.Name,
-            serverInfo = GetServerInfo(summary),
-            counters = GetCountersFromSummary(summary),
-            profile = MapToProfilePlan(summary.Profile),
-            resultAvailableAfter = GetTotalMilliseconds(summary.ResultAvailableAfter),
-            resultConsumedAfter = GetTotalMilliseconds(summary.ResultConsumedAfter)
-        }));
+        return new JRaw(
+            JsonConvert.SerializeObject(
+                new
+                {
+                    query = GetQuery(summary),
+                    queryType = GetQueryTypeAsStringCode(summary),
+                    plan = GetPlan(summary),
+                    notifications = CreateNotificationList(summary),
+                    database = summary.Database?.Name,
+                    serverInfo = GetServerInfo(summary),
+                    counters = GetCountersFromSummary(summary),
+                    profile = MapToProfilePlan(summary.Profile),
+                    resultAvailableAfter = GetTotalMilliseconds(summary.ResultAvailableAfter),
+                    resultConsumedAfter = GetTotalMilliseconds(summary.ResultConsumedAfter)
+                }));
     }
 
     private static long? GetTotalMilliseconds(TimeSpan timespan)
@@ -76,7 +78,7 @@ internal static class SummaryJsonSerializer
 
     private static object GetPlan(IResultSummary summary)
     {
-        return summary?.Plan == null 
+        return summary?.Plan == null
             ? null
             : MapToPlanJson(summary.Plan);
     }
@@ -109,16 +111,19 @@ internal static class SummaryJsonSerializer
             indexesRemoved = summary.Counters.IndexesRemoved,
             systemUpdates = summary.Counters.SystemUpdates,
             containsUpdates = summary.Counters.ContainsUpdates,
-            containsSystemUpdates = summary.Counters.ContainsSystemUpdates,
+            containsSystemUpdates = summary.Counters.ContainsSystemUpdates
         };
     }
 
     private static object MapToProfilePlan(IProfiledPlan plan)
     {
         if (plan == null)
+        {
             return null;
+        }
 
         if (plan.HasPageCacheStats)
+        {
             return new
             {
                 args = plan.Arguments,
@@ -130,8 +135,9 @@ internal static class SummaryJsonSerializer
                 pageCacheMisses = plan.PageCacheMisses,
                 pageCacheHits = plan.PageCacheHits,
                 rows = plan.Records,
-                dbHits = plan.DbHits,
+                dbHits = plan.DbHits
             };
+        }
 
         return new
         {
@@ -140,7 +146,7 @@ internal static class SummaryJsonSerializer
             children = plan.Children.Select(MapToProfilePlan).ToList(),
             identifiers = plan.Identifiers,
             rows = plan.Records,
-            dbHits = plan.DbHits,
+            dbHits = plan.DbHits
         };
     }
 
@@ -158,33 +164,39 @@ internal static class SummaryJsonSerializer
     private static object CreateNotificationList(IResultSummary summary)
     {
         if (summary?.Notifications == null)
+        {
             return null;
+        }
 
         if (summary.Notifications.All(x => x.Position == null))
         {
-            return summary.Notifications.Select(x => new
-            {
-                severity = x.Severity,
-                description = x.Description,
-                code = x.Code,
-                title = x.Title,
-            }).ToList();
+            return summary.Notifications.Select(
+                    x => new
+                    {
+                        severity = x.Severity,
+                        description = x.Description,
+                        code = x.Code,
+                        title = x.Title
+                    })
+                .ToList();
         }
 
-        return summary.Notifications.Select(x => new
-        {
-            severity = x.Severity,
-            description = x.Description,
-            code = x.Code,
-            title = x.Title,
-            position = x.Position == null 
-                ? null
-                : new
+        return summary.Notifications.Select(
+                x => new
                 {
-                    column = x.Position.Column,
-                    offset = x.Position.Offset,
-                    line = x.Position.Line
-                }
-        }).ToList();
+                    severity = x.Severity,
+                    description = x.Description,
+                    code = x.Code,
+                    title = x.Title,
+                    position = x.Position == null
+                        ? null
+                        : new
+                        {
+                            column = x.Position.Column,
+                            offset = x.Position.Offset,
+                            line = x.Position.Line
+                        }
+                })
+            .ToList();
     }
 }

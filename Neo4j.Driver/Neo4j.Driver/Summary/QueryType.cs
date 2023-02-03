@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -15,36 +15,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver;
+
+/// <summary>The type of a query.</summary>
+public enum QueryType
 {
-    /// <summary>
-    /// The type of a query.
-    /// </summary>
-    public enum QueryType
-    {
-        /// <summary>
-        /// The query type is unknown
-        /// </summary>
-        Unknown,
+    /// <summary>The query type is unknown</summary>
+    Unknown,
 
-        /// <summary>
-        /// The query is a readonly query
-        /// </summary>
-        ReadOnly,
+    /// <summary>The query is a readonly query</summary>
+    ReadOnly,
 
-        /// <summary>
-        /// The query is a readwrite query
-        /// </summary>
-        ReadWrite,
+    /// <summary>The query is a readwrite query</summary>
+    ReadWrite,
 
-        /// <summary>
-        /// The query is a writeonly query
-        /// </summary>
-        WriteOnly,
+    /// <summary>The query is a writeonly query</summary>
+    WriteOnly,
 
-        /// <summary>
-        /// The query is a schemawrite query
-        /// </summary>
-        SchemaWrite
-    }
+    /// <summary>The query is a schemawrite query</summary>
+    SchemaWrite
 }

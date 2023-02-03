@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,47 +18,39 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
-using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.IO
 {
     public class ChunkWriterTests
     {
-
-        [Theory]
-        [InlineData(0)]
-        [InlineData(5)]
-        [InlineData(Constants.MaxChunkSize + 1)]
-        public void ShouldThrowWhenConstructedWithInvalidChunkSize(int chunkSize)
-        {
-            var ex = Record.Exception(() => new ChunkWriter(new MemoryStream(), chunkSize));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ArgumentOutOfRangeException>();
-        }
+        private readonly Mock<ILogger> _logger = new();
+        private readonly BufferSettings _settings = new(Config.Default);
 
         [Fact]
         public void ShouldThrowWhenConstructedUsingUnreadableStream()
         {
-            var mockLogger = new Mock<Stream>();
-            mockLogger.Setup(l => l.CanWrite).Returns(false);
+            var mockStream = new Mock<Stream>();
+            mockStream.Setup(l => l.CanWrite).Returns(false);
 
-            var ex = Record.Exception(() => new ChunkWriter(mockLogger.Object));
+            var ex = Record.Exception(
+                () =>
+                    new ChunkWriter(mockStream.Object, _settings, _logger.Object));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ArgumentOutOfRangeException>();
         }
 
         [Fact]
-        public void ShouldWriteToUnderlyingStreamUponSend()
+        public async Task ShouldWriteToUnderlyingStreamUponSend()
         {
             var buffer = new byte[1024];
             var stream = new MemoryStream();
-            var writer = new ChunkWriter(stream);
+            var writer = new ChunkWriter(stream, _settings, _logger.Object);
 
             // Write data
             writer.OpenChunk();
@@ -67,17 +59,17 @@ namespace Neo4j.Driver.Internal.IO
 
             stream.Length.Should().Be(0);
 
-            writer.Send();
+            await writer.SendAsync();
 
             stream.Length.Should().Be(buffer.Length + 2);
         }
 
         [Fact]
-        public async void ShouldWriteToUnderlyingStreamUponSendAsync()
+        public async Task ShouldWriteToUnderlyingStreamUponSendAsync()
         {
             var buffer = new byte[1024];
             var stream = new MemoryStream();
-            var writer = new ChunkWriter(stream);
+            var writer = new ChunkWriter(stream, _settings, _logger.Object);
 
             // Write data
             writer.OpenChunk();
@@ -97,11 +89,11 @@ namespace Neo4j.Driver.Internal.IO
         [InlineData(Constants.ChunkBufferSize)]
         [InlineData(Constants.MaxChunkSize)]
         [InlineData(Constants.MaxChunkSize * 3)]
-        public async void ShouldCloseTheChunkWithCorrectSize(int chunkSize)
+        public async Task ShouldCloseTheChunkWithCorrectSize(int chunkSize)
         {
             var buffer = Enumerable.Range(0, chunkSize).Select(i => i % byte.MaxValue).Select(i => (byte)i).ToArray();
             var stream = new MemoryStream();
-            var writer = new ChunkWriter(stream);
+            var writer = new ChunkWriter(stream, _settings, _logger.Object);
 
             // Write data
             writer.OpenChunk();
@@ -113,7 +105,7 @@ namespace Neo4j.Driver.Internal.IO
             writer.CloseChunk();
 
             // Write To Underlying Stream
-            writer.Send();
+            await writer.SendAsync();
 
             var constructed = await ConstructMessage(stream.ToArray());
 
@@ -127,11 +119,11 @@ namespace Neo4j.Driver.Internal.IO
         [InlineData(Constants.ChunkBufferSize)]
         [InlineData(Constants.MaxChunkSize)]
         [InlineData(Constants.MaxChunkSize * 3)]
-        public async void ShouldCloseTheChunkWithCorrectSizeAsync(int chunkSize)
+        public async Task ShouldCloseTheChunkWithCorrectSizeAsync(int chunkSize)
         {
             var buffer = Enumerable.Range(0, chunkSize).Select(i => i % byte.MaxValue).Select(i => (byte)i).ToArray();
             var stream = new MemoryStream();
-            var writer = new ChunkWriter(stream);
+            var writer = new ChunkWriter(stream, _settings, _logger.Object);
 
             // Write data
             writer.OpenChunk();
@@ -152,12 +144,12 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         [Fact]
-        public void ShouldLogDataOnSend()
+        public async Task ShouldLogDataOnSend()
         {
             var buffer = Enumerable.Range(0, 10).Select(i => (byte)i).ToArray();
             var stream = new MemoryStream();
             var logger = LoggingHelper.GetTraceEnabledLogger();
-            var writer = new ChunkWriter(stream, logger.Object);
+            var writer = new ChunkWriter(stream, _settings, logger.Object);
 
             // Write data
             writer.OpenChunk();
@@ -166,18 +158,18 @@ namespace Neo4j.Driver.Internal.IO
 
             logger.Verify(x => x.Trace("C: {0}", It.IsAny<string>()), Times.Never);
 
-            writer.Send();
+            await writer.SendAsync();
 
             logger.Verify(x => x.Trace("C: {0}", It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
-        public async void ShouldLogDataOnSendAsync()
+        public async Task ShouldLogDataOnSendAsync()
         {
             var buffer = Enumerable.Range(0, 10).Select(i => (byte)i).ToArray();
             var stream = new MemoryStream();
             var logger = LoggingHelper.GetTraceEnabledLogger();
-            var writer = new ChunkWriter(stream, logger.Object);
+            var writer = new ChunkWriter(stream, _settings, logger.Object);
 
             // Write data
             writer.OpenChunk();
@@ -196,19 +188,25 @@ namespace Neo4j.Driver.Internal.IO
         [InlineData(100, 200, 10)]
         [InlineData(100, 200, 50)]
         [InlineData(100, 200, 98)]
-        public void ShouldNotResetCapacityWhenBelowMaxBufferSize(int defaultBufferSize, int maxBufferSize, int messageSize)
+        public async Task ShouldNotResetCapacityWhenBelowMaxBufferSize(
+            int defaultBufferSize,
+            int maxBufferSize,
+            int messageSize)
         {
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var writer = new ChunkWriter(stream, defaultBufferSize, maxBufferSize, logger.Object);
+            var settings = new BufferSettings(defaultBufferSize, maxBufferSize, defaultBufferSize, maxBufferSize);
+            var writer = new ChunkWriter(stream, settings, logger.Object);
 
             writer.OpenChunk();
             writer.Write(buffer, 0, buffer.Length);
             writer.CloseChunk();
-            writer.Send();
+            await writer.SendAsync();
 
-            logger.Verify(l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()), Times.Never);
+            logger.Verify(
+                l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()),
+                Times.Never);
         }
 
         [Theory]
@@ -216,12 +214,18 @@ namespace Neo4j.Driver.Internal.IO
         [InlineData(100, 200, 10)]
         [InlineData(100, 200, 50)]
         [InlineData(100, 200, 98)]
-        public async void ShouldNotResetCapacityWhenBelowMaxBufferSizeAsync(int defaultBufferSize, int maxBufferSize, int messageSize)
+        public async void ShouldNotResetCapacityWhenBelowMaxBufferSizeAsync(
+            int defaultBufferSize,
+            int maxBufferSize,
+            int messageSize)
         {
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var writer = new ChunkWriter(stream, defaultBufferSize, maxBufferSize, logger.Object);
+            var writer = new ChunkWriter(
+                stream,
+                new BufferSettings(defaultBufferSize, maxBufferSize, defaultBufferSize, maxBufferSize),
+                logger.Object);
 
             writer.OpenChunk();
             writer.Write(buffer, 0, buffer.Length);
@@ -229,7 +233,9 @@ namespace Neo4j.Driver.Internal.IO
 
             await writer.SendAsync();
 
-            logger.Verify(l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()), Times.Never);
+            logger.Verify(
+                l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()),
+                Times.Never);
         }
 
         [Theory]
@@ -237,17 +243,21 @@ namespace Neo4j.Driver.Internal.IO
         [InlineData(100, 200, 150)]
         [InlineData(100, 200, 200)]
         [InlineData(100, 200, 500)]
-        public void ShouldResetCapacityWhenAboveMaxBufferSize(int defaultBufferSize, int maxBufferSize, int messageSize)
+        public async Task ShouldResetCapacityWhenAboveMaxBufferSize(
+            int defaultBufferSize,
+            int maxBufferSize,
+            int messageSize)
         {
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var writer = new ChunkWriter(stream, defaultBufferSize, maxBufferSize, logger.Object);
+            var settings = new BufferSettings(defaultBufferSize, maxBufferSize, defaultBufferSize, maxBufferSize);
+            var writer = new ChunkWriter(stream, settings, logger.Object);
 
             writer.OpenChunk();
             writer.Write(buffer, 0, buffer.Length);
             writer.CloseChunk();
-            writer.Send();
+            await writer.SendAsync();
 
             logger.Verify(l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()), Times.Once);
         }
@@ -257,12 +267,17 @@ namespace Neo4j.Driver.Internal.IO
         [InlineData(100, 200, 150)]
         [InlineData(100, 200, 200)]
         [InlineData(100, 200, 500)]
-        public async void ShouldResetCapacityWhenAboveMaxBufferSizeAsync(int defaultBufferSize, int maxBufferSize, int messageSize)
+        public async void ShouldResetCapacityWhenAboveMaxBufferSizeAsync(
+            int defaultBufferSize,
+            int maxBufferSize,
+            int messageSize)
         {
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var writer = new ChunkWriter(stream, defaultBufferSize, maxBufferSize, logger.Object);
+            var settings = new BufferSettings(defaultBufferSize, maxBufferSize, defaultBufferSize, maxBufferSize);
+
+            var writer = new ChunkWriter(stream, settings, logger.Object);
 
             writer.OpenChunk();
             writer.Write(buffer, 0, buffer.Length);
@@ -274,33 +289,39 @@ namespace Neo4j.Driver.Internal.IO
         }
 
         [Fact]
-        public void ShouldResetCapacityWhenAboveMaxBufferSizeAfterEachSend()
+        public async Task ShouldResetCapacityWhenAboveMaxBufferSizeAfterEachSend()
         {
             var buffer = new byte[1536];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var writer = new ChunkWriter(stream, 512, 1024, logger.Object);
+            var settings = new BufferSettings(512, 1024, 512, 1024);
+
+            var writer = new ChunkWriter(stream, settings, logger.Object);
 
             writer.OpenChunk();
             writer.Write(buffer, 0, buffer.Length);
             writer.CloseChunk();
-            writer.Send();
+            await writer.SendAsync();
 
             writer.OpenChunk();
             writer.Write(buffer, 0, buffer.Length);
             writer.CloseChunk();
-            writer.Send();
+            await writer.SendAsync();
 
-            logger.Verify(l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()), Times.Exactly(2));
+            logger.Verify(
+                l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()),
+                Times.Exactly(2));
         }
 
         [Fact]
-        public async void ShouldResetCapacityWhenAboveMaxBufferSizeAfterEachSendAsync()
+        public async Task ShouldResetCapacityWhenAboveMaxBufferSizeAfterEachSendAsync()
         {
             var buffer = new byte[1536];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var writer = new ChunkWriter(stream, 512, 1024, logger.Object);
+            var settings = new BufferSettings(512, 1024, 512, 1024);
+
+            var writer = new ChunkWriter(stream, settings, logger.Object);
 
             writer.OpenChunk();
             writer.Write(buffer, 0, buffer.Length);
@@ -312,7 +333,9 @@ namespace Neo4j.Driver.Internal.IO
             writer.CloseChunk();
             await writer.SendAsync();
 
-            logger.Verify(l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()), Times.Exactly(2));
+            logger.Verify(
+                l => l.Info(It.IsRegex("^Shrinking write buffers to the"), It.IsAny<object[]>()),
+                Times.Exactly(2));
         }
 
         private static async Task<byte[]> ConstructMessage(byte[] buffer)
@@ -320,10 +343,9 @@ namespace Neo4j.Driver.Internal.IO
             var stream = new MemoryStream();
             var reader = new ChunkReader(new MemoryStream(buffer));
 
-            await reader.ReadNextMessagesAsync(stream);
+            await reader.ReadMessageChunksToBufferStreamAsync(stream);
 
             return stream.ToArray();
         }
-
     }
 }

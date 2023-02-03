@@ -1,44 +1,44 @@
 <Project>
-  <PropertyGroup>
-    <Copyright>Copyright 2002-2022</Copyright>
-	  <Version>5.5.0</Version>
-	  <AssemblyVersion>5.5.0.0</AssemblyVersion>
-	  <AssemblyFileVersion>5.5.0.0</AssemblyFileVersion>
-    <FileVersion>5.5.0.0</FileVersion>
-  </PropertyGroup>
-  <PropertyGroup>
-    <XunitVersion>2.4.1</XunitVersion>
-    <MSTestVersion>16.1.1</MSTestVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)'=='DebugDelaySigned' OR '$(Configuration)'=='ReleaseSigned'">
-    <PackageIdSuffix>.Signed</PackageIdSuffix>
-    <DefineConstants>$(DefineConstants);STRONGNAMED</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)'=='DebugDelaySigned'">
-    <DelaySign>true</DelaySign>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)'=='ReleaseSigned'">
-    <SignAssembly>true</SignAssembly>
-    <DelaySign>false</DelaySign>
-    <AssemblyOriginatorKeyFile>..\neo4j.snk</AssemblyOriginatorKeyFile>
-  </PropertyGroup>
-
-<!--
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)'=='ReleaseSigned'">
-    <GetFrameworkSdkPath>
-      <Output TaskParameter="Path" PropertyName="WindowsSdkPath" />
-    </GetFrameworkSdkPath>
-    <Exec Command="&quot;$(SDK40ToolsPath)sn.exe&quot; -R &quot;$(TargetPath)&quot; &quot;$(SignatureFile)&quot;" />
-  </Target>
--->
-   <PropertyGroup>
-      <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-      <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-      <PackageProjectUrl>https://github.com/neo4j/neo4j-dotnet-driver</PackageProjectUrl>
-      <PackageIcon>Neo4j-icon-color.png</PackageIcon>
+    <PropertyGroup>
+        <Copyright>Copyright 2002-2022</Copyright>
+        <Version>5.5.0</Version>
+        <AssemblyVersion>5.5.0.0</AssemblyVersion>
+        <AssemblyFileVersion>5.5.0.0</AssemblyFileVersion>
+        <FileVersion>5.5.0.0</FileVersion>
+    </PropertyGroup>
+    <PropertyGroup>
+        <XunitVersion>2.4.1</XunitVersion>
+        <MSTestVersion>16.1.1</MSTestVersion>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)'=='DebugDelaySigned' OR '$(Configuration)'=='ReleaseSigned'">
+        <PackageIdSuffix>.Signed</PackageIdSuffix>
+        <DefineConstants>$(DefineConstants);STRONGNAMED</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)'=='DebugDelaySigned'">
+        <DelaySign>true</DelaySign>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)'=='ReleaseSigned'">
+        <SignAssembly>true</SignAssembly>
+        <DelaySign>false</DelaySign>
+        <AssemblyOriginatorKeyFile>..\neo4j.snk</AssemblyOriginatorKeyFile>
     </PropertyGroup>
 
-	<ItemGroup>
-		<None Include="..\Neo4j-icon-color.png" Pack="true" PackagePath=""/>
-	</ItemGroup>
+    <!--
+      <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)'=='ReleaseSigned'">
+        <GetFrameworkSdkPath>
+          <Output TaskParameter="Path" PropertyName="WindowsSdkPath" />
+        </GetFrameworkSdkPath>
+        <Exec Command="&quot;$(SDK40ToolsPath)sn.exe&quot; -R &quot;$(TargetPath)&quot; &quot;$(SignatureFile)&quot;" />
+      </Target>
+    -->
+    <PropertyGroup>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+        <PackageProjectUrl>https://github.com/neo4j/neo4j-dotnet-driver</PackageProjectUrl>
+        <PackageIcon>Neo4j-icon-color.png</PackageIcon>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="..\Neo4j-icon-color.png" Pack="true" PackagePath=""/>
+    </ItemGroup>
 </Project>

@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -23,78 +23,79 @@ using System.Reactive.Threading.Tasks;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal class RxResult : IRxResult
 {
-    internal class RxResult : IRxResult
+    private readonly IObservable<string[]> _keys;
+    private readonly ILogger _logger;
+    private readonly Subject<IRecord> _records;
+
+    private readonly IObservable<IInternalResultCursor> _resultCursor;
+    private readonly ReplaySubject<IResultSummary> _summary;
+
+    private volatile int _streaming = (int)StreamingState.Ready;
+
+    public RxResult(
+        IObservable<IInternalResultCursor> resultCursor,
+        ILogger logger = null)
     {
-        private enum StreamingState
-        {
-            Ready = 0,
-            Streaming = 1,
-            Completed = 2
-        }
+        _resultCursor = resultCursor.Replay().AutoConnect();
+        _keys = _resultCursor.SelectMany(x => x.KeysAsync().ToObservable()).Replay().AutoConnect();
+        _records = new Subject<IRecord>();
+        _summary = new ReplaySubject<IResultSummary>();
+        _logger = logger;
+    }
 
-        private readonly IObservable<IInternalResultCursor> _resultCursor;
-        private readonly IObservable<string[]> _keys;
-        private readonly Subject<IRecord> _records;
-        private readonly ReplaySubject<IResultSummary> _summary;
+    private StreamingState State => (StreamingState)_streaming;
 
-        private volatile int _streaming = (int) StreamingState.Ready;
-        private readonly ILogger _logger;
+    public IObservable<string[]> Keys()
+    {
+        return _keys;
+    }
 
-        public RxResult(IObservable<IInternalResultCursor> resultCursor,
-            ILogger logger = null)
-        {
-            _resultCursor = resultCursor.Replay().AutoConnect();
-            _keys = _resultCursor.SelectMany(x => x.KeysAsync().ToObservable()).Replay().AutoConnect();
-            _records = new Subject<IRecord>();
-            _summary = new ReplaySubject<IResultSummary>();
-            _logger = logger;
-        }
-
-        private StreamingState State => (StreamingState) _streaming;
-
-        public IObservable<string[]> Keys()
-        {
-            return _keys;
-        }
-
-        public IObservable<IRecord> Records()
-        {
-            return _resultCursor.SelectMany(cursor =>
+    public IObservable<IRecord> Records()
+    {
+        return _resultCursor.SelectMany(
+            cursor =>
                 Observable.Create<IRecord>(recordObserver => StartStreaming(cursor, recordObserver)));
+    }
+
+    public IObservable<IResultSummary> Consume()
+    {
+        return _resultCursor.SelectMany(
+            cursor =>
+                Observable.Create<IResultSummary>(
+                    summaryObserver =>
+                        StartStreaming(cursor, summaryObserver: summaryObserver)));
+    }
+
+    public IObservable<bool> IsOpen => _resultCursor.Select(x => x.IsOpen).FirstAsync();
+
+    private IDisposable StartStreaming(
+        IInternalResultCursor cursor,
+        IObserver<IRecord> recordObserver = null,
+        IObserver<IResultSummary> summaryObserver = null)
+    {
+        var cancellation = new CompositeDisposable(2);
+
+        if (summaryObserver != null)
+        {
+            cancellation.Add(_summary.Subscribe(summaryObserver));
         }
 
-        public IObservable<IResultSummary> Consume()
+        if (StartStreaming())
         {
-            return _resultCursor.SelectMany(cursor =>
-                Observable.Create<IResultSummary>(summaryObserver =>
-                    StartStreaming(cursor, summaryObserver: summaryObserver)));
-        }
-
-        public IObservable<bool> IsOpen => _resultCursor.Select(x => x.IsOpen).FirstAsync();
-
-        private IDisposable StartStreaming(IInternalResultCursor cursor,
-            IObserver<IRecord> recordObserver = null, IObserver<IResultSummary> summaryObserver = null)
-        {
-            var cancellation = new CompositeDisposable(2);
-
-            if (summaryObserver != null)
+            if (recordObserver != null)
             {
-                cancellation.Add(_summary.Subscribe(summaryObserver));
+                cancellation.Add(_records.Subscribe(recordObserver));
             }
 
-            if (StartStreaming())
-            {
-                if (recordObserver != null)
-                {
-                    cancellation.Add(_records.Subscribe(recordObserver));
-                }
+            var streamingCancellation = new CancellationDisposable();
+            cancellation.Add(streamingCancellation);
 
-                var streamingCancellation = new CancellationDisposable();
-                cancellation.Add(streamingCancellation);
-
-                Task.Run(async () =>
+            Task.Run(
+                async () =>
                 {
                     try
                     {
@@ -138,26 +139,37 @@ namespace Neo4j.Driver.Internal
                     }
 
                     CompleteStreaming();
-                }, streamingCancellation.Token);
-            }
-            else
-            {
-                recordObserver?.OnError(new ResultConsumedException(
+                },
+                streamingCancellation.Token);
+        }
+        else
+        {
+            recordObserver?.OnError(
+                new ResultConsumedException(
                     "Streaming has already started and/or finished with a previous Records or Summary subscription."));
-            }
-
-            return cancellation;
         }
 
-        private bool StartStreaming()
-        {
-            return Interlocked.CompareExchange(ref _streaming, (int) StreamingState.Streaming,
-                       (int) StreamingState.Ready) == (int) StreamingState.Ready;
-        }
+        return cancellation;
+    }
 
-        private void CompleteStreaming()
-        {
-            Interlocked.CompareExchange(ref _streaming, (int) StreamingState.Completed, (int) StreamingState.Streaming);
-        }
+    private bool StartStreaming()
+    {
+        return Interlocked.CompareExchange(
+                ref _streaming,
+                (int)StreamingState.Streaming,
+                (int)StreamingState.Ready) ==
+            (int)StreamingState.Ready;
+    }
+
+    private void CompleteStreaming()
+    {
+        Interlocked.CompareExchange(ref _streaming, (int)StreamingState.Completed, (int)StreamingState.Streaming);
+    }
+
+    private enum StreamingState
+    {
+        Ready = 0,
+        Streaming = 1,
+        Completed = 2
     }
 }

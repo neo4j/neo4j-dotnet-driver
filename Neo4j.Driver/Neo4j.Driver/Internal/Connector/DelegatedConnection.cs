@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -16,142 +16,198 @@
 // limitations under the License.
 
 using System;
-using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Protocol;
-using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver;
-using Neo4j.Driver.Internal.MessageHandling;
-using Neo4j.Driver.Internal.Util;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
+using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Util;
 
-namespace Neo4j.Driver.Internal.Connector
+namespace Neo4j.Driver.Internal.Connector;
+
+internal abstract class DelegatedConnection : IConnection
 {
-    internal abstract class DelegatedConnection : IConnection
+    protected DelegatedConnection(IConnection connection)
     {
-        protected IConnection Delegate { get; set; }
+        Delegate = connection;
+    }
 
-        protected DelegatedConnection(IConnection connection)
+    protected IConnection Delegate { get; set; }
+
+    public AccessMode? Mode => Delegate.Mode;
+
+    public string Database => Delegate.Database;
+
+    public IDictionary<string, string> RoutingContext => Delegate.RoutingContext;
+
+    public async Task SyncAsync()
+    {
+        try
         {
-            Delegate = connection;
-            RoutingContext = connection.RoutingContext;
+            await Delegate.SyncAsync().ConfigureAwait(false);
         }
-
-        public AccessMode? Mode
+        catch (Exception e)
         {
-            get => Delegate.Mode;
-            set => Delegate.Mode = value;
+            await OnErrorAsync(e).ConfigureAwait(false);
         }
+    }
 
-        public string Database
+    public async Task SendAsync()
+    {
+        try
         {
-            get => Delegate.Database;
-            set => Delegate.Database = value;
+            await Delegate.SendAsync().ConfigureAwait(false);
         }
-
-        public IDictionary<string, string> RoutingContext { get; set; }
-        
-        public virtual Task OnErrorAsync(Exception error)
+        catch (Exception e)
         {
-            return Task.CompletedTask;
+            await OnErrorAsync(e).ConfigureAwait(false);
         }
+    }
 
-        public Task SyncAsync()
+    public async Task ReceiveOneAsync()
+    {
+        try
         {
-            return TaskWithErrorHandling(() => Delegate.SyncAsync());
+            await Delegate.ReceiveOneAsync().ConfigureAwait(false);
         }
-
-        public Task SendAsync()
+        catch (Exception e)
         {
-            return TaskWithErrorHandling(() => Delegate.SendAsync());
+            await OnErrorAsync(e).ConfigureAwait(false);
         }
+    }
 
-        public Task ReceiveOneAsync()
+    public BoltProtocolVersion Version => Delegate.Version;
+
+    public void ConfigureMode(AccessMode? mode)
+    {
+        Delegate.ConfigureMode(mode);
+    }
+
+    public void Configure(string database, AccessMode? mode)
+    {
+        Delegate.Configure(database, mode);
+    }
+
+    public async Task InitAsync(CancellationToken cancellationToken = default)
+    {
+        try
         {
-            return TaskWithErrorHandling(() => Delegate.ReceiveOneAsync());
+            await Delegate.InitAsync(cancellationToken).ConfigureAwait(false);
         }
-
-        public Task InitAsync(CancellationToken cancellationToken = default)
+        catch (Exception e)
         {
-            return TaskWithErrorHandling(() => Delegate.InitAsync(cancellationToken));
+            await OnErrorAsync(e).ConfigureAwait(false);
         }
+    }
 
-        public Task EnqueueAsync(IRequestMessage message1, IResponseHandler handler1,
-            IRequestMessage message2 = null, IResponseHandler handler2 = null)
+    public async Task EnqueueAsync(IRequestMessage message, IResponseHandler handler)
+    {
+        try
         {
-            try
-            {
-                return Delegate.EnqueueAsync(message1, handler1, message2, handler2);
-            }
-            catch (Exception e)
-            {
-                return OnErrorAsync(e);
-            }
+            await Delegate.EnqueueAsync(message, handler).ConfigureAwait(false);
         }
-
-        public Task ResetAsync()
+        catch (Exception e)
         {
-            try
-            {
-                return Delegate.ResetAsync();
-            }
-            catch (Exception e)
-            {
-                return OnErrorAsync(e);
-            }
+            await OnErrorAsync(e).ConfigureAwait(false);
         }
+    }
 
-        public virtual bool IsOpen => Delegate.IsOpen;
+    public virtual bool IsOpen => Delegate.IsOpen;
 
-        public IServerInfo Server => Delegate.Server;
-        public IBoltProtocol BoltProtocol => Delegate.BoltProtocol;
+    public IServerInfo Server => Delegate.Server;
+    public IBoltProtocol BoltProtocol => Delegate.BoltProtocol;
 
-        public void UpdateId(string newConnId)
-        {
-            Delegate.UpdateId(newConnId);
-        }
+    public bool UtcEncodedDateTime => Delegate.UtcEncodedDateTime;
 
-        public void UpdateVersion(ServerVersion newVersion)
-        {
-            Delegate.UpdateVersion(newVersion);
-        }
+    public void UpdateId(string newConnId)
+    {
+        Delegate.UpdateId(newConnId);
+    }
 
-        public virtual Task DestroyAsync()
-        {
-            return Delegate.DestroyAsync();
-        }
+    public void UpdateVersion(ServerVersion newVersion)
+    {
+        Delegate.UpdateVersion(newVersion);
+    }
 
-        public virtual Task CloseAsync()
-        {
-            return Delegate.CloseAsync();
-        }
+    public virtual Task DestroyAsync()
+    {
+        return Delegate.DestroyAsync();
+    }
 
-        internal async Task TaskWithErrorHandling(Func<Task> task)
-        {
-            try
-            {
-                await task().ConfigureAwait(false);
-            }
-            catch (Exception e)
-            {
-                await OnErrorAsync(e).ConfigureAwait(false);
-            }
-        }
+    public virtual Task CloseAsync()
+    {
+        return Delegate.CloseAsync();
+    }
 
-        public override string ToString()
-        {
-            return Delegate.ToString();
-        }
+    public void SetReadTimeoutInSeconds(int seconds)
+    {
+        Delegate.SetReadTimeoutInSeconds(seconds);
+    }
 
-		public void SetRecvTimeOut(int seconds)
-		{
-			Delegate.SetRecvTimeOut(seconds);
-		}
+    public void SetUseUtcEncodedDateTime()
+    {
+        Delegate.SetUseUtcEncodedDateTime();
+    }
 
-        public void SetUseUtcEncodedDateTime()
-        {
-            Delegate.SetUseUtcEncodedDateTime();
-        }
+    public Task LoginAsync(string userAgent, IAuthToken authToken)
+    {
+        return BoltProtocol.LoginAsync(this, userAgent, authToken);
+    }
+
+    public Task LogoutAsync()
+    {
+        return BoltProtocol.LogoutAsync(this);
+    }
+
+    public Task ResetAsync()
+    {
+        return BoltProtocol.ResetAsync(this);
+    }
+
+    public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
+        string database,
+        string impersonatedUser,
+        Bookmarks bookmarks)
+    {
+        return BoltProtocol.GetRoutingTableAsync(this, database, impersonatedUser, bookmarks);
+    }
+
+    public Task<IResultCursor> RunInAutoCommitTransactionAsync(AutoCommitParams autoCommitParams)
+    {
+        return BoltProtocol.RunInAutoCommitTransactionAsync(this, autoCommitParams);
+    }
+
+    public Task BeginTransactionAsync(
+        string database,
+        Bookmarks bookmarks,
+        TransactionConfig config,
+        string impersonatedUser)
+    {
+        return BoltProtocol.BeginTransactionAsync(this, database, bookmarks, config, impersonatedUser);
+    }
+
+    public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize)
+    {
+        return BoltProtocol.RunInExplicitTransactionAsync(this, query, reactive, fetchSize);
+    }
+
+    public Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker)
+    {
+        return BoltProtocol.CommitTransactionAsync(this, bookmarksTracker);
+    }
+
+    public Task RollbackTransactionAsync()
+    {
+        return BoltProtocol.RollbackTransactionAsync(this);
+    }
+
+    internal virtual Task OnErrorAsync(Exception error)
+    {
+        return Task.CompletedTask;
+    }
+
+    public override string ToString()
+    {
+        return Delegate.ToString();
     }
 }

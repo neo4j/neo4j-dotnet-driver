@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -17,17 +17,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver;
 using Xunit;
-using Xunit.Abstractions;
-using static Neo4j.Driver.Internal.ErrorExtensions;
 
 namespace Neo4j.Driver.Tests
 {
@@ -80,13 +76,16 @@ namespace Neo4j.Driver.Tests
             var error = new TransientException("code", "message");
             var logger = new Mock<ILogger>();
             var retryLogic = new AsyncRetryLogic(TimeSpan.FromMinutes(1), logger.Object);
-            var work = CreateFailingWork(1,
+            var work = CreateFailingWork(
+                1,
                 Enumerable.Range(1, errorCount).Select(x => error).Cast<Exception>().ToArray());
 
             var result = await retryLogic.RetryAsync(() => work.Work(null));
 
             result.Should().Be(1);
-            logger.Verify(x => x.Warn(error,
+            logger.Verify(
+                x => x.Warn(
+                    error,
                     It.Is<string>(s => s.StartsWith("Transaction failed and will be retried in"))),
                 Times.Exactly(errorCount));
         }
@@ -102,7 +101,9 @@ namespace Neo4j.Driver.Tests
             var result = await retryLogic.RetryAsync(() => work.Work(null));
 
             result.Should().Be(1);
-            logger.Verify(x => x.Warn(error,
+            logger.Verify(
+                x => x.Warn(
+                    error,
                     It.Is<string>(s => s.StartsWith("Transaction failed and will be retried in"))),
                 Times.Once);
         }
@@ -111,17 +112,23 @@ namespace Neo4j.Driver.Tests
         public async Task ShouldThrowServiceUnavailableWhenRetriesTimedOut()
         {
             var errorCount = 3;
-            var exceptions = Enumerable.Range(1, errorCount).Select(i => new TransientException($"{i}", $"{i}"))
-                .Cast<Exception>().ToArray();
+            var exceptions = Enumerable.Range(1, errorCount)
+                .Select(i => new TransientException($"{i}", $"{i}"))
+                .Cast<Exception>()
+                .ToArray();
+
             var logger = new Mock<ILogger>();
             var retryLogic = new AsyncRetryLogic(TimeSpan.FromSeconds(2), logger.Object);
             var work = CreateFailingWork(TimeSpan.FromSeconds(1), 1, exceptions);
 
             var exc = await Record.ExceptionAsync(() => retryLogic.RetryAsync(() => work.Work(null)));
 
-            exc.Should().BeOfType<ServiceUnavailableException>()
-                .Which.InnerException.Should().BeOfType<AggregateException>()
-                .Which.InnerExceptions.Should().BeSubsetOf(exceptions);
+            exc.Should()
+                .BeOfType<ServiceUnavailableException>()
+                .Which.InnerException.Should()
+                .BeOfType<AggregateException>()
+                .Which.InnerExceptions.Should()
+                .BeSubsetOf(exceptions);
         }
 
         private static ConfigurableTransactionWork<T> CreateFailingWork<T>(T success, params Exception[] exceptions)
@@ -129,7 +136,9 @@ namespace Neo4j.Driver.Tests
             return CreateFailingWork(TimeSpan.Zero, success, exceptions);
         }
 
-        private static ConfigurableTransactionWork<T> CreateFailingWork<T>(TimeSpan delay, T success,
+        private static ConfigurableTransactionWork<T> CreateFailingWork<T>(
+            TimeSpan delay,
+            T success,
             params Exception[] exceptions)
         {
             return new ConfigurableTransactionWork<T>(delay, success)
@@ -156,7 +165,7 @@ namespace Neo4j.Driver.Tests
             {
                 new TransientException("Neo.TransientError.Database.Unavailable", "database unavailable"),
                 new SessionExpiredException("session expired"),
-                new ServiceUnavailableException("service unavailable"),
+                new ServiceUnavailableException("service unavailable")
             };
         }
 
@@ -164,8 +173,8 @@ namespace Neo4j.Driver.Tests
         {
             private readonly TimeSpan _delay;
             private readonly T _result;
-            private int _invocations;
             private IEnumerator<Exception> _failures;
+            private int _invocations;
 
             public ConfigurableTransactionWork(TimeSpan delay, T result)
             {

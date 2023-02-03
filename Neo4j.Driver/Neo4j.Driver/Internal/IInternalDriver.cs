@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -20,18 +20,16 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Experimental;
-using Neo4j.Driver.Experimental.FluentQueries;
 
-namespace Neo4j.Driver.Internal
+namespace Neo4j.Driver.Internal;
+
+internal interface IInternalDriver : IDriver
 {
-    internal interface IInternalDriver : IDriver
-    {
-        IInternalAsyncSession Session(Action<SessionConfigBuilder> action, bool reactive);
+    IInternalAsyncSession Session(Action<SessionConfigBuilder> action, bool reactive);
 
-        Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
-            Query query,
-            Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor,
-            QueryConfig config = null,
-            CancellationToken cancellationToken = default);
-    }
+    Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
+        Query query,
+        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor,
+        QueryConfig config = null,
+        CancellationToken cancellationToken = default);
 }

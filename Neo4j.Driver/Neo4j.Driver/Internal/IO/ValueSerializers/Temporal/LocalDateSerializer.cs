@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,54 +18,56 @@
 using System;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
+
+internal sealed class LocalDateSerializer : IPackStreamSerializer
 {
-    internal class LocalDateSerializer : IPackStreamSerializer
-    {
-        public const byte StructType = (byte) 'D';
-        public const int StructSize = 1;
+    internal static readonly LocalDateSerializer Instance = new();
 
-        public IEnumerable<byte> ReadableStructs => new[] {StructType};
+    public const byte StructType = (byte)'D';
+    public const int StructSize = 1;
+
+    public IEnumerable<byte> ReadableStructs => new[] { StructType };
 
 #if NET6_0_OR_GREATER
-        public IEnumerable<Type> WritableTypes => new[] {typeof(LocalDate), typeof(DateOnly)};
+    public IEnumerable<Type> WritableTypes => new[] { typeof(LocalDate), typeof(DateOnly) };
 #else
-        public IEnumerable<Type> WritableTypes => new[] {typeof(LocalDate)};
+    public IEnumerable<Type> WritableTypes => new[] { typeof(LocalDate) };
 #endif
-        public object Deserialize(IPackStreamReader reader, byte signature, long size)
-        {
-            PackStream.EnsureStructSize("Date", StructSize, size);
 
-            var epochDays = reader.ReadLong();
+    public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
+    {
+        PackStream.EnsureStructSize("Date", StructSize, size);
 
-            return TemporalHelpers.EpochDaysToDate(epochDays);
-        }
+        var epochDays = reader.ReadLong();
 
-        public void Serialize(IPackStreamWriter writer, object value)
-        {
-#if NET6_0_OR_GREATER
-            if (value is DateOnly date)
-            {
-                WriteDateOnly(writer, date);
-                return;
-            }
-#endif
-            WriteLocalDate(writer, value);
-        }
-
-        private static void WriteLocalDate(IPackStreamWriter writer, object value)
-        {
-            var date = value.CastOrThrow<LocalDate>();
-            writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(date.ToEpochDays());
-        }
-
-#if NET6_0_OR_GREATER
-        private static void WriteDateOnly(IPackStreamWriter writer, DateOnly date)
-        {
-            writer.WriteStructHeader(StructSize, StructType);
-            writer.Write(date.ToEpochDays());
-        }
-#endif
+        return TemporalHelpers.EpochDaysToDate(epochDays);
     }
+
+    public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
+    {
+#if NET6_0_OR_GREATER
+        if (value is DateOnly date)
+        {
+            WriteDateOnly(writer, date);
+            return;
+        }
+#endif
+        WriteLocalDate(writer, value);
+    }
+
+    private static void WriteLocalDate(PackStreamWriter writer, object value)
+    {
+        var date = value.CastOrThrow<LocalDate>();
+        writer.WriteStructHeader(StructSize, StructType);
+        writer.WriteLong(date.ToEpochDays());
+    }
+
+#if NET6_0_OR_GREATER
+    private static void WriteDateOnly(PackStreamWriter writer, DateOnly date)
+    {
+        writer.WriteStructHeader(StructSize, StructType);
+        writer.WriteLong(date.ToEpochDays());
+    }
+#endif
 }

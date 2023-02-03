@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -19,135 +19,151 @@ using System;
 using System.Globalization;
 using Neo4j.Driver.Internal.Types;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver;
+
+/// <summary>Represents a single three-dimensional point in a particular coordinate reference system.</summary>
+public sealed class Point : IValue, IEquatable<Point>
 {
-    /// <summary>
-    /// Represents a single three-dimensional point in a particular coordinate reference system.
-    /// </summary>
-    public sealed class Point : IValue, IEquatable<Point>
+    internal const int TwoD = 2;
+    internal const int ThreeD = 3;
+
+    /// <summary>Initializes a new instance of <see cref="Point"/> structure with two dimensions</summary>
+    /// <param name="srId">
+    ///     <see cref="SrId"/>
+    /// </param>
+    /// <param name="x">
+    ///     <see cref="X"/>
+    /// </param>
+    /// <param name="y">
+    ///     <see cref="Y"/>
+    /// </param>
+    public Point(int srId, double x, double y)
+        : this(TwoD, srId, x, y, double.NaN)
     {
-        internal const int TwoD = 2;
-        internal const int ThreeD = 3;
+    }
 
-        /// <summary>
-        /// Initializes a new instance of <see cref="Point" /> structure with two dimensions
-        /// </summary>
-        /// <param name="srId"><see cref="SrId" /></param>
-        /// <param name="x"><see cref="X" /></param>
-        /// <param name="y"><see cref="Y"/></param>
-        public Point(int srId, double x, double y)
-            : this(TwoD, srId, x, y, double.NaN)
+    /// <summary>Initializes a new instance of <see cref="Point"/> structure with three dimensions</summary>
+    /// <param name="srId">
+    ///     <see cref="SrId"/>
+    /// </param>
+    /// <param name="x">
+    ///     <see cref="X"/>
+    /// </param>
+    /// <param name="y">
+    ///     <see cref="Y"/>
+    /// </param>
+    /// <param name="z">
+    ///     <see cref="Z"/>
+    /// </param>
+    public Point(int srId, double x, double y, double z)
+        : this(ThreeD, srId, x, y, z)
+    {
+    }
+
+    private Point(int dimension, int srId, double x, double y, double z)
+    {
+        Dimension = dimension;
+        SrId = srId;
+        X = x;
+        Y = y;
+        Z = z;
+    }
+
+    internal int Dimension { get; }
+
+    /// <summary>Gets the coordinate reference system identifier.</summary>
+    public int SrId { get; }
+
+    /// <summary>Gets X coordinate of the point.</summary>
+    public double X { get; }
+
+    /// <summary>Gets Y coordinate of the point.</summary>
+    public double Y { get; }
+
+    /// <summary>Gets Z coordinate of the point.</summary>
+    public double Z { get; }
+
+    /// <summary>
+    /// Returns a value indicating whether the value of this instance is equal to the value of the specified
+    /// <see cref="Point"/> instance.
+    /// </summary>
+    /// <param name="other">The object to compare to this instance.</param>
+    /// <returns>
+    /// <code>true</code> if the <code>value</code> parameter equals the value of this instance; otherwise,
+    /// <code>false</code>
+    /// </returns>
+    public bool Equals(Point other)
+    {
+        if (other is null)
         {
-
+            return false;
         }
 
-        /// <summary>
-        /// Initializes a new instance of <see cref="Point" /> structure with three dimensions
-        /// </summary>
-        /// <param name="srId"><see cref="SrId" /></param>
-        /// <param name="x"><see cref="X" /></param>
-        /// <param name="y"><see cref="Y"/></param>
-        /// <param name="z"><see cref="Z"/></param>
-        public Point(int srId, double x, double y, double z)
-            : this(ThreeD, srId, x, y, z)
+        if (ReferenceEquals(this, other))
         {
-
+            return true;
         }
 
-        private Point(int dimension, int srId, double x, double y, double z)
+        return Dimension == other.Dimension &&
+            SrId == other.SrId &&
+            X.Equals(other.X) &&
+            Y.Equals(other.Y) &&
+            Z.Equals(other.Z);
+    }
+
+    /// <summary>Converts the value of the current <see cref="Point"/> object to its equivalent string representation.</summary>
+    /// <returns>String representation of this Point.</returns>
+    public override string ToString()
+    {
+        var xStr = X.ToString(NumberFormatInfo.InvariantInfo);
+        var yStr = Y.ToString(NumberFormatInfo.InvariantInfo);
+        var zStr = Z.ToString(NumberFormatInfo.InvariantInfo);
+        switch (Dimension)
         {
-            Dimension = dimension;
-            SrId = srId;
-            X = x;
-            Y = y;
-            Z = z;
+            case TwoD:
+                return $"Point{{srId={SrId}, x={xStr}, y={yStr}}}";
+
+            case ThreeD:
+                return $"Point{{srId={SrId}, x={xStr}, y={yStr}, z={zStr}}}";
+
+            default:
+                return $"Point{{dimension={Dimension}, srId={SrId}, x={xStr}, y={yStr}, z={zStr}}}";
+        }
+    }
+
+    /// <summary>Returns the hash code for this instance.</summary>
+    /// <returns>A 32-bit signed integer hash code.</returns>
+    public override int GetHashCode()
+    {
+        unchecked
+        {
+            var hashCode = Dimension;
+            hashCode = (hashCode * 397) ^ SrId;
+            hashCode = (hashCode * 397) ^ X.GetHashCode();
+            hashCode = (hashCode * 397) ^ Y.GetHashCode();
+            hashCode = (hashCode * 397) ^ Z.GetHashCode();
+            return hashCode;
+        }
+    }
+
+    /// <summary>Returns a value indicating whether this instance is equal to a specified object.</summary>
+    /// <param name="obj">The object to compare to this instance.</param>
+    /// <returns>
+    /// <code>true</code> if <code>value</code> is an instance of <see cref="Point"/> and equals the value of this
+    /// instance; otherwise, <code>false</code>
+    /// </returns>
+    public override bool Equals(object obj)
+    {
+        if (obj is null)
+        {
+            return false;
         }
 
-        internal int Dimension { get; }
-
-        /// <summary>
-        /// Gets the coordinate reference system identifier.
-        /// </summary>
-        public int SrId { get; }
-
-        /// <summary>
-        /// Gets X coordinate of the point.
-        /// </summary>
-        public double X { get; }
-
-        /// <summary>
-        /// Gets Y coordinate of the point.
-        /// </summary>
-        public double Y { get; }
-
-        /// <summary>
-        /// Gets Z coordinate of the point.
-        /// </summary>
-        public double Z { get; }
-
-
-        /// <summary>
-        /// Converts the value of the current <see cref="Point"/> object to its equivalent string representation.
-        /// </summary>
-        /// <returns>String representation of this Point.</returns>
-        public override string ToString()
+        if (ReferenceEquals(this, obj))
         {
-            var xStr = X.ToString(NumberFormatInfo.InvariantInfo);
-            var yStr = Y.ToString(NumberFormatInfo.InvariantInfo);
-            var zStr = Z.ToString(NumberFormatInfo.InvariantInfo);
-            switch (Dimension)
-            {
-                case TwoD:
-                    return $"Point{{srId={SrId}, x={xStr}, y={yStr}}}";
-                case ThreeD:
-                    return $"Point{{srId={SrId}, x={xStr}, y={yStr}, z={zStr}}}";
-                default:
-                    return $"Point{{dimension={Dimension}, srId={SrId}, x={xStr}, y={yStr}, z={zStr}}}";
-            }
+            return true;
         }
 
-        /// <summary>
-        /// Returns the hash code for this instance.
-        /// </summary>
-        /// <returns>A 32-bit signed integer hash code.</returns>
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                var hashCode = Dimension;
-                hashCode = (hashCode * 397) ^ SrId;
-                hashCode = (hashCode * 397) ^ X.GetHashCode();
-                hashCode = (hashCode * 397) ^ Y.GetHashCode();
-                hashCode = (hashCode * 397) ^ Z.GetHashCode();
-                return hashCode;
-            }
-        }
-
-        /// <summary>
-        /// Returns a value indicating whether the value of this instance is equal to the 
-        /// value of the specified <see cref="Point"/> instance. 
-        /// </summary>
-        /// <param name="other">The object to compare to this instance.</param>
-        /// <returns><code>true</code> if the <code>value</code> parameter equals the value of 
-        /// this instance; otherwise, <code>false</code></returns>
-        public bool Equals(Point other)
-        {
-            if (other is null) return false;
-            if (ReferenceEquals(this, other)) return true;
-            return Dimension == other.Dimension && SrId == other.SrId && X.Equals(other.X) && Y.Equals(other.Y) && Z.Equals(other.Z);
-        }
-
-        /// <summary>
-        /// Returns a value indicating whether this instance is equal to a specified object.
-        /// </summary>
-        /// <param name="obj">The object to compare to this instance.</param>
-        /// <returns><code>true</code> if <code>value</code> is an instance of <see cref="Point"/> and 
-        /// equals the value of this instance; otherwise, <code>false</code></returns>
-        public override bool Equals(object obj)
-        {
-            if (obj is null) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            return obj is Point point && Equals(point);
-        }
+        return obj is Point point && Equals(point);
     }
 }

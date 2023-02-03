@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -15,20 +15,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
+namespace Neo4j.Driver;
 
-namespace Neo4j.Driver
+/// <summary>Provides information about the database that processed the query.</summary>
+public interface IDatabaseInfo
 {
-    /// <summary>
-    /// Provides information about the database that processed the query.
-    /// </summary>
-    public interface IDatabaseInfo
-    {
-        /// <summary>
-        /// The name of the database where the query is processed.
-        /// </summary>
-        /// 
-        /// <remarks>Returns <code>null</code> if the source server does not support multiple databases.</remarks>
-        string Name { get; }
-    }
+    /// <summary>The name of the database where the query is processed.</summary>
+    /// 
+    /// <remarks>Returns <code>null</code> if the source server does not support multiple databases.</remarks>
+    string Name { get; }
 }

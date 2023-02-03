@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,15 +18,12 @@
 using System;
 using System.Collections;
 using FluentAssertions;
-using Neo4j.Driver.Internal;
-using Neo4j.Driver;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Types
 {
     public class ZonedDateTimeWithZoneIdTests
     {
-
         [Fact]
         public void ShouldCreateDateTimeWithZoneIdWithDateTimeComponents()
         {
@@ -146,7 +143,8 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(999_999_999 + 1)]
         public void ShouldThrowOnInvalidNanosecond(int nanosecond)
         {
-            var ex = Record.Exception(() => new ZonedDateTime(1990, 1, 1, 0, 0, 0, nanosecond, Zone.Of("Europe/Athens")));
+            var ex = Record.Exception(
+                () => new ZonedDateTime(1990, 1, 1, 0, 0, 0, nanosecond, Zone.Of("Europe/Athens")));
 
             ex.Should().NotBeNull().And.BeOfType<ArgumentOutOfRangeException>();
         }
@@ -182,13 +180,31 @@ namespace Neo4j.Driver.Tests.Types
 
         [Theory]
         [InlineData(1947, 12, 17, 23, 5, 54, 192794500, "Europe/Rome", "1947-12-17T23:05:54.192794500[Europe/Rome]")]
-        [InlineData(1947, 12, 5, 0, 5, 54, 192794500, "Europe/Amsterdam", "1947-12-05T00:05:54.192794500[Europe/Amsterdam]")]
+        [InlineData(
+            1947,
+            12,
+            5,
+            0,
+            5,
+            54,
+            192794500,
+            "Europe/Amsterdam",
+            "1947-12-05T00:05:54.192794500[Europe/Amsterdam]")]
         [InlineData(1947, 12, 5, 0, 5, 54, 0, "Europe/Istanbul", "1947-12-05T00:05:54[Europe/Istanbul]")]
         [InlineData(5, 1, 5, 0, 5, 54, 0, "Africa/Nairobi", "0005-01-05T00:05:54[Africa/Nairobi]")]
         [InlineData(-5, 1, 5, 0, 5, 54, 1250, "America/Halifax", "-0005-01-05T00:05:54.000001250[America/Halifax]")]
         [InlineData(999999, 1, 1, 5, 1, 25, 1, "America/New_York", "999999-01-01T05:01:25.000000001[America/New_York]")]
         [InlineData(-999999, 1, 1, 5, 1, 25, 1, "Asia/Seoul", "-999999-01-01T05:01:25.000000001[Asia/Seoul]")]
-        public void ShouldGenerateCorrectString(int year, int month, int day, int hour, int minute, int second, int nanosecond, string zoneId, string expected)
+        public void ShouldGenerateCorrectString(
+            int year,
+            int month,
+            int day,
+            int hour,
+            int minute,
+            int second,
+            int nanosecond,
+            string zoneId,
+            string expected)
         {
             var cypherDateTime = new ZonedDateTime(year, month, day, hour, minute, second, nanosecond, Zone.Of(zoneId));
             var cypherDateTimeStr = cypherDateTime.ToString();

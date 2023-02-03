@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -15,27 +15,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Threading.Tasks;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.MessageHandling;
 
-namespace Neo4j.Driver.Internal.Messaging
+namespace Neo4j.Driver.Internal.Messaging;
+
+internal sealed class IgnoredMessage : IResponseMessage
 {
-    internal class IgnoredMessage : IResponseMessage
+    public static readonly IgnoredMessage Instance = new();
+
+    private IgnoredMessage()
     {
-        public static readonly IgnoredMessage Ignored = new IgnoredMessage();
+    }
 
-        private IgnoredMessage()
-        {
-        }
+    public IPackStreamSerializer Serializer => IgnoredMessageSerializer.Instance;
 
-        public override string ToString()
-        {
-            return "IGNORED";
-        }
+    public void Dispatch(IResponsePipeline pipeline)
+    {
+        pipeline.OnIgnored();
+    }
 
-        public void Dispatch(IResponsePipeline pipeline)
-        {
-            pipeline.OnIgnored();
-        }
+    public override string ToString()
+    {
+        return "IGNORED";
     }
 }

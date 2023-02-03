@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,15 +18,12 @@
 using System;
 using System.Collections;
 using FluentAssertions;
-using Neo4j.Driver.Internal;
-using Neo4j.Driver;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Types
 {
     public class LocalDateTimeTests
     {
-
         [Fact]
         public void ShouldCreateDateTimeWithDateTimeComponents()
         {
@@ -164,7 +161,15 @@ namespace Neo4j.Driver.Tests.Types
         [InlineData(-5, 1, 5, 0, 5, 54, 1250, "-0005-01-05T00:05:54.000001250")]
         [InlineData(999999, 1, 1, 5, 1, 25, 1, "999999-01-01T05:01:25.000000001")]
         [InlineData(-999999, 1, 1, 5, 1, 25, 1, "-999999-01-01T05:01:25.000000001")]
-        public void ShouldGenerateCorrectString(int year, int month, int day, int hour, int minute, int second, int nanosecond, string expected)
+        public void ShouldGenerateCorrectString(
+            int year,
+            int month,
+            int day,
+            int hour,
+            int minute,
+            int second,
+            int nanosecond,
+            string expected)
         {
             var cypherDateTime = new LocalDateTime(year, month, day, hour, minute, second, nanosecond);
             var cypherDateTimeStr = cypherDateTime.ToString();

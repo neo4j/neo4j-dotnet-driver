@@ -1,14 +1,14 @@
 ﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
-//
+// 
 // This file is part of Neo4j.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// 
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-//
+// 
 //     http://www.apache.org/licenses/LICENSE-2.0
-//
+// 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,11 +16,7 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using FluentAssertions;
-using Moq;
-using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Tests;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.Protocol
@@ -30,96 +26,57 @@ namespace Neo4j.Driver.Internal.Protocol
         public class CreateMethod
         {
             [Fact]
-            public void ShouldCreateBoltProtocolV3()
+            public void ShouldCreateLegacyBoltProtocol()
             {
-                var connMock = new Mock<ITcpSocketClient>();
-                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
-                TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V3_0);
-                boltProtocol.Should().BeOfType<BoltProtocolV3>();
-            }
-
-            [Fact]
-            public void ShouldCreateBoltProtocolV4()
-            {
-                var connMock = new Mock<ITcpSocketClient>();
-                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
-                TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V4_0);
-                boltProtocol.Should().BeOfType<BoltProtocolV4_0>();
-            }
-
-            [Fact]
-            public void ShouldCreateBoltProtocolV4_1()
-            {
-                var connMock = new Mock<ITcpSocketClient>();
-                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
-                TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V4_1, new Dictionary<string, string>());
-                boltProtocol.Should().BeOfType<BoltProtocolV4_1>();
-            }
-
-            [Fact]
-            public void ShouldCreateBoltProtocolV4_2()
-            {
-                var connMock = new Mock<ITcpSocketClient>();
-                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
-                TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V4_2, new Dictionary<string, string>());
-                boltProtocol.Should().BeOfType<BoltProtocolV4_2>();
-            }
-
-            [Fact]
-            public void ShouldCreateBoltProtocolV4_3()
-            {
-                var connMock = new Mock<ITcpSocketClient>();
-                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
-                TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V4_3, new Dictionary<string, string>());
-                boltProtocol.Should().BeOfType<BoltProtocolV4_3>();
-            }
-
-			[Fact]
-			public void ShouldCreateBoltProtocolV4_4()
-			{
-				var connMock = new Mock<ITcpSocketClient>();
-				TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
-				TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-				var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V4_4, new Dictionary<string, string>());
-				boltProtocol.Should().BeOfType<BoltProtocolV4_4>();
-			}
-
-            [Fact]
-            public void ShouldCreateBoltProtocolV5_0()
-            {
-                var connMock = new Mock<ITcpSocketClient>();
-                TcpSocketClientTestSetup.CreateWriteStreamMock(connMock);
-                TcpSocketClientTestSetup.CreateReadStreamMock(connMock);
-                var boltProtocol = BoltProtocolFactory.ForVersion(BoltProtocolVersion.V5_0, new Dictionary<string, string>());
-                boltProtocol.Should().BeOfType<BoltProtocolV5_0>();
+                var boltProtocol = BoltProtocolFactory.Default.ForVersion(BoltProtocolVersion.V3_0);
+                boltProtocol.Should().Be(BoltProtocolV3.Instance);
             }
 
             [Theory]
-            [InlineData(0, 0, "The Neo4j server does not support any of the protocol versions supported by this client")]
+            [InlineData(4, 1)]
+            [InlineData(4, 2)]
+            [InlineData(4, 3)]
+            [InlineData(4, 4)]
+            [InlineData(5, 0)]
+            public void ShouldCreateBoltProtocol(int major, int minor)
+            {
+                var boltProtocol = BoltProtocolFactory.Default.ForVersion(new BoltProtocolVersion(major, minor));
+                boltProtocol.Should().Be(BoltProtocol.Instance);
+            }
+
+            [Theory]
+            // No-matches
+            [InlineData(
+                0,
+                0,
+                "The Neo4j server does not support any of the protocol versions supported by this client. " +
+                "Ensure that you are using driver and server versions that are compatible with one another.")]
+            // Non-existent
             [InlineData(1, 0, "Protocol error, server suggested unexpected protocol version: 1.0")]
-            [InlineData(2, 0, "Protocol error, server suggested unexpected protocol version: 2.0")]            
-            [InlineData(15, 0, "Protocol error, server suggested unexpected protocol version: 15.0")]            
-            public void ShouldThrowExceptionIfVersionIsNotSupported(int majorVersion, int minorVersion, string errorMessage)
+            [InlineData(2, 0, "Protocol error, server suggested unexpected protocol version: 2.0")]
+            // Future protocol
+            [InlineData(15, 0, "Protocol error, server suggested unexpected protocol version: 15.0")]
+            // Deprecated protocol
+            [InlineData(4, 0, "Protocol error, server suggested unexpected protocol version: 4.0")]
+            public void ShouldThrowExceptionIfVersionIsNotSupported(
+                int majorVersion,
+                int minorVersion,
+                string errorMessage)
             {
                 var version = new BoltProtocolVersion(majorVersion, minorVersion);
-                var exception = Record.Exception(() => BoltProtocolFactory.ForVersion(version));
-                exception.Should().BeOfType<NotSupportedException>();
-                exception.Message.Should().StartWith(errorMessage);
+                var exception = Record.Exception(() => BoltProtocolFactory.Default.ForVersion(version));
+                exception.Should().BeOfType<NotSupportedException>().Which.Message.Should().Be(errorMessage);
             }
 
-            [Theory]
-            [InlineData(1213486160 /*HTTP*/, "Server responded HTTP.")]
-            public void ShouldThrowExceptionIfSpecialVersionIsNotSupported(int largeVersion, string errorMessage)
+            [Fact]
+            public void ShouldThrowExceptionIfHttpVersionSpecified()
             {
-                var version = new BoltProtocolVersion(largeVersion);
-                var exception = Record.Exception(() => BoltProtocolFactory.ForVersion(version));
-                exception.Should().BeOfType<NotSupportedException>();
-                exception.Message.Should().StartWith(errorMessage);
+                var version = new BoltProtocolVersion(1213486160);
+                var exception = Record.Exception(() => BoltProtocolFactory.Default.ForVersion(version));
+                exception.Should()
+                    .BeOfType<NotSupportedException>()
+                    .Which.Message.Should()
+                    .StartWith("Server responded HTTP.");
             }
         }
     }

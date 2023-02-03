@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -15,117 +15,87 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.IO;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver;
 using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Messaging;
 
-namespace Neo4j.Driver.Internal.IO
+namespace Neo4j.Driver.Internal.IO;
+
+internal sealed class MessageReader : IMessageReader
 {
-    internal class MessageReader : IMessageReader
+    private readonly IChunkReader _chunkReader;
+    private readonly int _defaultBufferSize;
+    private readonly ILogger _logger;
+    private readonly int _maxBufferSize;
+    private int _shrinkCounter;
+
+    public MessageReader(IChunkReader chunkReader, BufferSettings bufferSettings, ILogger logger)
     {
-        private readonly IChunkReader _chunkReader;
-        private readonly IPackStreamReader _packStreamReader;
-        private readonly ILogger _logger;
-        private readonly MemoryStream _bufferStream;
-        private readonly int _defaultBufferSize;
-        private readonly int _maxBufferSize;
-		private int _readTimeoutSeconds = -1;
+        _chunkReader = chunkReader;
+        _defaultBufferSize = bufferSettings.DefaultReadBufferSize;
+        _maxBufferSize = bufferSettings.MaxReadBufferSize;
+        _logger = logger;
+    }
 
-		public int ReadTimeoutSeconds 
-		{ 
-			get
-			{
-				return _readTimeoutSeconds;
-			}
-			set
-			{
-				_readTimeoutSeconds = value;
-				if(_chunkReader is not null)
-					_chunkReader.ReadTimeoutSeconds = value;
-			} 
-		}
+    public async Task ReadAsync(IResponsePipeline pipeline, PackStreamReader reader)
+    {
+        var messageCount = await _chunkReader.ReadMessageChunksToBufferStreamAsync(reader.Stream).ConfigureAwait(false);
+        ConsumeMessages(pipeline, messageCount, reader);
+    }
 
-		private int _shrinkCounter = 0;
+    public void SetReadTimeoutInMs(int ms)
+    {
+        _chunkReader.SetTimeoutInMs(ms);
+    }
 
-        public MessageReader(Stream stream, IMessageFormat messageFormat)
-            : this(stream, Constants.DefaultReadBufferSize, Constants.MaxReadBufferSize, null, messageFormat)
+    private void ConsumeMessages(IResponsePipeline pipeline, int messages, PackStreamReader packStreamReader)
+    {
+        var leftMessages = messages;
+
+        while (packStreamReader.Stream.Length > packStreamReader.Stream.Position && leftMessages > 0)
         {
+            ProcessMessage(pipeline, packStreamReader);
+            leftMessages -= 1;
         }
 
-        public MessageReader(Stream stream, int defaultBufferSize, int maxBufferSize, ILogger logger,
-            IMessageFormat messageFormat)
-            : this(new ChunkReader(stream, logger), defaultBufferSize, maxBufferSize, logger, messageFormat)
+        // Check whether we have incomplete message in the buffers
+        if (packStreamReader.Stream.Length != packStreamReader.Stream.Position)
         {
+            return;
         }
 
-        public MessageReader(IChunkReader chunkReader, int defaultBufferSize, int maxBufferSize, ILogger logger,
-            IMessageFormat messageFormat)
-        {
-            Throw.ArgumentNullException.IfNull(chunkReader, nameof(chunkReader));
-            Throw.ArgumentNullException.IfNull(messageFormat, nameof(messageFormat));
+        packStreamReader.Stream.SetLength(0);
 
-            _logger = logger;
-            _chunkReader = chunkReader;
-            _defaultBufferSize = defaultBufferSize;
-            _maxBufferSize = maxBufferSize;
-            _bufferStream = new MemoryStream(_defaultBufferSize);
-            _packStreamReader = messageFormat.CreateReader(_bufferStream);
+        if (packStreamReader.Stream.Capacity <= _maxBufferSize)
+        {
+            return;
         }
 
-        public async Task ReadAsync(IResponsePipeline pipeline)
+        _logger?.Info(
+            $@"Shrinking read buffers to the default read buffer size {
+                _defaultBufferSize
+            } since its size reached {
+                packStreamReader.Stream.Capacity
+            } which is larger than the maximum read buffer size {
+                _maxBufferSize
+            }. This has already occurred {_shrinkCounter} times for this connection.");
+
+        _shrinkCounter += 1;
+
+        packStreamReader.Stream.Capacity = _defaultBufferSize;
+    }
+
+    private void ProcessMessage(IResponsePipeline pipeline, PackStreamReader packStreamReader)
+    {
+        var message = packStreamReader.Read();
+
+        if (message is IResponseMessage response)
         {
-            var messageCount = await _chunkReader.ReadNextMessagesAsync(_bufferStream).ConfigureAwait(false);
-            ConsumeMessages(pipeline, messageCount);
+            response.Dispatch(pipeline);
         }
-
-        private void ConsumeMessages(IResponsePipeline pipeline, int messages)
+        else
         {
-            var leftMessages = messages;
-
-            while (_bufferStream.Length > _bufferStream.Position && leftMessages > 0)
-            {
-                ProcessMessage(pipeline);
-
-                leftMessages -= 1;
-            }
-
-            // Check whether we have incomplete message in the buffers
-            if (_bufferStream.Length == _bufferStream.Position)
-            {
-                _bufferStream.SetLength(0);
-
-                if (_bufferStream.Capacity > _maxBufferSize)
-                {
-                    _logger?.Info(
-                        $@"Shrinking read buffers to the default read buffer size {
-                                _defaultBufferSize
-                            } since its size reached {
-                                _bufferStream.Capacity
-                            } which is larger than the maximum read buffer size {
-                                _maxBufferSize
-                            }. This has already occurred {_shrinkCounter} times for this connection.");
-
-                    _shrinkCounter += 1;
-
-                    _bufferStream.Capacity = _defaultBufferSize;
-                }
-            }
-        }
-
-        private void ProcessMessage(IResponsePipeline pipeline)
-        {
-            var message = _packStreamReader.Read();
-
-            if (message is IResponseMessage response)
-            {
-                response.Dispatch(pipeline);
-            }
-            else
-            {
-                throw new ProtocolException($"Unknown response message type {message.GetType().FullName}");
-            }
+            throw new ProtocolException($"Unknown response message type {message.GetType().FullName}");
         }
     }
 }

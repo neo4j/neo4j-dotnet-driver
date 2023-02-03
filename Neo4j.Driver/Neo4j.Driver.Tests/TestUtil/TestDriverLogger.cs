@@ -1,14 +1,14 @@
 ﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
-//
+// 
 // This file is part of Neo4j.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// 
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-//
+// 
 //     http://www.apache.org/licenses/LICENSE-2.0
-//
+// 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,18 +35,6 @@ namespace Neo4j.Driver.TestUtil
         {
             _level = level;
             _logMethod = logMethod;
-        }
-
-        private void Log(ExtendedLogLevel level, Exception cause, string message, params object[] args)
-        {
-            message = message ?? "";
-            var formattableString = $"[{level}]:{string.Format(message, args)}";
-            if (cause != null)
-            {
-                formattableString = $"{formattableString}\n{cause}";
-            }
-
-            _logMethod(formattableString);
         }
 
         public void Error(Exception cause, string message, params object[] args)
@@ -88,6 +76,18 @@ namespace Neo4j.Driver.TestUtil
         public bool IsDebugEnabled()
         {
             return _level >= ExtendedLogLevel.Debug;
+        }
+
+        private void Log(ExtendedLogLevel level, Exception cause, string message, params object[] args)
+        {
+            message = message ?? "";
+            var formattableString = $"[{level}]:{string.Format(message, args)}";
+            if (cause != null)
+            {
+                formattableString = $"{formattableString}\n{cause}";
+            }
+
+            _logMethod(formattableString);
         }
 
         public static ILogger Create(ITestOutputHelper output)

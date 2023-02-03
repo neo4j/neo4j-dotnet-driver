@@ -1,14 +1,14 @@
 ﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
-//
+// 
 // This file is part of Neo4j.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// 
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-//
+// 
 //     http://www.apache.org/licenses/LICENSE-2.0
-//
+// 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,28 +16,38 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Neo4j.Driver.Internal.IO;
 
-namespace Neo4j.Driver.Internal.Protocol
+namespace Neo4j.Driver.Internal;
+
+internal interface IBoltProtocolFactory
 {
-    internal static class BoltProtocolFactory
-    {
-        private const int BoltHttpIdentifier = 1213486160;  //0x‭48 54 54 50 - or HTTP ascii codes...
-        static readonly string HttpErrorMessage = "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
-                                               $"(HTTP defaults to port 7474 whereas BOLT defaults to port {GraphDatabase.DefaultBoltPort})";
-        private static readonly string NoAgreedVersion =
-            "The Neo4j server does not support any of the protocol versions supported by this client. " +
-            "Ensure that you are using driver and server versions that are compatible with one another.";
+    IBoltProtocol ForVersion(BoltProtocolVersion version);
+}
 
-        private static readonly Lazy<byte[]> HandshakeBytesLazy = 
-            new Lazy<byte[]>(() =>
+internal class BoltProtocolFactory : IBoltProtocolFactory
+{
+    private const string HttpErrorMessage =
+        "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
+        "(HTTP defaults to port 7474 whereas BOLT defaults to port 7687)";
+
+    private const string NoAgreedVersion =
+        "The Neo4j server does not support any of the protocol versions supported by this client. " +
+        "Ensure that you are using driver and server versions that are compatible with one another.";
+
+    // 0x‭48 54 54 50 - or HTTP ascii codes...
+    private static readonly BoltProtocolVersion HttpBoltVersion = new(1213486160);
+    internal static readonly BoltProtocolFactory Default = new();
+
+    private static readonly Lazy<byte[]> HandshakeBytesLazy =
+        new(
+            () =>
             {
-                const int goGoBolt = 0x6060B017; 
+                const int goGoBolt = 0x6060B017;
 
-                var versions = new int[]
+                var versions = new[]
                 {
                     //This is a 'magic' handshake identifier to indicate we're using 'BOLT' ('GOGOBOLT')
                     goGoBolt,
@@ -47,34 +57,44 @@ namespace Neo4j.Driver.Internal.Protocol
                     BoltProtocolVersion.V4_1.PackToInt(),
                     BoltProtocolVersion.V3_0.PackToInt()
                 };
+
                 return versions.SelectMany(PackStreamBitConverter.GetBytes).ToArray();
-            }, LazyThreadSafetyMode.PublicationOnly);
+            },
+            LazyThreadSafetyMode.PublicationOnly);
 
-        public static IBoltProtocol ForVersion(BoltProtocolVersion version, IDictionary<string, string> routingContext = null)
+    private BoltProtocolFactory()
+    {
+    }
+
+    public IBoltProtocol ForVersion(BoltProtocolVersion version)
+    {
+        if (version == HttpBoltVersion)
         {
-            return version switch
-            {
-                {MajorVersion: 3, MinorVersion: 0} => new BoltProtocolV3(),
-                {MajorVersion: 4, MinorVersion: 0} => new BoltProtocolV4_0(),
-                {MajorVersion: 4, MinorVersion: 1} => new BoltProtocolV4_1(routingContext),
-                {MajorVersion: 4, MinorVersion: 2} => new BoltProtocolV4_2(routingContext),
-                {MajorVersion: 4, MinorVersion: 3} => new BoltProtocolV4_3(routingContext),
-                {MajorVersion: 4, MinorVersion: 4} => new BoltProtocolV4_4(routingContext),
-                {MajorVersion: 5, MinorVersion: 0} => new BoltProtocolV5_0(routingContext),
-                // no matching versions
-                {MajorVersion: 0, MinorVersion: 0} => throw new NotSupportedException(NoAgreedVersion),
-                // http response
-                _ when version == new BoltProtocolVersion(BoltHttpIdentifier) => throw new NotSupportedException(HttpErrorMessage),
-                // undefined
-                _ => throw new NotSupportedException($"Protocol error, server suggested unexpected protocol version: {version}")
-            };
-        }
-        
-        public static BoltProtocolVersion UnpackAgreedVersion(byte[] data)
-        {            
-            return BoltProtocolVersion.FromPackedInt(PackStreamBitConverter.ToInt32(data));
+            throw new NotSupportedException(HttpErrorMessage);
         }
 
-        public static byte[] PackSupportedVersions() => HandshakeBytesLazy.Value;
+        return version switch
+        {
+            // no matching versions
+            { MajorVersion: 0, MinorVersion: 0 } => throw new NotSupportedException(NoAgreedVersion),
+            { MajorVersion: 3, MinorVersion: 0 } => BoltProtocolV3.Instance,
+            { MajorVersion: 4, MinorVersion: 1 } => BoltProtocol.Instance,
+            { MajorVersion: 4, MinorVersion: 2 } => BoltProtocol.Instance,
+            { MajorVersion: 4, MinorVersion: 3 } => BoltProtocol.Instance,
+            { MajorVersion: 4, MinorVersion: 4 } => BoltProtocol.Instance,
+            { MajorVersion: 5, MinorVersion: 0 } => BoltProtocol.Instance,
+            _ => throw new NotSupportedException(
+                $"Protocol error, server suggested unexpected protocol version: {version}")
+        };
+    }
+
+    public static BoltProtocolVersion UnpackAgreedVersion(byte[] data)
+    {
+        return BoltProtocolVersion.FromPackedInt(PackStreamBitConverter.ToInt32(data));
+    }
+
+    public static byte[] PackSupportedVersions()
+    {
+        return HandshakeBytesLazy.Value;
     }
 }

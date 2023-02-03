@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -28,17 +28,17 @@ namespace Neo4j.Driver.Tests
         {
             public static IEnumerable<object[]> InvalidTimeSpanValues => new[]
             {
-                new object[] {TimeSpan.FromSeconds(-1)},
-                new object[] {TimeSpan.FromHours(-2)}
+                new object[] { TimeSpan.FromSeconds(-1) },
+                new object[] { TimeSpan.FromHours(-2) }
             };
 
             public static IEnumerable<object[]> ValidTimeSpanValues => new[]
             {
-                new object[] {null},
-                new object[] {(TimeSpan?)TimeSpan.Zero},
-                new object[] {(TimeSpan?)TimeSpan.FromMilliseconds(0.1)},
-                new object[] {(TimeSpan?)TimeSpan.FromMinutes(30)},
-                new object[] {(TimeSpan?)TimeSpan.MaxValue}
+                new object[] { null },
+                new object[] { (TimeSpan?)TimeSpan.Zero },
+                new object[] { (TimeSpan?)TimeSpan.FromMilliseconds(0.1) },
+                new object[] { (TimeSpan?)TimeSpan.FromMinutes(30) },
+                new object[] { (TimeSpan?)TimeSpan.MaxValue }
             };
 
             [Fact]
@@ -48,19 +48,21 @@ namespace Neo4j.Driver.Tests
 
                 config.Timeout.Should().Be(null);
             }
-            
-            [Theory, MemberData(nameof(ValidTimeSpanValues))]
+
+            [Theory]
+            [MemberData(nameof(ValidTimeSpanValues))]
             public void ShouldAllowToSetToNewValue(TimeSpan? input)
             {
                 var builder = TransactionConfig.Builder;
                 builder.WithTimeout(input);
-                
+
                 var config = builder.Build();
-                
+
                 config.Timeout.Should().Be(input);
             }
 
-            [Theory, MemberData(nameof(InvalidTimeSpanValues))]
+            [Theory]
+            [MemberData(nameof(InvalidTimeSpanValues))]
             public void ShouldThrowExceptionIfAssigningValueLessThanZero(TimeSpan input)
             {
                 var error = Record.Exception(() => TransactionConfig.Builder.WithTimeout(input));
@@ -79,16 +81,17 @@ namespace Neo4j.Driver.Tests
 
                 config.Metadata.Should().BeEmpty();
             }
-            
+
             [Fact]
             public void ShouldAllowToSetToNewValue()
             {
                 var builder = TransactionConfig.Builder;
-                builder.WithMetadata(new Dictionary<string, object> {{"key", "value"}});
-                
+                builder.WithMetadata(new Dictionary<string, object> { { "key", "value" } });
+
                 var config = builder.Build();
 
-                config.Metadata.Should().HaveCount(1)
+                config.Metadata.Should()
+                    .HaveCount(1)
                     .And.Contain(new KeyValuePair<string, object>("key", "value"));
             }
 

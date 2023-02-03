@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -16,57 +16,55 @@
 // limitations under the License.
 
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
-{
-    public class AsyncWriteCommand<TContext> : AsyncCommand<TContext>
-        where TContext : StressTestContext
-    {
-        private readonly StressTest<TContext> _test;
+namespace Neo4j.Driver.IntegrationTests.Stress;
 
-        public AsyncWriteCommand(StressTest<TContext> test, IDriver driver, bool useBookmark)
-            : base(driver, useBookmark)
+public class AsyncWriteCommand<TContext> : AsyncCommand<TContext>
+    where TContext : StressTestContext
+{
+    private readonly StressTest<TContext> _test;
+
+    public AsyncWriteCommand(StressTest<TContext> test, IDriver driver, bool useBookmark)
+        : base(driver, useBookmark)
+    {
+        _test = test ?? throw new ArgumentNullException(nameof(test));
+    }
+
+    public override async Task ExecuteAsync(TContext context)
+    {
+        var summary = default(IResultSummary);
+        var error = default(Exception);
+
+        var session = NewSession(AccessMode.Write, context);
+        try
         {
-            _test = test ?? throw new ArgumentNullException(nameof(test));
+            var cursor = await session.RunAsync("CREATE ()");
+            summary = await cursor.ConsumeAsync();
+
+            if (session.LastBookmarks != null)
+            {
+                context.Bookmarks = session.LastBookmarks;
+            }
+        }
+        catch (Exception exc)
+        {
+            error = exc;
+            if (!_test.HandleWriteFailure(error, context))
+            {
+                throw;
+            }
+        }
+        finally
+        {
+            await session.CloseAsync();
         }
 
-        public override async Task ExecuteAsync(TContext context)
+        if (error == null && summary != null)
         {
-            var summary = default(IResultSummary);
-            var error = default(Exception);
-
-            var session = NewSession(AccessMode.Write, context);
-            try
-            {
-                var cursor = await session.RunAsync("CREATE ()");
-                summary = await cursor.ConsumeAsync();
-
-                if (session.LastBookmarks != null)
-                {
-                    context.Bookmarks = session.LastBookmarks;
-                }
-            }
-            catch (Exception exc)
-            {
-                error = exc;
-                if (!_test.HandleWriteFailure(error, context))
-                {
-                    throw;
-                }
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-
-            if (error == null && summary != null)
-            {
-                summary.Counters.NodesCreated.Should().Be(1);
-                context.NodeCreated();
-            }
+            summary.Counters.NodesCreated.Should().Be(1);
+            context.NodeCreated();
         }
     }
 }

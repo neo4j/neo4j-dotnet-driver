@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,16 +18,21 @@
 using System;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal
-{
-    internal interface IInternalAsyncSession: IAsyncSession
-    {
-        Task<IAsyncTransaction> BeginTransactionAsync(Action<TransactionConfigBuilder> action,
-            bool disposeUnconsumedSessionResult);
-        Task<IAsyncTransaction> BeginTransactionAsync(AccessMode mode, Action<TransactionConfigBuilder> action,
-            bool disposeUnconsumedSessionResult);
+namespace Neo4j.Driver.Internal;
 
-        Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action,
-            bool disposeUnconsumedSessionResult);
-    }
+internal interface IInternalAsyncSession : IAsyncSession
+{
+    Task<IAsyncTransaction> BeginTransactionAsync(
+        Action<TransactionConfigBuilder> action,
+        bool disposeUnconsumedSessionResult);
+
+    Task<IAsyncTransaction> BeginTransactionAsync(
+        AccessMode mode,
+        Action<TransactionConfigBuilder> action,
+        bool disposeUnconsumedSessionResult);
+
+    Task<IResultCursor> RunAsync(
+        Query query,
+        Action<TransactionConfigBuilder> action,
+        bool disposeUnconsumedSessionResult);
 }

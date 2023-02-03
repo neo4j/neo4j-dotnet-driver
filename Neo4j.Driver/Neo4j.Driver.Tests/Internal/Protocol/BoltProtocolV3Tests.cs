@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -16,425 +16,513 @@
 // limitations under the License.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
-using FluentAssertions.Collections;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.MessageHandling.V3;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Messaging.V3;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver.Tests;
 using Xunit;
-using static Neo4j.Driver.Internal.Protocol.BoltProtocolUtils;
-using static Neo4j.Driver.Internal.Protocol.BoltProtocolV3;
-using V3 = Neo4j.Driver.Internal.MessageHandling.V3;
+using Record = Xunit.Record;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
-    public static class BoltProtocolV3Tests
+    public class BoltProtocolV3Tests
     {
-        private static readonly TransactionConfig TxConfig = new TransactionConfig
-        {
-            Timeout = TimeSpan.FromMinutes(1),
-            Metadata = new Dictionary<string, object> {{"key1", "value1"}}
-        };
-
-        private static readonly Bookmarks Bookmarks = Bookmarks.From("bookmark-123");
-
-        private static void VerifyMetadata(IDictionary<string, object> metadata, AccessMode mode)
-        {
-            var expected = new Dictionary<string, object>
-            {
-                {"bookmarks", new[] {"bookmark-123"}},
-                {"tx_timeout", TxConfig.Timeout.Value.TotalMilliseconds},
-                {"tx_metadata", TxConfig.Metadata}
-            };
-
-            if (mode == AccessMode.Read)
-            {
-                expected.Add("mode", "r");
-            }
-
-            metadata.Should().BeEquivalentTo(expected);
-        }
-
-        public class LoginAsyncMethod
+        public class LoginAsyncTests
         {
             [Fact]
-            public async Task ShouldEnqueueHelloAndSync()
+            public async Task ShouldSyncHelloMessage()
             {
                 var mockConn = new Mock<IConnection>();
-                var V3 = new BoltProtocolV3();
-                mockConn.Setup(x => x.Server).Returns(new ServerInfo(new Uri("http://neo4j.com")));
-                await V3.LoginAsync(mockConn.Object, "user-zhen", AuthTokens.None);
+                var auth = AuthTokens.Basic("user", "pass");
+
+                var mockMsgFactory = new Mock<IBoltProtocolMessageFactory>();
+                var msg = new HelloMessage(BoltProtocolVersion.V3_0, "ua", null, null);
+                mockMsgFactory.Setup(x => x.NewHelloMessage(mockConn.Object, "ua", auth)).Returns(msg);
+
+                var mockHandlerFactory = new Mock<IBoltProtocolHandlerFactory>();
+                var handler = new HelloResponseHandler(mockConn.Object);
+                mockHandlerFactory.Setup(x => x.NewHelloResponseHandler(mockConn.Object)).Returns(handler);
+
+                var protocol = new BoltProtocolV3(mockMsgFactory.Object, mockHandlerFactory.Object);
+                await protocol.LoginAsync(mockConn.Object, "ua", auth);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<Messaging.V3.HelloMessage>(), It.IsAny<V3.HelloResponseHandler>(), null, null),
-					Times.Once);
-                mockConn.Verify(x => x.SyncAsync());
+                    x => x.EnqueueAsync(It.IsNotNull<HelloMessage>(), It.IsNotNull<HelloResponseHandler>()),
+                    Times.Once);
+
+                mockConn.Verify(x => x.SyncAsync(), Times.Once);
+                mockConn.VerifyNoOtherCalls();
             }
         }
 
-        public class LogoutAsyncMethod
+        public class LogoutAsyncTests
         {
             [Fact]
-            public async Task ShouldEnqueueGoodbyeAndSend()
+            public async Task ShouldSendGoodbyeMessage()
             {
                 var mockConn = new Mock<IConnection>();
-                var V3 = new BoltProtocolV3();
 
-                await V3.LogoutAsync(mockConn.Object);
+                await BoltProtocolV3.Instance.LogoutAsync(mockConn.Object);
 
-                mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<GoodbyeMessage>(), It.IsNotNull<IResponseHandler>(), null, null),
-                    Times.Once);
+                mockConn.Verify(x => x.EnqueueAsync(GoodbyeMessage.Instance, NoOpResponseHandler.Instance), Times.Once);
                 mockConn.Verify(x => x.SendAsync());
+                mockConn.VerifyNoOtherCalls();
             }
         }
 
-        public class RunInAutoCommitTransactionAsyncMethod
+        public class ResetAsyncTests
         {
             [Fact]
-            public async Task ShouldEnqueueRunAndPullAllAndSend()
+            public async Task ShouldEnqueueResetMessage()
             {
-                var mockConn = NewConnectionWithMode();
-                var query = new Query("A cypher query");
-                var bookmarkTracker = new Mock<IBookmarksTracker>();
-                var resourceHandler = new Mock<IResultResourceHandler>();
-                var V3 = new BoltProtocolV3();
+                var mockConn = new Mock<IConnection>();
 
-                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
-                        It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
-                    .Returns(Task.CompletedTask)
-                    .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
-                        (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
+                await BoltProtocolV3.Instance.ResetAsync(mockConn.Object);
 
-				
-
-                await V3.RunInAutoCommitTransactionAsync(mockConn.Object, query, true, bookmarkTracker.Object,
-                    resourceHandler.Object, null, null, null, null);
-
-                mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V3.RunResponseHandler>(),
-                        PullAllMessage.PullAll,
-                        It.IsAny<V3.PullResponseHandler>()), Times.Once);
-                mockConn.Verify(x => x.SendAsync());
-            }
-
-            [Fact]
-            public async Task ResultBuilderShouldObtainServerInfoFromConnection()
-            {
-                var mockConn = NewConnectionWithMode();
-                var query = new Query("A cypher query");
-                var bookmarkTracker = new Mock<IBookmarksTracker>();
-                var resourceHandler = new Mock<IResultResourceHandler>();
-                var V3 = new BoltProtocolV3();
-
-                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
-                        It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
-                    .Returns(Task.CompletedTask)
-                    .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
-                        (msg1, h1, msg2, h2) => { h1.OnSuccess(new Dictionary<string, object>()); });
-
-                await V3.RunInAutoCommitTransactionAsync(mockConn.Object, query, true, bookmarkTracker.Object,
-                    resourceHandler.Object, null, null, null, null);
-
-                mockConn.Verify(x => x.Server, Times.Once);
-            }
-
-            [Theory]
-            [InlineData(AccessMode.Read)]
-            [InlineData(AccessMode.Write)]
-            public async Task ShouldPassBookmarkAndTxConfigToRunWithMetadataMessage(AccessMode mode)
-            {
-                var mockConn = NewConnectionWithMode(mode);
-                var query = new Query("A cypher query");
-                var bookmarkTracker = new Mock<IBookmarksTracker>();
-                var resourceHandler = new Mock<IResultResourceHandler>();
-                var V3 = new BoltProtocolV3();
-
-                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
-                        It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
-                    .Returns(Task.CompletedTask)
-                    .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
-                        (m1, h1, m2, h2) =>
-                        {
-                            h1.OnSuccess(new Dictionary<string, object>());
-                            VerifyMetadata(m1.CastOrThrow<RunWithMetadataMessage>().Metadata, mode);
-                        });
-
-                await V3.RunInAutoCommitTransactionAsync(mockConn.Object, query, true, bookmarkTracker.Object,
-                    resourceHandler.Object, null, Bookmarks, TxConfig, null);
-
-                mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V3.RunResponseHandler>(),
-                        PullAllMessage.PullAll,
-                        It.IsAny<V3.PullResponseHandler>()),
-                    Times.Once);
-            }
-
-            [Theory]
-            [InlineData("database")]
-            public void ShouldThrowWhenADatabaseIsGiven(string database)
-            {
-                var V3 = new BoltProtocolV3();
-
-                V3.Awaiting(p => p.RunInAutoCommitTransactionAsync(Mock.Of<IConnection>(), new Query("text"),
-                        false, Mock.Of<IBookmarksTracker>(), Mock.Of<IResultResourceHandler>(), database,
-                        Bookmarks.From("123"),
-                        TransactionConfig.Default, null))
-                    .Should().Throw<ClientException>().WithMessage("*that does not support multiple databases*");
+                mockConn.Verify(x => x.EnqueueAsync(ResetMessage.Instance, NoOpResponseHandler.Instance), Times.Once);
+                mockConn.VerifyNoOtherCalls();
             }
         }
 
-        public class BeginTransactionAsyncMethod
-        {   
-            [Fact]
-            public async Task ShouldSyncIfValidBookmarkGiven()
-            {
-                var mockConn = NewConnectionWithMode();
-                var bookmarks = Bookmarks.From(AsyncSessionTests.FakeABookmark(234));
-                var V3 = new BoltProtocolV3();
-
-                await V3.BeginTransactionAsync(mockConn.Object, null, bookmarks, null, null);
-
-                mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V3.BeginResponseHandler>(), null, null),
-                    Times.Once);
-                mockConn.Verify(x => x.SyncAsync(), Times.Once);
-            }
-
-            [Theory]
-            [InlineData(AccessMode.Read)]
-            [InlineData(AccessMode.Write)]
-            public async Task ShouldPassBookmarkTxConfigAndModeToRunWithMetadataMessage(AccessMode mode)
-            {
-                var mockConn = NewConnectionWithMode(mode);
-                var V3 = new BoltProtocolV3();
-
-                mockConn.Setup(x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>(),
-                        It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()))
-                    .Returns(Task.CompletedTask)
-                    .Callback<IRequestMessage, IResponseHandler, IRequestMessage, IResponseHandler>(
-                        (m1, h1, m2, h2) =>
-                        {
-                            var msg = m1.CastOrThrow<BeginMessage>();
-                            VerifyMetadata(msg.Metadata, mode);
-                        });
-
-                await V3.BeginTransactionAsync(mockConn.Object, null, Bookmarks, TxConfig, null);
-
-                mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<BeginMessage>(), It.IsAny<V3.BeginResponseHandler>(), null, null),
-                    Times.Once);
-            }
-
-            [Theory]
-            [InlineData("database")]
-            public void ShouldThrowWhenADatabaseIsGiven(string database)
-            {
-                var V3 = new BoltProtocolV3();
-				var mockConn = NewConnectionWithMode(AccessMode.Read);
-
-				V3.Awaiting(p => p.BeginTransactionAsync(mockConn.Object, database, Bookmarks.From("123"),
-                        TransactionConfig.Default, null))
-                    .Should().Throw<ClientException>().WithMessage("*that does not support multiple databases*");
-            }
-
-			[Fact]
-			public async Task ShouldThrowOnImpersonatedUserAsync()
-			{
-				var protocol = new BoltProtocolV3();
-				var mockConn = NewConnectionWithMode(AccessMode.Read);
-				
-				var ex = await Assert.ThrowsAsync<ArgumentException>(() => protocol.BeginTransactionAsync(mockConn.Object, 
-																						   string.Empty, 
-																						   Bookmarks.From("123"), 
-																						   TransactionConfig.Default, 
-																						   "ImpersonatedUser"));
-
-				ex.Message.Should().Contain("3.0");
-			}
-        }
-
-        public class CommitTransactionAsyncMethod
+        public class GetRoutingTableAsyncTests
         {
             [Fact]
-            public async Task EnqueueCommitAndSync()
+            public async Task ShouldThrowProtocolExceptionIfNullConnection()
             {
-                var mockConn = NewConnectionWithMode();
-                var bookmarkTracker = new Mock<IBookmarksTracker>();
-                var V3 = new BoltProtocolV3();
+                var ex = await Record.ExceptionAsync(
+                    () => BoltProtocolV3.Instance.GetRoutingTableAsync(null, "db", null, null));
 
-                await V3.CommitTransactionAsync(mockConn.Object, bookmarkTracker.Object);
-
-                mockConn.Verify(
-                    x => x.EnqueueAsync(CommitMessage.Commit, It.IsAny<V3.CommitResponseHandler>(), null, null),
-                    Times.Once);
-                mockConn.Verify(x => x.SyncAsync(), Times.Once);
+                ex.Should().BeOfType<ProtocolException>();
             }
-        }
 
-        public class RollbackTransactionAsyncMethod
-        {
             [Fact]
-            public async Task ShouldEnqueueRollbackAndSync()
+            public async Task ShouldThrowIfImpersonationNotNull()
             {
-                var mockConn = NewConnectionWithMode();
-                var V3 = new BoltProtocolV3();
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V3_0);
 
-                await V3.RollbackTransactionAsync(mockConn.Object);
+                var ex = await Record.ExceptionAsync(
+                    () => BoltProtocolV3.Instance.GetRoutingTableAsync(mockConn.Object, "db", "Douglas Fir", null));
 
-                mockConn.Verify(
-                    x => x.EnqueueAsync(RollbackMessage.Rollback, It.IsAny<V3.RollbackResponseHandler>(), null, null),
-                    Times.Once);
-                mockConn.Verify(x => x.SyncAsync(), Times.Once);
+                ex.Should().BeOfType<ArgumentException>();
             }
-        }
 
-        public class RunInExplicitTransactionAsyncMethod
-        {
             [Fact]
-            public async Task ShouldRunPullAllSync()
+            public async Task ShouldSendRunWithMetadataMessageToGetRoutingTable()
             {
-                var mockConn = AsyncSessionTests.MockedConnectionWithSuccessResponse();
-                var query = new Query("lalala");
-                var V3 = new BoltProtocolV3();
+                var mockRoutingContext = new Mock<IDictionary<string, string>>();
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V3_0);
+                mockConn.SetupGet(x => x.RoutingContext).Returns(mockRoutingContext.Object);
 
-                await V3.RunInExplicitTransactionAsync(mockConn.Object, query, true);
+                var mockRtResult = new Mock<IRecord>();
+                mockRtResult.SetupGet(x => x.Values).Returns(new Dictionary<string, object>());
 
+                var mockCursor = new Mock<IInternalResultCursor>();
+                mockCursor.SetupSequence(x => x.FetchAsync()).ReturnsAsync(true).ReturnsAsync(false);
+                mockCursor.SetupGet(x => x.Current).Returns(mockRtResult.Object);
+
+                var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
+                resultCursorBuilderMock.Setup(x => x.CreateCursor()).Returns(mockCursor.Object);
+
+                var msgFactory = new Mock<IBoltProtocolMessageFactory>();
+
+                AutoCommitParams queryParams = null;
+                msgFactory.Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, It.IsAny<AutoCommitParams>()))
+                    .Callback<IConnection, AutoCommitParams>((_, y) => queryParams = y);
+
+                var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
+                handlerFactory.Setup(
+                        x => x.NewResultCursorBuilder(
+                            It.IsAny<SummaryBuilder>(),
+                            It.IsAny<IConnection>(),
+                            It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                                Func<IResultStreamBuilder, long, long, Task>>>(),
+                            It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                                Func<IResultStreamBuilder, long, Task>>>(),
+                            It.IsAny<IBookmarksTracker>(),
+                            It.IsAny<IResultResourceHandler>(),
+                            It.IsAny<long>(),
+                            It.IsAny<bool>()))
+                    .Returns(resultCursorBuilderMock.Object);
+
+                var protocol = new BoltProtocolV3(msgFactory.Object, handlerFactory.Object);
+
+                var bm = new InternalBookmarks();
+                var routingTable = await protocol.GetRoutingTableAsync(
+                    mockConn.Object,
+                    "test",
+                    null,
+                    bm);
+
+                routingTable.Should().Contain(new KeyValuePair<string, object>("db", "test"));
+
+                handlerFactory.Verify(x => x.NewRouteResponseHandler(), Times.Never);
+
+                msgFactory.Verify(
+                    x =>
+                        x.NewRouteMessage(
+                            It.IsAny<IConnection>(),
+                            It.IsAny<Bookmarks>(),
+                            It.IsAny<string>(),
+                            It.IsAny<string>()),
+                    Times.Never);
+
+                queryParams.Should().NotBeNull();
+                queryParams.Query.Text.Should().Be("CALL dbms.cluster.routing.getRoutingTable($context)");
+                queryParams.Query.Parameters.Should().HaveCount(1).And.ContainKeys("context");
+                queryParams.Query.Parameters["context"].Should().Be(mockRoutingContext.Object);
+                queryParams.Database.Should().BeNull();
+                queryParams.BookmarksTracker.Should().NotBeNull();
+                queryParams.ResultResourceHandler.Should().NotBeNull();
+                queryParams.Bookmarks.Should().BeNull();
+
+                mockConn.Verify(x => x.ConfigureMode(AccessMode.Read), Times.Once);
                 mockConn.Verify(
-                    x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<V3.RunResponseHandler>(),
-                        PullAllMessage.PullAll,
-                        It.IsAny<V3.PullResponseHandler>()),
-                    Times.Once);
+                    x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()),
+                    Times.Exactly(2));
+
                 mockConn.Verify(x => x.SendAsync(), Times.Once);
             }
-
-            [Fact]
-            public async Task ResultBuilderShouldObtainServerInfoFromConnection()
-            {
-                var mockConn = AsyncSessionTests.MockedConnectionWithSuccessResponse();
-                var query = new Query("lalala");
-                var V3 = new BoltProtocolV3();
-
-                await V3.RunInExplicitTransactionAsync(mockConn.Object, query, true);
-                mockConn.Verify(x => x.Server, Times.Once);
-            }
         }
 
-        public class RoutingTable
+        public class RunInAutoCommitTransactionAsyncTests
         {
-            [Theory]
-            [InlineData("Neo4j/3.2.0-alpha01")]
-            [InlineData("3.2.0-alpha01")]
-            [InlineData("Neo4j/3.2.1")]
-            [InlineData("3.2.1")]
-            public void ShouldUseGetRoutingTableProcedure(string version)
+            [Fact]
+            public async Task ShouldThrowIfImpersonatedUserIsNotNull()
             {
-                var V3 = new BoltProtocolV3();
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V3_0);
 
-                // Given
-                var context = new Dictionary<string, string> { { "context", string.Empty } };
-                var mockConnection = new Mock<IConnection>();
-                var serverInfoMock = new Mock<IServerInfo>();
-                
-                serverInfoMock.Setup(m => m.Agent).Returns(version);
-                mockConnection.Setup(m => m.Server).Returns(serverInfoMock.Object);
-                mockConnection.Setup(m => m.BoltProtocol).Returns(V3);
-                mockConnection.Setup(m => m.RoutingContext).Returns(context);
+                var acp = new AutoCommitParams
+                {
+                    ImpersonatedUser = "Douglas Fir"
+                };
 
-                // When
-                string procedure;
-                var parameters = new Dictionary<string, object>();
-                V3.GetProcedureAndParameters(mockConnection.Object, "database", out procedure, out parameters);
+                var exception = await Record.ExceptionAsync(
+                    () => BoltProtocolV3.Instance.RunInAutoCommitTransactionAsync(mockConn.Object, acp));
 
-                // Then
-                procedure.Should().Be("CALL dbms.cluster.routing.getRoutingTable($context)");
-                parameters["context"].Should().Be(context);
+                exception.Should().BeOfType<ArgumentException>();
             }
 
             [Fact]
-            public async Task GetRoutingTableShouldThrowOnNullConnectionObject()
-			{
-                var v3 = new BoltProtocolV3();
+            public async Task ShouldThrowIfDatabaseIsNotNull()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V3_0);
 
-                var ex = await Xunit.Record.ExceptionAsync(async () => await v3.GetRoutingTable(null, "adb", null, null));
+                var acp = new AutoCommitParams
+                {
+                    Database = "NotNull"
+                };
 
-                ex.Should().BeOfType<ProtocolException>().Which
-                    .Message.Should()
-                    .Contain("Attempting to get a routing table on a null connection");
+                var exception = await Record.ExceptionAsync(
+                    () => BoltProtocolV3.Instance.RunInAutoCommitTransactionAsync(mockConn.Object, acp));
+
+                exception.Should().BeOfType<ClientException>();
             }
 
-			[Fact]
-			public async Task RoutingTableShouldContainDatabase()
-			{
-				var connection = SetupMockedConnection();
-				var boltProtocolV3 = new BoltProtocolV3();
-				
-				//When
-				var routingTableDictionary = await boltProtocolV3.GetRoutingTable(connection, "myTestDatabase", null, null);
+            [Fact]
+            public async Task ShouldSendMessages()
+            {
+                var mockBt = new Mock<IBookmarksTracker>();
+                var mockRrh = new Mock<IResultResourceHandler>();
 
-				//Then
-				routingTableDictionary.ToDictionary().Should().ContainKey("db").WhichValue.Should().Be("myTestDatabase");
-			}
+                var acp = new AutoCommitParams
+                {
+                    Query = new Query("..."),
+                    Reactive = false,
+                    FetchSize = 10,
+                    BookmarksTracker = mockBt.Object,
+                    ResultResourceHandler = mockRrh.Object
+                };
 
-			[Fact]
-			public async Task ShouldThrowOnImpersonatedUser()
-			{
-				var connection = SetupMockedConnection();
-				var boltProtocolV3 = new BoltProtocolV3();
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V3_0);
 
-				//When
-				var ex = await Assert.ThrowsAsync<ArgumentException>(() => boltProtocolV3.GetRoutingTable(connection, "myTestDatabase", string.Empty, null));
+                var msgFactory = new Mock<IBoltProtocolMessageFactory>();
+                msgFactory
+                    .Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, acp))
+                    .Returns(new RunWithMetadataMessage(mockConn.Object.Version, new Query("...")));
 
-				ex.Message.Should().Contain("3.0");
-			}
+                var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
+                var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
+                var summaryBuilder = new SummaryBuilder(new Query("..."), new ServerInfo(new Uri("http://0.0.0.0")));
+                handlerFactory.Setup(
+                        x => x.NewRunResponseHandlerV3(
+                            resultCursorBuilderMock.Object,
+                            It.IsNotNull<SummaryBuilder>()))
+                    .Returns(new RunResponseHandlerV3(resultCursorBuilderMock.Object, summaryBuilder));
 
-			private IConnection SetupMockedConnection()
-			{
-				//Given
-				var routingContext = new Dictionary<string, string>
-				{
-					{"name", "molly"},
-					{"age", "1"},
-					{"color", "white"}
-				};
+                handlerFactory.Setup(
+                        x => x.NewPullAllResponseHandler(
+                            resultCursorBuilderMock.Object,
+                            It.IsNotNull<SummaryBuilder>(),
+                            mockBt.Object))
+                    .Returns(new PullAllResponseHandler(resultCursorBuilderMock.Object, summaryBuilder, mockBt.Object));
 
-				var results = new object[]
-				{
-					"15000",
-					new List<object>
-					{
-						new Dictionary<string, object>
-						{
-							{"addresses", "routing ip addresses"},
-							{"role", "ROUTE"}
-						},
-						new Dictionary<string, object>
-						{
-							{"addresses", "write ip addresses"},
-							{"role", "WRITE"}
-						},
-						new Dictionary<string, object>
-						{
-							{"addresses", "read ip addresses"},
-							{"role", "READ"}
-						}
-					}
-				};
+                handlerFactory.Setup(
+                        x => x.NewResultCursorBuilder(
+                            It.IsAny<SummaryBuilder>(),
+                            It.IsAny<IConnection>(),
+                            It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                                Func<IResultStreamBuilder, long, long, Task>>>(),
+                            It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                                Func<IResultStreamBuilder, long, Task>>>(),
+                            It.IsAny<IBookmarksTracker>(),
+                            It.IsAny<IResultResourceHandler>(),
+                            It.IsAny<long>(),
+                            It.IsAny<bool>()))
+                    .Returns(resultCursorBuilderMock.Object);
 
-				var mockConn = Tests.Routing.ClusterDiscoveryTests.Setup32SocketConnection(routingContext, results);
-				mockConn.Setup(m => m.RoutingContext).Returns(routingContext);
+                var protocol = new BoltProtocolV3(msgFactory.Object, handlerFactory.Object);
+                await protocol.RunInAutoCommitTransactionAsync(mockConn.Object, acp);
 
-				return mockConn.Object;
-			}
+                handlerFactory.Verify(
+                    x => x.NewResultCursorBuilder(
+                        It.IsNotNull<SummaryBuilder>(),
+                        mockConn.Object,
+                        null,
+                        null,
+                        null,
+                        mockRrh.Object,
+                        Config.Infinite,
+                        false),
+                    Times.Once);
+
+                mockConn.Verify(
+                    x => x.EnqueueAsync(It.IsNotNull<IRequestMessage>(), It.IsNotNull<IResponseHandler>()),
+                    Times.Exactly(2));
+
+                mockConn.Verify(
+                    x => x.EnqueueAsync(It.IsNotNull<RunWithMetadataMessage>(), It.IsNotNull<RunResponseHandlerV3>()),
+                    Times.Once);
+
+                mockConn.Verify(
+                    x => x.EnqueueAsync(PullAllMessage.Instance, It.IsNotNull<PullAllResponseHandler>()),
+                    Times.Once);
+
+                mockConn.Verify(x => x.SendAsync(), Times.Once);
+                mockConn.Verify(x => x.SyncAsync(), Times.Never);
+            }
         }
 
+        public class BeginTransactionAsyncTests
+        {
+            [Fact]
+            public async Task ShouldThrowIfImpersonatedUserIsNotNull()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V3_0);
 
+                var exception = await Record.ExceptionAsync(
+                    () => BoltProtocolV3.Instance.BeginTransactionAsync(
+                        mockConn.Object,
+                        null,
+                        null,
+                        TransactionConfig.Default,
+                        "Douglas Fire"));
+
+                exception.Should().BeOfType<ArgumentException>();
+            }
+
+            [Fact]
+            public async Task ShouldThrowIfDatabaseIsNotNull()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V3_0);
+
+                var exception = await Record.ExceptionAsync(
+                    () => BoltProtocolV3.Instance.BeginTransactionAsync(
+                        mockConn.Object,
+                        "db",
+                        null,
+                        TransactionConfig.Default,
+                        null));
+
+                exception.Should().BeOfType<ClientException>();
+            }
+
+            [Fact]
+            public async Task ShouldThrowIfConnectionModeIsNull()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V3_0);
+                mockConn.SetupGet(x => x.Mode).Returns((AccessMode?)null);
+
+                var exception = await Record.ExceptionAsync(
+                    () => BoltProtocolV3.Instance.BeginTransactionAsync(
+                        mockConn.Object,
+                        null,
+                        null,
+                        TransactionConfig.Default,
+                        null));
+
+                exception.Should().BeOfType<InvalidOperationException>();
+            }
+
+            [Fact]
+            public async Task ShouldSyncBeginMessage()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V3_0);
+                mockConn.SetupGet(x => x.Mode).Returns(AccessMode.Write);
+
+                var fakeMessage = new BeginMessage(null, null, null, null, null, AccessMode.Write, null);
+                var msgFactory = new Mock<IBoltProtocolMessageFactory>();
+                msgFactory.Setup(
+                        x => x.NewBeginMessage(
+                            It.IsAny<IConnection>(),
+                            It.IsAny<string>(),
+                            It.IsAny<Bookmarks>(),
+                            It.IsAny<TransactionConfig>(),
+                            It.IsAny<AccessMode>(),
+                            It.IsAny<string>()))
+                    .Returns(fakeMessage);
+
+                var protocol = new BoltProtocolV3(msgFactory.Object);
+
+                var tc = new TransactionConfig();
+                var bookmarks = new InternalBookmarks();
+                await protocol.BeginTransactionAsync(
+                    mockConn.Object,
+                    null,
+                    bookmarks,
+                    tc,
+                    null);
+
+                msgFactory.Verify(
+                    x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
+                    Times.Once);
+
+                mockConn.Verify(
+                    x => x.EnqueueAsync(fakeMessage, NoOpResponseHandler.Instance),
+                    Times.Once);
+
+                mockConn.Verify(x => x.SyncAsync(), Times.Once);
+                mockConn.Verify(x => x.SendAsync(), Times.Never);
+            }
+        }
+
+        public class RunInExplicitTransactionAsync
+        {
+            [Fact]
+            public async Task ShouldSendMessages()
+            {
+                var query = new Query("...");
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V3_0);
+
+                var msgFactory = new Mock<IBoltProtocolMessageFactory>();
+                msgFactory
+                    .Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, query))
+                    .Returns(new RunWithMetadataMessage(mockConn.Object.Version, query));
+
+                var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
+                var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
+                var summaryBuilder = new SummaryBuilder(new Query("..."), new ServerInfo(new Uri("http://0.0.0.0")));
+                handlerFactory.Setup(
+                        x => x.NewRunResponseHandlerV3(
+                            resultCursorBuilderMock.Object,
+                            It.IsNotNull<SummaryBuilder>()))
+                    .Returns(new RunResponseHandlerV3(resultCursorBuilderMock.Object, summaryBuilder));
+
+                handlerFactory.Setup(
+                        x => x.NewPullAllResponseHandler(
+                            resultCursorBuilderMock.Object,
+                            It.IsNotNull<SummaryBuilder>(),
+                            null))
+                    .Returns(new PullAllResponseHandler(resultCursorBuilderMock.Object, summaryBuilder, null));
+
+                handlerFactory.Setup(
+                        x => x.NewResultCursorBuilder(
+                            It.IsAny<SummaryBuilder>(),
+                            It.IsAny<IConnection>(),
+                            It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                                Func<IResultStreamBuilder, long, long, Task>>>(),
+                            It.IsAny<Func<IConnection, SummaryBuilder, IBookmarksTracker,
+                                Func<IResultStreamBuilder, long, Task>>>(),
+                            It.IsAny<IBookmarksTracker>(),
+                            It.IsAny<IResultResourceHandler>(),
+                            It.IsAny<long>(),
+                            It.IsAny<bool>()))
+                    .Returns(resultCursorBuilderMock.Object);
+
+                var protocol = new BoltProtocolV3(msgFactory.Object, handlerFactory.Object);
+                await protocol.RunInExplicitTransactionAsync(mockConn.Object, query, false);
+
+                handlerFactory.Verify(
+                    x => x.NewResultCursorBuilder(
+                        It.IsNotNull<SummaryBuilder>(),
+                        mockConn.Object,
+                        null,
+                        null,
+                        null,
+                        null,
+                        Config.Infinite,
+                        false),
+                    Times.Once);
+
+                mockConn.Verify(
+                    x => x.EnqueueAsync(It.IsNotNull<IRequestMessage>(), It.IsNotNull<IResponseHandler>()),
+                    Times.Exactly(2));
+
+                mockConn.Verify(
+                    x => x.EnqueueAsync(It.IsNotNull<RunWithMetadataMessage>(), It.IsNotNull<RunResponseHandlerV3>()),
+                    Times.Once);
+
+                mockConn.Verify(
+                    x => x.EnqueueAsync(PullAllMessage.Instance, It.IsNotNull<PullAllResponseHandler>()),
+                    Times.Once);
+
+                mockConn.Verify(x => x.SendAsync(), Times.Once);
+                mockConn.Verify(x => x.SyncAsync(), Times.Never);
+            }
+        }
+
+        public class CommitTransactionAsyncTests
+        {
+            [Fact]
+            public async Task ShouldSyncCommitMessage()
+            {
+                var mockConn = new Mock<IConnection>();
+                var mockBt = new Mock<IBookmarksTracker>();
+                var mockHandler = new Mock<IBoltProtocolHandlerFactory>();
+                var handler = new CommitResponseHandler(mockBt.Object);
+                mockHandler.Setup(x => x.NewCommitResponseHandler(mockBt.Object))
+                    .Returns(handler);
+
+                var protocol = new BoltProtocolV3(null, mockHandler.Object);
+
+                await protocol.CommitTransactionAsync(mockConn.Object, mockBt.Object);
+
+                mockConn.Verify(x => x.EnqueueAsync(CommitMessage.Instance, handler), Times.Once);
+                mockConn.Verify(x => x.SyncAsync(), Times.Once);
+                mockConn.VerifyNoOtherCalls();
+            }
+        }
+
+        public class RollbackTransactionAsyncTests
+        {
+            [Fact]
+            public async Task ShouldSyncRollbackMessage()
+            {
+                var mockConn = new Mock<IConnection>();
+
+                await BoltProtocolV3.Instance.RollbackTransactionAsync(mockConn.Object);
+
+                mockConn.Verify(
+                    x => x.EnqueueAsync(RollbackMessage.Instance, NoOpResponseHandler.Instance),
+                    Times.Once);
+
+                mockConn.Verify(x => x.SyncAsync(), Times.Once);
+                mockConn.VerifyNoOtherCalls();
+            }
+        }
     }
 }

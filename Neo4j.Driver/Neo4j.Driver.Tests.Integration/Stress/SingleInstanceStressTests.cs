@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -24,102 +24,101 @@ using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Neo4j.Driver.IntegrationTests.Stress
+namespace Neo4j.Driver.IntegrationTests.Stress;
+
+[Collection(SAIntegrationCollection.CollectionName)]
+public class SingleInstanceStressTests : StressTest<SingleInstanceStressTests.Context>
 {
-    [Collection(SAIntegrationCollection.CollectionName)]
-    public class SingleInstanceStressTests : StressTest<SingleInstanceStressTests.Context>
+    private readonly StandAloneIntegrationTestFixture _standalone;
+
+    public SingleInstanceStressTests(ITestOutputHelper output, StandAloneIntegrationTestFixture standalone) :
+        base(output, standalone.StandAloneSharedInstance.BoltUri, standalone.StandAloneSharedInstance.AuthToken)
     {
-        private readonly StandAloneIntegrationTestFixture _standalone;
+        _standalone = standalone;
+    }
 
-        public SingleInstanceStressTests(ITestOutputHelper output, StandAloneIntegrationTestFixture standalone) :
-            base(output, standalone.StandAloneSharedInstance.BoltUri, standalone.StandAloneSharedInstance.AuthToken)
+    protected override Context CreateContext()
+    {
+        return new Context(_standalone.StandAloneSharedInstance.BoltUri.Authority);
+    }
+
+    protected override IEnumerable<IBlockingCommand<Context>> CreateTestSpecificBlockingCommands()
+    {
+        return Enumerable.Empty<IBlockingCommand<Context>>();
+    }
+
+    protected override IEnumerable<IAsyncCommand<Context>> CreateTestSpecificAsyncCommands()
+    {
+        return Enumerable.Empty<IAsyncCommand<Context>>();
+    }
+
+    protected override IEnumerable<IRxCommand<Context>> CreateTestSpecificRxCommands()
+    {
+        return new List<IRxCommand<Context>>
         {
-            _standalone = standalone;
+            new RxReadCommandInTx<Context>(_driver, false),
+            new RxReadCommandInTx<Context>(_driver, true),
+            new RxWriteCommandInTx<Context>(this, _driver, false),
+            new RxWriteCommandInTx<Context>(this, _driver, true),
+            new RxWrongCommandInTx<Context>(_driver),
+            new RxFailingCommandInTx<Context>(_driver)
+        };
+    }
+
+    protected override void PrintStats(Context context)
+    {
+        _output.WriteLine("{0}", context);
+    }
+
+    protected override void VerifyReadQueryDistribution(Context context)
+    {
+        context.ReadNodesCount.Should().BePositive();
+    }
+
+    public override bool HandleWriteFailure(Exception error, Context context)
+    {
+        return false;
+    }
+
+    protected override void RunReactiveBigData()
+    {
+        var bookmark = CreateNodesRx(BigDataTestBatchCount, BigDataTestBatchSize, BigDataTestBatchBuffer, _driver);
+        ReadNodesRx(_driver, bookmark, BigDataTestBatchCount * BigDataTestBatchSize);
+    }
+
+    public class Context : StressTestContext
+    {
+        private readonly string _expectedAddress;
+        private long _readQueries;
+
+        public Context(string expectedAddress)
+        {
+            _expectedAddress = expectedAddress;
         }
 
-        protected override Context CreateContext()
+        public long ReadQueries => Interlocked.Read(ref _readQueries);
+
+        protected override void ProcessSummary(IResultSummary summary)
         {
-            return new Context(_standalone.StandAloneSharedInstance.BoltUri.Authority);
-        }
-
-        protected override IEnumerable<IBlockingCommand<Context>> CreateTestSpecificBlockingCommands()
-        {
-            return Enumerable.Empty<IBlockingCommand<Context>>();
-        }
-
-        protected override IEnumerable<IAsyncCommand<Context>> CreateTestSpecificAsyncCommands()
-        {
-            return Enumerable.Empty<IAsyncCommand<Context>>();
-        }
-
-        protected override IEnumerable<IRxCommand<Context>> CreateTestSpecificRxCommands()
-        {
-			return new List<IRxCommand<Context>>
-			{
-				new RxReadCommandInTx<Context>(_driver, false),
-				new RxReadCommandInTx<Context>(_driver, true),
-				new RxWriteCommandInTx<Context>(this, _driver, false),
-				new RxWriteCommandInTx<Context>(this, _driver, true),
-				new RxWrongCommandInTx<Context>(_driver),
-				new RxFailingCommandInTx<Context>(_driver)
-			};
-        }
-
-        protected override void PrintStats(Context context)
-        {
-            _output.WriteLine("{0}", context);
-        }
-
-        protected override void VerifyReadQueryDistribution(Context context)
-        {
-            context.ReadNodesCount.Should().BePositive();
-        }
-
-        public override bool HandleWriteFailure(Exception error, Context context)
-        {
-            return false;
-        }
-
-		protected override void RunReactiveBigData()
-		{
-			var bookmark = CreateNodesRx(BigDataTestBatchCount, BigDataTestBatchSize, BigDataTestBatchBuffer, _driver);
-			ReadNodesRx(_driver, bookmark, BigDataTestBatchCount * BigDataTestBatchSize);
-		}
-
-		public class Context : StressTestContext
-        {
-            private readonly string _expectedAddress;
-            private long _readQueries;
-
-            public Context(string expectedAddress)
+            if (summary == null)
             {
-                _expectedAddress = expectedAddress;
+                return;
             }
 
-            public long ReadQueries => Interlocked.Read(ref _readQueries);
+            summary.Server.Address.Should().Be(_expectedAddress);
+            Interlocked.Increment(ref _readQueries);
+        }
 
-            protected override void ProcessSummary(IResultSummary summary)
-            {
-                if (summary == null)
-                {
-                    return;
-                }
-
-                summary.Server.Address.Should().Be(_expectedAddress);
-                Interlocked.Increment(ref _readQueries);
-            }
-
-            public override string ToString()
-            {
-                return new StringBuilder()
-                    .Append("SingleInstanceContext{")
-                    .AppendFormat("Bookmark={0}, ", Bookmarks)
-                    .AppendFormat("BookmarkFailures={0}, ", BookmarkFailures)
-                    .AppendFormat("NodesCreated={0}, ", CreatedNodesCount)
-                    .AppendFormat("NodesRead={0}", ReadNodesCount)
-                    .Append("}")
-                    .ToString();
-            }
+        public override string ToString()
+        {
+            return new StringBuilder()
+                .Append("SingleInstanceContext{")
+                .AppendFormat("Bookmark={0}, ", Bookmarks)
+                .AppendFormat("BookmarkFailures={0}, ", BookmarkFailures)
+                .AppendFormat("NodesCreated={0}, ", CreatedNodesCount)
+                .AppendFormat("NodesRead={0}", ReadNodesCount)
+                .Append("}")
+                .ToString();
         }
     }
 }

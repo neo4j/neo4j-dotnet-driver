@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -17,6 +17,7 @@
 
 using System;
 using FluentAssertions;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Result;
 using Xunit;
 
@@ -25,16 +26,25 @@ namespace Neo4j.Driver.Tests
     public class SummaryBuilderTests
     {
         [Theory]
-        [InlineData("bolt://localhost:7687", "1.2.3", "ServerInfo{Address=localhost:7687, Agent=1.2.3, ProtocolVersion=1.2}")]
-        [InlineData("bolt://127.0.0.1:7687", "1.2.3", "ServerInfo{Address=127.0.0.1:7687, Agent=1.2.3, ProtocolVersion=1.2}")]
+        [InlineData(
+            "bolt://localhost:7687",
+            "1.2.3",
+            "ServerInfo{Address=localhost:7687, Agent=1.2.3, ProtocolVersion=1.2}")]
+        [InlineData(
+            "bolt://127.0.0.1:7687",
+            "1.2.3",
+            "ServerInfo{Address=127.0.0.1:7687, Agent=1.2.3, ProtocolVersion=1.2}")]
         // If no port provided, it will be port=-1. This should never happen as we always default to 7687 if no port provided.
         [InlineData("bolt://localhost", "1.2.3", "ServerInfo{Address=localhost:-1, Agent=1.2.3, ProtocolVersion=1.2}")]
-        [InlineData("https://neo4j.com:9999", "1.2.3", "ServerInfo{Address=neo4j.com:9999, Agent=1.2.3, ProtocolVersion=1.2}")]
+        [InlineData(
+            "https://neo4j.com:9999",
+            "1.2.3",
+            "ServerInfo{Address=neo4j.com:9999, Agent=1.2.3, ProtocolVersion=1.2}")]
         public void CreateServerInfoCorrectly(string uriStr, string version, string expected)
         {
             var uri = new Uri(uriStr);
             var serverInfo = new ServerInfo(uri);
-            serverInfo.Update(new Internal.Protocol.BoltProtocolVersion(1, 2), version);
+            serverInfo.Update(new BoltProtocolVersion(1, 2), version);
 
             serverInfo.ToString().Should().Be(expected);
         }

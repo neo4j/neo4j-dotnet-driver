@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -25,6 +25,10 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
     {
         private const string Key = TimeToFirstCollector.TimeToFirstKey;
 
+        internal static KeyValuePair<string, object> TestMetadata => new(Key, 35L);
+
+        internal static long TestMetadataCollected => 35L;
+
         [Fact]
         public void ShouldNotCollectIfMetadataIsNull()
         {
@@ -48,19 +52,22 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         [Fact]
         public void ShouldThrowIfValueIsOfWrongType()
         {
-            var metadata = new Dictionary<string, object> {{Key, false}};
+            var metadata = new Dictionary<string, object> { { Key, false } };
             var collector = new TimeToFirstCollector();
 
             var ex = Record.Exception(() => collector.Collect(metadata));
 
-            ex.Should().BeOfType<ProtocolException>().Which
-                .Message.Should().Contain($"Expected '{Key}' metadata to be of type 'Int64', but got 'Boolean'.");
+            ex.Should()
+                .BeOfType<ProtocolException>()
+                .Which
+                .Message.Should()
+                .Contain($"Expected '{Key}' metadata to be of type 'Int64', but got 'Boolean'.");
         }
 
         [Fact]
         public void ShouldCollect()
         {
-            var metadata = new Dictionary<string, object> {{Key, 5L}};
+            var metadata = new Dictionary<string, object> { { Key, 5L } };
             var collector = new TimeToFirstCollector();
 
             collector.Collect(metadata);
@@ -71,24 +78,23 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         [Fact]
         public void ShouldReturnSameCollected()
         {
-            var metadata = new Dictionary<string, object> {{Key, 5L}};
+            var metadata = new Dictionary<string, object> { { Key, 5L } };
             var collector = new TimeToFirstCollector();
 
             collector.Collect(metadata);
 
-            ((IMetadataCollector) collector).Collected.Should().Be(collector.Collected);
+            ((IMetadataCollector)collector).Collected.Should().Be(collector.Collected);
         }
-
-        internal static KeyValuePair<string, object> TestMetadata =>
-            new KeyValuePair<string, object>(Key, 35L);
-
-        internal static long TestMetadataCollected => 35L;
     }
 
     public class TimeToLastCollectorTests
     {
         private const string Key = TimeToLastCollector.TimeToLastKey;
 
+        internal static KeyValuePair<string, object> TestMetadata => new(Key, 45L);
+
+        internal static long TestMetadataCollected => 45L;
+
         [Fact]
         public void ShouldNotCollectIfMetadataIsNull()
         {
@@ -112,19 +118,22 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         [Fact]
         public void ShouldThrowIfValueIsOfWrongType()
         {
-            var metadata = new Dictionary<string, object> {{Key, false}};
+            var metadata = new Dictionary<string, object> { { Key, false } };
             var collector = new TimeToLastCollector();
 
             var ex = Record.Exception(() => collector.Collect(metadata));
 
-            ex.Should().BeOfType<ProtocolException>().Which
-                .Message.Should().Contain($"Expected '{Key}' metadata to be of type 'Int64', but got 'Boolean'.");
+            ex.Should()
+                .BeOfType<ProtocolException>()
+                .Which
+                .Message.Should()
+                .Contain($"Expected '{Key}' metadata to be of type 'Int64', but got 'Boolean'.");
         }
 
         [Fact]
         public void ShouldCollect()
         {
-            var metadata = new Dictionary<string, object> {{Key, 5L}};
+            var metadata = new Dictionary<string, object> { { Key, 5L } };
             var collector = new TimeToLastCollector();
 
             collector.Collect(metadata);
@@ -135,17 +144,12 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         [Fact]
         public void ShouldReturnSameCollected()
         {
-            var metadata = new Dictionary<string, object> {{Key, 5L}};
+            var metadata = new Dictionary<string, object> { { Key, 5L } };
             var collector = new TimeToLastCollector();
 
             collector.Collect(metadata);
 
-            ((IMetadataCollector) collector).Collected.Should().Be(collector.Collected);
+            ((IMetadataCollector)collector).Collected.Should().Be(collector.Collected);
         }
-
-        internal static KeyValuePair<string, object> TestMetadata =>
-            new KeyValuePair<string, object>(Key, 45L);
-
-        internal static long TestMetadataCollected => 45L;
     }
 }

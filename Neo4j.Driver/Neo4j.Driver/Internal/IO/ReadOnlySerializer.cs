@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -19,20 +19,24 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Neo4j.Driver.Internal.IO
+namespace Neo4j.Driver.Internal.IO;
+
+internal abstract class ReadOnlySerializer : IPackStreamSerializer
 {
-    internal abstract class ReadOnlySerializer : IPackStreamSerializer
+    public IEnumerable<Type> WritableTypes => Enumerable.Empty<Type>();
+
+    public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
     {
-        public IEnumerable<Type> WritableTypes => Enumerable.Empty<Type>();
-
-        public void Serialize(IPackStreamWriter writer, object value)
-        {
-            throw new ProtocolException(
-                $"{GetType().Name}: It is not allowed to send a value of type {value?.GetType().Name} to the server.");
-        }
-
-        public abstract IEnumerable<byte> ReadableStructs { get; }
-
-        public abstract object Deserialize(IPackStreamReader reader, byte signature, long size);
+        throw new ProtocolException(
+            $"{GetType().Name}: It is not allowed to send a value of type {value?.GetType().Name} to the server.");
     }
+
+    public abstract IEnumerable<byte> ReadableStructs { get; }
+
+    public virtual object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte __, long ___)
+    {
+        return Deserialize(reader);
+    }
+
+    public abstract object Deserialize(PackStreamReader reader);
 }

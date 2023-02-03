@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -15,7 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Net;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -28,7 +27,6 @@ namespace Neo4j.Driver.Tests.Connector
 {
     public class DefaultResolverTests
     {
-
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -54,7 +52,7 @@ namespace Neo4j.Driver.Tests.Connector
 
             resolverMock.Verify(r => r.ResolveAsync("some_host"));
         }
-        
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -144,61 +142,91 @@ namespace Neo4j.Driver.Tests.Connector
 
             ipAddresses.Should().HaveCount(1).And.Contain(IPAddress.IPv6Loopback);
         }
-        
+
         [Fact]
         public void ShouldOrderIPv4First()
         {
             var resolverMock = new Mock<IHostResolver>();
-            resolverMock.Setup(x => x.Resolve(It.IsAny<string>())).Returns(new[]
-                {IPAddress.Parse("[::1]"),IPAddress.Parse("10.0.0.1"), IPAddress.Parse("192.168.0.11")});
+            resolverMock.Setup(x => x.Resolve(It.IsAny<string>()))
+                .Returns(
+                    new[]
+                        { IPAddress.Parse("[::1]"), IPAddress.Parse("10.0.0.1"), IPAddress.Parse("192.168.0.11") });
 
             var resolver = new DefaultHostResolver(resolverMock.Object, false);
             var ipAddresses = resolver.Resolve("some_host");
 
-            ipAddresses.Should().HaveCount(3).And.ContainInOrder(IPAddress.Parse("10.0.0.1"),
-                IPAddress.Parse("192.168.0.11"), IPAddress.Parse("[::1]"));
+            ipAddresses.Should()
+                .HaveCount(3)
+                .And.ContainInOrder(
+                    IPAddress.Parse("10.0.0.1"),
+                    IPAddress.Parse("192.168.0.11"),
+                    IPAddress.Parse("[::1]"));
         }
 
         [Fact]
         public async void ShouldOrderIPv4FirstAsync()
         {
             var resolverMock = new Mock<IHostResolver>();
-            resolverMock.Setup(x => x.ResolveAsync(It.IsAny<string>())).Returns(Task.FromResult(new[]
-                {IPAddress.Parse("[::1]"), IPAddress.Parse("10.0.0.1"), IPAddress.Parse("192.168.0.11")}));
+            resolverMock.Setup(x => x.ResolveAsync(It.IsAny<string>()))
+                .Returns(
+                    Task.FromResult(
+                        new[]
+                        {
+                            IPAddress.Parse("[::1]"), IPAddress.Parse("10.0.0.1"), IPAddress.Parse("192.168.0.11")
+                        }));
 
             var resolver = new DefaultHostResolver(resolverMock.Object, false);
             var ipAddresses = await resolver.ResolveAsync("some_host");
 
-            ipAddresses.Should().HaveCount(3).And.ContainInOrder(IPAddress.Parse("10.0.0.1"),
-                IPAddress.Parse("192.168.0.11"), IPAddress.Parse("[::1]"));
+            ipAddresses.Should()
+                .HaveCount(3)
+                .And.ContainInOrder(
+                    IPAddress.Parse("10.0.0.1"),
+                    IPAddress.Parse("192.168.0.11"),
+                    IPAddress.Parse("[::1]"));
         }
 
         [Fact]
         public void ShouldOrderIPv6FirstWhenIPv6Preferred()
         {
             var resolverMock = new Mock<IHostResolver>();
-            resolverMock.Setup(x => x.Resolve(It.IsAny<string>())).Returns(new[]
-                {IPAddress.Parse("10.0.0.1"), IPAddress.Parse("[::1]"), IPAddress.Parse("192.168.0.11")});
+            resolverMock.Setup(x => x.Resolve(It.IsAny<string>()))
+                .Returns(
+                    new[]
+                        { IPAddress.Parse("10.0.0.1"), IPAddress.Parse("[::1]"), IPAddress.Parse("192.168.0.11") });
 
             var resolver = new DefaultHostResolver(resolverMock.Object, true);
             var ipAddresses = resolver.Resolve("some_host");
 
-            ipAddresses.Should().HaveCount(3).And.ContainInOrder(IPAddress.Parse("[::1]"), IPAddress.Parse("10.0.0.1"),
-                IPAddress.Parse("192.168.0.11"));
+            ipAddresses.Should()
+                .HaveCount(3)
+                .And.ContainInOrder(
+                    IPAddress.Parse("[::1]"),
+                    IPAddress.Parse("10.0.0.1"),
+                    IPAddress.Parse("192.168.0.11"));
         }
 
         [Fact]
         public async void ShouldOrderIPv6FirstWhenIPv6PreferredAsync()
         {
             var resolverMock = new Mock<IHostResolver>();
-            resolverMock.Setup(x => x.ResolveAsync(It.IsAny<string>())).Returns(Task.FromResult(new[]
-                {IPAddress.Parse("10.0.0.1"), IPAddress.Parse("[::1]"), IPAddress.Parse("192.168.0.11")}));
+            resolverMock.Setup(x => x.ResolveAsync(It.IsAny<string>()))
+                .Returns(
+                    Task.FromResult(
+                        new[]
+                        {
+                            IPAddress.Parse("10.0.0.1"), IPAddress.Parse("[::1]"), IPAddress.Parse("192.168.0.11")
+                        }));
 
             var resolver = new DefaultHostResolver(resolverMock.Object, true);
             var ipAddresses = await resolver.ResolveAsync("some_host");
 
-            ipAddresses.Should().HaveCount(3).And.ContainInOrder(IPAddress.Parse("[::1]"), IPAddress.Parse("10.0.0.1"),
-                IPAddress.Parse("192.168.0.11"));
+            ipAddresses.Should()
+                .HaveCount(3)
+                .And.ContainInOrder(
+                    IPAddress.Parse("[::1]"),
+                    IPAddress.Parse("10.0.0.1"),
+                    IPAddress.Parse("192.168.0.11"));
         }
 
         [MonoTheory]
@@ -222,6 +250,5 @@ namespace Neo4j.Driver.Tests.Connector
 
             await resolver.ResolveAsync("localhost");
         }
-        
     }
 }

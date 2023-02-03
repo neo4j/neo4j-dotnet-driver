@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -26,6 +26,10 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
     public class DatabaseInfoCollectorTests
     {
         private const string Key = DatabaseInfoCollector.DbKey;
+
+        internal static KeyValuePair<string, object> TestMetadata => new(Key, "foo");
+
+        internal static IDatabaseInfo TestMetadataCollected => new DatabaseInfo("foo");
 
         [Fact]
         public void ShouldCollectFalseIfMetadataIsNull()
@@ -50,12 +54,14 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         [Fact]
         public void ShouldThrowIfValueIsOfWrongType()
         {
-            var metadata = new Dictionary<string, object> {{Key, 1L}};
+            var metadata = new Dictionary<string, object> { { Key, 1L } };
             var collector = new DatabaseInfoCollector();
 
             var ex = Record.Exception(() => collector.Collect(metadata));
 
-            ex.Should().BeOfType<ProtocolException>().Which
+            ex.Should()
+                .BeOfType<ProtocolException>()
+                .Which
                 .Message.Should()
                 .Contain($"Expected '{Key}' metadata to be of type 'string', but got 'Int64'.");
         }
@@ -63,7 +69,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         [Fact]
         public void ShouldCollect()
         {
-            var metadata = new Dictionary<string, object> {{Key, "my-database"}};
+            var metadata = new Dictionary<string, object> { { Key, "my-database" } };
             var collector = new DatabaseInfoCollector();
 
             collector.Collect(metadata);
@@ -74,17 +80,12 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata
         [Fact]
         public void ShouldReturnSameCollected()
         {
-            var metadata = new Dictionary<string, object> {{Key, "my-database"}};
+            var metadata = new Dictionary<string, object> { { Key, "my-database" } };
             var collector = new DatabaseInfoCollector();
 
             collector.Collect(metadata);
 
-            ((IMetadataCollector) collector).Collected.Should().Be(collector.Collected);
+            ((IMetadataCollector)collector).Collected.Should().Be(collector.Collected);
         }
-
-        internal static KeyValuePair<string, object> TestMetadata =>
-            new KeyValuePair<string, object>(Key, "foo");
-
-        internal static IDatabaseInfo TestMetadataCollected => new DatabaseInfo("foo");
     }
 }

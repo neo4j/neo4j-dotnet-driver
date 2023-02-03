@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,22 +18,25 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.Internal.IO
+namespace Neo4j.Driver.Internal.IO;
+
+internal abstract class WriteOnlySerializer : IPackStreamSerializer
 {
-    internal abstract class WriteOnlySerializer : IPackStreamSerializer
+    public IEnumerable<byte> ReadableStructs => Enumerable.Empty<byte>();
+
+    public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
     {
-        public IEnumerable<byte> ReadableStructs => Enumerable.Empty<byte>();
-
-        public object Deserialize(IPackStreamReader reader, byte signature, long size)
-        {
-            throw new ProtocolException(
-                $"{GetType().Name}: It is not expected to receive a struct of signature {signature:X2} from the server.");
-        }
-
-        public abstract IEnumerable<Type> WritableTypes { get; }
-
-        public abstract void Serialize(IPackStreamWriter writer, object value);
+        throw new ProtocolException(
+            $"{GetType().Name}: It is not expected to receive a struct of signature {signature:X2} from the server.");
     }
+
+    public abstract IEnumerable<Type> WritableTypes { get; }
+
+    public virtual void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
+    {
+        Serialize(writer, value);
+    }
+
+    public abstract void Serialize(PackStreamWriter writer, object value);
 }

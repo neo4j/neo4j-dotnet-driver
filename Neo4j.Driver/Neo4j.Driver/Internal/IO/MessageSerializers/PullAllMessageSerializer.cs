@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,17 +18,25 @@
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Messaging;
-using static Neo4j.Driver.Internal.Protocol.BoltProtocolV3MessageFormat;
+using static Neo4j.Driver.Internal.MessageFormat;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers
+namespace Neo4j.Driver.Internal.IO.MessageSerializers;
+
+internal sealed class PullAllMessageSerializer : WriteOnlySerializer
 {
-    internal class PullAllMessageSerializer : WriteOnlySerializer
-    {
-        public override IEnumerable<Type> WritableTypes => new[] {typeof(PullAllMessage)};
+    internal static PullAllMessageSerializer Instance = new();
 
-        public override void Serialize(IPackStreamWriter writer, object value)
+    private static readonly Type[] Types = { typeof(PullAllMessage) };
+    public override IEnumerable<Type> WritableTypes => Types;
+
+    public override void Serialize(PackStreamWriter writer, object value)
+    {
+        if (value is not PullAllMessage)
         {
-            writer.WriteStructHeader(0, MsgPullAll);
+            throw new ArgumentOutOfRangeException(
+                $"Encountered {value?.GetType().Name} where {nameof(PullAllMessage)} was expected");
         }
+
+        writer.WriteStructHeader(0, MsgPull);
     }
 }

@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -16,42 +16,24 @@
 // limitations under the License.
 
 using FluentAssertions;
-using Moq;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers
 {
-    public class IgnoredMessageSerializerTests : PackStreamSerializerTests
+    public class IgnoredMessageSerializerTests
     {
-        internal override IPackStreamSerializer SerializerUnderTest => new IgnoredMessageSerializer();
-
         [Fact]
-        public void ShouldThrowOnSerialize()
+        public void StructTagsAreSuccess()
         {
-            var handler = SerializerUnderTest;
-
-            var ex = Record.Exception(() =>
-                handler.Serialize(Mock.Of<IPackStreamWriter>(), IgnoredMessage.Ignored));
-
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ProtocolException>();
+            IgnoredMessageSerializer.Instance.ReadableStructs.Should().ContainEquivalentOf(MessageFormat.MsgIgnored);
         }
 
         [Fact]
-        public void ShouldDeserialize()
+        public void ShouldReturnIgnoredMessage()
         {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
-
-            writer.WriteStructHeader(0, BoltProtocolV3MessageFormat.MsgIgnored);
-
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var value = readerMachine.Reader().Read();
-
-            value.Should().NotBeNull();
-            value.Should().BeOfType<IgnoredMessage>();
+            var message = IgnoredMessageSerializer.Instance.Deserialize(null);
+            message.Should().Be(IgnoredMessage.Instance);
         }
     }
 }

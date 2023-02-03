@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -28,27 +28,27 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
         public void ShouldSerializeDuration()
         {
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             writer.Write(new Duration(10, 4, 300, 120));
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
 
-            reader.PeekNextType().Should().Be(PackStream.PackType.Struct);
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(4);
-            reader.ReadStructSignature().Should().Be((byte) 'E');
+            reader.ReadStructSignature().Should().Be((byte)'E');
             reader.Read().Should().Be(10L);
             reader.Read().Should().Be(4L);
             reader.Read().Should().Be(300L);
             reader.ReadInteger().Should().Be(120);
         }
-        
+
         [Fact]
         public void ShouldDeserializeDuration()
         {
             var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer();
+            var writer = writerMachine.Writer;
 
             writer.WriteStructHeader(DurationSerializer.StructSize, DurationSerializer.StructType);
             writer.Write(21L);
@@ -66,6 +66,5 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             value.Should().BeOfType<Duration>().Which.Seconds.Should().Be(564L);
             value.Should().BeOfType<Duration>().Which.Nanos.Should().Be(865);
         }
-        
     }
 }

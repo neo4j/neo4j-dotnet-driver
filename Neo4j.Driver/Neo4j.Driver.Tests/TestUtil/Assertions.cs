@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -16,10 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using FluentAssertions.Numeric;
@@ -28,15 +24,21 @@ namespace Neo4j.Driver.Tests
 {
     public static class Assertions
     {
-        public static AndConstraint<NumericAssertions<T>> BeGreaterOrEqualTo<T>(this NumericAssertions<T> assertion,
-            T expected, T accuracy, string because = "", params object[] becauseArgs)
+        public static AndConstraint<NumericAssertions<T>> BeGreaterOrEqualTo<T>(
+            this NumericAssertions<T> assertion,
+            T expected,
+            T accuracy,
+            string because = "",
+            params object[] becauseArgs)
             where T : struct, IConvertible
         {
             var expectedAsDouble = Convert.ToDouble(expected);
             var accuracyAsDouble = Convert.ToDouble(accuracy);
 
-            return assertion.BeGreaterOrEqualTo((T) Convert.ChangeType(expectedAsDouble - accuracyAsDouble, typeof(T)),
-                because, becauseArgs);
+            return assertion.BeGreaterOrEqualTo(
+                (T)Convert.ChangeType(expectedAsDouble - accuracyAsDouble, typeof(T)),
+                because,
+                becauseArgs);
         }
 
         public static bool Matches(Action assertion)

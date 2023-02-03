@@ -3,8 +3,8 @@
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -16,11 +16,7 @@
 // limitations under the License.
 
 using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
 using FluentAssertions;
-using Neo4j.Driver.Internal;
-using Neo4j.Driver;
 using Xunit;
 using static Neo4j.Driver.Tests.AsyncSessionTests;
 
@@ -34,44 +30,43 @@ namespace Neo4j.Driver.Tests
             {
                 new object[]
                 {
-                    new[] {null, "illegalBookmark", FakeABookmark(123)}, new[] {"illegalBookmark", FakeABookmark(123)}
+                    new[] { null, "illegalBookmark", FakeABookmark(123) },
+                    new[] { "illegalBookmark", FakeABookmark(123) }
                 },
-                new object[] {new[] {null, "illegalBookmark"}, new[] {"illegalBookmark"}},
-                new object[] {new string[] {null}, new string[0]},
-                new object[] {new[] {"illegalBookmark"}, new[] {"illegalBookmark"}},
+                new object[] { new[] { null, "illegalBookmark" }, new[] { "illegalBookmark" } },
+                new object[] { new string[] { null }, new string[0] },
+                new object[] { new[] { "illegalBookmark" }, new[] { "illegalBookmark" } },
                 new object[]
-                    {new[] {FakeABookmark(123), FakeABookmark(234)}, new[] {FakeABookmark(123), FakeABookmark(234)}},
+                {
+                    new[] { FakeABookmark(123), FakeABookmark(234) }, new[] { FakeABookmark(123), FakeABookmark(234) }
+                },
                 new object[]
-                    {new[] {FakeABookmark(123), FakeABookmark(-234)}, new[] {FakeABookmark(123), FakeABookmark(-234)}},
+                {
+                    new[] { FakeABookmark(123), FakeABookmark(-234) }, new[] { FakeABookmark(123), FakeABookmark(-234) }
+                }
             };
 
-            [Theory, MemberData(nameof(MultipleBookmarks))]
+            [Theory]
+            [MemberData(nameof(MultipleBookmarks))]
             public void ShouldCreateFromMultipleBookmarks(string[] bookmarks, string[] expectedValues)
             {
                 var bookmark = Bookmarks.From(bookmarks);
                 bookmark.Values.Should().BeEquivalentTo(expectedValues);
-
-                var parameters = bookmark.AsBeginTransactionParameters();
-                if (expectedValues.Length > 0)
-                {
-                    parameters.Should().ContainKey("bookmarks").WhichValue.Should().BeEquivalentTo(expectedValues);
-                }
-                else
-                {
-                    parameters.Should().BeNull();
-                }
             }
 
             public class EqualsMethod
             {
                 [Theory]
                 [InlineData(new string[0], new string[0])]
-                [InlineData(new[] {"bookmark-1", "bookmark-2", "bookmark-3"},
-                    new[] {"bookmark-1", "bookmark-2", "bookmark-3"})]
-                [InlineData(new[] {null, "bookmark-1", "bookmark-2", "bookmark-3"},
-                    new[] {"bookmark-1", "bookmark-2", "bookmark-3", null})]
-                [InlineData(new[] {null, "bookmark-1", "bookmark-2", "bookmark-3"},
-                    new[] {"bookmark-3", "bookmark-1", "bookmark-2", null})]
+                [InlineData(
+                    new[] { "bookmark-1", "bookmark-2", "bookmark-3" },
+                    new[] { "bookmark-1", "bookmark-2", "bookmark-3" })]
+                [InlineData(
+                    new[] { null, "bookmark-1", "bookmark-2", "bookmark-3" },
+                    new[] { "bookmark-1", "bookmark-2", "bookmark-3", null })]
+                [InlineData(
+                    new[] { null, "bookmark-1", "bookmark-2", "bookmark-3" },
+                    new[] { "bookmark-3", "bookmark-1", "bookmark-2", null })]
                 public void ShouldBeEqual(string[] values1, string[] values2)
                 {
                     var bookmark1 = Bookmarks.From(values1);
@@ -85,19 +80,23 @@ namespace Neo4j.Driver.Tests
             {
                 [Theory]
                 [InlineData(new string[0], new string[0], new string[0])]
-                [InlineData(new string[0], new[] {"bookmark-1"}, new[] {"bookmark-1"})]
-                [InlineData(new[] {"bookmark-1"}, new[] {"bookmark-2"}, new[] {"bookmark-1", "bookmark-2"})]
-                [InlineData(new[] {"bookmark-1", "bookmark-2"}, new[] {"bookmark-2"},
-                    new[] {"bookmark-1", "bookmark-2"})]
-                [InlineData(new[] {"bookmark-1", "bookmark-2"}, new[] {"bookmark-2", "bookmark-3"},
-                    new[] {"bookmark-1", "bookmark-2", "bookmark-3"})]
+                [InlineData(new string[0], new[] { "bookmark-1" }, new[] { "bookmark-1" })]
+                [InlineData(new[] { "bookmark-1" }, new[] { "bookmark-2" }, new[] { "bookmark-1", "bookmark-2" })]
+                [InlineData(
+                    new[] { "bookmark-1", "bookmark-2" },
+                    new[] { "bookmark-2" },
+                    new[] { "bookmark-1", "bookmark-2" })]
+                [InlineData(
+                    new[] { "bookmark-1", "bookmark-2" },
+                    new[] { "bookmark-2", "bookmark-3" },
+                    new[] { "bookmark-1", "bookmark-2", "bookmark-3" })]
                 public void ShouldUnionValues(string[] values1, string[] values2, string[] values3)
                 {
                     var bookmark1 = Bookmarks.From(values1);
                     var bookmark2 = Bookmarks.From(values2);
                     var bookmark3 = Bookmarks.From(values3);
 
-                    Bookmarks.From(new[] {bookmark1, bookmark2}).Should().Be(bookmark3);
+                    Bookmarks.From(new[] { bookmark1, bookmark2 }).Should().Be(bookmark3);
                 }
             }
         }
