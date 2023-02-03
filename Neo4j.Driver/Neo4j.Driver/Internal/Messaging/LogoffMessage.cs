@@ -15,15 +15,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
 
-namespace Neo4j.Driver.Internal.MessageHandling;
+namespace Neo4j.Driver.Internal.Messaging;
 
-internal class LogonResponseHandler : MetadataCollectingResponseHandler
+internal sealed class LogoffMessage : IRequestMessage
 {
-    public LogonResponseHandler(IConnection _)
-    {
+    public IPackStreamSerializer Serializer => LogoffMessageSerializer.Instance;
+    public static readonly LogoffMessage Instance = new();
 
-        
+    public override string ToString()
+    {
+        return "LOGOFF";
     }
 }

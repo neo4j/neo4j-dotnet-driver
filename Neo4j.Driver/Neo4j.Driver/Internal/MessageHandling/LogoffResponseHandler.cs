@@ -19,11 +19,10 @@ using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal.MessageHandling;
 
-internal class LogonResponseHandler : MetadataCollectingResponseHandler
+internal class LogoffResponseHandler : MetadataCollectingResponseHandler
 {
-    public LogonResponseHandler(IConnection _)
+    public LogoffResponseHandler(IConnection _)
     {
 
-        
     }
 }

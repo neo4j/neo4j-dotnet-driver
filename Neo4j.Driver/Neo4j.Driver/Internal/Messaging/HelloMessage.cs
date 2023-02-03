@@ -33,14 +33,18 @@ internal sealed class HelloMessage : IRequestMessage
         IDictionary<string, object> authToken,
         IDictionary<string, string> routingContext)
     {
-        Metadata = authToken?.Count > 0 
-            ? new Dictionary<string, object>(authToken) { [UserAgentMetadataKey] = userAgent }
-            : new Dictionary<string, object> { [UserAgentMetadataKey] = userAgent };
-
-        // Routing added in 4.1, subsequent hellos should include it.
-        if (version >= BoltProtocolVersion.V4_1)
+        if (version >= BoltProtocolVersion.V5_1)
         {
-            Metadata.Add(RoutingMetadataKey, routingContext);
+            throw new ArgumentOutOfRangeException(nameof(version), version, "Should be Bolt version 5.0 or less");
+        }
+        
+        if (authToken?.Count > 0)
+        {
+            Metadata = new Dictionary<string, object>(authToken) { [UserAgentMetadataKey] = userAgent };
+        }
+        else
+        {
+            Metadata = new Dictionary<string, object> { [UserAgentMetadataKey] = userAgent };
         }
 
         if (version >= BoltProtocolVersion.V4_3 && version < BoltProtocolVersion.V5_0)
@@ -58,6 +62,11 @@ internal sealed class HelloMessage : IRequestMessage
         if (version < BoltProtocolVersion.V5_1)
         {
             throw new ArgumentOutOfRangeException(nameof(version), version, "should be Bolt version 5.1+");
+        }
+
+        if (version < BoltProtocolVersion.V5_1)
+        {
+            Metadata.Add(RoutingMetadataKey, routingContext);
         }
         
         Metadata = new Dictionary<string, object>

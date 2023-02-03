@@ -30,7 +30,6 @@ internal sealed class BoltProtocol : IBoltProtocol
     internal static readonly IBoltProtocol Instance = new BoltProtocol();
     private readonly IBoltProtocol _boltProtocolV3;
     private readonly IBoltProtocolHandlerFactory _protocolHandlerFactory;
-
     private readonly IBoltProtocolMessageFactory _protocolMessageFactory;
 
     internal BoltProtocol(
@@ -49,9 +48,26 @@ internal sealed class BoltProtocol : IBoltProtocol
         IAuthToken authToken,
         INotificationsConfig notificationsConfig)
     {
-        return connection.Version < BoltProtocolVersion.V5_1
-            ? _boltProtocolV3.LoginAsync(connection, userAgent, authToken, null)
-            : LoginV51Async(connection, userAgent, authToken, notificationsConfig);
+        return connection.Version >= BoltProtocolVersion.V5_1
+            ? LoginV51Async(connection, userAgent, authToken)
+            : _boltProtocolV3.LoginAsync(connection, userAgent, authToken);
+    }
+
+    private async Task LoginV51Async(
+        IConnection connection,
+        string userAgent,
+        IAuthToken authToken,
+        INotificationsConfig notificationsConfig)
+    {
+        var helloMessage = _protocolMessageFactory.NewHelloMessage(connection, userAgent, null, notificationsConfig);
+        var helloHandler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
+        await connection.EnqueueAsync(helloMessage, helloHandler).ConfigureAwait(false);
+
+        var logonMessage = _protocolMessageFactory.NewLogonMessage(connection, authToken);
+        var logonHandler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
+        await connection.EnqueueAsync(logonMessage, logonHandler).ConfigureAwait(false);
+
+        await connection.SyncAsync().ConfigureAwait(false);
     }
 
     public Task LogoutAsync(IConnection connection)
@@ -180,23 +196,6 @@ internal sealed class BoltProtocol : IBoltProtocol
     public Task RollbackTransactionAsync(IConnection connection)
     {
         return _boltProtocolV3.RollbackTransactionAsync(connection);
-    }
-
-    private async Task LoginV51Async(
-        IConnection connection,
-        string userAgent,
-        IAuthToken authToken,
-        INotificationsConfig notificationsConfig)
-    {
-        var helloMessage = _protocolMessageFactory.NewHelloMessage(connection, userAgent, null, notificationsConfig);
-        var helloHandler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
-        await connection.EnqueueAsync(helloMessage, helloHandler).ConfigureAwait(false);
-
-        var logonMessage = _protocolMessageFactory.NewLogonMessage(connection, authToken);
-        var logonHandler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
-        await connection.EnqueueAsync(logonMessage, logonHandler).ConfigureAwait(false);
-
-        await connection.SyncAsync().ConfigureAwait(false);
     }
 
     private async Task<IReadOnlyDictionary<string, object>> GetRoutingTableWithQueryAsync(

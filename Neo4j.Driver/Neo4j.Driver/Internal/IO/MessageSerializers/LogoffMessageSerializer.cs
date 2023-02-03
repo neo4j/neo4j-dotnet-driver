@@ -15,32 +15,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.IO;
-using Neo4j.Driver.Internal.IO.MessageSerializers;
+using Neo4j.Driver.Internal.Messaging;
 
-namespace Neo4j.Driver.Internal.Messaging;
+namespace Neo4j.Driver.Internal.IO.MessageSerializers;
 
-internal sealed class LogonMessage : IRequestMessage
+internal class LogoffMessageSerializer: WriteOnlySerializer
 {
-    public IPackStreamSerializer Serializer => LogonMessageSerializer.Instance;
+    public static readonly LogoffMessageSerializer Instance = new();
 
-    public IDictionary<string, object> Auth { get; }
-
-    public LogonMessage(BoltProtocolVersion _, IAuthToken authToken)
+    private static readonly Type[] Types = { typeof(LogoffMessage) };
+    public override IEnumerable<Type> WritableTypes => Types;
+    
+    public override void Serialize(PackStreamWriter writer, object value)
     {
-        Auth = authToken.AsDictionary();
-    }
-
-    public override string ToString()
-    {
-        var authToken = new Dictionary<string, object>(Auth);
-
-        if (authToken.ContainsKey(AuthToken.CredentialsKey))
+        if (value is not LogoffMessage message)
         {
-            authToken[AuthToken.CredentialsKey] = "******";
+            throw new ArgumentOutOfRangeException(
+                $"Encountered {value?.GetType().Name} where {nameof(LogoffMessage)} was expected");
         }
 
-        return $"LOGON {authToken.ToContentString()}";
+        writer.WriteStructHeader(0, MessageFormat.MsgLogoff);
     }
 }
