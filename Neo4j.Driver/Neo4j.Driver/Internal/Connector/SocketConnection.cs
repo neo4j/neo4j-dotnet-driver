@@ -114,7 +114,7 @@ internal sealed class SocketConnection : IConnection
         Database = database;
     }
 
-    public async Task InitAsync(CancellationToken cancellationToken = default)
+    public async Task InitAsync(INotificationsConfig notificationsConfig, CancellationToken cancellationToken = default)
     {
         await _sendLock.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -128,7 +128,7 @@ internal sealed class SocketConnection : IConnection
             _sendLock.Release();
         }
 
-        await BoltProtocol.LoginAsync(this, _userAgent, _authToken).ConfigureAwait(false);
+        await LoginAsync(this, _userAgent, _authToken, notificationsConfig).ConfigureAwait(false);
     }
 
     public async Task SyncAsync()
@@ -269,9 +269,9 @@ internal sealed class SocketConnection : IConnection
         _client.UseUtcEncoded();
     }
 
-    public Task LoginAsync(string userAgent, IAuthToken authToken)
+    public Task LoginAsync(string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
     {
-        return BoltProtocol.LoginAsync(this, userAgent, authToken);
+        return BoltProtocol.LoginAsync(this, userAgent, authToken, notificationsConfig);
     }
 
     public Task LogoutAsync()
@@ -287,18 +287,19 @@ internal sealed class SocketConnection : IConnection
         return BoltProtocol.GetRoutingTableAsync(this, database, impersonatedUser, bookmarks);
     }
 
-    public Task<IResultCursor> RunInAutoCommitTransactionAsync(AutoCommitParams autoCommitParams)
+    public Task<IResultCursor> RunInAutoCommitTransactionAsync(AutoCommitParams autoCommitParams, INotificationsConfig notificationsConfig)
     {
-        return BoltProtocol.RunInAutoCommitTransactionAsync(this, autoCommitParams);
+        return BoltProtocol.RunInAutoCommitTransactionAsync(this, autoCommitParams, notificationsConfig);
     }
 
     public Task BeginTransactionAsync(
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
-        string impersonatedUser)
+        string impersonatedUser,
+        INotificationsConfig notificationsConfig)
     {
-        return BoltProtocol.BeginTransactionAsync(this, database, bookmarks, config, impersonatedUser);
+        return BoltProtocol.BeginTransactionAsync(this, database, bookmarks, config, impersonatedUser, notificationsConfig);
     }
 
     public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize)
