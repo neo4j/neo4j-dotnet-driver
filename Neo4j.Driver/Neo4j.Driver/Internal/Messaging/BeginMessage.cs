@@ -15,8 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 
@@ -28,45 +26,20 @@ internal sealed class BeginMessage : TransactionStartingMessage
         BoltProtocolVersion version,
         string database,
         Bookmarks bookmarks,
-        TransactionConfig configBuilder,
+        TransactionConfig txConfig,
         AccessMode mode,
-        string impersonatedUser)
-        : this(
+        string impersonatedUser,
+        INotificationsConfig notificationsConfig)
+        : base(
             version,
             database,
             bookmarks,
-            configBuilder?.Timeout,
-            configBuilder?.Metadata,
+            txConfig?.Timeout,
+            txConfig?.Metadata,
             mode,
+            notificationsConfig,
             impersonatedUser)
     {
-    }
-
-    public BeginMessage(
-        BoltProtocolVersion version,
-        string database,
-        Bookmarks bookmarks,
-        TimeSpan? txTimeout,
-        IDictionary<string, object> txMetadata,
-        AccessMode mode,
-        string impersonatedUser)
-        : base(database, bookmarks, txTimeout, txMetadata, mode)
-    {
-        if (string.IsNullOrEmpty(impersonatedUser))
-        {
-            return;
-        }
-
-        if (version >= BoltProtocolVersion.V4_4)
-        {
-            Metadata.Add("imp_user", impersonatedUser);
-        }
-        else
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(impersonatedUser),
-                "Impersonated users can not be used with bolt version less than 4.4");
-        }
     }
 
     public override IPackStreamSerializer Serializer => BeginMessageSerializer.Instance;

@@ -306,31 +306,108 @@ internal class Counters : ICounters
     }
 }
 
-/// <summary>This is a notification</summary>
 internal class Notification : INotification
 {
-    public Notification(string code, string title, string description, IInputPosition position, string severity)
+    public Notification(
+        string code,
+        string title,
+        string description,
+        IInputPosition position,
+        string severity,
+        string rawCategory)
     {
         Code = code;
         Title = title;
         Description = description;
         Position = position;
         Severity = severity;
+        RawSeverityLevel = severity;
+        RawCategory = rawCategory;
     }
 
+    public string RawSeverityLevel { get; }
+    public NotificationSeverity SeverityLevel => ParseSeverity(Severity);
+    public string RawCategory { get; }
+    public NotificationCategory Category => ParseCategory(RawCategory);
     public string Code { get; }
     public string Title { get; }
     public string Description { get; }
     public IInputPosition Position { get; }
+
+    [Obsolete("Deprecated, Replaced by RawSeverityLevel. Will be removed in 6.0")]
     public string Severity { get; }
+
+    private NotificationCategory ParseCategory(string category)
+    {
+        try
+        {
+            return category?.ToLower() switch
+            {
+                "hint" => NotificationCategory.Hint,
+                "unrecognized" => NotificationCategory.Unrecognized,
+                "unsupported" => NotificationCategory.Unsupported,
+                "performance" => NotificationCategory.Performance,
+                "deprecation" => NotificationCategory.Deprecation,
+                "generic" => NotificationCategory.Generic,
+                var _ => NotificationCategory.Unknown
+            };
+        }
+        catch
+        {
+            return NotificationCategory.Unknown;
+        }
+    }
+
+    private NotificationSeverity ParseSeverity(string severity)
+    {
+        return severity?.ToLower() switch
+        {
+            "information" => NotificationSeverity.Information,
+            "warning" => NotificationSeverity.Warning,
+            var _ => NotificationSeverity.Unknown
+        };
+    }
 
     public override string ToString()
     {
-        return $"{GetType().Name}{{{nameof(Code)}={Code}, " +
-            $"{nameof(Title)}={Title}, " +
-            $"{nameof(Description)}={Description}, " +
-            $"{nameof(Position)}={Position}, " +
-            $"{nameof(Severity)}={Severity}}}";
+        const string space = " ";
+        const string equals = "=";
+
+        return string.Concat(
+            nameof(Notification),
+            "{",
+            nameof(Code),
+            equals,
+            Code,
+            space,
+            nameof(Title),
+            equals,
+            Title,
+            space,
+            nameof(Description),
+            equals,
+            Description,
+            space,
+            nameof(Position),
+            equals,
+            Position.ToString(),
+            space,
+            nameof(SeverityLevel),
+            equals,
+            SeverityLevel.ToString(),
+            space,
+            nameof(Category),
+            equals,
+            Category.ToString(),
+            space,
+            nameof(RawSeverityLevel),
+            equals,
+            RawSeverityLevel,
+            space,
+            nameof(RawCategory),
+            equals,
+            RawCategory, //no space
+            "}");
     }
 }
 

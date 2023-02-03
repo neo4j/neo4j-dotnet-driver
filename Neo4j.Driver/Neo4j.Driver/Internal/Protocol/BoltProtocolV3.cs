@@ -39,9 +39,9 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         _protocolHandlerFactory = protocolHandlerFactory ?? BoltProtocolHandlerFactory.Instance;
     }
 
-    public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
+    public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
     {
-        var message = _protocolMessageFactory.NewHelloMessage(connection, userAgent, authToken);
+        var message = _protocolMessageFactory.NewHelloMessage(connection, userAgent, authToken, notificationsConfig);
         var handler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
 
         await connection.EnqueueAsync(message, handler).ConfigureAwait(false);
@@ -87,7 +87,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             ResultResourceHandler = resourceHandler
         };
 
-        var result = await RunInAutoCommitTransactionAsync(connection, autoCommitParams).ConfigureAwait(false);
+        var result = await RunInAutoCommitTransactionAsync(connection, autoCommitParams, null).ConfigureAwait(false);
         var record = await result.SingleAsync().ConfigureAwait(false);
 
         //Since 4.4 the Routing information will contain a db.
@@ -100,7 +100,8 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
 
     public async Task<IResultCursor> RunInAutoCommitTransactionAsync(
         IConnection connection,
-        AutoCommitParams autoCommitParams)
+        AutoCommitParams autoCommitParams,
+        INotificationsConfig notificationsConfig)
     {
         ValidateImpersonatedUserForVersion(connection, autoCommitParams.ImpersonatedUser);
         ValidateDatabase(connection, autoCommitParams.Database);
@@ -136,7 +137,8 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
-        string impersonatedUser)
+        string impersonatedUser,
+        INotificationsConfig notificationsConfig)
     {
         ValidateImpersonatedUserForVersion(connection, impersonatedUser);
         ValidateDatabase(connection, database);

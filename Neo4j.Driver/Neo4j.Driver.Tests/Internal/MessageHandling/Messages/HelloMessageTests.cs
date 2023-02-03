@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
         {
             var helloMessage = new HelloMessage(new BoltProtocolVersion(major, minor), "jeff", null, null);
             helloMessage.Serializer.Should().BeOfType<HelloMessageSerializer>();
-            helloMessage.MetaData.Should().ContainKey("user_agent").WhichValue.Should().Be("jeff");
+            helloMessage.Metadata.Should().ContainKey("user_agent").WhichValue.Should().Be("jeff");
             helloMessage.ToString().Should().Be("HELLO [{user_agent, jeff}]");
         }
 
@@ -104,9 +104,9 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
                 null);
 
             helloMessage.Serializer.Should().BeOfType<HelloMessageSerializer>();
-            helloMessage.MetaData.Should().ContainKey("scheme").WhichValue.Should().Be("basic");
-            helloMessage.MetaData.Should().ContainKey("principal").WhichValue.Should().Be("jeff");
-            helloMessage.MetaData.Should().ContainKey("credentials").WhichValue.Should().Be("hidden");
+            helloMessage.Metadata.Should().ContainKey("scheme").WhichValue.Should().Be("basic");
+            helloMessage.Metadata.Should().ContainKey("principal").WhichValue.Should().Be("jeff");
+            helloMessage.Metadata.Should().ContainKey("credentials").WhichValue.Should().Be("hidden");
             helloMessage.ToString()
                 .Should()
                 .Be(

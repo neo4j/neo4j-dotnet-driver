@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver;
 
@@ -338,5 +339,37 @@ public sealed class ConfigBuilder
     {
         var certs = trustedCaCertificateFileNames?.Select(x => new X509Certificate2(x)).ToList();
         return WithCertificateTrustRule(certificateTrustRule, certs);
+    }
+
+    /// <summary>
+    ///     Set which <see cref="INotification" />s the session can receive in <see cref="IResultSummary.Notifications" />
+    ///     when executing a query, overriding any server configuration.
+    ///     Overriding any driver configuration for queries executed in the session.
+    /// </summary>
+    /// <remarks>Cannot be used with: <see cref="WithNoNotifications" />.</remarks>
+    /// <param name="minimumSeverity"></param>
+    /// <param name="disabledCategories"></param>
+    /// <returns>A <see cref="ConfigBuilder" /> instance for further configuration options.</returns>
+    public ConfigBuilder WithNotifications(
+        Severity minimumSeverity = Severity.Information,
+        params Category[] disabledCategories)
+    {
+        _config.NotificationsConfig = new NotificationsConfig(minimumSeverity, disabledCategories);
+        return this;
+    }
+
+    /// <summary>
+    ///     Set session to not receive <see cref="INotification" />s from the server when executing
+    ///     queries.
+    ///     Overriding any driver configuration for queries executed in the session.
+    /// </summary>
+    /// <remarks>
+    ///     Cannot be used with: <see cref="WithNotifications" />.
+    /// </remarks>
+    /// <returns>A <see cref="ConfigBuilder" /> instance for further configuration options.</returns>
+    public ConfigBuilder WithNoNotifications()
+    {
+        _config.NotificationsConfig = new NoNotificationsConfig();
+        return this;
     }
 }

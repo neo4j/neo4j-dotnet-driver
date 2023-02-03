@@ -19,6 +19,7 @@ using System;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Logging;
+using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver;
 
@@ -182,4 +183,6 @@ public class Config
     /// major version and y is the minor version.
     /// </summary>
     public string UserAgent { get; set; } = ConnectionSettings.DefaultUserAgent;
+
+    public INotificationsConfig NotificationsConfig { get; internal set; }
 }

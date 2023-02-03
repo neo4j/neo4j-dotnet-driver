@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
@@ -24,6 +25,7 @@ namespace Neo4j.Driver.Internal.Messaging;
 internal sealed class HelloMessage : IRequestMessage
 {
     private const string UserAgentMetadataKey = "user_agent";
+    private const string RoutingMetadataKey = "routing";
 
     public HelloMessage(
         BoltProtocolVersion version,
@@ -31,40 +33,59 @@ internal sealed class HelloMessage : IRequestMessage
         IDictionary<string, object> authToken,
         IDictionary<string, string> routingContext)
     {
-        if (authToken?.Count > 0)
-        {
-            MetaData = new Dictionary<string, object>(authToken) { [UserAgentMetadataKey] = userAgent };
-        }
-        else
-        {
-            MetaData = new Dictionary<string, object> { [UserAgentMetadataKey] = userAgent };
-        }
+        Metadata = authToken?.Count > 0 
+            ? new Dictionary<string, object>(authToken) { [UserAgentMetadataKey] = userAgent }
+            : new Dictionary<string, object> { [UserAgentMetadataKey] = userAgent };
 
         // Routing added in 4.1, subsequent hellos should include it.
         if (version >= BoltProtocolVersion.V4_1)
         {
-            MetaData.Add("routing", routingContext);
+            Metadata.Add(RoutingMetadataKey, routingContext);
         }
 
         if (version >= BoltProtocolVersion.V4_3 && version < BoltProtocolVersion.V5_0)
         {
-            MetaData.Add("patch_bolt", new[] { "utc" });
+            Metadata.Add("patch_bolt", new[] { "utc" });
         }
     }
 
-    public IDictionary<string, object> MetaData { get; }
+    public HelloMessage(
+        BoltProtocolVersion version,
+        string userAgent,
+        IDictionary<string, string> routingContext,
+        INotificationsConfig notificationsConfig)
+    {
+        if (version < BoltProtocolVersion.V5_1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(version), version, "should be Bolt version 5.1+");
+        }
+        
+        Metadata = new Dictionary<string, object>
+        {
+            [UserAgentMetadataKey] = userAgent,
+            [RoutingMetadataKey] = routingContext
+        };
+
+        if (version >= BoltProtocolVersion.V5_2)
+        {
+            Utils.NotificationsMetadataWriter.AddNotificationsConfigToMetadata(Metadata, notificationsConfig);
+        }
+    }
+
+    public IDictionary<string, object> Metadata { get; }
 
     public IPackStreamSerializer Serializer => HelloMessageSerializer.Instance;
 
     public override string ToString()
     {
-        var metadataCopy = new Dictionary<string, object>(MetaData);
+        var metadataCopy = new Dictionary<string, object>(Metadata);
 
         if (metadataCopy.ContainsKey(AuthToken.CredentialsKey))
         {
             metadataCopy[AuthToken.CredentialsKey] = "******";
         }
 
-        return "HELLO " + metadataCopy.ToContentString();
+        return $"HELLO {metadataCopy.ToContentString()}";
     }
 }
+

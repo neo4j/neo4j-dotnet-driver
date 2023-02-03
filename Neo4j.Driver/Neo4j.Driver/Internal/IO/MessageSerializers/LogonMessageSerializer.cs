@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -21,22 +21,22 @@ using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers;
 
-internal sealed class HelloMessageSerializer : WriteOnlySerializer
+internal class LogonMessageSerializer : WriteOnlySerializer
 {
-    internal static HelloMessageSerializer Instance = new();
+    public static readonly LogonMessageSerializer Instance = new();
 
-    private static readonly Type[] Types = { typeof(HelloMessage) };
+    private static readonly Type[] Types = {typeof(LogonMessage)};
     public override IEnumerable<Type> WritableTypes => Types;
-
+    
     public override void Serialize(PackStreamWriter writer, object value)
     {
-        if (value is not HelloMessage msg)
+        if (value is not LogonMessage message)
         {
             throw new ArgumentOutOfRangeException(
                 $"Encountered {value?.GetType().Name} where {nameof(HelloMessage)} was expected");
         }
-
-        writer.WriteStructHeader(1, MessageFormat.MsgHello);
-        writer.WriteDictionary(msg.Metadata);
+        
+        writer.WriteStructHeader(1, MessageFormat.MsgLogon);
+        writer.WriteDictionary(message.Auth);
     }
 }

@@ -15,41 +15,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 
 namespace Neo4j.Driver.Internal.Messaging;
 
-internal sealed class RunWithMetadataMessage : TransactionStartingMessage
+internal class LogonMessage : IRequestMessage
 {
-    public RunWithMetadataMessage(
-        BoltProtocolVersion version,
-        Query query,
-        Bookmarks bookmarks = null,
-        TransactionConfig config = null,
-        AccessMode mode = AccessMode.Write,
-        string database = null,
-        string impersonatedUser = null,
-        INotificationsConfig notificationsConfig = null)
-        : base(
-            version,
-            database,
-            bookmarks,
-            config?.Timeout,
-            config?.Metadata,
-            mode,
-            notificationsConfig,
-            impersonatedUser)
+    public IPackStreamSerializer Serializer => LogonMessageSerializer.Instance;
+    
+    public IDictionary<string, object> Auth { get; }
+
+    public LogonMessage(BoltProtocolVersion _, IAuthToken authToken)
     {
-        Query = query;
+        Auth = authToken.AsDictionary();
     }
-
-    public Query Query { get; }
-
-    public override IPackStreamSerializer Serializer => RunWithMetadataMessageSerializer.Instance;
 
     public override string ToString()
     {
-        return $"RUN {Query} {Metadata.ToContentString()}";
+        var authToken = new Dictionary<string, object>(Auth);
+
+        if (authToken.ContainsKey(AuthToken.CredentialsKey))
+        {
+            authToken[AuthToken.CredentialsKey] = "******";
+        }
+        
+        return $"LOGON {authToken.ToContentString()}";
     }
 }

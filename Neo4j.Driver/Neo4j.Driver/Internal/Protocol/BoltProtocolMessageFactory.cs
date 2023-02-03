@@ -23,14 +23,16 @@ namespace Neo4j.Driver.Internal;
 
 internal interface IBoltProtocolMessageFactory
 {
-    RunWithMetadataMessage NewRunWithMetadataMessage(IConnection connection, AutoCommitParams autoCommitParams);
-    RunWithMetadataMessage NewRunWithMetadataMessage(IConnection connection, Query query);
+    RunWithMetadataMessage NewRunWithMetadataMessage(IConnection connection, AutoCommitParams autoCommitParams,
+        INotificationsConfig notificationsConfig);
+    RunWithMetadataMessage NewRunWithMetadataMessage(IConnection connection, Query query,
+        INotificationsConfig notificationsConfig);
     PullMessage NewPullMessage(long fetchSize);
     PullMessage NewPullMessage(long id, long fetchSize);
     RouteMessage NewRouteMessage(IConnection connection, Bookmarks bookmarks, string database, string impersonatedUser);
     RouteMessageV43 NewRouteMessageV43(IConnection connection, Bookmarks bookmarks, string database);
     DiscardMessage NewDiscardMessage(long id, long discardSize);
-    HelloMessage NewHelloMessage(IConnection connection, string userAgent, IAuthToken authToken);
+    HelloMessage NewHelloMessage(IConnection connection, string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig);
 
     BeginMessage NewBeginMessage(
         IConnection connection,
@@ -38,14 +40,18 @@ internal interface IBoltProtocolMessageFactory
         Bookmarks bookmarks,
         TransactionConfig config,
         AccessMode mode,
-        string impersonatedUser);
+        string impersonatedUser,
+        INotificationsConfig notificationsConfig);
+
+    LogonMessage NewLogonMessage(IConnection connection, IAuthToken authToken);
 }
 
 internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
 {
     internal static readonly BoltProtocolMessageFactory Instance = new();
 
-    public RunWithMetadataMessage NewRunWithMetadataMessage(IConnection connection, AutoCommitParams autoCommitParams)
+    public RunWithMetadataMessage NewRunWithMetadataMessage(IConnection connection, AutoCommitParams autoCommitParams,
+        INotificationsConfig notificationsConfig)
     {
         return new RunWithMetadataMessage(
             connection.Version,
@@ -54,12 +60,14 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
             autoCommitParams.Config,
             connection.Mode ?? throw new InvalidOperationException("Connection should have its Mode property set."),
             autoCommitParams.Database,
-            autoCommitParams.ImpersonatedUser);
+            autoCommitParams.ImpersonatedUser,
+            notificationsConfig);
     }
 
-    public RunWithMetadataMessage NewRunWithMetadataMessage(IConnection connection, Query query)
+    public RunWithMetadataMessage NewRunWithMetadataMessage(IConnection connection, Query query,
+        INotificationsConfig notificationsConfig)
     {
-        return new RunWithMetadataMessage(connection.Version, query);
+        return new RunWithMetadataMessage(connection.Version, query, notificationsConfig: notificationsConfig);
     }
 
     public PullMessage NewPullMessage(long fetchSize)
@@ -94,13 +102,22 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
         return new DiscardMessage(id, discardSize);
     }
 
-    public HelloMessage NewHelloMessage(IConnection connection, string userAgent, IAuthToken authToken)
+    public HelloMessage NewHelloMessage(
+        IConnection connection,
+        string userAgent,
+        IAuthToken authToken,
+        INotificationsConfig notificationsConfig)
     {
-        return new HelloMessage(
-            connection.Version,
-            userAgent,
-            authToken.AsDictionary(),
-            connection.RoutingContext);
+        if (connection.Version < BoltProtocolVersion.V5_1)
+        {
+            return new HelloMessage(
+                connection.Version,
+                userAgent,
+                authToken.AsDictionary(),
+                connection.RoutingContext);
+        }
+
+        return new HelloMessage(connection.Version, userAgent, connection.RoutingContext, notificationsConfig);
     }
 
     public BeginMessage NewBeginMessage(
@@ -109,7 +126,8 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
         Bookmarks bookmarks,
         TransactionConfig config,
         AccessMode mode,
-        string impersonatedUser)
+        string impersonatedUser,
+        INotificationsConfig notificationsConfig)
     {
         return new BeginMessage(
             connection.Version,
@@ -117,6 +135,12 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
             bookmarks,
             config,
             mode,
-            impersonatedUser);
+            impersonatedUser,
+            notificationsConfig);
+    }
+
+    public LogonMessage NewLogonMessage(IConnection connection, IAuthToken authToken)
+    {
+        return new LogonMessage(connection.Version, authToken);
     }
 }

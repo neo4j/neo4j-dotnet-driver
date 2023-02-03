@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Experimental;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver;
 
@@ -132,6 +133,8 @@ public sealed class SessionConfig
     }
 
     internal IBookmarkManager BookmarkManager { get; set; }
+
+    public INotificationsConfig NotificationsConfig { get; internal set; }
 }
 
 /// <summary>The builder to build a <see cref="SessionConfig"/>.</summary>
@@ -269,6 +272,38 @@ public sealed class SessionConfigBuilder
     internal SessionConfigBuilder WithBookmarkManager(IBookmarkManager bookmarkManager)
     {
         _config.BookmarkManager = bookmarkManager;
+        return this;
+    }
+
+    /// <summary>
+    ///     Set which <see cref="INotification" />s the session can receive in <see cref="IResultSummary.Notifications" />
+    ///     when executing a query, overriding any server configuration.
+    ///     Overriding any driver configuration for queries executed in the session.
+    /// </summary>
+    /// <remarks>Cannot be used with: <see cref="WithNoNotifications" />.</remarks>
+    /// <param name="minimumSeverity"></param>
+    /// <param name="disabledCategories"></param>
+    /// <returns>A <see cref="SessionConfigBuilder" /> instance for further configuration options.</returns>
+    public SessionConfigBuilder WithNotifications(
+        Severity minimumSeverity = Severity.Information,
+        params Category[] disabledCategories)
+    {
+        _config.NotificationsConfig = new NotificationsConfig(minimumSeverity, disabledCategories);
+        return this;
+    }
+
+    /// <summary>
+    ///     Set session to not receive <see cref="INotification" />s from the server when executing
+    ///     queries.
+    ///     Overriding any driver configuration for queries executed in the session.
+    /// </summary>
+    /// <remarks>
+    ///     Cannot be used with: <see cref="WithNotifications" />.
+    /// </remarks>
+    /// <returns>A <see cref="SessionConfigBuilder" /> instance for further configuration options.</returns>
+    public SessionConfigBuilder WithNoNotifications()
+    {
+        _config.NotificationsConfig = new NoNotificationsConfig();
         return this;
     }
 }
