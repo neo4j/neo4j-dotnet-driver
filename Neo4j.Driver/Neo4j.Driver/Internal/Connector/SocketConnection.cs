@@ -274,6 +274,11 @@ internal sealed class SocketConnection : IConnection
         return BoltProtocol.LoginAsync(this, userAgent, authToken, notificationsConfig);
     }
 
+    public Task LogoutAsync()
+    {
+        return BoltProtocol.LogoutAsync(this);
+    }
+
     public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         string database,
         string impersonatedUser,

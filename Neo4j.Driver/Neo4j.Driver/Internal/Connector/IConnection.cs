@@ -64,6 +64,12 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
 
 internal interface IConnectionRunner
 {
+    Task LoginAsync(
+        string userAgent,
+        IAuthToken authToken,
+        INotificationsConfig notificationsConfig);
+    Task LogoutAsync();
+
     Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         string database,
         string impersonatedUser,

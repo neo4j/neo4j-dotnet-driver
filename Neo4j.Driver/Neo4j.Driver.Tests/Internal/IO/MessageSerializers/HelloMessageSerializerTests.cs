@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Connector;
@@ -48,7 +49,6 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
         [InlineData(4, 3)]
         [InlineData(4, 4)]
         [InlineData(5, 0)]
-        [InlineData(6, 0)]
         public void ShouldSerialize(int major, int minor)
         {
             using var memory = new MemoryStream();
@@ -58,7 +58,10 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
 
             var psw = new PackStreamWriter(format, memory);
 
-            HelloMessageSerializer.Instance.Serialize(psw, new HelloMessage(boltProtocolVersion, "user", null, null));
+            HelloMessageSerializer.Instance.Serialize(
+                psw,
+                new HelloMessage(boltProtocolVersion, "user", null, null as IDictionary<string, string>));
+
             memory.Position = 0;
 
             var reader = new PackStreamReader(format, memory, new ByteBuffers());

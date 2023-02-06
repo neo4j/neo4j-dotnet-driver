@@ -50,6 +50,7 @@ namespace Neo4j.Driver.Tests
                         It.IsAny<string>(),
                         bookmarks,
                         It.IsAny<TransactionConfig>(),
+                        null,
                         null),
                     Times.Once);
             }
@@ -72,6 +73,7 @@ namespace Neo4j.Driver.Tests
                         It.IsAny<string>(),
                         It.IsAny<Bookmarks>(),
                         It.IsAny<TransactionConfig>(),
+                        null,
                         null),
                     Times.Once);
             }

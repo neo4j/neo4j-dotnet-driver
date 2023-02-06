@@ -98,7 +98,8 @@ namespace Neo4j.Driver.Tests
                 await session.RunAsync("lalalal");
 
                 mockConn.Verify(
-                    x => x.RunInAutoCommitTransactionAsync(It.IsAny<AutoCommitParams>()),
+                    x => x.RunInAutoCommitTransactionAsync(It.IsAny<AutoCommitParams>(), 
+                        It.IsAny<INotificationsConfig>()),
                     Times.Once);
             }
         }
@@ -207,7 +208,8 @@ namespace Neo4j.Driver.Tests
                                 It.IsAny<string>(),
                                 It.IsAny<Bookmarks>(),
                                 It.IsAny<TransactionConfig>(),
-                                It.IsAny<string>()))
+                                It.IsAny<string>(),
+                                It.IsAny<INotificationsConfig>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
 
                 var session = NewSession(mockConn.Object);
@@ -235,7 +237,8 @@ namespace Neo4j.Driver.Tests
                                 It.IsAny<string>(),
                                 It.IsAny<Bookmarks>(),
                                 It.IsAny<TransactionConfig>(),
-                                It.IsAny<string>()))
+                                It.IsAny<string>(),
+                                It.IsAny<INotificationsConfig>()))
                     .Returns(Task.CompletedTask)
                     .Callback(
                         () =>
@@ -274,7 +277,8 @@ namespace Neo4j.Driver.Tests
                                 It.IsAny<string>(),
                                 It.IsAny<Bookmarks>(),
                                 It.IsAny<TransactionConfig>(),
-                                It.IsAny<string>()))
+                                It.IsAny<string>(),
+                                It.IsAny<INotificationsConfig>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
 
                 var session = NewSession(mockConn.Object);

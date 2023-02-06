@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Types;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.MessageHandling.Messages
@@ -29,7 +30,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
         [Fact]
         public void ShouldHaveCorrectSerializer()
         {
-            var rm = new BeginMessage(null, null, null, null, null, AccessMode.Read, null);
+            var rm = new BeginMessage(null, null, null, null, AccessMode.Read, null, null);
 
             rm.Serializer.Should().BeOfType<BeginMessageSerializer>();
         }
@@ -37,7 +38,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
         [Fact]
         public void ShouldHandleNullValues()
         {
-            var rm = new BeginMessage(null, null, null, null, null, AccessMode.Write, null);
+            var rm = new BeginMessage(null, null, null, null, AccessMode.Write, null, null);
 
             rm.ToString().Should().Be("BEGIN []");
         }
@@ -45,7 +46,6 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
         [Theory]
         [InlineData(4, 4)]
         [InlineData(5, 0)]
-        [InlineData(6, 0)]
         public void ShouldHandleSetValues(int major, int minor)
         {
             var txMeta = new Dictionary<string, object>
@@ -58,10 +58,10 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
                 new BoltProtocolVersion(major, minor),
                 "neo4j",
                 bookmarks,
-                TimeSpan.FromSeconds(1),
-                txMeta,
+                new TransactionConfig(txMeta, TimeSpan.FromSeconds(1)),
                 AccessMode.Read,
-                "Douglas Fir");
+                "Douglas Fir",
+                null);
 
             message.Metadata.Should().ContainKey("bookmarks").WhichValue.Should().BeEquivalentTo(new[] { "bm:a" });
             message.Metadata.Should().ContainKey("imp_user").WhichValue.Should().BeEquivalentTo("Douglas Fir");
@@ -76,19 +76,42 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
                     "BEGIN [{bookmarks, [bm:a]}, {tx_timeout, 1000}, {tx_metadata, [{a, b}]}, {mode, r}, {db, neo4j}, {imp_user, Douglas Fir}]");
         }
 
-        [Fact]
-        public void ShouldValidateTimeout()
+        [Theory]
+        [InlineData(5, 2)]
+        [InlineData(6, 0)]
+        public void ShouldHandleSetValuesWithNotifications(int major, int minor)
         {
-            var message = new BeginMessage(
-                BoltProtocolVersion.V3_0,
-                null,
-                null,
-                TimeSpan.FromSeconds(-1),
-                null,
-                AccessMode.Write,
-                null);
+            var txMeta = new Dictionary<string, object>
+            {
+                ["a"] = "b"
+            };
 
-            message.Metadata.Should().ContainKey("tx_timeout").WhichValue.Should().BeEquivalentTo(0L);
+            var bookmarks = new InternalBookmarks("bm:a");
+            var message = new BeginMessage(
+                new BoltProtocolVersion(major, minor),
+                "neo4j",
+                bookmarks,
+                new TransactionConfig(txMeta, TimeSpan.FromSeconds(1)),
+                AccessMode.Read,
+                "Douglas Fir",
+                new NotificationsConfig(Severity.Warning, new[] { Category.Generic }));
+
+            message.Metadata.Should().ContainKey("bookmarks").WhichValue.Should().BeEquivalentTo(new[] { "bm:a" });
+            message.Metadata.Should().ContainKey("imp_user").WhichValue.Should().BeEquivalentTo("Douglas Fir");
+            message.Metadata.Should().ContainKey("tx_timeout").WhichValue.Should().BeEquivalentTo(1000L);
+            message.Metadata.Should().ContainKey("tx_metadata").WhichValue.Should().BeEquivalentTo(txMeta);
+            message.Metadata.Should().ContainKey("mode").WhichValue.Should().BeEquivalentTo("r");
+            message.Metadata.Should().ContainKey("db").WhichValue.Should().BeEquivalentTo("neo4j");
+            message.Metadata.Should().ContainKey("noti_min_sev").WhichValue.Should().BeEquivalentTo("WARNING");
+            message.Metadata.Should()
+                .ContainKey("noti_dis_cats")
+                .WhichValue.Should()
+                .BeEquivalentTo(new[] { "GENERIC" });
+
+            message.ToString()
+                .Should()
+                .Be(
+                    "BEGIN [{bookmarks, [bm:a]}, {tx_timeout, 1000}, {tx_metadata, [{a, b}]}, {mode, r}, {db, neo4j}, {imp_user, Douglas Fir}, {noti_min_sev, WARNING}, {noti_dis_cats, [GENERIC]}]");
         }
 
         [Fact]
@@ -99,13 +122,15 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
                         BoltProtocolVersion.V4_3,
                         "neo4j",
                         new InternalBookmarks("bm:a"),
-                        TimeSpan.FromSeconds(1),
-                        new Dictionary<string, object>
-                        {
-                            ["a"] = "b"
-                        },
+                        new TransactionConfig(
+                            new Dictionary<string, object>
+                            {
+                                ["a"] = "b"
+                            },
+                            TimeSpan.FromSeconds(1)),
                         AccessMode.Read,
-                        "Douglas Fir"))
+                        "Douglas Fir",
+                        null))
                 .Should()
                 .BeOfType<ArgumentOutOfRangeException>();
         }

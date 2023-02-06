@@ -34,19 +34,22 @@ namespace Neo4j.Driver.Internal.Protocol
     {
         public class LoginAsyncTests
         {
-            [Fact]
-            public async Task ShouldDelegateToV3()
+            [Theory]
+            [InlineData(4, 1)]
+            [InlineData(5, 0)]
+            public async Task ShouldDelegateToV3(int major, int minor)
             {
                 var mockV3 = new Mock<IBoltProtocol>();
                 var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
                 var protocol = new BoltProtocol(mockV3.Object);
                 var auth = AuthTokens.Basic("x", "y");
                 var ua = "herman";
 
-                await protocol.LoginAsync(mockConn.Object, ua, auth);
+                await protocol.LoginAsync(mockConn.Object, ua, auth, null);
 
-                mockV3.Verify(x => x.LoginAsync(mockConn.Object, ua, auth), Times.Once);
-                mockConn.Verify(x => x.LoginAsync(It.IsAny<string>(), It.IsAny<IAuthToken>()), Times.Never());
+                mockV3.Verify(x => x.LoginAsync(mockConn.Object, ua, auth, null), Times.Once);
+                mockConn.Verify(x => x.LoginAsync(It.IsAny<string>(), It.IsAny<IAuthToken>(), It.IsAny<INotificationsConfig>()), Times.Never());
             }
         }
 
@@ -290,8 +293,8 @@ namespace Neo4j.Driver.Internal.Protocol
                 var msgFactory = new Mock<IBoltProtocolMessageFactory>();
 
                 AutoCommitParams queryParams = null;
-                msgFactory.Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, It.IsAny<AutoCommitParams>()))
-                    .Callback<IConnection, AutoCommitParams>((_, y) => queryParams = y);
+                msgFactory.Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, It.IsAny<AutoCommitParams>(), It.IsAny<INotificationsConfig>()))
+                    .Callback<IConnection, AutoCommitParams, INotificationsConfig>((_, y, _) => queryParams = y);
 
                 var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
                 handlerFactory.Setup(
@@ -374,8 +377,8 @@ namespace Neo4j.Driver.Internal.Protocol
                 var msgFactory = new Mock<IBoltProtocolMessageFactory>();
 
                 AutoCommitParams queryParams = null;
-                msgFactory.Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, It.IsAny<AutoCommitParams>()))
-                    .Callback<IConnection, AutoCommitParams>((_, y) => queryParams = y);
+                msgFactory.Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, It.IsAny<AutoCommitParams>(), It.IsAny<INotificationsConfig>()))
+                    .Callback<IConnection, AutoCommitParams, INotificationsConfig>((_, y, _) => queryParams = y);
 
                 var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
                 handlerFactory.Setup(
@@ -483,7 +486,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 };
 
                 var exception = await Record.ExceptionAsync(
-                    () => BoltProtocol.Instance.RunInAutoCommitTransactionAsync(mockConn.Object, acp));
+                    () => BoltProtocol.Instance.RunInAutoCommitTransactionAsync(mockConn.Object, acp, null));
 
                 exception.Should().BeOfType<ArgumentException>();
             }
@@ -505,7 +508,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 };
 
                 var exception = await Record.ExceptionAsync(
-                    () => BoltProtocol.Instance.RunInAutoCommitTransactionAsync(mockConn.Object, acp));
+                    () => BoltProtocol.Instance.RunInAutoCommitTransactionAsync(mockConn.Object, acp, null));
 
                 exception.Should().BeNull();
             }
@@ -530,7 +533,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 var msgFactory = new Mock<IBoltProtocolMessageFactory>();
                 msgFactory
-                    .Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, acp))
+                    .Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, acp, null))
                     .Returns(new RunWithMetadataMessage(mockConn.Object.Version, new Query("...")));
 
                 msgFactory
@@ -576,12 +579,13 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 var mockV3 = new Mock<IBoltProtocol>();
                 var protocol = new BoltProtocol(mockV3.Object, msgFactory.Object, handlerFactory.Object);
-                await protocol.RunInAutoCommitTransactionAsync(mockConn.Object, acp);
+                await protocol.RunInAutoCommitTransactionAsync(mockConn.Object, acp, null);
 
                 msgFactory.Verify(
                     x => x.NewRunWithMetadataMessage(
                         mockConn.Object,
-                        acp),
+                        acp,
+                        null),
                     Times.Once);
 
                 handlerFactory.Verify(
@@ -638,7 +642,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 var msgFactory = new Mock<IBoltProtocolMessageFactory>();
                 msgFactory
-                    .Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, acp))
+                    .Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, acp, null))
                     .Returns(new RunWithMetadataMessage(mockConn.Object.Version, new Query("...")));
 
                 var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
@@ -668,12 +672,13 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 var mockV3 = new Mock<IBoltProtocol>();
                 var protocol = new BoltProtocol(mockV3.Object, msgFactory.Object, handlerFactory.Object);
-                await protocol.RunInAutoCommitTransactionAsync(mockConn.Object, acp);
+                await protocol.RunInAutoCommitTransactionAsync(mockConn.Object, acp, null);
 
                 msgFactory.Verify(
                     x => x.NewRunWithMetadataMessage(
                         mockConn.Object,
-                        acp),
+                        acp,
+                        null),
                     Times.Once);
 
                 handlerFactory.Verify(
@@ -728,7 +733,8 @@ namespace Neo4j.Driver.Internal.Protocol
                         "db",
                         Bookmarks.Empty,
                         TransactionConfig.Default,
-                        "Douglas Fir"));
+                        "Douglas Fir",
+                        null));
 
                 exception.Should().BeOfType<ArgumentException>();
             }
@@ -749,7 +755,8 @@ namespace Neo4j.Driver.Internal.Protocol
                         "db",
                         Bookmarks.Empty,
                         TransactionConfig.Default,
-                        "Douglas Fir"));
+                        "Douglas Fir",
+                        null));
 
                 exception.Should().BeNull();
             }
@@ -770,11 +777,12 @@ namespace Neo4j.Driver.Internal.Protocol
                     "db",
                     bookmarks,
                     config,
-                    "user");
+                    "user",
+                    null);
 
                 mockV3.Verify(
                     x =>
-                        x.BeginTransactionAsync(mockConn.Object, "db", bookmarks, config, "user"),
+                        x.BeginTransactionAsync(mockConn.Object, "db", bookmarks, config, "user", null),
                     Times.Once);
 
                 mockConn.Verify(
@@ -783,7 +791,8 @@ namespace Neo4j.Driver.Internal.Protocol
                             It.IsAny<string>(),
                             It.IsAny<Bookmarks>(),
                             It.IsAny<TransactionConfig>(),
-                            It.IsAny<string>()),
+                            It.IsAny<string>(),
+                            It.IsAny<INotificationsConfig>()),
                     Times.Never);
             }
         }
@@ -801,7 +810,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 var msgFactory = new Mock<IBoltProtocolMessageFactory>();
                 msgFactory
-                    .Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, query))
+                    .Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, query, null))
                     .Returns(new RunWithMetadataMessage(mockConn.Object.Version, new Query("...")));
 
                 var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
@@ -834,7 +843,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 await protocol.RunInExplicitTransactionAsync(mockConn.Object, query, true, 10);
 
                 msgFactory.Verify(
-                    x => x.NewRunWithMetadataMessage(mockConn.Object, query),
+                    x => x.NewRunWithMetadataMessage(mockConn.Object, query, null),
                     Times.Once);
 
                 handlerFactory.Verify(
@@ -878,7 +887,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 var msgFactory = new Mock<IBoltProtocolMessageFactory>();
                 msgFactory
-                    .Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, query))
+                    .Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, query, null))
                     .Returns(new RunWithMetadataMessage(mockConn.Object.Version, new Query("...")));
 
                 msgFactory
@@ -929,7 +938,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 await protocol.RunInExplicitTransactionAsync(mockConn.Object, query, false, 10);
 
                 msgFactory.Verify(
-                    x => x.NewRunWithMetadataMessage(mockConn.Object, query),
+                    x => x.NewRunWithMetadataMessage(mockConn.Object, query, null),
                     Times.Once);
 
                 handlerFactory.Verify(

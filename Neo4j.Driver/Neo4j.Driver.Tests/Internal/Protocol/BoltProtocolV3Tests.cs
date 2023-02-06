@@ -41,7 +41,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var auth = AuthTokens.Basic("user", "pass");
 
                 var mockMsgFactory = new Mock<IBoltProtocolMessageFactory>();
-                var msg = new HelloMessage(BoltProtocolVersion.V3_0, "ua", null, null);
+                var msg = new HelloMessage(BoltProtocolVersion.V3_0, "ua", null, null as IDictionary<string, string>);
                 mockMsgFactory.Setup(x => x.NewHelloMessage(mockConn.Object, "ua", auth)).Returns(msg);
 
                 var mockHandlerFactory = new Mock<IBoltProtocolHandlerFactory>();
@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 mockHandlerFactory.Setup(x => x.NewHelloResponseHandler(mockConn.Object)).Returns(handler);
 
                 var protocol = new BoltProtocolV3(mockMsgFactory.Object, mockHandlerFactory.Object);
-                await protocol.LoginAsync(mockConn.Object, "ua", auth);
+                await protocol.LoginAsync(mockConn.Object, "ua", auth, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsNotNull<HelloMessage>(), It.IsNotNull<HelloResponseHandler>()),
@@ -133,8 +133,8 @@ namespace Neo4j.Driver.Internal.Protocol
                 var msgFactory = new Mock<IBoltProtocolMessageFactory>();
 
                 AutoCommitParams queryParams = null;
-                msgFactory.Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, It.IsAny<AutoCommitParams>()))
-                    .Callback<IConnection, AutoCommitParams>((_, y) => queryParams = y);
+                msgFactory.Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, It.IsAny<AutoCommitParams>(), It.IsAny<INotificationsConfig>()))
+                    .Callback<IConnection, AutoCommitParams, INotificationsConfig>((_, y, _) => queryParams = y);
 
                 var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
                 handlerFactory.Setup(
@@ -205,7 +205,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 };
 
                 var exception = await Record.ExceptionAsync(
-                    () => BoltProtocolV3.Instance.RunInAutoCommitTransactionAsync(mockConn.Object, acp));
+                    () => BoltProtocolV3.Instance.RunInAutoCommitTransactionAsync(mockConn.Object, acp, null));
 
                 exception.Should().BeOfType<ArgumentException>();
             }
@@ -222,7 +222,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 };
 
                 var exception = await Record.ExceptionAsync(
-                    () => BoltProtocolV3.Instance.RunInAutoCommitTransactionAsync(mockConn.Object, acp));
+                    () => BoltProtocolV3.Instance.RunInAutoCommitTransactionAsync(mockConn.Object, acp, null));
 
                 exception.Should().BeOfType<ClientException>();
             }
@@ -247,7 +247,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 var msgFactory = new Mock<IBoltProtocolMessageFactory>();
                 msgFactory
-                    .Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, acp))
+                    .Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, acp, null))
                     .Returns(new RunWithMetadataMessage(mockConn.Object.Version, new Query("...")));
 
                 var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
@@ -281,7 +281,7 @@ namespace Neo4j.Driver.Internal.Protocol
                     .Returns(resultCursorBuilderMock.Object);
 
                 var protocol = new BoltProtocolV3(msgFactory.Object, handlerFactory.Object);
-                await protocol.RunInAutoCommitTransactionAsync(mockConn.Object, acp);
+                await protocol.RunInAutoCommitTransactionAsync(mockConn.Object, acp, null);
 
                 handlerFactory.Verify(
                     x => x.NewResultCursorBuilder(
@@ -326,7 +326,8 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         null,
                         TransactionConfig.Default,
-                        "Douglas Fire"));
+                        "Douglas Fire",
+                        null));
 
                 exception.Should().BeOfType<ArgumentException>();
             }
@@ -343,6 +344,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         "db",
                         null,
                         TransactionConfig.Default,
+                        null,
                         null));
 
                 exception.Should().BeOfType<ClientException>();
@@ -361,6 +363,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         null,
                         TransactionConfig.Default,
+                        null,
                         null));
 
                 exception.Should().BeOfType<InvalidOperationException>();
@@ -373,7 +376,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 mockConn.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V3_0);
                 mockConn.SetupGet(x => x.Mode).Returns(AccessMode.Write);
 
-                var fakeMessage = new BeginMessage(null, null, null, null, null, AccessMode.Write, null);
+                var fakeMessage = new BeginMessage(null, null, null, null, AccessMode.Write, null, null);
                 var msgFactory = new Mock<IBoltProtocolMessageFactory>();
                 msgFactory.Setup(
                         x => x.NewBeginMessage(
@@ -382,7 +385,8 @@ namespace Neo4j.Driver.Internal.Protocol
                             It.IsAny<Bookmarks>(),
                             It.IsAny<TransactionConfig>(),
                             It.IsAny<AccessMode>(),
-                            It.IsAny<string>()))
+                            It.IsAny<string>(),
+                            It.IsAny<INotificationsConfig>()))
                     .Returns(fakeMessage);
 
                 var protocol = new BoltProtocolV3(msgFactory.Object);
@@ -394,10 +398,11 @@ namespace Neo4j.Driver.Internal.Protocol
                     null,
                     bookmarks,
                     tc,
+                    null,
                     null);
 
                 msgFactory.Verify(
-                    x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
+                    x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null, null),
                     Times.Once);
 
                 mockConn.Verify(
@@ -420,7 +425,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 var msgFactory = new Mock<IBoltProtocolMessageFactory>();
                 msgFactory
-                    .Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, query))
+                    .Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, query, null))
                     .Returns(new RunWithMetadataMessage(mockConn.Object.Version, query));
 
                 var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();

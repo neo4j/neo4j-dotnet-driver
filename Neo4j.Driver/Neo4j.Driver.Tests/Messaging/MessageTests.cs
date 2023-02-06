@@ -38,7 +38,8 @@ namespace Neo4j.Driver.Tests
                         Bookmarks.From("bookmark1", "bookmark2"),
                         TransactionConfigGenerator(),
                         AccessMode.Read,
-                        "Impersonated User"),
+                        "Impersonated User",
+                        null),
                     "BEGIN [{bookmarks, [bookmark1, bookmark2]}, {tx_timeout, 1000}, {mode, r}, {imp_user, Impersonated User}]"
                 },
                 new object[]
@@ -99,7 +100,7 @@ namespace Neo4j.Driver.Tests
                 },
                 new object[]
                 {
-                    new HelloMessage(BoltProtocolVersion.V4_4, "mydriver", null, null),
+                    new HelloMessage(BoltProtocolVersion.V4_4, "mydriver", null, null as IDictionary<string, string>),
                     "HELLO [{user_agent, mydriver}, {routing, NULL}, {patch_bolt, [utc]}]"
                 },
                 new object[]
@@ -118,7 +119,7 @@ namespace Neo4j.Driver.Tests
                 },
                 new object[]
                 {
-                    new HelloMessage(BoltProtocolVersion.V4_4, "mydriver", null, null),
+                    new HelloMessage(BoltProtocolVersion.V4_4, "mydriver", null, null as IDictionary<string, string>),
                     "HELLO [{user_agent, mydriver}, {routing, NULL}, {patch_bolt, [utc]}]"
                 },
                 new object[]
@@ -137,7 +138,7 @@ namespace Neo4j.Driver.Tests
                 },
                 new object[]
                 {
-                    new HelloMessage(BoltProtocolVersion.V4_2, "mydriver", null, null),
+                    new HelloMessage(BoltProtocolVersion.V4_2, "mydriver", null, null as IDictionary<string, string>),
                     "HELLO [{user_agent, mydriver}, {routing, NULL}]"
                 },
                 new object[]
@@ -156,12 +157,13 @@ namespace Neo4j.Driver.Tests
                 },
                 new object[]
                 {
-                    new HelloMessage(BoltProtocolVersion.V4_1, "mydriver", null, null),
+                    new HelloMessage(BoltProtocolVersion.V4_1, "mydriver", null, null as IDictionary<string, string>),
                     "HELLO [{user_agent, mydriver}, {routing, NULL}]"
                 },
                 new object[]
                 {
-                    new HelloMessage(BoltProtocolVersion.V3_0, "mydriver", null, null), "HELLO [{user_agent, mydriver}]"
+                    new HelloMessage(BoltProtocolVersion.V3_0, "mydriver", null, null as IDictionary<string, string>),
+                    "HELLO [{user_agent, mydriver}]"
                 },
                 new object[] { new SuccessMessage(new Dictionary<string, object>()), "SUCCESS []" },
                 new object[] { IgnoredMessage.Instance, "IGNORED" },

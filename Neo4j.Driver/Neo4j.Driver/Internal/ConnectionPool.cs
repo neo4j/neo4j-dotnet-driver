@@ -60,7 +60,7 @@ internal sealed class ConnectionPool : IConnectionPool
     private int _poolSize;
 
     private ConnectionPoolStatus _poolStatus = Active;
-    private INotificationsConfig _notificationsConfig;
+    private readonly INotificationsConfig _notificationsConfig;
 
     public ConnectionPool(
         Uri uri,
@@ -93,12 +93,12 @@ internal sealed class ConnectionPool : IConnectionPool
     // Used in test only
     internal ConnectionPool(
         IPooledConnectionFactory connectionFactory,
-        INotificationsConfig notificationsConfig,
         BlockingCollection<IPooledConnection> idleConnections = null,
         ConcurrentHashSet<IPooledConnection> inUseConnections = null,
         ConnectionPoolSettings poolSettings = null,
         IConnectionValidator validator = null,
-        ILogger logger = null)
+        ILogger logger = null,
+        INotificationsConfig notificationsConfig = null)
         : this(
             new Uri("bolt://localhost:7687"),
             connectionFactory,

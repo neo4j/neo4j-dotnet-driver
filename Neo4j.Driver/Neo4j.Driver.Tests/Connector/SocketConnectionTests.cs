@@ -76,11 +76,17 @@ namespace Neo4j.Driver.Tests
                 var conn = NewSocketConnection(mockClient.Object, boltProtocolFactory: bpFactory.Object);
 
                 // When
-                await conn.InitAsync();
+                await conn.InitAsync(null);
 
                 // Then
                 mockClient.Verify(c => c.ConnectAsync(null, CancellationToken.None), Times.Once);
-                protocolMock.Verify(x => x.LoginAsync(conn, It.IsAny<string>(), It.IsAny<IAuthToken>()), Times.Once);
+                protocolMock.Verify(
+                    x => x.LoginAsync(
+                        conn,
+                        It.IsAny<string>(),
+                        It.IsAny<IAuthToken>(),
+                        It.IsAny<INotificationsConfig>()),
+                    Times.Once);
             }
 
             [Fact]
@@ -94,7 +100,7 @@ namespace Neo4j.Driver.Tests
                 // ReSharper disable once ObjectCreationAsStatement
                 var conn = new SocketConnection(mockClient.Object, AuthToken, UserAgent, Logger, Server);
                 // When
-                var error = await Record.ExceptionAsync(() => conn.InitAsync());
+                var error = await Record.ExceptionAsync(() => conn.InitAsync(null));
                 // Then
                 error.Should().BeOfType<IOException>();
                 error.Message.Should().Be("I will stop socket conn from initialization");

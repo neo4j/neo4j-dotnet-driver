@@ -37,7 +37,7 @@ internal sealed class HelloMessage : IRequestMessage
         {
             throw new ArgumentOutOfRangeException(nameof(version), version, "Should be Bolt version 5.0 or less");
         }
-        
+
         if (authToken?.Count > 0)
         {
             Metadata = new Dictionary<string, object>(authToken) { [UserAgentMetadataKey] = userAgent };
@@ -47,6 +47,11 @@ internal sealed class HelloMessage : IRequestMessage
             Metadata = new Dictionary<string, object> { [UserAgentMetadataKey] = userAgent };
         }
 
+        if (version >= BoltProtocolVersion.V4_1)
+        {
+            Metadata.Add(RoutingMetadataKey, routingContext);
+        }
+        
         if (version >= BoltProtocolVersion.V4_3 && version < BoltProtocolVersion.V5_0)
         {
             Metadata.Add("patch_bolt", new[] { "utc" });
@@ -64,11 +69,6 @@ internal sealed class HelloMessage : IRequestMessage
             throw new ArgumentOutOfRangeException(nameof(version), version, "should be Bolt version 5.1+");
         }
 
-        if (version < BoltProtocolVersion.V5_1)
-        {
-            Metadata.Add(RoutingMetadataKey, routingContext);
-        }
-        
         Metadata = new Dictionary<string, object>
         {
             [UserAgentMetadataKey] = userAgent,

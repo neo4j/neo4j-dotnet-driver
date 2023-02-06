@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
@@ -28,7 +29,12 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
         [Fact]
         public void ShouldHaveCorrectSerializer()
         {
-            var helloMessage = new HelloMessage(BoltProtocolVersion.V3_0, null, null, null);
+            var helloMessage = new HelloMessage(
+                BoltProtocolVersion.V3_0,
+                null,
+                null,
+                (IDictionary<string, string>)null);
+
             helloMessage.Serializer.Should().BeOfType<HelloMessageSerializer>();
         }
 
@@ -37,7 +43,12 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
         [InlineData(4, 0)]
         public void ShouldHandleNullValues(int major, int minor)
         {
-            var helloMessage = new HelloMessage(new BoltProtocolVersion(major, minor), null, null, null);
+            var helloMessage = new HelloMessage(
+                new BoltProtocolVersion(major, minor),
+                null,
+                null,
+                (IDictionary<string, string>)null);
+
             helloMessage.Serializer.Should().BeOfType<HelloMessageSerializer>();
             helloMessage.ToString().Should().Be("HELLO [{user_agent, NULL}]");
         }
@@ -47,7 +58,12 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
         [InlineData(4, 0)]
         public void ShouldHandleValues(int major, int minor)
         {
-            var helloMessage = new HelloMessage(new BoltProtocolVersion(major, minor), "jeff", null, null);
+            var helloMessage = new HelloMessage(
+                new BoltProtocolVersion(major, minor),
+                "jeff",
+                null,
+                (IDictionary<string, string>)null);
+
             helloMessage.Serializer.Should().BeOfType<HelloMessageSerializer>();
             helloMessage.Metadata.Should().ContainKey("user_agent").WhichValue.Should().Be("jeff");
             helloMessage.ToString().Should().Be("HELLO [{user_agent, jeff}]");
@@ -58,7 +74,12 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
         [InlineData(4, 2)]
         public void ShouldIncludeRoutingKeyAboveV40(int major, int minor)
         {
-            var helloMessage = new HelloMessage(new BoltProtocolVersion(major, minor), null, null, null);
+            var helloMessage = new HelloMessage(
+                new BoltProtocolVersion(major, minor),
+                null,
+                null,
+                (IDictionary<string, string>)null);
+
             helloMessage.Serializer.Should().BeOfType<HelloMessageSerializer>();
 
             helloMessage.ToString().Should().Be("HELLO [{user_agent, NULL}, {routing, NULL}]");
@@ -86,7 +107,12 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
         [InlineData(4, 4)]
         public void ShouldIncludePatchBolt(int major, int minor)
         {
-            var helloMessage = new HelloMessage(new BoltProtocolVersion(major, minor), null, null, null);
+            var helloMessage = new HelloMessage(
+                new BoltProtocolVersion(major, minor),
+                null,
+                null,
+                (IDictionary<string, string>)null);
+
             helloMessage.Serializer.Should().BeOfType<HelloMessageSerializer>();
 
             helloMessage.ToString().Should().Be("HELLO [{user_agent, NULL}, {routing, NULL}, {patch_bolt, [utc]}]");
@@ -94,7 +120,6 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
 
         [Theory]
         [InlineData(5, 0)]
-        [InlineData(6, 0)]
         public void ShouldIncludeAuth(int major, int minor)
         {
             var helloMessage = new HelloMessage(
@@ -111,6 +136,24 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
                 .Should()
                 .Be(
                     "HELLO [{scheme, basic}, {principal, jeff}, {credentials, ******}, {user_agent, NULL}, {routing, NULL}]");
+        }
+
+        [Theory]
+        [InlineData(5, 1)]
+        [InlineData(6, 0)]
+        public void ShouldThrowIfPassingAuthToHelloMessageAbove51(int major, int minor)
+        {
+            var exception = Record.Exception(
+                () =>
+                {
+                    new HelloMessage(
+                        new BoltProtocolVersion(major, minor),
+                        null,
+                        AuthTokens.Basic("jeff", "hidden").AsDictionary(),
+                        null);
+                });
+
+            exception.Should().BeOfType<ArgumentOutOfRangeException>();
         }
     }
 }

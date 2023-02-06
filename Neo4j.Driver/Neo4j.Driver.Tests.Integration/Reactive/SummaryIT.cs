@@ -274,7 +274,8 @@ public class SummaryIT
                                 null,
                                 null,
                                 null,
-                                "WARNING")
+                                "WARNING",
+                                null)
                         }
                     },
                     options => options.ExcludingMissingMembers()
