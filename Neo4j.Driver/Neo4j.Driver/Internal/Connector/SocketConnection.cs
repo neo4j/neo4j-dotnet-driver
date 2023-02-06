@@ -128,7 +128,7 @@ internal sealed class SocketConnection : IConnection
             _sendLock.Release();
         }
 
-        await LoginAsync(this, _userAgent, _authToken, notificationsConfig).ConfigureAwait(false);
+        await LoginAsync(_userAgent, _authToken, notificationsConfig).ConfigureAwait(false);
     }
 
     public async Task SyncAsync()
@@ -272,11 +272,6 @@ internal sealed class SocketConnection : IConnection
     public Task LoginAsync(string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
     {
         return BoltProtocol.LoginAsync(this, userAgent, authToken, notificationsConfig);
-    }
-
-    public Task LogoutAsync()
-    {
-        return BoltProtocol.LogoutAsync(this);
     }
 
     public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(

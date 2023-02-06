@@ -127,5 +127,7 @@ internal class NewSession : IProtocolObject
         public string impersonatedUser { get; set; }
 
         public string bookmarkManagerId { get; set; }
+
+        public string authorizationToken { get; set; }
     }
 }

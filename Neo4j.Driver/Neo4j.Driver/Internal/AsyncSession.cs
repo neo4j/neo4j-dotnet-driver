@@ -53,6 +53,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     private Task<IResultCursor> _result; // last session run result if any
 
     private AsyncTransaction _transaction;
+    private INotificationsConfig _notificationsConfig;
 
     public AsyncSession(
         IConnectionProvider provider,
@@ -83,6 +84,11 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         {
             LastBookmarks = Bookmarks.From(config.Bookmarks);
             _initialBookmarks = LastBookmarks;
+        }
+
+        if (config.NotificationsConfig != null)
+        {
+            _notificationsConfig = config.NotificationsConfig;
         }
     }
 
@@ -182,8 +188,9 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                             ImpersonatedUser = ImpersonatedUser(),
                             FetchSize = _fetchSize,
                             BookmarksTracker = this,
-                            ResultResourceHandler = this
-                        })
+                            ResultResourceHandler = this,
+                        },
+                        _notificationsConfig)
                     .ConfigureAwait(false);
             });
 

@@ -60,13 +60,15 @@ internal sealed class ConnectionPool : IConnectionPool
     private int _poolSize;
 
     private ConnectionPoolStatus _poolStatus = Active;
+    private INotificationsConfig _notificationsConfig;
 
     public ConnectionPool(
         Uri uri,
         IPooledConnectionFactory connectionFactory,
         ConnectionPoolSettings connectionPoolSettings,
         ILogger logger,
-        IDictionary<string, string> routingContext)
+        IDictionary<string, string> routingContext,
+        INotificationsConfig notificationsConfig = null)
     {
         _uri = uri;
         _id = $"pool-{_uri.Host}:{_uri.Port}";
@@ -85,11 +87,13 @@ internal sealed class ConnectionPool : IConnectionPool
         _poolMetricsListener = metrics?.PutPoolMetrics($"{_id}-{GetHashCode()}", this);
 
         RoutingContext = routingContext;
+        _notificationsConfig = notificationsConfig;
     }
 
     // Used in test only
     internal ConnectionPool(
         IPooledConnectionFactory connectionFactory,
+        INotificationsConfig notificationsConfig,
         BlockingCollection<IPooledConnection> idleConnections = null,
         ConcurrentHashSet<IPooledConnection> inUseConnections = null,
         ConnectionPoolSettings poolSettings = null,
@@ -100,7 +104,8 @@ internal sealed class ConnectionPool : IConnectionPool
             connectionFactory,
             poolSettings ?? new ConnectionPoolSettings(Config.Default),
             logger,
-            null)
+            null,
+            notificationsConfig)
     {
         _idleConnections = idleConnections ?? new BlockingCollection<IPooledConnection>();
         _inUseConnections = inUseConnections ?? new ConcurrentHashSet<IPooledConnection>();
@@ -281,7 +286,7 @@ internal sealed class ConnectionPool : IConnectionPool
             }
 
             await conn
-                .InitAsync(cancellationToken)
+                .InitAsync(_notificationsConfig, cancellationToken)
                 .ConfigureAwait(false);
 
             _poolMetricsListener?.ConnectionCreated();

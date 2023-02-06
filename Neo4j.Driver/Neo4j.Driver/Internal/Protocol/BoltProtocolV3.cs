@@ -41,7 +41,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
 
     public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
     {
-        var message = _protocolMessageFactory.NewHelloMessage(connection, userAgent, authToken, notificationsConfig);
+        var message = _protocolMessageFactory.NewHelloMessage(connection, userAgent, authToken);
         var handler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
 
         await connection.EnqueueAsync(message, handler).ConfigureAwait(false);
@@ -123,7 +123,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             summaryBuilder,
             autoCommitParams.BookmarksTracker);
 
-        var autoCommitMessage = _protocolMessageFactory.NewRunWithMetadataMessage(connection, autoCommitParams);
+        var autoCommitMessage = _protocolMessageFactory.NewRunWithMetadataMessage(connection, autoCommitParams, notificationsConfig);
 
         await connection.EnqueueAsync(autoCommitMessage, runHandler).ConfigureAwait(false);
         await connection.EnqueueAsync(PullAllMessage.Instance, pullAllHandler).ConfigureAwait(false);
@@ -152,7 +152,8 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             bookmarks,
             config,
             mode,
-            impersonatedUser);
+            impersonatedUser,
+            notificationsConfig);
 
         await connection.EnqueueAsync(message, NoOpResponseHandler.Instance).ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);
@@ -178,7 +179,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         var runHandler = _protocolHandlerFactory.NewRunResponseHandlerV3(streamBuilder, summaryBuilder);
         var pullAllHandler = _protocolHandlerFactory.NewPullAllResponseHandler(streamBuilder, summaryBuilder, null);
 
-        var message = _protocolMessageFactory.NewRunWithMetadataMessage(connection, query);
+        var message = _protocolMessageFactory.NewRunWithMetadataMessage(connection, query, null);
 
         await connection.EnqueueAsync(message, runHandler).ConfigureAwait(false);
         await connection.EnqueueAsync(PullAllMessage.Instance, pullAllHandler).ConfigureAwait(false);
