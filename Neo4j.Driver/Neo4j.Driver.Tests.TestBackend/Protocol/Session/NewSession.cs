@@ -17,6 +17,8 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Auth;
 using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
@@ -79,6 +81,11 @@ internal class NewSession : IProtocolObject
             configBuilder.WithImpersonatedUser(data.impersonatedUser);
         }
 
+        if (data.authorizationToken is not null)
+        {
+            configBuilder.WithAuthToken(new AuthToken(data.authorizationToken.data.ToDictionary()));
+        }
+
         if (data.bookmarkManagerId != null)
         {
             configBuilder.WithBookmarkManager(
@@ -127,5 +134,7 @@ internal class NewSession : IProtocolObject
         public string impersonatedUser { get; set; }
 
         public string bookmarkManagerId { get; set; }
+
+        public AuthorizationToken authorizationToken { get; set; }
     }
 }

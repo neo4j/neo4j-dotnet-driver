@@ -58,19 +58,24 @@ internal sealed class BoltProtocol : IBoltProtocol
         return _boltProtocolV3.ResetAsync(connection);
     }
 
+    public Task ReAuthAsync(IConnection connection, IAuthToken newAuthToken)
+    {
+        return _boltProtocolV3.ReAuthAsync(connection, newAuthToken);
+    }
+
     public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         IConnection connection,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks)
     {
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
 
-        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, impersonatedUser);
+        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, sessionConfig?.ImpersonatedUser);
 
         return connection.Version >= BoltProtocolVersion.V4_3
-            ? GetRoutingTableWithRouteMessageAsync(connection, database, impersonatedUser, bookmarks)
+            ? GetRoutingTableWithRouteMessageAsync(connection, database, sessionConfig?.ImpersonatedUser, bookmarks)
             : GetRoutingTableWithQueryAsync(connection, database, bookmarks);
     }
 
@@ -118,10 +123,10 @@ internal sealed class BoltProtocol : IBoltProtocol
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
-        string impersonatedUser)
+        SessionConfig sessionConfig)
     {
-        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, impersonatedUser);
-        return _boltProtocolV3.BeginTransactionAsync(connection, database, bookmarks, config, impersonatedUser);
+        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, sessionConfig?.ImpersonatedUser);
+        return _boltProtocolV3.BeginTransactionAsync(connection, database, bookmarks, config, sessionConfig);
     }
 
     public async Task<IResultCursor> RunInExplicitTransactionAsync(
@@ -239,6 +244,7 @@ internal sealed class BoltProtocol : IBoltProtocol
     }
 
     // Internal for tests.
+
     internal Func<IResultStreamBuilder, long, long, Task> RequestMore(
         IConnection connection,
         SummaryBuilder summaryBuilder,
@@ -258,6 +264,7 @@ internal sealed class BoltProtocol : IBoltProtocol
     }
 
     // Internal for tests.
+
     internal Func<IResultStreamBuilder, long, Task> CancelRequest(
         IConnection connection,
         SummaryBuilder summaryBuilder,

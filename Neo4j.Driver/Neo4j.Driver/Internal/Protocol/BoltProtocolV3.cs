@@ -39,13 +39,39 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         _protocolHandlerFactory = protocolHandlerFactory ?? BoltProtocolHandlerFactory.Instance;
     }
 
+    private async Task EnqueueLogon(IConnection connection, IAuthToken authToken)
+    {
+        connection.ClearQueueAsync();
+        var logonMessage = _protocolMessageFactory.NewLogonMessage(connection, authToken);
+        await connection.EnqueueAsync(logonMessage, NoOpResponseHandler.Instance).ConfigureAwait(false);
+    }
+
     public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
     {
-        var message = _protocolMessageFactory.NewHelloMessage(connection, userAgent, authToken);
-        var handler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
+        var helloMessage = _protocolMessageFactory.NewHelloMessage(connection, userAgent, authToken);
+        var helloResponseHandler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
+        await connection.EnqueueAsync(helloMessage, helloResponseHandler).ConfigureAwait(false);
+        if (connection.Version >= BoltProtocolVersion.V5_1)
+        {
+            await EnqueueLogon(connection, authToken).ConfigureAwait(false);
+        }
 
-        await connection.EnqueueAsync(message, handler).ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);
+    }
+
+    public async Task ReAuthAsync(IConnection connection, IAuthToken newAuthToken)
+    {
+        if (connection.Version < BoltProtocolVersion.V5_1)
+        {
+            throw new ClientException(
+                "Driver is connected to a server that does not support re-authorisation. " +
+                "Please upgrade to neo4j 5.5.0 or later in order to use this functionality");
+        }
+
+        await connection.EnqueueAsync(LogoffMessage.Instance, NoOpResponseHandler.Instance).ConfigureAwait(false);
+        await EnqueueLogon(connection, newAuthToken).ConfigureAwait(false);
+        // we don't sync here because the logoff/logon should be pipelined with whatever
+        // comes next from the driver
     }
 
     public async Task LogoutAsync(IConnection connection)
@@ -62,13 +88,13 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
     public async Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         IConnection connection,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks)
     {
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
 
-        ValidateImpersonatedUserForVersion(connection, impersonatedUser);
+        ValidateImpersonatedUserForVersion(connection, sessionConfig?.ImpersonatedUser);
 
         connection.ConfigureMode(AccessMode.Read);
 
@@ -136,9 +162,9 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
-        string impersonatedUser)
+        SessionConfig sessionConfig)
     {
-        ValidateImpersonatedUserForVersion(connection, impersonatedUser);
+        ValidateImpersonatedUserForVersion(connection, sessionConfig?.ImpersonatedUser ?? "");
         ValidateDatabase(connection, database);
 
         var mode = connection.Mode ??
@@ -150,7 +176,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             bookmarks,
             config,
             mode,
-            impersonatedUser);
+            sessionConfig);
 
         await connection.EnqueueAsync(message, NoOpResponseHandler.Instance).ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);

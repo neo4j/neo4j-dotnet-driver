@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Tests
                         Bookmarks.From("bookmark1", "bookmark2"),
                         TransactionConfigGenerator(),
                         AccessMode.Read,
-                        "Impersonated User"),
+                        new("Impersonated User")),
                     "BEGIN [{bookmarks, [bookmark1, bookmark2]}, {tx_timeout, 1000}, {mode, r}, {imp_user, Impersonated User}]"
                 },
                 new object[]

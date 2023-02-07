@@ -17,15 +17,16 @@
 
 using System;
 using System.Reflection;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal;
 
 internal class ConnectionSettings
 {
-    internal ConnectionSettings(Uri uri, IAuthToken authToken, Config config, IHostResolver hostResolver = null)
+    internal ConnectionSettings(Uri uri, IAuthTokenManager authTokenManager, Config config, IHostResolver hostResolver = null)
     {
-        AuthToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
+        AuthTokenManager = authTokenManager;
         UserAgent = config.UserAgent;
         var resolver = hostResolver switch
         {
@@ -63,7 +64,7 @@ internal class ConnectionSettings
         }
     }
 
-    public IAuthToken AuthToken { get; }
+    public IAuthTokenManager AuthTokenManager { get; }
     public string UserAgent { get; }
     public SocketSettings SocketSettings { get; }
 }

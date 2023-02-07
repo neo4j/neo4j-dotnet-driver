@@ -334,7 +334,7 @@ public class Examples
         public void TestCustomAuthExample()
         {
             // Given
-            using var driver = CreateDriverWithCustomizedAuth(Uri, User, Password, "native", "basic", null);
+            using var driver = CreateDriverWithCustomizedAuth(Uri, User, Password, "native", AuthSchemes.Basic, null);
             using var session = driver.Session();
             // When & Then
             session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);

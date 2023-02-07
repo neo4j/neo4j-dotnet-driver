@@ -74,7 +74,7 @@ internal class RoutingTableManager : IRoutingTableManager
     public async Task<IRoutingTable> EnsureRoutingTableForModeAsync(
         AccessMode mode,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks)
     {
         database = database ?? string.Empty;
@@ -91,7 +91,7 @@ internal class RoutingTableManager : IRoutingTableManager
                 return existingTable;
             }
 
-            var refreshedTable = await UpdateRoutingTableAsync(mode, database, impersonatedUser, bookmarks)
+            var refreshedTable = await UpdateRoutingTableAsync(mode, database, sessionConfig, bookmarks)
                 .ConfigureAwait(false);
 
             await UpdateAsync(refreshedTable).ConfigureAwait(false);
@@ -218,7 +218,7 @@ internal class RoutingTableManager : IRoutingTableManager
     internal async Task<IRoutingTable> UpdateRoutingTableAsync(
         AccessMode mode,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks)
     {
         if (database == null)
@@ -247,7 +247,7 @@ internal class RoutingTableManager : IRoutingTableManager
                 existingTable,
                 mode,
                 database,
-                impersonatedUser,
+                sessionConfig,
                 bookmarks,
                 triedUris)
             .ConfigureAwait(false);
@@ -268,7 +268,7 @@ internal class RoutingTableManager : IRoutingTableManager
                         existingTable,
                         mode,
                         database,
-                        impersonatedUser,
+                        sessionConfig,
                         bookmarks)
                     .ConfigureAwait(false);
 
@@ -290,7 +290,7 @@ internal class RoutingTableManager : IRoutingTableManager
         IRoutingTable routingTable,
         AccessMode mode,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks,
         ISet<Uri> triedUris = null)
     {
@@ -316,7 +316,7 @@ internal class RoutingTableManager : IRoutingTableManager
                     try
                     {
                         var newRoutingTable =
-                            await _discovery.DiscoverAsync(conn, database, impersonatedUser, bookmarks)
+                            await _discovery.DiscoverAsync(conn, database, sessionConfig, bookmarks)
                                 .ConfigureAwait(false);
 
                         if (!newRoutingTable.IsStale(mode))

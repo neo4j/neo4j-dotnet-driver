@@ -39,10 +39,16 @@ internal class ClusterConnectionPool : IClusterConnectionPool
         IPooledConnectionFactory connectionFactory,
         RoutingSettings routingSetting,
         ConnectionPoolSettings poolSettings,
+        ConnectionSettings connectionSettings,
         ILogger logger
     ) : this(
         initUris,
-        new ConnectionPoolFactory(connectionFactory, poolSettings, routingSetting.RoutingContext, logger),
+        new ConnectionPoolFactory(
+            connectionFactory,
+            poolSettings,
+            routingSetting.RoutingContext,
+            connectionSettings,
+            logger),
         logger)
     {
     }
@@ -74,7 +80,7 @@ internal class ClusterConnectionPool : IClusterConnectionPool
         Uri uri,
         AccessMode mode,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks)
     {
         if (!_pools.TryGetValue(uri, out var pool))
@@ -82,7 +88,7 @@ internal class ClusterConnectionPool : IClusterConnectionPool
             return Task.FromResult((IConnection)null);
         }
 
-        return pool.AcquireAsync(mode, database, impersonatedUser, bookmarks);
+        return pool.AcquireAsync(mode, database, sessionConfig, bookmarks);
     }
 
     public async Task AddAsync(IEnumerable<Uri> servers)

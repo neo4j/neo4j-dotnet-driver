@@ -19,8 +19,10 @@ using System;
 using System.Net;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Connector.Trust;
 using Org.BouncyCastle.Pkcs;
@@ -176,7 +178,7 @@ public class CertificateTrustIT : IClassFixture<CertificateTrustIT.CertificateTr
     {
         var connectionSettings = new ConnectionSettings(
             overridenUri,
-            Server.AuthToken,
+            AuthTokenManagers.Static(Server.AuthToken),
             config,
             new CustomHostResolver(
                 Server.BoltUri,
@@ -184,7 +186,7 @@ public class CertificateTrustIT : IClassFixture<CertificateTrustIT.CertificateTr
 
         var bufferSettings = new BufferSettings(config);
         var connectionFactory =
-            new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logger);
+            new PooledConnectionFactory(bufferSettings, config.Logger);
 
         return GraphDatabase.CreateDriver(overridenUri, config, connectionFactory, connectionSettings);
     }

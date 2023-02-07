@@ -29,7 +29,7 @@ internal interface IClusterConnectionPool : IAsyncDisposable
         Uri uri,
         AccessMode mode,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks);
 
     // Add a set of uri to this pool

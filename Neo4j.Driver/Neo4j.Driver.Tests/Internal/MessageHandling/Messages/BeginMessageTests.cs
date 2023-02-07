@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
                 TimeSpan.FromSeconds(1),
                 txMeta,
                 AccessMode.Read,
-                "Douglas Fir");
+                new("Douglas Fir"));
 
             message.Metadata.Should().ContainKey("bookmarks").WhichValue.Should().BeEquivalentTo(new[] { "bm:a" });
             message.Metadata.Should().ContainKey("imp_user").WhichValue.Should().BeEquivalentTo("Douglas Fir");
@@ -105,7 +105,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
                             ["a"] = "b"
                         },
                         AccessMode.Read,
-                        "Douglas Fir"))
+                        new("Douglas Fir")))
                 .Should()
                 .BeOfType<ArgumentOutOfRangeException>();
         }

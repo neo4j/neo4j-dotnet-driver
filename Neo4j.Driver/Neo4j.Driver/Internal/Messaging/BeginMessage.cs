@@ -30,7 +30,7 @@ internal sealed class BeginMessage : TransactionStartingMessage
         Bookmarks bookmarks,
         TransactionConfig configBuilder,
         AccessMode mode,
-        string impersonatedUser)
+        SessionConfig sessionConfig)
         : this(
             version,
             database,
@@ -38,7 +38,7 @@ internal sealed class BeginMessage : TransactionStartingMessage
             configBuilder?.Timeout,
             configBuilder?.Metadata,
             mode,
-            impersonatedUser)
+            sessionConfig)
     {
     }
 
@@ -49,22 +49,22 @@ internal sealed class BeginMessage : TransactionStartingMessage
         TimeSpan? txTimeout,
         IDictionary<string, object> txMetadata,
         AccessMode mode,
-        string impersonatedUser)
+        SessionConfig sessionConfig)
         : base(database, bookmarks, txTimeout, txMetadata, mode)
     {
-        if (string.IsNullOrEmpty(impersonatedUser))
+        if (string.IsNullOrWhiteSpace(sessionConfig?.ImpersonatedUser))
         {
             return;
         }
 
         if (version >= BoltProtocolVersion.V4_4)
         {
-            Metadata.Add("imp_user", impersonatedUser);
+            Metadata.Add("imp_user", sessionConfig.ImpersonatedUser);
         }
         else
         {
             throw new ArgumentOutOfRangeException(
-                nameof(impersonatedUser),
+                nameof(sessionConfig.ImpersonatedUser),
                 "Impersonated users can not be used with bolt version less than 4.4");
         }
     }

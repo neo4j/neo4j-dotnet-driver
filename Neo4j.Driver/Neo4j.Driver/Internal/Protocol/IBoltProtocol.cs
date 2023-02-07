@@ -27,11 +27,12 @@ internal interface IBoltProtocol
     Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken);
     Task LogoutAsync(IConnection connection);
     Task ResetAsync(IConnection connection);
+    Task ReAuthAsync(IConnection connection, IAuthToken newAuthToken);
 
     Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         IConnection connection,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks);
 
     Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, AutoCommitParams autoCommitParams);
@@ -41,7 +42,7 @@ internal interface IBoltProtocol
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
-        string impersonatedUser);
+        SessionConfig sessionConfig);
 
     Task<IResultCursor> RunInExplicitTransactionAsync(
         IConnection connection,

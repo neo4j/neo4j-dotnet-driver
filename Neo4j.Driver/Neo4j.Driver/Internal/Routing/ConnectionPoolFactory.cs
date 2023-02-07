@@ -31,21 +31,30 @@ internal class ConnectionPoolFactory : IConnectionPoolFactory
     private readonly ILogger _logger;
     private readonly ConnectionPoolSettings _poolSettings;
     private readonly IDictionary<string, string> _routingContext;
+    private readonly ConnectionSettings _connectionSettings;
 
     public ConnectionPoolFactory(
         IPooledConnectionFactory connectionFactory,
         ConnectionPoolSettings poolSettings,
         IDictionary<string, string> routingContext,
+        ConnectionSettings connectionSettings,
         ILogger logger)
     {
         _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
         _poolSettings = poolSettings ?? throw new ArgumentNullException(nameof(poolSettings));
         _logger = logger;
         _routingContext = routingContext;
+        _connectionSettings = connectionSettings;
     }
 
     public IConnectionPool Create(Uri uri)
     {
-        return new ConnectionPool(uri, _connectionFactory, _poolSettings, _logger, _routingContext);
+        return new ConnectionPool(
+            uri,
+            _connectionFactory,
+            _poolSettings,
+            _logger,
+            _connectionSettings,
+            _routingContext);
     }
 }

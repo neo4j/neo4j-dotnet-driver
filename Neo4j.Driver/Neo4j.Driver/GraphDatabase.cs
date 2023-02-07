@@ -17,7 +17,9 @@
 
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;
@@ -120,6 +122,12 @@ public static class GraphDatabase
         return Driver(new Uri(uri), authToken);
     }
 
+
+    public static IDriver Driver(string uri, IAuthTokenManager authTokenManager)
+    {
+        return Driver(new Uri(uri), authTokenManager);
+    }
+
     /// <summary>Returns a driver for a Neo4j instance with default configuration settings.</summary>
     /// <param name="uri">
     /// The URI to the Neo4j instance. Should be in the form
@@ -135,6 +143,11 @@ public static class GraphDatabase
     public static IDriver Driver(Uri uri, IAuthToken authToken)
     {
         return Driver(uri, authToken, null);
+    }
+
+    public static IDriver Driver(Uri uri, IAuthTokenManager authTokenManager)
+    {
+        return Driver(uri, authTokenManager, null);
     }
 
     /// <summary>Returns a driver for a Neo4j instance with custom configuration.</summary>
@@ -157,6 +170,12 @@ public static class GraphDatabase
         return Driver(new Uri(uri), authToken, action);
     }
 
+    public static IDriver Driver(string uri, IAuthTokenManager authTokenManager, Action<ConfigBuilder> action)
+    {
+        return Driver(new Uri(uri), authTokenManager, action);
+    }
+
+
     /// <summary>Returns a driver for a Neo4j instance with custom configuration.</summary>
     /// <param name="uri">
     /// The URI to the Neo4j instance. Should be in the form
@@ -172,15 +191,19 @@ public static class GraphDatabase
     /// <returns>A new driver to the database instance specified by the <paramref name="uri"/>.</returns>
     public static IDriver Driver(Uri uri, IAuthToken authToken, Action<ConfigBuilder> action)
     {
+        return Driver(uri, AuthTokenManagers.Static(authToken), action);
+    }
+
+    public static IDriver Driver(Uri uri, IAuthTokenManager authTokenManager, Action<ConfigBuilder> action)
+    {
         uri = uri ?? throw new ArgumentNullException(nameof(uri));
-        authToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
+        authTokenManager = authTokenManager ?? throw new ArgumentNullException(nameof(authTokenManager));
 
         var config = ConfigBuilders.BuildConfig(action);
 
-        var connectionSettings = new ConnectionSettings(uri, authToken, config);
+        var connectionSettings = new ConnectionSettings(uri, authTokenManager, config);
         var bufferSettings = new BufferSettings(config);
-        var connectionFactory =
-            new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logger);
+        var connectionFactory = new PooledConnectionFactory(bufferSettings, config.Logger);
 
         return CreateDriver(uri, config, connectionFactory, connectionSettings);
     }
@@ -204,10 +227,15 @@ public static class GraphDatabase
 
         EnsureNoRoutingContextOnBolt(uri, routingContext);
 
-        var connectionProvider = parsedUri.IsRoutingUri()
-            ? new LoadBalancer(connectionFactory, routingSettings, connectionPoolSettings, logger)
-            : new ConnectionPool(parsedUri, connectionFactory, connectionPoolSettings, logger, null) as
-                IConnectionProvider;
+        IConnectionProvider connectionProvider = parsedUri.IsRoutingUri()
+            ? new LoadBalancer(connectionFactory, routingSettings, connectionPoolSettings, connectionSettings, logger)
+            : new ConnectionPool(
+                parsedUri,
+                connectionFactory,
+                connectionPoolSettings,
+                logger,
+                connectionSettings,
+                null);
 
         return new Internal.Driver(
             parsedUri,

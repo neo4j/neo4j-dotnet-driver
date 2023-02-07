@@ -42,7 +42,7 @@ namespace Neo4j.Driver.Tests
         {
             var connection = new Mock<IConnection>().Object;
             var releaseManager = new Mock<IConnectionReleaseManager>().Object;
-            var pooledConnection = new PooledConnection(connection, releaseManager);
+            var pooledConnection = new PooledConnection(connection, (_, _) => Task.CompletedTask, releaseManager);
             var exception = (Exception)Activator.CreateInstance(exceptionType, "Testing exception");
 
             var resultingException = await Record.ExceptionAsync(() => pooledConnection.OnErrorAsync(exception));
@@ -57,7 +57,7 @@ namespace Neo4j.Driver.Tests
         {
             var connection = new Mock<IConnection>().Object;
             var releaseManager = new Mock<IConnectionReleaseManager>().Object;
-            var pooledConnection = new PooledConnection(connection, releaseManager);
+            var pooledConnection = new PooledConnection(connection, (_, _) => Task.CompletedTask, releaseManager);
             var exception = (Exception)Activator.CreateInstance(exceptionType);
 
             var resultingException = await Record.ExceptionAsync(() => pooledConnection.OnErrorAsync(exception));
@@ -69,7 +69,10 @@ namespace Neo4j.Driver.Tests
         {
             var connection = new Mock<IConnection>();
             var releaseManager = new Mock<IConnectionReleaseManager>();
-            var pooledConnection = new PooledConnection(connection.Object, releaseManager.Object);
+            var pooledConnection = new PooledConnection(
+                connection.Object,
+                (_, _) => Task.CompletedTask,
+                releaseManager.Object);
 
             var resultException = await Record.ExceptionAsync(
                 () =>

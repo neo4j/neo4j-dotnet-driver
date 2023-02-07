@@ -839,9 +839,21 @@ public abstract class StressTest<TContext> : IDisposable
         public IPooledConnection Create(
             Uri uri,
             IConnectionReleaseManager releaseManager,
+            SocketSettings socketSettings,
+            IAuthToken authToken,
+            Func<IAuthToken, CancellationToken, Task> taskCompletedAsync,
+            string userAgent,
             IDictionary<string, string> routingContext)
         {
-            var pooledConnection = _delegate.Create(uri, releaseManager, routingContext);
+            var pooledConnection = _delegate.Create(
+                uri,
+                releaseManager,
+                socketSettings,
+                authToken,
+                taskCompletedAsync,
+                userAgent,
+                routingContext);
+
             Connections.Enqueue(pooledConnection);
             return pooledConnection;
         }

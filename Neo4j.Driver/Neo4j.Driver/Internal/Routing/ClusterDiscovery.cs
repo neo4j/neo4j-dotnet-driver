@@ -30,10 +30,10 @@ internal class ClusterDiscovery : IDiscovery
     public async Task<IRoutingTable> DiscoverAsync(
         IConnection connection,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks)
     {
-        var routingTable = await connection.GetRoutingTableAsync(database, impersonatedUser, bookmarks)
+        var routingTable = await connection.GetRoutingTableAsync(database, sessionConfig, bookmarks)
             .ConfigureAwait(false);
 
         return ParseDiscoveryResult(routingTable);

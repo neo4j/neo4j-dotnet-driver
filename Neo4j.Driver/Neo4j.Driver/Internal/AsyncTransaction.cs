@@ -33,7 +33,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
     private readonly IConnection _connection;
     private readonly long _fetchSize;
-    private readonly string _impersonatedUser;
+    private readonly SessionConfig _sessionConfig;
     private readonly ILogger _logger;
     private readonly bool _reactive;
     private readonly ITransactionResourceHandler _resourceHandler;
@@ -53,7 +53,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         Bookmarks bookmark = null,
         bool reactive = false,
         long fetchSize = Config.Infinite,
-        string impersonatedUser = null)
+        SessionConfig sessionConfig = null)
     {
         _connection = new TransactionConnection(this, connection);
         _resourceHandler = resourceHandler ?? throw new ArgumentNullException(nameof(resourceHandler));
@@ -62,7 +62,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         _reactive = reactive;
         Database = database;
         _fetchSize = fetchSize;
-        _impersonatedUser = impersonatedUser;
+        _sessionConfig = sessionConfig;
     }
 
     private string Database { get; set; }
@@ -120,7 +120,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
     public Task BeginTransactionAsync(TransactionConfig config)
     {
         TransactionConfig = config;
-        return _connection.BeginTransactionAsync(Database, _bookmarks, config, _impersonatedUser);
+        return _connection.BeginTransactionAsync(Database, _bookmarks, config, _sessionConfig);
     }
 
     public async Task MarkToCloseAsync()

@@ -38,6 +38,8 @@ namespace Neo4j.Driver.Internal.Protocol
             public async Task ShouldSyncHelloMessage()
             {
                 var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V5_1);
+
                 var auth = AuthTokens.Basic("user", "pass");
 
                 var mockMsgFactory = new Mock<IBoltProtocolMessageFactory>();
@@ -55,6 +57,8 @@ namespace Neo4j.Driver.Internal.Protocol
                     x => x.EnqueueAsync(It.IsNotNull<HelloMessage>(), It.IsNotNull<HelloResponseHandler>()),
                     Times.Once);
 
+                mockConn.VerifyGet(x => x.Version, Times.Once);
+                mockConn.Verify(x => x.EnqueueAsync(null, NoOpResponseHandler.Instance), Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
                 mockConn.VerifyNoOtherCalls();
             }
@@ -107,7 +111,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 mockConn.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V3_0);
 
                 var ex = await Record.ExceptionAsync(
-                    () => BoltProtocolV3.Instance.GetRoutingTableAsync(mockConn.Object, "db", "Douglas Fir", null));
+                    () => BoltProtocolV3.Instance.GetRoutingTableAsync(mockConn.Object, "db", new("Douglas Fir"), null));
 
                 ex.Should().BeOfType<ArgumentException>();
             }
@@ -201,7 +205,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 var acp = new AutoCommitParams
                 {
-                    ImpersonatedUser = "Douglas Fir"
+                    ImpersonatedUser = new("Douglas Fir")
                 };
 
                 var exception = await Record.ExceptionAsync(
@@ -326,7 +330,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         null,
                         TransactionConfig.Default,
-                        "Douglas Fire"));
+                        new("Douglas Fire")));
 
                 exception.Should().BeOfType<ArgumentException>();
             }
@@ -382,7 +386,7 @@ namespace Neo4j.Driver.Internal.Protocol
                             It.IsAny<Bookmarks>(),
                             It.IsAny<TransactionConfig>(),
                             It.IsAny<AccessMode>(),
-                            It.IsAny<string>()))
+                            It.IsAny<SessionConfig>()))
                     .Returns(fakeMessage);
 
                 var protocol = new BoltProtocolV3(msgFactory.Object);
