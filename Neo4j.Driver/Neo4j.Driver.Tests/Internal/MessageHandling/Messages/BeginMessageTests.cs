@@ -77,6 +77,39 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
         }
 
         [Theory]
+        [InlineData(4, 4)]
+        [InlineData(5, 0)]
+        public void ShouldIgnoreNotificationConfig(int major, int minor)
+        {
+            var txMeta = new Dictionary<string, object>
+            {
+                ["a"] = "b"
+            };
+
+            var bookmarks = new InternalBookmarks("bm:a");
+            var message = new BeginMessage(
+                new BoltProtocolVersion(major, minor),
+                "neo4j",
+                bookmarks,
+                new TransactionConfig(txMeta, TimeSpan.FromSeconds(1)),
+                AccessMode.Read,
+                "Douglas Fir",
+                new NotificationsDisabledConfig());
+
+            message.Metadata.Should().ContainKey("bookmarks").WhichValue.Should().BeEquivalentTo(new[] { "bm:a" });
+            message.Metadata.Should().ContainKey("imp_user").WhichValue.Should().BeEquivalentTo("Douglas Fir");
+            message.Metadata.Should().ContainKey("tx_timeout").WhichValue.Should().BeEquivalentTo(1000L);
+            message.Metadata.Should().ContainKey("tx_metadata").WhichValue.Should().BeEquivalentTo(txMeta);
+            message.Metadata.Should().ContainKey("mode").WhichValue.Should().BeEquivalentTo("r");
+            message.Metadata.Should().ContainKey("db").WhichValue.Should().BeEquivalentTo("neo4j");
+
+            message.ToString()
+                .Should()
+                .Be(
+                    "BEGIN [{bookmarks, [bm:a]}, {tx_timeout, 1000}, {tx_metadata, [{a, b}]}, {mode, r}, {db, neo4j}, {imp_user, Douglas Fir}]");
+        }
+
+        [Theory]
         [InlineData(5, 2)]
         [InlineData(6, 0)]
         public void ShouldHandleSetValuesWithNotifications(int major, int minor)

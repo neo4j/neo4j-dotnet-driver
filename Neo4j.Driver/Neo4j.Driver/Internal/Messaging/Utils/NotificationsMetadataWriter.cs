@@ -21,17 +21,14 @@ internal static class NotificationsMetadataWriter
 
         switch (notificationsConfig)
         {
-            case NoNotificationsConfig:
+            case NotificationsDisabledConfig:
                 metadata.Add(MinimumSeverityKey, "OFF");
                 break;
 
             case NotificationsConfig config:
-                var sendSeverity = config.MinimumSeverity != Severity.Information ||
-                    (config.MinimumSeverity == Severity.Information && !config.DisabledCategories.Any());
-
-                if (sendSeverity)
+                if (config.MinimumSeverity.HasValue)
                 {
-                    var severity = config.MinimumSeverity.ToString().ToUpperInvariant();
+                    var severity = config.MinimumSeverity.Value.ToString().ToUpperInvariant();
                     metadata.Add(MinimumSeverityKey, severity);
                 }
 

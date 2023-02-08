@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var connFactory = new Mock<IPooledConnectionFactory>().Object;
                 var poolSettings = new ConnectionPoolSettings(Config.Default);
                 var routingSetting = new RoutingSettings(uri, new Dictionary<string, string>(), Config.Default);
-                var pool = new ClusterConnectionPool(uris, connFactory, routingSetting, poolSettings, null);
+                var pool = new ClusterConnectionPool(uris, connFactory, routingSetting, poolSettings, null, null);
 
                 pool.ToString().Should().Contain("bolt://123:456/");
 
@@ -100,7 +100,7 @@ namespace Neo4j.Driver.Tests.Routing
                 // Then
                 connection.Should().NotBeNull();
                 var exception =
-                    await Record.ExceptionAsync(() => connection.InitAsync(It.IsAny<INotificationsConfig>()));
+                    await Record.ExceptionAsync(() => connection.InitAsync(null));
 
                 mockedConnection.Verify(c => c.InitAsync(null, CancellationToken.None), Times.Once);
                 exception.Should().BeOfType<InvalidOperationException>();

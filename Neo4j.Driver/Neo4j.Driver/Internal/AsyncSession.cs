@@ -347,7 +347,8 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
             LastBookmarks,
             _reactive,
             _fetchSize,
-            ImpersonatedUser());
+            ImpersonatedUser(),
+            _notificationsConfig);
 
         await tx.BeginTransactionAsync(config).ConfigureAwait(false);
         _transaction = tx;

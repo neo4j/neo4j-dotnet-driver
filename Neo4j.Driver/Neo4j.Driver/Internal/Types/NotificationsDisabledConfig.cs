@@ -17,7 +17,7 @@
 
 namespace Neo4j.Driver.Internal.Types;
 
-internal sealed class NoNotificationsConfig : INotificationsConfig
+internal sealed class NotificationsDisabledConfig : INotificationsConfig
 {
     public bool Optimize { get; set; }
 }

@@ -135,6 +135,32 @@ public sealed class SessionConfig
     internal IBookmarkManager BookmarkManager { get; set; }
 
     public INotificationsConfig NotificationsConfig { get; internal set; }
+
+    internal void OptimizeNotificationsConfig(INotificationsConfig driverConfig)
+    {
+        if (driverConfig == null || NotificationsConfig == null)
+            return;
+
+        if (driverConfig is NotificationsDisabledConfig &&
+            NotificationsConfig is NotificationsDisabledConfig sessionNotifications)
+        {
+            sessionNotifications.Optimize = true;
+        }
+
+        if (driverConfig is not NotificationsConfig driverNotifications ||
+            NotificationsConfig is not NotificationsConfig sessionNotificationConfig)
+            return;
+
+        if (driverNotifications.MinimumSeverity != sessionNotificationConfig.MinimumSeverity)
+        {
+            return;
+        }
+
+        if (driverNotifications.DisabledCategories.SetEquals(sessionNotificationConfig.DisabledCategories))
+        {
+            sessionNotificationConfig.Optimize = true;
+        }
+    }
 }
 
 /// <summary>The builder to build a <see cref="SessionConfig"/>.</summary>
@@ -285,7 +311,7 @@ public sealed class SessionConfigBuilder
     /// <param name="disabledCategories"></param>
     /// <returns>A <see cref="SessionConfigBuilder" /> instance for further configuration options.</returns>
     public SessionConfigBuilder WithNotifications(
-        Severity minimumSeverity = Severity.Information,
+        Severity? minimumSeverity = null,
         params Category[] disabledCategories)
     {
         _config.NotificationsConfig = new NotificationsConfig(minimumSeverity, disabledCategories);
@@ -303,7 +329,7 @@ public sealed class SessionConfigBuilder
     /// <returns>A <see cref="SessionConfigBuilder" /> instance for further configuration options.</returns>
     public SessionConfigBuilder WithNoNotifications()
     {
-        _config.NotificationsConfig = new NoNotificationsConfig();
+        _config.NotificationsConfig = new NotificationsDisabledConfig();
         return this;
     }
 }

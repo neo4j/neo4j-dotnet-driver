@@ -351,7 +351,7 @@ public sealed class ConfigBuilder
     /// <param name="disabledCategories"></param>
     /// <returns>A <see cref="ConfigBuilder" /> instance for further configuration options.</returns>
     public ConfigBuilder WithNotifications(
-        Severity minimumSeverity = Severity.Information,
+        Severity? minimumSeverity = null,
         params Category[] disabledCategories)
     {
         _config.NotificationsConfig = new NotificationsConfig(minimumSeverity, disabledCategories);
@@ -369,7 +369,7 @@ public sealed class ConfigBuilder
     /// <returns>A <see cref="ConfigBuilder" /> instance for further configuration options.</returns>
     public ConfigBuilder WithNoNotifications()
     {
-        _config.NotificationsConfig = new NoNotificationsConfig();
+        _config.NotificationsConfig = new NotificationsDisabledConfig();
         return this;
     }
 }

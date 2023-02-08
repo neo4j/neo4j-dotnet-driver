@@ -21,11 +21,11 @@ namespace Neo4j.Driver.Internal.Types;
 
 internal sealed class NotificationsConfig : INotificationsConfig
 {
-    public Severity MinimumSeverity { get; }
+    public Severity? MinimumSeverity { get; }
     public HashSet<Category> DisabledCategories { get; }
     public bool Optimize { get; set; }
 
-    public NotificationsConfig(Severity minimumSeverity, Category[] disabledCategories)
+    public NotificationsConfig(Severity? minimumSeverity, Category[] disabledCategories)
     {
         MinimumSeverity = minimumSeverity;
         DisabledCategories = new HashSet<Category>(disabledCategories);

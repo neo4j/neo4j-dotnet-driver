@@ -49,7 +49,6 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
                 null,
                 (IDictionary<string, string>)null);
 
-            helloMessage.Serializer.Should().BeOfType<HelloMessageSerializer>();
             helloMessage.ToString().Should().Be("HELLO [{user_agent, NULL}]");
         }
 
@@ -64,7 +63,6 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
                 null,
                 (IDictionary<string, string>)null);
 
-            helloMessage.Serializer.Should().BeOfType<HelloMessageSerializer>();
             helloMessage.Metadata.Should().ContainKey("user_agent").WhichValue.Should().Be("jeff");
             helloMessage.ToString().Should().Be("HELLO [{user_agent, jeff}]");
         }
@@ -79,8 +77,6 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
                 null,
                 null,
                 (IDictionary<string, string>)null);
-
-            helloMessage.Serializer.Should().BeOfType<HelloMessageSerializer>();
 
             helloMessage.ToString().Should().Be("HELLO [{user_agent, NULL}, {routing, NULL}]");
         }
@@ -97,7 +93,6 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
             };
 
             var helloMessage = new HelloMessage(new BoltProtocolVersion(major, minor), null, null, meta);
-            helloMessage.Serializer.Should().BeOfType<HelloMessageSerializer>();
 
             helloMessage.ToString().Should().Be("HELLO [{user_agent, NULL}, {routing, [{a, b}]}]");
         }
@@ -112,8 +107,6 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
                 null,
                 null,
                 (IDictionary<string, string>)null);
-
-            helloMessage.Serializer.Should().BeOfType<HelloMessageSerializer>();
 
             helloMessage.ToString().Should().Be("HELLO [{user_agent, NULL}, {routing, NULL}, {patch_bolt, [utc]}]");
         }

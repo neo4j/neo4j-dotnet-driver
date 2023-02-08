@@ -88,18 +88,18 @@ internal class NewSession : IProtocolObject
                     .BookmarkManager);
         }
 
-        if (data.notificationMinSeverity != null)
+        if (data.notificationsMinSeverity != null)
         {
-            if (data.notificationMinSeverity == "OFF")
+            if (data.notificationsMinSeverity == "OFF")
             {
                 configBuilder.WithNoNotifications();
             }
             else
             {
-                var severity = Enum.Parse<Severity>(data.notificationMinSeverity, true);
+                var severity = Enum.Parse<Severity>(data.notificationsMinSeverity, true);
                 configBuilder.WithNotifications(
                     severity,
-                    data.notificationDisabledCategories
+                    data.notificationsDisabledCategories
                         ?.Select(x => Enum.Parse<Category>(x, true))
                         .ToArray() ?? Array.Empty<Category>());
             }
@@ -149,7 +149,7 @@ internal class NewSession : IProtocolObject
 
         public AuthorizationToken authorizationToken { get; set; }
 
-        public string notificationMinSeverity { get; set; }
-        public string[] notificationDisabledCategories { get; set; }
+        public string notificationsMinSeverity { get; set; }
+        public string[] notificationsDisabledCategories { get; set; }
     }
 }
