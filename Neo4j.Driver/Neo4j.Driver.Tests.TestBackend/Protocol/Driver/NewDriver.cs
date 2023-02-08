@@ -145,7 +145,7 @@ internal class NewDriver : IProtocolObject
         {
             if (data.notificationsMinSeverity == "OFF")
             {
-                configBuilder.WithNoNotifications();
+                configBuilder.WithNotificationsDisabled();
             }
             else
             {

@@ -92,7 +92,7 @@ internal class NewSession : IProtocolObject
         {
             if (data.notificationsMinSeverity == "OFF")
             {
-                configBuilder.WithNoNotifications();
+                configBuilder.WithNotificationsDisabled();
             }
             else
             {

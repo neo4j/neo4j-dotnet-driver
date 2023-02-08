@@ -23,5 +23,5 @@ namespace Neo4j.Driver;
 /// </summary>
 public interface INotificationsConfig
 {
-    public bool Optimize { get; }
+    internal bool Optimize { get; }
 }

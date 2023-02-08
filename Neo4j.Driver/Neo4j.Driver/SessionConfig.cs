@@ -306,7 +306,7 @@ public sealed class SessionConfigBuilder
     ///     when executing a query, overriding any server configuration.
     ///     Overriding any driver configuration for queries executed in the session.
     /// </summary>
-    /// <remarks>Cannot be used with: <see cref="WithNoNotifications" />.</remarks>
+    /// <remarks>Cannot be used with: <see cref="WithNotificationsDisabled" />.</remarks>
     /// <param name="minimumSeverity"></param>
     /// <param name="disabledCategories"></param>
     /// <returns>A <see cref="SessionConfigBuilder" /> instance for further configuration options.</returns>
@@ -327,7 +327,7 @@ public sealed class SessionConfigBuilder
     ///     Cannot be used with: <see cref="WithNotifications" />.
     /// </remarks>
     /// <returns>A <see cref="SessionConfigBuilder" /> instance for further configuration options.</returns>
-    public SessionConfigBuilder WithNoNotifications()
+    public SessionConfigBuilder WithNotificationsDisabled()
     {
         _config.NotificationsConfig = new NotificationsDisabledConfig();
         return this;

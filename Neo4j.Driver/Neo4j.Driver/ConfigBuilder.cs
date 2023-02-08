@@ -346,7 +346,7 @@ public sealed class ConfigBuilder
     ///     when executing a query, overriding any server configuration.
     ///     Overriding any driver configuration for queries executed in the session.
     /// </summary>
-    /// <remarks>Cannot be used with: <see cref="WithNoNotifications" />.</remarks>
+    /// <remarks>Cannot be used with: <see cref="WithNotificationsDisabled" />.</remarks>
     /// <param name="minimumSeverity"></param>
     /// <param name="disabledCategories"></param>
     /// <returns>A <see cref="ConfigBuilder" /> instance for further configuration options.</returns>
@@ -367,7 +367,7 @@ public sealed class ConfigBuilder
     ///     Cannot be used with: <see cref="WithNotifications" />.
     /// </remarks>
     /// <returns>A <see cref="ConfigBuilder" /> instance for further configuration options.</returns>
-    public ConfigBuilder WithNoNotifications()
+    public ConfigBuilder WithNotificationsDisabled()
     {
         _config.NotificationsConfig = new NotificationsDisabledConfig();
         return this;
