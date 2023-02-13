@@ -15,8 +15,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using FluentAssertions;
-using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
@@ -30,22 +30,21 @@ public class BlockingWriteCommandUsingReadSessionTxFunc : BlockingCommand
     public override void Execute(StressTestContext context)
     {
         using var session = NewSession(AccessMode.Read, context);
-        var result = session.ExecuteRead(
-            tx =>
-            {
-                var exc = Record.Exception(
-                    () =>
-                    {
-                        var result = tx.Run("CREATE ()");
-                        result.Consume();
-                        return result;
-                    });
+        
+        try
+        {
+            var succeeded = session.ExecuteRead(
+                tx =>
+                {
+                    tx.Run("CREATE ()").Consume();
+                    return true;
+                });
 
-                exc.Should().BeOfType<ClientException>();
-                return default(IResult);
-            });
-
-        result.Should().NotBeNull();
-        result.Consume().Counters.NodesCreated.Should().Be(0);
+            succeeded.Should().BeFalse("Test should have thrown Client Exception");
+        }
+        catch (Exception ex)
+        {
+            ex.Should().BeOfType<ClientException>();
+        }
     }
 }
