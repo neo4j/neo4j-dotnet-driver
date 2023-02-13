@@ -23,5 +23,8 @@ namespace Neo4j.Driver;
 /// </summary>
 public interface INotificationsConfig
 {
-    internal bool Optimize { get; }
+    /// <summary>
+    /// Returns which notifications are visible.
+    /// </summary>
+    (Severity, Category)[] Visible { get; }
 }

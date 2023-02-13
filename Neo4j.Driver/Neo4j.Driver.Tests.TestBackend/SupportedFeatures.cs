@@ -62,7 +62,6 @@ internal static class SupportedFeatures
             //"Optimization:ConnectionReuse",
             "Optimization:EagerTransactionBegin",
             //"Optimization:ImplicitDefaultArguments",
-            "Optimization:MinimalNotificationsConfig",
             //"Optimization:MinimalResets",
             "Optimization:PullPipelining"
             //"Optimization:ResultListFetchAll",

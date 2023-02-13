@@ -7,18 +7,13 @@ namespace Neo4j.Driver.Internal.Messaging.Utils;
 
 internal static class NotificationsMetadataWriter
 {
-    private const string MinimumSeverityKey = "noti_min_sev";
-    private const string DisabledCategoriesKey = "noti_dis_cats";
+    private const string MinimumSeverityKey = "notifications_minimum_severity";
+    private const string DisabledCategoriesKey = "notifications_disabled_categories";
 
     internal static void AddNotificationsConfigToMetadata(
         IDictionary<string, object> metadata,
         INotificationsConfig notificationsConfig)
     {
-        if (notificationsConfig?.Optimize ?? true)
-        {
-            return;
-        }
-
         switch (notificationsConfig)
         {
             case NotificationsDisabledConfig:
@@ -32,16 +27,15 @@ internal static class NotificationsMetadataWriter
                     metadata.Add(MinimumSeverityKey, severity);
                 }
 
-                if (config.DisabledCategories.Any())
+                if (config.DisabledCategories?.Any() ?? false)
                 {
                     var cats = config.DisabledCategories.Select(x => x.ToString().ToUpperInvariant()).ToArray();
                     metadata.Add(DisabledCategoriesKey, cats);
                 }
 
                 break;
-
             default:
-                throw new ArgumentOutOfRangeException(nameof(notificationsConfig));
+                return;
         }
     }
 }

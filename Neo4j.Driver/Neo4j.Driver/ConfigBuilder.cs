@@ -351,9 +351,15 @@ public sealed class ConfigBuilder
     /// <param name="disabledCategories"></param>
     /// <returns>A <see cref="ConfigBuilder" /> instance for further configuration options.</returns>
     public ConfigBuilder WithNotifications(
-        Severity? minimumSeverity = null,
-        params Category[] disabledCategories)
+        Severity? minimumSeverity,
+        Category[] disabledCategories)
     {
+        if (minimumSeverity == null && disabledCategories == null)
+        {
+            throw new ArgumentException(
+                $"Both {nameof(minimumSeverity)} and {nameof(disabledCategories)} are both null, at least one must be non-null.");
+        }
+
         _config.NotificationsConfig = new NotificationsConfig(minimumSeverity, disabledCategories);
         return this;
     }

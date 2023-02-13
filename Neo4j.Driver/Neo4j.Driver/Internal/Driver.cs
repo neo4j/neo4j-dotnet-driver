@@ -80,7 +80,6 @@ internal sealed class Driver : IInternalDriver
         }
 
         var sessionConfig = ConfigBuilders.BuildSessionConfig(action);
-        sessionConfig.OptimizeNotificationsConfig(Config.NotificationsConfig);
 
         var session = new AsyncSession(
             _connectionProvider,

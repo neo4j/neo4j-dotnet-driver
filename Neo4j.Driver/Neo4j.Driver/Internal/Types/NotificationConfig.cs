@@ -15,19 +15,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Neo4j.Driver.Internal.Types;
 
 internal sealed class NotificationsConfig : INotificationsConfig
 {
-    public Severity? MinimumSeverity { get; }
-    public HashSet<Category> DisabledCategories { get; }
-    public bool Optimize { get; set; }
+    public Severity? MinimumSeverity { get; set; }
+    public HashSet<Category> DisabledCategories { get; set; }
+
+    public (Severity, Category)[] Visible
+    {
+        get
+        {
+            var sevs = MinimumSeverity.HasValue && MinimumSeverity.Value == Severity.Warning
+                ? new[] { Severity.Warning }
+                : new[] { Severity.Information, Severity.Warning };
+
+            return Enum.GetValues(typeof(Category))
+                .OfType<Category>()
+                .Where(x => !(DisabledCategories?.Contains(x) ?? false))
+                .SelectMany(x => sevs.Select(y => (y, x)))
+                .ToArray();
+        }
+    }
 
     public NotificationsConfig(Severity? minimumSeverity, Category[] disabledCategories)
     {
         MinimumSeverity = minimumSeverity;
-        DisabledCategories = new HashSet<Category>(disabledCategories);
+        
+        if (disabledCategories != null)
+        {
+            DisabledCategories = new HashSet<Category>(disabledCategories);
+        }
     }
 }
