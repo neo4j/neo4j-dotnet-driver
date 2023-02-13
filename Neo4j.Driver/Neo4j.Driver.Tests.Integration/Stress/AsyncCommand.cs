@@ -22,8 +22,8 @@ namespace Neo4j.Driver.IntegrationTests.Stress;
 
 public abstract class AsyncCommand : IAsyncCommand
 {
-    protected readonly IDriver _driver;
-    protected readonly bool _useBookmark;
+    private readonly IDriver _driver;
+    private readonly bool _useBookmark;
 
     protected AsyncCommand(IDriver driver, bool useBookmark)
     {

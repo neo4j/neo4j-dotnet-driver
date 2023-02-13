@@ -38,15 +38,7 @@ public class BlockingWriteCommandTxFunc : BlockingCommand
         try
         {
             using var session = NewSession(AccessMode.Write, context);
-            session.WriteTransaction(
-                txc =>
-                {
-                    summary = txc.Run("CREATE ()").Consume();
-                    txc.Commit();
-
-                    return summary;
-                });
-
+            summary = session.ExecuteWrite(txc => txc.Run("CREATE ()").Consume());
             context.Bookmarks = session.LastBookmarks;
         }
         catch (Exception exc)

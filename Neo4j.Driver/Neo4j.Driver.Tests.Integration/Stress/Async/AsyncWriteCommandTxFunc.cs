@@ -33,49 +33,29 @@ public class AsyncWriteCommandTxFunc : AsyncCommand
 
     public override async Task ExecuteAsync(StressTestContext context)
     {
-        var summary = default(IResultSummary);
-        var error = default(Exception);
-        var session = NewSession(AccessMode.Write, context);
+        await using var session = NewSession(AccessMode.Write, context);
 
         try
         {
-            await session.WriteTransactionAsync(
+            var summary = await session.ExecuteWriteAsync(
                     async tx =>
                     {
-                        try
-                        {
-                            var cursor = await tx.RunAsync("CREATE ()").ConfigureAwait(false);
-                            summary = await cursor.ConsumeAsync().ConfigureAwait(false);
-                            await tx.CommitAsync();
-                        }
-                        catch
-                        {
-                            await tx.RollbackAsync().ConfigureAwait(false);
-                            throw;
-                        }
-
-                        context.Bookmarks = session.LastBookmarks;
+                        var cursor = await tx.RunAsync("CREATE ()").ConfigureAwait(false);
+                        return await cursor.ConsumeAsync().ConfigureAwait(false);
                     })
                 .ConfigureAwait(false);
+
+            context.Bookmarks = session.LastBookmarks;
+
+            summary.Counters.NodesCreated.Should().Be(1);
+            context.NodeCreated();
         }
         catch (Exception ex)
         {
-            error = ex;
-
-            if (!_test.HandleWriteFailure(error, context))
+            if (!_test.HandleWriteFailure(ex, context))
             {
                 throw;
             }
-        }
-        finally
-        {
-            await session.CloseAsync().ConfigureAwait(false);
-        }
-
-        if (error == null && summary != null)
-        {
-            summary.Counters.NodesCreated.Should().Be(1);
-            context.NodeCreated();
         }
     }
 }

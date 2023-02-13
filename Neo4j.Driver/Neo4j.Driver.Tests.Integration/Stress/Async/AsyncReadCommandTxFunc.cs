@@ -29,27 +29,20 @@ public class AsyncReadCommandTxFunc : AsyncCommand
 
     public override async Task ExecuteAsync(StressTestContext context)
     {
-        var session = NewSession(AccessMode.Read, context);
+        await using var session = NewSession(AccessMode.Read, context);
 
-        try
-        {
-            await session.ReadTransactionAsync(
-                    async tx =>
+        await session.ExecuteReadAsync(
+                async tx =>
+                {
+                    var cursor = await tx.RunAsync("MATCH (n) RETURN n LIMIT 1").ConfigureAwait(false);
+                    var records = await cursor.ToListAsync().ConfigureAwait(false);
+
+                    if (records.Count > 0)
                     {
-                        var cursor = await tx.RunAsync("MATCH (n) RETURN n LIMIT 1").ConfigureAwait(false);
-                        var records = await cursor.ToListAsync().ConfigureAwait(false);
-
-                        if (records.Count > 0)
-                        {
-                            records[0][0].Should().BeAssignableTo<INode>();
-                            context.NodeRead(await cursor.ConsumeAsync());
-                        }
-                    })
-                .ConfigureAwait(false);
-        }
-        finally
-        {
-            await session.CloseAsync();
-        }
+                        records[0][0].Should().BeAssignableTo<INode>();
+                        context.NodeRead(await cursor.ConsumeAsync());
+                    }
+                })
+            .ConfigureAwait(false);
     }
 }

@@ -31,7 +31,7 @@ public class BlockingWrongCommandTxFunc : BlockingCommand
     {
         using var session = NewSession(AccessMode.Read, context);
 
-        session.ReadTransaction(
+        session.ExecuteRead(
             txc =>
             {
                 var result = txc.Run("RETURN");

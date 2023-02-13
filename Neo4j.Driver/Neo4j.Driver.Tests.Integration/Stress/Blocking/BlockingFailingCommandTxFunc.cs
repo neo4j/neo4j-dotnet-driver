@@ -30,15 +30,14 @@ public class BlockingFailingCommandTxFunc : BlockingCommand
     public override void Execute(StressTestContext context)
     {
         using var session = NewSession(AccessMode.Read, context);
-        session.ReadTransaction(
+        session.ExecuteRead(
             tx =>
             {
                 var result = tx.Run("UNWIND [10, 5, 0] AS x RETURN 10 / x");
                 var exc = Record.Exception(() => result.Consume());
 
                 exc.Should().BeOfType<ClientException>().Which.Message.Should().Contain("/ by zero");
-
-                return result;
+                return 1;
             });
     }
 }

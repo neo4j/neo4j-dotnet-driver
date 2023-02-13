@@ -31,7 +31,7 @@ public class BlockingReadCommandTxFunc: BlockingCommand
     {
         using var session = NewSession(AccessMode.Read, context);
 
-        session.ReadTransaction(
+        session.ExecuteRead(
             txc =>
             {
                 var result = txc.Run("MATCH (n) RETURN n LIMIT 1");
@@ -40,7 +40,6 @@ public class BlockingReadCommandTxFunc: BlockingCommand
 
                 context.NodeRead(result.Consume());
 
-                txc.Commit();
                 return record;
             });
     }

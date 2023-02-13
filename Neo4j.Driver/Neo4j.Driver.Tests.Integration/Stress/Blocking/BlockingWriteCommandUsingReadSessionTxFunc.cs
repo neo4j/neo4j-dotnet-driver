@@ -29,22 +29,20 @@ public class BlockingWriteCommandUsingReadSessionTxFunc : BlockingCommand
 
     public override void Execute(StressTestContext context)
     {
-        var result = default(IResult);
-
         using var session = NewSession(AccessMode.Read, context);
-        session.ReadTransaction(
+        var result = session.ExecuteRead(
             tx =>
             {
                 var exc = Record.Exception(
                     () =>
                     {
-                        result = tx.Run("CREATE ()");
+                        var result = tx.Run("CREATE ()");
                         result.Consume();
                         return result;
                     });
 
                 exc.Should().BeOfType<ClientException>();
-                return result;
+                return default(IResult);
             });
 
         result.Should().NotBeNull();
