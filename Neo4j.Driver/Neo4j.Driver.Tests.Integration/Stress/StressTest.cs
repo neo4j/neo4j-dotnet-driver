@@ -396,7 +396,7 @@ public abstract class StressTest<TContext> : IDisposable
         await ReadNodesAsync(_driver, bookmark, BigDataTestBatchCount * BigDataTestBatchSize);
     }
 
-    private async Task<Bookmarks> CreateNodesAsync(int batchCount, int batchSize, int batchBuffer, IDriver driver)
+    private async Task<Bookmarks> CreateNodesAsync(int batchCount, int batchSize, int queryBatchSize, IDriver driver)
     {
         var timer = Stopwatch.StartNew();
 
@@ -406,16 +406,17 @@ public abstract class StressTest<TContext> : IDisposable
             for (var batchIndex = 0; batchIndex < batchCount; batchIndex++)
             {
                 await session.ExecuteWriteAsync(
-                    txc => Task.WhenAll(
-                        Enumerable.Range(1, batchSize)
-                            .Select(index => batchIndex * batchSize + index)
-                            .Batch(batchBuffer)
-                            .Select(
-                                indices =>
-                                    txc.RunAsync(CreateBatchNodesQuery(indices))
-                                        .ContinueWith(t => t.Result.ConsumeAsync())
-                                        .Unwrap())
-                            .ToArray()));
+                    async tx =>
+                    {
+                        // 1-500, 501-1000
+                        var batches = Enumerable.Range(batchIndex * batchSize + 1, batchSize).Batch(queryBatchSize);    
+
+                        foreach (var batch in batches)
+                        {
+                            var cursor = await tx.RunAsync(CreateBatchNodesQuery(batch));
+                            await cursor.ConsumeAsync();
+                        }
+                    });
             }
         }
         finally
