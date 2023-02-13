@@ -20,15 +20,14 @@ using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class BlockingWriteCommandUsingReadSessionTxFunc<TContext> : BlockingCommand<TContext>
-    where TContext : StressTestContext
+public class BlockingWriteCommandUsingReadSessionTxFunc : BlockingCommand
 {
     public BlockingWriteCommandUsingReadSessionTxFunc(IDriver driver, bool useBookmark)
         : base(driver, useBookmark)
     {
     }
 
-    public override void Execute(TContext context)
+    public override void Execute(StressTestContext context)
     {
         var result = default(IResult);
 

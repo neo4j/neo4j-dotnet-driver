@@ -27,7 +27,7 @@ using Xunit.Abstractions;
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
 [Collection(SAIntegrationCollection.CollectionName)]
-public class SingleInstanceStressTests : StressTest<SingleInstanceStressTests.Context>
+public class SingleInstanceStressTests : StressTest
 {
     private readonly StandAloneIntegrationTestFixture _standalone;
 
@@ -42,40 +42,40 @@ public class SingleInstanceStressTests : StressTest<SingleInstanceStressTests.Co
         return new Context(_standalone.StandAloneSharedInstance.BoltUri.Authority);
     }
 
-    protected override IEnumerable<IBlockingCommand<Context>> CreateTestSpecificBlockingCommands()
+    protected override IEnumerable<IBlockingCommand> CreateTestSpecificBlockingCommands()
     {
-        return Enumerable.Empty<IBlockingCommand<Context>>();
+        return Enumerable.Empty<IBlockingCommand>();
     }
 
-    protected override IEnumerable<IAsyncCommand<Context>> CreateTestSpecificAsyncCommands()
+    protected override IEnumerable<IAsyncCommand> CreateTestSpecificAsyncCommands()
     {
-        return Enumerable.Empty<IAsyncCommand<Context>>();
+        return Enumerable.Empty<IAsyncCommand>();
     }
 
-    protected override IEnumerable<IRxCommand<Context>> CreateTestSpecificRxCommands()
+    protected override IEnumerable<IRxCommand> CreateTestSpecificRxCommands()
     {
-        return new List<IRxCommand<Context>>
+        return new List<IRxCommand>
         {
-            new RxReadCommandInTx<Context>(_driver, false),
-            new RxReadCommandInTx<Context>(_driver, true),
-            new RxWriteCommandInTx<Context>(this, _driver, false),
-            new RxWriteCommandInTx<Context>(this, _driver, true),
-            new RxWrongCommandInTx<Context>(_driver),
-            new RxFailingCommandInTx<Context>(_driver)
+            new RxReadCommandInTx(_driver, false),
+            new RxReadCommandInTx(_driver, true),
+            new RxWriteCommandInTx(this, _driver, false),
+            new RxWriteCommandInTx(this, _driver, true),
+            new RxWrongCommandInTx(_driver),
+            new RxFailingCommandInTx(_driver)
         };
     }
 
-    protected override void PrintStats(Context context)
+    protected override void PrintStats(StressTestContext context)
     {
         _output.WriteLine("{0}", context);
     }
 
-    protected override void VerifyReadQueryDistribution(Context context)
+    protected override void VerifyReadQueryDistribution(StressTestContext context)
     {
         context.ReadNodesCount.Should().BePositive();
     }
 
-    public override bool HandleWriteFailure(Exception error, Context context)
+    public override bool HandleWriteFailure(Exception error, StressTestContext context)
     {
         return false;
     }

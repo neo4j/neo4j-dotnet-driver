@@ -17,7 +17,6 @@
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public interface IRxCommand<in TContext> : IAsyncCommand<TContext>
-    where TContext : StressTestContext
+public interface IRxCommand: IAsyncCommand
 {
 }

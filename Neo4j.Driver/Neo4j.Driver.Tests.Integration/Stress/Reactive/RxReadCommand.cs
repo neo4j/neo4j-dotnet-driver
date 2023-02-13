@@ -23,15 +23,14 @@ using static Neo4j.Driver.Tests.Assertions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class RxReadCommand<TContext> : RxCommand<TContext>
-    where TContext : StressTestContext
+public class RxReadCommand : RxCommand
 {
     public RxReadCommand(IDriver driver, bool useBookmark)
         : base(driver, useBookmark)
     {
     }
 
-    public override async Task ExecuteAsync(TContext context)
+    public override async Task ExecuteAsync(StressTestContext context)
     {
         var session = NewSession(AccessMode.Read, context);
         var result = session.Run("MATCH (n) RETURN n LIMIT 1");

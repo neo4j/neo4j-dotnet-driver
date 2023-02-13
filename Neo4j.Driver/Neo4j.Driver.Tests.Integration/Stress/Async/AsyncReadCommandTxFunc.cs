@@ -20,15 +20,14 @@ using FluentAssertions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class AsyncReadCommandTxFunc<TContext> : AsyncCommand<TContext>
-    where TContext : StressTestContext
+public class AsyncReadCommandTxFunc : AsyncCommand
 {
     public AsyncReadCommandTxFunc(IDriver driver, bool useBookmark)
         : base(driver, useBookmark)
     {
     }
 
-    public override async Task ExecuteAsync(TContext context)
+    public override async Task ExecuteAsync(StressTestContext context)
     {
         var session = NewSession(AccessMode.Read, context);
 

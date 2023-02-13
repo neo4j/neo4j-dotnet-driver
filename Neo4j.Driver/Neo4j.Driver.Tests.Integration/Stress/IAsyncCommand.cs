@@ -19,8 +19,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public interface IAsyncCommand<in TContext>
-    where TContext : StressTestContext
+public interface IAsyncCommand
 {
-    Task ExecuteAsync(TContext context);
+    Task ExecuteAsync(StressTestContext context);
 }

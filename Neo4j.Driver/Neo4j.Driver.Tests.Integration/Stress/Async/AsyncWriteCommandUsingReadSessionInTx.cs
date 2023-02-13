@@ -21,15 +21,14 @@ using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class AsyncWriteCommandUsingReadSessionInTx<TContext> : AsyncCommand<TContext>
-    where TContext : StressTestContext
+public class AsyncWriteCommandUsingReadSessionInTx: AsyncCommand
 {
     public AsyncWriteCommandUsingReadSessionInTx(IDriver driver, bool useBookmark)
         : base(driver, useBookmark)
     {
     }
 
-    public override async Task ExecuteAsync(TContext context)
+    public override async Task ExecuteAsync(StressTestContext context)
     {
         var cursor = default(IResultCursor);
 

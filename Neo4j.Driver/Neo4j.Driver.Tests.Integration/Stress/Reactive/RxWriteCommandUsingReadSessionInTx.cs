@@ -23,15 +23,14 @@ using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class RxWriteCommandUsingReadSessionInTx<TContext> : RxCommand<TContext>
-    where TContext : StressTestContext
+public class RxWriteCommandUsingReadSessionInTx : RxCommand
 {
     public RxWriteCommandUsingReadSessionInTx(IDriver driver, bool useBookmark)
         : base(driver, useBookmark)
     {
     }
 
-    public override async Task ExecuteAsync(TContext context)
+    public override async Task ExecuteAsync(StressTestContext context)
     {
         var session = NewSession(AccessMode.Read, context);
         var result = default(IRxResult);

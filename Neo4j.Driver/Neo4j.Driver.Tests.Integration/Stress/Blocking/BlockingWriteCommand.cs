@@ -20,18 +20,17 @@ using FluentAssertions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class BlockingWriteCommand<TContext> : BlockingCommand<TContext>
-    where TContext : StressTestContext
+public class BlockingWriteCommand: BlockingCommand
 {
-    private readonly StressTest<TContext> _test;
+    private readonly StressTest _test;
 
-    public BlockingWriteCommand(StressTest<TContext> test, IDriver driver, bool useBookmark)
+    public BlockingWriteCommand(StressTest test, IDriver driver, bool useBookmark)
         : base(driver, useBookmark)
     {
         _test = test ?? throw new ArgumentNullException(nameof(test));
     }
 
-    public override void Execute(TContext context)
+    public override void Execute(StressTestContext context)
     {
         var summary = default(IResultSummary);
         var error = default(Exception);

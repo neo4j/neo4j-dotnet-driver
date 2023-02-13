@@ -21,15 +21,14 @@ using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class AsyncFailingCommandTxFunc<TContext> : AsyncCommand<TContext>
-    where TContext : StressTestContext
+public class AsyncFailingCommandTxFunc: AsyncCommand
 {
     public AsyncFailingCommandTxFunc(IDriver driver)
         : base(driver, false)
     {
     }
 
-    public override async Task ExecuteAsync(TContext context)
+    public override async Task ExecuteAsync(StressTestContext context)
     {
         var session = NewSession(AccessMode.Read, context);
 
