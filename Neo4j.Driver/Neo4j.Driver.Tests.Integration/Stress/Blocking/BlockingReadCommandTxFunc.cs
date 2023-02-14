@@ -20,19 +20,18 @@ using FluentAssertions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class BlockingReadCommandTxFunc<TContext> : BlockingCommand<TContext>
-    where TContext : StressTestContext
+public class BlockingReadCommandTxFunc: BlockingCommand
 {
     public BlockingReadCommandTxFunc(IDriver driver, bool useBookmark)
         : base(driver, useBookmark)
     {
     }
 
-    public override void Execute(TContext context)
+    public override void Execute(StressTestContext context)
     {
         using var session = NewSession(AccessMode.Read, context);
 
-        session.ReadTransaction(
+        session.ExecuteRead(
             txc =>
             {
                 var result = txc.Run("MATCH (n) RETURN n LIMIT 1");
@@ -41,7 +40,6 @@ public class BlockingReadCommandTxFunc<TContext> : BlockingCommand<TContext>
 
                 context.NodeRead(result.Consume());
 
-                txc.Commit();
                 return record;
             });
     }

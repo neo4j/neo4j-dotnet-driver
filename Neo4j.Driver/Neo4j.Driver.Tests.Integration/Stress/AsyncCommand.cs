@@ -20,11 +20,10 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public abstract class AsyncCommand<TContext> : IAsyncCommand<TContext>
-    where TContext : StressTestContext
+public abstract class AsyncCommand : IAsyncCommand
 {
-    protected readonly IDriver _driver;
-    protected readonly bool _useBookmark;
+    private readonly IDriver _driver;
+    private readonly bool _useBookmark;
 
     protected AsyncCommand(IDriver driver, bool useBookmark)
     {
@@ -32,9 +31,9 @@ public abstract class AsyncCommand<TContext> : IAsyncCommand<TContext>
         _useBookmark = useBookmark;
     }
 
-    public abstract Task ExecuteAsync(TContext context);
+    public abstract Task ExecuteAsync(StressTestContext context);
 
-    public IAsyncSession NewSession(AccessMode mode, TContext context)
+    public IAsyncSession NewSession(AccessMode mode, StressTestContext context)
     {
         return _driver.AsyncSession(
             o =>
@@ -42,7 +41,7 @@ public abstract class AsyncCommand<TContext> : IAsyncCommand<TContext>
                     .WithBookmarks(_useBookmark ? new[] { context.Bookmarks } : Array.Empty<Bookmarks>()));
     }
 
-    public Task<IAsyncTransaction> BeginTransaction(IAsyncSession session, TContext context)
+    public Task<IAsyncTransaction> BeginTransaction(IAsyncSession session, StressTestContext context)
     {
         if (_useBookmark)
         {

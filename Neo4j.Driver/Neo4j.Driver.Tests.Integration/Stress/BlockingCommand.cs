@@ -19,8 +19,7 @@ using System;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public abstract class BlockingCommand<TContext> : IBlockingCommand<TContext>
-    where TContext : StressTestContext
+public abstract class BlockingCommand : IBlockingCommand
 {
     protected readonly IDriver _driver;
     protected readonly bool _useBookmark;
@@ -31,9 +30,9 @@ public abstract class BlockingCommand<TContext> : IBlockingCommand<TContext>
         _useBookmark = useBookmark;
     }
 
-    public abstract void Execute(TContext context);
+    public abstract void Execute(StressTestContext context);
 
-    public ISession NewSession(AccessMode mode, TContext context)
+    public ISession NewSession(AccessMode mode, StressTestContext context)
     {
         return _driver.Session(
             o =>
@@ -41,7 +40,7 @@ public abstract class BlockingCommand<TContext> : IBlockingCommand<TContext>
                     .WithBookmarks(_useBookmark ? new[] { context.Bookmarks } : Array.Empty<Bookmarks>()));
     }
 
-    public ITransaction BeginTransaction(ISession session, TContext context)
+    public ITransaction BeginTransaction(ISession session, StressTestContext context)
     {
         if (_useBookmark)
         {

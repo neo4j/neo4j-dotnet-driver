@@ -21,18 +21,17 @@ using FluentAssertions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class AsyncWriteCommand<TContext> : AsyncCommand<TContext>
-    where TContext : StressTestContext
+public class AsyncWriteCommand : AsyncCommand
 {
-    private readonly StressTest<TContext> _test;
+    private readonly StressTest _test;
 
-    public AsyncWriteCommand(StressTest<TContext> test, IDriver driver, bool useBookmark)
+    public AsyncWriteCommand(StressTest test, IDriver driver, bool useBookmark)
         : base(driver, useBookmark)
     {
         _test = test ?? throw new ArgumentNullException(nameof(test));
     }
 
-    public override async Task ExecuteAsync(TContext context)
+    public override async Task ExecuteAsync(StressTestContext context)
     {
         var summary = default(IResultSummary);
         var error = default(Exception);

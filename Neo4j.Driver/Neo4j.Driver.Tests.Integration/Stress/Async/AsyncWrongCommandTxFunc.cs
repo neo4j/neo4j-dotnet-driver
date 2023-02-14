@@ -15,54 +15,41 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class AsyncWrongCommandTxFunc<TContext> : AsyncCommand<TContext>
-    where TContext : StressTestContext
+public class AsyncWrongCommandTxFunc : AsyncCommand
 {
     public AsyncWrongCommandTxFunc(IDriver driver)
         : base(driver, false)
     {
     }
 
-    public override async Task ExecuteAsync(TContext context)
+    public override async Task ExecuteAsync(StressTestContext context)
     {
-        var session = NewSession(AccessMode.Read, context);
-
+        await using var session = NewSession(AccessMode.Read, context);
         try
         {
-            await session.ReadTransactionAsync(
+            var result = await session.ExecuteReadAsync(
                     async tx =>
                     {
-                        try
-                        {
-                            var exc = await Record.ExceptionAsync(
-                                    async () =>
-                                    {
-                                        var cursor = await tx.RunAsync("RETURN").ConfigureAwait(false);
-                                        await cursor.ConsumeAsync();
-                                    })
-                                .ConfigureAwait(false);
-
-                            exc.Should()
-                                .BeOfType<ClientException>()
-                                .Which.Code.Should()
-                                .Be("Neo.ClientError.Statement.SyntaxError");
-                        }
-                        finally
-                        {
-                            await tx.RollbackAsync().ConfigureAwait(false);
-                        }
+                        var cursor = await tx.RunAsync("RETURN").ConfigureAwait(false);
+                        await cursor.ConsumeAsync().ConfigureAwait(false);
+                        return false;
                     })
                 .ConfigureAwait(false);
+
+            result.Should().BeTrue("If this case is met, the code didn't throw an expected exception in TXFunc");
         }
-        finally
+        catch (Exception ex)
         {
-            await session.CloseAsync().ConfigureAwait(false);
+            ex.Should()
+                .BeOfType<ClientException>()
+                .Which.Code.Should()
+                .Be("Neo.ClientError.Statement.SyntaxError");
         }
     }
 }

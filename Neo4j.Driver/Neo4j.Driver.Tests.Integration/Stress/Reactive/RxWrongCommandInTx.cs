@@ -24,15 +24,14 @@ using static Neo4j.Driver.Reactive.Utils;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class RxWrongCommandInTx<TContext> : RxCommand<TContext>
-    where TContext : StressTestContext
+public class RxWrongCommandInTx : RxCommand
 {
     public RxWrongCommandInTx(IDriver driver)
         : base(driver, false)
     {
     }
 
-    public override async Task ExecuteAsync(TContext context)
+    public override async Task ExecuteAsync(StressTestContext context)
     {
         var session = NewSession(AccessMode.Read, context);
 

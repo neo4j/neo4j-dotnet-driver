@@ -20,15 +20,14 @@ using FluentAssertions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class BlockingReadCommandInTx<TContext> : BlockingCommand<TContext>
-    where TContext : StressTestContext
+public class BlockingReadCommandInTx: BlockingCommand
 {
     public BlockingReadCommandInTx(IDriver driver, bool useBookmark)
         : base(driver, useBookmark)
     {
     }
 
-    public override void Execute(TContext context)
+    public override void Execute(StressTestContext context)
     {
         using (var session = NewSession(AccessMode.Read, context))
         using (var txc = BeginTransaction(session, context))

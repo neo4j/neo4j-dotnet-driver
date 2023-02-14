@@ -15,55 +15,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class AsyncWriteCommandUsingReadSessionTxFunc<TContext> : AsyncCommand<TContext>
-    where TContext : StressTestContext
+public class AsyncWriteCommandUsingReadSessionTxFunc : AsyncCommand
 {
     public AsyncWriteCommandUsingReadSessionTxFunc(IDriver driver, bool useBookmark)
         : base(driver, useBookmark)
     {
     }
 
-    public override async Task ExecuteAsync(TContext context)
+    public override async Task ExecuteAsync(StressTestContext context)
     {
-        var cursor = default(IResultCursor);
-
-        var session = NewSession(AccessMode.Read, context);
+        await using var session = NewSession(AccessMode.Read, context);
         try
         {
-            await session.ReadTransactionAsync(
+            var result = await session.ExecuteReadAsync(
                     async tx =>
                     {
-                        try
-                        {
-                            var exc = await Record.ExceptionAsync(
-                                async () =>
-                                {
-                                    cursor = await tx.RunAsync("CREATE ()");
-                                    await cursor.ConsumeAsync();
-                                });
-
-                            exc.Should().BeOfType<ClientException>();
-                        }
-                        finally
-                        {
-                            await tx.RollbackAsync().ConfigureAwait(false);
-                        }
+                        var cursor = await tx.RunAsync("CREATE ()").ConfigureAwait(false);
+                        await cursor.ConsumeAsync().ConfigureAwait(false);
+                        return false;
                     })
                 .ConfigureAwait(false);
-        }
-        finally
-        {
-            await session.CloseAsync().ConfigureAwait(false);
-        }
 
-        cursor.Should().NotBeNull();
-        var summary = await cursor.ConsumeAsync();
-        summary.Counters.NodesCreated.Should().Be(0);
+            result.Should().BeTrue("This should have thrown an exception");
+        }
+        catch (Exception ex)
+        {
+            ex.Should().BeOfType<ClientException>();
+        }
     }
 }

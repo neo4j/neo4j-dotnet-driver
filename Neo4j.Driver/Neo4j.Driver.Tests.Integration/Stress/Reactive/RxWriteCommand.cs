@@ -23,18 +23,17 @@ using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class RxWriteCommand<TContext> : RxCommand<TContext>
-    where TContext : StressTestContext
+public class RxWriteCommand : RxCommand
 {
-    private readonly StressTest<TContext> _test;
+    private readonly StressTest _test;
 
-    public RxWriteCommand(StressTest<TContext> test, IDriver driver, bool useBookmark)
+    public RxWriteCommand(StressTest test, IDriver driver, bool useBookmark)
         : base(driver, useBookmark)
     {
         _test = test ?? throw new ArgumentNullException(nameof(test));
     }
 
-    public override async Task ExecuteAsync(TContext context)
+    public override async Task ExecuteAsync(StressTestContext context)
     {
         var session = NewSession(AccessMode.Write, context);
 
