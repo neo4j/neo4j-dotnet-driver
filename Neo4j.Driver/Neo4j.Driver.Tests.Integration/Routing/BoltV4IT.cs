@@ -18,6 +18,7 @@
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.TestUtil;
+using Xunit;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
 using static Neo4j.Driver.SessionConfigBuilder;
@@ -70,20 +71,15 @@ public class BoltV4IT : RoutingDriverTestBase
     public async Task ShouldReturnDatabaseInfoForDatabaseInAutoCommit()
     {
         var dbname = "foo";
-        var session = _driver.AsyncSession(ForDatabase("system"));
         Bookmarks bookmarks;
 
-        try
+        await using (var initial = _driver.AsyncSession(ForDatabase("system")))
         {
-            await session.RunAsync(new Query($"CREATE DATABASE {dbname}"));
-            bookmarks = session.LastBookmarks;
-        }
-        finally
-        {
-            await session.CloseAsync();
+            await initial.RunAsync(new Query($"CREATE DATABASE {dbname}"));
+            bookmarks = initial.LastBookmarks;
         }
 
-        session = _driver.AsyncSession(
+        await using var session = _driver.AsyncSession(
             o =>
             {
                 if (!string.IsNullOrEmpty(dbname))
@@ -94,35 +90,27 @@ public class BoltV4IT : RoutingDriverTestBase
                 o.WithBookmarks(bookmarks ?? Bookmarks.Empty);
             });
 
-        try
-        {
-            var result = await session.RunAsync(new Query("RETURN 1"));
-            var summary = await result.ConsumeAsync();
-            summary.Database.Should().NotBeNull();
-            summary.Database.Name.Should().Be(dbname);
-        }
-        finally
-        {
-            await session.CloseAsync();
-        }
+        var result = await session.RunAsync(new Query("RETURN 1"));
+        var summary = await result.ConsumeAsync();
+        summary.Database.Should().NotBeNull();
+        summary.Database.Name.Should().Be(dbname);
     }
 
     [RequireClusterFact("4.0.0", GreaterThanOrEqualTo)]
-    public void ShouldThrowForNonExistentDatabaseInTxFunc()
+    public async Task ShouldThrowForNonExistentDatabaseInTxFunc()
     {
-        this.Awaiting(_ => VerifyDatabaseNameOnSummaryTxFunc("bar", "bar"))
-            .Should()
-            .Throw<ClientException>()
-            .WithMessage("*database does not exist*");
+        var exception = await Record.ExceptionAsync(() => VerifyDatabaseNameOnSummaryTxFunc("bar", "bar"));
+        exception.Should().BeOfType<ClientException>().Which.Message.Should().Be("*database does not exist*");
     }
 
     [RequireClusterFact("4.0.0", VersionComparison.LessThan)]
-    public void ShouldThrowWhenDatabaseIsSpecifiedInTxFunc()
+    public async Task ShouldThrowWhenDatabaseIsSpecifiedInTxFunc()
     {
-        this.Awaiting(_ => VerifyDatabaseNameOnSummaryTxFunc("bar", "bar"))
-            .Should()
-            .Throw<ClientException>()
-            .WithMessage("*to a server that does not support multiple databases.*");
+        var exception = await Record.ExceptionAsync(() => VerifyDatabaseNameOnSummaryTxFunc("bar", "bar"));
+        exception.Should()
+            .BeOfType<ClientException>()
+            .Which.Message.Should()
+            .Be("*to a server that does not support multiple databases.*");
     }
 
     private async Task VerifyDatabaseNameOnSummaryTxFunc(string name, string expected, Bookmarks bookmarks = null)

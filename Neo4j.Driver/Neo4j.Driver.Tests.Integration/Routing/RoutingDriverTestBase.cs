@@ -28,7 +28,7 @@ public abstract class RoutingDriverTestBase : IDisposable
 {
     private bool _disposed;
 
-    public RoutingDriverTestBase(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)
+    protected RoutingDriverTestBase(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)
     {
         Output = output;
         Cluster = fixture.Cluster;

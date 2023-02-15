@@ -19,7 +19,6 @@ using System;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Microsoft.Reactive.Testing;
-using Neo4j.Driver.IntegrationTests;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Reactive;
 using Xunit;
@@ -27,7 +26,7 @@ using Xunit.Abstractions;
 using static Microsoft.Reactive.Testing.ReactiveTest;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
 
-namespace Neo4j.Driver.ExamplesAsync;
+namespace Neo4j.Driver.IntegrationTests;
 
 public class ExamplesRx
 {

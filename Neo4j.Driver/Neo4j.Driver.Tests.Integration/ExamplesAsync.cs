@@ -21,13 +21,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.IntegrationTests;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 using Xunit.Abstractions;
 
-// ReSharper disable once CheckNamespace
-namespace Neo4j.Driver.ExamplesAsync;
+namespace Neo4j.Driver.IntegrationTests;
 
 public class ExamplesAsync
 {
