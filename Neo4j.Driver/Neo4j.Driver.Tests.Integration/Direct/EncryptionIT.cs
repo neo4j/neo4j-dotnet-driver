@@ -29,44 +29,34 @@ public class EncryptionIT : DirectDriverTestBase
     {
     }
 
-    [ShouldNotRunInTestKit_RequireServerFactAttribute]
+    [ShouldNotRunInTestKit_RequireServerFact]
     public async Task ShouldBeAbleToConnectWithInsecureConfig()
     {
-        using (var driver = GraphDatabase.Driver(
-                   ServerEndPoint,
-                   AuthToken,
-                   o => o
-                       .WithEncryptionLevel(EncryptionLevel.Encrypted)
-                       .WithTrustManager(TrustManager.CreateInsecure())))
-        {
-            await VerifyConnectivity(driver);
-        }
+        await using var driver = GraphDatabase.Driver(
+            ServerEndPoint,
+            AuthToken,
+            o => o
+                .WithEncryptionLevel(EncryptionLevel.Encrypted)
+                .WithTrustManager(TrustManager.CreateInsecure()));
+
+        await VerifyConnectivity(driver);
     }
 
-    [ShouldNotRunInTestKit_RequireServerFactAttribute]
+    [ShouldNotRunInTestKit_RequireServerFact]
     public async Task ShouldBeAbleToConnectUsingInsecureUri()
     {
         var builder = new UriBuilder("bolt+ssc", ServerEndPoint.Host, ServerEndPoint.Port);
-        using (var driver = GraphDatabase.Driver(builder.Uri, AuthToken))
-        {
-            await VerifyConnectivity(driver);
-        }
+        await using var driver = GraphDatabase.Driver(builder.Uri, AuthToken);
+        await VerifyConnectivity(driver);
     }
 
     private static async Task VerifyConnectivity(IDriver driver)
     {
-        var session = driver.AsyncSession();
+        await using var session = driver.AsyncSession();
 
-        try
-        {
             var cursor = await session.RunAsync("RETURN 2 as Number");
             var records = await cursor.ToListAsync(r => r["Number"].As<int>());
 
             records.Should().BeEquivalentTo(2);
-        }
-        finally
-        {
-            await session.CloseAsync();
-        }
     }
 }

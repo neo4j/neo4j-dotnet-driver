@@ -36,8 +36,8 @@ public class CertificateTrustIT : IClassFixture<CertificateTrustIT.CertificateTr
         Pkcs12 = fixture.Pkcs12;
     }
 
-    public StandAlone Server { get; }
-    public Pkcs12Store Pkcs12 { get; }
+    private StandAlone Server { get; }
+    private Pkcs12Store Pkcs12 { get; }
 
     [ShouldNotRunInTestKitFact]
     public async Task CertificateTrustManager_ShouldTrust()
@@ -155,21 +155,12 @@ public class CertificateTrustIT : IClassFixture<CertificateTrustIT.CertificateTr
 
     private async Task TestConnectivity(Uri target, Config config)
     {
-        using (var driver = SetupWithCustomResolver(target, config))
-        {
-            var session = driver.AsyncSession();
-            try
-            {
-                var cursor = await session.RunAsync("RETURN 1");
-                var records = await cursor.ToListAsync(r => r[0].As<int>());
+        await using var driver = SetupWithCustomResolver(target, config);
+        await using var session = driver.AsyncSession();
+        var cursor = await session.RunAsync("RETURN 1");
+        var records = await cursor.ToListAsync(r => r[0].As<int>());
 
-                records.Should().BeEquivalentTo(1);
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
+        records.Should().BeEquivalentTo(1);
     }
 
     private IDriver SetupWithCustomResolver(Uri overridenUri, Config config)
