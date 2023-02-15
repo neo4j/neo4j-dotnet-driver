@@ -31,7 +31,6 @@ public sealed class StandAlone : IStandAlone
     private readonly ExternalBoltkitInstaller _installer = new();
 
     private ISingleInstance _delegator;
-    private bool _disposed;
 
     public StandAlone()
     {
@@ -92,13 +91,23 @@ public sealed class StandAlone : IStandAlone
 
     public void Dispose()
     {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
+        DisposeBoltDriver();
 
-    ~StandAlone()
-    {
-        Dispose(false);
+        try
+        {
+            _installer.Stop();
+        }
+        catch
+        {
+            try
+            {
+                _installer.Kill();
+            }
+            catch
+            {
+                // ignored
+            }
+        }
     }
 
     private void RetryIfFailToStart()
@@ -117,37 +126,6 @@ public sealed class StandAlone : IStandAlone
     private void NewBoltDriver()
     {
         Driver = DefaultInstallation.NewBoltDriver(BoltUri, AuthToken);
-    }
-
-    private void Dispose(bool disposing)
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        if (disposing)
-        {
-            DisposeBoltDriver();
-
-            try
-            {
-                _installer.Stop();
-            }
-            catch
-            {
-                try
-                {
-                    _installer.Kill();
-                }
-                catch
-                {
-                    // ignored
-                }
-            }
-        }
-
-        _disposed = true;
     }
 
     private void DisposeBoltDriver()

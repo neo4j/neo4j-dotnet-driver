@@ -21,7 +21,7 @@ using System.IO;
 
 namespace Neo4j.Driver.IntegrationTests.Internals;
 
-public class ExternalBoltkitClusterInstaller : IInstaller
+public sealed class ExternalBoltkitClusterInstaller : IInstaller
 {
     private const int Cores = 3;
     //TODO: Add read replicas into the cluster too

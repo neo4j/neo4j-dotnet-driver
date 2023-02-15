@@ -24,7 +24,7 @@ using static Neo4j.Driver.Reactive.Utils;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class RxWrongCommandInTx : RxCommand
+public sealed class RxWrongCommandInTx : RxCommand
 {
     public RxWrongCommandInTx(IDriver driver)
         : base(driver, false)

@@ -19,10 +19,9 @@ using System;
 
 namespace Neo4j.Driver.IntegrationTests.Internals;
 
-public class LocalStandAloneInstance : SingleInstance, IStandAlone
+public sealed class LocalStandAloneInstance : SingleInstance, IStandAlone
 {
     private const string UsingLocalServer = "DOTNET_DRIVER_USING_LOCAL_SERVER";
-    private bool _disposed;
 
     public LocalStandAloneInstance() :
         base(
@@ -36,31 +35,10 @@ public class LocalStandAloneInstance : SingleInstance, IStandAlone
 
     public void Dispose()
     {
-        Dispose(true);
-        GC.SuppressFinalize(this);
+        Driver.Dispose();
     }
 
     public IDriver Driver { get; }
-
-    ~LocalStandAloneInstance()
-    {
-        Dispose(false);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        if (disposing)
-        {
-            Driver.Dispose();
-        }
-
-        _disposed = true;
-    }
 
     public static bool IsServerProvided()
     {

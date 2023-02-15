@@ -26,7 +26,7 @@ using Xunit.Abstractions;
 namespace Neo4j.Driver.IntegrationTests.Routing;
 
 [Collection(CcIntegrationCollection.CollectionName)]
-public class RoutingDriverIT : RoutingDriverTestBase
+public sealed class RoutingDriverIT : RoutingDriverTestBase
 {
     public RoutingDriverIT(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture) : base(
         output,

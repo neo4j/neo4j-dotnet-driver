@@ -236,7 +236,7 @@ public static class NavigationIT
         {
             var result = NewRunnable().Run("UNWIND RANGE(1,5) AS n RETURN n as number, 't'+n as text");
 
-            var keys1 = result.Keys().WaitForCompletion();
+            var keys1 = result.Keys().WaitForCompletion().ToArray();
             result.Consume().WaitForCompletion();
 
             var keys2 = result.Keys().WaitForCompletion();
@@ -255,7 +255,7 @@ public static class NavigationIT
         {
             var result = NewRunnable().Run("UNWIND RANGE(1,5) AS n RETURN n as number, 't'+n as text");
 
-            var summary1 = result.Consume().WaitForCompletion();
+            var summary1 = result.Consume().WaitForCompletion().ToArray();
             var summary2 = result.Consume().WaitForCompletion();
             var summary3 = result.Consume().WaitForCompletion();
 
@@ -384,86 +384,56 @@ public static class NavigationIT
 
     public class Session : Specs
     {
-        private readonly IRxSession rxSession;
-        private bool _disposed;
+        private readonly IRxSession _rxSession;
 
         public Session(ITestOutputHelper output, StandAloneIntegrationTestFixture standAlone)
             : base(output, standAlone)
         {
-            rxSession = NewSession();
-        }
-
-        ~Session()
-        {
-            Dispose(false);
+            _rxSession = NewSession();
         }
 
         protected override IRxRunnable NewRunnable()
         {
-            return rxSession;
+            return _rxSession;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (_disposed)
+            if (!IsDispose)
             {
-                return;
+                _rxSession.Close<int>().WaitForCompletion();
             }
 
-            if (disposing)
-            {
-                // clean database after each test run
-                rxSession.Close<int>().WaitForCompletion();
-            }
-
-            //Mark as disposed
-            _disposed = true;
-
-            base.Dispose(disposing);
+            base.Dispose();
         }
     }
 
     public class Transaction : Specs
     {
-        private readonly IRxSession rxSession;
-        private readonly IRxTransaction rxTransaction;
-        private bool _disposed;
+        private readonly IRxSession _rxSession;
+        private readonly IRxTransaction _rxTransaction;
 
         public Transaction(ITestOutputHelper output, StandAloneIntegrationTestFixture standAlone)
             : base(output, standAlone)
         {
-            rxSession = NewSession();
-            rxTransaction = rxSession.BeginTransaction().SingleAsync().Wait();
-        }
-
-        ~Transaction()
-        {
-            Dispose(false);
+            _rxSession = NewSession();
+            _rxTransaction = _rxSession.BeginTransaction().SingleAsync().Wait();
         }
 
         protected override IRxRunnable NewRunnable()
         {
-            return rxTransaction;
+            return _rxTransaction;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (_disposed)
-            {
-                return;
-            }
-
-            if (disposing)
+            if (!IsDispose)
             {
                 // clean database after each test run
-                rxTransaction.Commit<int>().WaitForCompletion();
-                rxSession.Close<int>().WaitForCompletion();
+                _rxTransaction.Commit<int>().WaitForCompletion();
+                _rxSession.Close<int>().WaitForCompletion();
             }
-
-            //Mark as disposed
-            _disposed = true;
-
-            base.Dispose(disposing);
+            base.Dispose();
         }
     }
 }

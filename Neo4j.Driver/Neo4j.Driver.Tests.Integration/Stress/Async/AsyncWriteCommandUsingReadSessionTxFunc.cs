@@ -21,7 +21,7 @@ using FluentAssertions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class AsyncWriteCommandUsingReadSessionTxFunc : AsyncCommand
+public sealed class AsyncWriteCommandUsingReadSessionTxFunc : AsyncCommand
 {
     public AsyncWriteCommandUsingReadSessionTxFunc(IDriver driver, bool useBookmark)
         : base(driver, useBookmark)

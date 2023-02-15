@@ -31,20 +31,13 @@ using static Neo4j.Driver.Tests.Assertions;
 
 namespace Neo4j.Driver.IntegrationTests.Reactive;
 
-public class SummaryIT
+public abstract class SummaryIT
 {
     public abstract class Specs : AbstractRxIT
     {
-        private bool _disposed;
-
         protected Specs(ITestOutputHelper output, StandAloneIntegrationTestFixture standAlone)
             : base(output, standAlone)
         {
-        }
-
-        ~Specs()
-        {
-            Dispose(false);
         }
 
         protected abstract IRxRunnable NewRunnable();
@@ -114,7 +107,7 @@ public class SummaryIT
             VerifySummary(
                 "CREATE (n:Label3 {id: $id1})-[:KNOWS]->(m:Label4 {id: $id2}) RETURN n, m",
                 new { id1 = 10, id2 = 20 },
-                s => true);
+                _ => true);
 
             VerifySummary(
                 "MATCH (n:Label3)-[r:KNOWS]->(m:Label4) DELETE n, r",
@@ -303,143 +296,111 @@ public class SummaryIT
                     OnCompleted<IResultSummary>(0));
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (_disposed)
+            if (!IsDispose)
             {
-                return;
+                CleanUpOnDispose();
             }
 
-            if (disposing)
+            base.Dispose();
+        }
+
+        private void CleanUpOnDispose()
+        {
+            using var session = Server.Driver.Session();
+
+            if (RequireServer.RequiredServerAvailable("5.0.0", GreaterThanOrEqualTo))
             {
-                using (var session = Server.Driver.Session())
+                foreach (var drop in session.Run("SHOW CONSTRAINTS").ToList())
                 {
-                    if (RequireServer.RequiredServerAvailable("5.0.0", GreaterThanOrEqualTo))
+                    if (drop.Values.TryGetValue("name", out var name))
                     {
-                        foreach (var drop in session.Run("SHOW CONSTRAINTS").ToList())
-                        {
-                            if (drop.Values.TryGetValue("name", out var name))
-                            {
-                                session.Run($"DROP CONSTRAINT {name}").Consume();
-                            }
-                        }
-
-                        foreach (var drop in session.Run("SHOW INDEXES").ToList())
-                        {
-                            if (drop.Values.TryGetValue("name", out var name))
-                            {
-                                session.Run($"DROP INDEX {name}").Consume();
-                            }
-                        }
+                        session.Run($"DROP CONSTRAINT {name}").Consume();
                     }
-                    else
-                    {
-                        foreach (var drop in session.Run("CALL db.constraints()").ToList())
-                        {
-                            if (drop.Values.TryGetValue("name", out var name))
-                            {
-                                session.Run($"DROP CONSTRAINT {name}").Consume();
-                            }
-                        }
+                }
 
-                        foreach (var drop in session.Run("CALL db.indexes()").ToList())
-                        {
-                            if (drop.Values.TryGetValue("name", out var name))
-                            {
-                                session.Run($"DROP INDEX {name}").Consume();
-                            }
-                        }
+                foreach (var drop in session.Run("SHOW INDEXES").ToList())
+                {
+                    if (drop.Values.TryGetValue("name", out var name))
+                    {
+                        session.Run($"DROP INDEX {name}").Consume();
                     }
                 }
             }
+            else
+            {
+                foreach (var drop in session.Run("CALL db.constraints()").ToList())
+                {
+                    if (drop.Values.TryGetValue("name", out var name))
+                    {
+                        session.Run($"DROP CONSTRAINT {name}").Consume();
+                    }
+                }
 
-            //Mark as disposed
-            _disposed = true;
-
-            base.Dispose(disposing);
+                foreach (var drop in session.Run("CALL db.indexes()").ToList())
+                {
+                    if (drop.Values.TryGetValue("name", out var name))
+                    {
+                        session.Run($"DROP INDEX {name}").Consume();
+                    }
+                }
+            }
         }
     }
 
     public class Session : Specs
     {
-        private readonly IRxSession rxSession;
-        private bool _disposed;
+        private readonly IRxSession _rxSession;
 
         public Session(ITestOutputHelper output, StandAloneIntegrationTestFixture standAlone)
             : base(output, standAlone)
         {
-            rxSession = NewSession();
-        }
-
-        ~Session()
-        {
-            Dispose(false);
+            _rxSession = NewSession();
         }
 
         protected override IRxRunnable NewRunnable()
         {
-            return rxSession;
+            return _rxSession;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (_disposed)
+            if (!IsDispose)
             {
-                return;
+                _rxSession.Close<int>().WaitForCompletion();
             }
 
-            if (disposing)
-            {
-                rxSession.Close<int>().WaitForCompletion();
-            }
-
-            //Mark as disposed
-            _disposed = true;
-
-            base.Dispose(disposing);
+            base.Dispose();
         }
     }
 
     public class Transaction : Specs
     {
-        private readonly IRxSession rxSession;
-        private readonly IRxTransaction rxTransaction;
-        private bool _disposed;
+        private readonly IRxSession _rxSession;
+        private readonly IRxTransaction _rxTransaction;
 
         public Transaction(ITestOutputHelper output, StandAloneIntegrationTestFixture standAlone)
             : base(output, standAlone)
         {
-            rxSession = NewSession();
-            rxTransaction = rxSession.BeginTransaction().SingleAsync().Wait();
-        }
-
-        ~Transaction()
-        {
-            Dispose(false);
+            _rxSession = NewSession();
+            _rxTransaction = _rxSession.BeginTransaction().SingleAsync().Wait();
         }
 
         protected override IRxRunnable NewRunnable()
         {
-            return rxTransaction;
+            return _rxTransaction;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (_disposed)
+            if (!IsDispose)
             {
-                return;
+                _rxTransaction.Commit<int>().WaitForCompletion();
+                _rxSession.Close<int>().WaitForCompletion();
             }
 
-            if (disposing)
-            {
-                rxTransaction.Commit<int>().WaitForCompletion();
-                rxSession.Close<int>().WaitForCompletion();
-            }
-
-            //Mark as disposed
-            _disposed = true;
-
-            base.Dispose(disposing);
+            base.Dispose();
         }
     }
 }

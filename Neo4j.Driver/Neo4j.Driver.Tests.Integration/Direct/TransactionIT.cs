@@ -26,7 +26,7 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;
 
-public class TransactionIT : DirectDriverTestBase
+public sealed class TransactionIT : DirectDriverTestBase
 {
     public TransactionIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
     {

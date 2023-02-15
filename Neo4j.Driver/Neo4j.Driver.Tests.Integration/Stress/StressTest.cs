@@ -24,15 +24,17 @@ using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.IntegrationTests.Extensions;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
 using Xunit.Abstractions;
-using static Neo4j.Driver.IntegrationTests.VersionComparison;
+using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
 public abstract class StressTest: IDisposable
 {
-    public enum StressTestMinLogLevel
+    private enum StressTestMinLogLevel
     {
         Trace,
         Debug,

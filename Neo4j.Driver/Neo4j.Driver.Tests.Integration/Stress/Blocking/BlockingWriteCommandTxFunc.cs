@@ -20,7 +20,7 @@ using FluentAssertions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class BlockingWriteCommandTxFunc : BlockingCommand
+public sealed class BlockingWriteCommandTxFunc : BlockingCommand
 {
     private readonly StressTest _test;
 

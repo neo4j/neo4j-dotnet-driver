@@ -27,7 +27,7 @@ using static Neo4j.Driver.SessionConfigBuilder;
 
 namespace Neo4j.Driver.IntegrationTests.Routing;
 
-public class BoltV4IT : RoutingDriverTestBase
+public sealed class BoltV4IT : RoutingDriverTestBase
 {
     private readonly IDriver _driver;
 

@@ -23,7 +23,7 @@ using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class RxWriteCommandInTx : RxCommand
+public sealed class RxWriteCommandInTx : RxCommand
 {
     private readonly StressTest _test;
 

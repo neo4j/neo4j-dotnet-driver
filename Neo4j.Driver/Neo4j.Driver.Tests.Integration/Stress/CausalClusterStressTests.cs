@@ -22,14 +22,15 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using FluentAssertions;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-[Collection(CCIntegrationCollection.CollectionName)]
-public class CausalClusterStressTests : StressTest
+[Collection(CcIntegrationCollection.CollectionName)]
+public sealed class CausalClusterStressTests : StressTest
 {
     private readonly CausalClusterIntegrationTestFixture _cluster;
 
