@@ -542,7 +542,6 @@ public class ExamplesAsync
             }
         }
     }
-
     public class HelloWorldExampleTest : BaseAsyncExample
     {
         public HelloWorldExampleTest(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
@@ -558,26 +557,15 @@ public class ExamplesAsync
             // When & Then
             await example.PrintGreetingAsync("Hello, world");
         }
-
+        
+        // tag::async-hello-world[]
         public class HelloWorldExample : IDisposable
         {
             private readonly IDriver _driver;
-            private bool _disposed;
 
             public HelloWorldExample(string uri, string user, string password)
             {
                 _driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
-            }
-
-            public void Dispose()
-            {
-                Dispose(true);
-                GC.SuppressFinalize(this);
-            }
-
-            ~HelloWorldExample()
-            {
-                Dispose(false);
             }
 
             public async Task PrintGreetingAsync(string message)
@@ -592,27 +580,19 @@ public class ExamplesAsync
                             "RETURN a.message + ', from node ' + id(a)",
                             new { message });
 
-                        return (await result.SingleAsync())[0].As<string>();
+                        var record = await result.SingleAsync();
+                        return record[0].As<string>();
                     });
 
                 Console.WriteLine(greeting);
             }
 
-            protected virtual void Dispose(bool disposing)
+            public void Dispose()
             {
-                if (_disposed)
-                {
-                    return;
-                }
-
-                if (disposing)
-                {
-                    _driver?.Dispose();
-                }
-
-                _disposed = true;
+                _driver?.Dispose();
             }
         }
+        // end::async-hello-world[]
     }
 
     public class DriverIntroductionExampleTest : BaseAsyncExample
