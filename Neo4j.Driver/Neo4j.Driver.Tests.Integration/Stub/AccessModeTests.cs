@@ -89,91 +89,55 @@ public class AccessModeTests
     [InlineData(AccessMode.Write)]
     public async Task ReadTransactionOnSessionShouldGoToReader(AccessMode mode)
     {
-        using (BoltStubServer.Start("V4/accessmode_router", 9001))
-        {
-            using (BoltStubServer.Start("V4/accessmode_reader_func", 9003))
-            {
-                using (var driver =
-                       GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, NoEncryption))
-                {
-                    var session = driver.AsyncSession(o => o.WithDefaultAccessMode(mode));
-                    try
-                    {
-                        var result = await session.ReadTransactionAsync(
-                            tx =>
-                                tx.RunAndSingleAsync("RETURN $x", new { x = 1 }, r => r[0].As<int>()));
+        using var _ = BoltStubServer.Start("V4/accessmode_router", 9001);
+        using var __ = BoltStubServer.Start("V4/accessmode_reader_func", 9003);
+        await using var driver =
+            GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, NoEncryption);
 
-                        result.Should().Be(1);
-                    }
-                    finally
-                    {
-                        await session.CloseAsync();
-                    }
-                }
-            }
-        }
+        await using var session = driver.AsyncSession(o => o.WithDefaultAccessMode(mode));
+        var result = await session.ExecuteReadAsync(
+            tx =>
+                tx.RunAndSingleAsync("RETURN $x", new { x = 1 }, r => r[0].As<int>()));
+
+        result.Should().Be(1);
     }
 
     [RequireBoltStubServerFact]
     public async Task RunOnWriteModeSessionShouldGoToWriter()
     {
-        using (BoltStubServer.Start("V4/accessmode_router", 9001))
-        {
-            using (BoltStubServer.Start("V4/accessmode_writer_implicit", 9002))
-            {
-                using (var driver =
-                       GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, NoEncryption))
-                {
-                    var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
-                    try
-                    {
-                        var result = await session.RunAndSingleAsync(
-                            "CREATE (n: { id: $x }) RETURN $x",
-                            new { x = 1 },
-                            r => r[0].As<int>());
+        using var _ = BoltStubServer.Start("V4/accessmode_router", 9001);
+        using var __ = BoltStubServer.Start("V4/accessmode_writer_implicit", 9002);
+        await using var driver =
+            GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, NoEncryption);
 
-                        result.Should().Be(1);
-                    }
-                    finally
-                    {
-                        await session.CloseAsync();
-                    }
-                }
-            }
-        }
+        await using var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
+        var result = await session.RunAndSingleAsync(
+            "CREATE (n: { id: $x }) RETURN $x",
+            new { x = 1 },
+            r => r[0].As<int>());
+
+        result.Should().Be(1);
     }
 
     [RequireBoltStubServerFact]
     public async Task RunOnWriteModeTransactionShouldGoToWriter()
     {
-        using (BoltStubServer.Start("V4/accessmode_router", 9001))
-        {
-            using (BoltStubServer.Start("V4/accessmode_writer_explicit", 9002))
-            {
-                using (var driver =
-                       GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, NoEncryption))
-                {
-                    var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
-                    try
-                    {
-                        var tx = await session.BeginTransactionAsync();
+        using var _ = BoltStubServer.Start("V4/accessmode_router", 9001);
+        using var __ = BoltStubServer.Start("V4/accessmode_writer_explicit", 9002);
+        await using var driver =
+            GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, NoEncryption);
 
-                        var result = await tx.RunAndSingleAsync(
-                            "CREATE (n: { id: $x }) RETURN $x",
-                            new { x = 1 },
-                            r => r[0].As<int>());
+        await using var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
+        var tx = await session.BeginTransactionAsync();
 
-                        result.Should().Be(1);
+        var result = await tx.RunAndSingleAsync(
+            "CREATE (n: { id: $x }) RETURN $x",
+            new { x = 1 },
+            r => r[0].As<int>());
 
-                        await tx.CommitAsync();
-                    }
-                    finally
-                    {
-                        await session.CloseAsync();
-                    }
-                }
-            }
-        }
+        result.Should().Be(1);
+
+        await tx.CommitAsync();
     }
 
     [RequireBoltStubServerTheory]
@@ -181,31 +145,19 @@ public class AccessModeTests
     [InlineData(AccessMode.Write)]
     public async Task WriteTransactionOnSessionShouldGoToWriter(AccessMode mode)
     {
-        using (BoltStubServer.Start("V4/accessmode_router", 9001))
-        {
-            using (BoltStubServer.Start("V4/accessmode_writer_func", 9002))
-            {
-                using (var driver =
-                       GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, NoEncryption))
-                {
-                    var session = driver.AsyncSession(o => o.WithDefaultAccessMode(mode));
-                    try
-                    {
-                        var result = await session.WriteTransactionAsync(
-                            tx =>
-                                tx.RunAndSingleAsync(
-                                    "CREATE (n: { id: $x }) RETURN $x",
-                                    new { x = 1 },
-                                    r => r[0].As<int>()));
+        using var _ = BoltStubServer.Start("V4/accessmode_router", 9001);
+        using var __ = BoltStubServer.Start("V4/accessmode_writer_func", 9002);
+        await using var driver =
+            GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, NoEncryption);
 
-                        result.Should().Be(1);
-                    }
-                    finally
-                    {
-                        await session.CloseAsync();
-                    }
-                }
-            }
-        }
+        await using var session = driver.AsyncSession(o => o.WithDefaultAccessMode(mode));
+        var result = await session.ExecuteWriteAsync(
+            tx =>
+                tx.RunAndSingleAsync(
+                    "CREATE (n: { id: $x }) RETURN $x",
+                    new { x = 1 },
+                    r => r[0].As<int>()));
+
+        result.Should().Be(1);
     }
 }

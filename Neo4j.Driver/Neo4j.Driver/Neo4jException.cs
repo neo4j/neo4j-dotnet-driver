@@ -141,6 +141,7 @@ public class TransientException : Neo4jException
     {
     }
 
+    /// <inheritdoc />
     public override bool IsRetriable => true;
 }
 
@@ -196,6 +197,7 @@ public class ServiceUnavailableException : Neo4jException
     {
     }
 
+    /// <inheritdoc />
     public override bool IsRetriable => true;
 }
 
@@ -220,6 +222,7 @@ public class SessionExpiredException : Neo4jException
     {
     }
 
+    /// <inheritdoc />
     public override bool IsRetriable => true;
 }
 
@@ -243,6 +246,7 @@ public class ConnectionReadTimeoutException : Neo4jException
     {
     }
 
+    /// <inheritdoc />
     public override bool IsRetriable => true;
 }
 
@@ -342,6 +346,7 @@ public class AuthorizationException : SecurityException
     {
     }
 
+    /// <inheritdoc />
     public override bool IsRetriable => true;
 
     internal static bool IsAuthorizationError(string code)

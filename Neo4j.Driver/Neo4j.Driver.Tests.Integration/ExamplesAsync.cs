@@ -719,7 +719,9 @@ public class ExamplesAsync
                 _disposed = true;
             }
 
+#pragma warning disable CS8892
             public static async Task Main(string[] args)
+#pragma warning restore CS8892
             {
                 // Aura queries use an encrypted connection using the "neo4j+s" protocol
                 var boltUrl = "%%BOLT_URL_PLACEHOLDER%%";

@@ -127,7 +127,7 @@ public class BoltV4IT : RoutingDriverTestBase
 
     private async Task VerifyDatabaseNameOnSummaryTxFunc(string name, string expected, Bookmarks bookmarks = null)
     {
-        var session = _driver.AsyncSession(
+        await using var session = _driver.AsyncSession(
             o =>
             {
                 if (!string.IsNullOrEmpty(name))
@@ -138,44 +138,23 @@ public class BoltV4IT : RoutingDriverTestBase
                 o.WithBookmarks(bookmarks ?? Bookmarks.Empty);
             });
 
-        try
-        {
-            var summary =
-                await session.ReadTransactionAsync(async txc => { return await txc.RunAndConsumeAsync("RETURN 1"); });
+        var summary =
+            await session.ExecuteReadAsync(txc => txc.RunAndConsumeAsync("RETURN 1"));
 
-            summary.Database.Should().NotBeNull();
-            summary.Database.Name.Should().Be(expected);
-        }
-        finally
-        {
-            await session.CloseAsync();
-        }
+        summary.Database.Should().NotBeNull();
+        summary.Database.Name.Should().Be(expected);
     }
 
     private static async Task<Bookmarks> CreateDatabase(IDriver driver, string name)
     {
-        var session = driver.AsyncSession(ForDatabase("system"));
-        try
-        {
-            await session.WriteTransactionAsync(async txc => await txc.RunAndConsumeAsync($"CREATE DATABASE {name}"));
-            return session.LastBookmarks;
-        }
-        finally
-        {
-            await session.CloseAsync();
-        }
+        await using var session = driver.AsyncSession(ForDatabase("system"));
+        await session.ExecuteWriteAsync(async txc => await txc.RunAndConsumeAsync($"CREATE DATABASE {name}"));
+        return session.LastBookmarks;
     }
 
     private static async Task DropDatabase(IDriver driver, string name, Bookmarks bookmarks)
     {
-        var session = driver.AsyncSession(o => o.WithDatabase("system").WithBookmarks(bookmarks));
-        try
-        {
-            await session.WriteTransactionAsync(async txc => await txc.RunAndConsumeAsync($"DROP DATABASE {name}"));
-        }
-        finally
-        {
-            await session.CloseAsync();
-        }
+        await using var session = driver.AsyncSession(o => o.WithDatabase("system").WithBookmarks(bookmarks));
+        await session.ExecuteWriteAsync(async txc => await txc.RunAndConsumeAsync($"DROP DATABASE {name}"));
     }
 }

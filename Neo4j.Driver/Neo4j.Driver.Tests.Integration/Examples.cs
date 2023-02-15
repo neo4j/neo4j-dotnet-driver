@@ -26,7 +26,7 @@ using Neo4j.Driver.IntegrationTests;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 using Xunit.Abstractions;
-using static Neo4j.Driver.IntegrationTests.DatabaseExtensions;
+using static Neo4j.Driver.IntegrationTests.Extensions.DatabaseExtensions;
 
 // ReSharper disable once CheckNamespace
 namespace Neo4j.Driver.Examples;

@@ -130,7 +130,7 @@ public class ResultStreamingTests
             {
                 var session = driver.RxSession();
 
-                session.ReadTransaction(tx => tx.Run("UNWIND [1,2,3,4] AS n RETURN n").Keys())
+                session.ExecuteRead(tx => tx.Run("UNWIND [1,2,3,4] AS n RETURN n").Keys())
                     .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, Utils.MatchesKeys("n")),

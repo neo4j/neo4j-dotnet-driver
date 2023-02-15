@@ -92,7 +92,7 @@ public class SessionIT : AbstractRxIT
         session.Run("RETURN 1")
             .Records()
             .SelectMany(
-                r =>
+                _ =>
                 {
                     throw new Exception("Got you!");
 #pragma warning disable CS0162
@@ -109,7 +109,7 @@ public class SessionIT : AbstractRxIT
         var work = new ConfigurableTransactionWork("CREATE (:WithoutRetry) RETURN 5");
 
         NewSession()
-            .WriteTransaction(work.Work)
+            .ExecuteWrite(work.Work)
             .WaitForCompletion()
             .AssertEqual(
                 OnNext(0, 5),
@@ -133,7 +133,7 @@ public class SessionIT : AbstractRxIT
         };
 
         NewSession()
-            .WriteTransaction(work.Work)
+            .ExecuteWrite(work.Work)
             .WaitForCompletion()
             .AssertEqual(
                 OnNext(0, 7),
@@ -157,7 +157,7 @@ public class SessionIT : AbstractRxIT
         };
 
         NewSession()
-            .WriteTransaction(work.Work)
+            .ExecuteWrite(work.Work)
             .WaitForCompletion()
             .AssertEqual(
                 OnNext(0, 7),
@@ -173,7 +173,7 @@ public class SessionIT : AbstractRxIT
         var work = new ConfigurableTransactionWork("UNWIND [10, 5, 0] AS x CREATE (:Hi) RETURN 10/x");
 
         NewSession()
-            .WriteTransaction(work.Work)
+            .ExecuteWrite(work.Work)
             .WaitForCompletion()
             .AssertEqual(
                 OnNext(0, 1),
@@ -194,7 +194,7 @@ public class SessionIT : AbstractRxIT
         };
 
         NewSession()
-            .WriteTransaction(work.Work)
+            .ExecuteWrite(work.Work)
             .WaitForCompletion()
             .AssertEqual(
                 OnError<int>(
@@ -242,18 +242,18 @@ public class SessionIT : AbstractRxIT
             set => _reactiveFailures = (value ?? Enumerable.Empty<Exception>()).GetEnumerator();
         }
 
-        public IObservable<int> Work(IRxTransaction txc)
+        public IObservable<int> Work(IRxRunnable txc)
         {
             Interlocked.Increment(ref _invocations);
 
             if (_syncFailures.MoveNext())
             {
-                throw _syncFailures.Current;
+                throw _syncFailures.Current!;
             }
 
             if (_reactiveFailures.MoveNext())
             {
-                return Observable.Throw<int>(_reactiveFailures.Current);
+                return Observable.Throw<int>(_reactiveFailures.Current!);
             }
 
             return txc.Run(_query).Records().Select(r => r[0].As<int>());

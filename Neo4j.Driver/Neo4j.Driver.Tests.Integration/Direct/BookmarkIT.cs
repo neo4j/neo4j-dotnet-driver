@@ -39,12 +39,12 @@ public class BookmarkIT : DirectDriverTestBase
 
         try
         {
-            session.LastBookmark.Should().BeNull();
+            session.LastBookmarks.Should().BeNull();
 
             await CreateNodeInTx(session, 1);
 
-            session.LastBookmark.Should().NotBeNull();
-            session.LastBookmark.Values.Should().NotBeEmpty();
+            session.LastBookmarks.Should().NotBeNull();
+            session.LastBookmarks.Values.Should().NotBeEmpty();
         }
         finally
         {
@@ -60,7 +60,7 @@ public class BookmarkIT : DirectDriverTestBase
         {
             await CreateNodeInTx(session, 1);
 
-            var bookmark = session.LastBookmark;
+            var bookmark = session.LastBookmarks;
             bookmark.Should().NotBeNull();
             bookmark.Values.Should().NotBeEmpty();
 
@@ -74,7 +74,7 @@ public class BookmarkIT : DirectDriverTestBase
                 await tx.RollbackAsync();
             }
 
-            session.LastBookmark.Should().Be(bookmark);
+            session.LastBookmarks.Should().Be(bookmark);
         }
         finally
         {
@@ -90,7 +90,7 @@ public class BookmarkIT : DirectDriverTestBase
         {
             await CreateNodeInTx(session, 1);
 
-            var bookmark = session.LastBookmark;
+            var bookmark = session.LastBookmarks;
             bookmark.Should().NotBeNull();
             bookmark.Values.Should().NotBeEmpty();
 
@@ -104,7 +104,7 @@ public class BookmarkIT : DirectDriverTestBase
 
             exc.Should().BeOfType<ClientException>();
 
-            session.LastBookmark.Should().Be(bookmark);
+            session.LastBookmarks.Should().Be(bookmark);
         }
         finally
         {

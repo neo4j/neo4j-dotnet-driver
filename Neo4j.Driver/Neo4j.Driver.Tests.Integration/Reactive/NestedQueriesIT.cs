@@ -91,7 +91,7 @@ public class NestedQueriesIT : AbstractRxIT
         const int size = 1024;
         var session = Server.Driver.RxSession(o => o.WithFetchSize(5));
 
-        session.ReadTransaction(
+        session.ExecuteRead(
                 txc =>
                     txc.Run("UNWIND range(1, $size) AS x RETURN x", new { size })
                         .Records()
@@ -99,7 +99,7 @@ public class NestedQueriesIT : AbstractRxIT
                         .Buffer(10)
                         .SelectMany(
                             x =>
-                                session.WriteTransaction(
+                                session.ExecuteWrite(
                                     txc2 =>
                                         txc2.Run("UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id", new { x })
                                             .Records()))
@@ -119,7 +119,7 @@ public class NestedQueriesIT : AbstractRxIT
         const int size = 1024;
         var session = Server.Driver.RxSession(o => o.WithFetchSize(5));
 
-        session.ReadTransaction(
+        session.ExecuteRead(
                 txc =>
                     txc.Run("UNWIND range(1, $size) AS x RETURN x", new { size })
                         .Records()
@@ -127,7 +127,7 @@ public class NestedQueriesIT : AbstractRxIT
                         .Buffer(10)
                         .SelectMany(
                             x =>
-                                session.WriteTransaction(
+                                session.ExecuteWrite(
                                     txc2 =>
                                         txc2.Run("UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id", new { x })
                                             .Records()))
@@ -149,7 +149,7 @@ public class NestedQueriesIT : AbstractRxIT
             .Buffer(10)
             .SelectMany(
                 x =>
-                    session.WriteTransaction(
+                    session.ExecuteWrite(
                         txc2 =>
                             txc2.Run("UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id", new { x }).Records()))
             .Select(r => r[0].As<int>())
@@ -174,7 +174,7 @@ public class NestedQueriesIT : AbstractRxIT
             .Buffer(10)
             .SelectMany(
                 x =>
-                    session.WriteTransaction(
+                    session.ExecuteWrite(
                         txc2 =>
                             txc2.Run("UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id", new { x }).Records()))
             .Select(r => r[0].As<int>())
@@ -189,7 +189,7 @@ public class NestedQueriesIT : AbstractRxIT
         const int size = 1024;
         var session = Server.Driver.RxSession(o => o.WithFetchSize(5));
 
-        session.ReadTransaction(
+        session.ExecuteRead(
                 txc => txc.Run("UNWIND range(1, $size) AS x RETURN x", new { size })
                     .Records()
                     .Select(r => r[0].As<int>())
@@ -213,7 +213,7 @@ public class NestedQueriesIT : AbstractRxIT
         const int size = 1024;
         var session = Server.Driver.RxSession(o => o.WithFetchSize(5));
 
-        session.ReadTransaction(
+        session.ExecuteRead(
                 txc => txc.Run("UNWIND range(1, $size) AS x RETURN x", new { size })
                     .Records()
                     .Select(r => r[0].As<int>())
