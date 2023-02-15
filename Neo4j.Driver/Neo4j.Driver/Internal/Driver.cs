@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal;
 
 internal sealed class Driver : IInternalDriver
 {
-    private readonly DefaultBookmarkManager _bookmarkManager;
+    private readonly DefaultBookmarkManager _defaultExecuteQueryBookmarkManager;
 
     private readonly IConnectionProvider _connectionProvider;
     private readonly ILogger _logger;
@@ -52,7 +52,7 @@ internal sealed class Driver : IInternalDriver
         _retryLogic = retryLogic;
         _metrics = metrics;
         Config = config;
-        _bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig());
+        _defaultExecuteQueryBookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig());
     }
 
     public Uri Uri { get; }
@@ -119,6 +119,11 @@ internal sealed class Driver : IInternalDriver
         return _connectionProvider.SupportsMultiDbAsync();
     }
 
+    public IBookmarkManager GetDefaultExecuteQueryBookmarkManager()
+    {
+        return _defaultExecuteQueryBookmarkManager;
+    }
+
     public void Dispose()
     {
         Dispose(true);
@@ -133,7 +138,7 @@ internal sealed class Driver : IInternalDriver
 
     public Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
         Query query,
-        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor,
+        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> resultTransformer,
         QueryConfig config = null,
         CancellationToken cancellationToken = default)
     {
@@ -141,7 +146,7 @@ internal sealed class Driver : IInternalDriver
             query,
             config,
             cancellationToken,
-            TransformCursor(streamProcessor));
+            TransformCursor(resultTransformer));
     }
 
     private void Close()
@@ -210,13 +215,13 @@ internal sealed class Driver : IInternalDriver
     }
 
     private static Func<IResultCursor, CancellationToken, Task<EagerResult<TResult>>> TransformCursor<TResult>(
-        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor)
+        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> resultTransformer)
     {
         async Task<EagerResult<TResult>> TransformCursorImpl(
             IResultCursor cursor,
             CancellationToken cancellationToken)
         {
-            var processedStream = await streamProcessor(cursor);
+            var processedStream = await resultTransformer(cursor);
             var summary = await cursor.ConsumeAsync().ConfigureAwait(false);
             var keys = await cursor.KeysAsync();
             return new EagerResult<TResult>(processedStream, summary, keys);
@@ -239,7 +244,7 @@ internal sealed class Driver : IInternalDriver
 
         if (config.EnableBookmarkManager)
         {
-            sessionConfigBuilder.WithBookmarkManager(config.BookmarkManager ?? _bookmarkManager);
+            sessionConfigBuilder.WithBookmarkManager(config.BookmarkManager ?? _defaultExecuteQueryBookmarkManager);
         }
 
         sessionConfigBuilder.WithDefaultAccessMode(

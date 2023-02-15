@@ -60,8 +60,8 @@ public interface IExecutableQuery<T>
     /// </summary>
     /// <param name="streamProcessor">The stream processor function.</param>
     /// <returns>The executable query object allowing method chaining.</returns>
-    IExecutableQuery<TResult> WithStreamProcessor<TResult>(
-        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor);
+    IExecutableQuery<TResult> WithResultTransformer<TResult>(
+        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> resultTransformer);
 
     /// <summary>Executes the query as configured and returns the results, fully materialised.</summary>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>

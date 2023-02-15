@@ -30,7 +30,7 @@ public class QueryConfig
     /// <param name="impersonatedUser">Username of a user to impersonate while executing a query.</param>
     /// <param name="bookmarkManager">
     /// Instance of <see cref="IBookmarkManager"/> to provide bookmarks for query execution, and
-    /// receive resulting bookmarks.<br/> When null the driver will use it's own <see cref="IBookmarkManager"/> for causal
+    /// receive resulting bookmarks.<br/> When null the driver will use its own <see cref="IBookmarkManager"/> for causal
     /// chaining.
     /// </param>
     /// <param name="enableBookmarkManager">

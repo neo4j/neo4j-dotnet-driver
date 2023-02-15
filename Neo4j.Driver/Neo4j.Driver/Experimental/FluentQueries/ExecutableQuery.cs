@@ -28,18 +28,18 @@ internal class ExecutableQuery<T> : IExecutableQuery<T>
     private readonly IInternalDriver _driver;
     private Query _query;
     private QueryConfig _queryConfig;
-    private readonly Func<IAsyncEnumerable<IRecord>, ValueTask<T>> _streamProcessor;
+    private readonly Func<IAsyncEnumerable<IRecord>, ValueTask<T>> _resultTransformer;
 
     private ExecutableQuery(
         Query query,
         IInternalDriver driver,
         QueryConfig queryConfig,
-        Func<IAsyncEnumerable<IRecord>, ValueTask<T>> streamProcessor)
+        Func<IAsyncEnumerable<IRecord>, ValueTask<T>> resultTransformer)
     {
         _query = query;
         _driver = driver;
         _queryConfig = queryConfig;
-        _streamProcessor = streamProcessor;
+        _resultTransformer = resultTransformer;
     }
 
     public IExecutableQuery<T> WithConfig(QueryConfig config)
@@ -60,10 +60,10 @@ internal class ExecutableQuery<T> : IExecutableQuery<T>
         return this;
     }
 
-    public IExecutableQuery<TResult> WithStreamProcessor<TResult>(
-        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor)
+    public IExecutableQuery<TResult> WithResultTransformer<TResult>(
+        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> resultTransformer)
     {
-        return new ExecutableQuery<TResult>(_query, _driver, _queryConfig, streamProcessor);
+        return new ExecutableQuery<TResult>(_query, _driver, _queryConfig, resultTransformer);
     }
 
     // removing since behaviour is different to WithParameters, pending discussion
@@ -77,17 +77,17 @@ internal class ExecutableQuery<T> : IExecutableQuery<T>
     {
         return _driver.ExecuteQueryAsync(
             _query,
-            _streamProcessor,
+            _resultTransformer,
             _queryConfig,
             cancellationToken);
     }
 
     public static ExecutableQuery<IReadOnlyList<IRecord>> GetDefault(IInternalDriver driver, string cypher)
     {
-        return new ExecutableQuery<IReadOnlyList<IRecord>>(new Query(cypher), driver, null, ToListAsync);
+        return new ExecutableQuery<IReadOnlyList<IRecord>>(new Query(cypher), driver, null, ToEagerResultAsync);
     }
 
-    private static async ValueTask<IReadOnlyList<T>> ToListAsync<T>(IAsyncEnumerable<T> enumerable)
+    private static async ValueTask<IReadOnlyList<T>> ToEagerResultAsync<T>(IAsyncEnumerable<T> enumerable)
     {
         var result = new List<T>();
         await foreach (var item in enumerable)

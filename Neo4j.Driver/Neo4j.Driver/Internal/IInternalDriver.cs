@@ -29,7 +29,7 @@ internal interface IInternalDriver : IDriver
 
     Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
         Query query,
-        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor,
+        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> resultTransformer,
         QueryConfig config = null,
         CancellationToken cancellationToken = default);
 }

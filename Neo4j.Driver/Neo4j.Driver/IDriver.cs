@@ -17,6 +17,8 @@
 
 using System;
 using System.Threading.Tasks;
+using Neo4j.Driver.Experimental;
+using Neo4j.Driver.Experimental.FluentQueries;
 
 namespace Neo4j.Driver;
 
@@ -84,4 +86,12 @@ public interface IDriver : IDisposable, IAsyncDisposable
     /// cluster support multi-databases, otherwise false.
     /// </returns>
     Task<bool> SupportsMultiDbAsync();
+
+    /// <summary>
+    /// Returns the bookmark manager exercised by <see cref="ExecutableQuery{T}.ExecuteAsync"/> by default.
+    /// The returned bookmark manager can then be explicitly configured for use by specific <see cref="IAsyncSession"/>
+    /// calls.
+    /// </summary>
+    /// <returns>The default bookmark manager instance.</returns>
+    IBookmarkManager GetDefaultExecuteQueryBookmarkManager();
 }
