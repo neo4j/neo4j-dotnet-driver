@@ -25,7 +25,7 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Reactive;
 
-[Collection(SAIntegrationCollection.CollectionName)]
+[Collection(SaIntegrationCollection.CollectionName)]
 public abstract class AbstractRxIT : AbstractRxTest, IDisposable
 {
     private readonly List<IRxSession> _sessions = new();

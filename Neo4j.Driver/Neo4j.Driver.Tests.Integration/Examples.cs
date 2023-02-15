@@ -1035,13 +1035,13 @@ public class Examples
     }
 }
 
-[Collection(SAIntegrationCollection.CollectionName)]
+[Collection(SaIntegrationCollection.CollectionName)]
 public abstract class BaseExample : IDisposable
 {
     private bool _disposed;
-    protected string Password = Neo4jDefaultInstallation.Password;
-    protected string Uri = Neo4jDefaultInstallation.BoltUri;
-    protected string User = Neo4jDefaultInstallation.User;
+    protected string Password = DefaultInstallation.Password;
+    protected string Uri = DefaultInstallation.BoltUri;
+    protected string User = DefaultInstallation.User;
 
     protected BaseExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
     {

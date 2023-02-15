@@ -18,6 +18,7 @@
 using System;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.IntegrationTests.Extensions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.TestUtil;
 using Xunit;
@@ -25,7 +26,7 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Stub;
 
-public class MultiDatabasesTests
+public sealed class MultiDatabasesTests
 {
     private readonly Action<ConfigBuilder> _setupConfig;
 
@@ -203,7 +204,6 @@ public class MultiDatabasesTests
         using var _ = BoltStubServer.Start($"{boltVersion}/fail_to_auth", 9001);
         await using var driver = GraphDatabase.Driver($"{scheme}://127.0.0.1:9001", AuthTokens.None, _setupConfig);
         var error = await Record.ExceptionAsync(() => driver.SupportsMultiDbAsync());
-        error.Should().BeOfType<AuthenticationException>();
-        error!.Message.Should().StartWith("blabla");
+        error.Should().BeOfType<AuthenticationException>().Which.Message.Should().StartWith("blabla");
     }
 }

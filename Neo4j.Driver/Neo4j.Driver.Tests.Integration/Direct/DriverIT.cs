@@ -28,7 +28,7 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;
 
-public class DriverIT : DirectDriverTestBase
+public sealed class DriverIT : DirectDriverTestBase
 {
     public DriverIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
     {
@@ -97,7 +97,7 @@ public class DriverIT : DirectDriverTestBase
     public async Task ShouldConnectIPv4AddressIfIpv6Enabled()
     {
         await using var driver = GraphDatabase.Driver(
-            Neo4jDefaultInstallation.BoltUri,
+            DefaultInstallation.BoltUri,
             AuthToken,
             o => o.WithIpv6Enabled(true));
 
@@ -115,7 +115,7 @@ public class DriverIT : DirectDriverTestBase
     {
         // Given
         await using var driver = GraphDatabase.Driver(
-            Neo4jDefaultInstallation.BoltUri,
+            DefaultInstallation.BoltUri,
             AuthToken,
             o =>
             {

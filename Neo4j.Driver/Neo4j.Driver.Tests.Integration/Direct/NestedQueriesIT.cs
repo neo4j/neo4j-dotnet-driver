@@ -17,12 +17,13 @@
 
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;
 
-public class NestedQueriesIT : DirectDriverTestBase
+public sealed class NestedQueriesIT : DirectDriverTestBase
 {
     public NestedQueriesIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
     {
@@ -47,8 +48,10 @@ public class NestedQueriesIT : DirectDriverTestBase
                 }
             });
 
-        error.Should().BeOfType<ResultConsumedException>();
-        error!.Message.Should().Contain("result has already been consumed");
+        error.Should()
+            .BeOfType<ResultConsumedException>()
+            .Which.Message.Should()
+            .Contain("result has already been consumed");
     }
 
     [RequireServerFact]
@@ -67,8 +70,9 @@ public class NestedQueriesIT : DirectDriverTestBase
                 }
             });
 
-        error.Should().BeOfType<ResultConsumedException>();
-        error!.Message.Should()
+        error.Should()
+            .BeOfType<ResultConsumedException>()
+            .Which.Message.Should()
             .Contain("result has already been consumed");
     }
 
@@ -94,8 +98,9 @@ public class NestedQueriesIT : DirectDriverTestBase
                 }
             });
 
-        error.Should().BeOfType<ResultConsumedException>();
-        error!.Message.Should()
+        error.Should()
+            .BeOfType<ResultConsumedException>()
+            .Which.Message.Should()
             .Contain("result has already been consumed");
     }
 
@@ -119,8 +124,9 @@ public class NestedQueriesIT : DirectDriverTestBase
                 }
             });
 
-        error.Should().BeOfType<TransactionNestingException>();
-        error!.Message.Should()
+        error.Should()
+            .BeOfType<TransactionNestingException>()
+            .Which.Message.Should()
             .Contain("Attempting to nest transactions");
     }
 
@@ -141,8 +147,9 @@ public class NestedQueriesIT : DirectDriverTestBase
                 }
             });
 
-        error.Should().BeOfType<TransactionNestingException>();
-        error!.Message.Should()
+        error.Should()
+            .BeOfType<TransactionNestingException>()
+            .Which.Message.Should()
             .Contain("Attempting to nest transactions");
     }
 
@@ -167,8 +174,9 @@ public class NestedQueriesIT : DirectDriverTestBase
                 }
             });
 
-        error.Should().BeOfType<TransactionNestingException>();
-        error!.Message.Should()
+        error.Should()
+            .BeOfType<TransactionNestingException>()
+            .Which.Message.Should()
             .Contain("Attempting to nest transactions");
     }
 
@@ -194,8 +202,9 @@ public class NestedQueriesIT : DirectDriverTestBase
                         }
                     }));
 
-        error.Should().BeOfType<TransactionNestingException>();
-        error!.Message.Should()
+        error.Should()
+            .BeOfType<TransactionNestingException>()
+            .Which.Message.Should()
             .Contain("Attempting to nest transactions");
     }
 
@@ -220,8 +229,9 @@ public class NestedQueriesIT : DirectDriverTestBase
                         }
                     }));
 
-        error.Should().BeOfType<TransactionNestingException>();
-        error!.Message.Should()
+        error.Should()
+            .BeOfType<TransactionNestingException>()
+            .Which.Message.Should()
             .Contain("Attempting to nest transactions");
     }
 
@@ -243,8 +253,9 @@ public class NestedQueriesIT : DirectDriverTestBase
                         }
                     }));
 
-        error.Should().BeOfType<TransactionNestingException>();
-        error!.Message.Should()
+        error.Should()
+            .BeOfType<TransactionNestingException>()
+            .Which.Message.Should()
             .Contain("Attempting to nest transactions");
     }
 }

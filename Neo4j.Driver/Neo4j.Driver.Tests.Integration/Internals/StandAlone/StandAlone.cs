@@ -26,7 +26,7 @@ public interface IStandAlone : ISingleInstance, IDisposable
     IDriver Driver { get; }
 }
 
-public class StandAlone : IStandAlone
+public sealed class StandAlone : IStandAlone
 {
     private readonly ExternalBoltkitInstaller _installer = new();
 
@@ -116,10 +116,10 @@ public class StandAlone : IStandAlone
 
     private void NewBoltDriver()
     {
-        Driver = Neo4jDefaultInstallation.NewBoltDriver(BoltUri, AuthToken);
+        Driver = DefaultInstallation.NewBoltDriver(BoltUri, AuthToken);
     }
 
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
         if (_disposed)
         {
@@ -160,9 +160,6 @@ public class StandAlone : IStandAlone
         return _delegator?.ToString() ?? "No server found";
     }
 
-    /// This method will always restart the server with the updated certificates
-    /// </summary>
-    /// <param name="sourceProcedureJarPath"></param>
     public void RestartServerWithCertificate(Pkcs12Store store)
     {
         DisposeBoltDriver();

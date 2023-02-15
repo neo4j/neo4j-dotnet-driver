@@ -19,6 +19,8 @@ using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.IntegrationTests.Extensions;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -303,8 +305,8 @@ public class TransactionIT : DirectDriverTestBase
         var cursor1 = await txc1.RunAsync("UNWIND range(1, $size) AS x RETURN x", new { size });
 
         await cursor1.ForEachAsync(
-            async r =>
-                await txc1.RunAsync(
+            r =>
+                txc1.RunAsync(
                     "UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id",
                     new { x = r["x"].As<int>() }));
 

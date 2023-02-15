@@ -17,12 +17,13 @@
 
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;
 
-public class BookmarkIT : DirectDriverTestBase
+public sealed class BookmarkIT : DirectDriverTestBase
 {
     public BookmarkIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
     {

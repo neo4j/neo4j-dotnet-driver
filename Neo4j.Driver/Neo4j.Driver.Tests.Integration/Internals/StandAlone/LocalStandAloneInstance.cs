@@ -26,12 +26,12 @@ public class LocalStandAloneInstance : SingleInstance, IStandAlone
 
     public LocalStandAloneInstance() :
         base(
-            Neo4jDefaultInstallation.HttpUri,
-            Neo4jDefaultInstallation.BoltUri,
+            DefaultInstallation.HttpUri,
+            DefaultInstallation.BoltUri,
             null,
-            Neo4jDefaultInstallation.Password)
+            DefaultInstallation.Password)
     {
-        Driver = Neo4jDefaultInstallation.NewBoltDriver(BoltUri, AuthToken);
+        Driver = DefaultInstallation.NewBoltDriver(BoltUri, AuthToken);
     }
 
     public void Dispose()

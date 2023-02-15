@@ -20,12 +20,12 @@ using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal.Util;
 using Xunit.Abstractions;
-using static Neo4j.Driver.IntegrationTests.VersionComparison;
+using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
 using static Neo4j.Driver.IntegrationTests.Extensions.DatabaseExtensions;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;
 
-public class BoltV4IT : DirectDriverTestBase
+public sealed class BoltV4IT : DirectDriverTestBase
 {
     public BoltV4IT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         : base(output, fixture)

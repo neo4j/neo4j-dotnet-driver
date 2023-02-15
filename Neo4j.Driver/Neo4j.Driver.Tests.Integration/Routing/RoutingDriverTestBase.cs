@@ -23,7 +23,7 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Routing;
 
-[Collection(CCIntegrationCollection.CollectionName)]
+[Collection(CcIntegrationCollection.CollectionName)]
 public abstract class RoutingDriverTestBase : IDisposable
 {
     private bool _disposed;

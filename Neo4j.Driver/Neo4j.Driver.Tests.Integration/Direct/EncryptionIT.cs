@@ -18,18 +18,19 @@
 using System;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;
 
-public class EncryptionIT : DirectDriverTestBase
+public sealed class EncryptionIT : DirectDriverTestBase
 {
     public EncryptionIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         : base(output, fixture)
     {
     }
 
-    [ShouldNotRunInTestKit_RequireServerFact]
+    [ShouldNotRunInTestKitRequireServerFact]
     public async Task ShouldBeAbleToConnectWithInsecureConfig()
     {
         await using var driver = GraphDatabase.Driver(
@@ -42,7 +43,7 @@ public class EncryptionIT : DirectDriverTestBase
         await VerifyConnectivity(driver);
     }
 
-    [ShouldNotRunInTestKit_RequireServerFact]
+    [ShouldNotRunInTestKitRequireServerFact]
     public async Task ShouldBeAbleToConnectUsingInsecureUri()
     {
         var builder = new UriBuilder("bolt+ssc", ServerEndPoint.Host, ServerEndPoint.Port);

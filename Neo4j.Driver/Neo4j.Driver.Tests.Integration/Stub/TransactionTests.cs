@@ -33,12 +33,12 @@ internal static class ExceptionExtension
         {
             T => true,
             AggregateException aggregate => aggregate.InnerExceptions.Any(x => x.HasCause<T>()),
-            _ => exception.InnerException?.HasCause<T>() ?? false
+            var _ => exception.InnerException?.HasCause<T>() ?? false
         };
     }
 }
 
-public class TransactionTests
+public abstract class TransactionTests
 {
     private static void NoEncryptionAndShortRetry(ConfigBuilder builder)
     {

@@ -24,7 +24,7 @@ using Neo4j.Driver.Reactive;
 using Xunit;
 using Xunit.Abstractions;
 using static Microsoft.Reactive.Testing.ReactiveTest;
-using static Neo4j.Driver.IntegrationTests.VersionComparison;
+using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
 
 namespace Neo4j.Driver.IntegrationTests;
 
@@ -176,12 +176,12 @@ public class ExamplesRx
     }
 }
 
-[Collection(SAIntegrationCollection.CollectionName)]
+[Collection(SaIntegrationCollection.CollectionName)]
 public abstract class BaseRxExample : AbstractRxTest, IDisposable
 {
     private bool _disposed;
-    protected string Uri = Neo4jDefaultInstallation.BoltUri;
-    protected string User = Neo4jDefaultInstallation.User;
+    protected string Uri = DefaultInstallation.BoltUri;
+    protected string User = DefaultInstallation.User;
 
     protected BaseRxExample(StandAloneIntegrationTestFixture fixture)
     {

@@ -20,7 +20,7 @@ using static Neo4j.Driver.SessionConfigBuilder;
 
 namespace Neo4j.Driver.IntegrationTests.Extensions;
 
-public class DatabaseExtensions
+public static class DatabaseExtensions
 {
     public static async Task CreateDatabase(IDriver driver, string name, bool async = false)
     {

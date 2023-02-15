@@ -23,9 +23,10 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Reactive.Testing;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Reactive;
 using Xunit.Abstractions;
-using static Neo4j.Driver.IntegrationTests.VersionComparison;
+using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
 using static Neo4j.Driver.Reactive.Utils;
 using static Neo4j.Driver.Tests.Assertions;
 

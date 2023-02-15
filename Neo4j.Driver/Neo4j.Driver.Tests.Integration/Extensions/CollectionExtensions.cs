@@ -19,15 +19,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Neo4j.Driver.IntegrationTests;
+namespace Neo4j.Driver.IntegrationTests.Extensions;
 
 public static class CollectionExtensions
 {
     public static T RandomElement<T>(this IEnumerable<T> list)
     {
         var random = new Random(Guid.NewGuid().GetHashCode());
-        var index = random.Next(0, list.Count());
-        return list.ElementAt(index);
+        var eagerList = list.ToList();
+        var index = random.Next(0, eagerList.Count());
+        return eagerList.ElementAt(index);
     }
 
     public static IEnumerable<IEnumerable<T>> Batch<T>(this IEnumerable<T> collection, int batchSize)

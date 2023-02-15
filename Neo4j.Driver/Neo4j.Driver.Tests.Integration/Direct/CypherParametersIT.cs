@@ -19,11 +19,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;
 
-public class CypherParametersIT : DirectDriverTestBase
+public sealed class CypherParametersIT : DirectDriverTestBase
 {
     public CypherParametersIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         : base(output, fixture)

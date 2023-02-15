@@ -28,7 +28,7 @@ using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;
 
-public class CertificateTrustIT : IClassFixture<CertificateTrustIT.CertificateTrustIntegrationTestFixture>
+public sealed class CertificateTrustIT : IClassFixture<CertificateTrustIT.CertificateTrustIntegrationTestFixture>
 {
     public CertificateTrustIT(CertificateTrustIntegrationTestFixture fixture)
     {
@@ -180,7 +180,7 @@ public class CertificateTrustIT : IClassFixture<CertificateTrustIT.CertificateTr
         return GraphDatabase.CreateDriver(overridenUri, config, connectionFactory, connectionSettings);
     }
 
-    private class CustomHostResolver : IHostResolver
+    private sealed class CustomHostResolver : IHostResolver
     {
         private readonly IHostResolver _original;
         private readonly Uri _target;
@@ -203,10 +203,8 @@ public class CertificateTrustIT : IClassFixture<CertificateTrustIT.CertificateTr
     }
 
     // ReSharper disable once ClassNeverInstantiated.Global
-    public class CertificateTrustIntegrationTestFixture : IDisposable
+    public sealed class CertificateTrustIntegrationTestFixture : IDisposable
     {
-        private bool _disposed;
-
         public CertificateTrustIntegrationTestFixture()
         {
             if (!BoltkitHelper.ServerAvailable())
@@ -238,30 +236,8 @@ public class CertificateTrustIT : IClassFixture<CertificateTrustIT.CertificateTr
 
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        ~CertificateTrustIntegrationTestFixture()
-        {
-            Dispose(false);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            if (disposing)
-            {
-                //Dispose managed state (managed objects).
-                StandAlone?.Dispose();
-                StandAlone?.UpdateCertificate(Pkcs12);
-            }
-
-            _disposed = true;
+            StandAlone?.Dispose();
+            StandAlone?.UpdateCertificate(Pkcs12);
         }
     }
 }

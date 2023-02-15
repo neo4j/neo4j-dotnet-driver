@@ -23,7 +23,7 @@ using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests.Stub;
 
-public class RoutingDriverTests
+public sealed class RoutingDriverTests
 {
     public RoutingDriverTests()
     {
@@ -31,7 +31,7 @@ public class RoutingDriverTests
             .WithEncryptionLevel(EncryptionLevel.None);
     }
 
-    public Action<ConfigBuilder> SetupConfig { get; }
+    private Action<ConfigBuilder> SetupConfig { get; }
 
     [RequireBoltStubServerTheory]
     [InlineData("V3")]
@@ -86,7 +86,6 @@ public class RoutingDriverTests
         using var _ = BoltStubServer.Start($"{boltVersion}/fail_to_auth", 9001);
         await using var driver = GraphDatabase.Driver("neo4j://127.0.0.1:9001", AuthTokens.None, SetupConfig);
         var error = await Record.ExceptionAsync(() => driver.VerifyConnectivityAsync());
-        error.Should().BeOfType<AuthenticationException>();
-        error!.Message.Should().StartWith("blabla");
+        error.Should().BeOfType<AuthenticationException>().Which.Message.Should().StartWith("blabla");
     }
 }

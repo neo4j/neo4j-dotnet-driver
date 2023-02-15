@@ -15,14 +15,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
-
 namespace Neo4j.Driver.IntegrationTests.Internals;
 
 public interface IInstaller
 {
-    void Install();
-    ISet<ISingleInstance> Start();
-    void Stop();
-    void Kill();
 }

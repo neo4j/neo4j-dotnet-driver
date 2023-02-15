@@ -28,7 +28,7 @@ using static Microsoft.Reactive.Testing.ReactiveTest;
 
 namespace Neo4j.Driver.IntegrationTests.Stub;
 
-public class ResultStreamingTests
+public sealed class ResultStreamingTests
 {
     private readonly ITestOutputHelper _output;
     private readonly Action<ConfigBuilder> _setupConfig;

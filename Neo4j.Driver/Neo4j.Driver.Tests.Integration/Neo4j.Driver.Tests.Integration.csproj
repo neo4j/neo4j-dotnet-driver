@@ -1,5 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-    <Import Project="..\common.props"/>
+    <Import Project="..\common.props" />
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
         <IsPackable>false</IsPackable>
@@ -18,38 +18,38 @@
         <RootNamespace>Neo4j.Driver.IntegrationTests</RootNamespace>
     </PropertyGroup>
     <ItemGroup>
-        <Content Include="App.config"/>
-        <PackageReference Include="Castle.Core" Version="4.4.1"/>
-        <PackageReference Include="FluentAssertions" Version="5.10.3"/>
-        <PackageReference Include="Microsoft.Reactive.Testing" Version="5.0.0"/>
-        <PackageReference Include="Moq" Version="4.15.2"/>
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3"/>
-        <PackageReference Include="Portable.BouncyCastle" Version="1.8.8"/>
-        <PackageReference Include="System.Reactive" Version="5.0.0"/>
-        <PackageReference Include="TeamCity.VSTest.TestAdapter" Version="1.0.23"/>
-        <PackageReference Include="xunit" Version="$(XunitVersion)"/>
-        <PackageReference Include="xunit.runner.console" Version="$(XunitVersion)"/>
+        <Content Include="App.config" />
+        <PackageReference Include="Castle.Core" Version="4.4.1" />
+        <PackageReference Include="FluentAssertions" Version="5.10.3" />
+        <PackageReference Include="Microsoft.Reactive.Testing" Version="5.0.0" />
+        <PackageReference Include="Moq" Version="4.15.2" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
+        <PackageReference Include="Portable.BouncyCastle" Version="1.8.8" />
+        <PackageReference Include="System.Reactive" Version="5.0.0" />
+        <PackageReference Include="TeamCity.VSTest.TestAdapter" Version="1.0.23" />
+        <PackageReference Include="xunit" Version="$(XunitVersion)" />
+        <PackageReference Include="xunit.runner.console" Version="$(XunitVersion)" />
         <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
     </ItemGroup>
     <ItemGroup>
-        <ProjectReference Include="..\Neo4j.Driver.Reactive\Neo4j.Driver.Reactive.csproj"/>
-        <ProjectReference Include="..\Neo4j.Driver.Tests\Neo4j.Driver.Tests.csproj"/>
-        <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj"/>
+        <ProjectReference Include="..\Neo4j.Driver.Reactive\Neo4j.Driver.Reactive.csproj" />
+        <ProjectReference Include="..\Neo4j.Driver.Tests\Neo4j.Driver.Tests.csproj" />
+        <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.0'">
-        <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0"/>
-        <PackageReference Include="System.Net.NameResolution" Version="4.3.0"/>
-        <PackageReference Include="System.Net.Security" Version="4.3.2"/>
-        <PackageReference Include="System.Net.Sockets" Version="4.3.0"/>
-        <PackageReference Include="System.Threading.Tasks" Version="4.3.0"/>
-        <PackageReference Include="System.Threading.Tasks.Parallel" Version="4.3.0"/>
-        <PackageReference Include="System.Threading.Thread" Version="4.3.0"/>
+        <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
+        <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
+        <PackageReference Include="System.Net.Security" Version="4.3.2" />
+        <PackageReference Include="System.Net.Sockets" Version="4.3.0" />
+        <PackageReference Include="System.Threading.Tasks" Version="4.3.0" />
+        <PackageReference Include="System.Threading.Tasks.Parallel" Version="4.3.0" />
+        <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
     </ItemGroup>
     <ItemGroup>
-        <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}"/>
+        <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
     </ItemGroup>
     <ItemGroup>
         <None Update="Resources\V4_1\noop.script">
@@ -151,7 +151,7 @@
         <None Update="Resources\V3\rollback_error.script">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
-        <None Remove="Shared\**"/>
+        <None Remove="Shared\**" />
         <None Update="Resources\V3\supports_multidb.script">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
@@ -172,9 +172,9 @@
         </None>
     </ItemGroup>
     <ItemGroup>
-        <Compile Remove="Shared\**"/>
+        <Compile Remove="Shared\**" />
     </ItemGroup>
     <ItemGroup>
-        <EmbeddedResource Remove="Shared\**"/>
+        <EmbeddedResource Remove="Shared\**" />
     </ItemGroup>
 </Project>

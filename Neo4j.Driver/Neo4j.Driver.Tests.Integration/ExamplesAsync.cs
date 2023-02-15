@@ -1007,13 +1007,13 @@ public class ExamplesAsync
     }
 }
 
-[Collection(SAIntegrationCollection.CollectionName)]
+[Collection(SaIntegrationCollection.CollectionName)]
 public abstract class BaseAsyncExample : IDisposable
 {
     private bool _disposed;
-    protected string Password = Neo4jDefaultInstallation.Password;
-    protected string Uri = Neo4jDefaultInstallation.BoltUri;
-    protected string User = Neo4jDefaultInstallation.User;
+    protected string Password = DefaultInstallation.Password;
+    protected string Uri = DefaultInstallation.BoltUri;
+    protected string User = DefaultInstallation.User;
 
     protected BaseAsyncExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
     {

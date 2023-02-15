@@ -29,15 +29,10 @@ public class SingleInstance : ISingleInstance
     {
         HttpUri = new Uri(httpUri);
         BoltUri = new Uri(boltUri);
-        BoltRoutingUri = new Uri(BoltRoutingScheme + $"{BoltUri.Host}:{BoltUri.Port}");
-        if (homePath == null)
-        {
-            HomePath = "UNKNOWN";
-        }
-        else
-        {
-            HomePath = new DirectoryInfo(homePath).FullName;
-        }
+        BoltRoutingUri = new Uri($"{BoltRoutingScheme}{BoltUri.Host}:{BoltUri.Port}");
+        HomePath = homePath == null 
+            ? "UNKNOWN"
+            : new DirectoryInfo(homePath).FullName;
 
         AuthToken = AuthTokens.Basic(Username, password);
     }

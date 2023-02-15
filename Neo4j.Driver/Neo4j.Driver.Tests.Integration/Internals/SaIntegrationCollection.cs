@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,24 +15,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests.Stress;
+namespace Neo4j.Driver.IntegrationTests.Internals;
 
-public class BlockingWrongCommand : BlockingCommand
+[CollectionDefinition(CollectionName)]
+public class SaIntegrationCollection : ICollectionFixture<StandAloneIntegrationTestFixture>
 {
-    public BlockingWrongCommand(IDriver driver)
-        : base(driver, false)
-    {
-    }
-
-    public override void Execute(StressTestContext context)
-    {
-        using (var session = NewSession(AccessMode.Read, context))
-        {
-            var exc = Record.Exception(() => session.Run("RETURN").Consume());
-            exc.Should().BeOfType<ClientException>().Which.Code.Should().Be("Neo.ClientError.Statement.SyntaxError");
-        }
-    }
+    public const string CollectionName = "StandAloneIntegration";
+    // This class has no code, and is never created. Its purpose is simply
+    // to be the place to apply [CollectionDefinition] and all the
+    // ICollectionFixture<> interfaces.
 }

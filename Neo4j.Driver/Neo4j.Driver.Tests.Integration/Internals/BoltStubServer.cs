@@ -35,7 +35,7 @@ internal class BoltStubServer : IDisposable
     static BoltStubServer()
     {
         var assemblyUri = new Uri(typeof(BoltStubServer).GetTypeInfo().Assembly.Location);
-        var assemblyDirectory = new FileInfo(assemblyUri.AbsolutePath).Directory.FullName;
+        var assemblyDirectory = new FileInfo(assemblyUri.AbsolutePath).Directory!.FullName;
 
         ScriptSourcePath = Path.Combine(assemblyDirectory, "Resources");
     }

@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
@@ -26,7 +27,7 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Stub;
 
-public class DirectDriverTests
+public sealed class DirectDriverTests
 {
     public DirectDriverTests(ITestOutputHelper output)
     {
@@ -35,7 +36,7 @@ public class DirectDriverTests
             .WithLogger(TestLogger.Create(output));
     }
 
-    public Action<ConfigBuilder> SetupConfig { get; }
+    private Action<ConfigBuilder> SetupConfig { get; }
 
     [RequireBoltStubServerFact]
     public async Task ShouldLogServerAddress()
@@ -48,31 +49,16 @@ public class DirectDriverTests
             o.WithLogger(new TestLogger(logs.Add, ExtendedLogLevel.Debug));
         }
 
-        using (BoltStubServer.Start("V4/accessmode_reader_implicit", 9001))
-        {
-            using (var driver = GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, SetupConfig))
-            {
-                var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
-                try
-                {
-                    var cursor = await session.RunAsync("RETURN $x", new { x = 1 });
-                    var list = await cursor.ToListAsync(r => Convert.ToInt32(r[0]));
+        using var _ = BoltStubServer.Start("V4/accessmode_reader_implicit", 9001);
+        await using var driver = GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, SetupConfig);
+        await using var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
+        var cursor = await session.RunAsync("RETURN $x", new { x = 1 });
+        var list = await cursor.ToListAsync(r => Convert.ToInt32(r[0]));
 
-                    list.Should().HaveCount(1).And.Contain(1);
-                }
-                finally
-                {
-                    await session.CloseAsync();
-                }
-            }
-        }
-
-        foreach (var log in logs)
+        list.Should().HaveCount(1).And.Contain(1);
+        foreach (var log in logs.Where(log => log.StartsWith("[Debug]:[conn-")))
         {
-            if (log.StartsWith("[Debug]:[conn-"))
-            {
-                log.Should().Contain("127.0.0.1:9001");
-            }
+            log.Should().Contain("127.0.0.1:9001");
         }
     }
 
@@ -89,7 +75,7 @@ public class DirectDriverTests
         using var _ = BoltStubServer.Start("V4/multiple_bookmarks", 9001);
         var uri = new Uri("bolt://127.0.0.1:9001");
         await using var driver = GraphDatabase.Driver(uri, SetupConfig);
-            
+
         await using var session = driver.AsyncSession(o => o.WithBookmarks(Bookmarks.From(bookmarks)));
         try
         {
@@ -154,8 +140,7 @@ public class DirectDriverTests
         using var _ = BoltStubServer.Start($"{boltVersion}/fail_to_auth", 9001);
         await using var driver = GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, SetupConfig);
         var error = await Record.ExceptionAsync(() => driver.VerifyConnectivityAsync());
-        error.Should().BeOfType<AuthenticationException>();
-        error!.Message.Should().StartWith("blabla");
+        error.Should().BeOfType<AuthenticationException>().Which.Message.Should().StartWith("blabla");
     }
 
     [RequireBoltStubServerTheory]
@@ -166,6 +151,6 @@ public class DirectDriverTests
         await using var driver = GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, SetupConfig);
         //await driver.VerifyConnectivityAsync();                    
         await using var session = driver.AsyncSession();
-        var cursor = await session.RunAsync("MATCH (N) RETURN n.name");
+        await session.RunAsync("MATCH (N) RETURN n.name");
     }
 }

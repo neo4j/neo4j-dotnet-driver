@@ -20,11 +20,12 @@ using System.Linq;
 using System.Reactive.Linq;
 using FluentAssertions;
 using Microsoft.Reactive.Testing;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Reactive;
 using Xunit.Abstractions;
-using static Neo4j.Driver.IntegrationTests.VersionComparison;
+using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
 using static Neo4j.Driver.Reactive.Utils;
 using static Neo4j.Driver.Tests.Assertions;
 
