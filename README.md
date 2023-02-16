@@ -10,6 +10,7 @@ Resources to get you started:
 * [Neo4j Docs](https://neo4j.com/docs/) for other important Neo4j documentations.
 * [Movies Example Application](https://github.com/neo4j-examples/movies-dotnetcore-bolt) a sample small project using
   the driver.
+* [Discussions](https://github.com/neo4j/neo4j-dotnet-driver/discussions/677)
 
 ## For Application Developers
 
