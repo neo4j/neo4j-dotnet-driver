@@ -338,8 +338,11 @@ public sealed class SessionIT : DirectDriverTestBase
     {
         await using var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken);
 
-        await using var session = driver.AsyncSession();
-        var cursor = await session.RunAsync("RETURN 1 As X");
+        IResultCursor cursor;
+        await using (var session = driver.AsyncSession())
+        {
+            cursor = await session.RunAsync("RETURN 1 As X");
+        }
 
         var error = await Record.ExceptionAsync(() => cursor.ToListAsync());
         error.Should().BeOfType<ResultConsumedException>();

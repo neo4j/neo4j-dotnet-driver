@@ -203,7 +203,7 @@ public sealed class CertificateTrustIT : IClassFixture<CertificateTrustIT.Certif
     }
 
     // ReSharper disable once ClassNeverInstantiated.Global
-    public sealed class CertificateTrustIntegrationTestFixture : IDisposable
+    public class CertificateTrustIntegrationTestFixture : IDisposable
     {
         public CertificateTrustIntegrationTestFixture()
         {

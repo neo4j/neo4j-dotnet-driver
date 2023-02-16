@@ -30,6 +30,7 @@ using Xunit.Abstractions;
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
 [Collection(CcIntegrationCollection.CollectionName)]
+// ReSharper disable once UnusedMember.Global
 public sealed class CausalClusterStressTests : StressTest
 {
     private readonly CausalClusterIntegrationTestFixture _cluster;

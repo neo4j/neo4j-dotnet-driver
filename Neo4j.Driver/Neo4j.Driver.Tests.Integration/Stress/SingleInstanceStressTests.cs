@@ -28,6 +28,7 @@ using Xunit.Abstractions;
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
 [Collection(SaIntegrationCollection.CollectionName)]
+// ReSharper disable once UnusedMember.Global
 public class SingleInstanceStressTests : StressTest
 {
     private readonly StandAloneIntegrationTestFixture _standalone;

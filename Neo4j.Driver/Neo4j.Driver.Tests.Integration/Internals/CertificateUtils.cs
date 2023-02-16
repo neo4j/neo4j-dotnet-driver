@@ -66,8 +66,8 @@ public static class CertificateUtils
         certGenerator.SetNotAfter(notAfter);
         certGenerator.SetPublicKey(keyPair.Public);
 
-        var altNames = dnsAltNames as string[] ?? dnsAltNames.ToArray();
-        var addressAltNames = ipAddressAltNames as string[] ?? ipAddressAltNames.ToArray();
+        var altNames = dnsAltNames?.ToArray() ?? Array.Empty<string>();
+        var addressAltNames = ipAddressAltNames?.ToArray() ?? Array.Empty<string>();
         if (altNames.Any() || addressAltNames.Any())
         {
             var alternativeNames = new List<Asn1Encodable>();
