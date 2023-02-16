@@ -19,9 +19,9 @@ using System;
 
 namespace Neo4j.Driver.IntegrationTests.Internals;
 
-public abstract class StandAloneIntegrationTestFixture : IDisposable
+public sealed class StandAloneIntegrationTestFixture : IDisposable
 {
-    protected StandAloneIntegrationTestFixture()
+    public StandAloneIntegrationTestFixture()
     {
         StandAloneSharedInstance = CreateInstance();
     }
@@ -31,7 +31,6 @@ public abstract class StandAloneIntegrationTestFixture : IDisposable
     public void Dispose()
     {
         StandAloneSharedInstance?.Dispose();
-        GC.SuppressFinalize(this);
     }
 
     private IStandAlone CreateInstance()

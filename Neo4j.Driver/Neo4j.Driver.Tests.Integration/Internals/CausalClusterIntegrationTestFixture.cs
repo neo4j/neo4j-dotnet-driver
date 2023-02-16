@@ -19,11 +19,11 @@ using System;
 
 namespace Neo4j.Driver.IntegrationTests.Internals;
 
-public abstract class CausalClusterIntegrationTestFixture : IDisposable
+public sealed class CausalClusterIntegrationTestFixture : IDisposable
 {
     private bool _disposed;
 
-    protected CausalClusterIntegrationTestFixture()
+    public CausalClusterIntegrationTestFixture()
     {
         if (ExistingCluster.IsClusterProvided())
         {
