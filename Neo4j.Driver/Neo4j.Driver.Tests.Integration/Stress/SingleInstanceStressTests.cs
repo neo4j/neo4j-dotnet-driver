@@ -21,12 +21,14 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using FluentAssertions;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-[Collection(SAIntegrationCollection.CollectionName)]
+[Collection(SaIntegrationCollection.CollectionName)]
+// ReSharper disable once UnusedMember.Global
 public class SingleInstanceStressTests : StressTest
 {
     private readonly StandAloneIntegrationTestFixture _standalone;

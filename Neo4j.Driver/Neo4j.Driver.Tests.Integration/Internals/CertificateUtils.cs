@@ -51,10 +51,10 @@ public static class CertificateUtils
         var keyPair = keyPairGen.GenerateKeyPair();
 
         var certGenerator = new X509V3CertificateGenerator();
-        certGenerator.SetSubjectDN(new X509Name("CN=" + commonName));
+        certGenerator.SetSubjectDN(new X509Name($"CN={commonName}"));
         if (signBy == null)
         {
-            certGenerator.SetIssuerDN(new X509Name("CN=" + commonName));
+            certGenerator.SetIssuerDN(new X509Name($"CN={commonName}"));
         }
         else
         {
@@ -66,16 +66,17 @@ public static class CertificateUtils
         certGenerator.SetNotAfter(notAfter);
         certGenerator.SetPublicKey(keyPair.Public);
 
-        if ((dnsAltNames?.Any() ?? false) || (ipAddressAltNames?.Any() ?? false))
+        var altNames = dnsAltNames?.ToArray() ?? Array.Empty<string>();
+        var addressAltNames = ipAddressAltNames?.ToArray() ?? Array.Empty<string>();
+        if (altNames.Any() || addressAltNames.Any())
         {
             var alternativeNames = new List<Asn1Encodable>();
+            
             alternativeNames.AddRange(
-                dnsAltNames?.Select(name => new GeneralName(GeneralName.DnsName, name)) ??
-                Enumerable.Empty<Asn1Encodable>());
+                altNames.Select(name => new GeneralName(GeneralName.DnsName, name)));
 
             alternativeNames.AddRange(
-                ipAddressAltNames?.Select(ip => new GeneralName(GeneralName.IPAddress, ip)) ??
-                Enumerable.Empty<Asn1Encodable>());
+                addressAltNames.Select(ip => new GeneralName(GeneralName.IPAddress, ip)));
 
             certGenerator.AddExtension(
                 X509Extensions.SubjectAlternativeName,
@@ -93,7 +94,7 @@ public static class CertificateUtils
         return ToPkcs12(certificate, keyPair.Private);
     }
 
-    public static Pkcs12Store ToPkcs12(X509Certificate certificate, AsymmetricKeyParameter privateKey)
+    private static Pkcs12Store ToPkcs12(X509Certificate certificate, AsymmetricKeyParameter privateKey)
     {
         var pkcs12Store = new Pkcs12Store();
         var certificateEntry = new X509CertificateEntry(certificate);

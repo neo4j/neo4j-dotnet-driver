@@ -17,7 +17,7 @@
 
 namespace Neo4j.Driver.IntegrationTests.Internals;
 
-public class ShellCommandRunnerTests
+public abstract class ShellCommandRunnerTests
 {
     public class RunCommandMethod
     {

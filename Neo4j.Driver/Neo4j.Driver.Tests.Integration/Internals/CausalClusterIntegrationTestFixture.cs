@@ -16,29 +16,40 @@
 // limitations under the License.
 
 using System;
-using Neo4j.Driver.IntegrationTests.Internals;
-using Xunit;
-using Xunit.Abstractions;
 
-namespace Neo4j.Driver.IntegrationTests.Direct;
+namespace Neo4j.Driver.IntegrationTests.Internals;
 
-[Collection(SaIntegrationCollection.CollectionName)]
-public abstract class DirectDriverTestBase : IDisposable
+public sealed class CausalClusterIntegrationTestFixture : IDisposable
 {
     private bool _disposed;
 
-    protected DirectDriverTestBase(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+    public CausalClusterIntegrationTestFixture()
     {
-        Output = output;
-        Server = fixture.StandAloneSharedInstance;
-        ServerEndPoint = Server.BoltUri;
-        AuthToken = Server.AuthToken;
+        if (ExistingCluster.IsClusterProvided())
+        {
+            Cluster = new ExistingCluster();
+        }
+        else
+        {
+            var isClusterSupported = BoltkitHelper.IsClusterSupported();
+            if (!isClusterSupported.Item1)
+            {
+                return;
+            }
+
+            try
+            {
+                Cluster = new CausalCluster();
+            }
+            catch (Exception)
+            {
+                Dispose();
+                throw;
+            }
+        }
     }
 
-    protected ITestOutputHelper Output { get; }
-    protected IStandAlone Server { get; }
-    protected Uri ServerEndPoint { get; }
-    protected IAuthToken AuthToken { get; }
+    public ICausalCluster Cluster { get; }
 
     public void Dispose()
     {
@@ -46,11 +57,8 @@ public abstract class DirectDriverTestBase : IDisposable
         {
             case true: return;
             case false:
-            {
-                using var session = Server.Driver.Session();
-                session.Run("MATCH (n) DETACH DELETE n").Consume();
+                Cluster?.Dispose();
                 break;
-            }
         }
 
         _disposed = true;

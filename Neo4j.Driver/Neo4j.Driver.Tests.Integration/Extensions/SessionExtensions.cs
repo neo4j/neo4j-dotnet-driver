@@ -18,7 +18,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.IntegrationTests;
+namespace Neo4j.Driver.IntegrationTests.Extensions;
 
 public static class SessionExtensions
 {

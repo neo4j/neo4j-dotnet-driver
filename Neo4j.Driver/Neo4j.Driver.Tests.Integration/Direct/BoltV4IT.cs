@@ -15,18 +15,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal.Util;
 using Xunit.Abstractions;
-using static Neo4j.Driver.IntegrationTests.VersionComparison;
-using static Neo4j.Driver.IntegrationTests.DatabaseExtensions;
+using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
+using static Neo4j.Driver.IntegrationTests.Extensions.DatabaseExtensions;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;
 
-public class BoltV4IT : DirectDriverTestBase
+public sealed class BoltV4IT : DirectDriverTestBase
 {
     public BoltV4IT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         : base(output, fixture)
@@ -122,7 +121,7 @@ public class BoltV4IT : DirectDriverTestBase
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
     public async Task ShouldReturnDatabaseInfoForDefaultDatabaseWhenSpecifiedInTxFunc()
     {
-        Console.WriteLine($"Version = {ServerVersion.From(BoltkitHelper.ServerVersion())}");
+        Output.WriteLine($"Version = {ServerVersion.From(BoltkitHelper.ServerVersion())}");
         await VerifyDatabaseNameOnSummaryTxFunc("neo4j", "neo4j");
     }
 
@@ -210,83 +209,49 @@ public class BoltV4IT : DirectDriverTestBase
 
     private async Task VerifyDatabaseNameOnSummary(string name, string expected)
     {
-        var session = Server.Driver.AsyncSession(
-            o =>
-            {
-                if (!string.IsNullOrEmpty(name))
-                {
-                    o.WithDatabase(name);
-                }
-            });
+        await using var session = Server.Driver.AsyncSession(o => { ConfigureDb(o, name); });
 
-        try
-        {
-            var cursor = await session.RunAsync("RETURN 1");
-            var summary = await cursor.ConsumeAsync();
+        var cursor = await session.RunAsync("RETURN 1");
+        var summary = await cursor.ConsumeAsync();
 
-            summary.Database.Should().NotBeNull();
-            summary.Database.Name.Should().Be(expected);
-        }
-        finally
-        {
-            await session.CloseAsync();
-        }
+        summary.Database.Should().NotBeNull();
+        summary.Database.Name.Should().Be(expected);
     }
 
     private async Task VerifyDatabaseNameOnSummaryTx(string name, string expected)
     {
-        var session = Server.Driver.AsyncSession(
-            o =>
-            {
-                if (!string.IsNullOrEmpty(name))
-                {
-                    o.WithDatabase(name);
-                }
-            });
+        await using var session = Server.Driver.AsyncSession(o => { ConfigureDb(o, name); });
 
-        try
+        var txc = await session.BeginTransactionAsync();
+        var cursor = await txc.RunAsync("RETURN 1");
+        var summary = await cursor.ConsumeAsync();
+
+        summary.Database.Should().NotBeNull();
+        summary.Database.Name.Should().Be(expected);
+
+        await txc.CommitAsync();
+    }
+
+    private static void ConfigureDb(SessionConfigBuilder o, string name)
+    {
+        if (!string.IsNullOrEmpty(name))
         {
-            var txc = await session.BeginTransactionAsync();
-            var cursor = await txc.RunAsync("RETURN 1");
-            var summary = await cursor.ConsumeAsync();
-
-            summary.Database.Should().NotBeNull();
-            summary.Database.Name.Should().Be(expected);
-
-            await txc.CommitAsync();
-        }
-        finally
-        {
-            await session.CloseAsync();
+            o.WithDatabase(name);
         }
     }
 
     private async Task VerifyDatabaseNameOnSummaryTxFunc(string name, string expected)
     {
-        var session = Server.Driver.AsyncSession(
-            o =>
+        await using var session = Server.Driver.AsyncSession(o => { ConfigureDb(o, name); });
+
+        var summary = await session.ExecuteReadAsync(
+            async txc =>
             {
-                if (!string.IsNullOrEmpty(name))
-                {
-                    o.WithDatabase(name);
-                }
+                var cursor = await txc.RunAsync("RETURN 1");
+                return await cursor.ConsumeAsync();
             });
 
-        try
-        {
-            var summary = await session.ReadTransactionAsync(
-                async txc =>
-                {
-                    var cursor = await txc.RunAsync("RETURN 1");
-                    return await cursor.ConsumeAsync();
-                });
-
-            summary.Database.Should().NotBeNull();
-            summary.Database.Name.Should().Be(expected);
-        }
-        finally
-        {
-            await session.CloseAsync();
-        }
+        summary.Database.Should().NotBeNull();
+        summary.Database.Name.Should().Be(expected);
     }
 }

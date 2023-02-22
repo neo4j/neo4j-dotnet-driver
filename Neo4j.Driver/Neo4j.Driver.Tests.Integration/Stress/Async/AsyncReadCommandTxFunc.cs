@@ -20,7 +20,7 @@ using FluentAssertions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class AsyncReadCommandTxFunc : AsyncCommand
+public sealed class AsyncReadCommandTxFunc : AsyncCommand
 {
     public AsyncReadCommandTxFunc(IDriver driver, bool useBookmark)
         : base(driver, useBookmark)

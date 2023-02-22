@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,26 +15,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests.Stress;
+namespace Neo4j.Driver.IntegrationTests.Internals;
 
-public class BlockingFailingCommand : BlockingCommand
+[CollectionDefinition(CollectionName)]
+public class CcIntegrationCollection : ICollectionFixture<CausalClusterIntegrationTestFixture>
 {
-    public BlockingFailingCommand(IDriver driver)
-        : base(driver, false)
-    {
-    }
-
-    public override void Execute(StressTestContext context)
-    {
-        using (var session = NewSession(AccessMode.Read, context))
-        {
-            var result = session.Run("UNWIND [10, 5, 0] AS x RETURN 10 / x");
-            var exc = Record.Exception(() => result.Consume());
-
-            exc.Should().BeOfType<ClientException>().Which.Message.Should().Contain("/ by zero");
-        }
-    }
+    public const string CollectionName = "CausalClusterIntegration";
+    // This class has no code, and is never created. Its purpose is simply
+    // to be the place to apply [CollectionDefinition] and all the
+    // ICollectionFixture<> interfaces.
 }

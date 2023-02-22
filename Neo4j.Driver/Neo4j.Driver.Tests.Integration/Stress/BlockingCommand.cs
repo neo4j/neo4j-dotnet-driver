@@ -21,8 +21,8 @@ namespace Neo4j.Driver.IntegrationTests.Stress;
 
 public abstract class BlockingCommand : IBlockingCommand
 {
-    protected readonly IDriver _driver;
-    protected readonly bool _useBookmark;
+    private readonly IDriver _driver;
+    private readonly bool _useBookmark;
 
     protected BlockingCommand(IDriver driver, bool useBookmark)
     {
@@ -32,31 +32,11 @@ public abstract class BlockingCommand : IBlockingCommand
 
     public abstract void Execute(StressTestContext context);
 
-    public ISession NewSession(AccessMode mode, StressTestContext context)
+    protected ISession NewSession(AccessMode mode, StressTestContext context)
     {
         return _driver.Session(
             o =>
                 o.WithDefaultAccessMode(mode)
                     .WithBookmarks(_useBookmark ? new[] { context.Bookmarks } : Array.Empty<Bookmarks>()));
-    }
-
-    public ITransaction BeginTransaction(ISession session, StressTestContext context)
-    {
-        if (_useBookmark)
-        {
-            while (true)
-            {
-                try
-                {
-                    return session.BeginTransaction();
-                }
-                catch (TransientException)
-                {
-                    context.BookmarkFailed();
-                }
-            }
-        }
-
-        return session.BeginTransaction();
     }
 }

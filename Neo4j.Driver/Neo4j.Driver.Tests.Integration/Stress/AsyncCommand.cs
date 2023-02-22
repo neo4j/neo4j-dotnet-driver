@@ -33,31 +33,11 @@ public abstract class AsyncCommand : IAsyncCommand
 
     public abstract Task ExecuteAsync(StressTestContext context);
 
-    public IAsyncSession NewSession(AccessMode mode, StressTestContext context)
+    protected IAsyncSession NewSession(AccessMode mode, StressTestContext context)
     {
         return _driver.AsyncSession(
             o =>
                 o.WithDefaultAccessMode(mode)
                     .WithBookmarks(_useBookmark ? new[] { context.Bookmarks } : Array.Empty<Bookmarks>()));
-    }
-
-    public Task<IAsyncTransaction> BeginTransaction(IAsyncSession session, StressTestContext context)
-    {
-        if (_useBookmark)
-        {
-            while (true)
-            {
-                try
-                {
-                    return session.BeginTransactionAsync();
-                }
-                catch (TransientException)
-                {
-                    context.BookmarkFailed();
-                }
-            }
-        }
-
-        return session.BeginTransactionAsync();
     }
 }

@@ -18,55 +18,46 @@
 using System;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;
 
-public class EncryptionIT : DirectDriverTestBase
+public sealed class EncryptionIT : DirectDriverTestBase
 {
     public EncryptionIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         : base(output, fixture)
     {
     }
 
-    [ShouldNotRunInTestKit_RequireServerFactAttribute]
+    [ShouldNotRunInTestKitRequireServerFact]
     public async Task ShouldBeAbleToConnectWithInsecureConfig()
     {
-        using (var driver = GraphDatabase.Driver(
-                   ServerEndPoint,
-                   AuthToken,
-                   o => o
-                       .WithEncryptionLevel(EncryptionLevel.Encrypted)
-                       .WithTrustManager(TrustManager.CreateInsecure())))
-        {
-            await VerifyConnectivity(driver);
-        }
+        await using var driver = GraphDatabase.Driver(
+            ServerEndPoint,
+            AuthToken,
+            o => o
+                .WithEncryptionLevel(EncryptionLevel.Encrypted)
+                .WithTrustManager(TrustManager.CreateInsecure()));
+
+        await VerifyConnectivity(driver);
     }
 
-    [ShouldNotRunInTestKit_RequireServerFactAttribute]
+    [ShouldNotRunInTestKitRequireServerFact]
     public async Task ShouldBeAbleToConnectUsingInsecureUri()
     {
         var builder = new UriBuilder("bolt+ssc", ServerEndPoint.Host, ServerEndPoint.Port);
-        using (var driver = GraphDatabase.Driver(builder.Uri, AuthToken))
-        {
-            await VerifyConnectivity(driver);
-        }
+        await using var driver = GraphDatabase.Driver(builder.Uri, AuthToken);
+        await VerifyConnectivity(driver);
     }
 
     private static async Task VerifyConnectivity(IDriver driver)
     {
-        var session = driver.AsyncSession();
+        await using var session = driver.AsyncSession();
 
-        try
-        {
             var cursor = await session.RunAsync("RETURN 2 as Number");
             var records = await cursor.ToListAsync(r => r["Number"].As<int>());
 
             records.Should().BeEquivalentTo(2);
-        }
-        finally
-        {
-            await session.CloseAsync();
-        }
     }
 }

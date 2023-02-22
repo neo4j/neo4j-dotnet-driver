@@ -21,7 +21,7 @@ using FluentAssertions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class AsyncWrongCommandTxFunc : AsyncCommand
+public sealed class AsyncWrongCommandTxFunc : AsyncCommand
 {
     public AsyncWrongCommandTxFunc(IDriver driver)
         : base(driver, false)

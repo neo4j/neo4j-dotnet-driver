@@ -22,14 +22,12 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using FluentAssertions;
-using Neo4j.Driver.IntegrationTests;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 using Xunit.Abstractions;
-using static Neo4j.Driver.IntegrationTests.DatabaseExtensions;
+using static Neo4j.Driver.IntegrationTests.Extensions.DatabaseExtensions;
 
-// ReSharper disable once CheckNamespace
-namespace Neo4j.Driver.Examples;
+namespace Neo4j.Driver.IntegrationTests;
 
 /// <summary>The driver examples since 1.2 driver</summary>
 public class Examples
@@ -45,10 +43,8 @@ public class Examples
         // tag::autocommit-transaction[]
         public void AddPerson(string name)
         {
-            using (var session = Driver.Session())
-            {
-                session.Run("CREATE (a:Person {name: $name})", new { name });
-            }
+            using var session = Driver.Session();
+            session.Run("CREATE (a:Person {name: $name})", new { name });
         }
         // end::autocommit-transaction[]
 
@@ -80,12 +76,10 @@ public class Examples
         public void TestBasicAuthExample()
         {
             // Given
-            using (var driver = CreateDriverWithBasicAuth(Uri, User, Password))
-            using (var session = driver.Session())
-            {
-                // When & Then
-                session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
-            }
+            using var driver = CreateDriverWithBasicAuth(Uri, User, Password);
+            using var session = driver.Session();
+            // When & Then
+            session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
         }
     }
 
@@ -142,12 +136,10 @@ public class Examples
         public void TestConfigConnectionTimeoutExample()
         {
             // Given
-            using (var driver = CreateDriverWithCustomizedConnectionTimeout(Uri, User, Password))
-            using (var session = driver.Session())
-            {
-                // When & Then
-                session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
-            }
+            using var driver = CreateDriverWithCustomizedConnectionTimeout(Uri, User, Password);
+            using var session = driver.Session();
+            // When & Then
+            session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
         }
     }
 
@@ -172,12 +164,10 @@ public class Examples
         public void TestConfigMaxRetryTimeExample()
         {
             // Given
-            using (var driver = CreateDriverWithCustomizedMaxRetryTime(Uri, User, Password))
-            using (var session = driver.Session())
-            {
-                // When & Then
-                session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
-            }
+            using var driver = CreateDriverWithCustomizedMaxRetryTime(Uri, User, Password);
+            using var session = driver.Session();
+            // When & Then
+            session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
         }
     }
 
@@ -202,12 +192,10 @@ public class Examples
         public void TestConfigTrustExample()
         {
             // Given
-            using (var driver = CreateDriverWithCustomizedTrustStrategy(Uri, User, Password))
-            using (var session = driver.Session())
-            {
-                // When & Then
-                session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
-            }
+            using var driver = CreateDriverWithCustomizedTrustStrategy(Uri, User, Password);
+            using var session = driver.Session();
+            // When & Then
+            session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
         }
     }
 
@@ -232,12 +220,10 @@ public class Examples
         public void TestConfigUnencryptedExample()
         {
             // Given
-            using (var driver = CreateDriverWithCustomizedSecurityStrategy(Uri, User, Password))
-            using (var session = driver.Session())
-            {
-                // When & Then
-                session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
-            }
+            using var driver = CreateDriverWithCustomizedSecurityStrategy(Uri, User, Password);
+            using var session = driver.Session();
+            // When & Then
+            session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
         }
     }
 
@@ -261,26 +247,23 @@ public class Examples
 
         public void AddPerson(string name)
         {
-            using (var driver = CreateDriverWithCustomResolver(
-                       "neo4j://x.example.com",
-                       AuthTokens.Basic(Username, Password),
-                       ServerAddress.From("a.example.com", 7687),
-                       ServerAddress.From("b.example.com", 7877),
-                       ServerAddress.From("c.example.com", 9092)))
-            {
-                using (var session = driver.Session())
-                {
-                    session.Run("CREATE (a:Person {name: $name})", new { name });
-                }
-            }
+            using var driver = CreateDriverWithCustomResolver(
+                "neo4j://x.example.com",
+                AuthTokens.Basic(Username, Password),
+                ServerAddress.From("a.example.com", 7687),
+                ServerAddress.From("b.example.com", 7877),
+                ServerAddress.From("c.example.com", 9092));
+
+            using var session = driver.Session();
+            session.Run("CREATE (a:Person {name: $name})", new { name });
         }
         // end::config-custom-resolver[]
 
         [RequireBoltStubServerFact]
         public void TestCustomResolverExample()
         {
-            using var server1 = BoltStubServer.Start("V4/get_routing_table_only", 9001);
-            using var server2 = BoltStubServer.Start("V4/return_1", 9002);
+            using var _ = BoltStubServer.Start("V4/get_routing_table_only", 9001);
+            using var __ = BoltStubServer.Start("V4/return_1", 9002);
             using var driver = CreateDriverWithCustomResolver(
                 "neo4j://x.example.com",
                 AuthTokens.None,
@@ -362,11 +345,9 @@ public class Examples
         public void TestKerberosAuthExample()
         {
             // Given
-            using (var driver = CreateDriverWithKerberosAuth(Uri, "kerberos ticket"))
-            {
-                // When & Then
-                driver.Should().BeOfType<Internal.Driver>();
-            }
+            using var driver = CreateDriverWithKerberosAuth(Uri, "kerberos ticket");
+            // When & Then
+            driver.Should().BeOfType<Internal.Driver>();
         }
     }
 
@@ -446,19 +427,15 @@ public class Examples
         public void TestDriverLifecycleExample()
         {
             // Given
-            var driver = new DriverLifecycleExample(Uri, User, Password).Driver;
-            using (var session = driver.Session())
-            {
-                // When & Then
-                session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
-            }
+            using var driver = new DriverLifecycleExample(Uri, User, Password).Driver;
+            using var session = driver.Session();
+            // When & Then
+            session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
         }
 
         // tag::driver-lifecycle[]
         public class DriverLifecycleExample : IDisposable
         {
-            private bool _disposed;
-
             public DriverLifecycleExample(string uri, string user, string password)
             {
                 Driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
@@ -468,28 +445,7 @@ public class Examples
 
             public void Dispose()
             {
-                Dispose(true);
-                GC.SuppressFinalize(this);
-            }
-
-            ~DriverLifecycleExample()
-            {
-                Dispose(false);
-            }
-
-            protected virtual void Dispose(bool disposing)
-            {
-                if (_disposed)
-                {
-                    return;
-                }
-
-                if (disposing)
-                {
-                    Driver?.Dispose();
-                }
-
-                _disposed = true;
+                Driver?.Dispose();
             }
         }
     }
@@ -514,22 +470,10 @@ public class Examples
         public class HelloWorldExample : IDisposable
         {
             private readonly IDriver _driver;
-            private bool _disposed;
 
             public HelloWorldExample(string uri, string user, string password)
             {
                 _driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
-            }
-
-            public void Dispose()
-            {
-                Dispose(true);
-                GC.SuppressFinalize(this);
-            }
-
-            ~HelloWorldExample()
-            {
-                Dispose(false);
             }
 
             public void PrintGreeting(string message)
@@ -550,19 +494,9 @@ public class Examples
                 Console.WriteLine(greeting);
             }
 
-            protected virtual void Dispose(bool disposing)
+            public void Dispose()
             {
-                if (_disposed)
-                {
-                    return;
-                }
-
-                if (disposing)
-                {
-                    _driver?.Dispose();
-                }
-
-                _disposed = true;
+                _driver?.Dispose();
             }
 
             public static void Main()
@@ -1101,13 +1035,13 @@ public class Examples
     }
 }
 
-[Collection(SAIntegrationCollection.CollectionName)]
+[Collection(SaIntegrationCollection.CollectionName)]
 public abstract class BaseExample : IDisposable
 {
     private bool _disposed;
-    protected string Password = Neo4jDefaultInstallation.Password;
-    protected string Uri = Neo4jDefaultInstallation.BoltUri;
-    protected string User = Neo4jDefaultInstallation.User;
+    protected string Password = DefaultInstallation.Password;
+    protected string Uri = DefaultInstallation.BoltUri;
+    protected string User = DefaultInstallation.User;
 
     protected BaseExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
     {

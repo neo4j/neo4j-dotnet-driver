@@ -87,9 +87,9 @@ internal class ExecutableQuery<T> : IExecutableQuery<T>
         return new ExecutableQuery<IReadOnlyList<IRecord>>(new Query(cypher), driver, null, ToListAsync);
     }
 
-    private static async ValueTask<IReadOnlyList<T>> ToListAsync<T>(IAsyncEnumerable<T> enumerable)
+    private static async ValueTask<IReadOnlyList<TResult>> ToListAsync<TResult>(IAsyncEnumerable<TResult> enumerable)
     {
-        var result = new List<T>();
+        var result = new List<TResult>();
         await foreach (var item in enumerable)
         {
             result.Add(item);

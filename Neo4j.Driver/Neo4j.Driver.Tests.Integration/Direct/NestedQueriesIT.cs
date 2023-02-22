@@ -17,12 +17,13 @@
 
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;
 
-public class NestedQueriesIT : DirectDriverTestBase
+public sealed class NestedQueriesIT : DirectDriverTestBase
 {
     public NestedQueriesIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
     {
@@ -31,113 +32,194 @@ public class NestedQueriesIT : DirectDriverTestBase
     [RequireServerFact]
     public async Task ShouldErrorToRunNestedQueriesWithSessionRuns()
     {
-        using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2)))
-        {
-            const int size = 1024;
-            var session = driver.AsyncSession(o => o.WithFetchSize(5));
-            try
+        await using var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2));
+        const int size = 1024;
+        await using var session = driver.AsyncSession(o => o.WithFetchSize(5));
+        var cursor1 = await session.RunAsync("UNWIND range(1, $size) AS x RETURN x", new { size });
+        var error = await Record.ExceptionAsync(
+            async () =>
             {
-                var cursor1 = await session.RunAsync("UNWIND range(1, $size) AS x RETURN x", new { size });
-                var error = await Record.ExceptionAsync(
-                    async () =>
-                    {
-                        while (await cursor1.FetchAsync())
-                        {
-                            var record = cursor1.Current;
-                            await session.RunAsync(
-                                "UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id",
-                                new { x = record["x"].As<int>() });
-                        }
-                    });
+                while (await cursor1.FetchAsync())
+                {
+                    var record = cursor1.Current;
+                    await session.RunAsync(
+                        "UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id",
+                        new { x = record["x"].As<int>() });
+                }
+            });
 
-                error.Should().BeOfType<ResultConsumedException>();
-                error.Message.Should().Contain("result has already been consumed");
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
+        error.Should()
+            .BeOfType<ResultConsumedException>()
+            .Which.Message.Should()
+            .Contain("result has already been consumed");
     }
 
     [RequireServerFact]
     public async Task ShouldErrorToRunNestedQueriesWithSessionAndTxRuns()
     {
-        using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2)))
-        {
-            const int size = 1024;
-            var session = driver.AsyncSession(o => o.WithFetchSize(5));
-            try
+        await using var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2));
+        const int size = 1024;
+        await using var session = driver.AsyncSession(o => o.WithFetchSize(5));
+        var cursor1 = await session.RunAsync("UNWIND range(1, $size) AS x RETURN x", new { size });
+        var error = await Record.ExceptionAsync(
+            async () =>
             {
-                var cursor1 = await session.RunAsync("UNWIND range(1, $size) AS x RETURN x", new { size });
-                var error = await Record.ExceptionAsync(
-                    async () =>
-                    {
-                        while (await cursor1.FetchAsync())
-                        {
-                            await session.BeginTransactionAsync();
-                        }
-                    });
+                while (await cursor1.FetchAsync())
+                {
+                    await session.BeginTransactionAsync();
+                }
+            });
 
-                error.Should().BeOfType<ResultConsumedException>();
-                error.Message.Should()
-                    .Contain("result has already been consumed");
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
+        error.Should()
+            .BeOfType<ResultConsumedException>()
+            .Which.Message.Should()
+            .Contain("result has already been consumed");
     }
 
     [RequireServerFact]
     public async Task ShouldErrorToRunNestedQueriesWithSessionRunAndTxFunc()
     {
-        using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2)))
-        {
-            const int size = 1024;
-            var session = driver.AsyncSession(o => o.WithFetchSize(5));
-            try
-            {
-                var cursor1 = await session.RunAsync("UNWIND range(1, $size) AS x RETURN x", new { size });
-                var error = await Record.ExceptionAsync(
-                    async () =>
-                    {
-                        while (await cursor1.FetchAsync())
-                        {
-                            var record = cursor1.Current;
-                            await session.WriteTransactionAsync(
-                                async tx => await tx.RunAsync(
-                                    "UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id",
-                                    new { x = record["x"].As<int>() }));
-                        }
-                    });
+        await using var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2));
+        const int size = 1024;
+        await using var session = driver.AsyncSession(o => o.WithFetchSize(5));
 
-                error.Should().BeOfType<ResultConsumedException>();
-                error.Message.Should()
-                    .Contain("result has already been consumed");
-            }
-            finally
+        var cursor1 = await session.RunAsync("UNWIND range(1, $size) AS x RETURN x", new { size });
+
+        var error = await Record.ExceptionAsync(
+            async () =>
             {
-                await session.CloseAsync();
-            }
-        }
+                while (await cursor1.FetchAsync())
+                {
+                    var record = cursor1.Current;
+                    await session.ExecuteWriteAsync(
+                        async tx => await tx.RunAsync(
+                            "UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id",
+                            new { x = record["x"].As<int>() }));
+                }
+            });
+
+        error.Should()
+            .BeOfType<ResultConsumedException>()
+            .Which.Message.Should()
+            .Contain("result has already been consumed");
     }
 
     [RequireServerFact]
     public async Task ShouldErrorToRunNestedQueriesWithTxAndSessionRuns()
     {
-        using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2)))
-        {
-            const int size = 1024;
-            var session = driver.AsyncSession(o => o.WithFetchSize(5));
-            try
+        await using var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2));
+        const int size = 1024;
+        await using var session = driver.AsyncSession(o => o.WithFetchSize(5));
+        var tx = await session.BeginTransactionAsync();
+        var cursor1 = await tx.RunAsync("UNWIND range(1, $size) AS x RETURN x", new { size });
+        var error = await Record.ExceptionAsync(
+            async () =>
             {
-                var tx = await session.BeginTransactionAsync();
-                var cursor1 = await tx.RunAsync("UNWIND range(1, $size) AS x RETURN x", new { size });
-                var error = await Record.ExceptionAsync(
-                    async () =>
+                while (await cursor1.FetchAsync())
+                {
+                    var record = cursor1.Current;
+                    await session.RunAsync(
+                        "UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id",
+                        new { x = record["x"].As<int>() });
+                }
+            });
+
+        error.Should()
+            .BeOfType<TransactionNestingException>()
+            .Which.Message.Should()
+            .Contain("Attempting to nest transactions");
+    }
+
+    [RequireServerFact]
+    public async Task ShouldErrorToRunNestedQueriesWithTxRuns()
+    {
+        await using var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2));
+        const int size = 1024;
+        await using var session = driver.AsyncSession(o => o.WithFetchSize(5));
+        var tx = await session.BeginTransactionAsync();
+        var cursor1 = await tx.RunAsync("UNWIND range(1, $size) AS x RETURN x", new { size });
+        var error = await Record.ExceptionAsync(
+            async () =>
+            {
+                while (await cursor1.FetchAsync())
+                {
+                    await session.BeginTransactionAsync();
+                }
+            });
+
+        error.Should()
+            .BeOfType<TransactionNestingException>()
+            .Which.Message.Should()
+            .Contain("Attempting to nest transactions");
+    }
+
+    [RequireServerFact]
+    public async Task ShouldErrorToRunNestedQueriesWithTxRunAndTxFunc()
+    {
+        await using var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2));
+        const int size = 1024;
+        await using var session = driver.AsyncSession(o => o.WithFetchSize(5));
+        var tx = await session.BeginTransactionAsync();
+        var cursor1 = await tx.RunAsync("UNWIND range(1, $size) AS x RETURN x", new { size });
+        var error = await Record.ExceptionAsync(
+            async () =>
+            {
+                while (await cursor1.FetchAsync())
+                {
+                    var record = cursor1.Current;
+                    await session.ExecuteWriteAsync(
+                        async tx2 => await tx2.RunAsync(
+                            "UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id",
+                            new { x = record["x"].As<int>() }));
+                }
+            });
+
+        error.Should()
+            .BeOfType<TransactionNestingException>()
+            .Which.Message.Should()
+            .Contain("Attempting to nest transactions");
+    }
+
+    [RequireServerFact]
+    public async Task ShouldErrorToRunNestedQueriesWithTxFuncs()
+    {
+        await using var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2));
+        const int size = 1024;
+        await using var session = driver.AsyncSession(o => o.WithFetchSize(5));
+        var error = await Record.ExceptionAsync(
+            async () =>
+                await session.ExecuteReadAsync(
+                    async tx =>
                     {
+                        var cursor1 = await tx.RunAsync("UNWIND range(1, $size) AS x RETURN x", new { size });
+                        while (await cursor1.FetchAsync())
+                        {
+                            var record = cursor1.Current;
+                            await session.ExecuteWriteAsync(
+                                async tx2 => await tx2.RunAsync(
+                                    "UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id",
+                                    new { x = record["x"].As<int>() }));
+                        }
+                    }));
+
+        error.Should()
+            .BeOfType<TransactionNestingException>()
+            .Which.Message.Should()
+            .Contain("Attempting to nest transactions");
+    }
+
+    [RequireServerFact]
+    public async Task ShouldErrorToRunNestedQueriesWithTxFuncAndSessionRun()
+    {
+        await using var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2));
+        const int size = 1024;
+        await using var session = driver.AsyncSession(o => o.WithFetchSize(5));
+        var error = await Record.ExceptionAsync(
+            async () =>
+                await session.ExecuteReadAsync(
+                    async tx =>
+                    {
+                        var cursor1 = await tx.RunAsync("UNWIND range(1, $size) AS x RETURN x", new { size });
                         while (await cursor1.FetchAsync())
                         {
                             var record = cursor1.Current;
@@ -145,185 +227,35 @@ public class NestedQueriesIT : DirectDriverTestBase
                                 "UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id",
                                 new { x = record["x"].As<int>() });
                         }
-                    });
+                    }));
 
-                error.Should().BeOfType<TransactionNestingException>();
-                error.Message.Should()
-                    .Contain("Attempting to nest transactions");
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
-    }
-
-    [RequireServerFact]
-    public async Task ShouldErrorToRunNestedQueriesWithTxRuns()
-    {
-        using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2)))
-        {
-            const int size = 1024;
-            var session = driver.AsyncSession(o => o.WithFetchSize(5));
-            try
-            {
-                var tx = await session.BeginTransactionAsync();
-                var cursor1 = await tx.RunAsync("UNWIND range(1, $size) AS x RETURN x", new { size });
-                var error = await Record.ExceptionAsync(
-                    async () =>
-                    {
-                        while (await cursor1.FetchAsync())
-                        {
-                            await session.BeginTransactionAsync();
-                        }
-                    });
-
-                error.Should().BeOfType<TransactionNestingException>();
-                error.Message.Should()
-                    .Contain("Attempting to nest transactions");
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
-    }
-
-    [RequireServerFact]
-    public async Task ShouldErrorToRunNestedQueriesWithTxRunAndTxFunc()
-    {
-        using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2)))
-        {
-            const int size = 1024;
-            var session = driver.AsyncSession(o => o.WithFetchSize(5));
-            try
-            {
-                var tx = await session.BeginTransactionAsync();
-                var cursor1 = await tx.RunAsync("UNWIND range(1, $size) AS x RETURN x", new { size });
-                var error = await Record.ExceptionAsync(
-                    async () =>
-                    {
-                        while (await cursor1.FetchAsync())
-                        {
-                            var record = cursor1.Current;
-                            await session.WriteTransactionAsync(
-                                async tx2 => await tx2.RunAsync(
-                                    "UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id",
-                                    new { x = record["x"].As<int>() }));
-                        }
-                    });
-
-                error.Should().BeOfType<TransactionNestingException>();
-                error.Message.Should()
-                    .Contain("Attempting to nest transactions");
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
-    }
-
-    [RequireServerFact]
-    public async Task ShouldErrorToRunNestedQueriesWithTxFuncs()
-    {
-        using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2)))
-        {
-            const int size = 1024;
-            var session = driver.AsyncSession(o => o.WithFetchSize(5));
-            try
-            {
-                var error = await Record.ExceptionAsync(
-                    async () =>
-                        await session.ReadTransactionAsync(
-                            async tx =>
-                            {
-                                var cursor1 = await tx.RunAsync("UNWIND range(1, $size) AS x RETURN x", new { size });
-                                while (await cursor1.FetchAsync())
-                                {
-                                    var record = cursor1.Current;
-                                    await session.WriteTransactionAsync(
-                                        async tx2 => await tx2.RunAsync(
-                                            "UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id",
-                                            new { x = record["x"].As<int>() }));
-                                }
-                            }));
-
-                error.Should().BeOfType<TransactionNestingException>();
-                error.Message.Should()
-                    .Contain("Attempting to nest transactions");
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
-    }
-
-    [RequireServerFact]
-    public async Task ShouldErrorToRunNestedQueriesWithTxFuncAndSessionRun()
-    {
-        using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2)))
-        {
-            const int size = 1024;
-            var session = driver.AsyncSession(o => o.WithFetchSize(5));
-            try
-            {
-                var error = await Record.ExceptionAsync(
-                    async () =>
-                        await session.ReadTransactionAsync(
-                            async tx =>
-                            {
-                                var cursor1 = await tx.RunAsync("UNWIND range(1, $size) AS x RETURN x", new { size });
-                                while (await cursor1.FetchAsync())
-                                {
-                                    var record = cursor1.Current;
-                                    await session.RunAsync(
-                                        "UNWIND $x AS id CREATE (n:Node {id: id}) RETURN n.id",
-                                        new { x = record["x"].As<int>() });
-                                }
-                            }));
-
-                error.Should().BeOfType<TransactionNestingException>();
-                error.Message.Should()
-                    .Contain("Attempting to nest transactions");
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
+        error.Should()
+            .BeOfType<TransactionNestingException>()
+            .Which.Message.Should()
+            .Contain("Attempting to nest transactions");
     }
 
     [RequireServerFact]
     public async Task ShouldErrorToRunNestedQueriesWithTxFuncAndTxRun()
     {
-        using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2)))
-        {
-            const int size = 1024;
-            var session = driver.AsyncSession(o => o.WithFetchSize(5));
-            try
-            {
-                var error = await Record.ExceptionAsync(
-                    async () =>
-                        await session.ReadTransactionAsync(
-                            async tx =>
-                            {
-                                var cursor1 = await tx.RunAsync("UNWIND range(1, $size) AS x RETURN x", new { size });
-                                while (await cursor1.FetchAsync())
-                                {
-                                    await session.BeginTransactionAsync();
-                                }
-                            }));
+        await using var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken, o => o.WithFetchSize(2));
+        const int size = 1024;
+        await using var session = driver.AsyncSession(o => o.WithFetchSize(5));
+        var error = await Record.ExceptionAsync(
+            async () =>
+                await session.ExecuteReadAsync(
+                    async tx =>
+                    {
+                        var cursor1 = await tx.RunAsync("UNWIND range(1, $size) AS x RETURN x", new { size });
+                        while (await cursor1.FetchAsync())
+                        {
+                            await session.BeginTransactionAsync();
+                        }
+                    }));
 
-                error.Should().BeOfType<TransactionNestingException>();
-                error.Message.Should()
-                    .Contain("Attempting to nest transactions");
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
+        error.Should()
+            .BeOfType<TransactionNestingException>()
+            .Which.Message.Should()
+            .Contain("Attempting to nest transactions");
     }
 }

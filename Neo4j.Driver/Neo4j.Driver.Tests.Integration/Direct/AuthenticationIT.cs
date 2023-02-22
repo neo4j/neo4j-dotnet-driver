@@ -19,13 +19,14 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;
 
-public class AuthenticationIT : DirectDriverTestBase
+public sealed class AuthenticationIT : DirectDriverTestBase
 {
     public AuthenticationIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         : base(output, fixture)
@@ -35,24 +36,15 @@ public class AuthenticationIT : DirectDriverTestBase
     [RequireServerFact]
     public async Task AuthenticationErrorIfWrongAuthToken()
     {
-        using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthTokens.Basic("fake", "fake")))
-        {
-            var session = driver.AsyncSession();
-            try
-            {
-                var exc = await Record.ExceptionAsync(() => session.RunAsync("Return 1"));
+        await using var driver = GraphDatabase.Driver(ServerEndPoint, AuthTokens.Basic("fake", "fake"));
+        await using var session = driver.AsyncSession();
+        var exc = await Record.ExceptionAsync(() => session.RunAsync("Return 1"));
 
-                exc.Should()
-                    .BeOfType<AuthenticationException>()
-                    .Which
-                    .Message.Should()
-                    .Contain("The client is unauthorized due to authentication failure.");
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
+        exc.Should()
+            .BeOfType<AuthenticationException>()
+            .Which
+            .Message.Should()
+            .Contain("The client is unauthorized due to authentication failure.");
     }
 
     [RequireServerFact]
@@ -96,21 +88,12 @@ public class AuthenticationIT : DirectDriverTestBase
 
     private static async Task VerifyConnectivity(Uri address, IAuthToken token)
     {
-        using (var driver = GraphDatabase.Driver(address, token))
-        {
-            var session = driver.AsyncSession();
+        await using var driver = GraphDatabase.Driver(address, token);
+        await using var session = driver.AsyncSession();
 
-            try
-            {
-                var cursor = await session.RunAsync("RETURN 2 as Number");
-                var records = await cursor.ToListAsync(r => r["Number"].As<int>());
+        var cursor = await session.RunAsync("RETURN 2 as Number");
+        var records = await cursor.ToListAsync(r => r["Number"].As<int>());
 
-                records.Should().BeEquivalentTo(2);
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
+        records.Should().BeEquivalentTo(2);
     }
 }

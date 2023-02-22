@@ -21,13 +21,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.IntegrationTests;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 using Xunit.Abstractions;
 
-// ReSharper disable once CheckNamespace
-namespace Neo4j.Driver.ExamplesAsync;
+namespace Neo4j.Driver.IntegrationTests;
 
 public class ExamplesAsync
 {
@@ -719,7 +717,9 @@ public class ExamplesAsync
                 _disposed = true;
             }
 
+#pragma warning disable CS8892
             public static async Task Main(string[] args)
+#pragma warning restore CS8892
             {
                 // Aura queries use an encrypted connection using the "neo4j+s" protocol
                 var boltUrl = "%%BOLT_URL_PLACEHOLDER%%";
@@ -1007,13 +1007,13 @@ public class ExamplesAsync
     }
 }
 
-[Collection(SAIntegrationCollection.CollectionName)]
+[Collection(SaIntegrationCollection.CollectionName)]
 public abstract class BaseAsyncExample : IDisposable
 {
     private bool _disposed;
-    protected string Password = Neo4jDefaultInstallation.Password;
-    protected string Uri = Neo4jDefaultInstallation.BoltUri;
-    protected string User = Neo4jDefaultInstallation.User;
+    protected string Password = DefaultInstallation.Password;
+    protected string Uri = DefaultInstallation.BoltUri;
+    protected string User = DefaultInstallation.User;
 
     protected BaseAsyncExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
     {

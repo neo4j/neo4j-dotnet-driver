@@ -18,12 +18,13 @@
 using System;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Routing;
 
-public class RoutingDriverAsyncIT : RoutingDriverTestBase
+public sealed class RoutingDriverAsyncIT : RoutingDriverTestBase
 {
     public RoutingDriverAsyncIT(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture) : base(
         output,
@@ -34,65 +35,39 @@ public class RoutingDriverAsyncIT : RoutingDriverTestBase
     [RequireClusterFact]
     public async Task ShouldFailWithAuthenticationError()
     {
-        Exception exception = null;
-        using (var driver = GraphDatabase.Driver(RoutingServer, AuthTokens.Basic("fake", "fake")))
-        {
-            var session = driver.AsyncSession();
-            try
-            {
-                exception = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
+        await using var driver = GraphDatabase.Driver(RoutingServer, AuthTokens.Basic("fake", "fake"));
+        await using var session = driver.AsyncSession();
+        var exception = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
 
-        exception.Should().BeOfType<AuthenticationException>();
-        exception.Message.Should().Be("The client is unauthorized due to authentication failure.");
+        exception.Should()
+            .BeOfType<AuthenticationException>()
+            .Which.Message.Should()
+            .Be("The client is unauthorized due to authentication failure.");
     }
 
     [RequireClusterFact]
     public async Task ShouldConnectClusterWithRoutingScheme()
     {
-        using (var driver = GraphDatabase.Driver(RoutingServer, AuthToken))
-        {
-            var session = driver.AsyncSession();
-            try
-            {
-                var result = await session.RunAsync("UNWIND range(1,10000) AS x RETURN sum(x)");
-                var read = await result.FetchAsync();
-                read.Should().BeTrue();
-                result.Current[0].As<int>().Should().Be(10001 * 10000 / 2);
-                read = await result.FetchAsync();
-                read.Should().BeFalse();
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
+        await using var driver = GraphDatabase.Driver(RoutingServer, AuthToken);
+        await using var session = driver.AsyncSession();
+        var result = await session.RunAsync("UNWIND range(1,10000) AS x RETURN sum(x)");
+        var read = await result.FetchAsync();
+        read.Should().BeTrue();
+        result.Current[0].As<int>().Should().Be(10001 * 10000 / 2);
+        read = await result.FetchAsync();
+        read.Should().BeFalse();
     }
 
     [RequireClusterFact]
     public async Task ShouldThrowServiceUnavailableExceptionIfNoServer()
     {
-        Exception error = null;
-        using (var driver = GraphDatabase.Driver(WrongServer, AuthTokens.Basic("fake", "fake")))
-        {
-            var session = driver.AsyncSession();
-            try
-            {
-                error = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
+        await using var driver = GraphDatabase.Driver(WrongServer, AuthTokens.Basic("fake", "fake"));
+        await using var session = driver.AsyncSession();
+        var error = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
 
-        error.Should().BeOfType<ServiceUnavailableException>();
-        error.Message.Should()
+        error.Should()
+            .BeOfType<ServiceUnavailableException>()
+            .Which.Message.Should()
             .Be(
                 "Failed to connect to any routing server. Please make sure that the cluster is up and can be accessed by the driver and retry.");
     }
@@ -108,8 +83,9 @@ public class RoutingDriverAsyncIT : RoutingDriverTestBase
 
         driver.Dispose();
         var error = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
-        error.Should().BeOfType<ObjectDisposedException>();
-        error.Message.Should()
+        error.Should()
+            .BeOfType<ObjectDisposedException>()
+            .Which.Message.Should()
             .StartWith("Failed to acquire a new connection as the driver has already been disposed.");
     }
 
@@ -126,7 +102,9 @@ public class RoutingDriverAsyncIT : RoutingDriverTestBase
         await session.CloseAsync();
 
         var error = Record.Exception(() => driver.AsyncSession());
-        error.Should().BeOfType<ObjectDisposedException>();
-        error.Message.Should().Contain("Cannot open a new session on a driver that is already disposed.");
+        error.Should()
+            .BeOfType<ObjectDisposedException>()
+            .Which.Message.Should()
+            .Contain("Cannot open a new session on a driver that is already disposed.");
     }
 }

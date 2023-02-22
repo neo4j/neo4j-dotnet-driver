@@ -20,7 +20,7 @@ using FluentAssertions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class BlockingWriteCommandUsingReadSessionTxFunc : BlockingCommand
+public sealed class BlockingWriteCommandUsingReadSessionTxFunc : BlockingCommand
 {
     public BlockingWriteCommandUsingReadSessionTxFunc(IDriver driver, bool useBookmark)
         : base(driver, useBookmark)

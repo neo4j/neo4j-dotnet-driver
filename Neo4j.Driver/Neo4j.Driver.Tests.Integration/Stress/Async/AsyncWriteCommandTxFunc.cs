@@ -21,7 +21,7 @@ using FluentAssertions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class AsyncWriteCommandTxFunc : AsyncCommand
+public sealed class AsyncWriteCommandTxFunc : AsyncCommand
 {
     private readonly StressTest _test;
 

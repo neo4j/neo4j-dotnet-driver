@@ -20,7 +20,7 @@ using System.IO;
 
 namespace Neo4j.Driver.IntegrationTests.Internals;
 
-internal static class Neo4jSettingsHelper
+internal static class SettingsHelper
 {
     public const string ListenAddr = "dbms.connectors.default_listen_address";
     public const string Ipv6EnabledAddr = "::";
@@ -37,41 +37,39 @@ internal static class Neo4jSettingsHelper
         var tempFileName = Path.Combine(location, "conf/neo4j.conf.tmp");
         File.Move(configFileName, tempFileName);
 
-        using (var reader = new StreamReader(new FileStream(tempFileName, FileMode.Open, FileAccess.Read)))
-        using (var writer =
-               new StreamWriter(new FileStream(configFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite)))
+        using var reader = new StreamReader(new FileStream(tempFileName, FileMode.Open, FileAccess.Read));
+        using var writer =
+            new StreamWriter(new FileStream(configFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite));
+
+        while (reader.ReadLine() is { } line)
         {
-            string line;
-            while ((line = reader.ReadLine()) != null)
+            if (line.Trim() == string.Empty || line.Trim().StartsWith("#"))
             {
-                if (line.Trim() == string.Empty || line.Trim().StartsWith("#"))
+                // empty or comments, print as original
+                writer.WriteLine(line);
+            }
+            else
+            {
+                var tokens = line.Split('=');
+                if (tokens.Length == 2 && keyValuePairCopy.ContainsKey(tokens[0].Trim()))
                 {
-                    // empty or comments, print as original
-                    writer.WriteLine(line);
+                    var key = tokens[0].Trim();
+                    // found property and update it to the new value
+                    writer.WriteLine($"{key}={keyValuePairCopy[key]}");
+                    keyValuePairCopy.Remove(key);
                 }
                 else
                 {
-                    var tokens = line.Split('=');
-                    if (tokens.Length == 2 && keyValuePairCopy.ContainsKey(tokens[0].Trim()))
-                    {
-                        var key = tokens[0].Trim();
-                        // found property and update it to the new value
-                        writer.WriteLine($"{key}={keyValuePairCopy[key]}");
-                        keyValuePairCopy.Remove(key);
-                    }
-                    else
-                    {
-                        // not the property that we are looking for, print it as original
-                        writer.WriteLine(line);
-                    }
+                    // not the property that we are looking for, print it as original
+                    writer.WriteLine(line);
                 }
             }
+        }
 
-            // write the extra properties at the end of the file
-            foreach (var pair in keyValuePairCopy)
-            {
-                writer.WriteLine($"{pair.Key}={pair.Value}");
-            }
+        // write the extra properties at the end of the file
+        foreach (var pair in keyValuePairCopy)
+        {
+            writer.WriteLine($"{pair.Key}={pair.Value}");
         }
 
         // delete the temp file

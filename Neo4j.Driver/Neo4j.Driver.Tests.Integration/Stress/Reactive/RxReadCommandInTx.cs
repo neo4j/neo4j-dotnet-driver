@@ -23,7 +23,7 @@ using static Neo4j.Driver.Tests.Assertions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class RxReadCommandInTx : RxCommand
+public sealed class RxReadCommandInTx : RxCommand
 {
     public RxReadCommandInTx(IDriver driver, bool useBookmark)
         : base(driver, useBookmark)

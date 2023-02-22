@@ -20,7 +20,7 @@ using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class BlockingWrongCommandTxFunc : BlockingCommand
+public sealed class BlockingWrongCommandTxFunc : BlockingCommand
 {
     public BlockingWrongCommandTxFunc(IDriver driver)
         : base(driver, false)
