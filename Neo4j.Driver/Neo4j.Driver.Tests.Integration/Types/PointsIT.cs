@@ -35,7 +35,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
 
         private readonly Random _random = new Random();
 
-        public PointsIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+        public PointsIT(ITestOutputHelper output, SingleServerFixture fixture)
             : base(output, fixture)
         {
         }

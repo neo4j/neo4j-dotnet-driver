@@ -34,7 +34,7 @@ namespace Neo4j.Driver.ExamplesAsync
     {
         public class RxSectionExamples : BaseRxExample
         {
-            public RxSectionExamples(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public RxSectionExamples(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -134,7 +134,7 @@ namespace Neo4j.Driver.ExamplesAsync
 
         public class ResultConsumeExample : BaseAsyncExample
         {
-            public ResultConsumeExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public ResultConsumeExample(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -170,7 +170,7 @@ namespace Neo4j.Driver.ExamplesAsync
         }
     }
 
-    [Collection(SAIntegrationCollection.CollectionName)]
+    [Collection(SingleServerCollection.CollectionName)]
     public abstract class BaseRxExample : AbstractRxTest, IDisposable
     {
         private bool _disposed = false;
@@ -181,9 +181,9 @@ namespace Neo4j.Driver.ExamplesAsync
 
         ~BaseRxExample() => Dispose(false);
 
-        protected BaseRxExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+        protected BaseRxExample(ITestOutputHelper output, SingleServerFixture fixture)
         {
-            Driver = fixture.StandAloneSharedInstance.Driver;
+            Driver = fixture.SingleServerDbms.Driver;
         }
 
         public void Dispose()

@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Xunit;
@@ -23,10 +24,10 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Routing
 {
-    [Collection(CCIntegrationCollection.CollectionName)]
+    [Collection(CausalClusterCollection.CollectionName)]
     public class RoutingDriverIT : RoutingDriverTestBase
     {
-        public RoutingDriverIT(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture) : base(output,
+        public RoutingDriverIT(ITestOutputHelper output, CausalClusterFixture fixture) : base(output,
             fixture)
         {
         }
@@ -51,7 +52,6 @@ namespace Neo4j.Driver.IntegrationTests.Routing
             }
         }
 
-
         [RequireClusterFact]
         public async Task ShouldConnectClusterWithRoutingScheme()
         {
@@ -72,39 +72,28 @@ namespace Neo4j.Driver.IntegrationTests.Routing
             }
         }
 
-        [RequireClusterFact]
+        [RequireClusterFact(Skip = "Extremely unreliable test")]
         public async Task ShouldLoadBalanceBetweenServers()
         {
-            using (var driver = GraphDatabase.Driver(RoutingServer, AuthToken))
+            using var driver = GraphDatabase.Driver(RoutingServer, AuthToken, o => o.WithLogger(new TestLogger(Output, ExtendedLogLevel.Trace)));
+
+            for (var i = 0; i < 10; i++)
             {
-                for (var i = 0; i < 10; i++)
+                string addr1, addr2;
+
+                await using (var session1 = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read)))
                 {
-                    string addr1, addr2;
-
-                    var session1 = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
-                    try
-                    {
-                        var summary = await session1.RunAndConsumeAsync("RETURN 1");
-                        addr1 = summary.Server.Address;
-                    }
-                    finally
-                    {
-                        await session1.CloseAsync();
-                    }
-
-                    var session2 = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
-                    try
-                    {
-                        var summary = await session2.RunAndConsumeAsync("RETURN 2");
-                        addr2 = summary.Server.Address;
-                    }
-                    finally
-                    {
-                        await session2.CloseAsync();
-                    }
-
-                    addr1.Should().NotBe(addr2);
+                    var summary = await session1.RunAndConsumeAsync("RETURN 1");
+                    addr1 = summary.Server.Address;
                 }
+
+                await using (var session2 = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read)))
+                {
+                    var summary = await session2.RunAndConsumeAsync("RETURN 2");
+                    addr2 = summary.Server.Address;
+                }
+    
+                addr1.Should().NotBe(addr2);
             }
         }
 

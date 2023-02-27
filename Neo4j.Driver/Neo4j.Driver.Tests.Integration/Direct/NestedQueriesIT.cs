@@ -27,7 +27,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
     public class NestedQueriesIT : DirectDriverTestBase
     {
 
-        public NestedQueriesIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
+        public NestedQueriesIT(ITestOutputHelper output, SingleServerFixture fixture) : base(output, fixture)
         {
         }
 

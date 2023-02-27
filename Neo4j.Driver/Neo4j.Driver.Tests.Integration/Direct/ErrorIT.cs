@@ -28,7 +28,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
     {
         private IDriver Driver => Server.Driver;
 
-        public ErrorIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
+        public ErrorIT(ITestOutputHelper output, SingleServerFixture fixture) : base(output, fixture)
         {
         }
 

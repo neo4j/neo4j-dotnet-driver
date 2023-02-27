@@ -38,7 +38,7 @@ namespace Neo4j.Driver.IntegrationTests.Internals
     public static class CertificateUtils
     {
         public static Pkcs12Store CreateCert(string commonName, DateTime notBefore, DateTime notAfter,
-            IEnumerable<string> dnsAltNames, IEnumerable<string> ipAddressAltNames, Pkcs12Store signBy)
+            List<string> dnsAltNames, List<string> ipAddressAltNames, Pkcs12Store signBy)
         {
             var keyPairGen = new RsaKeyPairGenerator();
             keyPairGen.Init(new KeyGenerationParameters(new SecureRandom(), 2048));
@@ -110,10 +110,10 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
             throw new ArgumentException("Invalid store.");
         }
-
+        
         public static X509Certificate2 GetDotnetCertificate(this Pkcs12Store store)
         {
-            var stream = new MemoryStream();
+            using var stream = new MemoryStream();
             var password = "password";
 
             store.Save(stream, password.ToCharArray(), SecureRandom.GetInstance("SHA256PRNG"));
@@ -139,26 +139,20 @@ namespace Neo4j.Driver.IntegrationTests.Internals
 
         public static void DumpPem(AsymmetricKeyParameter value, string target)
         {
-            using (var targetStream = new FileStream(target, FileMode.OpenOrCreate))
-            {
-                using (var targetWriter = new StreamWriter(targetStream, Encoding.ASCII))
-                {
-                    var pemWriter = new PemWriter(targetWriter);
-                    pemWriter.WriteObject(new Pkcs8Generator(value));
-                }
-            }
+            using var targetStream = new FileStream(target, FileMode.OpenOrCreate);
+            using var targetWriter = new StreamWriter(targetStream, Encoding.ASCII);
+            
+            var pemWriter = new PemWriter(targetWriter);
+            pemWriter.WriteObject(new Pkcs8Generator(value));
         }
 
         public static void DumpPem(X509Certificate value, string target)
         {
-            using (var targetStream = new FileStream(target, FileMode.OpenOrCreate))
-            {
-                using (var targetWriter = new StreamWriter(targetStream, Encoding.ASCII))
-                {
-                    var pemWriter = new PemWriter(targetWriter);
-                    pemWriter.WriteObject(new MiscPemGenerator(value));
-                }
-            }
+            using var targetStream = new FileStream(target, FileMode.OpenOrCreate);
+            using var targetWriter = new StreamWriter(targetStream, Encoding.ASCII);
+            
+            var pemWriter = new PemWriter(targetWriter);
+            pemWriter.WriteObject(new MiscPemGenerator(value));
         }
     }
 }

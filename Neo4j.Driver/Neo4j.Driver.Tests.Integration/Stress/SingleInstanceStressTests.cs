@@ -26,20 +26,20 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress
 {
-    [Collection(SAIntegrationCollection.CollectionName)]
+    [Collection(SingleServerCollection.CollectionName)]
     public class SingleInstanceStressTests : StressTest<SingleInstanceStressTests.Context>
     {
-        private readonly StandAloneIntegrationTestFixture _standalone;
+        private readonly SingleServerFixture _standalone;
 
-        public SingleInstanceStressTests(ITestOutputHelper output, StandAloneIntegrationTestFixture standalone) :
-            base(output, standalone.StandAloneSharedInstance.BoltUri, standalone.StandAloneSharedInstance.AuthToken)
+        public SingleInstanceStressTests(ITestOutputHelper output, SingleServerFixture standalone) :
+            base(output, standalone.SingleServerDbms.BoltUri, standalone.SingleServerDbms.AuthToken)
         {
             _standalone = standalone;
         }
 
         protected override Context CreateContext()
         {
-            return new Context(_standalone.StandAloneSharedInstance.BoltUri.Authority);
+            return new Context(_standalone.SingleServerDbms.BoltUri.Authority);
         }
 
         protected override IEnumerable<IBlockingCommand<Context>> CreateTestSpecificBlockingCommands()

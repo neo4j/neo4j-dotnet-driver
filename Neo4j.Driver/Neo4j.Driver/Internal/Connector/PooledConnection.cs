@@ -76,14 +76,13 @@ namespace Neo4j.Driver.Internal.Connector
 				HasUnrecoverableError = true;
 			}
 
-			if (error is Neo4jException)
+			if (error is Neo4jException or TimeZoneNotFoundException)
 			{
-				if (error.IsAuthorizationError())
-				{
-					_releaseManager.MarkConnectionsForReauthorization(this);					
-				}
-
-				throw error;
+                if (error.IsAuthorizationError())
+                {
+                    _releaseManager.MarkConnectionsForReauthorization(this);
+                }
+                throw error;
 			}
 
 			if (error.IsConnectionError())

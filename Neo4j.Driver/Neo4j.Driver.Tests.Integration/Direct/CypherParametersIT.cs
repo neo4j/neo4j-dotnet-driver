@@ -27,7 +27,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
     {
         private IDriver Driver => Server.Driver;
 
-        public CypherParametersIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+        public CypherParametersIT(ITestOutputHelper output, SingleServerFixture fixture)
             : base(output, fixture)
         {
         }

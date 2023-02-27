@@ -22,25 +22,25 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Direct
 {
-    [Collection(SAIntegrationCollection.CollectionName)]
+    [Collection(SingleServerCollection.CollectionName)]
     public abstract class DirectDriverTestBase : IDisposable
     {
         protected ITestOutputHelper Output { get; }
-        protected IStandAlone Server { get; }
+        protected ISingleServer Server { get; }
         protected Uri ServerEndPoint { get; }
         protected IAuthToken AuthToken { get; }
+        private bool _disposed;
 
         ~DirectDriverTestBase() => Dispose(false);
 
-        protected DirectDriverTestBase(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+        protected DirectDriverTestBase(ITestOutputHelper output, SingleServerFixture fixture)
         {
             Output = output;
-            Server = fixture.StandAloneSharedInstance;
+            Server = fixture.SingleServerDbms;
             ServerEndPoint = Server.BoltUri;
             AuthToken = Server.AuthToken;
         }
 
-        private bool _disposed = false;
         public void Dispose()
         {
             Dispose(true);
@@ -53,7 +53,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 return;
 
             if (disposing)
-            {   
+            {
                 using (var session = Server.Driver.Session())
                 {
                     session.Run("MATCH (n) DETACH DELETE n").Consume();

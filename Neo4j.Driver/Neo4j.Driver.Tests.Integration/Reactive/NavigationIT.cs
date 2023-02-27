@@ -19,6 +19,7 @@ using System;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Reactive.Testing;
 using Neo4j.Driver.Reactive;
 using Xunit.Abstractions;
@@ -32,7 +33,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
     {
         public abstract class Specs : AbstractRxIT
         {
-            protected Specs(ITestOutputHelper output, StandAloneIntegrationTestFixture standAlone)
+            protected Specs(ITestOutputHelper output, SingleServerFixture standAlone)
                 : base(output, standAlone)
             {
             }
@@ -446,7 +447,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             ~Session() => Dispose(false);
 
-            public Session(ITestOutputHelper output, StandAloneIntegrationTestFixture standAlone)
+            public Session(ITestOutputHelper output, SingleServerFixture standAlone)
                 : base(output, standAlone)
             {
                 rxSession = NewSession();
@@ -484,7 +485,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             ~Transaction() => Dispose(false);
 
-            public Transaction(ITestOutputHelper output, StandAloneIntegrationTestFixture standAlone)
+            public Transaction(ITestOutputHelper output, SingleServerFixture standAlone)
                 : base(output, standAlone)
             {
                 rxSession = NewSession();

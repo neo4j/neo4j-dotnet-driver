@@ -39,7 +39,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
         private readonly IRxSession session;
 
-        public TransactionIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+        public TransactionIT(ITestOutputHelper output, SingleServerFixture fixture)
             : base(output, fixture)
         {
             // clean database after each test run

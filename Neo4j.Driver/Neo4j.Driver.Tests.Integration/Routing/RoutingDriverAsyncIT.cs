@@ -28,7 +28,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
 {
     public class RoutingDriverAsyncIT : RoutingDriverTestBase
     {
-        public RoutingDriverAsyncIT(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture) : base(
+        public RoutingDriverAsyncIT(ITestOutputHelper output, CausalClusterFixture fixture) : base(
             output, fixture)
         {
         }

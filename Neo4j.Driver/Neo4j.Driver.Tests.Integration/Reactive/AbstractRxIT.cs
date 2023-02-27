@@ -16,36 +16,31 @@
 // limitations under the License.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reactive;
-using Microsoft.Reactive.Testing;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Reactive;
 using Xunit;
 using Xunit.Abstractions;
-using static Microsoft.Reactive.Testing.ReactiveAssert;
-using static Neo4j.Driver.Reactive.Utils;
 
 namespace Neo4j.Driver.IntegrationTests.Reactive
 {
-    [Collection(SAIntegrationCollection.CollectionName)]
+    [Collection(SingleServerCollection.CollectionName)]
     public abstract class AbstractRxIT : AbstractRxTest, IDisposable
     {
         private bool _disposed = false;
         private readonly List<IRxSession> _sessions = new List<IRxSession>();
 
-        protected IStandAlone Server { get; }
+        protected ISingleServer Server { get; }
         protected Uri ServerEndPoint { get; }
         protected IAuthToken AuthToken { get; }
 
         ~AbstractRxIT() => Dispose(false);
 
-        protected AbstractRxIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+        protected AbstractRxIT(ITestOutputHelper output, SingleServerFixture fixture)
             : base(output)
         {
-            Server = fixture.StandAloneSharedInstance;
+            Server = fixture.SingleServerDbms;
             ServerEndPoint = Server.BoltUri;
             AuthToken = Server.AuthToken;
         }

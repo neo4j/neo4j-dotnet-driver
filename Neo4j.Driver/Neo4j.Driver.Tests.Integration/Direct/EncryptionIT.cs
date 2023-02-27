@@ -16,23 +16,20 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.Internal;
-using Xunit;
 using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Direct
 {
     public class EncryptionIT : DirectDriverTestBase
     {
-        public EncryptionIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+        public EncryptionIT(ITestOutputHelper output, SingleServerFixture fixture)
             : base(output, fixture)
         {
         }
 
-        [ShouldNotRunInTestKit_RequireServerFactAttribute]
+        [ShouldNotRunInTestKit_RequireServerFact]
         public async Task ShouldBeAbleToConnectWithInsecureConfig()
         {
             using (var driver = GraphDatabase.Driver(ServerEndPoint, AuthToken,
@@ -44,7 +41,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             }
         }
 
-        [ShouldNotRunInTestKit_RequireServerFactAttribute]
+        [ShouldNotRunInTestKit_RequireServerFact]
         public async Task ShouldBeAbleToConnectUsingInsecureUri()
         {
             var builder = new UriBuilder("bolt+ssc", ServerEndPoint.Host, ServerEndPoint.Port);

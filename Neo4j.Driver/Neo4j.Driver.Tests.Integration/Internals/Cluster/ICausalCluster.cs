@@ -16,16 +16,12 @@
 // limitations under the License.
 
 using System;
-using Xunit.Abstractions;
+using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests.Internals
+namespace Neo4j.Driver.IntegrationTests.Internals;
+
+public interface ICausalCluster : IAsyncLifetime
 {
-    public interface ICausalCluster : IDisposable
-    {
-        Uri BoltRoutingUri { get; }
-
-        IAuthToken AuthToken { get; }
-
-        void Configure(ConfigBuilder builder);
-    }
+    Uri BoltRoutingUri { get; }
+    IAuthToken AuthToken { get; }
 }

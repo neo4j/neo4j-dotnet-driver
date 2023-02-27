@@ -23,53 +23,15 @@ using Xunit;
 
 namespace Neo4j.Driver.IntegrationTests
 {
-    public class RequireBoltStubServerFactAttribute : FactAttribute
+    public class RequireTestContainerDatabaseAttribute : FactAttribute
     {
-		//Default server version required to run stub tests is anything less than 4.3. After this version testkit takes over the stub tests.
-		public RequireBoltStubServerFactAttribute(string versionText = "4.3.0",
-												  VersionComparison versionCompare = VersionComparison.LessThan)
-		{
-			StringBuilder skipText = new StringBuilder();
-
-			CheckStubServer(skipText);
-
-			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
-			
-			if (skipText.Length > 0) 
-				Skip = skipText.ToString();
-		}
-
-		private void CheckStubServer(StringBuilder skipText)
-		{
-			if (!BoltkitHelper.StubServerAvailable())
-			{
-				skipText.Append(BoltkitHelper.TestRequireBoltkit);
-			}
-		}
-	}
-
-    public class RequireBoltStubServerTheoryAttribute : TheoryAttribute
-    {
-		//Default server version required to run stub tests is anything less than 4.3. After this version testkit takes over the stub tests.
-        public RequireBoltStubServerTheoryAttribute(string versionText = "4.3.0",
-													VersionComparison versionCompare = VersionComparison.LessThan)
-        {
-			StringBuilder skipText = new StringBuilder();
-			
-			CheckStubServer(skipText);
-			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
-			
-			if (skipText.Length > 0)
-				Skip = skipText.ToString();
-        }
-
-		private void CheckStubServer(StringBuilder skipText)
-		{
-			if (!BoltkitHelper.StubServerAvailable())
-			{
-				 skipText.Append(BoltkitHelper.TestRequireBoltkit);
-			}
-		}
+	    public RequireTestContainerDatabaseAttribute()
+	    {
+		    if (!SingleServerFixture.UsingOwnedDatabase)
+		    {
+			    Skip = "Not using testcontainer database";
+		    }
+	    }
     }
 
     public enum VersionComparison
@@ -90,7 +52,7 @@ namespace Neo4j.Driver.IntegrationTests
 			if (!string.IsNullOrWhiteSpace(versionText))
 			{
 				var version = ServerVersion.From(versionText);
-				var availableVersion = ServerVersion.From(BoltkitHelper.ServerVersion());
+				var availableVersion = ServerVersion.From(TestConfiguration.ServerVersion());
 
 				
 				switch (versionCompare)
@@ -136,19 +98,19 @@ namespace Neo4j.Driver.IntegrationTests
         {
             var skipText = new StringBuilder();
 
-            if (!BoltkitHelper.ServerAvailable())
+            if (!TestConfiguration.SingleServerAvailable())
             {
-                skipText.AppendLine(BoltkitHelper.TestRequireBoltkit);
+                skipText.AppendLine(TestConfiguration.TestRequireBoltkit);
             }
 
 			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
 
-			if (skipText.Length > 0)
+			if (skipText.Length > 0) 
 				Skip = skipText.ToString();
 		}
     }
     
-    public class RequireEnterpriseEdition : RequireServerFactAttribute
+    public sealed class RequireEnterpriseEdition : RequireServerFactAttribute
     {
         public RequireEnterpriseEdition(string versionText = null,
             VersionComparison versionCompare = VersionComparison.EqualTo)
@@ -157,7 +119,7 @@ namespace Neo4j.Driver.IntegrationTests
             if (string.IsNullOrEmpty(Skip))
             {
 
-                if (!BoltkitHelper.IsEnterprise())
+                if (!TestConfiguration.IsEnterprise())
                 {
                     Skip = "Test requires Neo4j enterprise edition.";
                 }
@@ -173,11 +135,11 @@ namespace Neo4j.Driver.IntegrationTests
         {
             if (string.IsNullOrEmpty(Skip))
             {
-                if (!BoltkitHelper.IPV6Available())
+                if (!TestConfiguration.IpV6Available())
                 {
                     Skip = "IPv6 is not available";
                 }
-                else if (!BoltkitHelper.IPV6Enabled())
+                else if (!TestConfiguration.IpV6Enabled())
                 {
                     Skip = "IPv6 is disabled";
                 }
@@ -196,9 +158,9 @@ namespace Neo4j.Driver.IntegrationTests
 		{
 			var skipText = new StringBuilder();
 
-			if (!BoltkitHelper.ServerAvailable())
+			if (!TestConfiguration.SingleServerAvailable())
 			{
-				skipText.AppendLine(BoltkitHelper.TestRequireBoltkit);
+				skipText.AppendLine(TestConfiguration.TestRequireBoltkit);
 			}
 
 			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
@@ -218,9 +180,9 @@ namespace Neo4j.Driver.IntegrationTests
         {
             var skipText = new StringBuilder();
 
-            if (!BoltkitHelper.ServerAvailable())
+            if (!TestConfiguration.IsClusterAvailable())
             {
-                skipText.AppendLine(BoltkitHelper.TestRequireBoltkit);
+                skipText.AppendLine(TestConfiguration.TestRequireBoltkit);
             }
 
 			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
@@ -237,10 +199,10 @@ namespace Neo4j.Driver.IntegrationTests
     {
         public RequireClusterTheoryAttribute()
         {
-            var isClusterSupported = BoltkitHelper.IsClusterSupported();
-            if (!isClusterSupported.Item1)
+            var isClusterSupported = TestConfiguration.IsClusterAvailable();
+            if (!isClusterSupported)
             {
-                Skip = isClusterSupported.Item2;
+                Skip = "Cluster not available";
             }
         }
     }
