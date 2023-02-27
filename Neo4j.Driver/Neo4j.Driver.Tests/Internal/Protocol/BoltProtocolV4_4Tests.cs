@@ -26,6 +26,7 @@ using Neo4j.Driver.Internal.Result;
 using Xunit;
 using Neo4j.Driver.Internal.MessageHandling.V4_4;
 using static Neo4j.Driver.Internal.Protocol.BoltProtocolUtils;
+using Record = Xunit.Record;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
@@ -73,13 +74,34 @@ namespace Neo4j.Driver.Internal.Protocol
 		{
 			var protocol = new BoltProtocolV4_4(new Dictionary<string, string> { { "ContextKey", "ContextValue" } });
 
-			var ex = await Xunit.Record.ExceptionAsync(async () => await protocol.GetRoutingTable(null, "adb", null, null));
+			var ex = await Record.ExceptionAsync(async () => await protocol.GetRoutingTable(null, "adb", null, null));
 
 			ex.Should().BeOfType<ProtocolException>().Which
 				.Message.Should()
 				.Contain("Attempting to get a routing table on a null connection");
 		}
+		
+		[Fact]
+		public async Task ShouldCloseConnectionWhenThrows()
+		{
+			var databaseName = "myDatabaseName";
+			var protocol = new BoltProtocolV4_4(new Dictionary<string, string> { { "ContextKey", "ContextValue" } });
+			var routingContext = new Dictionary<string, string>
+			{
+				{"name", "molly"},
+				{"age", "1"},
+				{"color", "white"}
+			};
 
+			var mockConn = new Mock<IConnection>();
+			mockConn.Setup(x => x.SyncAsync()).Throws(new FatalDiscoveryException("database doesn't exist"));
+			mockConn.Setup(m => m.RoutingContext).Returns(routingContext);
+			
+			var exception = await Record.ExceptionAsync(() => protocol.GetRoutingTable(mockConn.Object, databaseName, null, null));
+
+			exception.Should().BeOfType<FatalDiscoveryException>();
+			mockConn.Verify(x => x.CloseAsync(), Times.Once);
+		}
 
 		[Theory]
 		[InlineData("ImpersonatedUser")]
