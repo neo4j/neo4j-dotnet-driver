@@ -102,7 +102,6 @@ namespace Neo4j.Driver.Internal.Protocol
 			{
 				{"name", "molly"},
 				{"age", "1"},
-				{"color", "white"}
 			};
 
 			var mockConn = Tests.Routing.ClusterDiscoveryTests.Setup43SocketConnection(routingContext, 
@@ -126,7 +125,6 @@ namespace Neo4j.Driver.Internal.Protocol
 				{
 					{"name", "molly"},
 					{"age", "1"},
-					{"color", "white"}
 				};
 
 			var mockConn = Tests.Routing.ClusterDiscoveryTests.Setup43SocketConnection(routingContext, 
