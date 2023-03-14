@@ -23,7 +23,7 @@ using System.Threading;
 
 namespace Neo4j.Driver.IntegrationTests.Internals;
 
-public class CausalCluster : ICausalCluster
+public sealed class CausalCluster : ICausalCluster
 {
     private static readonly TimeSpan ClusterOnlineTimeout = TimeSpan.FromMinutes(2);
 
@@ -102,17 +102,15 @@ public class CausalCluster : ICausalCluster
 
     private void WaitForMembersOnline()
     {
-        void VerifyCanExecute(AccessMode mode, List<Exception> exceptions)
+        void VerifyCanExecute(AccessMode mode)
         {
-            using (var driver = GraphDatabase.Driver(AnyCore().BoltRoutingUri, AuthToken))
-            using (var session = driver.Session(o => o.WithDefaultAccessMode(mode)))
-            {
-                session.Run("RETURN 1").Consume();
-            }
+            using var driver = GraphDatabase.Driver(AnyCore().BoltRoutingUri, AuthToken);
+            using var session = driver.Session(o => o.WithDefaultAccessMode(mode));
+            session.Run("RETURN 1").Consume();
         }
 
         var expectedOnlineMembers = Members.Select(x => x.BoltUri.Authority).ToHashSet();
-        var onlineMembers = Enumerable.Empty<string>();
+        var onlineMembers = Array.Empty<string>();
 
         var errors = new List<Exception>();
         var timer = Stopwatch.StartNew();
@@ -124,25 +122,24 @@ public class CausalCluster : ICausalCluster
             {
                 try
                 {
-                    using (var driver = GraphDatabase.Driver(AnyCore().BoltRoutingUri, AuthToken))
-                    using (var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Read)))
+                    using var driver = GraphDatabase.Driver(AnyCore().BoltRoutingUri, AuthToken);
+                    using var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Read));
+
+                    var records = session.Run("CALL dbms.cluster.overview()").ToList();
+
+                    var cluster = session.Run("CALL dbms.cluster.overview()").ToList();
+                    if (!DbAvailable(cluster))
                     {
-                        var addresses = new List<string>();
-                        var records = session.Run("CALL dbms.cluster.overview()").ToList();
-                        foreach (var record in records)
-                        {
-                            addresses.Add(
-                                record["addresses"].As<List<object>>().First().As<string>().Replace("bolt://", ""));
-                        }
-
-                        var cluster = session.Run("CALL dbms.cluster.overview()").ToList();
-                        if (!Neo4jDbAvailable(cluster))
-                        {
-                            continue;
-                        }
-
-                        onlineMembers = addresses;
+                        continue;
                     }
+
+                    onlineMembers = records.Select(
+                            record => record["addresses"]
+                                .As<List<object>>()
+                                .First()
+                                .As<string>()
+                                .Replace("bolt://", ""))
+                        .ToArray();
                 }
                 catch (Exception exc)
                 {
@@ -159,10 +156,10 @@ public class CausalCluster : ICausalCluster
             try
             {
                 // Verify that we can connect to a FOLLOWER
-                VerifyCanExecute(AccessMode.Read, errors);
+                VerifyCanExecute(AccessMode.Read);
 
                 // Verify that we can connect to a LEADER
-                VerifyCanExecute(AccessMode.Write, errors);
+                VerifyCanExecute(AccessMode.Write);
 
                 return;
             }
@@ -175,7 +172,7 @@ public class CausalCluster : ICausalCluster
         throw new TimeoutException($"Timed out waiting for the cluster to become available. Seen errors: {errors}");
     }
 
-    private static bool Neo4jDbAvailable(List<IRecord> cluster)
+    private static bool DbAvailable(List<IRecord> cluster)
     {
         return cluster.Any(
             x => x.Values.TryGetValue("databases", out var y) &&
@@ -183,7 +180,7 @@ public class CausalCluster : ICausalCluster
                     .TryGetValue("neo4j", out _));
     }
 
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
         if (_disposed)
         {

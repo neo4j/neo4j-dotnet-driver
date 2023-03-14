@@ -1,10 +1,10 @@
 <Project>
     <PropertyGroup>
         <Copyright>Copyright 2002-2022</Copyright>
-        <Version>5.5.0</Version>
-        <AssemblyVersion>5.5.0.0</AssemblyVersion>
-        <AssemblyFileVersion>5.5.0.0</AssemblyFileVersion>
-        <FileVersion>5.5.0.0</FileVersion>
+        <Version>5.6.0</Version>
+        <AssemblyVersion>5.6.0.0</AssemblyVersion>
+        <AssemblyFileVersion>5.6.0.0</AssemblyFileVersion>
+        <FileVersion>5.6.0.0</FileVersion>
     </PropertyGroup>
     <PropertyGroup>
         <XunitVersion>2.4.1</XunitVersion>

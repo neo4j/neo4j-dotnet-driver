@@ -21,12 +21,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Direct;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit.Abstractions;
-using static Neo4j.Driver.IntegrationTests.VersionComparison;
+using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
 
 namespace Neo4j.Driver.IntegrationTests.Types;
 
-public class PointsIT : DirectDriverTestBase
+public sealed class PointsIT : DirectDriverTestBase
 {
     private const int Wgs84SrId = 4326;
     private const int Wgs843DSrId = 4979;
@@ -159,36 +160,19 @@ public class PointsIT : DirectDriverTestBase
 
     private IList<Point> GenerateRandomPointList(int sequence, int count)
     {
-        return Enumerable.Range(0, count).Select(i => GenerateRandomPoint(sequence)).ToList();
+        return Enumerable.Range(0, count).Select(_ => GenerateRandomPoint(sequence)).ToList();
     }
 
     private Point GenerateRandomPoint(int sequence)
     {
-        switch (sequence % 4)
+        return (sequence % 4) switch
         {
-            case 0:
-                return new Point(Wgs84SrId, GenerateRandomX(), GenerateRandomY());
-
-            case 1:
-                return new Point(
-                    Wgs843DSrId,
-                    GenerateRandomX(),
-                    GenerateRandomY(),
-                    GenerateRandomZ());
-
-            case 2:
-                return new Point(CartesianSrId, GenerateRandomX(), GenerateRandomY());
-
-            case 3:
-                return new Point(
-                    Cartesian3DSrId,
-                    GenerateRandomX(),
-                    GenerateRandomY(),
-                    GenerateRandomZ());
-
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
+            0 => new Point(Wgs84SrId, GenerateRandomX(), GenerateRandomY()),
+            1 => new Point(Wgs843DSrId, GenerateRandomX(), GenerateRandomY(), GenerateRandomZ()),
+            2 => new Point(CartesianSrId, GenerateRandomX(), GenerateRandomY()),
+            3 => new Point(Cartesian3DSrId, GenerateRandomX(), GenerateRandomY(), GenerateRandomZ()),
+            var _ => throw new ArgumentOutOfRangeException()
+        };
     }
 
     private double GenerateRandomX()

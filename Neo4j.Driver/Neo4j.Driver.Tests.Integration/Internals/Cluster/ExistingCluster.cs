@@ -33,7 +33,7 @@ public class ExistingCluster : ICausalCluster
     public Uri BoltRoutingUri => new(GetEnvOrThrow(ClusterUri));
 
     public IAuthToken AuthToken => AuthTokens.Basic(
-        GetEnvOrDefault(ClusterUser, Neo4jDefaultInstallation.User),
+        GetEnvOrDefault(ClusterUser, DefaultInstallation.User),
         GetEnvOrThrow(ClusterPassword));
 
     public void Configure(ConfigBuilder builder)

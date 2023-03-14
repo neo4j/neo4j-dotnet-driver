@@ -26,12 +26,11 @@ public interface IStandAlone : ISingleInstance, IDisposable
     IDriver Driver { get; }
 }
 
-public class StandAlone : IStandAlone
+public sealed class StandAlone : IStandAlone
 {
     private readonly ExternalBoltkitInstaller _installer = new();
 
     private ISingleInstance _delegator;
-    private bool _disposed;
 
     public StandAlone()
     {
@@ -92,13 +91,23 @@ public class StandAlone : IStandAlone
 
     public void Dispose()
     {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
+        DisposeBoltDriver();
 
-    ~StandAlone()
-    {
-        Dispose(false);
+        try
+        {
+            _installer.Stop();
+        }
+        catch
+        {
+            try
+            {
+                _installer.Kill();
+            }
+            catch
+            {
+                // ignored
+            }
+        }
     }
 
     private void RetryIfFailToStart()
@@ -116,38 +125,7 @@ public class StandAlone : IStandAlone
 
     private void NewBoltDriver()
     {
-        Driver = Neo4jDefaultInstallation.NewBoltDriver(BoltUri, AuthToken);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        if (disposing)
-        {
-            DisposeBoltDriver();
-
-            try
-            {
-                _installer.Stop();
-            }
-            catch
-            {
-                try
-                {
-                    _installer.Kill();
-                }
-                catch
-                {
-                    // ignored
-                }
-            }
-        }
-
-        _disposed = true;
+        Driver = DefaultInstallation.NewBoltDriver(BoltUri, AuthToken);
     }
 
     private void DisposeBoltDriver()
@@ -160,9 +138,6 @@ public class StandAlone : IStandAlone
         return _delegator?.ToString() ?? "No server found";
     }
 
-    /// This method will always restart the server with the updated certificates
-    /// </summary>
-    /// <param name="sourceProcedureJarPath"></param>
     public void RestartServerWithCertificate(Pkcs12Store store)
     {
         DisposeBoltDriver();

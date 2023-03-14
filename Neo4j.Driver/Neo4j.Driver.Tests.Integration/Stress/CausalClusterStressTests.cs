@@ -22,14 +22,16 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using FluentAssertions;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-[Collection(CCIntegrationCollection.CollectionName)]
-public class CausalClusterStressTests : StressTest<CausalClusterStressTests.Context>
+[Collection(CcIntegrationCollection.CollectionName)]
+// ReSharper disable once UnusedMember.Global
+public sealed class CausalClusterStressTests : StressTest
 {
     private readonly CausalClusterIntegrationTestFixture _cluster;
 
@@ -44,35 +46,35 @@ public class CausalClusterStressTests : StressTest<CausalClusterStressTests.Cont
         return new Context();
     }
 
-    protected override IEnumerable<IBlockingCommand<Context>> CreateTestSpecificBlockingCommands()
+    protected override IEnumerable<IBlockingCommand> CreateTestSpecificBlockingCommands()
     {
-        return new List<IBlockingCommand<Context>>
+        return new List<IBlockingCommand>
         {
-            new BlockingWriteCommandUsingReadSessionTxFunc<Context>(_driver, false),
-            new BlockingWriteCommandUsingReadSessionTxFunc<Context>(_driver, true)
+            new BlockingWriteCommandUsingReadSessionTxFunc(_driver, false),
+            new BlockingWriteCommandUsingReadSessionTxFunc(_driver, true)
         };
     }
 
-    protected override IEnumerable<IAsyncCommand<Context>> CreateTestSpecificAsyncCommands()
+    protected override IEnumerable<IAsyncCommand> CreateTestSpecificAsyncCommands()
     {
-        return new List<IAsyncCommand<Context>>
+        return new List<IAsyncCommand>
         {
-            new AsyncWriteCommandUsingReadSessionTxFunc<Context>(_driver, false),
-            new AsyncWriteCommandUsingReadSessionTxFunc<Context>(_driver, true)
+            new AsyncWriteCommandUsingReadSessionTxFunc(_driver, false),
+            new AsyncWriteCommandUsingReadSessionTxFunc(_driver, true)
         };
     }
 
-    protected override IEnumerable<IRxCommand<Context>> CreateTestSpecificRxCommands()
+    protected override IEnumerable<IRxCommand> CreateTestSpecificRxCommands()
     {
-        return Enumerable.Empty<IRxCommand<Context>>();
+        return Enumerable.Empty<IRxCommand>();
     }
 
-    protected override void PrintStats(Context context)
+    protected override void PrintStats(StressTestContext context)
     {
         _output.WriteLine("{0}", context);
     }
 
-    protected override void VerifyReadQueryDistribution(Context context)
+    protected override void VerifyReadQueryDistribution(StressTestContext context)
     {
         if (UsingBoltMoreThan5_0())
             // 5.0 clusters don't provide a mechanism for this kind of inspection,
@@ -82,12 +84,15 @@ public class CausalClusterStressTests : StressTest<CausalClusterStressTests.Cont
         }
 
         var clusterAddresses = DiscoverClusterAddresses();
-
-        VerifyServedReadQueries(context, clusterAddresses);
-        VerifyServedSimilarAmountOfReadQueries(context, clusterAddresses);
+        if (context is not Context clusterContext)
+        {
+            throw new Exception("Context of wrong type");
+        }
+        VerifyServedReadQueries(clusterContext, clusterAddresses);
+        VerifyServedSimilarAmountOfReadQueries(clusterContext, clusterAddresses);
     }
 
-    public override bool HandleWriteFailure(Exception error, Context context)
+    public override bool HandleWriteFailure(Exception error, StressTestContext context)
     {
         switch (error)
         {
@@ -96,7 +101,11 @@ public class CausalClusterStressTests : StressTest<CausalClusterStressTests.Cont
                 var isLeaderSwitch = error.Message.EndsWith("no longer accepts writes");
                 if (isLeaderSwitch)
                 {
-                    context.LeaderSwitched();
+                    if (context is not Context clusterContext)
+                    {
+                        throw new Exception("Context of wrong type");
+                    }
+                    clusterContext.LeaderSwitched();
                     return true;
                 }
 

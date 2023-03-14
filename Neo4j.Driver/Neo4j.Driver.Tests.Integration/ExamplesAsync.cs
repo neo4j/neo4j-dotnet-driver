@@ -21,13 +21,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.IntegrationTests;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 using Xunit.Abstractions;
 
-// ReSharper disable once CheckNamespace
-namespace Neo4j.Driver.ExamplesAsync;
+namespace Neo4j.Driver.IntegrationTests;
 
 public class ExamplesAsync
 {
@@ -542,7 +540,6 @@ public class ExamplesAsync
             }
         }
     }
-
     public class HelloWorldExampleTest : BaseAsyncExample
     {
         public HelloWorldExampleTest(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
@@ -558,26 +555,15 @@ public class ExamplesAsync
             // When & Then
             await example.PrintGreetingAsync("Hello, world");
         }
-
+        
+        // tag::async-hello-world[]
         public class HelloWorldExample : IDisposable
         {
             private readonly IDriver _driver;
-            private bool _disposed;
 
             public HelloWorldExample(string uri, string user, string password)
             {
                 _driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
-            }
-
-            public void Dispose()
-            {
-                Dispose(true);
-                GC.SuppressFinalize(this);
-            }
-
-            ~HelloWorldExample()
-            {
-                Dispose(false);
             }
 
             public async Task PrintGreetingAsync(string message)
@@ -592,27 +578,19 @@ public class ExamplesAsync
                             "RETURN a.message + ', from node ' + id(a)",
                             new { message });
 
-                        return (await result.SingleAsync())[0].As<string>();
+                        var record = await result.SingleAsync();
+                        return record[0].As<string>();
                     });
 
                 Console.WriteLine(greeting);
             }
 
-            protected virtual void Dispose(bool disposing)
+            public void Dispose()
             {
-                if (_disposed)
-                {
-                    return;
-                }
-
-                if (disposing)
-                {
-                    _driver?.Dispose();
-                }
-
-                _disposed = true;
+                _driver?.Dispose();
             }
         }
+        // end::async-hello-world[]
     }
 
     public class DriverIntroductionExampleTest : BaseAsyncExample
@@ -739,7 +717,9 @@ public class ExamplesAsync
                 _disposed = true;
             }
 
+#pragma warning disable CS8892
             public static async Task Main(string[] args)
+#pragma warning restore CS8892
             {
                 // Aura queries use an encrypted connection using the "neo4j+s" protocol
                 var boltUrl = "%%BOLT_URL_PLACEHOLDER%%";
@@ -1027,13 +1007,13 @@ public class ExamplesAsync
     }
 }
 
-[Collection(SAIntegrationCollection.CollectionName)]
+[Collection(SaIntegrationCollection.CollectionName)]
 public abstract class BaseAsyncExample : IDisposable
 {
     private bool _disposed;
-    protected string Password = Neo4jDefaultInstallation.Password;
-    protected string Uri = Neo4jDefaultInstallation.BoltUri;
-    protected string User = Neo4jDefaultInstallation.User;
+    protected string Password = DefaultInstallation.Password;
+    protected string Uri = DefaultInstallation.BoltUri;
+    protected string User = DefaultInstallation.User;
 
     protected BaseAsyncExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
     {

@@ -28,6 +28,7 @@ internal partial class AsyncSession : IResultResourceHandler, ITransactionResour
 {
     /// <summary>Only set the bookmark to a new value if the new value is not null</summary>
     /// <param name="bookmarks">The new bookmarks.</param>
+    /// <param name="dbInfo"></param>
     public void UpdateBookmarks(Bookmarks bookmarks, IDatabaseInfo dbInfo = null)
     {
         _initialBookmarks = null;

@@ -21,14 +21,14 @@ using System.IO;
 
 namespace Neo4j.Driver.IntegrationTests.Internals;
 
-public class ExternalBoltkitClusterInstaller : IInstaller
+public sealed class ExternalBoltkitClusterInstaller : IInstaller
 {
     private const int Cores = 3;
-    //TODO Add readreplicas into the cluster too
+    //TODO: Add read replicas into the cluster too
     //private const int ReadReplicas = 2;
 
     private const string Password = "cluster";
-    public static readonly string ClusterDir = Path.Combine(BoltkitHelper.TargetDir, "cluster");
+    private static readonly string ClusterDir = Path.Combine(BoltkitHelper.TargetDir, "cluster");
     private readonly IShellCommandRunner _commandRunner;
 
     public ExternalBoltkitClusterInstaller()
@@ -41,7 +41,7 @@ public class ExternalBoltkitClusterInstaller : IInstaller
         if (Directory.Exists(ClusterDir))
         {
             _commandRunner.Debug($"Found and using cluster installed at `{ClusterDir}`.");
-            // no need to redownload and change the password if already downloaded locally
+            // no need to re-download and change the password if already downloaded locally
             return;
         }
 

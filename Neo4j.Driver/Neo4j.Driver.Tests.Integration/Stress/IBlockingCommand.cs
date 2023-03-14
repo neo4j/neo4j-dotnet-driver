@@ -17,8 +17,7 @@
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public interface IBlockingCommand<in TContext>
-    where TContext : StressTestContext
+public interface IBlockingCommand
 {
-    void Execute(TContext context);
+    void Execute(StressTestContext context);
 }

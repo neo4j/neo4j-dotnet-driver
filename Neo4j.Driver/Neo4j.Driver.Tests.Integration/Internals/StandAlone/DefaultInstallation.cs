@@ -21,17 +21,17 @@ using Neo4j.Driver.TestUtil;
 
 namespace Neo4j.Driver.IntegrationTests.Internals;
 
-public class Neo4jDefaultInstallation
+public static class DefaultInstallation
 {
-    public static string User = "neo4j";
-    public static string Password = "neo4j";
-    public static string HttpUri = "http://127.0.0.1:7474";
+    public static readonly string User = "neo4j";
+    public static readonly string Password = "neo4j";
+    public static readonly string HttpUri = "http://127.0.0.1:7474";
 
-    public static string BoltHeader = "bolt://";
-    public static string BoltHost = "127.0.0.1";
-    public static string BoltPort = "7687";
+    public static readonly string BoltHeader = "bolt://";
+    private static readonly string BoltHost = "127.0.0.1";
+    public static readonly string BoltPort = "7687";
 
-    static Neo4jDefaultInstallation()
+    static DefaultInstallation()
     {
         if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TEST_NEO4J_USER")))
         {
@@ -58,16 +58,10 @@ public class Neo4jDefaultInstallation
 
     public static IDriver NewBoltDriver(Uri boltUri, IAuthToken authToken)
     {
-        ILogger logger;
         var configuredLevelStr = Environment.GetEnvironmentVariable("NEOLOGLEVEL");
-        if (Enum.TryParse<ExtendedLogLevel>(configuredLevelStr ?? "", true, out var configuredLevel))
-        {
-            logger = new TestLogger(s => Console.WriteLine(s), configuredLevel);
-        }
-        else
-        {
-            logger = new TestLogger(s => Debug.WriteLine(s), ExtendedLogLevel.Debug);
-        }
+        var logger = Enum.TryParse<ExtendedLogLevel>(configuredLevelStr ?? "", true, out var configuredLevel)
+            ? new TestLogger(Console.WriteLine, configuredLevel)
+            : new TestLogger(s => Debug.WriteLine(s), ExtendedLogLevel.Debug);
 
         return GraphDatabase.Driver(boltUri, authToken, o => { o.WithLogger(logger); });
     }

@@ -23,19 +23,18 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Reactive.Testing;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Reactive;
 using Xunit.Abstractions;
-using static Neo4j.Driver.IntegrationTests.VersionComparison;
+using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
 using static Neo4j.Driver.Reactive.Utils;
 using static Neo4j.Driver.Tests.Assertions;
 
 namespace Neo4j.Driver.IntegrationTests.Reactive;
 
-public class TransactionIT : AbstractRxIT
+public sealed class TransactionIT : AbstractRxIT
 {
-    private const string BehaviourDifferenceWJavaDriver = "TODO: Behaviour Difference w/Java Driver";
-
-    private readonly IRxSession session;
+    private readonly IRxSession _session;
 
     public TransactionIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         : base(output, fixture)
@@ -46,20 +45,20 @@ public class TransactionIT : AbstractRxIT
             tmpSession.Run("MATCH (n) DETACH DELETE n").Consume();
         }
 
-        session = NewSession();
+        _session = NewSession();
     }
 
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
     public void ShouldCommitEmptyTx()
     {
-        var bookmarkBefore = session.LastBookmarks;
+        var bookmarkBefore = _session.LastBookmarks;
 
-        session.BeginTransaction()
+        _session.BeginTransaction()
             .SelectMany(tx => tx.Commit<int>())
             .WaitForCompletion()
             .AssertEqual(OnCompleted<int>(0));
 
-        var bookmarkAfter = session.LastBookmarks;
+        var bookmarkAfter = _session.LastBookmarks;
 
         bookmarkBefore.Should().BeNull();
         bookmarkAfter.Should().NotBe(bookmarkBefore);
@@ -68,14 +67,14 @@ public class TransactionIT : AbstractRxIT
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
     public void ShouldRollbackEmptyTx()
     {
-        var bookmarkBefore = session.LastBookmarks;
+        var bookmarkBefore = _session.LastBookmarks;
 
-        session.BeginTransaction()
+        _session.BeginTransaction()
             .SelectMany(tx => tx.Rollback<int>())
             .WaitForCompletion()
             .AssertEqual(OnCompleted<int>(0));
 
-        var bookmarkAfter = session.LastBookmarks;
+        var bookmarkAfter = _session.LastBookmarks;
 
         bookmarkBefore.Should().BeNull();
         bookmarkAfter.Should().Be(bookmarkBefore);
@@ -84,7 +83,7 @@ public class TransactionIT : AbstractRxIT
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
     public void ShouldRunQueryAndCommit()
     {
-        session.BeginTransaction()
+        _session.BeginTransaction()
             .SelectMany(
                 txc =>
                     txc.Run("CREATE (n:Node {id: 42}) RETURN n")
@@ -103,7 +102,7 @@ public class TransactionIT : AbstractRxIT
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
     public async Task ShouldRunQueryAndRollback()
     {
-        var txc = await session.BeginTransaction().SingleAsync();
+        var txc = await _session.BeginTransaction().SingleAsync();
 
         VerifyCanCreateNode(txc, 4242);
         VerifyCanRollback(txc);
@@ -125,7 +124,7 @@ public class TransactionIT : AbstractRxIT
 
     private async Task VerifyRunMultipleQuerys(bool commit)
     {
-        var txc = await session.BeginTransaction().SingleAsync();
+        var txc = await _session.BeginTransaction().SingleAsync();
 
         var result1 = txc.Run("CREATE (n:Node {id : 1})");
         await result1.Records().SingleOrDefaultAsync();
@@ -155,7 +154,7 @@ public class TransactionIT : AbstractRxIT
 
     private async Task VerifyRunMultipleQuerysWithoutWaiting(bool commit)
     {
-        var txc = await session.BeginTransaction().SingleAsync();
+        var txc = await _session.BeginTransaction().SingleAsync();
 
         var result1 = txc.Run("CREATE (n:Node {id : 1})");
         var result2 = txc.Run("CREATE (n:Node {id : 2})");
@@ -182,7 +181,7 @@ public class TransactionIT : AbstractRxIT
 
     private async Task VerifyRunMultipleQuerysWithoutStreaming(bool commit)
     {
-        var txc = await session.BeginTransaction().SingleAsync();
+        var txc = await _session.BeginTransaction().SingleAsync();
 
         var result1 = txc.Run("CREATE (n:Node {id : 1})");
         var result2 = txc.Run("CREATE (n:Node {id : 2})");
@@ -198,7 +197,7 @@ public class TransactionIT : AbstractRxIT
     [RequireServerFact]
     public async Task ShouldFailToCommitAfterAFailedQuery()
     {
-        var txc = await session.BeginTransaction().SingleAsync();
+        var txc = await _session.BeginTransaction().SingleAsync();
 
         VerifyFailsWithWrongQuery(txc);
 
@@ -210,7 +209,7 @@ public class TransactionIT : AbstractRxIT
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
     public async Task ShouldSucceedToRollbackAfterAFailedQuery()
     {
-        var txc = await session.BeginTransaction().SingleAsync();
+        var txc = await _session.BeginTransaction().SingleAsync();
 
         VerifyFailsWithWrongQuery(txc);
 
@@ -222,7 +221,7 @@ public class TransactionIT : AbstractRxIT
     [RequireServerFact]
     public async Task ShouldFailToCommitAfterSuccessfulAndFailedQuerys()
     {
-        var txc = await session.BeginTransaction().SingleAsync();
+        var txc = await _session.BeginTransaction().SingleAsync();
 
         VerifyCanCreateNode(txc, 5);
         VerifyCanReturnOne(txc);
@@ -236,7 +235,7 @@ public class TransactionIT : AbstractRxIT
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
     public async Task ShouldSucceedToRollbackAfterSuccessfulAndFailedQuerys()
     {
-        var txc = await session.BeginTransaction().SingleAsync();
+        var txc = await _session.BeginTransaction().SingleAsync();
 
         VerifyCanCreateNode(txc, 5);
         VerifyCanReturnOne(txc);
@@ -250,7 +249,7 @@ public class TransactionIT : AbstractRxIT
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
     public async Task ShouldFailToRunAnotherQueryAfterAFailedOne()
     {
-        var txc = await session.BeginTransaction().SingleAsync();
+        var txc = await _session.BeginTransaction().SingleAsync();
 
         VerifyFailsWithWrongQuery(txc);
 
@@ -283,7 +282,7 @@ public class TransactionIT : AbstractRxIT
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
     public async Task ShouldNotAllowCommitAfterCommit()
     {
-        var txc = await session.BeginTransaction().SingleAsync();
+        var txc = await _session.BeginTransaction().SingleAsync();
 
         VerifyCanCreateNode(txc, 6);
         VerifyCanCommit(txc);
@@ -302,7 +301,7 @@ public class TransactionIT : AbstractRxIT
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
     public async Task ShouldNotAllowRollbackAfterRollback()
     {
-        var txc = await session.BeginTransaction().SingleAsync();
+        var txc = await _session.BeginTransaction().SingleAsync();
 
         VerifyCanCreateNode(txc, 6);
         VerifyCanRollback(txc);
@@ -321,7 +320,7 @@ public class TransactionIT : AbstractRxIT
     [RequireServerFact]
     public async Task ShouldFailToCommitAfterRollback()
     {
-        var txc = await session.BeginTransaction().SingleAsync();
+        var txc = await _session.BeginTransaction().SingleAsync();
 
         VerifyCanCreateNode(txc, 6);
         VerifyCanRollback(txc);
@@ -340,7 +339,7 @@ public class TransactionIT : AbstractRxIT
     [RequireServerFact]
     public async Task ShouldFailToRollbackAfterCommit()
     {
-        var txc = await session.BeginTransaction().SingleAsync();
+        var txc = await _session.BeginTransaction().SingleAsync();
 
         VerifyCanCreateNode(txc, 6);
         VerifyCanCommit(txc);
@@ -370,7 +369,7 @@ public class TransactionIT : AbstractRxIT
 
     private async Task VerifyFailToRunQueryAfterCompletedTxc(bool commit)
     {
-        var txc = await session.BeginTransaction().SingleAsync();
+        var txc = await _session.BeginTransaction().SingleAsync();
 
         VerifyCanCreateNode(txc, 15);
         VerifyCanCommitOrRollback(txc, commit);
@@ -389,19 +388,19 @@ public class TransactionIT : AbstractRxIT
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
     public async Task ShouldUpdateBookmark()
     {
-        var bookmark1 = session.LastBookmarks;
+        var bookmark1 = _session.LastBookmarks;
 
-        var txc1 = await session.BeginTransaction().SingleAsync();
+        var txc1 = await _session.BeginTransaction().SingleAsync();
         VerifyCanCreateNode(txc1, 20);
         VerifyCanCommit(txc1);
 
-        var bookmark2 = session.LastBookmarks;
+        var bookmark2 = _session.LastBookmarks;
 
-        var txc2 = await session.BeginTransaction().SingleAsync();
+        var txc2 = await _session.BeginTransaction().SingleAsync();
         VerifyCanCreateNode(txc2, 20);
         VerifyCanCommit(txc2);
 
-        var bookmark3 = session.LastBookmarks;
+        var bookmark3 = _session.LastBookmarks;
 
         bookmark1.Should().BeNull();
         bookmark2.Should().NotBe(bookmark1);
@@ -411,7 +410,7 @@ public class TransactionIT : AbstractRxIT
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
     public async Task ShouldPropagateFailuresFromQuerys()
     {
-        var txc = await session.BeginTransaction().SingleAsync();
+        var txc = await _session.BeginTransaction().SingleAsync();
 
         var result1 = txc.Run("CREATE (:TestNode) RETURN 1 as n");
         var result2 = txc.Run("CREATE (:TestNode) RETURN 2 as n");
@@ -435,7 +434,7 @@ public class TransactionIT : AbstractRxIT
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
     public async Task ShouldNotRunUntilSubscribed()
     {
-        var txc = await session.BeginTransaction().SingleAsync();
+        var txc = await _session.BeginTransaction().SingleAsync();
 
         var result1 = txc.Run("RETURN 1");
         var result2 = txc.Run("RETURN 2");
@@ -471,7 +470,7 @@ public class TransactionIT : AbstractRxIT
 
     private async Task VerifyNotPropagateFailureIfNotExecuted(bool commit)
     {
-        var txc = await session.BeginTransaction().SingleAsync();
+        var txc = await _session.BeginTransaction().SingleAsync();
 
         txc.Run("RETURN ILLEGAL");
 
@@ -481,7 +480,7 @@ public class TransactionIT : AbstractRxIT
     [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
     public async Task ShouldNotPropagateRunFailureFromSummary()
     {
-        var txc = await session.BeginTransaction().SingleAsync();
+        var txc = await _session.BeginTransaction().SingleAsync();
         var result = txc.Run("RETURN Wrong");
 
         result.Records()
@@ -502,7 +501,7 @@ public class TransactionIT : AbstractRxIT
     {
         const int size = 1024;
 
-        var messages = session.BeginTransaction()
+        var messages = _session.BeginTransaction()
             .SelectMany(
                 txc =>
                     txc.Run("UNWIND range(1, $size) AS x RETURN x", new { size })

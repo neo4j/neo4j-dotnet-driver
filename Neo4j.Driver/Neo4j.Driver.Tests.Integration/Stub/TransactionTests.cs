@@ -22,7 +22,6 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Stub;
 
@@ -34,12 +33,12 @@ internal static class ExceptionExtension
         {
             T => true,
             AggregateException aggregate => aggregate.InnerExceptions.Any(x => x.HasCause<T>()),
-            _ => exception.InnerException?.HasCause<T>() ?? false
+            var _ => exception.InnerException?.HasCause<T>() ?? false
         };
     }
 }
 
-public class TransactionTests
+public abstract class TransactionTests
 {
     private static void NoEncryptionAndShortRetry(ConfigBuilder builder)
     {
@@ -54,27 +53,22 @@ public class TransactionTests
         [InlineData("V4")]
         public void ShouldFailIfCommitFailsDueToBrokenConnection(string boltVersion)
         {
-            using (BoltStubServer.Start($"{boltVersion}/connection_error_on_commit", 9001))
-            {
-                using (var driver =
-                       GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, NoEncryptionAndShortRetry))
-                {
-                    using (var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Write)))
-                    {
-                        var txc = session.BeginTransaction();
-                        var result = txc.Run("CREATE (n {name: 'Bob'})");
+            using var _ = BoltStubServer.Start($"{boltVersion}/connection_error_on_commit", 9001);
+            using var driver =
+                GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, NoEncryptionAndShortRetry);
 
-                        var exc = Record.Exception(() => txc.Commit());
+            using var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Write));
+            var txc = session.BeginTransaction();
+            txc.Run("CREATE (n {name: 'Bob'})");
 
-                        exc.Should()
-                            .BeOfType<ServiceUnavailableException>()
-                            .Which
-                            .HasCause<IOException>()
-                            .Should()
-                            .BeTrue();
-                    }
-                }
-            }
+            var exc = Record.Exception(() => txc.Commit());
+
+            exc.Should()
+                .BeOfType<ServiceUnavailableException>()
+                .Which
+                .HasCause<IOException>()
+                .Should()
+                .BeTrue();
         }
 
         [Theory]
@@ -82,74 +76,53 @@ public class TransactionTests
         [InlineData("V4")]
         public async Task ShouldFailIfCommitFailsDueToBrokenConnectionAsync(string boltVersion)
         {
-            using (BoltStubServer.Start($"{boltVersion}/connection_error_on_commit", 9001))
-            {
-                using (var driver =
-                       GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, NoEncryptionAndShortRetry))
-                {
-                    var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
-                    try
-                    {
-                        var txc = await session.BeginTransactionAsync();
-                        var result = await txc.RunAsync("CREATE (n {name: 'Bob'})");
+            using var _ = BoltStubServer.Start($"{boltVersion}/connection_error_on_commit", 9001);
+            await using var driver =
+                GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, NoEncryptionAndShortRetry);
 
-                        var exc = await Record.ExceptionAsync(() => txc.CommitAsync());
+            await using var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
+            var txc = await session.BeginTransactionAsync();
+            await txc.RunAsync("CREATE (n {name: 'Bob'})");
 
-                        exc.Should()
-                            .BeOfType<ServiceUnavailableException>()
-                            .Which
-                            .HasCause<IOException>()
-                            .Should()
-                            .BeTrue();
-                    }
-                    finally
-                    {
-                        await session.CloseAsync();
-                    }
-                }
-            }
+            var exc = await Record.ExceptionAsync(() => txc.CommitAsync());
+
+            exc.Should()
+                .BeOfType<ServiceUnavailableException>()
+                .Which
+                .HasCause<IOException>()
+                .Should()
+                .BeTrue();
         }
     }
 
     public class TransactionFunction
     {
-        private readonly ITestOutputHelper _testOutputHelper;
-
-        public TransactionFunction(ITestOutputHelper testOutputHelper)
-        {
-            _testOutputHelper = testOutputHelper;
-        }
-
         [Theory]
         [InlineData("V3")]
         [InlineData("V4")]
         public void ShouldFailIfCommitFailsDueToBrokenConnection(string boltVersion)
         {
-            using (BoltStubServer.Start($"{boltVersion}/connection_error_on_commit", 9001))
-            {
-                using (var driver =
-                       GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, NoEncryptionAndShortRetry))
-                {
-                    var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Write));
-                    try
-                    {
-                        var exc = Record.Exception(
-                            () =>
-                                session.WriteTransaction(txc => txc.Run("CREATE (n {name: 'Bob'})")));
+            using var _ = BoltStubServer.Start($"{boltVersion}/connection_error_on_commit", 9001);
 
-                        exc.Should()
-                            .BeOfType<ServiceUnavailableException>()
-                            .Which
-                            .HasCause<IOException>()
-                            .Should()
-                            .BeTrue();
-                    }
-                    finally
-                    {
-                        session.Dispose();
-                    }
-                }
-            }
+            var exc = Record.Exception(
+                () =>
+                {
+                    using var driver = GraphDatabase.Driver(
+                        "bolt://127.0.0.1:9001",
+                        AuthTokens.None,
+                        NoEncryptionAndShortRetry);
+
+                    using var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Write));
+
+                    session.ExecuteWrite(txc => txc.Run("CREATE (n {name: 'Bob'})"));
+                });
+
+            exc.Should()
+                .BeOfType<ServiceUnavailableException>()
+                .Which
+                .HasCause<IOException>()
+                .Should()
+                .BeTrue();
         }
 
         [Theory]
@@ -157,34 +130,25 @@ public class TransactionTests
         [InlineData("V4")]
         public async Task ShouldFailIfCommitFailsDueToBrokenConnectionAsync(string boltVersion)
         {
-            using (BoltStubServer.Start($"{boltVersion}/connection_error_on_commit", 9001))
-            {
-                using (var driver =
-                       GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, NoEncryptionAndShortRetry))
+            using var _ = BoltStubServer.Start($"{boltVersion}/connection_error_on_commit", 9001);
+
+            var exc = await Record.ExceptionAsync(
+                async () =>
                 {
-                    var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
+                    await using var driver =
+                        GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, NoEncryptionAndShortRetry);
 
-                    try
-                    {
-                        var exc = await Record.ExceptionAsync(
-                            () =>
-                            {
-                                return session.WriteTransactionAsync(txc => txc.RunAsync("CREATE (n {name: 'Bob'})"));
-                            });
+                    await using var session = driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
 
-                        exc.Should()
-                            .BeOfType<ServiceUnavailableException>()
-                            .Which
-                            .HasCause<IOException>()
-                            .Should()
-                            .BeTrue();
-                    }
-                    finally
-                    {
-                        await session.CloseAsync();
-                    }
-                }
-            }
+                    await session.ExecuteWriteAsync(txc => txc.RunAsync("CREATE (n {name: 'Bob'})"));
+                });
+
+            exc.Should()
+                .BeOfType<ServiceUnavailableException>()
+                .Which
+                .HasCause<IOException>()
+                .Should()
+                .BeTrue();
         }
     }
 }

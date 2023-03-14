@@ -28,7 +28,7 @@ using static Microsoft.Reactive.Testing.ReactiveTest;
 
 namespace Neo4j.Driver.IntegrationTests.Stub;
 
-public class ResultStreamingTests
+public sealed class ResultStreamingTests
 {
     private readonly ITestOutputHelper _output;
     private readonly Action<ConfigBuilder> _setupConfig;
@@ -36,108 +36,81 @@ public class ResultStreamingTests
     public ResultStreamingTests(ITestOutputHelper output)
     {
         _output = output;
-
         _setupConfig = o => o.WithLogger(TestLogger.Create(output));
     }
 
     [Fact]
     public async Task ShouldStreamingWithAsyncSession()
     {
-        using (BoltStubServer.Start("V4/streaming_records_all", 9001))
-        {
-            using (var driver =
-                   GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, _setupConfig))
-            {
-                var session = driver.AsyncSession();
-                try
-                {
-                    var cursor =
-                        await session.RunAsync("MATCH (n) RETURN n.name");
+        using var _ = BoltStubServer.Start("V4/streaming_records_all", 9001);
+        await using var driver =
+            GraphDatabase.Driver("bolt://127.0.0.1:9001", AuthTokens.None, _setupConfig);
 
-                    var result = await cursor.ToListAsync(r => r[0].As<string>());
+        await using var session = driver.AsyncSession();
+        var cursor =
+            await session.RunAsync("MATCH (n) RETURN n.name");
 
-                    result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
-                }
-                finally
-                {
-                    await session.CloseAsync();
-                }
-            }
-        }
+        var result = await cursor.ToListAsync(r => r[0].As<string>());
+
+        result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
     }
 
     [Fact]
     public async Task ShouldAllowChangeFetchSize()
     {
-        using (BoltStubServer.Start("V4/streaming_records", 9001))
-        {
-            using (var driver = GraphDatabase.Driver(
-                       "bolt://127.0.0.1:9001",
-                       AuthTokens.None,
-                       o => o.WithLogger(TestLogger.Create(_output)).WithFetchSize(2)))
-            {
-                var session = driver.AsyncSession();
-                try
-                {
-                    var cursor =
-                        await session.RunAsync("MATCH (n) RETURN n.name");
+        using var _ = BoltStubServer.Start("V4/streaming_records", 9001);
+        await using var driver = GraphDatabase.Driver(
+            "bolt://127.0.0.1:9001",
+            AuthTokens.None,
+            o => o.WithLogger(TestLogger.Create(_output)).WithFetchSize(2));
 
-                    var result = await cursor.ToListAsync(r => r[0].As<string>());
+        await using var session = driver.AsyncSession();
+        var cursor =
+            await session.RunAsync("MATCH (n) RETURN n.name");
 
-                    result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
-                }
-                finally
-                {
-                    await session.CloseAsync();
-                }
-            }
-        }
+        var result = await cursor.ToListAsync(r => r[0].As<string>());
+
+        result.Should().BeEquivalentTo("Bob", "Alice", "Tina");
     }
 
     [Fact]
     public void ShouldDiscardIfNotFinished()
     {
-        using (BoltStubServer.Start("V4/discard_streaming_records", 9001))
-        {
-            using (var driver = GraphDatabase.Driver(
-                       "bolt://127.0.0.1:9001",
-                       AuthTokens.None,
-                       o => o.WithLogger(TestLogger.Create(_output)).WithFetchSize(2)))
-            {
-                var session = driver.RxSession();
+        using var _ = BoltStubServer.Start("V4/discard_streaming_records", 9001);
+        using var driver = GraphDatabase.Driver(
+            "bolt://127.0.0.1:9001",
+            AuthTokens.None,
+            o => o.WithLogger(TestLogger.Create(_output)).WithFetchSize(2));
 
-                session.Run("UNWIND [1,2,3,4] AS n RETURN n")
-                    .Keys()
-                    .WaitForCompletion()
-                    .AssertEqual(
-                        OnNext(0, Utils.MatchesKeys("n")),
-                        OnCompleted<string[]>(0));
+        var session = driver.RxSession();
 
-                session.Close<string>().WaitForCompletion().AssertEqual(OnCompleted<string>(0));
-            }
-        }
+        session.Run("UNWIND [1,2,3,4] AS n RETURN n")
+            .Keys()
+            .WaitForCompletion()
+            .AssertEqual(
+                OnNext(0, Utils.MatchesKeys("n")),
+                OnCompleted<string[]>(0));
+
+        session.Close<string>().WaitForCompletion().AssertEqual(OnCompleted<string>(0));
     }
 
     [Fact]
     public void ShouldDiscardTxIfNotFinished()
     {
-        using (BoltStubServer.Start("V4/discard_streaming_records_tx", 9001))
-        {
-            using (var driver = GraphDatabase.Driver(
-                       "bolt://127.0.0.1:9001",
-                       AuthTokens.None,
-                       o => o.WithLogger(TestLogger.Create(_output)).WithFetchSize(2)))
-            {
-                var session = driver.RxSession();
+        using var _ = BoltStubServer.Start("V4/discard_streaming_records_tx", 9001);
+        using var driver = GraphDatabase.Driver(
+            "bolt://127.0.0.1:9001",
+            AuthTokens.None,
+            o => o.WithLogger(TestLogger.Create(_output)).WithFetchSize(2));
 
-                session.ReadTransaction(tx => tx.Run("UNWIND [1,2,3,4] AS n RETURN n").Keys())
-                    .WaitForCompletion()
-                    .AssertEqual(
-                        OnNext(0, Utils.MatchesKeys("n")),
-                        OnCompleted<string[]>(0));
+        var session = driver.RxSession();
 
-                session.Close<string>().WaitForCompletion().AssertEqual(OnCompleted<string>(0));
-            }
-        }
+        session.ExecuteRead(tx => tx.Run("UNWIND [1,2,3,4] AS n RETURN n").Keys())
+            .WaitForCompletion()
+            .AssertEqual(
+                OnNext(0, Utils.MatchesKeys("n")),
+                OnCompleted<string[]>(0));
+
+        session.Close<string>().WaitForCompletion().AssertEqual(OnCompleted<string>(0));
     }
 }

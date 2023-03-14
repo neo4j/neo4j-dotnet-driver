@@ -25,33 +25,34 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Reactive;
 
-[Collection(SAIntegrationCollection.CollectionName)]
+[Collection(SaIntegrationCollection.CollectionName)]
 public abstract class AbstractRxIT : AbstractRxTest, IDisposable
 {
     private readonly List<IRxSession> _sessions = new();
-    private bool _disposed;
+    protected bool IsDispose { get; private set; }
 
     protected AbstractRxIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         : base(output)
     {
         Server = fixture.StandAloneSharedInstance;
-        ServerEndPoint = Server.BoltUri;
-        AuthToken = Server.AuthToken;
     }
 
     protected IStandAlone Server { get; }
-    protected Uri ServerEndPoint { get; }
-    protected IAuthToken AuthToken { get; }
 
-    public void Dispose()
+    public virtual void Dispose()
     {
-        Dispose(true);
+        switch (IsDispose)
+        {
+            case true: return;
+            case false:
+                _sessions.ForEach(x => x.Close<Unit>().WaitForCompletion());
+                _sessions.Clear();
+                break;
+        }
+
+        //Mark as disposed
+        IsDispose = true;
         GC.SuppressFinalize(this);
-    }
-
-    ~AbstractRxIT()
-    {
-        Dispose(false);
     }
 
     protected IRxSession NewSession()
@@ -59,22 +60,5 @@ public abstract class AbstractRxIT : AbstractRxTest, IDisposable
         var session = Server.Driver.RxSession();
         _sessions.Add(session);
         return session;
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        if (disposing)
-        {
-            _sessions.ForEach(x => x.Close<Unit>().WaitForCompletion());
-            _sessions.Clear();
-        }
-
-        //Mark as disposed
-        _disposed = true;
     }
 }
