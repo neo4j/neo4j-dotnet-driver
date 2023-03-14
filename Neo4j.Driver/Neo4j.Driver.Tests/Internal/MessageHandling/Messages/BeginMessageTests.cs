@@ -135,16 +135,16 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
             message.Metadata.Should().ContainKey("tx_metadata").WhichValue.Should().BeEquivalentTo(txMeta);
             message.Metadata.Should().ContainKey("mode").WhichValue.Should().BeEquivalentTo("r");
             message.Metadata.Should().ContainKey("db").WhichValue.Should().BeEquivalentTo("neo4j");
-            message.Metadata.Should().ContainKey("noti_min_sev").WhichValue.Should().BeEquivalentTo("WARNING");
+            message.Metadata.Should().ContainKey("notifications_minimum_severity").WhichValue.Should().BeEquivalentTo("WARNING");
             message.Metadata.Should()
-                .ContainKey("noti_dis_cats")
+                .ContainKey("notifications_disabled_categories")
                 .WhichValue.Should()
                 .BeEquivalentTo(new[] { "GENERIC" });
 
             message.ToString()
                 .Should()
                 .Be(
-                    "BEGIN [{bookmarks, [bm:a]}, {tx_timeout, 1000}, {tx_metadata, [{a, b}]}, {mode, r}, {db, neo4j}, {imp_user, Douglas Fir}, {noti_min_sev, WARNING}, {noti_dis_cats, [GENERIC]}]");
+                    "BEGIN [{bookmarks, [bm:a]}, {tx_timeout, 1000}, {tx_metadata, [{a, b}]}, {mode, r}, {db, neo4j}, {imp_user, Douglas Fir}, {notifications_minimum_severity, WARNING}, {notifications_disabled_categories, [GENERIC]}]");
         }
 
         [Fact]
