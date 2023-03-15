@@ -27,7 +27,7 @@ internal static class NotificationsMetadataWriter
                     metadata.Add(MinimumSeverityKey, severity);
                 }
 
-                if (config.DisabledCategories?.Any() ?? false)
+                if (config.DisabledCategories != null)
                 {
                     var cats = config.DisabledCategories.Select(x => x.ToString().ToUpperInvariant()).ToArray();
                     metadata.Add(DisabledCategoriesKey, cats);

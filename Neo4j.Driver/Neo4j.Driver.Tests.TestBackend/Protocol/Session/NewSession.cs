@@ -88,7 +88,7 @@ internal class NewSession : IProtocolObject
                     .BookmarkManager);
         }
 
-        if (data.notificationsMinSeverity != null)
+        if (data.notificationsMinSeverity != null || data.notificationsDisabledCategories != null)
         {
             if (data.notificationsMinSeverity == "OFF")
             {
@@ -96,12 +96,15 @@ internal class NewSession : IProtocolObject
             }
             else
             {
-                var severity = Enum.Parse<Severity>(data.notificationsMinSeverity, true);
-                configBuilder.WithNotifications(
-                    severity,
-                    data.notificationsDisabledCategories
-                        ?.Select(x => Enum.Parse<Category>(x, true))
-                        .ToArray() ?? Array.Empty<Category>());
+                var sev = Enum.TryParse<Severity>(data.notificationsMinSeverity ?? "ignore", true, out var severity)
+                    ? (Severity?)severity
+                    : null;
+
+                var cats = data.notificationsDisabledCategories
+                    ?.Select(x => Enum.Parse<Category>(x, true))
+                    .ToArray();
+
+                configBuilder.WithNotifications(sev, cats);
             }
         }
     }

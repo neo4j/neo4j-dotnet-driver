@@ -173,10 +173,10 @@ internal static class SummaryJsonSerializer
             return summary.Notifications.Select(
                     x => new
                     {
-                        rawCategory = x.RawCategory,
+                        rawCategory = x.RawCategory ?? String.Empty,
                         category = x.Category.ToString().ToUpper(),
                         severity = x.Severity,
-                        rawSeverityLevel = x.RawSeverityLevel,
+                        rawSeverityLevel = x.RawSeverityLevel ?? String.Empty,
                         severityLevel = x.SeverityLevel.ToString().ToUpper(),
                         description = x.Description,
                         code = x.Code,
@@ -188,10 +188,10 @@ internal static class SummaryJsonSerializer
         return summary.Notifications.Select(
                 x => new
                 {
-                    rawCategory = x.RawCategory,
+                    rawCategory = x.RawCategory ?? String.Empty,
                     category = x.Category.ToString().ToUpper(),
                     severity = x.Severity,
-                    rawSeverityLevel = x.RawSeverityLevel,
+                    rawSeverityLevel = x.RawSeverityLevel ?? String.Empty,
                     severityLevel = x.SeverityLevel.ToString().ToUpper(),
                     description = x.Description,
                     code = x.Code,
