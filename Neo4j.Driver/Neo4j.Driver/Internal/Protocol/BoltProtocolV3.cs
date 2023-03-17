@@ -39,7 +39,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         _protocolHandlerFactory = protocolHandlerFactory ?? BoltProtocolHandlerFactory.Instance;
     }
 
-    public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
+    public async Task AuthenticateAsync(IConnection connection, string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
     {
         var message = _protocolMessageFactory.NewHelloMessage(connection, userAgent, authToken);
         var handler = _protocolHandlerFactory.NewHelloResponseHandler(connection);

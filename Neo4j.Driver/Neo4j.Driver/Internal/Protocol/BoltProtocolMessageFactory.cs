@@ -33,7 +33,7 @@ internal interface IBoltProtocolMessageFactory
     RouteMessageV43 NewRouteMessageV43(IConnection connection, Bookmarks bookmarks, string database);
     DiscardMessage NewDiscardMessage(long id, long discardSize);
     HelloMessage NewHelloMessage(IConnection connection, string userAgent, IAuthToken authToken);
-    HelloMessage NewHelloMessageV51(IConnection connection, string userAgent, INotificationsConfig notificationsConfig);
+    HelloMessage NewAuthlessHelloMessage(IConnection connection, string userAgent, INotificationsConfig notificationsConfig);
 
     BeginMessage NewBeginMessage(
         IConnection connection,
@@ -115,7 +115,7 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
             connection.RoutingContext);
     }
 
-    public HelloMessage NewHelloMessageV51(IConnection connection, string userAgent, INotificationsConfig notificationsConfig)
+    public HelloMessage NewAuthlessHelloMessage(IConnection connection, string userAgent, INotificationsConfig notificationsConfig)
     {
         return new HelloMessage(connection.Version, userAgent, connection.RoutingContext, notificationsConfig);
     }

@@ -42,15 +42,15 @@ internal sealed class BoltProtocol : IBoltProtocol
         _boltProtocolV3 = boltProtocolV3 ?? BoltProtocolV3.Instance;
     }
 
-    public Task LoginAsync(
+    public Task AuthenticateAsync(
         IConnection connection,
         string userAgent,
         IAuthToken authToken,
         INotificationsConfig notificationsConfig)
     {
         return connection.Version >= BoltProtocolVersion.V5_1
-            ? LoginV51Async(connection, userAgent, authToken, notificationsConfig)
-            : _boltProtocolV3.LoginAsync(connection, userAgent, authToken, notificationsConfig);
+            ? AuthenticateWithLogonAsync(connection, userAgent, authToken, notificationsConfig)
+            : _boltProtocolV3.AuthenticateAsync(connection, userAgent, authToken, notificationsConfig);
     }
 
     public Task LogoutAsync(IConnection connection)
@@ -185,19 +185,18 @@ internal sealed class BoltProtocol : IBoltProtocol
         return _boltProtocolV3.RollbackTransactionAsync(connection);
     }
 
-    private async Task LoginV51Async(
+    private async Task AuthenticateWithLogonAsync(
         IConnection connection,
         string userAgent,
         IAuthToken authToken,
         INotificationsConfig notificationsConfig)
     {
-        var helloMessage = _protocolMessageFactory.NewHelloMessageV51(connection, userAgent, notificationsConfig);
+        var helloMessage = _protocolMessageFactory.NewAuthlessHelloMessage(connection, userAgent, notificationsConfig);
         var helloHandler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
         await connection.EnqueueAsync(helloMessage, helloHandler).ConfigureAwait(false);
 
         var logonMessage = _protocolMessageFactory.NewLogonMessage(connection, authToken);
-        var logonHandler = _protocolHandlerFactory.NewLogonResponseHandler(connection);
-        await connection.EnqueueAsync(logonMessage, logonHandler).ConfigureAwait(false);
+        await connection.EnqueueAsync(logonMessage, NoOpResponseHandler.Instance).ConfigureAwait(false);
 
         await connection.SyncAsync().ConfigureAwait(false);
     }

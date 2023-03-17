@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 mockHandlerFactory.Setup(x => x.NewHelloResponseHandler(mockConn.Object)).Returns(handler);
 
                 var protocol = new BoltProtocolV3(mockMsgFactory.Object, mockHandlerFactory.Object);
-                await protocol.LoginAsync(mockConn.Object, "ua", auth, null);
+                await protocol.AuthenticateAsync(mockConn.Object, "ua", auth, null);
 
                 mockConn.Verify(
                     x => x.EnqueueAsync(It.IsNotNull<HelloMessage>(), It.IsNotNull<HelloResponseHandler>()),

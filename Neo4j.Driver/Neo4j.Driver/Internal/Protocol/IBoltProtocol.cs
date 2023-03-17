@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal;
 
 internal interface IBoltProtocol
 {
-    Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken,
+    Task AuthenticateAsync(IConnection connection, string userAgent, IAuthToken authToken,
         INotificationsConfig notificationsConfig);
     Task LogoutAsync(IConnection connection);
     Task ResetAsync(IConnection connection);

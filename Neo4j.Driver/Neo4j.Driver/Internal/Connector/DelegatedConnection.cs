@@ -151,7 +151,7 @@ internal abstract class DelegatedConnection : IConnection
 
     public Task LoginAsync(string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
     {
-        return BoltProtocol.LoginAsync(this, userAgent, authToken, notificationsConfig);
+        return BoltProtocol.AuthenticateAsync(this, userAgent, authToken, notificationsConfig);
     }
 
     public Task LogoutAsync()

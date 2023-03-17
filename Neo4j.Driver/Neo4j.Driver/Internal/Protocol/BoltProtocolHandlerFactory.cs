@@ -47,8 +47,6 @@ internal interface IBoltProtocolHandlerFactory
     RouteResponseHandler NewRouteResponseHandler();
     HelloResponseHandler NewHelloResponseHandler(IConnection connection);
 
-    LogonResponseHandler NewLogonResponseHandler(IConnection connection);
-
     CommitResponseHandler NewCommitResponseHandler(IBookmarksTracker bookmarksTracker);
 
     //Bolt V3
@@ -105,11 +103,6 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
     public HelloResponseHandler NewHelloResponseHandler(IConnection connection)
     {
         return new HelloResponseHandler(connection);
-    }
-
-    public LogonResponseHandler NewLogonResponseHandler(IConnection connection)
-    {
-        return new LogonResponseHandler(connection);
     }
 
     public CommitResponseHandler NewCommitResponseHandler(IBookmarksTracker bookmarksTracker)

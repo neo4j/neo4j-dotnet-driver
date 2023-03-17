@@ -18,13 +18,15 @@
 namespace Neo4j.Driver;
 
 /// <summary>
-/// Configuration object for which notifications server will send when executing queries.
-/// Marker interface.
+/// Marker interface for configuration objects of notifications.<br/><br/>
+/// Notification configuration allows the driver to specify which notification categories or severities to assess ond
+/// emit when running a query.
 /// </summary>
+/// <seealso cref="INotification"/>
+/// <seealso cref="ConfigBuilder.WithNotificationsDisabled"/>
+/// <seealso cref="ConfigBuilder.WithNotifications"/>
+/// <seealso cref="SessionConfigBuilder.WithNotificationsDisabled"/>
+/// <seealso cref="SessionConfigBuilder.WithNotifications"/>
 public interface INotificationsConfig
 {
-    /// <summary>
-    /// Returns which notifications are visible.
-    /// </summary>
-    (Severity, Category)[] Visible { get; }
 }

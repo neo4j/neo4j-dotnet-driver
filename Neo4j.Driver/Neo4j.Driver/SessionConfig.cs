@@ -276,14 +276,26 @@ public sealed class SessionConfigBuilder
     }
 
     /// <summary>
-    ///     Set which <see cref="INotification" />s the session can receive in <see cref="IResultSummary.Notifications" />
-    ///     when executing a query, overriding any server configuration.
-    ///     Overriding any driver configuration for queries executed in the session.
+    /// Override configuration for which <see cref="INotification"/>s should be emitted for the lifetime of the
+    /// session. <br/> Unspecified configuration will be provided by configuration specified in the server or the driver's
+    /// <see cref="ConfigBuilder.WithNotifications"/>. <br/> If the driver has disabled notifications with
+    /// <see cref="ConfigBuilder.WithNotificationsDisabled"/>, the unspecified values will be provided by the server.
     /// </summary>
-    /// <remarks>Cannot be used with: <see cref="WithNotificationsDisabled" />.</remarks>
-    /// <param name="minimumSeverity"></param>
-    /// <param name="disabledCategories"></param>
-    /// <returns>A <see cref="SessionConfigBuilder" /> instance for further configuration options.</returns>
+    /// <remarks>Cannot be used with: <see cref="WithNotificationsDisabled"/>.</remarks>
+    /// <param name="minimumSeverity">
+    /// Optional parameter to override the minimum severity of notifications emitted. <br/> By
+    /// leaving null, the value will inherit configuration from <see cref="ConfigBuilder.WithNotifications"/> or the server.
+    /// </param>
+    /// <param name="disabledCategories">
+    /// Optional parameter to override the category of notifications emitted. <br/> By passing
+    /// an empty collection, all categories are enabled.<br/> By leaving null, the value will inherit configuration from
+    /// <see cref="ConfigBuilder.WithNotifications"/> or the server.
+    /// </param>
+    /// <exception cref="ArgumentException">Thrown when both parameters are null.</exception>
+    /// <returns>A <see cref="SessionConfigBuilder"/> instance for further configuration options.</returns>
+    /// <seealso cref="WithNotificationsDisabled"/>
+    /// <seealso cref="ConfigBuilder.WithNotifications"/>
+    /// <seealso cref="ConfigBuilder.WithNotificationsDisabled"/>
     public SessionConfigBuilder WithNotifications(
         Severity? minimumSeverity,
         Category[] disabledCategories)
@@ -293,20 +305,17 @@ public sealed class SessionConfigBuilder
             throw new ArgumentException(
                 $"Both {nameof(minimumSeverity)} and {nameof(disabledCategories)} are both null, at least one must be non-null.");
         }
-        
+
         _config.NotificationsConfig = new NotificationsConfig(minimumSeverity, disabledCategories);
         return this;
     }
 
-    /// <summary>
-    ///     Set session to not receive <see cref="INotification" />s from the server when executing
-    ///     queries.
-    ///     Overriding any driver configuration for queries executed in the session.
-    /// </summary>
-    /// <remarks>
-    ///     Cannot be used with: <see cref="WithNotifications" />.
-    /// </remarks>
-    /// <returns>A <see cref="SessionConfigBuilder" /> instance for further configuration options.</returns>
+    /// <summary>Disable all notifications for the lifetime of the session.</summary>
+    /// <remarks>Cannot be used with: <see cref="WithNotifications"/>.</remarks>
+    /// <returns>A <see cref="SessionConfigBuilder"/> instance for further configuration options.</returns>
+    /// <seealso cref="WithNotifications"/>
+    /// <seealso cref="ConfigBuilder.WithNotifications"/>
+    /// <seealso cref="ConfigBuilder.WithNotificationsDisabled"/>
     public SessionConfigBuilder WithNotificationsDisabled()
     {
         _config.NotificationsConfig = new NotificationsDisabledConfig();

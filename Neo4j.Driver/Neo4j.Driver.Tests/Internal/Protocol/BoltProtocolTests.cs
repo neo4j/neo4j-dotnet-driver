@@ -46,9 +46,9 @@ namespace Neo4j.Driver.Internal.Protocol
                 var auth = AuthTokens.Basic("x", "y");
                 var ua = "herman";
 
-                await protocol.LoginAsync(mockConn.Object, ua, auth, null);
+                await protocol.AuthenticateAsync(mockConn.Object, ua, auth, null);
 
-                mockV3.Verify(x => x.LoginAsync(mockConn.Object, ua, auth, null), Times.Once);
+                mockV3.Verify(x => x.AuthenticateAsync(mockConn.Object, ua, auth, null), Times.Once);
                 mockConn.Verify(x => x.LoginAsync(It.IsAny<string>(), It.IsAny<IAuthToken>(), It.IsAny<INotificationsConfig>()), Times.Never());
             }
         }

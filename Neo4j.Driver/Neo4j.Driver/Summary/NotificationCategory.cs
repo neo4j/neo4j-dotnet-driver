@@ -54,7 +54,7 @@ public enum NotificationCategory
     Generic,
 
     /// <summary>
-    /// <see cref="INotification"/>'s category is a value unknown to this driver version.
+    /// the <see cref="INotification"/>'s category is a value unknown to this driver version.
     /// </summary>
     Unknown
 }

@@ -26,22 +26,6 @@ internal sealed class NotificationsConfig : INotificationsConfig
     public Severity? MinimumSeverity { get; set; }
     public HashSet<Category> DisabledCategories { get; set; }
 
-    public (Severity, Category)[] Visible
-    {
-        get
-        {
-            var sevs = MinimumSeverity.HasValue && MinimumSeverity.Value == Severity.Warning
-                ? new[] { Severity.Warning }
-                : new[] { Severity.Information, Severity.Warning };
-
-            return Enum.GetValues(typeof(Category))
-                .OfType<Category>()
-                .Where(x => !(DisabledCategories?.Contains(x) ?? false))
-                .SelectMany(x => sevs.Select(y => (y, x)))
-                .ToArray();
-        }
-    }
-
     public NotificationsConfig(Severity? minimumSeverity, Category[] disabledCategories)
     {
         MinimumSeverity = minimumSeverity;
