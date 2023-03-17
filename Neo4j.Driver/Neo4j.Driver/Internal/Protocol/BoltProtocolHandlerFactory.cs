@@ -46,7 +46,6 @@ internal interface IBoltProtocolHandlerFactory
 
     RouteResponseHandler NewRouteResponseHandler();
     HelloResponseHandler NewHelloResponseHandler(IConnection connection);
-    HelloResponseHandlerV51 NewHelloResponseHandlerV51(IConnection connection);
 
     LogonResponseHandler NewLogonResponseHandler(IConnection connection);
 
@@ -106,11 +105,6 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
     public HelloResponseHandler NewHelloResponseHandler(IConnection connection)
     {
         return new HelloResponseHandler(connection);
-    }
-
-    public HelloResponseHandlerV51 NewHelloResponseHandlerV51(IConnection connection)
-    {
-        return new HelloResponseHandlerV51(connection);
     }
 
     public LogonResponseHandler NewLogonResponseHandler(IConnection connection)
