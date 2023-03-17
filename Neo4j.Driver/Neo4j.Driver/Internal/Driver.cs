@@ -109,6 +109,20 @@ internal sealed class Driver : IInternalDriver
         return _connectionProvider.VerifyConnectivityAndGetInfoAsync();
     }
 
+    public async Task<bool> TryVerifyConnectivityAsync()
+    {
+        try
+        {
+            await _connectionProvider.VerifyConnectivityAndGetInfoAsync().ConfigureAwait(false);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+
     public Task VerifyConnectivityAsync()
     {
         return GetServerInfoAsync();
