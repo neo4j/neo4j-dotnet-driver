@@ -89,7 +89,7 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
             return true;
         }
 
-        return _compValue == rhs._compValue && MajorVersion == rhs.MajorVersion && MinorVersion == rhs.MinorVersion;
+        return _compValue == rhs._compValue;
     }
 
     private static int UnpackMajor(int rawVersion)
@@ -176,7 +176,7 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(_compValue, MajorVersion, MinorVersion);
+        return _compValue;
     }
 
     public override string ToString()
