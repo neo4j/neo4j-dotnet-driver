@@ -73,8 +73,9 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         _database = config.Database;
         _defaultMode = config.DefaultAccessMode;
         _fetchSize = config.FetchSize ?? defaultFetchSize;
+        _notificationsConfig = config.NotificationsConfig;
+        
         _useBookmarkManager = config.BookmarkManager != null;
-
         if (_useBookmarkManager)
         {
             _bookmarkManager = config.BookmarkManager;
@@ -84,11 +85,6 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         {
             LastBookmarks = Bookmarks.From(config.Bookmarks);
             _initialBookmarks = LastBookmarks;
-        }
-
-        if (config.NotificationsConfig != null)
-        {
-            _notificationsConfig = config.NotificationsConfig;
         }
     }
 
