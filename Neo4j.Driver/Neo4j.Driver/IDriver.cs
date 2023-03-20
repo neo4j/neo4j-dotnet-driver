@@ -67,12 +67,12 @@ public interface IDriver : IDisposable, IAsyncDisposable
     Task<IServerInfo> GetServerInfoAsync();
 
     /// <summary>
-    /// Asynchronously verify if the driver can connect to the remote server returning server info
+    /// Asynchronously verify if the driver can connect to the remote server.
     /// </summary>
     ///  <remarks>Even if this method returns false, the driver still need to be closed via
     /// <see cref="CloseAsync"/> or disposed to free up all resources.</remarks>
     /// <returns>A task that represents the asynchronous operation.<br/>
-    /// The task result contains if the driver successfully connected.</returns>
+    /// The task result contains if the driver successfully connected to the remote server.</returns>
     Task<bool> TryVerifyConnectivityAsync();
 
     /// <summary>
