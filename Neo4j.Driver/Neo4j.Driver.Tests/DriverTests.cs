@@ -150,6 +150,32 @@ namespace Neo4j.Driver.Tests
         }
 
         [Fact]
+        public async void ShouldTryVerifyConnection()
+        {
+            var mock = new Mock<IConnectionProvider>();
+            mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
+                .Returns(Task.FromResult(new Mock<IServerInfo>().Object));
+
+            var driver = (IDriver)new Internal.Driver(new Uri("bolt://localhost"), false, mock.Object, null);
+            var connects = await driver.TryVerifyConnectivityAsync();
+            
+            connects.Should().BeTrue();
+        }
+
+        [Fact]
+        public async void ShouldCatchInTryVerifyConnection()
+        {
+            var mock = new Mock<IConnectionProvider>();
+            mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
+                .ThrowsAsync(new Exception("broken"));
+
+            var driver = (IDriver)new Internal.Driver(new Uri("bolt://localhost"), false, mock.Object, null);
+            var connects = await driver.TryVerifyConnectivityAsync();
+
+            connects.Should().BeFalse();
+        }
+
+        [Fact]
         public async void ShouldGetInfoConnection()
         {
             var mockServerInfo = new Mock<IServerInfo>().Object;
