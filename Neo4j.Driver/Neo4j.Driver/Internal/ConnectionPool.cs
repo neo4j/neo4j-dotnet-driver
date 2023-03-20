@@ -50,6 +50,7 @@ internal sealed class ConnectionPool : IConnectionPool
     private readonly int _maxIdlePoolSize;
 
     private readonly int _maxPoolSize;
+    private readonly INotificationsConfig _notificationsConfig;
 
     private readonly IConnectionPoolListener _poolMetricsListener;
 
@@ -60,7 +61,6 @@ internal sealed class ConnectionPool : IConnectionPool
     private int _poolSize;
 
     private ConnectionPoolStatus _poolStatus = Active;
-    private readonly INotificationsConfig _notificationsConfig;
 
     public ConnectionPool(
         Uri uri,

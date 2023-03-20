@@ -39,7 +39,11 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         _protocolHandlerFactory = protocolHandlerFactory ?? BoltProtocolHandlerFactory.Instance;
     }
 
-    public async Task AuthenticateAsync(IConnection connection, string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
+    public async Task AuthenticateAsync(
+        IConnection connection,
+        string userAgent,
+        IAuthToken authToken,
+        INotificationsConfig notificationsConfig)
     {
         var message = _protocolMessageFactory.NewHelloMessage(connection, userAgent, authToken);
         var handler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
@@ -123,7 +127,10 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             summaryBuilder,
             autoCommitParams.BookmarksTracker);
 
-        var autoCommitMessage = _protocolMessageFactory.NewRunWithMetadataMessage(connection, autoCommitParams, notificationsConfig);
+        var autoCommitMessage = _protocolMessageFactory.NewRunWithMetadataMessage(
+            connection,
+            autoCommitParams,
+            notificationsConfig);
 
         await connection.EnqueueAsync(autoCommitMessage, runHandler).ConfigureAwait(false);
         await connection.EnqueueAsync(PullAllMessage.Instance, pullAllHandler).ConfigureAwait(false);

@@ -22,8 +22,8 @@ namespace Neo4j.Driver.Internal.Messaging;
 
 internal sealed class LogoffMessage : IRequestMessage
 {
-    public IPackStreamSerializer Serializer => LogoffMessageSerializer.Instance;
     public static readonly LogoffMessage Instance = new();
+    public IPackStreamSerializer Serializer => LogoffMessageSerializer.Instance;
 
     public override string ToString()
     {

@@ -23,14 +23,13 @@ namespace Neo4j.Driver.Internal.Messaging;
 
 internal sealed class LogonMessage : IRequestMessage
 {
-    public IPackStreamSerializer Serializer => LogonMessageSerializer.Instance;
-
-    public IDictionary<string, object> Auth { get; }
-
     public LogonMessage(BoltProtocolVersion _, IAuthToken authToken)
     {
         Auth = authToken.AsDictionary();
     }
+
+    public IDictionary<string, object> Auth { get; }
+    public IPackStreamSerializer Serializer => LogonMessageSerializer.Instance;
 
     public override string ToString()
     {

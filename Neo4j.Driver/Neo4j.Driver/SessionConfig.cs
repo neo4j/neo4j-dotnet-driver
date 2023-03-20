@@ -134,6 +134,19 @@ public sealed class SessionConfig
 
     internal IBookmarkManager BookmarkManager { get; set; }
 
+    /// <summary>
+    /// The configuration for setting which notifications the server should send to the client for queries executed in
+    /// the session.
+    /// </summary>
+    /// <remarks>
+    /// Note: Configuration support was introduced in server version 5.7.<br/> Servers currently will analyze all
+    /// queries for all <see cref="NotificationCategory"/>s and <see cref="NotificationSeverity"/>s.
+    /// </remarks>
+    /// <seealso cref="SessionConfigBuilder.WithNotifications"/>
+    /// <seealso cref="SessionConfigBuilder.WithNotificationsDisabled"/>
+    /// <seealso cref="Config.NotificationsConfig"/>
+    /// <seealso cref="INotification"/>
+    /// <seealso cref="IResultSummary.Notifications"/>
     public INotificationsConfig NotificationsConfig { get; internal set; }
 }
 

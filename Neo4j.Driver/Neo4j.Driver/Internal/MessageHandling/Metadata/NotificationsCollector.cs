@@ -65,7 +65,7 @@ internal class NotificationsCollector : IMetadataCollector<IList<INotification>>
         var foundLine = posValue.TryGetValue("line", 0L, out var line);
         var foundColumn = posValue.TryGetValue("column", 0L, out var column);
 
-        var position = foundOffset || foundLine || foundColumn 
+        var position = foundOffset || foundLine || foundColumn
             ? new InputPosition((int)offset, (int)line, (int)column)
             : null;
 

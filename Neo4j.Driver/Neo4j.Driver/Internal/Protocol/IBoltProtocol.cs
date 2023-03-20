@@ -24,8 +24,12 @@ namespace Neo4j.Driver.Internal;
 
 internal interface IBoltProtocol
 {
-    Task AuthenticateAsync(IConnection connection, string userAgent, IAuthToken authToken,
+    Task AuthenticateAsync(
+        IConnection connection,
+        string userAgent,
+        IAuthToken authToken,
         INotificationsConfig notificationsConfig);
+
     Task LogoutAsync(IConnection connection);
     Task ResetAsync(IConnection connection);
 
@@ -35,7 +39,9 @@ internal interface IBoltProtocol
         string impersonatedUser,
         Bookmarks bookmarks);
 
-    Task<IResultCursor> RunInAutoCommitTransactionAsync(IConnection connection, AutoCommitParams autoCommitParams,
+    Task<IResultCursor> RunInAutoCommitTransactionAsync(
+        IConnection connection,
+        AutoCommitParams autoCommitParams,
         INotificationsConfig notificationsConfig);
 
     Task BeginTransactionAsync(

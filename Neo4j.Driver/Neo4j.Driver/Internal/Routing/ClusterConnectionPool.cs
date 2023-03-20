@@ -43,7 +43,12 @@ internal class ClusterConnectionPool : IClusterConnectionPool
         INotificationsConfig notificationsConfig
     ) : this(
         initUris,
-        new ConnectionPoolFactory(connectionFactory, poolSettings, routingSetting.RoutingContext, logger, notificationsConfig),
+        new ConnectionPoolFactory(
+            connectionFactory,
+            poolSettings,
+            routingSetting.RoutingContext,
+            logger,
+            notificationsConfig),
         logger)
     {
     }

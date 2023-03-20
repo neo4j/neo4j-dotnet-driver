@@ -19,7 +19,6 @@ using System;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Logging;
-using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver;
 
@@ -184,5 +183,19 @@ public class Config
     /// </summary>
     public string UserAgent { get; set; } = ConnectionSettings.DefaultUserAgent;
 
+    /// <summary>
+    /// The configuration for setting which notifications the server should send to the client.<br/> This
+    /// configuration is used for all queries executed by the driver unless otherwise overriden by
+    /// <see cref="SessionConfigBuilder"/> for the scope of a single session.
+    /// </summary>
+    /// <remarks>
+    /// Note: Configuration support was introduced in server version 5.7.<br/> Servers currently will analyze all
+    /// queries for all <see cref="NotificationCategory"/>s and <see cref="NotificationSeverity"/>s.
+    /// </remarks>
+    /// <seealso cref="ConfigBuilder.WithNotifications"/>
+    /// <seealso cref="ConfigBuilder.WithNotificationsDisabled"/>
+    /// <seealso cref="SessionConfig.NotificationsConfig"/>
+    /// <seealso cref="INotification"/>
+    /// <seealso cref="IResultSummary.Notifications"/>
     public INotificationsConfig NotificationsConfig { get; internal set; }
 }

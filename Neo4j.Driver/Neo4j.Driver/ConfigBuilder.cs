@@ -352,8 +352,8 @@ public sealed class ConfigBuilder
     /// </param>
     /// <param name="disabledCategories">
     /// Optional parameter to override the category of notifications emitted. <br/> By passing
-    /// an empty collection, all categories are enabled.<br/> By leaving null, the value will inherit configuration from
-    /// the server.
+    /// an empty collection, all categories are enabled.<br/> By leaving null, the value will inherit configuration from the
+    /// server.
     /// </param>
     /// <exception cref="ArgumentException">Thrown when both parameters are null.</exception>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
@@ -375,10 +375,8 @@ public sealed class ConfigBuilder
     }
 
     /// <summary>Disable all notifications for the lifetime of the driver.</summary>
-    /// <remarks>
-    ///     Cannot be used with: <see cref="WithNotifications" />.
-    /// </remarks>
-    /// <returns>A <see cref="ConfigBuilder" /> instance for further configuration options.</returns>
+    /// <remarks>Cannot be used with: <see cref="WithNotifications"/>.</remarks>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     /// <seealso cref="WithNotifications"/>
     /// <seealso cref="SessionConfigBuilder.WithNotifications"/>
     /// <seealso cref="SessionConfigBuilder.WithNotificationsDisabled"/>

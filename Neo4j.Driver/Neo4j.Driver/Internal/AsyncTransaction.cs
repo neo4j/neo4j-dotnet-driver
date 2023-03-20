@@ -35,6 +35,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
     private readonly long _fetchSize;
     private readonly string _impersonatedUser;
     private readonly ILogger _logger;
+    private readonly INotificationsConfig _notificationsConfig;
     private readonly bool _reactive;
     private readonly ITransactionResourceHandler _resourceHandler;
 
@@ -44,7 +45,6 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
     private bool _disposed;
     private IState _state = Active;
-    private readonly INotificationsConfig _notificationsConfig;
 
     public AsyncTransaction(
         IConnection connection,

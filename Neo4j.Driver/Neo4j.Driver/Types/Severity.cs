@@ -1,10 +1,10 @@
-﻿// Copyright (c) 2002-2022 "Neo4j,"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -18,23 +18,19 @@
 namespace Neo4j.Driver;
 
 /// <summary>
-/// Used In conjunction with <see cref="Category"/> to filter
-/// which <see cref="INotification"/>s will be sent in <see cref="IResultSummary.Notifications"/>.<br/><br/>
-/// Can be used in <see cref="ConfigBuilder.WithNotificationFilters"/>
-/// and <see cref="SessionConfigBuilder.WithNotificationFilters"/>.
+/// Used In conjunction with <see cref="Category"/> to filter which <see cref="INotification"/>s will be sent in
+/// <see cref="IResultSummary.Notifications"/>.<br/><br/> Can be used in
+/// <see cref="ConfigBuilder.WithNotificationFilters"/> and <see cref="SessionConfigBuilder.WithNotificationFilters"/>.
 /// </summary>
 public enum Severity
 {
-    /// <summary>
-    /// Request warning severity notifications. <br/>
-    /// Neo4j recommends user intervention for all warning notifications
-    /// </summary>
+    /// <summary>Request warning severity notifications. <br/> Neo4j recommends user intervention for all warning notifications</summary>
     /// <remarks>Will be returned as <see cref="NotificationSeverity.Warning"/></remarks>
     Warning,
 
     /// <summary>
-    /// Request information severity notifications. <br/>
-    /// Information notifications are for providing additional information.
+    /// Request information severity notifications. <br/> Information notifications are for providing additional
+    /// information.
     /// </summary>
     /// <remarks>Will be returned as <see cref="NotificationSeverity.Information"/></remarks>
     Information

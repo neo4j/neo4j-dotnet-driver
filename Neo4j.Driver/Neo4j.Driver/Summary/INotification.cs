@@ -20,56 +20,39 @@ using System;
 namespace Neo4j.Driver;
 
 /// <summary>
-/// Representation for notifications found when executing a query.
-/// 
-/// A notification can be visualized in a client pinpointing problems or other information about the query.
+/// Representation for notifications found when executing a query. A notification can be visualized in a client
+/// pinpointing problems or other information about the query.
 /// </summary>
 public interface INotification
 {
-    /// <summary>
-    /// Gets the notification code of the <see cref="INotification"/> instance.
-    /// </summary>
+    /// <summary>Gets the notification code of the <see cref="INotification"/> instance.</summary>
     string Code { get; }
 
-    /// <summary>
-    /// Gets the condensed summary of the <see cref="INotification"/> instance.
-    /// </summary>
+    /// <summary>Gets the condensed summary of the <see cref="INotification"/> instance.</summary>
     string Title { get; }
 
-    /// <summary>
-    /// Gets the full description of the <see cref="INotification"/> instance.
-    /// </summary>
+    /// <summary>Gets the full description of the <see cref="INotification"/> instance.</summary>
     string Description { get; }
 
     /// <summary>
-    /// Gets the position in the query where the <see cref="INotification"/> instance points to.
-    /// Not all notifications have a unique position to point to and in that case the position would be set to all 0s.
+    /// Gets the position in the query where the <see cref="INotification"/> instance points to. Not all notifications
+    /// have a unique position to point to and in that case the position would be set to all 0s.
     /// </summary>
     IInputPosition Position { get; }
 
-    /// <summary>
-    /// Gets the severity level of the <see cref="INotification"/> instance.
-    /// </summary>
+    /// <summary>Gets the severity level of the <see cref="INotification"/> instance.</summary>
     [Obsolete("Deprecated, Replaced by RawSeverityLevel. Will be removed in 6.0")]
     string Severity { get; }
 
-    /// <summary>
-    /// Gets the unparsed string value for <see cref="SeverityLevel"/> of the <see cref="INotification"/> instance.
-    /// </summary>
+    /// <summary>Gets the unparsed string value for <see cref="SeverityLevel"/> of the <see cref="INotification"/> instance.</summary>
     public string RawSeverityLevel { get; }
 
-    /// <summary>
-    /// Gets the unparsed string value for <see cref="Category"/> of the <see cref="INotification"/> instance.
-    /// </summary>
+    /// <summary>Gets the unparsed string value for <see cref="Category"/> of the <see cref="INotification"/> instance.</summary>
     string RawCategory { get; }
 
-    /// <summary>
-    /// Gets the parses <see cref="RawSeverityLevel"/> of the <see cref="INotification"/> instance.
-    /// </summary>
+    /// <summary>Gets the parses <see cref="RawSeverityLevel"/> of the <see cref="INotification"/> instance.</summary>
     NotificationSeverity SeverityLevel { get; }
 
-    /// <summary>
-    /// Gets the parsed <see cref="RawCategory"/> of the <see cref="INotification"/> instance.
-    /// </summary>
+    /// <summary>Gets the parsed <see cref="RawCategory"/> of the <see cref="INotification"/> instance.</summary>
     NotificationCategory Category { get; }
 }

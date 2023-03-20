@@ -23,17 +23,27 @@ namespace Neo4j.Driver.Internal;
 
 internal interface IBoltProtocolMessageFactory
 {
-    RunWithMetadataMessage NewRunWithMetadataMessage(IConnection connection, AutoCommitParams autoCommitParams,
+    RunWithMetadataMessage NewRunWithMetadataMessage(
+        IConnection connection,
+        AutoCommitParams autoCommitParams,
         INotificationsConfig notificationsConfig);
-    RunWithMetadataMessage NewRunWithMetadataMessage(IConnection connection, Query query,
+
+    RunWithMetadataMessage NewRunWithMetadataMessage(
+        IConnection connection,
+        Query query,
         INotificationsConfig notificationsConfig);
+
     PullMessage NewPullMessage(long fetchSize);
     PullMessage NewPullMessage(long id, long fetchSize);
     RouteMessage NewRouteMessage(IConnection connection, Bookmarks bookmarks, string database, string impersonatedUser);
     RouteMessageV43 NewRouteMessageV43(IConnection connection, Bookmarks bookmarks, string database);
     DiscardMessage NewDiscardMessage(long id, long discardSize);
     HelloMessage NewHelloMessage(IConnection connection, string userAgent, IAuthToken authToken);
-    HelloMessage NewAuthlessHelloMessage(IConnection connection, string userAgent, INotificationsConfig notificationsConfig);
+
+    HelloMessage NewAuthlessHelloMessage(
+        IConnection connection,
+        string userAgent,
+        INotificationsConfig notificationsConfig);
 
     BeginMessage NewBeginMessage(
         IConnection connection,
@@ -51,7 +61,9 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
 {
     internal static readonly BoltProtocolMessageFactory Instance = new();
 
-    public RunWithMetadataMessage NewRunWithMetadataMessage(IConnection connection, AutoCommitParams autoCommitParams,
+    public RunWithMetadataMessage NewRunWithMetadataMessage(
+        IConnection connection,
+        AutoCommitParams autoCommitParams,
         INotificationsConfig notificationsConfig)
     {
         return new RunWithMetadataMessage(
@@ -65,7 +77,9 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
             notificationsConfig);
     }
 
-    public RunWithMetadataMessage NewRunWithMetadataMessage(IConnection connection, Query query,
+    public RunWithMetadataMessage NewRunWithMetadataMessage(
+        IConnection connection,
+        Query query,
         INotificationsConfig notificationsConfig)
     {
         return new RunWithMetadataMessage(connection.Version, query, notificationsConfig: notificationsConfig);
@@ -115,7 +129,10 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
             connection.RoutingContext);
     }
 
-    public HelloMessage NewAuthlessHelloMessage(IConnection connection, string userAgent, INotificationsConfig notificationsConfig)
+    public HelloMessage NewAuthlessHelloMessage(
+        IConnection connection,
+        string userAgent,
+        INotificationsConfig notificationsConfig)
     {
         return new HelloMessage(connection.Version, userAgent, connection.RoutingContext, notificationsConfig);
     }

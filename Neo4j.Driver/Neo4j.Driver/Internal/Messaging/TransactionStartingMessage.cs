@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.Messaging.Utils;
 
 namespace Neo4j.Driver.Internal.Messaging;
 
@@ -83,7 +84,7 @@ internal abstract class TransactionStartingMessage : IRequestMessage
 
         if (notificationsConfig != null && boltProtocolVersion >= BoltProtocolVersion.V5_2)
         {
-            Utils.NotificationsMetadataWriter.AddNotificationsConfigToMetadata(result, notificationsConfig);
+            NotificationsMetadataWriter.AddNotificationsConfigToMetadata(result, notificationsConfig);
         }
 
         Metadata = result;
@@ -92,5 +93,4 @@ internal abstract class TransactionStartingMessage : IRequestMessage
     public IDictionary<string, object> Metadata { get; }
 
     public abstract IPackStreamSerializer Serializer { get; }
-
 }

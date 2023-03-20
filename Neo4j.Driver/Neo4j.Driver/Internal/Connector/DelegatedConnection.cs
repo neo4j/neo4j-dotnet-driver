@@ -172,7 +172,9 @@ internal abstract class DelegatedConnection : IConnection
         return BoltProtocol.GetRoutingTableAsync(this, database, impersonatedUser, bookmarks);
     }
 
-    public Task<IResultCursor> RunInAutoCommitTransactionAsync(AutoCommitParams autoCommitParams, INotificationsConfig notificationsConfig)
+    public Task<IResultCursor> RunInAutoCommitTransactionAsync(
+        AutoCommitParams autoCommitParams,
+        INotificationsConfig notificationsConfig)
     {
         return BoltProtocol.RunInAutoCommitTransactionAsync(this, autoCommitParams, notificationsConfig);
     }
@@ -184,7 +186,13 @@ internal abstract class DelegatedConnection : IConnection
         string impersonatedUser,
         INotificationsConfig notificationsConfig)
     {
-        return BoltProtocol.BeginTransactionAsync(this, database, bookmarks, config, impersonatedUser, notificationsConfig);
+        return BoltProtocol.BeginTransactionAsync(
+            this,
+            database,
+            bookmarks,
+            config,
+            impersonatedUser,
+            notificationsConfig);
     }
 
     public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize)

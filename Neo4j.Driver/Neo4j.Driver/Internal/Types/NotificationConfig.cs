@@ -1,10 +1,10 @@
-﻿// Copyright (c) 2002-2022 "Neo4j,"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
 // 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -15,24 +15,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Neo4j.Driver.Internal.Types;
 
 internal sealed class NotificationsConfig : INotificationsConfig
 {
-    public Severity? MinimumSeverity { get; set; }
-    public HashSet<Category> DisabledCategories { get; set; }
-
     public NotificationsConfig(Severity? minimumSeverity, Category[] disabledCategories)
     {
         MinimumSeverity = minimumSeverity;
-        
+
         if (disabledCategories != null)
         {
             DisabledCategories = new HashSet<Category>(disabledCategories);
         }
     }
+
+    public Severity? MinimumSeverity { get; set; }
+    public HashSet<Category> DisabledCategories { get; set; }
 }

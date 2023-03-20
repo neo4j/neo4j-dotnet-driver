@@ -50,10 +50,10 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     private bool _disposed;
     private Bookmarks _initialBookmarks;
     private bool _isOpen = true;
+    private readonly INotificationsConfig _notificationsConfig;
     private Task<IResultCursor> _result; // last session run result if any
 
     private AsyncTransaction _transaction;
-    private INotificationsConfig _notificationsConfig;
 
     public AsyncSession(
         IConnectionProvider provider,
@@ -188,7 +188,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                             ImpersonatedUser = ImpersonatedUser(),
                             FetchSize = _fetchSize,
                             BookmarksTracker = this,
-                            ResultResourceHandler = this,
+                            ResultResourceHandler = this
                         },
                         _notificationsConfig)
                     .ConfigureAwait(false);

@@ -68,6 +68,7 @@ internal interface IConnectionRunner
         string userAgent,
         IAuthToken authToken,
         INotificationsConfig notificationsConfig);
+
     Task LogoutAsync();
 
     Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
@@ -75,10 +76,17 @@ internal interface IConnectionRunner
         string impersonatedUser,
         Bookmarks bookmarks);
 
-    Task<IResultCursor> RunInAutoCommitTransactionAsync(AutoCommitParams autoCommitParams,
+    Task<IResultCursor> RunInAutoCommitTransactionAsync(
+        AutoCommitParams autoCommitParams,
         INotificationsConfig notificationsConfig);
-    Task BeginTransactionAsync(string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser,
+
+    Task BeginTransactionAsync(
+        string database,
+        Bookmarks bookmarks,
+        TransactionConfig config,
+        string impersonatedUser,
         INotificationsConfig notificationsConfig);
+
     Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize);
     Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker);
     Task RollbackTransactionAsync();
