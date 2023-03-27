@@ -25,6 +25,7 @@ internal static class NotificationsMetadataWriter
 {
     private const string MinimumSeverityKey = "notifications_minimum_severity";
     private const string DisabledCategoriesKey = "notifications_disabled_categories";
+    private const string AllNotificationsDisabledValue = "OFF";
 
     internal static void AddNotificationsConfigToMetadata(
         IDictionary<string, object> metadata,
@@ -33,7 +34,7 @@ internal static class NotificationsMetadataWriter
         switch (notificationsConfig)
         {
             case NotificationsDisabledConfig:
-                metadata.Add(MinimumSeverityKey, "OFF");
+                metadata.Add(MinimumSeverityKey, AllNotificationsDisabledValue);
                 break;
 
             case NotificationsConfig config:
