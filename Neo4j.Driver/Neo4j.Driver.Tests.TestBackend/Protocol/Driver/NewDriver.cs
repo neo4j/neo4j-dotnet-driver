@@ -143,13 +143,13 @@ internal class NewDriver : IProtocolObject
 
         if (data.notificationsMinSeverity != null || data.notificationsDisabledCategories != null)
         {
-            if (data.notificationsMinSeverity == "OFF")
+            if (data.notificationsMinSeverity == TestkitConstants.NotificationsConfig.Disabled)
             {
                 configBuilder.WithNotificationsDisabled();
             }
             else
             {
-                var sev = Enum.TryParse<Severity>(data.notificationsMinSeverity ?? "ignore", true, out var severity)
+                var sev = Enum.TryParse<Severity>(data.notificationsMinSeverity ?? string.Empty, true, out var severity)
                     ? (Severity?)severity
                     : null;
 
