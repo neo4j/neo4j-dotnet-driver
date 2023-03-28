@@ -23,6 +23,9 @@ namespace Neo4j.Driver;
 /// </summary>
 public enum NotificationCategory
 {
+    /// <summary>the <see cref="INotification"/>'s category is a value unknown to this driver version.</summary>
+    Unknown,
+    
     /// <summary>The given hint cannot be satisfied.</summary>
     Hint,
 
@@ -42,8 +45,5 @@ public enum NotificationCategory
     Deprecation,
 
     /// <summary>Notification not covered by other categories.</summary>
-    Generic,
-
-    /// <summary>the <see cref="INotification"/>'s category is a value unknown to this driver version.</summary>
-    Unknown
+    Generic
 }
