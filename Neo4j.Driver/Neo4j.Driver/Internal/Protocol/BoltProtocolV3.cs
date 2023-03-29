@@ -45,6 +45,8 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         IAuthToken authToken,
         INotificationsConfig notificationsConfig)
     {
+        ValidateNotificationsForVersion(connection, notificationsConfig);
+
         var message = _protocolMessageFactory.NewHelloMessage(connection, userAgent, authToken);
         var handler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
 
@@ -109,6 +111,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
     {
         ValidateImpersonatedUserForVersion(connection, autoCommitParams.ImpersonatedUser);
         ValidateDatabase(connection, autoCommitParams.Database);
+        ValidateNotificationsForVersion(connection, notificationsConfig);
 
         var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
         var streamBuilder = _protocolHandlerFactory.NewResultCursorBuilder(
@@ -149,6 +152,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
     {
         ValidateImpersonatedUserForVersion(connection, impersonatedUser);
         ValidateDatabase(connection, database);
+        ValidateNotificationsForVersion(connection, notificationsConfig);
 
         var mode = connection.Mode ??
             throw new InvalidOperationException("Connection should have its Mode property set.");
@@ -208,7 +212,8 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         await connection.EnqueueAsync(RollbackMessage.Instance, NoOpResponseHandler.Instance).ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);
     }
-
+    
+    // TODO: Refactor validation methods into a separate class or move to message classes so the checks aren't duplicated. 
     internal static void ValidateDatabase(IConnection connection, string database)
     {
         if (connection.Version >= BoltProtocolVersion.V4_0)
@@ -236,6 +241,16 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             throw new ArgumentException(
                 $"Bolt Protocol {conn.Version} does not support impersonatedUser, " +
                 "but has been passed a non-null impersonated user string");
+        }
+    }
+    
+    internal static void ValidateNotificationsForVersion(IConnection connection, INotificationsConfig notificationsConfig)
+    {
+        if (notificationsConfig != null && connection.Version < BoltProtocolVersion.V5_2)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(notificationsConfig),
+                "Notification configuration can not be used with bolt version less than 5.2 (Added in Neo4j Version 5.7).");
         }
     }
 }

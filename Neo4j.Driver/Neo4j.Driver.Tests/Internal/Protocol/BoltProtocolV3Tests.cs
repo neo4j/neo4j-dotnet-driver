@@ -25,6 +25,7 @@ using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.MessageHandling.V3;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.Internal.Types;
 using Xunit;
 using Record = Xunit.Record;
 
@@ -32,7 +33,7 @@ namespace Neo4j.Driver.Internal.Protocol
 {
     public class BoltProtocolV3Tests
     {
-        public class LoginAsyncTests
+        public class AuthenticateAsyncTests
         {
             [Fact]
             public async Task ShouldSyncHelloMessage()
@@ -57,6 +58,24 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
                 mockConn.VerifyNoOtherCalls();
+            }
+
+            [Theory]
+            [InlineData(3, 0)]
+            [InlineData(4, 1)]
+            [InlineData(5, 1)]
+            public async Task ShouldThrowIfNotificationsConfigNonNullPre52(int major, int minor)
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
+                var auth = AuthTokens.Basic("user", "pass");
+                var mockMsgFactory = new Mock<IBoltProtocolMessageFactory>();
+                var mockHandlerFactory = new Mock<IBoltProtocolHandlerFactory>();
+                var protocol = new BoltProtocolV3(mockMsgFactory.Object, mockHandlerFactory.Object);
+                var ex = await Record.ExceptionAsync(
+                    () => protocol.AuthenticateAsync(mockConn.Object, "ua", auth, new NotificationsDisabledConfig()));
+
+                ex.Should().BeOfType<ArgumentOutOfRangeException>();
             }
         }
 
@@ -210,6 +229,53 @@ namespace Neo4j.Driver.Internal.Protocol
                 exception.Should().BeOfType<ArgumentException>();
             }
 
+            [Theory]
+            [InlineData(3, 0)]
+            [InlineData(4, 0)]
+            [InlineData(5, 1)]
+            public async Task ShouldThrowWhenNotificationsWithBoltVersionLessThan52(int major, int minor)
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
+                mockConn.SetupGet(x => x.Mode).Returns(AccessMode.Read);
+
+                var acp = new AutoCommitParams
+                {
+                    Query = new Query("..."),
+                };
+
+                var exception = await Record.ExceptionAsync(
+                    () => BoltProtocolV3.Instance.RunInAutoCommitTransactionAsync(
+                        mockConn.Object,
+                        acp,
+                        new NotificationsDisabledConfig()));
+
+                exception.Should().BeOfType<ArgumentOutOfRangeException>();
+            }
+
+            [Theory]
+            [InlineData(5, 2)]
+            [InlineData(6, 0)]
+            public async Task ShouldNotThrowWhenNotificationsWithBoltVersionGreaterThan51(int major, int minor)
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
+                mockConn.SetupGet(x => x.Mode).Returns(AccessMode.Read);
+
+                var acp = new AutoCommitParams
+                {
+                    Query = new Query("..."),
+                };
+
+                var exception = await Record.ExceptionAsync(
+                    () => BoltProtocolV3.Instance.RunInAutoCommitTransactionAsync(
+                        mockConn.Object,
+                        acp,
+                        new NotificationsDisabledConfig()));
+
+                exception.Should().BeNull();
+            }
+
             [Fact]
             public async Task ShouldThrowIfDatabaseIsNotNull()
             {
@@ -330,6 +396,49 @@ namespace Neo4j.Driver.Internal.Protocol
                         null));
 
                 exception.Should().BeOfType<ArgumentException>();
+            }
+
+            [Theory]
+            [InlineData(3, 0)]
+            [InlineData(4, 0)]
+            [InlineData(5, 1)]
+            public async Task ShouldThrowWhenNotificationsWithBoltVersionLessThan52(int major, int minor)
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
+                mockConn.SetupGet(x => x.Mode).Returns(AccessMode.Read);
+
+                var exception = await Record.ExceptionAsync(
+                    () => BoltProtocolV3.Instance.BeginTransactionAsync(
+                        mockConn.Object,
+                        null,
+                        null,
+                        TransactionConfig.Default,
+                        null,
+                        new NotificationsDisabledConfig()));
+
+                exception.Should().BeOfType<ArgumentOutOfRangeException>();
+            }
+
+            [Theory]
+            [InlineData(5, 2)]
+            [InlineData(6, 0)]
+            public async Task ShouldNotThrowWhenNotificationsWithBoltVersionGreaterThan51(int major, int minor)
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
+                mockConn.SetupGet(x => x.Mode).Returns(AccessMode.Read);
+
+                var exception = await Record.ExceptionAsync(
+                    () => BoltProtocolV3.Instance.BeginTransactionAsync(
+                        mockConn.Object,
+                        null,
+                        null,
+                        TransactionConfig.Default,
+                        null,
+                        new NotificationsDisabledConfig()));
+
+                exception.Should().BeNull();
             }
 
             [Fact]

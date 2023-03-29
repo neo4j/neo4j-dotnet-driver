@@ -48,6 +48,8 @@ internal sealed class BoltProtocol : IBoltProtocol
         IAuthToken authToken,
         INotificationsConfig notificationsConfig)
     {
+        BoltProtocolV3.ValidateNotificationsForVersion(connection, notificationsConfig);
+
         return connection.Version >= BoltProtocolVersion.V5_1
             ? AuthenticateWithLogonAsync(connection, userAgent, authToken, notificationsConfig)
             : _boltProtocolV3.AuthenticateAsync(connection, userAgent, authToken, notificationsConfig);
@@ -85,6 +87,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         INotificationsConfig notificationsConfig)
     {
         BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, autoCommitParams.ImpersonatedUser);
+        BoltProtocolV3.ValidateNotificationsForVersion(connection, notificationsConfig);
 
         var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
 
@@ -132,6 +135,8 @@ internal sealed class BoltProtocol : IBoltProtocol
         INotificationsConfig notificationsConfig)
     {
         BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, impersonatedUser);
+        BoltProtocolV3.ValidateNotificationsForVersion(connection, notificationsConfig);
+
         return _boltProtocolV3.BeginTransactionAsync(
             connection,
             database,

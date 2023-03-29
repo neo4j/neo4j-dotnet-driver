@@ -51,7 +51,4 @@
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
     </ItemGroup>
-    <ItemGroup>
-      <Folder Include="Internal\IO\MessageSerializers\Utils" />
-    </ItemGroup>
 </Project>
