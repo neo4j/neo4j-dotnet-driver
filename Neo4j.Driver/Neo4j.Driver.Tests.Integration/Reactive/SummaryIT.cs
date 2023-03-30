@@ -223,8 +223,8 @@ public abstract class SummaryIT
                         HasPlan = false, Plan = default(IPlan), HasProfile = false, Profile = default(IProfiledPlan)
                     }));
         }
-
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo, Skip = "Broken with servers 5.6+")]
         public void ShouldReturnPlanButNoProfile()
         {
             VerifySummary(
