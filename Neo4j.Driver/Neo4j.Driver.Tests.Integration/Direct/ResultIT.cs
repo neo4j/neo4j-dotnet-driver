@@ -74,20 +74,41 @@ public sealed class ResultIT : DirectDriverTestBase
     public async Task ShouldContainsSystemUpdates()
     {
         // Ensure that a constraint exists
-        var session = Driver.AsyncSession(ForDatabase("system"));
+        await using var session = Driver.AsyncSession(x => x.WithDatabase("system"));
+        Exception error = null;
         try
         {
-            var cursor = await session.RunAsync("CREATE USER foo SET PASSWORD 'bar'");
+            var cursor = await session.RunAsync("CREATE USER foo SET PASSWORD 'zxcvvcxz'");
             var summary = await cursor.ConsumeAsync();
             summary.Counters.ContainsUpdates.Should().BeFalse();
             summary.Counters.ContainsSystemUpdates.Should().BeTrue();
             summary.Counters.SystemUpdates.Should().Be(1);
         }
+        catch (Exception ex)
+        {
+            error = ex;
+        }
         finally
         {
-            var cursor = await session.RunAsync("DROP USER foo");
-            await cursor.ConsumeAsync();
-            await session.CloseAsync();
+            try
+            {
+                var cursor = await session.RunAsync("DROP USER foo");
+                await cursor.ConsumeAsync();
+            }
+            catch (Exception ex)
+            {
+                if (error != null)
+                {
+                    throw new AggregateException(ex, error);
+                }
+
+                throw;
+            }
+
+            if (error != null)
+            {
+                throw error;
+            }
         }
     }
 

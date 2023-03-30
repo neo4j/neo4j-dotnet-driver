@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -20,32 +20,13 @@ using Neo4j.Driver.Internal.IO.MessageSerializers;
 
 namespace Neo4j.Driver.Internal.Messaging;
 
-internal sealed class BeginMessage : TransactionStartingMessage
+internal sealed class LogoffMessage : IRequestMessage
 {
-    public BeginMessage(
-        BoltProtocolVersion version,
-        string database,
-        Bookmarks bookmarks,
-        TransactionConfig txConfig,
-        AccessMode mode,
-        string impersonatedUser,
-        INotificationsConfig notificationsConfig)
-        : base(
-            version,
-            database,
-            bookmarks,
-            txConfig?.Timeout,
-            txConfig?.Metadata,
-            mode,
-            notificationsConfig,
-            impersonatedUser)
-    {
-    }
-
-    public override IPackStreamSerializer Serializer => BeginMessageSerializer.Instance;
+    public static readonly LogoffMessage Instance = new();
+    public IPackStreamSerializer Serializer => LogoffMessageSerializer.Instance;
 
     public override string ToString()
     {
-        return $"BEGIN {Metadata.ToContentString()}";
+        return "LOGOFF";
     }
 }

@@ -50,6 +50,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     private bool _disposed;
     private Bookmarks _initialBookmarks;
     private bool _isOpen = true;
+    private readonly INotificationsConfig _notificationsConfig;
     private Task<IResultCursor> _result; // last session run result if any
 
     private AsyncTransaction _transaction;
@@ -72,8 +73,9 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         _database = config.Database;
         _defaultMode = config.DefaultAccessMode;
         _fetchSize = config.FetchSize ?? defaultFetchSize;
+        _notificationsConfig = config.NotificationsConfig;
+        
         _useBookmarkManager = config.BookmarkManager != null;
-
         if (_useBookmarkManager)
         {
             _bookmarkManager = config.BookmarkManager;
@@ -183,7 +185,8 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                             FetchSize = _fetchSize,
                             BookmarksTracker = this,
                             ResultResourceHandler = this
-                        })
+                        },
+                        _notificationsConfig)
                     .ConfigureAwait(false);
             });
 
@@ -340,7 +343,8 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
             LastBookmarks,
             _reactive,
             _fetchSize,
-            ImpersonatedUser());
+            ImpersonatedUser(),
+            _notificationsConfig);
 
         await tx.BeginTransactionAsync(config).ConfigureAwait(false);
         _transaction = tx;

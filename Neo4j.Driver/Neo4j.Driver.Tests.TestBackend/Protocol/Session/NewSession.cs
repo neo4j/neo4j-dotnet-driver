@@ -15,7 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
@@ -85,6 +87,26 @@ internal class NewSession : IProtocolObject
                 ObjManager.GetObject<NewBookmarkManager>(data.bookmarkManagerId)
                     .BookmarkManager);
         }
+
+        if (data.notificationsMinSeverity != null || data.notificationsDisabledCategories != null)
+        {
+            if (data.notificationsMinSeverity == TestkitConstants.NotificationsConfig.Disabled)
+            {
+                configBuilder.WithNotificationsDisabled();
+            }
+            else
+            {
+                var sev = Enum.TryParse<Severity>(data.notificationsMinSeverity ?? string.Empty, true, out var severity)
+                    ? (Severity?)severity
+                    : null;
+
+                var cats = data.notificationsDisabledCategories
+                    ?.Select(x => Enum.Parse<Category>(x, true))
+                    .ToArray();
+
+                configBuilder.WithNotifications(sev, cats);
+            }
+        }
     }
 
     public override async Task Process()
@@ -127,5 +149,10 @@ internal class NewSession : IProtocolObject
         public string impersonatedUser { get; set; }
 
         public string bookmarkManagerId { get; set; }
+
+        public AuthorizationToken authorizationToken { get; set; }
+
+        public string notificationsMinSeverity { get; set; }
+        public string[] notificationsDisabledCategories { get; set; }
     }
 }

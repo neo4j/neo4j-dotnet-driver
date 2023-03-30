@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver;
 
@@ -338,5 +339,50 @@ public sealed class ConfigBuilder
     {
         var certs = trustedCaCertificateFileNames?.Select(x => new X509Certificate2(x)).ToList();
         return WithCertificateTrustRule(certificateTrustRule, certs);
+    }
+
+    /// <summary>
+    /// Override configuration for which <see cref="INotification"/>s should be emitted for the lifetime of the
+    /// driver. <br/> Unspecified configuration will be provided by configuration in the server.
+    /// </summary>
+    /// <remarks>Cannot be used with: <see cref="WithNotificationsDisabled"/>.</remarks>
+    /// <param name="minimumSeverity">
+    /// Optional parameter to override the minimum severity of notifications emitted. <br/> By
+    /// leaving null, the value will inherit configuration from the server.
+    /// </param>
+    /// <param name="disabledCategories">
+    /// Optional parameter to override the category of notifications emitted. <br/> By passing
+    /// an empty collection, all categories are enabled.<br/> By leaving null, the value will inherit configuration from the
+    /// server.
+    /// </param>
+    /// <exception cref="ArgumentException">Thrown when both parameters are null.</exception>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <seealso cref="WithNotificationsDisabled"/>
+    /// <seealso cref="SessionConfigBuilder.WithNotifications"/>
+    /// <seealso cref="SessionConfigBuilder.WithNotificationsDisabled"/>
+    public ConfigBuilder WithNotifications(
+        Severity? minimumSeverity,
+        Category[] disabledCategories)
+    {
+        if (minimumSeverity == null && disabledCategories == null)
+        {
+            throw new ArgumentException(
+                $"Both {nameof(minimumSeverity)} and {nameof(disabledCategories)} are both null, at least one must be non-null.");
+        }
+
+        _config.NotificationsConfig = new NotificationsConfig(minimumSeverity, disabledCategories);
+        return this;
+    }
+
+    /// <summary>Disable all notifications for the lifetime of the driver.</summary>
+    /// <remarks>Cannot be used with: <see cref="WithNotifications"/>.</remarks>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <seealso cref="WithNotifications"/>
+    /// <seealso cref="SessionConfigBuilder.WithNotifications"/>
+    /// <seealso cref="SessionConfigBuilder.WithNotificationsDisabled"/>
+    public ConfigBuilder WithNotificationsDisabled()
+    {
+        _config.NotificationsConfig = new NotificationsDisabledConfig();
+        return this;
     }
 }

@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var connFactory = new Mock<IPooledConnectionFactory>().Object;
                 var poolSettings = new ConnectionPoolSettings(Config.Default);
                 var routingSetting = new RoutingSettings(uri, new Dictionary<string, string>(), Config.Default);
-                var pool = new ClusterConnectionPool(uris, connFactory, routingSetting, poolSettings, null);
+                var pool = new ClusterConnectionPool(uris, connFactory, routingSetting, poolSettings, null, null);
 
                 pool.ToString().Should().Contain("bolt://123:456/");
 
@@ -77,7 +77,7 @@ namespace Neo4j.Driver.Tests.Routing
                 // Given
                 var mockedConnectionPool = new Mock<IConnectionPool>();
                 var mockedConnection = new Mock<IPooledConnection>();
-                mockedConnection.Setup(c => c.InitAsync(CancellationToken.None))
+                mockedConnection.Setup(c => c.InitAsync(null, CancellationToken.None))
                     .Returns(Task.FromException(new InvalidOperationException("An exception")));
 
                 mockedConnectionPool.Setup(
@@ -99,8 +99,10 @@ namespace Neo4j.Driver.Tests.Routing
 
                 // Then
                 connection.Should().NotBeNull();
-                var exception = await Record.ExceptionAsync(() => connection.InitAsync());
-                mockedConnection.Verify(c => c.InitAsync(CancellationToken.None), Times.Once);
+                var exception =
+                    await Record.ExceptionAsync(() => connection.InitAsync(null));
+
+                mockedConnection.Verify(c => c.InitAsync(null, CancellationToken.None), Times.Once);
                 exception.Should().BeOfType<InvalidOperationException>();
                 exception.Message.Should().Be("An exception");
             }

@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Experimental;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver;
 
@@ -132,6 +133,21 @@ public sealed class SessionConfig
     }
 
     internal IBookmarkManager BookmarkManager { get; set; }
+
+    /// <summary>
+    /// The configuration for setting which notifications the server should send to the client for queries executed in
+    /// the session.
+    /// </summary>
+    /// <remarks>
+    /// Note: Configuration support was introduced in server version 5.7.<br/> Servers currently will analyze all
+    /// queries for all <see cref="NotificationCategory"/>s and <see cref="NotificationSeverity"/>s.
+    /// </remarks>
+    /// <seealso cref="SessionConfigBuilder.WithNotifications"/>
+    /// <seealso cref="SessionConfigBuilder.WithNotificationsDisabled"/>
+    /// <seealso cref="Config.NotificationsConfig"/>
+    /// <seealso cref="INotification"/>
+    /// <seealso cref="IResultSummary.Notifications"/>
+    public INotificationsConfig NotificationsConfig { get; internal set; }
 }
 
 /// <summary>The builder to build a <see cref="SessionConfig"/>.</summary>
@@ -269,6 +285,53 @@ public sealed class SessionConfigBuilder
     internal SessionConfigBuilder WithBookmarkManager(IBookmarkManager bookmarkManager)
     {
         _config.BookmarkManager = bookmarkManager;
+        return this;
+    }
+
+    /// <summary>
+    /// Override configuration for which <see cref="INotification"/>s should be emitted for the lifetime of the
+    /// session. <br/> Unspecified configuration will be provided by configuration specified in the server or the driver's
+    /// <see cref="ConfigBuilder.WithNotifications"/>. <br/> If the driver has disabled notifications with
+    /// <see cref="ConfigBuilder.WithNotificationsDisabled"/>, the unspecified values will be provided by the server.
+    /// </summary>
+    /// <remarks>Cannot be used with: <see cref="WithNotificationsDisabled"/>.</remarks>
+    /// <param name="minimumSeverity">
+    /// Optional parameter to override the minimum severity of notifications emitted. <br/> By
+    /// leaving null, the value will inherit configuration from <see cref="ConfigBuilder.WithNotifications"/> or the server.
+    /// </param>
+    /// <param name="disabledCategories">
+    /// Optional parameter to override the category of notifications emitted. <br/> By passing
+    /// an empty collection, all categories are enabled.<br/> By leaving null, the value will inherit configuration from
+    /// <see cref="ConfigBuilder.WithNotifications"/> or the server.
+    /// </param>
+    /// <exception cref="ArgumentException">Thrown when both parameters are null.</exception>
+    /// <returns>A <see cref="SessionConfigBuilder"/> instance for further configuration options.</returns>
+    /// <seealso cref="WithNotificationsDisabled"/>
+    /// <seealso cref="ConfigBuilder.WithNotifications"/>
+    /// <seealso cref="ConfigBuilder.WithNotificationsDisabled"/>
+    public SessionConfigBuilder WithNotifications(
+        Severity? minimumSeverity,
+        Category[] disabledCategories)
+    {
+        if (minimumSeverity == null && disabledCategories == null)
+        {
+            throw new ArgumentException(
+                $"Both {nameof(minimumSeverity)} and {nameof(disabledCategories)} are both null, at least one must be non-null.");
+        }
+
+        _config.NotificationsConfig = new NotificationsConfig(minimumSeverity, disabledCategories);
+        return this;
+    }
+
+    /// <summary>Disable all notifications for the lifetime of the session.</summary>
+    /// <remarks>Cannot be used with: <see cref="WithNotifications"/>.</remarks>
+    /// <returns>A <see cref="SessionConfigBuilder"/> instance for further configuration options.</returns>
+    /// <seealso cref="WithNotifications"/>
+    /// <seealso cref="ConfigBuilder.WithNotifications"/>
+    /// <seealso cref="ConfigBuilder.WithNotificationsDisabled"/>
+    public SessionConfigBuilder WithNotificationsDisabled()
+    {
+        _config.NotificationsConfig = new NotificationsDisabledConfig();
         return this;
     }
 }

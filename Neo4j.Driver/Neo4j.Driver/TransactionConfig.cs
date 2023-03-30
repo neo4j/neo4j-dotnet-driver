@@ -43,6 +43,12 @@ public sealed class TransactionConfig
         _metadata = PackStream.EmptyDictionary;
     }
 
+    internal TransactionConfig(IDictionary<string, object> metadata, TimeSpan? timeout)
+    {
+        _metadata = metadata;
+        _timeout = timeout;
+    }
+
     internal static TransactionConfigBuilder Builder => new(new TransactionConfig());
 
     /// <summary>

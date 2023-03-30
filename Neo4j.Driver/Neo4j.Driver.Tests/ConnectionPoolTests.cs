@@ -101,7 +101,9 @@ namespace Neo4j.Driver.Tests
                 await connectionPool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
 
                 //Then
-                mock.Verify(x => x.InitAsync(It.IsAny<CancellationToken>()), Times.Once);
+                mock.Verify(
+                    x => x.InitAsync(It.IsAny<INotificationsConfig>(), It.IsAny<CancellationToken>()),
+                    Times.Once);
             }
 
             [Fact]
@@ -217,7 +219,10 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldCloseConnectionIfFailedToCreate()
             {
                 var connMock = new Mock<IPooledConnection>();
-                connMock.Setup(x => x.InitAsync(It.IsAny<CancellationToken>())).Throws<NotImplementedException>();
+                connMock.Setup(x => x.InitAsync(
+                        It.IsAny<INotificationsConfig>(),
+                        It.IsAny<CancellationToken>()))
+                    .Throws<NotImplementedException>();
 
                 var connFactory = new MockedConnectionFactory(connMock.Object);
                 var pool = new ConnectionPool(connFactory);

@@ -31,7 +31,7 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
     void ConfigureMode(AccessMode? mode);
     void Configure(string database, AccessMode? mode);
 
-    Task InitAsync(CancellationToken cancellationToken = default);
+    Task InitAsync(INotificationsConfig notificationsConfig, CancellationToken cancellationToken = default);
 
     // send all and receive all
     Task SyncAsync();
@@ -64,7 +64,11 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
 
 internal interface IConnectionRunner
 {
-    Task LoginAsync(string userAgent, IAuthToken authToken);
+    Task LoginAsync(
+        string userAgent,
+        IAuthToken authToken,
+        INotificationsConfig notificationsConfig);
+
     Task LogoutAsync();
 
     Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
@@ -72,8 +76,17 @@ internal interface IConnectionRunner
         string impersonatedUser,
         Bookmarks bookmarks);
 
-    Task<IResultCursor> RunInAutoCommitTransactionAsync(AutoCommitParams autoCommitParams);
-    Task BeginTransactionAsync(string database, Bookmarks bookmarks, TransactionConfig config, string impersonatedUser);
+    Task<IResultCursor> RunInAutoCommitTransactionAsync(
+        AutoCommitParams autoCommitParams,
+        INotificationsConfig notificationsConfig);
+
+    Task BeginTransactionAsync(
+        string database,
+        Bookmarks bookmarks,
+        TransactionConfig config,
+        string impersonatedUser,
+        INotificationsConfig notificationsConfig);
+
     Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize);
     Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker);
     Task RollbackTransactionAsync();

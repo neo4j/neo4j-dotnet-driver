@@ -60,16 +60,15 @@ internal class NotificationsCollector : IMetadataCollector<IList<INotification>>
         var description = notificationDict.GetValue("description", string.Empty);
         var posValue = notificationDict.GetValue("position", new Dictionary<string, object>());
         var severity = notificationDict.GetValue("severity", string.Empty);
+        var category = notificationDict.GetValue<string>("category", null);
         var foundOffset = posValue.TryGetValue("offset", 0L, out var offset);
         var foundLine = posValue.TryGetValue("line", 0L, out var line);
         var foundColumn = posValue.TryGetValue("column", 0L, out var column);
 
-        if (foundOffset || foundLine || foundColumn)
-        {
-            var position = new InputPosition((int)offset, (int)line, (int)column);
-            return new Notification(code, title, description, position, severity);
-        }
+        var position = foundOffset || foundLine || foundColumn
+            ? new InputPosition((int)offset, (int)line, (int)column)
+            : null;
 
-        return new Notification(code, title, description, null, severity);
+        return new Notification(code, title, description, position, severity, category);
     }
 }

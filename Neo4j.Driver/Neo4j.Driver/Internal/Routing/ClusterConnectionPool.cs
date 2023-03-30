@@ -39,10 +39,16 @@ internal class ClusterConnectionPool : IClusterConnectionPool
         IPooledConnectionFactory connectionFactory,
         RoutingSettings routingSetting,
         ConnectionPoolSettings poolSettings,
-        ILogger logger
+        ILogger logger,
+        INotificationsConfig notificationsConfig
     ) : this(
         initUris,
-        new ConnectionPoolFactory(connectionFactory, poolSettings, routingSetting.RoutingContext, logger),
+        new ConnectionPoolFactory(
+            connectionFactory,
+            poolSettings,
+            routingSetting.RoutingContext,
+            logger,
+            notificationsConfig),
         logger)
     {
     }

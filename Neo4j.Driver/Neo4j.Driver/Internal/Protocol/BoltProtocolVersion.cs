@@ -35,6 +35,9 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
     public static readonly BoltProtocolVersion V4_3 = new(4, 3);
     public static readonly BoltProtocolVersion V4_4 = new(4, 4);
     public static readonly BoltProtocolVersion V5_0 = new(5, 0);
+    public static readonly BoltProtocolVersion V5_1 = new(5, 1);
+    public static readonly BoltProtocolVersion V5_2 = new(5, 2);
+    
     private readonly int _compValue;
 
     public BoltProtocolVersion(int majorVersion, int minorVersion)
@@ -76,7 +79,7 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
 
     public bool Equals(BoltProtocolVersion rhs)
     {
-        if (rhs is null)
+        if (ReferenceEquals(null, rhs))
         {
             return false;
         }
@@ -86,12 +89,6 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
             return true;
         }
 
-        if (GetType() != rhs.GetType())
-        {
-            return false;
-        }
-
-        //Return if the fields match
         return _compValue == rhs._compValue;
     }
 
@@ -138,7 +135,7 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
 
     public override bool Equals(object obj)
     {
-        return Equals(obj as BoltProtocolVersion);
+        return ReferenceEquals(this, obj) || obj is BoltProtocolVersion other && Equals(other);
     }
 
     public bool Equals(int majorVersion, int minorVersion)
@@ -179,9 +176,6 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
 
     public override int GetHashCode()
     {
-        //Using a Tuple object rather than XOR'ing the values so that MajorVersion.MinorVersion does not return the same hashcode as MinorVersion.MajorVersion.
-        //e.g. We dont want 4.1 == 1.4
-        //Be aware of perfomance of Tuple instantiation if using a lot of BoltProtocolVersion in containers.
         return _compValue;
     }
 

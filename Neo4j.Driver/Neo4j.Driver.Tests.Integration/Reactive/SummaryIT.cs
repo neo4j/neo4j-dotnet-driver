@@ -223,8 +223,8 @@ public abstract class SummaryIT
                         HasPlan = false, Plan = default(IPlan), HasProfile = false, Profile = default(IProfiledPlan)
                     }));
         }
-
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        
+        [RequireServerFact("4.0.0", GreaterThanOrEqualTo, Skip = "Broken with servers 5.6+")]
         public void ShouldReturnPlanButNoProfile()
         {
             VerifySummary(
@@ -252,7 +252,7 @@ public abstract class SummaryIT
                 Matches<IResultSummary>(s => s.Notifications.Should().BeNull()));
         }
 
-        [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
+        [RequireServerFact("4.0.0", "5.6.0", Between)]
         public void ShouldReturnNotifications()
         {
             VerifySummary(
@@ -268,7 +268,35 @@ public abstract class SummaryIT
                                 null,
                                 null,
                                 null,
-                                "WARNING")
+                                "WARNING",
+                                null)
+                        }
+                    },
+                    options => options.ExcludingMissingMembers()
+                        .Excluding(x => x.SelectedMemberPath == "Notifications[0].Position")
+                        .Excluding(x => x.SelectedMemberPath == "Notifications[0].Title")
+                        .Excluding(x => x.SelectedMemberPath == "Notifications[0].Description")));
+        }
+
+
+        [RequireServerFact("5.7.0", GreaterThanOrEqualTo)]
+        public void ShouldReturnNotificationsWithCategory()
+        {
+            VerifySummary(
+                "EXPLAIN MATCH (n:ThisLabelDoesNotExistReactive) RETURN n",
+                null,
+                MatchesSummary(
+                    new
+                    {
+                        Notifications = new[]
+                        {
+                            new Notification(
+                                "Neo.ClientNotification.Statement.UnknownLabelWarning",
+                                null,
+                                null,
+                                null,
+                                "WARNING",
+                                "UNRECOGNIZED")
                         }
                     },
                     options => options.ExcludingMissingMembers()

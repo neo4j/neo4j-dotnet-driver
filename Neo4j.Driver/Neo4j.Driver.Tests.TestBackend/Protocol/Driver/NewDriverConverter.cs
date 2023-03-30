@@ -48,6 +48,7 @@ internal class NewDriverConverter : JsonConverter<NewDriver.NewDriverType>
         newDriverRequest.connectionAcquisitionTimeoutMs = jsonObj["connectionAcquisitionTimeoutMs"]?.Value<int?>();
         newDriverRequest.fetchSize = jsonObj["fetchSize"]?.Value<long?>();
         newDriverRequest.maxTxRetryTimeMs = jsonObj["maxTxRetryTimeMs"]?.Value<long?>();
+        newDriverRequest.notificationsMinSeverity = jsonObj["notificationsMinSeverity"]?.Value<string>();
 
         if (jsonObj.TryGetValue("trustedCertificates", out var token))
         {
@@ -58,6 +59,9 @@ internal class NewDriverConverter : JsonConverter<NewDriver.NewDriverType>
         {
             newDriverRequest.encrypted = token.Value<bool?>();
         }
+
+        if (jsonObj.TryGetValue("notificationsDisabledCategories", out token))
+            newDriverRequest.notificationsDisabledCategories = token.ToObject<string[]>();
 
         return newDriverRequest;
     }

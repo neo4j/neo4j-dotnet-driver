@@ -30,7 +30,6 @@ internal sealed class BoltProtocol : IBoltProtocol
     internal static readonly IBoltProtocol Instance = new BoltProtocol();
     private readonly IBoltProtocol _boltProtocolV3;
     private readonly IBoltProtocolHandlerFactory _protocolHandlerFactory;
-
     private readonly IBoltProtocolMessageFactory _protocolMessageFactory;
 
     internal BoltProtocol(
@@ -43,9 +42,17 @@ internal sealed class BoltProtocol : IBoltProtocol
         _boltProtocolV3 = boltProtocolV3 ?? BoltProtocolV3.Instance;
     }
 
-    public Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
+    public Task AuthenticateAsync(
+        IConnection connection,
+        string userAgent,
+        IAuthToken authToken,
+        INotificationsConfig notificationsConfig)
     {
-        return _boltProtocolV3.LoginAsync(connection, userAgent, authToken);
+        BoltProtocolV3.ValidateNotificationsForVersion(connection, notificationsConfig);
+
+        return connection.Version >= BoltProtocolVersion.V5_1
+            ? AuthenticateWithLogonAsync(connection, userAgent, authToken, notificationsConfig)
+            : _boltProtocolV3.AuthenticateAsync(connection, userAgent, authToken, notificationsConfig);
     }
 
     public Task LogoutAsync(IConnection connection)
@@ -76,9 +83,11 @@ internal sealed class BoltProtocol : IBoltProtocol
 
     public async Task<IResultCursor> RunInAutoCommitTransactionAsync(
         IConnection connection,
-        AutoCommitParams autoCommitParams)
+        AutoCommitParams autoCommitParams,
+        INotificationsConfig notificationsConfig)
     {
         BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, autoCommitParams.ImpersonatedUser);
+        BoltProtocolV3.ValidateNotificationsForVersion(connection, notificationsConfig);
 
         var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
 
@@ -92,7 +101,11 @@ internal sealed class BoltProtocol : IBoltProtocol
             autoCommitParams.FetchSize,
             autoCommitParams.Reactive);
 
-        var runMessage = _protocolMessageFactory.NewRunWithMetadataMessage(connection, autoCommitParams);
+        var runMessage = _protocolMessageFactory.NewRunWithMetadataMessage(
+            connection,
+            autoCommitParams,
+            notificationsConfig);
+
         var runHandler = _protocolHandlerFactory.NewRunResponseHandler(streamBuilder, summaryBuilder);
 
         await connection.EnqueueAsync(runMessage, runHandler).ConfigureAwait(false);
@@ -118,10 +131,19 @@ internal sealed class BoltProtocol : IBoltProtocol
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
-        string impersonatedUser)
+        string impersonatedUser,
+        INotificationsConfig notificationsConfig)
     {
         BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, impersonatedUser);
-        return _boltProtocolV3.BeginTransactionAsync(connection, database, bookmarks, config, impersonatedUser);
+        BoltProtocolV3.ValidateNotificationsForVersion(connection, notificationsConfig);
+
+        return _boltProtocolV3.BeginTransactionAsync(
+            connection,
+            database,
+            bookmarks,
+            config,
+            impersonatedUser,
+            notificationsConfig);
     }
 
     public async Task<IResultCursor> RunInExplicitTransactionAsync(
@@ -142,7 +164,7 @@ internal sealed class BoltProtocol : IBoltProtocol
             fetchSize,
             reactive);
 
-        var runMessage = _protocolMessageFactory.NewRunWithMetadataMessage(connection, query);
+        var runMessage = _protocolMessageFactory.NewRunWithMetadataMessage(connection, query, null);
         var runHandler = _protocolHandlerFactory.NewRunResponseHandler(streamBuilder, summaryBuilder);
 
         await connection.EnqueueAsync(runMessage, runHandler).ConfigureAwait(false);
@@ -166,6 +188,22 @@ internal sealed class BoltProtocol : IBoltProtocol
     public Task RollbackTransactionAsync(IConnection connection)
     {
         return _boltProtocolV3.RollbackTransactionAsync(connection);
+    }
+
+    private async Task AuthenticateWithLogonAsync(
+        IConnection connection,
+        string userAgent,
+        IAuthToken authToken,
+        INotificationsConfig notificationsConfig)
+    {
+        var helloMessage = _protocolMessageFactory.NewAuthlessHelloMessage(connection, userAgent, notificationsConfig);
+        var helloHandler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
+        await connection.EnqueueAsync(helloMessage, helloHandler).ConfigureAwait(false);
+
+        var logonMessage = _protocolMessageFactory.NewLogonMessage(connection, authToken);
+        await connection.EnqueueAsync(logonMessage, NoOpResponseHandler.Instance).ConfigureAwait(false);
+
+        await connection.SyncAsync().ConfigureAwait(false);
     }
 
     private async Task<IReadOnlyDictionary<string, object>> GetRoutingTableWithQueryAsync(
@@ -193,7 +231,7 @@ internal sealed class BoltProtocol : IBoltProtocol
             Bookmarks = bookmarks
         };
 
-        var result = await RunInAutoCommitTransactionAsync(connection, autoCommitParams).ConfigureAwait(false);
+        var result = await RunInAutoCommitTransactionAsync(connection, autoCommitParams, null).ConfigureAwait(false);
         var record = await result.SingleAsync().ConfigureAwait(false);
 
         //Since 4.4 the Routing information will contain a db.

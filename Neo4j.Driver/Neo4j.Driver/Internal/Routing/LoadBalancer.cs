@@ -41,7 +41,8 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         IPooledConnectionFactory connectionFactory,
         RoutingSettings routingSettings,
         ConnectionPoolSettings poolSettings,
-        ILogger logger)
+        ILogger logger,
+        INotificationsConfig notificationsConfig)
     {
         RoutingSetting = routingSettings;
         RoutingContext = RoutingSetting.RoutingContext;
@@ -53,7 +54,8 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             connectionFactory,
             RoutingSetting,
             poolSettings,
-            logger);
+            logger,
+            notificationsConfig);
 
         _routingTableManager = new RoutingTableManager(routingSettings, this, logger);
         _loadBalancingStrategy = CreateLoadBalancingStrategy(_clusterConnectionPool, _logger);
