@@ -341,7 +341,7 @@ internal class Notification : INotification
     {
         try
         {
-            return category?.ToLower() switch
+            return category?.ToLowerInvariant() switch
             {
                 "hint" => NotificationCategory.Hint,
                 "unrecognized" => NotificationCategory.Unrecognized,
@@ -360,7 +360,7 @@ internal class Notification : INotification
 
     private NotificationSeverity ParseSeverity(string severity)
     {
-        return severity?.ToLower() switch
+        return severity?.ToLowerInvariant() switch
         {
             "information" => NotificationSeverity.Information,
             "warning" => NotificationSeverity.Warning,
