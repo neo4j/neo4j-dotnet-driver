@@ -21,7 +21,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal;
 
-namespace Neo4j.Driver.Experimental.FluentQueries;
+namespace Neo4j.Driver.Preview.FluentQueries;
 
 internal class ExecutableQuery<T> : IExecutableQuery<T>
 {

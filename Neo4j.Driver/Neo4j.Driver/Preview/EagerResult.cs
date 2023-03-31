@@ -15,10 +15,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Experimental;
+namespace Neo4j.Driver.Preview;
 
 /// <summary>
-/// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
+/// There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.
 /// Complete result from a cypher query.
 /// </summary>
 public sealed class EagerResult<T>
@@ -31,19 +31,19 @@ public sealed class EagerResult<T>
     }
 
     /// <summary>
-    /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
+    /// There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.
     /// Least common set of fields in <see cref="Result"/>.
     /// </summary>
     public string[] Keys { get; init; }
 
     /// <summary>
-    /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
+    /// There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.
     /// All Records from query.
     /// </summary>
     public T Result { get; init; }
 
     /// <summary>
-    /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
+    /// There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.
     /// Query summary.
     /// </summary>
     public IResultSummary Summary { get; init; }

@@ -18,9 +18,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Neo4j.Driver.Experimental;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Types;
+using Neo4j.Driver.Preview;
 
 namespace Neo4j.Driver;
 

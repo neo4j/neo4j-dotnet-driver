@@ -16,19 +16,19 @@
 // limitations under the License.
 
 using System.Collections.Generic;
-using Neo4j.Driver.Experimental.FluentQueries;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Preview.FluentQueries;
 
-namespace Neo4j.Driver.Experimental;
+namespace Neo4j.Driver.Preview;
 
 /// <summary>
-/// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
-/// <br/> This class provides access to experimental APIs on existing non-static classes.
+/// There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.
+/// <br/> This class provides access to preview APIs on existing non-static classes.
 /// </summary>
-public static class ExperimentalExtensions
+public static class PreviewExtensions
 {
     /// <summary>
-    /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
+    /// There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.
     /// <br/> Sets the <see cref="IBookmarkManager"/> for maintaining bookmarks for the lifetime of the session.
     /// </summary>
     /// <param name="builder">This <see cref="SessionConfigBuilder"/> instance.</param>
@@ -42,7 +42,7 @@ public static class ExperimentalExtensions
     }
 
     /// <summary>
-    /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
+    /// There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.
     /// Gets an <see cref="IExecutableQuery&lt;IRecord&gt;"/> that can be used to configure and execute a query using fluent
     /// method chaining.
     /// </summary>
@@ -83,9 +83,9 @@ public static class ExperimentalExtensions
     }
 
     /// <summary>
-    /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
-    /// <br/> Experimental: This method will be removed and replaced with a readonly property "BookmarkManager" on the
-    /// <see cref="SessionConfig"/> class.<br/> Gets the configured experimental bookmark manager from this
+    /// There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.
+    /// <br/> Preview: This method will be removed and replaced with a readonly property "BookmarkManager" on the
+    /// <see cref="SessionConfig"/> class.<br/> Gets the configured preview bookmark manager from this
     /// <see cref="SessionConfig"/> instance.
     /// </summary>
     /// <seealso cref="WithBookmarkManager"/>

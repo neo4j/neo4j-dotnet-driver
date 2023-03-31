@@ -27,7 +27,7 @@ moved to a monthly cadence.
 
 As a policy, patch versions will not be released except on rare occasions. Bug fixes and updates will go into the latest
 minor version and users should upgrade to that. Driver upgrades within a major version will never contain breaking API
-changes(Excluding the Neo4j.Driver.Experimental namespace).
+changes(Excluding the Neo4j.Driver.Preview namespace).
 
 See also: https://neo4j.com/developer/kb/neo4j-supported-versions/
 
