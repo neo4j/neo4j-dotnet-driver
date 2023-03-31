@@ -22,11 +22,11 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Preview.FluentQueries;
 
-/// <summary>There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.</summary>
+/// <summary>There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.</summary>
 public interface IExecutableQuery<T>
 {
     /// <summary>
-    /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
+    /// There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.
     /// Adds the specified config to the executable query.
     /// </summary>
     /// <param name="config">The query config to use.</param>
@@ -34,7 +34,7 @@ public interface IExecutableQuery<T>
     IExecutableQuery<T> WithConfig(QueryConfig config);
 
     /// <summary>
-    /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
+    /// There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.
     /// Sets the named parameters on the query.
     /// </summary>
     /// <param name="parameters">The query parameters, specified as an object which is then converted into key-value pairs.</param>
@@ -42,7 +42,7 @@ public interface IExecutableQuery<T>
     IExecutableQuery<T> WithParameters(object parameters);
 
     /// <summary>
-    /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
+    /// There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.
     /// Sets the named parameters on the query.
     /// </summary>
     /// <param name="parameters">
@@ -53,7 +53,7 @@ public interface IExecutableQuery<T>
     IExecutableQuery<T> WithParameters(Dictionary<string, object> parameters);
 
     /// <summary>
-    /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
+    /// There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.
     /// Adds a stream processor function that will be called, passing the <see cref="IAsyncEnumerable{IRecord}"/> of records
     /// returned from the query. The value returned from this callback property will be present in the
     /// <see cref="EagerResult{T}.Result"/> property of the result returned from executing the query.
