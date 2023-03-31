@@ -16,10 +16,10 @@
 // limitations under the License.
 
 using System.Collections.Generic;
-using Neo4j.Driver.Experimental.FluentQueries;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Preview.FluentQueries;
 
-namespace Neo4j.Driver.Experimental;
+namespace Neo4j.Driver.Preview;
 
 /// <summary>
 /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.

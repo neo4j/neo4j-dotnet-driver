@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Experimental;
+namespace Neo4j.Driver.Preview;
 
 /// <summary>
 /// Experimental: Subject to change.<br/> The <see cref="IBookmarkManagerFactory"/> interface is intended for

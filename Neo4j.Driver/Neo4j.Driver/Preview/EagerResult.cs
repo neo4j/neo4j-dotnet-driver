@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Experimental;
+namespace Neo4j.Driver.Preview;
 
 /// <summary>
 /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.

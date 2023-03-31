@@ -19,7 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Experimental;
+using Neo4j.Driver.Preview;
 
 namespace Neo4j.Driver.Internal;
 

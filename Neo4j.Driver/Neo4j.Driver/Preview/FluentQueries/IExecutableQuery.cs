@@ -20,7 +20,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Experimental.FluentQueries;
+namespace Neo4j.Driver.Preview.FluentQueries;
 
 /// <summary>There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.</summary>
 public interface IExecutableQuery<T>

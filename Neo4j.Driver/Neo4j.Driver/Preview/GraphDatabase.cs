@@ -17,7 +17,7 @@
 
 using Neo4j.Driver.Internal;
 
-namespace Neo4j.Driver.Experimental;
+namespace Neo4j.Driver.Preview;
 
 /// <summary>
 /// Methods being considered for moving to the Neo4j.Driver. There is no guarantee that anything in
