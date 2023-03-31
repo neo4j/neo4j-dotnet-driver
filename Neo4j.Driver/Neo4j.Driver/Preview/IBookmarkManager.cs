@@ -21,11 +21,11 @@ using System.Threading.Tasks;
 namespace Neo4j.Driver.Preview;
 
 /// <summary>
-/// Experimental: Subject to change.<br/> The <see cref="IBookmarkManager"/> interface is intended for
+/// Preview: Subject to change.<br/> The <see cref="IBookmarkManager"/> interface is intended for
 /// implementation by classes that provide convenient interfacing with <see cref="Bookmarks"/> in both the driver and user
 /// code.
 /// </summary>
-/// <see cref="ExperimentalExtensions.WithBookmarkManager"/>
+/// <see cref="PreviewExtensions.WithBookmarkManager"/>
 public interface IBookmarkManager
 {
     /// <summary>

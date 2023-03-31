@@ -23,9 +23,9 @@ namespace Neo4j.Driver.Preview;
 
 /// <summary>
 /// There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.
-/// <br/> This class provides access to experimental APIs on existing non-static classes.
+/// <br/> This class provides access to preview APIs on existing non-static classes.
 /// </summary>
-public static class ExperimentalExtensions
+public static class PreviewExtensions
 {
     /// <summary>
     /// There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.
@@ -84,8 +84,8 @@ public static class ExperimentalExtensions
 
     /// <summary>
     /// There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.
-    /// <br/> Experimental: This method will be removed and replaced with a readonly property "BookmarkManager" on the
-    /// <see cref="SessionConfig"/> class.<br/> Gets the configured experimental bookmark manager from this
+    /// <br/> Preview: This method will be removed and replaced with a readonly property "BookmarkManager" on the
+    /// <see cref="SessionConfig"/> class.<br/> Gets the configured preview bookmark manager from this
     /// <see cref="SessionConfig"/> instance.
     /// </summary>
     /// <seealso cref="WithBookmarkManager"/>
