@@ -17,17 +17,30 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Threading;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging.Utils;
 
 namespace Neo4j.Driver.Internal.Messaging;
 
+static class BoltAgentBuilder
+{
+    public static string GetBoltAgent()
+    {
+        return "";
+    }
+}
+
 internal sealed class HelloMessage : IRequestMessage
 {
+    public static Lazy<string> LazyBoltAgent = new(BoltAgentBuilder.GetBoltAgent, LazyThreadSafetyMode.PublicationOnly);
     private const string UserAgentMetadataKey = "user_agent";
     private const string RoutingMetadataKey = "routing";
-
+    private const string BoltAgentMetadataKey = "bolt_agent";
+    private const string PatchBoltMetadataKey = "patch_bolt";
+    
     public HelloMessage(
         BoltProtocolVersion version,
         string userAgent,
@@ -55,7 +68,7 @@ internal sealed class HelloMessage : IRequestMessage
 
         if (version >= BoltProtocolVersion.V4_3 && version < BoltProtocolVersion.V5_0)
         {
-            Metadata.Add("patch_bolt", new[] { "utc" });
+            Metadata.Add(PatchBoltMetadataKey, new[] { "utc" });
         }
     }
 
@@ -79,6 +92,11 @@ internal sealed class HelloMessage : IRequestMessage
         if (version >= BoltProtocolVersion.V5_2)
         {
             NotificationsMetadataWriter.AddNotificationsConfigToMetadata(Metadata, notificationsConfig);
+        }
+
+        if (version >= BoltProtocolVersion.V5_3)
+        {
+            Metadata.Add(BoltAgentMetadataKey, LazyBoltAgent.Value);
         }
     }
 

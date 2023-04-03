@@ -52,7 +52,7 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
                     //This is a 'magic' handshake identifier to indicate we're using 'BOLT' ('GOGOBOLT')
                     goGoBolt,
                     // 4 versions max.
-                    BoltProtocolVersion.V5_2.PackToIntRange(BoltProtocolVersion.V5_0),
+                    BoltProtocolVersion.V5_3.PackToIntRange(BoltProtocolVersion.V5_0),
                     BoltProtocolVersion.V4_4.PackToIntRange(BoltProtocolVersion.V4_2),
                     BoltProtocolVersion.V4_1.PackToInt(),
                     BoltProtocolVersion.V3_0.PackToInt()
