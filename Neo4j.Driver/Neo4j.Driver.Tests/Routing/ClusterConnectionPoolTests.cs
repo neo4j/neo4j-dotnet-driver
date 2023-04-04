@@ -23,7 +23,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Routing;
 using Xunit;
@@ -44,7 +46,20 @@ namespace Neo4j.Driver.Tests.Routing
                 var connFactory = new Mock<IPooledConnectionFactory>().Object;
                 var poolSettings = new ConnectionPoolSettings(Config.Default);
                 var routingSetting = new RoutingSettings(uri, new Dictionary<string, string>(), Config.Default);
-                var pool = new ClusterConnectionPool(uris, connFactory, routingSetting, poolSettings, null, null);
+                var connectionSettings = new ConnectionSettings(
+                    uri,
+                    AuthTokenManagers.None,
+                    Config.Default,
+                    new DefaultHostResolver(false));
+
+                var pool = new ClusterConnectionPool(
+                    uris,
+                    connFactory,
+                    routingSetting,
+                    poolSettings,
+                    connectionSettings,
+                    null,
+                    null);
 
                 pool.ToString().Should().Contain("bolt://123:456/");
 
@@ -64,7 +79,12 @@ namespace Neo4j.Driver.Tests.Routing
                 connectionPoolDict.Count.Should().Be(0);
 
                 // When
-                var connection = await pool.AcquireAsync(ServerUri, AccessMode.Write, null, null, Bookmarks.Empty);
+                var connection = await pool.AcquireAsync(
+                    ServerUri,
+                    AccessMode.Write,
+                    null,
+                    null,
+                    Bookmarks.Empty);
 
                 // Then
                 connection.Should().BeNull();
@@ -122,7 +142,7 @@ namespace Neo4j.Driver.Tests.Routing
                             x.AcquireAsync(
                                 It.IsAny<AccessMode>(),
                                 It.IsAny<string>(),
-                                It.IsAny<string>(),
+                                It.IsAny<SessionConfig>(),
                                 It.IsAny<Bookmarks>()))
                     .ReturnsAsync(mockedConnection.Object);
 

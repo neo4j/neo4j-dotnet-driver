@@ -21,16 +21,16 @@ using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers;
 
-internal class LogoffMessageSerializer : WriteOnlySerializer
+internal sealed class LogoffMessageSerializer : WriteOnlySerializer
 {
-    public static readonly LogoffMessageSerializer Instance = new();
+    internal static LogoffMessageSerializer Instance = new();
 
     private static readonly Type[] Types = { typeof(LogoffMessage) };
     public override IEnumerable<Type> WritableTypes => Types;
 
     public override void Serialize(PackStreamWriter writer, object value)
     {
-        if (value is not LogoffMessage message)
+        if (value is not LogoffMessage)
         {
             throw new ArgumentOutOfRangeException(
                 $"Encountered {value?.GetType().Name} where {nameof(LogoffMessage)} was expected");

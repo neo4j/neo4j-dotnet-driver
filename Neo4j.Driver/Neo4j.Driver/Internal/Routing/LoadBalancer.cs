@@ -32,6 +32,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
     private readonly IClusterConnectionPool _clusterConnectionPool;
     private readonly IInitialServerAddressProvider _initialServerAddressProvider;
     private readonly ILoadBalancingStrategy _loadBalancingStrategy;
+    private readonly ConnectionSettings _connectionSettings;
     private readonly ILogger _logger;
     private readonly IRoutingTableManager _routingTableManager;
 
@@ -41,12 +42,14 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         IPooledConnectionFactory connectionFactory,
         RoutingSettings routingSettings,
         ConnectionPoolSettings poolSettings,
+        ConnectionSettings connectionSettings,
         ILogger logger,
         INotificationsConfig notificationsConfig)
     {
         RoutingSetting = routingSettings;
         RoutingContext = RoutingSetting.RoutingContext;
 
+        _connectionSettings = connectionSettings;
         _logger = logger;
 
         _clusterConnectionPool = new ClusterConnectionPool(
@@ -54,6 +57,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             connectionFactory,
             RoutingSetting,
             poolSettings,
+            connectionSettings,
             logger,
             notificationsConfig);
 
@@ -99,7 +103,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
     public async Task<IConnection> AcquireAsync(
         AccessMode mode,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks)
     {
         if (IsClosed)
@@ -107,7 +111,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             throw GetDriverDisposedException(nameof(LoadBalancer));
         }
 
-        var conn = await AcquireConnectionAsync(mode, database, impersonatedUser, bookmarks).ConfigureAwait(false);
+        var conn = await AcquireConnectionAsync(mode, database, sessionConfig, bookmarks).ConfigureAwait(false);
 
         if (IsClosed)
         {
@@ -140,6 +144,8 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             "Unable to connect to database, " +
             "ensure the database is running and that there is a working network connection to it.");
     }
+
+    public ConnectionSettings ConnectionSettings => _connectionSettings;
 
     public async Task<bool> SupportsMultiDbAsync()
     {
@@ -208,11 +214,11 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
     private async Task<IConnection> AcquireConnectionAsync(
         AccessMode mode,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks)
     {
         var routingTable = await _routingTableManager
-            .EnsureRoutingTableForModeAsync(mode, database, impersonatedUser, bookmarks)
+            .EnsureRoutingTableForModeAsync(mode, database, sessionConfig, bookmarks)
             .ConfigureAwait(false);
 
         while (true)
@@ -239,7 +245,12 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
                 break;
             }
 
-            var conn = await CreateClusterConnectionAsync(uri, mode, routingTable.Database, impersonatedUser, bookmarks)
+            var conn = await CreateClusterConnectionAsync(
+                    uri,
+                    mode,
+                    routingTable.Database,
+                    sessionConfig,
+                    bookmarks)
                 .ConfigureAwait(false);
 
             if (conn != null)
@@ -257,12 +268,13 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         Uri uri,
         AccessMode mode,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks)
     {
         try
         {
-            var conn = await _clusterConnectionPool.AcquireAsync(uri, mode, database, impersonatedUser, bookmarks)
+            var conn = await _clusterConnectionPool
+                .AcquireAsync(uri, mode, database, sessionConfig, bookmarks)
                 .ConfigureAwait(false);
 
             if (conn != null)

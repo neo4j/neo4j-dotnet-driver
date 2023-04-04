@@ -19,8 +19,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Preview;
+using Neo4j.Driver.Internal.Auth;
+using Neo4j.Driver.Internal.Connector;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 using static Neo4j.Driver.Internal.Util.ConfigBuilders;
 
@@ -318,6 +319,16 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
 
                         throw;
                     }
+                },
+                ex =>
+                {
+                    if (ex is TokenExpiredException)
+                    {
+                        _connectionProvider.ConnectionSettings.AuthTokenManager?.OnTokenExpiredAsync(
+                            _connection.AuthToken);
+                    }
+
+                    return true;
                 }));
     }
 
@@ -343,8 +354,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
             LastBookmarks,
             _reactive,
             _fetchSize,
-            ImpersonatedUser(),
-            _notificationsConfig);
+            SessionConfig);
 
         await tx.BeginTransactionAsync(config).ConfigureAwait(false);
         _transaction = tx;
@@ -358,10 +368,19 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
             LastBookmarks = await GetBookmarksAsync().ConfigureAwait(false);
         }
 
-        _connection = await _connectionProvider.AcquireAsync(mode, _database, ImpersonatedUser(), LastBookmarks)
+        _connection = await _connectionProvider.AcquireAsync(
+                mode,
+                _database,
+                SessionConfig,
+                LastBookmarks)
             .ConfigureAwait(false);
 
-        //Update the database. If a routing request occurred it may have returned a differing DB alias name that needs to be used for the 
+        var token = SessionConfig?.AuthToken ??
+            await _connectionProvider.ConnectionSettings.AuthTokenManager.GetTokenAsync();
+
+        await _connection.ReAuthAsync(token);
+
+        //Update the database. If a routing request occurred it may have returned a differing DB alias name that needs to be used for the
         //rest of the sessions lifetime.
         _database = _connection.Database;
     }

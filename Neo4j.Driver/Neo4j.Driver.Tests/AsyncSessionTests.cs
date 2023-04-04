@@ -23,6 +23,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -208,7 +209,7 @@ namespace Neo4j.Driver.Tests
                                 It.IsAny<string>(),
                                 It.IsAny<Bookmarks>(),
                                 It.IsAny<TransactionConfig>(),
-                                It.IsAny<string>(),
+                                It.IsAny<Driver.SessionConfig>(),
                                 It.IsAny<INotificationsConfig>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
 
@@ -237,7 +238,7 @@ namespace Neo4j.Driver.Tests
                                 It.IsAny<string>(),
                                 It.IsAny<Bookmarks>(),
                                 It.IsAny<TransactionConfig>(),
-                                It.IsAny<string>(),
+                                It.IsAny<Driver.SessionConfig>(),
                                 It.IsAny<INotificationsConfig>()))
                     .Returns(Task.CompletedTask)
                     .Callback(
@@ -277,7 +278,7 @@ namespace Neo4j.Driver.Tests
                                 It.IsAny<string>(),
                                 It.IsAny<Bookmarks>(),
                                 It.IsAny<TransactionConfig>(),
-                                It.IsAny<string>(),
+                                It.IsAny<Driver.SessionConfig>(),
                                 It.IsAny<INotificationsConfig>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
 
@@ -376,7 +377,7 @@ namespace Neo4j.Driver.Tests
             public Task<IConnection> AcquireAsync(
                 AccessMode mode,
                 string database,
-                string impersonatedUser,
+                Driver.SessionConfig sessionConfig,
                 Bookmarks bookmarks)
             {
                 return Task.FromResult(Connection);
@@ -386,6 +387,11 @@ namespace Neo4j.Driver.Tests
             {
                 throw new NotSupportedException();
             }
+
+            public ConnectionSettings ConnectionSettings => new(
+                new Uri("neo4j://myTest.org"),
+                AuthTokenManagers.Static(AuthTokens.None),
+                Config.Default);
 
             public Task<bool> SupportsMultiDbAsync()
             {

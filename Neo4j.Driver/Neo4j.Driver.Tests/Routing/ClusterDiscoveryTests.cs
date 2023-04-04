@@ -62,13 +62,15 @@ namespace Neo4j.Driver.Tests.Routing
                     }
                 };
 
+                var sessionConfig = new SessionConfig("fake-person");
+
                 var mockConn = new Mock<IConnection>();
-                mockConn.Setup(x => x.GetRoutingTableAsync("test", "fake-person", bookmarks))
+                mockConn.Setup(x => x.GetRoutingTableAsync("test", sessionConfig, bookmarks))
                     .ReturnsAsync(routingTable);
 
                 // When
                 var manager = new ClusterDiscovery();
-                var table = await manager.DiscoverAsync(mockConn.Object, "test", "fake-person", bookmarks);
+                var table = await manager.DiscoverAsync(mockConn.Object, "test", sessionConfig, bookmarks);
 
                 // Then
                 table.Database.Should().Be("test");

@@ -112,7 +112,7 @@ namespace Neo4j.Driver.Tests.Routing
                         x => x.EnsureRoutingTableForModeAsync(
                             mode,
                             It.IsAny<string>(),
-                            It.IsAny<string>(),
+                            It.IsAny<SessionConfig>(),
                             Bookmarks.Empty))
                     .ReturnsAsync(routingTableMock.Object);
 
@@ -122,7 +122,7 @@ namespace Neo4j.Driver.Tests.Routing
                 mockedConn.Setup(x => x.Mode).Returns(mode);
                 var conn = mockedConn.Object;
                 clusterPoolMock
-                    .Setup(x => x.AcquireAsync(uri, mode, It.IsAny<string>(), It.IsAny<string>(), Bookmarks.Empty))
+                    .Setup(x => x.AcquireAsync(uri, mode, It.IsAny<string>(), It.IsAny<SessionConfig>(), Bookmarks.Empty))
                     .ReturnsAsync(conn);
 
                 var balancer = new LoadBalancer(clusterPoolMock.Object, mock.Object);
@@ -182,7 +182,7 @@ namespace Neo4j.Driver.Tests.Routing
                         x => x.EnsureRoutingTableForModeAsync(
                             mode,
                             It.IsAny<string>(),
-                            It.IsAny<string>(),
+                            It.IsAny<SessionConfig>(),
                             Bookmarks.Empty))
                     .ReturnsAsync(routingTableMock.Object);
 
@@ -194,13 +194,13 @@ namespace Neo4j.Driver.Tests.Routing
 
                 var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
                 clusterConnPoolMock.Setup(
-                        x => x.AcquireAsync(uri, mode, It.IsAny<string>(), It.IsAny<string>(), Bookmarks.Empty))
+                        x => x.AcquireAsync(uri, mode, It.IsAny<string>(), It.IsAny<SessionConfig>(), Bookmarks.Empty))
                     .Returns(Task.FromException<IConnection>(new ServiceUnavailableException("failed init")));
 
                 var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object);
 
                 // When & Then
-                balancer.Awaiting(b => b.AcquireAsync(mode, It.IsAny<string>(), It.IsAny<string>(), Bookmarks.Empty))
+                balancer.Awaiting(b => b.AcquireAsync(mode, It.IsAny<string>(), It.IsAny<SessionConfig>(), Bookmarks.Empty))
                     .Should()
                     .Throw<SessionExpiredException>()
                     .WithMessage("Failed to connect to any*");
@@ -224,7 +224,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
                 clusterConnPoolMock.Setup(
-                        x => x.AcquireAsync(uri, mode, It.IsAny<string>(), It.IsAny<string>(), Bookmarks.Empty))
+                        x => x.AcquireAsync(uri, mode, It.IsAny<string>(), It.IsAny<SessionConfig>(), Bookmarks.Empty))
                     .Returns(
                         Task.FromException<IConnection>(
                             new SecurityException("Failed to establish ssl connection with the server")));
@@ -256,13 +256,13 @@ namespace Neo4j.Driver.Tests.Routing
                         x => x.EnsureRoutingTableForModeAsync(
                             mode,
                             It.IsAny<string>(),
-                            It.IsAny<string>(),
+                            It.IsAny<SessionConfig>(),
                             Bookmarks.Empty))
                     .ReturnsAsync(routingTableMock.Object);
 
                 var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
                 clusterConnPoolMock
-                    .Setup(x => x.AcquireAsync(uri, mode, It.IsAny<string>(), It.IsAny<string>(), Bookmarks.Empty))
+                    .Setup(x => x.AcquireAsync(uri, mode, It.IsAny<string>(), It.IsAny<SessionConfig>(), Bookmarks.Empty))
                     .Returns(Task.FromException<IConnection>(new ProtocolException("do not understand struct 0x01")));
 
                 var balancer = new LoadBalancer(clusterConnPoolMock.Object, mock.Object);
@@ -298,10 +298,10 @@ namespace Neo4j.Driver.Tests.Routing
                             It.IsAny<Uri>(),
                             mode,
                             It.IsAny<string>(),
-                            It.IsAny<string>(),
+                            It.IsAny<SessionConfig>(),
                             Bookmarks.Empty))
                     .ReturnsAsync(
-                        (Uri uri, AccessMode m, string d, string u, Bookmarks b) => NewConnectionMock(uri, m));
+                        (Uri uri, AccessMode m, string d, string u, Bookmarks b, IAuthToken a) => NewConnectionMock(uri, m));
 
                 var balancer = new LoadBalancer(clusterPoolMock.Object, routingTableManager.Object);
 

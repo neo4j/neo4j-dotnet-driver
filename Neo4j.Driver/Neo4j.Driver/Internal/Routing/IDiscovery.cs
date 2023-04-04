@@ -25,6 +25,6 @@ internal interface IDiscovery
     Task<IRoutingTable> DiscoverAsync(
         IConnection connection,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks);
 }

@@ -27,11 +27,14 @@ namespace Neo4j.Driver.Internal.Connector;
 internal interface IConnection : IConnectionDetails, IConnectionRunner
 {
     IBoltProtocol BoltProtocol { get; }
+    bool ReAuthorizationRequired { get; set; }
 
     void ConfigureMode(AccessMode? mode);
     void Configure(string database, AccessMode? mode);
 
     Task InitAsync(INotificationsConfig notificationsConfig, CancellationToken cancellationToken = default);
+
+    Task ReAuthAsync(IAuthToken newAuthToken, CancellationToken cancellationToken = default);
 
     // send all and receive all
     Task SyncAsync();
@@ -43,6 +46,8 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
     Task ReceiveOneAsync();
 
     Task EnqueueAsync(IRequestMessage message, IResponseHandler handler);
+
+    void ClearQueueAsync();
 
     // Enqueue a reset message
     Task ResetAsync();
@@ -73,7 +78,7 @@ internal interface IConnectionRunner
 
     Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks);
 
     Task<IResultCursor> RunInAutoCommitTransactionAsync(
@@ -84,7 +89,7 @@ internal interface IConnectionRunner
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         INotificationsConfig notificationsConfig);
 
     Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize);
@@ -101,4 +106,5 @@ internal interface IConnectionDetails
     IDictionary<string, string> RoutingContext { get; }
     BoltProtocolVersion Version { get; }
     bool UtcEncodedDateTime { get; }
+    IAuthToken AuthToken { get; }
 }

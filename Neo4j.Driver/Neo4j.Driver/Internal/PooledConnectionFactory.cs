@@ -17,6 +17,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal;
@@ -26,18 +28,20 @@ internal interface IPooledConnectionFactory
     IPooledConnection Create(
         Uri uri,
         IConnectionReleaseManager releaseManager,
+        SocketSettings socketSettings,
+        IAuthToken authToken,
+        Func<IAuthToken, CancellationToken, Task> tokenExpiredAsync,
+        string userAgent,
         IDictionary<string, string> routingContext);
 }
 
 internal class PooledConnectionFactory : IPooledConnectionFactory
 {
     private readonly BufferSettings _bufferSettings;
-    private readonly ConnectionSettings _connectionSettings;
     private readonly ILogger _logger;
 
-    public PooledConnectionFactory(ConnectionSettings connectionSettings, BufferSettings bufferSettings, ILogger logger)
+    public PooledConnectionFactory(BufferSettings bufferSettings, ILogger logger)
     {
-        _connectionSettings = connectionSettings ?? throw new ArgumentNullException(nameof(connectionSettings));
         _bufferSettings = bufferSettings ?? throw new ArgumentNullException(nameof(bufferSettings));
         _logger = logger;
     }
@@ -45,10 +49,15 @@ internal class PooledConnectionFactory : IPooledConnectionFactory
     public IPooledConnection Create(
         Uri uri,
         IConnectionReleaseManager releaseManager,
+        SocketSettings socketSettings,
+        IAuthToken authToken,
+        Func<IAuthToken, CancellationToken, Task> tokenExpiredAsync,
+        string userAgent,
         IDictionary<string, string> routingContext)
     {
         return new PooledConnection(
-            new SocketConnection(uri, _connectionSettings, _bufferSettings, routingContext, _logger),
+            new SocketConnection(uri, socketSettings, authToken, userAgent, _bufferSettings, routingContext, _logger),
+            tokenExpiredAsync,
             releaseManager ?? throw new ArgumentNullException(nameof(releaseManager)));
     }
 }

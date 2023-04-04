@@ -32,11 +32,13 @@ internal class ConnectionPoolFactory : IConnectionPoolFactory
     private readonly INotificationsConfig _notificationsConfig;
     private readonly ConnectionPoolSettings _poolSettings;
     private readonly IDictionary<string, string> _routingContext;
+    private readonly ConnectionSettings _connectionSettings;
 
     public ConnectionPoolFactory(
         IPooledConnectionFactory connectionFactory,
         ConnectionPoolSettings poolSettings,
         IDictionary<string, string> routingContext,
+        ConnectionSettings connectionSettings,
         ILogger logger,
         INotificationsConfig notificationsConfig)
     {
@@ -45,6 +47,7 @@ internal class ConnectionPoolFactory : IConnectionPoolFactory
         _logger = logger;
         _notificationsConfig = notificationsConfig;
         _routingContext = routingContext;
+        _connectionSettings = connectionSettings;
     }
 
     public IConnectionPool Create(Uri uri)
@@ -54,6 +57,7 @@ internal class ConnectionPoolFactory : IConnectionPoolFactory
             _connectionFactory,
             _poolSettings,
             _logger,
+            _connectionSettings,
             _routingContext,
             _notificationsConfig);
     }

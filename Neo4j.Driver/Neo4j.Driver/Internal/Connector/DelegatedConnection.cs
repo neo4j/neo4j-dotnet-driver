@@ -100,6 +100,20 @@ internal abstract class DelegatedConnection : IConnection
         }
     }
 
+    public async Task ReAuthAsync(
+        IAuthToken newAuthToken,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await Delegate.ReAuthAsync(newAuthToken, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            await OnErrorAsync(e).ConfigureAwait(false);
+        }
+    }
+
     public async Task EnqueueAsync(IRequestMessage message, IResponseHandler handler)
     {
         try
@@ -112,12 +126,24 @@ internal abstract class DelegatedConnection : IConnection
         }
     }
 
+    public void ClearQueueAsync()
+    {
+        Delegate.ClearQueueAsync();
+    }
+
     public virtual bool IsOpen => Delegate.IsOpen;
 
     public IServerInfo Server => Delegate.Server;
+
     public IBoltProtocol BoltProtocol => Delegate.BoltProtocol;
+    public bool ReAuthorizationRequired
+    {
+        get => Delegate.ReAuthorizationRequired;
+        set => Delegate.ReAuthorizationRequired = value;
+    }
 
     public bool UtcEncodedDateTime => Delegate.UtcEncodedDateTime;
+    public IAuthToken AuthToken => Delegate.AuthToken;
 
     public void UpdateId(string newConnId)
     {
@@ -166,10 +192,10 @@ internal abstract class DelegatedConnection : IConnection
 
     public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks)
     {
-        return BoltProtocol.GetRoutingTableAsync(this, database, impersonatedUser, bookmarks);
+        return BoltProtocol.GetRoutingTableAsync(this, database, sessionConfig, bookmarks);
     }
 
     public Task<IResultCursor> RunInAutoCommitTransactionAsync(
@@ -183,7 +209,7 @@ internal abstract class DelegatedConnection : IConnection
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         INotificationsConfig notificationsConfig)
     {
         return BoltProtocol.BeginTransactionAsync(
@@ -191,7 +217,7 @@ internal abstract class DelegatedConnection : IConnection
             database,
             bookmarks,
             config,
-            impersonatedUser,
+            sessionConfig,
             notificationsConfig);
     }
 

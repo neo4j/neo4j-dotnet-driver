@@ -22,6 +22,7 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver.Internal;
 
@@ -65,19 +66,24 @@ internal sealed class BoltProtocol : IBoltProtocol
         return _boltProtocolV3.ResetAsync(connection);
     }
 
+    public Task ReAuthAsync(IConnection connection, IAuthToken newAuthToken)
+    {
+        return _boltProtocolV3.ReAuthAsync(connection, newAuthToken);
+    }
+
     public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         IConnection connection,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks)
     {
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
 
-        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, impersonatedUser);
+        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, sessionConfig?.ImpersonatedUser);
 
         return connection.Version >= BoltProtocolVersion.V4_3
-            ? GetRoutingTableWithRouteMessageAsync(connection, database, impersonatedUser, bookmarks)
+            ? GetRoutingTableWithRouteMessageAsync(connection, database, sessionConfig?.ImpersonatedUser, bookmarks)
             : GetRoutingTableWithQueryAsync(connection, database, bookmarks);
     }
 
@@ -131,19 +137,12 @@ internal sealed class BoltProtocol : IBoltProtocol
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         INotificationsConfig notificationsConfig)
     {
-        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, impersonatedUser);
+        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, sessionConfig?.ImpersonatedUser);
         BoltProtocolV3.ValidateNotificationsForVersion(connection, notificationsConfig);
-
-        return _boltProtocolV3.BeginTransactionAsync(
-            connection,
-            database,
-            bookmarks,
-            config,
-            impersonatedUser,
-            notificationsConfig);
+        return _boltProtocolV3.BeginTransactionAsync(connection, database, bookmarks, config, sessionConfig, notificationsConfig);
     }
 
     public async Task<IResultCursor> RunInExplicitTransactionAsync(
@@ -277,6 +276,7 @@ internal sealed class BoltProtocol : IBoltProtocol
     }
 
     // Internal for tests.
+
     internal Func<IResultStreamBuilder, long, long, Task> RequestMore(
         IConnection connection,
         SummaryBuilder summaryBuilder,
@@ -296,6 +296,7 @@ internal sealed class BoltProtocol : IBoltProtocol
     }
 
     // Internal for tests.
+
     internal Func<IResultStreamBuilder, long, Task> CancelRequest(
         IConnection connection,
         SummaryBuilder summaryBuilder,

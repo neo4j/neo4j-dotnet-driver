@@ -32,11 +32,12 @@ internal interface IBoltProtocol
 
     Task LogoutAsync(IConnection connection);
     Task ResetAsync(IConnection connection);
+    Task ReAuthAsync(IConnection connection, IAuthToken newAuthToken);
 
     Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         IConnection connection,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks);
 
     Task<IResultCursor> RunInAutoCommitTransactionAsync(
@@ -49,7 +50,7 @@ internal interface IBoltProtocol
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         INotificationsConfig notificationsConfig);
 
     Task<IResultCursor> RunInExplicitTransactionAsync(

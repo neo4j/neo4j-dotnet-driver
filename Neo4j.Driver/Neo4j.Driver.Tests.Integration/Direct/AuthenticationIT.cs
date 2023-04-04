@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Auth;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -67,7 +68,7 @@ public sealed class AuthenticationIT : DirectDriverTestBase
             oldAuthToken["principal"].As<string>(),
             oldAuthToken["credentials"].As<string>(),
             "native",
-            "basic");
+            AuthSchemes.Basic);
 
         await VerifyConnectivity(ServerEndPoint, newAuthToken);
     }
@@ -80,7 +81,7 @@ public sealed class AuthenticationIT : DirectDriverTestBase
             oldAuthToken["principal"].As<string>(),
             oldAuthToken["credentials"].As<string>(),
             "native",
-            "basic",
+            AuthSchemes.Basic,
             new Dictionary<string, object> { { "secret", 42 } });
 
         await VerifyConnectivity(ServerEndPoint, newAuthToken);

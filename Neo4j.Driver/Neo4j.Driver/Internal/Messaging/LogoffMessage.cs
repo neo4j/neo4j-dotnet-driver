@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 
@@ -23,6 +24,11 @@ namespace Neo4j.Driver.Internal.Messaging;
 internal sealed class LogoffMessage : IRequestMessage
 {
     public static readonly LogoffMessage Instance = new();
+
+    private LogoffMessage()
+    {
+    }
+
     public IPackStreamSerializer Serializer => LogoffMessageSerializer.Instance;
 
     public override string ToString()

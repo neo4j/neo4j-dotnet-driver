@@ -45,6 +45,16 @@ public sealed class SessionConfig
         _impersonatedUser = null;
     }
 
+    internal SessionConfig(string impersonatedUser) : this()
+    {
+        _impersonatedUser = impersonatedUser;
+    }
+
+    internal SessionConfig(IAuthToken authToken) : this()
+    {
+        AuthToken = authToken;
+    }
+
     internal static SessionConfigBuilder Builder => new(new SessionConfig());
 
     /// <summary>Gets the target database name for queries executed within the constructed session.</summary>
@@ -131,6 +141,11 @@ public sealed class SessionConfig
         get => _impersonatedUser;
         internal set => _impersonatedUser = !string.IsNullOrEmpty(value) ? value : throw new ArgumentNullException();
     }
+
+    /// <summary>
+    /// The auth token that will be used for this session. This overrides any auth settings on the driver object.
+    /// </summary>
+    public IAuthToken AuthToken { get; internal set; }
 
     internal IBookmarkManager BookmarkManager { get; set; }
 
@@ -226,6 +241,16 @@ public sealed class SessionConfigBuilder
     public SessionConfigBuilder WithDefaultAccessMode(AccessMode defaultAccessMode)
     {
         _config.DefaultAccessMode = defaultAccessMode;
+        return this;
+    }
+
+    /// <summary>Sets the auth token to be used for the session.</summary>
+    /// <param name="authToken">The auth token.</param>
+    /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
+    /// <seealso cref="SessionConfig.AuthToken"/>
+    public SessionConfigBuilder WithAuthToken(IAuthToken authToken)
+    {
+        _config.AuthToken = authToken;
         return this;
     }
 

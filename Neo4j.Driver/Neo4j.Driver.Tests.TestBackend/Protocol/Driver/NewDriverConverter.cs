@@ -39,6 +39,7 @@ internal class NewDriverConverter : JsonConverter<NewDriver.NewDriverType>
 
         var newDriverRequest = new NewDriver.NewDriverType();
         newDriverRequest.authorizationToken = jsonObj["authorizationToken"]?.ToObject<AuthorizationToken>();
+        newDriverRequest.authTokenManagerId = jsonObj["authTokenManagerId"]?.Value<string>();
         newDriverRequest.uri = jsonObj["uri"]?.Value<string>();
         newDriverRequest.userAgent = jsonObj["userAgent"]?.Value<string>();
         newDriverRequest.resolverRegistered = jsonObj["resolverRegistered"]?.Value<bool>() ?? false;

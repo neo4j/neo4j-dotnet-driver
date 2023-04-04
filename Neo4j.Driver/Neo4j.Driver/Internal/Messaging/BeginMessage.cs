@@ -28,7 +28,7 @@ internal sealed class BeginMessage : TransactionStartingMessage
         Bookmarks bookmarks,
         TransactionConfig txConfig,
         AccessMode mode,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         INotificationsConfig notificationsConfig)
         : base(
             version,
@@ -38,7 +38,7 @@ internal sealed class BeginMessage : TransactionStartingMessage
             txConfig?.Metadata,
             mode,
             notificationsConfig,
-            impersonatedUser)
+            sessionConfig)
     {
     }
 

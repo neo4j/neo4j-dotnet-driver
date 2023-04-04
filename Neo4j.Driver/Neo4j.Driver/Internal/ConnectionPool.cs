@@ -20,6 +20,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Extensions;
 using Neo4j.Driver.Internal.Logging;
@@ -38,6 +39,7 @@ internal sealed class ConnectionPool : IConnectionPool
     private const int SpinningWaitInterval = 500;
     private readonly TimeSpan _connectionAcquisitionTimeout;
     private readonly IPooledConnectionFactory _connectionFactory;
+    private readonly ConnectionSettings _connectionSettings;
 
     private readonly IConnectionValidator _connectionValidator;
 
@@ -67,6 +69,7 @@ internal sealed class ConnectionPool : IConnectionPool
         IPooledConnectionFactory connectionFactory,
         ConnectionPoolSettings connectionPoolSettings,
         ILogger logger,
+        ConnectionSettings connectionSettings,
         IDictionary<string, string> routingContext,
         INotificationsConfig notificationsConfig = null)
     {
@@ -78,6 +81,7 @@ internal sealed class ConnectionPool : IConnectionPool
         _connectionAcquisitionTimeout = connectionPoolSettings.ConnectionAcquisitionTimeout;
 
         _connectionFactory = connectionFactory;
+        _connectionSettings = connectionSettings;
 
         var connIdleTimeout = connectionPoolSettings.ConnectionIdleTimeout;
         var maxConnectionLifetime = connectionPoolSettings.MaxConnectionLifetime;
@@ -96,6 +100,7 @@ internal sealed class ConnectionPool : IConnectionPool
         BlockingCollection<IPooledConnection> idleConnections = null,
         ConcurrentHashSet<IPooledConnection> inUseConnections = null,
         ConnectionPoolSettings poolSettings = null,
+        ConnectionSettings connectionSettings = null,
         IConnectionValidator validator = null,
         ILogger logger = null,
         INotificationsConfig notificationsConfig = null)
@@ -104,9 +109,11 @@ internal sealed class ConnectionPool : IConnectionPool
             connectionFactory,
             poolSettings ?? new ConnectionPoolSettings(Config.Default),
             logger,
+            new ConnectionSettings(new Uri("bolt://localhost:7687"), AuthTokenManagers.None, Config.Default),
             null,
             notificationsConfig)
     {
+        _connectionSettings = connectionSettings;
         _idleConnections = idleConnections ?? new BlockingCollection<IPooledConnection>();
         _inUseConnections = inUseConnections ?? new ConcurrentHashSet<IPooledConnection>();
         if (validator != null)
@@ -133,7 +140,7 @@ internal sealed class ConnectionPool : IConnectionPool
     public async Task<IConnection> AcquireAsync(
         AccessMode mode,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks)
     {
         _poolMetricsListener?.PoolAcquiring();
@@ -199,25 +206,34 @@ internal sealed class ConnectionPool : IConnectionPool
 
     public async Task<IServerInfo> VerifyConnectivityAndGetInfoAsync()
     {
-        var connection = await AcquireAsync(AccessMode.Read, null, null, null)
-            .ConfigureAwait(false) as IPooledConnection;
+        var connection = await AcquireAsync(AccessMode.Read, null, CancellationToken.None)
+            .ConfigureAwait(false);
+
+        if (connection is not IPooledConnection pooledConnection)
+        {
+            throw new Exception("AcquireAsync returned wrong connection type");
+        }
 
         try
         {
-            await connection.ResetAsync().ConfigureAwait(false);
+            await pooledConnection.ResetAsync().ConfigureAwait(false);
         }
         finally
         {
-            await ReleaseAsync(connection).ConfigureAwait(false);
+            await ReleaseAsync(pooledConnection).ConfigureAwait(false);
         }
 
         return connection.Server;
     }
 
+    public ConnectionSettings ConnectionSettings => _connectionSettings;
+
     public async Task<bool> SupportsMultiDbAsync()
     {
         // Establish a connection with the server and immediately close it.
-        var connection = await AcquireAsync(Simple.Mode, Simple.Database, null, Simple.Bookmarks).ConfigureAwait(false);
+        var connection = await AcquireAsync(Simple.Mode, Simple.Database, null, Simple.Bookmarks)
+            .ConfigureAwait(false);
+
         var multiDb = connection.SupportsMultiDatabase();
         await connection.CloseAsync().ConfigureAwait(false);
 
@@ -272,13 +288,14 @@ internal sealed class ConnectionPool : IConnectionPool
         }
     }
 
-    private async Task<IPooledConnection> CreateNewPooledConnectionAsync(CancellationToken cancellationToken = default)
+    private async Task<IPooledConnection> CreateNewPooledConnectionAsync(
+        CancellationToken cancellationToken = default)
     {
         var conn = default(IPooledConnection);
 
         try
         {
-            conn = NewPooledConnection();
+            conn = await NewPooledConnection();
 
             if (conn == null)
             {
@@ -302,7 +319,7 @@ internal sealed class ConnectionPool : IConnectionPool
         }
     }
 
-    private IPooledConnection NewPooledConnection()
+    private async Task<IPooledConnection> NewPooledConnection()
     {
         if (!TryIncrementPoolSize())
         {
@@ -311,7 +328,13 @@ internal sealed class ConnectionPool : IConnectionPool
 
         _poolMetricsListener?.ConnectionCreating();
 
-        return _connectionFactory.Create(_uri, this, RoutingContext);
+        return _connectionFactory.Create(_uri,
+            this,
+            _connectionSettings.SocketSettings,
+            await _connectionSettings.AuthTokenManager.GetTokenAsync(),
+            _connectionSettings.AuthTokenManager.OnTokenExpiredAsync,
+            _connectionSettings.UserAgent,
+            RoutingContext);
     }
 
     private async Task DestroyConnectionAsync(IPooledConnection conn)
@@ -369,7 +392,10 @@ internal sealed class ConnectionPool : IConnectionPool
         Interlocked.Decrement(ref _poolSize);
     }
 
-    private async Task<IPooledConnection> AcquireOrTimeoutAsync(AccessMode mode, string database, TimeSpan timeout)
+    private async Task<IPooledConnection> AcquireOrTimeoutAsync(
+        AccessMode mode,
+        string database,
+        TimeSpan timeout)
     {
         using var cts = new CancellationTokenSource(timeout);
 
@@ -410,7 +436,6 @@ internal sealed class ConnectionPool : IConnectionPool
             }
 
             var connection = await GetPooledOrNewConnectionAsync(cancellationToken).ConfigureAwait(false);
-
             if (_connectionValidator.OnRequire(connection))
             {
                 await AddConnectionAsync(connection).ConfigureAwait(false);
@@ -443,20 +468,26 @@ internal sealed class ConnectionPool : IConnectionPool
         throw GetDriverDisposedException(nameof(ConnectionPool));
     }
 
-    private Task<IPooledConnection> GetPooledOrNewConnectionAsync(CancellationToken cancellationToken)
+    private async Task<IPooledConnection> GetPooledOrNewConnectionAsync(
+        CancellationToken cancellationToken)
     {
-        return _idleConnections.TryTake(out var connection)
-            ? Task.FromResult(connection)
-            : CreateNewConnectionOrGetIdleAsync(cancellationToken);
+        if (_idleConnections.TryTake(out var connection))
+        {
+            return connection;
+        }
+
+        return await CreateNewConnectionOrGetIdleAsync(cancellationToken);
     }
 
-    private async Task<IPooledConnection> CreateNewConnectionOrGetIdleAsync(CancellationToken cancellationToken)
+    private async Task<IPooledConnection> CreateNewConnectionOrGetIdleAsync(
+        CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
             if (!IsConnectionPoolFull())
             {
-                var connection = await CreateNewPooledConnectionAsync(cancellationToken).ConfigureAwait(false);
+                var connection = await CreateNewPooledConnectionAsync(cancellationToken)
+                    .ConfigureAwait(false);
 
                 if (connection != null)
                 {
@@ -465,7 +496,6 @@ internal sealed class ConnectionPool : IConnectionPool
             }
 
             await Task.Delay(SpinningWaitInterval, cancellationToken).ConfigureAwait(false);
-
             if (_idleConnections.TryTake(out var idle))
             {
                 return idle;

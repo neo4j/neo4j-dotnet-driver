@@ -24,7 +24,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Util;
 using Neo4j.Driver.Tests.TestUtil;
@@ -59,6 +61,7 @@ namespace Neo4j.Driver.Tests
             BlockingCollection<IPooledConnection> idleConnections = null,
             ConcurrentHashSet<IPooledConnection> inUseConnections = null,
             ConnectionPoolSettings poolSettings = null,
+            ConnectionSettings connectionSettings = null,
             bool isConnectionValid = true)
         {
             return new ConnectionPool(
@@ -66,6 +69,7 @@ namespace Neo4j.Driver.Tests
                 idleConnections,
                 inUseConnections,
                 poolSettings,
+                connectionSettings,
                 new TestConnectionValidator(isConnectionValid));
         }
 
@@ -380,6 +384,72 @@ namespace Neo4j.Driver.Tests
 
                 conn.Should().Be(mock.Object);
                 conn.ToString().Should().Be(idleTooLongId);
+            }
+
+            [Fact]
+            public async Task ShouldGetTokenFromAuthManager()
+            {
+                var mockConnection = new Mock<IPooledConnection>();
+                mockConnection.Setup(x => x.IsOpen).Returns(true);
+                var timerMock = new Mock<ITimer>();
+                timerMock.Setup(x => x.ElapsedMilliseconds).Returns(1000);
+                mockConnection.Setup(x => x.IdleTimer).Returns(timerMock.Object);
+                var idleTooLongId = "Molly";
+                mockConnection.Setup(x => x.ToString()).Returns(idleTooLongId);
+
+                var conns = new BlockingCollection<IPooledConnection>();
+                conns.Add(mockConnection.Object);
+                var enableIdleTooLongTest = TimeSpan.FromMilliseconds(100);
+                var poolSettings = new ConnectionPoolSettings(
+                    new Config { MaxIdleConnectionPoolSize = 2, ConnectionIdleTimeout = enableIdleTooLongTest });
+
+                var mockAuthMgr = new Mock<IAuthTokenManager>();
+                var connectionSettings = new ConnectionSettings(new Uri("bolt://localhost:7687"), mockAuthMgr.Object, Config.Default);
+
+                var pool = new ConnectionPool(
+                    ReusableConnectionFactory,
+                    conns,
+                    poolSettings: poolSettings,
+                    connectionSettings: connectionSettings);
+
+                await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
+
+                mockAuthMgr.Verify(x => x.GetTokenAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
+            }
+
+            // should re-auth connection
+            [Fact]
+            public async Task ShouldReAuthConnection()
+            {
+                var mockConnection = new Mock<IPooledConnection>();
+                mockConnection.Setup(x => x.IsOpen).Returns(true);
+                var timerMock = new Mock<ITimer>();
+                timerMock.Setup(x => x.ElapsedMilliseconds).Returns(1000);
+                mockConnection.Setup(x => x.IdleTimer).Returns(timerMock.Object);
+                var idleTooLongId = "Molly";
+                mockConnection.Setup(x => x.ToString()).Returns(idleTooLongId);
+
+                var conns = new BlockingCollection<IPooledConnection>();
+                conns.Add(mockConnection.Object);
+                var enableIdleTooLongTest = TimeSpan.FromMilliseconds(100);
+                var poolSettings = new ConnectionPoolSettings(
+                    new Config { MaxIdleConnectionPoolSize = 2, ConnectionIdleTimeout = enableIdleTooLongTest });
+
+                var mockAuthMgr = new Mock<IAuthTokenManager>();
+                var connectionSettings = new ConnectionSettings(
+                    new Uri("bolt://localhost:7687"),
+                    mockAuthMgr.Object,
+                    Config.Default);
+
+                var pool = new ConnectionPool(
+                    ReusableConnectionFactory,
+                    conns,
+                    poolSettings: poolSettings,
+                    connectionSettings: connectionSettings);
+
+                await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
+                mockConnection.Verify(
+                    x => x.ReAuthAsync(It.IsAny<IAuthToken>(), It.IsAny<CancellationToken>()));
             }
 
             [Theory]
@@ -877,10 +947,16 @@ namespace Neo4j.Driver.Tests
                     Config.InfiniteInterval,
                     Config.InfiniteInterval);
 
+                var connectionSettings = new ConnectionSettings(
+                    uri,
+                    AuthTokenManagers.None,
+                    Config.Default,
+                    new DefaultHostResolver(false));
+
                 var logger = new Mock<ILogger>().Object;
                 var connFactory = new MockedConnectionFactory();
 
-                var pool = new ConnectionPool(uri, connFactory, poolSettings, logger, null);
+                var pool = new ConnectionPool(uri, connFactory, poolSettings, logger, connectionSettings, null);
 
                 pool.NumberOfInUseConnections.Should().Be(0);
             }
@@ -1593,9 +1669,13 @@ namespace Neo4j.Driver.Tests
             public IPooledConnection Create(
                 Uri uri,
                 IConnectionReleaseManager releaseManager,
+                SocketSettings socketSettings,
+                IAuthToken authToken,
+                Func<IAuthToken, CancellationToken, Task> taskCompletedAsync,
+                string userAgent,
                 IDictionary<string, string> routingContext)
             {
-                return new PooledConnection(_connection, releaseManager);
+                return new PooledConnection(_connection, (_, _) => Task.CompletedTask, releaseManager);
             }
         }
     }

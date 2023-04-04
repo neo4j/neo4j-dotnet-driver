@@ -151,7 +151,7 @@ namespace Neo4j.Driver.Internal.Protocol
             public async Task ShouldThrowAnExceptionWhneNullConnection()
             {
                 var exception = await Record.ExceptionAsync(
-                    () => BoltProtocol.Instance.GetRoutingTableAsync(null, null, "douglas fir", null));
+                    () => BoltProtocol.Instance.GetRoutingTableAsync(null, null, new("douglas fir"), null));
 
                 exception.Should().BeOfType<ProtocolException>();
             }
@@ -166,7 +166,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var mockConn = new Mock<IConnection>();
                 mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
                 var exception = await Record.ExceptionAsync(
-                    () => BoltProtocol.Instance.GetRoutingTableAsync(mockConn.Object, null, "douglas fir", null));
+                    () => BoltProtocol.Instance.GetRoutingTableAsync(mockConn.Object, null, new("douglas fir"), null));
 
                 exception.Should().BeOfType<ArgumentException>();
             }
@@ -182,7 +182,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 mockConn.SetupGet(x => x.Mode).Returns(AccessMode.Read);
 
                 var exception = await Record.ExceptionAsync(
-                    () => BoltProtocol.Instance.GetRoutingTableAsync(mockConn.Object, null, "douglas fir", null));
+                    () => BoltProtocol.Instance.GetRoutingTableAsync(mockConn.Object, null, new("douglas fir"), null));
 
                 exception.Should().BeNull();
             }
@@ -212,7 +212,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var mockV3 = new Mock<IBoltProtocol>();
                 var protocol = new BoltProtocol(mockV3.Object, msgFactory.Object, handlerFactory.Object);
 
-                await protocol.GetRoutingTableAsync(mockConn.Object, "db", "dougy", new InternalBookmarks());
+                await protocol.GetRoutingTableAsync(mockConn.Object, "db", new("dougy"), new InternalBookmarks());
 
                 msgFactory.Verify(
                     x => x.NewRouteMessage(
@@ -542,7 +542,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 var acp = new AutoCommitParams
                 {
-                    ImpersonatedUser = "Douglas Fir"
+                    ImpersonatedUser = new("Douglas Fir")
                 };
 
                 var exception = await Record.ExceptionAsync(
@@ -564,7 +564,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var acp = new AutoCommitParams
                 {
                     Query = new Query("..."),
-                    ImpersonatedUser = "Douglas Fir"
+                    ImpersonatedUser = new("Douglas Fir")
                 };
 
                 var exception = await Record.ExceptionAsync(
@@ -836,7 +836,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         "db",
                         Bookmarks.Empty,
                         TransactionConfig.Default,
-                        "Douglas Fir",
+                        new SessionConfig("Douglas Fir"),
                         null));
 
                 exception.Should().BeOfType<ArgumentException>();
@@ -902,7 +902,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         "db",
                         Bookmarks.Empty,
                         TransactionConfig.Default,
-                        "Douglas Fir",
+                        new SessionConfig("Douglas Fir"),
                         null));
 
                 exception.Should().BeNull();
@@ -919,17 +919,19 @@ namespace Neo4j.Driver.Internal.Protocol
                 var mockV3 = new Mock<IBoltProtocol>();
                 var protocol = new BoltProtocol(mockV3.Object);
 
+                var sessionConfig = new SessionConfig("user");
+
                 await protocol.BeginTransactionAsync(
                     mockConn.Object,
                     "db",
                     bookmarks,
                     config,
-                    "user",
+                    sessionConfig,
                     null);
 
                 mockV3.Verify(
                     x =>
-                        x.BeginTransactionAsync(mockConn.Object, "db", bookmarks, config, "user", null),
+                        x.BeginTransactionAsync(mockConn.Object, "db", bookmarks, config, sessionConfig, null),
                     Times.Once);
 
                 mockConn.Verify(
@@ -938,7 +940,7 @@ namespace Neo4j.Driver.Internal.Protocol
                             It.IsAny<string>(),
                             It.IsAny<Bookmarks>(),
                             It.IsAny<TransactionConfig>(),
-                            It.IsAny<string>(),
+                            It.IsAny<SessionConfig>(),
                             It.IsAny<INotificationsConfig>()),
                     Times.Never);
             }

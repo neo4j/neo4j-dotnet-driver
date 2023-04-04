@@ -30,8 +30,6 @@ namespace Neo4j.Driver.Internal.Connector;
 
 internal sealed class SocketConnection : IConnection
 {
-    private readonly IAuthToken _authToken;
-
     private readonly ISocketClient _client;
     private readonly string _idPrefix;
 
@@ -49,7 +47,9 @@ internal sealed class SocketConnection : IConnection
 
     internal SocketConnection(
         Uri uri,
-        ConnectionSettings connectionSettings,
+        SocketSettings socketSettings,
+        IAuthToken authToken,
+        string userAgent,
         BufferSettings bufferSettings,
         IDictionary<string, string> routingContext,
         ILogger logger = null)
@@ -58,9 +58,9 @@ internal sealed class SocketConnection : IConnection
         _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
         _logger = new PrefixLogger(logger, FormatPrefix(_id));
 
-        _client = new SocketClient(uri, connectionSettings.SocketSettings, bufferSettings, _logger, null);
-        _authToken = connectionSettings.AuthToken;
-        _userAgent = connectionSettings.UserAgent;
+        _client = new SocketClient(uri, socketSettings, bufferSettings, _logger, null);
+        AuthToken = authToken;
+        _userAgent = userAgent;
         _serverInfo = new ServerInfo(uri);
 
         _responsePipeline = new ResponsePipeline(_logger);
@@ -79,7 +79,7 @@ internal sealed class SocketConnection : IConnection
         IBoltProtocolFactory protocolFactory = null)
     {
         _client = socketClient ?? throw new ArgumentNullException(nameof(socketClient));
-        _authToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
+        AuthToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
         _userAgent = userAgent ?? throw new ArgumentNullException(nameof(userAgent));
         _serverInfo = server ?? throw new ArgumentNullException(nameof(server));
         RoutingContext = null;
@@ -102,6 +102,8 @@ internal sealed class SocketConnection : IConnection
 
     /// <summary>Internal Set used for tests.</summary>
     public IBoltProtocol BoltProtocol { get; internal set; }
+
+    public bool ReAuthorizationRequired { get; set; }
 
     public void ConfigureMode(AccessMode? mode)
     {
@@ -128,7 +130,21 @@ internal sealed class SocketConnection : IConnection
             _sendLock.Release();
         }
 
-        await LoginAsync(_userAgent, _authToken, notificationsConfig).ConfigureAwait(false);
+        await BoltProtocol.LoginAsync(this, _userAgent, AuthToken).ConfigureAwait(false);
+    }
+
+    public async Task ReAuthAsync(
+        IAuthToken newAuthToken,
+        CancellationToken cancellationToken = default)
+    {
+        if (newAuthToken.Equals(AuthToken) && !ReAuthorizationRequired)
+        {
+            return;
+        }
+
+        await BoltProtocol.ReAuthAsync(this, newAuthToken);
+        AuthToken = newAuthToken;
+        ReAuthorizationRequired = false;
     }
 
     public async Task SyncAsync()
@@ -179,6 +195,11 @@ internal sealed class SocketConnection : IConnection
         }
     }
 
+    public void ClearQueueAsync()
+    {
+        _messages.Clear();
+    }
+
     public Task ResetAsync()
     {
         return BoltProtocol.ResetAsync(this);
@@ -188,6 +209,7 @@ internal sealed class SocketConnection : IConnection
     public IServerInfo Server => _serverInfo;
 
     public bool UtcEncodedDateTime { get; private set; }
+    public IAuthToken AuthToken { get; private set; }
 
     public void UpdateId(string newConnId)
     {
@@ -281,10 +303,10 @@ internal sealed class SocketConnection : IConnection
 
     public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks)
     {
-        return BoltProtocol.GetRoutingTableAsync(this, database, impersonatedUser, bookmarks);
+        return BoltProtocol.GetRoutingTableAsync(this, database, sessionConfig, bookmarks);
     }
 
     public Task<IResultCursor> RunInAutoCommitTransactionAsync(
@@ -298,7 +320,7 @@ internal sealed class SocketConnection : IConnection
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         INotificationsConfig notificationsConfig)
     {
         return BoltProtocol.BeginTransactionAsync(
@@ -306,7 +328,7 @@ internal sealed class SocketConnection : IConnection
             database,
             bookmarks,
             config,
-            impersonatedUser,
+            sessionConfig,
             notificationsConfig);
     }
 
