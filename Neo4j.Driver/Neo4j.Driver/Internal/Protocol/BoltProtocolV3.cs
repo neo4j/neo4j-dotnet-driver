@@ -39,8 +39,14 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         _protocolHandlerFactory = protocolHandlerFactory ?? BoltProtocolHandlerFactory.Instance;
     }
 
-    public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
+    public async Task AuthenticateAsync(
+        IConnection connection,
+        string userAgent,
+        IAuthToken authToken,
+        INotificationsConfig notificationsConfig)
     {
+        ValidateNotificationsForVersion(connection, notificationsConfig);
+
         var message = _protocolMessageFactory.NewHelloMessage(connection, userAgent, authToken);
         var handler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
 
@@ -87,7 +93,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             ResultResourceHandler = resourceHandler
         };
 
-        var result = await RunInAutoCommitTransactionAsync(connection, autoCommitParams).ConfigureAwait(false);
+        var result = await RunInAutoCommitTransactionAsync(connection, autoCommitParams, null).ConfigureAwait(false);
         var record = await result.SingleAsync().ConfigureAwait(false);
 
         //Since 4.4 the Routing information will contain a db.
@@ -100,10 +106,12 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
 
     public async Task<IResultCursor> RunInAutoCommitTransactionAsync(
         IConnection connection,
-        AutoCommitParams autoCommitParams)
+        AutoCommitParams autoCommitParams,
+        INotificationsConfig notificationsConfig)
     {
         ValidateImpersonatedUserForVersion(connection, autoCommitParams.ImpersonatedUser);
         ValidateDatabase(connection, autoCommitParams.Database);
+        ValidateNotificationsForVersion(connection, notificationsConfig);
 
         var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
         var streamBuilder = _protocolHandlerFactory.NewResultCursorBuilder(
@@ -122,7 +130,10 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             summaryBuilder,
             autoCommitParams.BookmarksTracker);
 
-        var autoCommitMessage = _protocolMessageFactory.NewRunWithMetadataMessage(connection, autoCommitParams);
+        var autoCommitMessage = _protocolMessageFactory.NewRunWithMetadataMessage(
+            connection,
+            autoCommitParams,
+            notificationsConfig);
 
         await connection.EnqueueAsync(autoCommitMessage, runHandler).ConfigureAwait(false);
         await connection.EnqueueAsync(PullAllMessage.Instance, pullAllHandler).ConfigureAwait(false);
@@ -136,10 +147,12 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
-        string impersonatedUser)
+        string impersonatedUser,
+        INotificationsConfig notificationsConfig)
     {
         ValidateImpersonatedUserForVersion(connection, impersonatedUser);
         ValidateDatabase(connection, database);
+        ValidateNotificationsForVersion(connection, notificationsConfig);
 
         var mode = connection.Mode ??
             throw new InvalidOperationException("Connection should have its Mode property set.");
@@ -150,7 +163,8 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             bookmarks,
             config,
             mode,
-            impersonatedUser);
+            impersonatedUser,
+            notificationsConfig);
 
         await connection.EnqueueAsync(message, NoOpResponseHandler.Instance).ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);
@@ -176,7 +190,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         var runHandler = _protocolHandlerFactory.NewRunResponseHandlerV3(streamBuilder, summaryBuilder);
         var pullAllHandler = _protocolHandlerFactory.NewPullAllResponseHandler(streamBuilder, summaryBuilder, null);
 
-        var message = _protocolMessageFactory.NewRunWithMetadataMessage(connection, query);
+        var message = _protocolMessageFactory.NewRunWithMetadataMessage(connection, query, null);
 
         await connection.EnqueueAsync(message, runHandler).ConfigureAwait(false);
         await connection.EnqueueAsync(PullAllMessage.Instance, pullAllHandler).ConfigureAwait(false);
@@ -198,7 +212,8 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         await connection.EnqueueAsync(RollbackMessage.Instance, NoOpResponseHandler.Instance).ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);
     }
-
+    
+    // TODO: Refactor validation methods into a separate class or move to message classes so the checks aren't duplicated. 
     internal static void ValidateDatabase(IConnection connection, string database)
     {
         if (connection.Version >= BoltProtocolVersion.V4_0)
@@ -226,6 +241,16 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             throw new ArgumentException(
                 $"Bolt Protocol {conn.Version} does not support impersonatedUser, " +
                 "but has been passed a non-null impersonated user string");
+        }
+    }
+    
+    internal static void ValidateNotificationsForVersion(IConnection connection, INotificationsConfig notificationsConfig)
+    {
+        if (notificationsConfig != null && connection.Version < BoltProtocolVersion.V5_2)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(notificationsConfig),
+                "Notification configuration can not be used with bolt version less than 5.2 (Added in Neo4j Version 5.7).");
         }
     }
 }

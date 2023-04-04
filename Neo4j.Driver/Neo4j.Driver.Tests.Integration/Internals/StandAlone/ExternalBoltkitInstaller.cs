@@ -20,8 +20,8 @@ using System.IO;
 using System.Linq;
 using Neo4j.Driver.Internal;
 using Org.BouncyCastle.Pkcs;
-using static Neo4j.Driver.IntegrationTests.Internals.Neo4jDefaultInstallation;
-using static Neo4j.Driver.IntegrationTests.Internals.Neo4jSettingsHelper;
+using static Neo4j.Driver.IntegrationTests.Internals.DefaultInstallation;
+using static Neo4j.Driver.IntegrationTests.Internals.SettingsHelper;
 
 namespace Neo4j.Driver.IntegrationTests.Internals;
 
@@ -70,7 +70,7 @@ public class ExternalBoltkitInstaller : IInstaller
 
         _commandRunner.RunCommand("neoctrl-create-user", $"\"{HomeDir}\"", "neo4j", Password);
 
-        if (BoltkitHelper.IPV6Available() && BoltkitHelper.IPV6Enabled())
+        if (BoltkitHelper.Ipv6Available() && BoltkitHelper.Ipv6Enabled())
         {
             DefaultConfig[ListenAddr] = Ipv6EnabledAddr;
         }
@@ -110,7 +110,7 @@ public class ExternalBoltkitInstaller : IInstaller
     private void UpdateSettings(IDictionary<string, string> keyValuePair)
     {
         _commandRunner.Debug($"Updating server config to {keyValuePair.ToContentString()}");
-        Neo4jSettingsHelper.UpdateSettings(HomeDir, keyValuePair);
+        SettingsHelper.UpdateSettings(HomeDir, keyValuePair);
     }
 
     public void EnsureProcedures(string sourceProcedureJarPath)

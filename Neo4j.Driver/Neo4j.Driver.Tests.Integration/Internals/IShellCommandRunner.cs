@@ -25,27 +25,22 @@ public interface IShellCommandRunner
     string[] RunCommand(string command, params string[] arguments);
 
     void BeginRunCommand(string command, params string[] arguments);
-    string[] EndRunCommand();
+    void EndRunCommand();
 }
 
 public abstract class ShellCommandRunner : IShellCommandRunner
 {
     public abstract string[] RunCommand(string command, params string[] arguments);
     public abstract void BeginRunCommand(string command, params string[] arguments);
-    public abstract string[] EndRunCommand();
+    public abstract void EndRunCommand();
 
     public virtual void Debug(string message)
     {
         System.Diagnostics.Debug.WriteLine(message);
     }
-
-    protected static string ShellCommandArgument(string command, string[] arguments)
-    {
-        return $"{command} {string.Join(" ", arguments)}";
-    }
 }
 
-public class ShellCommandRunnerFactory
+public sealed class ShellCommandRunnerFactory
 {
     public static IShellCommandRunner Create()
     {

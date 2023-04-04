@@ -19,10 +19,10 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Experimental;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;
+using Neo4j.Driver.Preview;
 
 namespace Neo4j.Driver.Internal;
 
@@ -108,6 +108,20 @@ internal sealed class Driver : IInternalDriver
     {
         return _connectionProvider.VerifyConnectivityAndGetInfoAsync();
     }
+
+    public async Task<bool> TryVerifyConnectivityAsync()
+    {
+        try
+        {
+            await _connectionProvider.VerifyConnectivityAndGetInfoAsync().ConfigureAwait(false);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
 
     public Task VerifyConnectivityAsync()
     {

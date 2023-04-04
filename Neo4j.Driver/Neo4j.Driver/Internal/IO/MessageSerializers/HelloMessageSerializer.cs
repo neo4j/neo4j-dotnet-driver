@@ -37,6 +37,6 @@ internal sealed class HelloMessageSerializer : WriteOnlySerializer
         }
 
         writer.WriteStructHeader(1, MessageFormat.MsgHello);
-        writer.WriteDictionary(msg.MetaData);
+        writer.WriteDictionary(msg.Metadata);
     }
 }

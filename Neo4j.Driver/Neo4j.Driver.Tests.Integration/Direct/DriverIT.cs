@@ -28,7 +28,7 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;
 
-public class DriverIT : DirectDriverTestBase
+public sealed class DriverIT : DirectDriverTestBase
 {
     public DriverIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
     {
@@ -41,108 +41,71 @@ public class DriverIT : DirectDriverTestBase
         var byteArray = PackStreamBitConverter.GetBytes("hello, world");
 
         // When
-        var session = Server.Driver.AsyncSession();
-        try
-        {
-            var cursor = await session.RunAsync(
-                "CREATE (a {value: $value}) RETURN a.value",
-                new Dictionary<string, object> { { "value", byteArray } });
+        await using var session = Server.Driver.AsyncSession();
+        var cursor = await session.RunAsync(
+            "CREATE (a {value: $value}) RETURN a.value",
+            new Dictionary<string, object> { { "value", byteArray } });
 
-            var value = await cursor.SingleAsync(r => r["a.value"].As<byte[]>());
+        var value = await cursor.SingleAsync(r => r["a.value"].As<byte[]>());
 
-            // Then
-            value.Should().BeEquivalentTo(byteArray);
-        }
-        finally
-        {
-            await session.CloseAsync();
-        }
+        // Then
+        value.Should().BeEquivalentTo(byteArray);
     }
 
     [RequireServerWithIPv6Fact("3.1.0", VersionComparison.GreaterThanOrEqualTo)]
     public async Task ShouldConnectIPv6AddressIfEnabled()
     {
-        using (var driver = GraphDatabase.Driver(
-                   "bolt://[::1]:7687",
-                   AuthToken,
-                   o => o.WithIpv6Enabled(true)))
-        {
-            var session = driver.AsyncSession();
-            try
-            {
-                var cursor = await session.RunAsync("RETURN 1");
-                var result = await cursor.SingleAsync(r => r[0].As<int>());
+        await using var driver = GraphDatabase.Driver(
+            "bolt://[::1]:7687",
+            AuthToken,
+            o => o.WithIpv6Enabled(true));
 
-                result.Should().Be(1);
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
+        await using var session = driver.AsyncSession();
+        var cursor = await session.RunAsync("RETURN 1");
+        var result = await cursor.SingleAsync(r => r[0].As<int>());
+
+        result.Should().Be(1);
     }
 
     [RequireServerFact("3.1.0", VersionComparison.GreaterThanOrEqualTo)]
     public async Task ShouldNotConnectIPv6AddressIfDisabled()
     {
-        using (var driver = GraphDatabase.Driver(
-                   "bolt://[::1]:7687",
-                   AuthToken,
-                   o => o.WithIpv6Enabled(false)))
-        {
-            var session = driver.AsyncSession();
-            try
-            {
-                var exc = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
+        await using var driver = GraphDatabase.Driver(
+            "bolt://[::1]:7687",
+            AuthToken,
+            o => o.WithIpv6Enabled(false));
 
-                exc.GetBaseException().Should().BeOfType<NotSupportedException>();
-                exc.GetBaseException().Message.Should().Contain("This protocol version is not supported");
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
+        await using var session = driver.AsyncSession();
+        var exc = await Record.ExceptionAsync(() => session.RunAsync("RETURN 1"));
+
+        exc.Should().NotBeNull();
+        exc!.GetBaseException().Should().BeOfType<NotSupportedException>();
+        exc.GetBaseException().Message.Should().Contain("This protocol version is not supported");
     }
 
     [RequireServerFact]
     public async Task ShouldConnectIPv4AddressIfIpv6Disabled()
     {
-        var session = Server.Driver.AsyncSession();
-        try
-        {
-            var cursor = await session.RunAsync("RETURN 1");
-            var result = await cursor.SingleAsync(r => r[0].As<int>());
+        await using var session = Server.Driver.AsyncSession();
+        var cursor = await session.RunAsync("RETURN 1");
+        var result = await cursor.SingleAsync(r => r[0].As<int>());
 
-            result.Should().Be(1);
-        }
-        finally
-        {
-            await session.CloseAsync();
-        }
+        result.Should().Be(1);
     }
 
     [RequireServerWithIPv6Fact]
     public async Task ShouldConnectIPv4AddressIfIpv6Enabled()
     {
-        using (var driver = GraphDatabase.Driver(
-                   Neo4jDefaultInstallation.BoltUri,
-                   AuthToken,
-                   o => o.WithIpv6Enabled(true)))
-        {
-            var session = driver.AsyncSession();
-            try
-            {
-                var cursor = await session.RunAsync("RETURN 1");
-                var result = await cursor.SingleAsync(r => r[0].As<int>());
+        await using var driver = GraphDatabase.Driver(
+            DefaultInstallation.BoltUri,
+            AuthToken,
+            o => o.WithIpv6Enabled(true));
 
-                result.Should().Be(1);
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
-        }
+        await using var session = driver.AsyncSession();
+        var cursor = await session.RunAsync("RETURN 1");
+        var result = await cursor.SingleAsync(r => r[0].As<int>());
+
+        result.Should().Be(1);
     }
 
     [RequireServerTheory]
@@ -151,41 +114,33 @@ public class DriverIT : DirectDriverTestBase
     public async Task ShouldCloseAgedIdleConnections(int sessionCount)
     {
         // Given
-        using (var driver = GraphDatabase.Driver(
-                   Neo4jDefaultInstallation.BoltUri,
-                   AuthToken,
-                   o =>
-                   {
-                       o.WithMetricsEnabled(true);
-                       o.WithConnectionIdleTimeout(TimeSpan.Zero); // enable but always timeout idle connections
-                   }))
-        {
-            // When
-            for (var i = 0; i < sessionCount; i++)
+        await using var driver = GraphDatabase.Driver(
+            DefaultInstallation.BoltUri,
+            AuthToken,
+            o =>
             {
-                // should not reuse the same connection as it should timeout
-                var session = driver.AsyncSession();
-                try
-                {
-                    var cursor = await session.RunAsync("RETURN 1");
-                    var result = await cursor.SingleAsync(r => r[0].As<int>());
+                o.WithMetricsEnabled(true);
+                o.WithConnectionIdleTimeout(TimeSpan.Zero); // enable but always timeout idle connections
+            });
 
-                    result.Should().Be(1);
+        // When
+        for (var i = 0; i < sessionCount; i++)
+        {
+            // should not reuse the same connection as it should timeout
+            await using var session = driver.AsyncSession();
+            var cursor = await session.RunAsync("RETURN 1");
+            var result = await cursor.SingleAsync(r => r[0].As<int>());
 
-                    Thread.Sleep(1); // block to let the timer aware the timeout
-                }
-                finally
-                {
-                    await session.CloseAsync();
-                }
-            }
+            result.Should().Be(1);
 
-            // Then
-            var metrics = ((Internal.Driver)driver).GetMetrics();
-            var m = metrics.ConnectionPoolMetrics.Single().Value;
-            Output.WriteLine(m.ToString());
-            m.Created.Should().Be(sessionCount);
-            m.Created.Should().Be(m.Closed + 1);
+            Thread.Sleep(1); // block to let the timer aware the timeout
         }
+
+        // Then
+        var metrics = ((Internal.Driver)driver).GetMetrics();
+        var m = metrics.ConnectionPoolMetrics.Single().Value;
+        Output.WriteLine(m.ToString());
+        m.Created.Should().Be(sessionCount);
+        m.Created.Should().Be(m.Closed + 1);
     }
 }

@@ -23,15 +23,14 @@ using static Neo4j.Driver.Tests.Assertions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class RxReadCommandInTx<TContext> : RxCommand<TContext>
-    where TContext : StressTestContext
+public sealed class RxReadCommandInTx : RxCommand
 {
     public RxReadCommandInTx(IDriver driver, bool useBookmark)
         : base(driver, useBookmark)
     {
     }
 
-    public override async Task ExecuteAsync(TContext context)
+    public override async Task ExecuteAsync(StressTestContext context)
     {
         var session = NewSession(AccessMode.Read, context);
 

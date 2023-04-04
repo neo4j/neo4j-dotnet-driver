@@ -21,13 +21,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Direct;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
 using Xunit.Abstractions;
-using static Neo4j.Driver.IntegrationTests.VersionComparison;
+using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
 
 namespace Neo4j.Driver.IntegrationTests.Types;
 
-public class TemporalTypesIT : DirectDriverTestBase
+public sealed class TemporalTypesIT : DirectDriverTestBase
 {
     private const int NumberOfRandomSequences = 100;
     private const int MinArrayLength = 5;
@@ -282,7 +283,7 @@ public class TemporalTypesIT : DirectDriverTestBase
     {
         await Task.WhenAll(
             Enumerable.Range(0, NumberOfRandomSequences)
-                .Select(i => RandomDuration())
+                .Select(_ => RandomDuration())
                 .Select(TestSendAndReceive));
     }
 
@@ -291,7 +292,7 @@ public class TemporalTypesIT : DirectDriverTestBase
     {
         await Task.WhenAll(
             Enumerable.Range(0, NumberOfRandomSequences)
-                .Select(i => RandomLocalDate())
+                .Select(_ => RandomLocalDate())
                 .Select(TestSendAndReceive));
     }
 
@@ -300,7 +301,7 @@ public class TemporalTypesIT : DirectDriverTestBase
     {
         await Task.WhenAll(
             Enumerable.Range(0, NumberOfRandomSequences)
-                .Select(i => RandomLocalDateTime())
+                .Select(_ => RandomLocalDateTime())
                 .Select(TestSendAndReceive));
     }
 
@@ -309,7 +310,7 @@ public class TemporalTypesIT : DirectDriverTestBase
     {
         await Task.WhenAll(
             Enumerable.Range(0, NumberOfRandomSequences)
-                .Select(i => RandomLocalTime())
+                .Select(_ => RandomLocalTime())
                 .Select(TestSendAndReceive));
     }
 
@@ -318,7 +319,7 @@ public class TemporalTypesIT : DirectDriverTestBase
     {
         await Task.WhenAll(
             Enumerable.Range(0, NumberOfRandomSequences)
-                .Select(i => RandomOffsetTime())
+                .Select(_ => RandomOffsetTime())
                 .Select(TestSendAndReceive));
     }
 
@@ -327,7 +328,7 @@ public class TemporalTypesIT : DirectDriverTestBase
     {
         await Task.WhenAll(
             Enumerable.Range(0, NumberOfRandomSequences)
-                .Select(i => RandomOffsetDateTime())
+                .Select(_ => RandomOffsetDateTime())
                 .Select(TestSendAndReceive));
     }
 
@@ -336,7 +337,7 @@ public class TemporalTypesIT : DirectDriverTestBase
     {
         await Task.WhenAll(
             Enumerable.Range(0, NumberOfRandomSequences)
-                .Select(i => RandomZonedDateTime())
+                .Select(_ => RandomZonedDateTime())
                 .Select(TestSendAndReceive));
     }
 
@@ -349,7 +350,7 @@ public class TemporalTypesIT : DirectDriverTestBase
     {
         await TestSendAndReceiveArray(
             Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
-                .Select(i => RandomDuration()));
+                .Select(_ => RandomDuration()));
     }
 
     [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
@@ -357,7 +358,7 @@ public class TemporalTypesIT : DirectDriverTestBase
     {
         await TestSendAndReceiveArray(
             Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
-                .Select(i => RandomLocalDate()));
+                .Select(_ => RandomLocalDate()));
     }
 
     [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
@@ -365,7 +366,7 @@ public class TemporalTypesIT : DirectDriverTestBase
     {
         await TestSendAndReceiveArray(
             Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
-                .Select(i => RandomLocalDateTime()));
+                .Select(_ => RandomLocalDateTime()));
     }
 
     [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
@@ -373,7 +374,7 @@ public class TemporalTypesIT : DirectDriverTestBase
     {
         await TestSendAndReceiveArray(
             Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
-                .Select(i => RandomLocalTime()));
+                .Select(_ => RandomLocalTime()));
     }
 
     [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
@@ -381,7 +382,7 @@ public class TemporalTypesIT : DirectDriverTestBase
     {
         await TestSendAndReceiveArray(
             Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
-                .Select(i => RandomOffsetTime()));
+                .Select(_ => RandomOffsetTime()));
     }
 
     [RequireServerFact("3.4.0", "4.3.0", Between)]
@@ -389,7 +390,7 @@ public class TemporalTypesIT : DirectDriverTestBase
     {
         await TestSendAndReceiveArray(
             Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
-                .Select(i => RandomOffsetDateTime()));
+                .Select(_ => RandomOffsetDateTime()));
     }
 
     [RequireServerFact("3.4.0", "4.3.0", Between)]
@@ -397,7 +398,7 @@ public class TemporalTypesIT : DirectDriverTestBase
     {
         await TestSendAndReceiveArray(
             Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
-                .Select(i => RandomZonedDateTime()));
+                .Select(_ => RandomZonedDateTime()));
     }
 
 #endregion
@@ -540,7 +541,7 @@ public class TemporalTypesIT : DirectDriverTestBase
     public async Task ShouldSendAndReceiveArrayOfSystemDateTime()
     {
         var array = Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
-            .Select(i => RandomSystemDateTime())
+            .Select(_ => RandomSystemDateTime())
             .ToList();
 
         var actual = array.Select(v => new LocalDateTime(v)).ToList();
@@ -552,7 +553,7 @@ public class TemporalTypesIT : DirectDriverTestBase
     public async Task ShouldSendAndReceiveArrayOfSystemDateTimeOffset()
     {
         var array = Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
-            .Select(i => RandomSystemDateTimeOffset())
+            .Select(_ => RandomSystemDateTimeOffset())
             .ToList();
 
         var actual = array.Select(v => new ZonedDateTime(v)).ToList();
@@ -564,7 +565,7 @@ public class TemporalTypesIT : DirectDriverTestBase
     public async Task ShouldSendAndReceiveArrayOfSystemTimeSpan()
     {
         var array = Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
-            .Select(i => RandomSystemTime())
+            .Select(_ => RandomSystemTime())
             .ToList();
 
         var actual = array.Select(v => new LocalTime(v)).ToList();

@@ -23,14 +23,11 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Routing;
 
-[Collection(CCIntegrationCollection.CollectionName)]
+[Collection(CcIntegrationCollection.CollectionName)]
 public abstract class RoutingDriverTestBase : IDisposable
 {
-    private bool _disposed;
-
-    public RoutingDriverTestBase(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)
+    protected RoutingDriverTestBase(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)
     {
-        Output = output;
         Cluster = fixture.Cluster;
         AuthToken = Cluster.AuthToken;
 
@@ -44,38 +41,16 @@ public abstract class RoutingDriverTestBase : IDisposable
             });
     }
 
-    protected ITestOutputHelper Output { get; }
     protected ICausalCluster Cluster { get; }
     protected IAuthToken AuthToken { get; }
 
     protected string RoutingServer => Cluster.BoltRoutingUri.ToString();
-    protected string WrongServer => "neo4j://localhost:1234";
-    protected IDriver Driver { get; }
+    protected static string WrongServer => "neo4j://localhost:1234";
+    private IDriver Driver { get; }
 
     public void Dispose()
     {
-        Dispose(true);
+        Driver.Dispose();
         GC.SuppressFinalize(this);
-    }
-
-    ~RoutingDriverTestBase()
-    {
-        Dispose(false);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        if (disposing)
-        {
-            Driver.Dispose();
-        }
-
-        //Mark as disposed
-        _disposed = true;
     }
 }

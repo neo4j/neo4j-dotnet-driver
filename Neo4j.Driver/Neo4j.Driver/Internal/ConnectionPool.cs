@@ -50,6 +50,7 @@ internal sealed class ConnectionPool : IConnectionPool
     private readonly int _maxIdlePoolSize;
 
     private readonly int _maxPoolSize;
+    private readonly INotificationsConfig _notificationsConfig;
 
     private readonly IConnectionPoolListener _poolMetricsListener;
 
@@ -66,7 +67,8 @@ internal sealed class ConnectionPool : IConnectionPool
         IPooledConnectionFactory connectionFactory,
         ConnectionPoolSettings connectionPoolSettings,
         ILogger logger,
-        IDictionary<string, string> routingContext)
+        IDictionary<string, string> routingContext,
+        INotificationsConfig notificationsConfig = null)
     {
         _uri = uri;
         _id = $"pool-{_uri.Host}:{_uri.Port}";
@@ -85,6 +87,7 @@ internal sealed class ConnectionPool : IConnectionPool
         _poolMetricsListener = metrics?.PutPoolMetrics($"{_id}-{GetHashCode()}", this);
 
         RoutingContext = routingContext;
+        _notificationsConfig = notificationsConfig;
     }
 
     // Used in test only
@@ -94,13 +97,15 @@ internal sealed class ConnectionPool : IConnectionPool
         ConcurrentHashSet<IPooledConnection> inUseConnections = null,
         ConnectionPoolSettings poolSettings = null,
         IConnectionValidator validator = null,
-        ILogger logger = null)
+        ILogger logger = null,
+        INotificationsConfig notificationsConfig = null)
         : this(
             new Uri("bolt://localhost:7687"),
             connectionFactory,
             poolSettings ?? new ConnectionPoolSettings(Config.Default),
             logger,
-            null)
+            null,
+            notificationsConfig)
     {
         _idleConnections = idleConnections ?? new BlockingCollection<IPooledConnection>();
         _inUseConnections = inUseConnections ?? new ConcurrentHashSet<IPooledConnection>();
@@ -281,7 +286,7 @@ internal sealed class ConnectionPool : IConnectionPool
             }
 
             await conn
-                .InitAsync(cancellationToken)
+                .InitAsync(_notificationsConfig, cancellationToken)
                 .ConfigureAwait(false);
 
             _poolMetricsListener?.ConnectionCreated();

@@ -22,11 +22,10 @@ using Microsoft.Reactive.Testing;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public abstract class RxCommand<TContext> : ReactiveTest, IRxCommand<TContext>
-    where TContext : StressTestContext
+public abstract class RxCommand : ReactiveTest, IRxCommand
 {
-    protected readonly IDriver _driver;
-    protected readonly bool _useBookmark;
+    private readonly IDriver _driver;
+    private readonly bool _useBookmark;
 
     protected RxCommand(IDriver driver, bool useBookmark)
     {
@@ -34,9 +33,9 @@ public abstract class RxCommand<TContext> : ReactiveTest, IRxCommand<TContext>
         _useBookmark = useBookmark;
     }
 
-    public abstract Task ExecuteAsync(TContext context);
+    public abstract Task ExecuteAsync(StressTestContext context);
 
-    public IRxSession NewSession(AccessMode mode, TContext context)
+    protected IRxSession NewSession(AccessMode mode, StressTestContext context)
     {
         return _driver.RxSession(
             o =>
@@ -44,7 +43,7 @@ public abstract class RxCommand<TContext> : ReactiveTest, IRxCommand<TContext>
                     .WithBookmarks(_useBookmark ? new[] { context.Bookmarks } : Array.Empty<Bookmarks>()));
     }
 
-    public IObservable<IRxTransaction> BeginTransaction(IRxSession session, TContext context)
+    protected IObservable<IRxTransaction> BeginTransaction(IRxSession session, StressTestContext context)
     {
         if (_useBookmark)
         {

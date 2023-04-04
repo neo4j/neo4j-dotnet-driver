@@ -141,8 +141,27 @@ internal class NewDriver : IProtocolObject
             configBuilder.WithFetchSize(data.fetchSize.Value);
         }
 
-        var logger = new SimpleLogger();
+        if (data.notificationsMinSeverity != null || data.notificationsDisabledCategories != null)
+        {
+            if (data.notificationsMinSeverity == TestkitConstants.NotificationsConfig.Disabled)
+            {
+                configBuilder.WithNotificationsDisabled();
+            }
+            else
+            {
+                var sev = Enum.TryParse<Severity>(data.notificationsMinSeverity ?? string.Empty, true, out var severity)
+                    ? (Severity?)severity
+                    : null;
 
+                var cats = data.notificationsDisabledCategories
+                    ?.Select(x => Enum.Parse<Category>(x, true))
+                    .ToArray();
+                
+                configBuilder.WithNotifications(sev, cats);
+            }
+        }
+
+        var logger = new SimpleLogger();
         configBuilder.WithLogger(logger);
     }
 
@@ -177,5 +196,8 @@ internal class NewDriver : IProtocolObject
         }
 
         public bool? encrypted { get; set; }
+
+        public string notificationsMinSeverity { get; set; }
+        public string[] notificationsDisabledCategories { get; set; }
     }
 }

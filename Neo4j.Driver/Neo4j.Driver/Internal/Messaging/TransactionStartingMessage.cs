@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.Messaging.Utils;
 
 namespace Neo4j.Driver.Internal.Messaging;
 
@@ -31,25 +32,14 @@ internal abstract class TransactionStartingMessage : IRequestMessage
     private const string DbKey = "db";
 
     protected TransactionStartingMessage(
+        BoltProtocolVersion boltProtocolVersion,
         string database,
         Bookmarks bookmarks,
         TimeSpan? txTimeout,
         IDictionary<string, object> txMetadata,
-        AccessMode mode)
-    {
-        Metadata = BuildMetadata(bookmarks, txTimeout, txMetadata, mode, database);
-    }
-
-    public IDictionary<string, object> Metadata { get; }
-
-    public abstract IPackStreamSerializer Serializer { get; }
-
-    private static IDictionary<string, object> BuildMetadata(
-        Bookmarks bookmarks,
-        TimeSpan? txTimeout,
-        IDictionary<string, object> txMetadata,
         AccessMode mode,
-        string database)
+        INotificationsConfig notificationsConfig,
+        string impersonatedUser)
     {
         var result = new Dictionary<string, object>();
 
@@ -78,6 +68,29 @@ internal abstract class TransactionStartingMessage : IRequestMessage
             result.Add(DbKey, database);
         }
 
-        return result;
+        if (!string.IsNullOrEmpty(impersonatedUser))
+        {
+            if (boltProtocolVersion >= BoltProtocolVersion.V4_4)
+            {
+                result.Add("imp_user", impersonatedUser);
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(impersonatedUser),
+                    "Impersonated users can not be used with bolt version less than 4.4");
+            }
+        }
+
+        if (notificationsConfig != null && boltProtocolVersion >= BoltProtocolVersion.V5_2)
+        {
+            NotificationsMetadataWriter.AddNotificationsConfigToMetadata(result, notificationsConfig);
+        }
+
+        Metadata = result;
     }
+
+    public IDictionary<string, object> Metadata { get; }
+
+    public abstract IPackStreamSerializer Serializer { get; }
 }

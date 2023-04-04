@@ -10,6 +10,7 @@ Resources to get you started:
 * [Neo4j Docs](https://neo4j.com/docs/) for other important Neo4j documentations.
 * [Movies Example Application](https://github.com/neo4j-examples/movies-dotnetcore-bolt) a sample small project using
   the driver.
+* [Discussions](https://github.com/neo4j/neo4j-dotnet-driver/discussions/677) Have your say on improving the API.
 
 ## For Application Developers
 
@@ -26,7 +27,7 @@ moved to a monthly cadence.
 
 As a policy, patch versions will not be released except on rare occasions. Bug fixes and updates will go into the latest
 minor version and users should upgrade to that. Driver upgrades within a major version will never contain breaking API
-changes(Excluding the Neo4j.Driver.Experimental namespace).
+changes(Excluding the Neo4j.Driver.Preview namespace).
 
 See also: https://neo4j.com/developer/kb/neo4j-supported-versions/
 

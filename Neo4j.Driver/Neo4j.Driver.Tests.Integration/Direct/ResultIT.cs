@@ -22,12 +22,12 @@ using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Tests;
 using Xunit;
 using Xunit.Abstractions;
-using static Neo4j.Driver.IntegrationTests.VersionComparison;
+using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
 using static Neo4j.Driver.SessionConfigBuilder;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;
 
-public class ResultIT : DirectDriverTestBase
+public sealed class ResultIT : DirectDriverTestBase
 {
     public ResultIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
     {
@@ -59,7 +59,7 @@ public class ResultIT : DirectDriverTestBase
 
             var serverInfo = summary.Server;
 
-            var boltAddress = Neo4jDefaultInstallation.BoltUri.Replace("bolt://", string.Empty);
+            var boltAddress = DefaultInstallation.BoltUri.Replace("bolt://", string.Empty);
             serverInfo.Address.Should().Be(boltAddress);
             summary.ResultAvailableAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
             summary.ResultConsumedAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
@@ -74,20 +74,41 @@ public class ResultIT : DirectDriverTestBase
     public async Task ShouldContainsSystemUpdates()
     {
         // Ensure that a constraint exists
-        var session = Driver.AsyncSession(ForDatabase("system"));
+        await using var session = Driver.AsyncSession(x => x.WithDatabase("system"));
+        Exception error = null;
         try
         {
-            var cursor = await session.RunAsync("CREATE USER foo SET PASSWORD 'bar'");
+            var cursor = await session.RunAsync("CREATE USER foo SET PASSWORD 'zxcvvcxz'");
             var summary = await cursor.ConsumeAsync();
             summary.Counters.ContainsUpdates.Should().BeFalse();
             summary.Counters.ContainsSystemUpdates.Should().BeTrue();
             summary.Counters.SystemUpdates.Should().Be(1);
         }
+        catch (Exception ex)
+        {
+            error = ex;
+        }
         finally
         {
-            var cursor = await session.RunAsync("DROP USER foo");
-            await cursor.ConsumeAsync();
-            await session.CloseAsync();
+            try
+            {
+                var cursor = await session.RunAsync("DROP USER foo");
+                await cursor.ConsumeAsync();
+            }
+            catch (Exception ex)
+            {
+                if (error != null)
+                {
+                    throw new AggregateException(ex, error);
+                }
+
+                throw;
+            }
+
+            if (error != null)
+            {
+                throw error;
+            }
         }
     }
 
@@ -177,8 +198,8 @@ public class ResultIT : DirectDriverTestBase
 
             var summary = await cursor.ConsumeAsync();
 
-            var boltAddress = Neo4jDefaultInstallation.BoltUri.Replace(
-                Neo4jDefaultInstallation.BoltHeader,
+            var boltAddress = DefaultInstallation.BoltUri.Replace(
+                DefaultInstallation.BoltHeader,
                 string.Empty);
 
             summary.Should().NotBeNull();
@@ -200,8 +221,8 @@ public class ResultIT : DirectDriverTestBase
             var cursor = await session.RunAsync("unwind range(1,3) as n return n");
             var summary = await cursor.ConsumeAsync();
 
-            var boltAddress = Neo4jDefaultInstallation.BoltUri.Replace(
-                Neo4jDefaultInstallation.BoltHeader,
+            var boltAddress = DefaultInstallation.BoltUri.Replace(
+                DefaultInstallation.BoltHeader,
                 string.Empty);
 
             summary.Should().NotBeNull();
@@ -323,11 +344,11 @@ public class ResultIT : DirectDriverTestBase
 
     private static async Task AssertCannotAccessRecords(IResultCursor cursor)
     {
-        await ConsumedException.ThrowsResultConsumedException(async () => await cursor.FetchAsync());
-        await ConsumedException.ThrowsResultConsumedException(async () => await cursor.PeekAsync());
+        await ConsumedException.ThrowsResultConsumedException(() => cursor.FetchAsync());
+        await ConsumedException.ThrowsResultConsumedException(() => cursor.PeekAsync());
         ConsumedException.ThrowsResultConsumedException(() => cursor.Current);
-        await ConsumedException.ThrowsResultConsumedException(async () => await cursor.SingleAsync());
-        await ConsumedException.ThrowsResultConsumedException(async () => await cursor.ToListAsync());
-        await ConsumedException.ThrowsResultConsumedException(async () => await cursor.ForEachAsync(r => {}));
+        await ConsumedException.ThrowsResultConsumedException(() => cursor.SingleAsync());
+        await ConsumedException.ThrowsResultConsumedException(() => cursor.ToListAsync());
+        await ConsumedException.ThrowsResultConsumedException(() => cursor.ForEachAsync(_ => {}));
     }
 }

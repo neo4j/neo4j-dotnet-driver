@@ -22,7 +22,7 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;
 
-[Collection(SAIntegrationCollection.CollectionName)]
+[Collection(SaIntegrationCollection.CollectionName)]
 public abstract class DirectDriverTestBase : IDisposable
 {
     private bool _disposed;
@@ -42,27 +42,14 @@ public abstract class DirectDriverTestBase : IDisposable
 
     public void Dispose()
     {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    ~DirectDriverTestBase()
-    {
-        Dispose(false);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (_disposed)
+        switch (_disposed)
         {
-            return;
-        }
-
-        if (disposing)
-        {
-            using (var session = Server.Driver.Session())
+            case true: return;
+            case false:
             {
+                using var session = Server.Driver.Session();
                 session.Run("MATCH (n) DETACH DELETE n").Consume();
+                break;
             }
         }
 

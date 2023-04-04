@@ -23,39 +23,17 @@ using Neo4j.Driver.Internal;
 
 namespace Neo4j.Driver.IntegrationTests.Internals;
 
-public class ProcessBasedCommandRunner : ShellCommandRunner, IDisposable
+public sealed class ProcessBasedCommandRunner : ShellCommandRunner, IDisposable
 {
     private const int DefaultTimeOut = 4 * 60 * 1000; // 4 minutes
-    private bool _disposed;
     private Process _process;
     private StringBuilder _stdErr;
 
     private List<string> _stdOut;
 
     public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    ~ProcessBasedCommandRunner()
-    {
-        Dispose(false);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        if (disposing)
-        {
-            _process?.Dispose();
-        }
-
-        _disposed = true;
+    { 
+        _process?.Dispose();
     }
 
     private static Process CreateProcess(
@@ -77,7 +55,7 @@ public class ProcessBasedCommandRunner : ShellCommandRunner, IDisposable
             }
         };
 
-        result.OutputDataReceived += (s, e) =>
+        result.OutputDataReceived += (_, e) =>
         {
             if (e.Data != null)
             {
@@ -85,7 +63,7 @@ public class ProcessBasedCommandRunner : ShellCommandRunner, IDisposable
             }
         };
 
-        result.ErrorDataReceived += (s, e) =>
+        result.ErrorDataReceived += (_, e) =>
         {
             if (e.Data != null)
             {
@@ -156,7 +134,7 @@ public class ProcessBasedCommandRunner : ShellCommandRunner, IDisposable
         }
     }
 
-    public override string[] EndRunCommand()
+    public override void EndRunCommand()
     {
         try
         {
@@ -188,8 +166,6 @@ public class ProcessBasedCommandRunner : ShellCommandRunner, IDisposable
                     $"{Environment.NewLine}stderr:{Environment.NewLine}{_stdErr}" +
                     $"{Environment.NewLine}output:{Environment.NewLine}{_stdOut.ToContentString($"{Environment.NewLine}")}");
             }
-
-            return _stdOut.ToArray();
         }
         finally
         {

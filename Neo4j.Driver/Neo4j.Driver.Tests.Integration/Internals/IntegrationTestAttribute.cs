@@ -17,13 +17,12 @@
 
 using System;
 using System.Text;
-using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal.Util;
 using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests;
+namespace Neo4j.Driver.IntegrationTests.Internals;
 
-public class RequireBoltStubServerFactAttribute : FactAttribute
+public sealed class RequireBoltStubServerFactAttribute : FactAttribute
 {
     //Default server version required to run stub tests is anything less than 4.3. After this version testkit takes over the stub tests.
     public RequireBoltStubServerFactAttribute(
@@ -51,7 +50,7 @@ public class RequireBoltStubServerFactAttribute : FactAttribute
     }
 }
 
-public class RequireBoltStubServerTheoryAttribute : TheoryAttribute
+public sealed class RequireBoltStubServerTheoryAttribute : TheoryAttribute
 {
     //Default server version required to run stub tests is anything less than 4.3. After this version testkit takes over the stub tests.
     public RequireBoltStubServerTheoryAttribute(
@@ -201,6 +200,8 @@ public static class RequireServer
 /// <summary>Use `RequireServerFact` tag for the tests that require a single instance</summary>
 public class RequireServerFactAttribute : FactAttribute
 {
+    private readonly VersionComparison _versionComparison;
+
     public RequireServerFactAttribute(
         string versionText = null,
         VersionComparison versionCompare = VersionComparison.EqualTo)
@@ -220,15 +221,15 @@ public class RequireServerFactAttribute : FactAttribute
         }
     }
 
-    /// <summary>between inclusive, exclusive respectively</summary>
-    /// <param name="minVersionText"></param>
-    /// <param name="maxVersionText"></param>
     public RequireServerFactAttribute(
         string minVersionText,
         string maxVersionText,
         VersionComparison versionComparison)
     {
-        Assert.Equal(versionComparison, VersionComparison.Between);
+        if (versionComparison != VersionComparison.Between)
+            throw new ArgumentException(nameof(versionComparison));
+
+        _versionComparison = versionComparison;
         var skipText = new StringBuilder();
 
         if (!BoltkitHelper.ServerAvailable())
@@ -245,7 +246,7 @@ public class RequireServerFactAttribute : FactAttribute
     }
 }
 
-public class RequireEnterpriseEdition : RequireServerFactAttribute
+public sealed class RequireEnterpriseEdition : RequireServerFactAttribute
 {
     public RequireEnterpriseEdition(
         string versionText = null,
@@ -276,7 +277,7 @@ public class RequireEnterpriseEdition : RequireServerFactAttribute
     }
 }
 
-public class RequireServerWithIPv6FactAttribute : RequireServerFactAttribute
+public sealed class RequireServerWithIPv6FactAttribute : RequireServerFactAttribute
 {
     public RequireServerWithIPv6FactAttribute(
         string versionText = null,
@@ -285,11 +286,11 @@ public class RequireServerWithIPv6FactAttribute : RequireServerFactAttribute
     {
         if (string.IsNullOrEmpty(Skip))
         {
-            if (!BoltkitHelper.IPV6Available())
+            if (!BoltkitHelper.Ipv6Available())
             {
                 Skip = "IPv6 is not available";
             }
-            else if (!BoltkitHelper.IPV6Enabled())
+            else if (!BoltkitHelper.Ipv6Enabled())
             {
                 Skip = "IPv6 is disabled";
             }
@@ -298,7 +299,7 @@ public class RequireServerWithIPv6FactAttribute : RequireServerFactAttribute
 }
 
 /// <summary>Use `RequireServerTheory` tag for the tests that require a single instance</summary>
-public class RequireServerTheoryAttribute : TheoryAttribute
+public sealed class RequireServerTheoryAttribute : TheoryAttribute
 {
     public RequireServerTheoryAttribute(
         string versionText = null,
@@ -321,7 +322,7 @@ public class RequireServerTheoryAttribute : TheoryAttribute
 }
 
 /// <summary>Use `RequireClusterFact` tag for the tests that require a cluster</summary>
-public class RequireClusterFactAttribute : FactAttribute
+public sealed class RequireClusterFactAttribute : FactAttribute
 {
     public RequireClusterFactAttribute(
         string versionText = null,
@@ -343,20 +344,7 @@ public class RequireClusterFactAttribute : FactAttribute
     }
 }
 
-/// <summary>Use `RequireClusterTheory` tag for the tests that require a cluster</summary>
-public class RequireClusterTheoryAttribute : TheoryAttribute
-{
-    public RequireClusterTheoryAttribute()
-    {
-        var isClusterSupported = BoltkitHelper.IsClusterSupported();
-        if (!isClusterSupported.Item1)
-        {
-            Skip = isClusterSupported.Item2;
-        }
-    }
-}
-
-public class ShouldNotRunInTestKitFact : FactAttribute
+public sealed class ShouldNotRunInTestKitFact : FactAttribute
 {
     public ShouldNotRunInTestKitFact()
     {
@@ -368,9 +356,9 @@ public class ShouldNotRunInTestKitFact : FactAttribute
     }
 }
 
-public class ShouldNotRunInTestKit_RequireServerFactAttribute : RequireServerFactAttribute
+public sealed class ShouldNotRunInTestKitRequireServerFactAttribute : RequireServerFactAttribute
 {
-    public ShouldNotRunInTestKit_RequireServerFactAttribute()
+    public ShouldNotRunInTestKitRequireServerFactAttribute()
     {
         var envVariable = Environment.GetEnvironmentVariable("TEST_NEO4J_USING_TESTKIT");
         if (!string.IsNullOrEmpty(envVariable) && envVariable.Equals("true", StringComparison.OrdinalIgnoreCase))

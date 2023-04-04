@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
         [Fact]
         public void ShouldThrowIfPassedWrongMessage()
         {
-            var message = new BeginMessage(BoltProtocolVersion.V3_0, "we", null, null, AccessMode.Read, null);
+            var message = new BeginMessage(BoltProtocolVersion.V3_0, "we", null, null, AccessMode.Read, null, null);
             Record.Exception(() => RollbackMessageSerializer.Instance.Serialize(null, message))
                 .Should()
                 .BeOfType<ArgumentOutOfRangeException>();

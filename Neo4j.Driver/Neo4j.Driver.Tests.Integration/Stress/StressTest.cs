@@ -24,16 +24,17 @@ using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.IntegrationTests.Extensions;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
 using Xunit.Abstractions;
-using static Neo4j.Driver.IntegrationTests.VersionComparison;
+using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public abstract class StressTest<TContext> : IDisposable
-    where TContext : StressTestContext
+public abstract class StressTest: IDisposable
 {
-    public enum StressTestMinLogLevel
+    private enum StressTestMinLogLevel
     {
         Trace,
         Debug,
@@ -190,24 +191,24 @@ public abstract class StressTest<TContext> : IDisposable
 
 #region Abstract Members
 
-    protected abstract TContext CreateContext();
+    protected abstract StressTestContext CreateContext();
 
-    protected abstract IEnumerable<IBlockingCommand<TContext>> CreateTestSpecificBlockingCommands();
+    protected abstract IEnumerable<IBlockingCommand> CreateTestSpecificBlockingCommands();
 
-    protected abstract IEnumerable<IAsyncCommand<TContext>> CreateTestSpecificAsyncCommands();
+    protected abstract IEnumerable<IAsyncCommand> CreateTestSpecificAsyncCommands();
 
-    protected abstract IEnumerable<IRxCommand<TContext>> CreateTestSpecificRxCommands();
+    protected abstract IEnumerable<IRxCommand> CreateTestSpecificRxCommands();
 
-    protected abstract void PrintStats(TContext context);
+    protected abstract void PrintStats(StressTestContext context);
 
-    protected abstract void VerifyReadQueryDistribution(TContext context);
+    protected abstract void VerifyReadQueryDistribution(StressTestContext context);
 
     protected virtual void RunReactiveBigData()
     {
         //Base implementation does nothing.
     }
 
-    public abstract bool HandleWriteFailure(Exception error, TContext context);
+    public abstract bool HandleWriteFailure(Exception error, StressTestContext context);
 
 #endregion
 
@@ -219,16 +220,16 @@ public abstract class StressTest<TContext> : IDisposable
         await RunStressTest(LaunchBlockingWorkers);
     }
 
-    private IList<IBlockingCommand<TContext>> CreateBlockingCommands()
+    private IList<IBlockingCommand> CreateBlockingCommands()
     {
-        var result = new List<IBlockingCommand<TContext>>
+        var result = new List<IBlockingCommand>
         {
-            new BlockingReadCommandTxFunc<TContext>(_driver, false),
-            new BlockingReadCommandTxFunc<TContext>(_driver, true),
-            new BlockingWriteCommandTxFunc<TContext>(this, _driver, false),
-            new BlockingWriteCommandTxFunc<TContext>(this, _driver, true),
-            new BlockingWrongCommandTxFunc<TContext>(_driver),
-            new BlockingFailingCommandTxFunc<TContext>(_driver)
+            new BlockingReadCommandTxFunc(_driver, false),
+            new BlockingReadCommandTxFunc(_driver, true),
+            new BlockingWriteCommandTxFunc(this, _driver, false),
+            new BlockingWriteCommandTxFunc(this, _driver, true),
+            new BlockingWrongCommandTxFunc(_driver),
+            new BlockingFailingCommandTxFunc(_driver)
         };
 
         result.AddRange(CreateTestSpecificBlockingCommands());
@@ -236,7 +237,7 @@ public abstract class StressTest<TContext> : IDisposable
         return result;
     }
 
-    private IEnumerable<Task> LaunchBlockingWorkers(TContext context)
+    private IEnumerable<Task> LaunchBlockingWorkers(StressTestContext context)
     {
         var commands = CreateBlockingCommands();
 
@@ -249,7 +250,7 @@ public abstract class StressTest<TContext> : IDisposable
         return tasks;
     }
 
-    private static Task LaunchBlockingWorkerThread(TContext context, IList<IBlockingCommand<TContext>> commands)
+    private static Task LaunchBlockingWorkerThread(StressTestContext context, IList<IBlockingCommand> commands)
     {
         return Task.Factory.StartNew(
             () =>
@@ -272,7 +273,7 @@ public abstract class StressTest<TContext> : IDisposable
         await RunStressTest(LaunchAsyncWorkers);
     }
 
-    private IList<IAsyncCommand<TContext>> CreateAsyncCommands()
+    private IList<IAsyncCommand> CreateAsyncCommands()
     {
         /* 
             Optional tests that can be run. Currenlty only want to run the transaction functions as these are what are used with Aura
@@ -290,14 +291,14 @@ public abstract class StressTest<TContext> : IDisposable
             AsyncFailingCommandTxFunc
         */
 
-        var result = new List<IAsyncCommand<TContext>>
+        var result = new List<IAsyncCommand>
         {
-            new AsyncReadCommandTxFunc<TContext>(_driver, false),
-            new AsyncReadCommandTxFunc<TContext>(_driver, true),
-            new AsyncWriteCommandTxFunc<TContext>(this, _driver, false),
-            new AsyncWriteCommandTxFunc<TContext>(this, _driver, true),
-            new AsyncWrongCommandTxFunc<TContext>(_driver),
-            new AsyncFailingCommandTxFunc<TContext>(_driver)
+            new AsyncReadCommandTxFunc(_driver, false),
+            new AsyncReadCommandTxFunc(_driver, true),
+            new AsyncWriteCommandTxFunc(this, _driver, false),
+            new AsyncWriteCommandTxFunc(this, _driver, true),
+            new AsyncWrongCommandTxFunc(_driver),
+            new AsyncFailingCommandTxFunc(_driver)
         };
 
         result.AddRange(CreateTestSpecificAsyncCommands());
@@ -305,7 +306,7 @@ public abstract class StressTest<TContext> : IDisposable
         return result;
     }
 
-    private IEnumerable<Task> LaunchAsyncWorkers(TContext context)
+    private IEnumerable<Task> LaunchAsyncWorkers(StressTestContext context)
     {
         var commands = CreateAsyncCommands();
 
@@ -318,7 +319,7 @@ public abstract class StressTest<TContext> : IDisposable
         return tasks;
     }
 
-    private static Task LaunchAsyncWorkerThread(TContext context, IList<IAsyncCommand<TContext>> commands)
+    private static Task LaunchAsyncWorkerThread(StressTestContext context, IList<IAsyncCommand> commands)
     {
         return Task.Factory.StartNew(
             () =>
@@ -344,14 +345,14 @@ public abstract class StressTest<TContext> : IDisposable
         await RunStressTest(LaunchRxWorkers);
     }
 
-    private IList<IRxCommand<TContext>> CreateRxCommands()
+    private IList<IRxCommand> CreateRxCommands()
     {
-        var result = new List<IRxCommand<TContext>>();
+        var result = new List<IRxCommand>();
         result.AddRange(CreateTestSpecificRxCommands());
         return result;
     }
 
-    private IEnumerable<Task> LaunchRxWorkers(TContext context)
+    private IEnumerable<Task> LaunchRxWorkers(StressTestContext context)
     {
         var commands = CreateRxCommands();
         var tasks = new List<Task>();
@@ -367,7 +368,7 @@ public abstract class StressTest<TContext> : IDisposable
         return tasks;
     }
 
-    private static Task LaunchRxWorkerThread(TContext context, IList<IRxCommand<TContext>> commands)
+    private static Task LaunchRxWorkerThread(StressTestContext context, IList<IRxCommand> commands)
     {
         return Task.Factory.StartNew(
             () =>
@@ -396,7 +397,7 @@ public abstract class StressTest<TContext> : IDisposable
         await ReadNodesAsync(_driver, bookmark, BigDataTestBatchCount * BigDataTestBatchSize);
     }
 
-    private async Task<Bookmarks> CreateNodesAsync(int batchCount, int batchSize, int batchBuffer, IDriver driver)
+    private async Task<Bookmarks> CreateNodesAsync(int batchCount, int batchSize, int queryBatchSize, IDriver driver)
     {
         var timer = Stopwatch.StartNew();
 
@@ -406,16 +407,17 @@ public abstract class StressTest<TContext> : IDisposable
             for (var batchIndex = 0; batchIndex < batchCount; batchIndex++)
             {
                 await session.ExecuteWriteAsync(
-                    txc => Task.WhenAll(
-                        Enumerable.Range(1, batchSize)
-                            .Select(index => batchIndex * batchSize + index)
-                            .Batch(batchBuffer)
-                            .Select(
-                                indices =>
-                                    txc.RunAsync(CreateBatchNodesQuery(indices))
-                                        .ContinueWith(t => t.Result.ConsumeAsync())
-                                        .Unwrap())
-                            .ToArray()));
+                    async tx =>
+                    {
+                        // 1-500, 501-1000
+                        var batches = Enumerable.Range(batchIndex * batchSize + 1, batchSize).Batch(queryBatchSize);    
+
+                        foreach (var batch in batches)
+                        {
+                            var cursor = await tx.RunAsync(CreateBatchNodesQuery(batch));
+                            await cursor.ConsumeAsync();
+                        }
+                    });
             }
         }
         finally
@@ -851,7 +853,7 @@ public abstract class StressTest<TContext> : IDisposable
 
 #region Test and Verifications
 
-    private async Task RunStressTest(Func<TContext, IEnumerable<Task>> launcher)
+    private async Task RunStressTest(Func<StressTestContext, IEnumerable<Task>> launcher)
     {
         var context = CreateContext();
         var workers = launcher(context);
@@ -871,7 +873,7 @@ public abstract class StressTest<TContext> : IDisposable
         VerifyResults(context);
     }
 
-    private void VerifyResults(TContext context)
+    private void VerifyResults(StressTestContext context)
     {
         VerifyNodesCreated(context.CreatedNodesCount);
         VerifyReadQueryDistribution(context);

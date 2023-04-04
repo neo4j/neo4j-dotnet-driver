@@ -18,38 +18,24 @@
 using System.Threading.Tasks;
 using static Neo4j.Driver.SessionConfigBuilder;
 
-namespace Neo4j.Driver.IntegrationTests;
+namespace Neo4j.Driver.IntegrationTests.Extensions;
 
-public class DatabaseExtensions
+public static class DatabaseExtensions
 {
     public static async Task CreateDatabase(IDriver driver, string name, bool async = false)
     {
-        var session = driver.AsyncSession(ForDatabase("system"));
+        await using var session = driver.AsyncSession(ForDatabase("system"));
 
-        try
-        {
-            var wait = async ? " WAIT" : string.Empty;
-            var cursor = await session.RunAsync($"CREATE DATABASE {name}{wait}");
-            await cursor.ConsumeAsync();
-        }
-        finally
-        {
-            await session.CloseAsync();
-        }
+        var wait = async ? " WAIT" : string.Empty;
+        var cursor = await session.RunAsync($"CREATE DATABASE {name}{wait}");
+        await cursor.ConsumeAsync();
     }
 
     public static async Task DropDatabase(IDriver driver, string name, bool async = false)
     {
-        var session = driver.AsyncSession(ForDatabase("system"));
-        try
-        {
-            var wait = async ? " WAIT" : string.Empty;
-            var cursor = await session.RunAsync($"DROP DATABASE {name}{wait}");
-            await cursor.ConsumeAsync();
-        }
-        finally
-        {
-            await session.CloseAsync();
-        }
+        await using var session = driver.AsyncSession(ForDatabase("system"));
+        var wait = async ? " WAIT" : string.Empty;
+        var cursor = await session.RunAsync($"DROP DATABASE {name}{wait}");
+        await cursor.ConsumeAsync();
     }
 }

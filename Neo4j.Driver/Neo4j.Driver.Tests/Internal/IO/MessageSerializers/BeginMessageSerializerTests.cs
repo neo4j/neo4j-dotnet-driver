@@ -48,6 +48,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
         [InlineData(4, 3)]
         [InlineData(4, 4)]
         [InlineData(5, 0)]
+        [InlineData(5, 2)]
         [InlineData(6, 0)]
         public void ShouldSerialize(int major, int minor)
         {
@@ -62,8 +63,8 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
                 "neo4j",
                 new InternalBookmarks("a"),
                 null,
-                null,
                 AccessMode.Read,
+                null,
                 null);
 
             BeginMessageSerializer.Instance.Serialize(psw, message);

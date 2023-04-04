@@ -21,62 +21,41 @@ using FluentAssertions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public class AsyncWriteCommandTxFunc<TContext> : AsyncCommand<TContext>
-    where TContext : StressTestContext
+public sealed class AsyncWriteCommandTxFunc : AsyncCommand
 {
-    private readonly StressTest<TContext> _test;
+    private readonly StressTest _test;
 
-    public AsyncWriteCommandTxFunc(StressTest<TContext> test, IDriver driver, bool useBookmark)
+    public AsyncWriteCommandTxFunc(StressTest test, IDriver driver, bool useBookmark)
         : base(driver, useBookmark)
     {
         _test = test ?? throw new ArgumentNullException(nameof(test));
     }
 
-    public override async Task ExecuteAsync(TContext context)
+    public override async Task ExecuteAsync(StressTestContext context)
     {
-        var summary = default(IResultSummary);
-        var error = default(Exception);
-        var session = NewSession(AccessMode.Write, context);
+        await using var session = NewSession(AccessMode.Write, context);
 
         try
         {
-            await session.WriteTransactionAsync(
+            var summary = await session.ExecuteWriteAsync(
                     async tx =>
                     {
-                        try
-                        {
-                            var cursor = await tx.RunAsync("CREATE ()").ConfigureAwait(false);
-                            summary = await cursor.ConsumeAsync().ConfigureAwait(false);
-                            await tx.CommitAsync();
-                        }
-                        catch
-                        {
-                            await tx.RollbackAsync().ConfigureAwait(false);
-                            throw;
-                        }
-
-                        context.Bookmarks = session.LastBookmarks;
+                        var cursor = await tx.RunAsync("CREATE ()").ConfigureAwait(false);
+                        return await cursor.ConsumeAsync().ConfigureAwait(false);
                     })
                 .ConfigureAwait(false);
+
+            context.Bookmarks = session.LastBookmarks;
+
+            summary.Counters.NodesCreated.Should().Be(1);
+            context.NodeCreated();
         }
         catch (Exception ex)
         {
-            error = ex;
-
-            if (!_test.HandleWriteFailure(error, context))
+            if (!_test.HandleWriteFailure(ex, context))
             {
                 throw;
             }
-        }
-        finally
-        {
-            await session.CloseAsync().ConfigureAwait(false);
-        }
-
-        if (error == null && summary != null)
-        {
-            summary.Counters.NodesCreated.Should().Be(1);
-            context.NodeCreated();
         }
     }
 }

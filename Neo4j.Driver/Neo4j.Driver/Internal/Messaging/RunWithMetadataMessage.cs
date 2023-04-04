@@ -29,16 +29,19 @@ internal sealed class RunWithMetadataMessage : TransactionStartingMessage
         TransactionConfig config = null,
         AccessMode mode = AccessMode.Write,
         string database = null,
-        string impersonatedUser = null)
-        : base(database, bookmarks, config?.Timeout, config?.Metadata, mode)
+        string impersonatedUser = null,
+        INotificationsConfig notificationsConfig = null)
+        : base(
+            version,
+            database,
+            bookmarks,
+            config?.Timeout,
+            config?.Metadata,
+            mode,
+            notificationsConfig,
+            impersonatedUser)
     {
         Query = query;
-
-        if (version >= BoltProtocolVersion.V4_4 &&
-            !string.IsNullOrEmpty(impersonatedUser))
-        {
-            Metadata.Add("imp_user", impersonatedUser);
-        }
     }
 
     public Query Query { get; }
