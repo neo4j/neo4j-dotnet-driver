@@ -17,21 +17,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Threading;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging.Utils;
 
 namespace Neo4j.Driver.Internal.Messaging;
-
-static class BoltAgentBuilder
-{
-    public static string GetBoltAgent()
-    {
-        return "";
-    }
-}
 
 internal sealed class HelloMessage : IRequestMessage
 {

@@ -38,6 +38,9 @@ namespace Neo4j.Driver.Internal.Protocol
             [InlineData(4, 3)]
             [InlineData(4, 4)]
             [InlineData(5, 0)]
+            [InlineData(5, 1)]
+            [InlineData(5, 2)]
+            [InlineData(5, 3)]
             public void ShouldCreateBoltProtocol(int major, int minor)
             {
                 var boltProtocol = BoltProtocolFactory.Default.ForVersion(new BoltProtocolVersion(major, minor));
