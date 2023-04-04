@@ -57,10 +57,6 @@ internal sealed class MessageFormat
     private readonly Dictionary<byte, IPackStreamSerializer> _readerStructHandlers = new();
     private readonly Dictionary<Type, IPackStreamSerializer> _writerStructHandlers = new();
 
-    //5.1+
-    public const byte MsgLogon = 0x6A;
-    public const byte MsgLogoff = 0x6B;
-
     internal MessageFormat(BoltProtocolVersion version)
     {
         Version = version;
