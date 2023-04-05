@@ -54,6 +54,7 @@ internal static class SupportedFeatures
             "Feature:Bolt:4.4",
             "Feature:Bolt:5.0",
             "Feature:Bolt:5.2",
+            "Feature:Bolt:5.3",
             "Feature:Bolt:Patch:UTC",
             "Feature:Impersonation",
             //"Feature:TLS:1.1",
