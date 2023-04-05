@@ -178,10 +178,12 @@ public class Config
     }
 
     /// <summary>
-    /// Used to get and set the User Agent string. If not used the default will be "neo4j-dotnet/x.y" where x is the
-    /// major version and y is the minor version.
+    /// Used to get and set the User Agent string.
+    /// If not set the default sent to the server will be "neo4j-dotnet/x.y.z (operating system; architecture)
+    /// dotnet-runtime/dotnet-version" where x is the  major version and y is the minor version and z is build. <br/>
+    /// Example: neo4j-dotnet/5.8.0 (Windows NT; X64) .NET/6.0.3
     /// </summary>
-    public string UserAgent { get; set; } = ConnectionSettings.DefaultUserAgent;
+    public string UserAgent { get; set; } = null;
 
     /// <summary>
     /// The configuration for setting which notifications the server should send to the client.<br/> This

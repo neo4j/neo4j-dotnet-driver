@@ -15,16 +15,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#nullable enable
 using System;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace Neo4j.Driver.Internal.Messaging.Utils;
 
 internal static class BoltAgentBuilder
 {
-    public static string GetBoltAgent()
+    private static readonly Lazy<string> LazyAgent = new(GetBoltAgent, LazyThreadSafetyMode.PublicationOnly);
+
+    public static string Agent => LazyAgent.Value;
+
+    /// <summary>
+    /// This string follows a common format and other teams across neo4j rely on it. <br/> Changes need to be in
+    /// accordance with company policy.
+    /// </summary>
+    private static string GetBoltAgent()
     {
         var version = typeof(BoltAgentBuilder).Assembly.GetName().Version;
         if (version == null)

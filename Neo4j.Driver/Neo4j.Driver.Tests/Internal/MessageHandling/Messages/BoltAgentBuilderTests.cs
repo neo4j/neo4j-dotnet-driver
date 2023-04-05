@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
         {
             var version = typeof(BoltAgentBuilderTests).Assembly.GetName().Version;
 
-            var agent = BoltAgentBuilder.GetBoltAgent();
+            var agent = BoltAgentBuilder.Agent;
             agent.Should().StartWith($"neo4j-dotnet/{version.Major}.{version.Minor}.{version.Build}");
         }
     }

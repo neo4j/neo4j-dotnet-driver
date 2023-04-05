@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging.Utils;
@@ -26,12 +25,11 @@ namespace Neo4j.Driver.Internal.Messaging;
 
 internal sealed class HelloMessage : IRequestMessage
 {
-    public static Lazy<string> LazyBoltAgent = new(BoltAgentBuilder.GetBoltAgent, LazyThreadSafetyMode.PublicationOnly);
     private const string UserAgentMetadataKey = "user_agent";
     private const string RoutingMetadataKey = "routing";
     private const string BoltAgentMetadataKey = "bolt_agent";
     private const string PatchBoltMetadataKey = "patch_bolt";
-    
+
     public HelloMessage(
         BoltProtocolVersion version,
         string userAgent,
@@ -45,11 +43,15 @@ internal sealed class HelloMessage : IRequestMessage
 
         if (authToken?.Count > 0)
         {
-            Metadata = new Dictionary<string, object>(authToken) { [UserAgentMetadataKey] = userAgent };
+            Metadata = new Dictionary<string, object>(authToken)
+            {
+                [UserAgentMetadataKey] = userAgent ??
+                    BoltAgentBuilder.Agent
+            };
         }
         else
         {
-            Metadata = new Dictionary<string, object> { [UserAgentMetadataKey] = userAgent };
+            Metadata = new Dictionary<string, object> { [UserAgentMetadataKey] = userAgent ?? BoltAgentBuilder.Agent };
         }
 
         if (version >= BoltProtocolVersion.V4_1)
@@ -76,7 +78,6 @@ internal sealed class HelloMessage : IRequestMessage
 
         Metadata = new Dictionary<string, object>
         {
-            [UserAgentMetadataKey] = userAgent,
             [RoutingMetadataKey] = routingContext
         };
 
@@ -87,7 +88,15 @@ internal sealed class HelloMessage : IRequestMessage
 
         if (version >= BoltProtocolVersion.V5_3)
         {
-            Metadata.Add(BoltAgentMetadataKey, LazyBoltAgent.Value);
+            Metadata.Add(BoltAgentMetadataKey, BoltAgentBuilder.Agent);
+            if (userAgent != null)
+            {
+                Metadata.Add(UserAgentMetadataKey, userAgent);
+            }
+        }
+        else
+        {
+            Metadata.Add(UserAgentMetadataKey, userAgent ?? BoltAgentBuilder.Agent);
         }
     }
 

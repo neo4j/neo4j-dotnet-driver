@@ -16,7 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Reflection;
 using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal;
@@ -52,15 +51,6 @@ internal class ConnectionSettings
             SocketKeepAliveEnabled = config.SocketKeepAlive,
             Ipv6Enabled = config.Ipv6Enabled
         };
-    }
-
-    internal static string DefaultUserAgent
-    {
-        get
-        {
-            var version = Assembly.GetExecutingAssembly().GetName().Version;
-            return $"neo4j-dotnet/{version!.Major}.{version.Minor}";
-        }
     }
 
     public IAuthToken AuthToken { get; }
