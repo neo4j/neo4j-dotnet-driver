@@ -25,6 +25,7 @@ using Neo4j.Driver.Internal.Messaging.V4_3;
 using Neo4j.Driver.Internal.Result;
 using Xunit;
 using Neo4j.Driver.Internal.MessageHandling.V4_3;
+using Record = Xunit.Record;
 
 namespace Neo4j.Driver.Internal.Protocol
 {
@@ -91,6 +92,32 @@ namespace Neo4j.Driver.Internal.Protocol
 			routingTable.ToDictionary().Should().ContainKey("db").WhichValue.Should().Be(databaseName);
 		}
 
+		[Fact]
+		public async Task ShouldCloseConnectionWhenThrows()
+		{
+
+			var databaseName = "myDatabaseName";
+			var protocol = new BoltProtocolV4_3(new Dictionary<string, string> { { "ContextKey", "ContextValue" } });
+			var routingContext = new Dictionary<string, string>
+			{
+				{"name", "molly"},
+				{"age", "1"},
+			};
+
+			var mockConn = Tests.Routing.ClusterDiscoveryTests.Setup43SocketConnection(routingContext, 
+				databaseName, 
+				null, 
+				Tests.Routing.ClusterDiscoveryTests.CreateGetServersDictionary(1, 1, 1));
+
+			mockConn.Setup(x => x.SyncAsync()).Throws(new FatalDiscoveryException("database doesn't exist"));
+			
+			mockConn.Setup(m => m.RoutingContext).Returns(routingContext);
+			var exception = await Record.ExceptionAsync(() => protocol.GetRoutingTable(mockConn.Object, databaseName, null, null));
+
+			exception.Should().BeOfType<FatalDiscoveryException>();
+			mockConn.Verify(x => x.CloseAsync(), Times.Once);
+		}
+		
 		private IConnection SetupMockedConnection(string databaseName)
 		{
 			//Given
@@ -98,7 +125,6 @@ namespace Neo4j.Driver.Internal.Protocol
 				{
 					{"name", "molly"},
 					{"age", "1"},
-					{"color", "white"}
 				};
 
 			var mockConn = Tests.Routing.ClusterDiscoveryTests.Setup43SocketConnection(routingContext, 

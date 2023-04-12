@@ -71,8 +71,14 @@ namespace Neo4j.Driver.Internal.Protocol
 
 			await connection.EnqueueAsync(new RouteMessage(connection.RoutingContext, bookmark, database, impersonatedUser), responseHandler).ConfigureAwait(false);
 
-			await connection.SyncAsync().ConfigureAwait(false);
-			await connection.CloseAsync().ConfigureAwait(false);
+			try
+			{
+				await connection.SyncAsync().ConfigureAwait(false);
+			}
+			finally
+			{
+				await connection.CloseAsync().ConfigureAwait(false);
+			}
 
 			return (IReadOnlyDictionary<string, object>)responseHandler.RoutingInformation;
 		}
