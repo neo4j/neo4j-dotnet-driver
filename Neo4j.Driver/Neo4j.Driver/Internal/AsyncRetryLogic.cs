@@ -85,6 +85,7 @@ internal class AsyncRetryLogic : IAsyncRetryLogic
             catch (Exception e) when (!e.CanBeRetried())
             {
                 _logger.Trace(e.Message);
+                throw;
             }
         } while (shouldRetry);
 

@@ -49,6 +49,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
 
         var message = _protocolMessageFactory.NewHelloMessage(connection, userAgent, authToken);
         var handler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
+        await connection.EnqueueAsync(message, handler);
         await connection.SyncAsync().ConfigureAwait(false);
     }        
 
@@ -107,7 +108,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
 
-        ValidateImpersonatedUserForVersion(connection, sessionConfig?.ImpersonatedUser);
+        ValidateImpersonatedUserForVersion(connection, sessionConfig);
 
         connection.ConfigureMode(AccessMode.Read);
 
@@ -142,7 +143,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         AutoCommitParams autoCommitParams,
         INotificationsConfig notificationsConfig)
     {
-        ValidateImpersonatedUserForVersion(connection, autoCommitParams.ImpersonatedUser);
+        ValidateImpersonatedUserForVersion(connection, autoCommitParams.SessionConfig);
         ValidateDatabase(connection, autoCommitParams.Database);
         ValidateNotificationsForVersion(connection, notificationsConfig);
 
@@ -183,7 +184,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         SessionConfig sessionConfig,
         INotificationsConfig notificationsConfig)
     {
-        ValidateImpersonatedUserForVersion(connection, sessionConfig?.ImpersonatedUser ?? "");
+        ValidateImpersonatedUserForVersion(connection, sessionConfig);
         ValidateDatabase(connection, database);
         ValidateNotificationsForVersion(connection, notificationsConfig);
 
@@ -262,14 +263,9 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         }
     }
 
-    internal static void ValidateImpersonatedUserForVersion(IConnection conn, string impersonatedUser)
+    internal static void ValidateImpersonatedUserForVersion(IConnection conn, SessionConfig sessionConfig)
     {
-        if (conn.Version >= BoltProtocolVersion.V4_4)
-        {
-            return;
-        }
-
-        if (!string.IsNullOrWhiteSpace(impersonatedUser))
+        if (conn.Version < BoltProtocolVersion.V4_4 && !string.IsNullOrWhiteSpace(sessionConfig?.ImpersonatedUser))
         {
             throw new ArgumentException(
                 $"Bolt Protocol {conn.Version} does not support impersonatedUser, " +

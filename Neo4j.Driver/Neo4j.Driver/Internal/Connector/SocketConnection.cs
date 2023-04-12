@@ -116,7 +116,10 @@ internal sealed class SocketConnection : IConnection
         Database = database;
     }
 
-    public async Task InitAsync(INotificationsConfig notificationsConfig, CancellationToken cancellationToken = default)
+    public async Task InitAsync(
+        INotificationsConfig notificationsConfig,
+        SessionConfig sessionConfig = null,
+        CancellationToken cancellationToken = default)
     {
         await _sendLock.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -130,7 +133,8 @@ internal sealed class SocketConnection : IConnection
             _sendLock.Release();
         }
 
-        await BoltProtocol.LoginAsync(this, _userAgent, AuthToken).ConfigureAwait(false);
+        var authToken = sessionConfig?.AuthToken ?? AuthToken;
+        await BoltProtocol.AuthenticateAsync(this, _userAgent, authToken, notificationsConfig).ConfigureAwait(false);
     }
 
     public async Task ReAuthAsync(

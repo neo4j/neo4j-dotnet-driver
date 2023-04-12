@@ -109,11 +109,10 @@ internal sealed class ConnectionPool : IConnectionPool
             connectionFactory,
             poolSettings ?? new ConnectionPoolSettings(Config.Default),
             logger,
-            new ConnectionSettings(new Uri("bolt://localhost:7687"), AuthTokenManagers.None, Config.Default),
+            connectionSettings,
             null,
             notificationsConfig)
     {
-        _connectionSettings = connectionSettings;
         _idleConnections = idleConnections ?? new BlockingCollection<IPooledConnection>();
         _inUseConnections = inUseConnections ?? new ConcurrentHashSet<IPooledConnection>();
         if (validator != null)
@@ -149,7 +148,7 @@ internal sealed class ConnectionPool : IConnectionPool
         {
             var connection = await TryExecuteAsync(
                     _logger,
-                    () => AcquireOrTimeoutAsync(mode, database, _connectionAcquisitionTimeout),
+                    () => AcquireOrTimeoutAsync(database, sessionConfig, mode, _connectionAcquisitionTimeout),
                     "Failed to acquire a connection from connection pool asynchronously.")
                 .ConfigureAwait(false);
 
@@ -206,7 +205,7 @@ internal sealed class ConnectionPool : IConnectionPool
 
     public async Task<IServerInfo> VerifyConnectivityAndGetInfoAsync()
     {
-        var connection = await AcquireAsync(AccessMode.Read, null, CancellationToken.None)
+        var connection = await AcquireAsync(AccessMode.Read, null, null, CancellationToken.None)
             .ConfigureAwait(false);
 
         if (connection is not IPooledConnection pooledConnection)
@@ -289,6 +288,7 @@ internal sealed class ConnectionPool : IConnectionPool
     }
 
     private async Task<IPooledConnection> CreateNewPooledConnectionAsync(
+        SessionConfig sessionConfig,
         CancellationToken cancellationToken = default)
     {
         var conn = default(IPooledConnection);
@@ -303,7 +303,7 @@ internal sealed class ConnectionPool : IConnectionPool
             }
 
             await conn
-                .InitAsync(_notificationsConfig, cancellationToken)
+                .InitAsync(_notificationsConfig, sessionConfig, cancellationToken)
                 .ConfigureAwait(false);
 
             _poolMetricsListener?.ConnectionCreated();
@@ -393,15 +393,16 @@ internal sealed class ConnectionPool : IConnectionPool
     }
 
     private async Task<IPooledConnection> AcquireOrTimeoutAsync(
-        AccessMode mode,
         string database,
+        SessionConfig sessionConfig,
+        AccessMode mode,
         TimeSpan timeout)
     {
         using var cts = new CancellationTokenSource(timeout);
 
         try
         {
-            return await AcquireAsync(mode, database, cts.Token)
+            return await AcquireAsync(mode, database, sessionConfig, cts.Token)
                 .Timeout(timeout, cts.Token)
                 .ConfigureAwait(false);
         }
@@ -421,6 +422,7 @@ internal sealed class ConnectionPool : IConnectionPool
     private async Task<IPooledConnection> AcquireAsync(
         AccessMode mode,
         string database,
+        SessionConfig sessionConfig,
         CancellationToken cancellationToken)
     {
         while (true)
@@ -435,7 +437,7 @@ internal sealed class ConnectionPool : IConnectionPool
                 ThrowServerUnavailableExceptionDueToDeactivated();
             }
 
-            var connection = await GetPooledOrNewConnectionAsync(cancellationToken).ConfigureAwait(false);
+            var connection = await GetPooledOrNewConnectionAsync(sessionConfig, cancellationToken).ConfigureAwait(false);
             if (_connectionValidator.OnRequire(connection))
             {
                 await AddConnectionAsync(connection).ConfigureAwait(false);
@@ -469,6 +471,7 @@ internal sealed class ConnectionPool : IConnectionPool
     }
 
     private async Task<IPooledConnection> GetPooledOrNewConnectionAsync(
+        SessionConfig sessionConfig,
         CancellationToken cancellationToken)
     {
         if (_idleConnections.TryTake(out var connection))
@@ -476,17 +479,18 @@ internal sealed class ConnectionPool : IConnectionPool
             return connection;
         }
 
-        return await CreateNewConnectionOrGetIdleAsync(cancellationToken);
+        return await CreateNewConnectionOrGetIdleAsync(sessionConfig, cancellationToken);
     }
 
     private async Task<IPooledConnection> CreateNewConnectionOrGetIdleAsync(
+        SessionConfig sessionConfig,
         CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
             if (!IsConnectionPoolFull())
             {
-                var connection = await CreateNewPooledConnectionAsync(cancellationToken)
+                var connection = await CreateNewPooledConnectionAsync(sessionConfig, cancellationToken)
                     .ConfigureAwait(false);
 
                 if (connection != null)

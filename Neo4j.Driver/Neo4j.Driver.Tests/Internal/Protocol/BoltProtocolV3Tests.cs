@@ -58,8 +58,6 @@ namespace Neo4j.Driver.Internal.Protocol
                     x => x.EnqueueAsync(It.IsNotNull<HelloMessage>(), It.IsNotNull<HelloResponseHandler>()),
                     Times.Once);
 
-                mockConn.VerifyGet(x => x.Version, Times.Once);
-                mockConn.Verify(x => x.EnqueueAsync(null, NoOpResponseHandler.Instance), Times.Once);
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
                 mockConn.VerifyNoOtherCalls();
             }
@@ -224,7 +222,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 var acp = new AutoCommitParams
                 {
-                    ImpersonatedUser = new("Douglas Fir")
+                    SessionConfig = new SessionConfig("Douglas Fir")
                 };
 
                 var exception = await Record.ExceptionAsync(

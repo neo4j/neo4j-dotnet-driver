@@ -80,7 +80,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
 
-        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, sessionConfig?.ImpersonatedUser);
+        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, sessionConfig);
 
         return connection.Version >= BoltProtocolVersion.V4_3
             ? GetRoutingTableWithRouteMessageAsync(connection, database, sessionConfig?.ImpersonatedUser, bookmarks)
@@ -92,7 +92,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         AutoCommitParams autoCommitParams,
         INotificationsConfig notificationsConfig)
     {
-        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, autoCommitParams.ImpersonatedUser);
+        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, autoCommitParams.SessionConfig);
         BoltProtocolV3.ValidateNotificationsForVersion(connection, notificationsConfig);
 
         var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
@@ -140,7 +140,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         SessionConfig sessionConfig,
         INotificationsConfig notificationsConfig)
     {
-        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, sessionConfig?.ImpersonatedUser);
+        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, sessionConfig);
         BoltProtocolV3.ValidateNotificationsForVersion(connection, notificationsConfig);
         return _boltProtocolV3.BeginTransactionAsync(connection, database, bookmarks, config, sessionConfig, notificationsConfig);
     }
@@ -202,7 +202,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         var logonMessage = _protocolMessageFactory.NewLogonMessage(connection, authToken);
         await connection.EnqueueAsync(logonMessage, NoOpResponseHandler.Instance).ConfigureAwait(false);
 
-        await connection.SyncAsync().ConfigureAwait(false);
+        //await connection.SyncAsync().ConfigureAwait(false);
     }
 
     private async Task<IReadOnlyDictionary<string, object>> GetRoutingTableWithQueryAsync(

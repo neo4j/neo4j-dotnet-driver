@@ -73,7 +73,7 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
             autoCommitParams.Config,
             connection.Mode ?? throw new InvalidOperationException("Connection should have its Mode property set."),
             autoCommitParams.Database,
-            autoCommitParams.ImpersonatedUser,
+            autoCommitParams.SessionConfig,
             notificationsConfig);
     }
 

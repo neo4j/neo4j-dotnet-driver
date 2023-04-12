@@ -32,7 +32,10 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
     void ConfigureMode(AccessMode? mode);
     void Configure(string database, AccessMode? mode);
 
-    Task InitAsync(INotificationsConfig notificationsConfig, CancellationToken cancellationToken = default);
+    Task InitAsync(
+        INotificationsConfig notificationsConfig,
+        SessionConfig sessionConfig = null,
+        CancellationToken cancellationToken = default);
 
     Task ReAuthAsync(IAuthToken newAuthToken, CancellationToken cancellationToken = default);
 

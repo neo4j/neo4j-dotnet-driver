@@ -39,7 +39,7 @@ internal abstract class TransactionStartingMessage : IRequestMessage
         IDictionary<string, object> txMetadata,
         AccessMode mode,
         INotificationsConfig notificationsConfig,
-        string impersonatedUser)
+        SessionConfig sessionConfig)
     {
         var result = new Dictionary<string, object>();
 
@@ -68,6 +68,7 @@ internal abstract class TransactionStartingMessage : IRequestMessage
             result.Add(DbKey, database);
         }
 
+        var impersonatedUser = sessionConfig?.ImpersonatedUser;
         if (!string.IsNullOrEmpty(impersonatedUser))
         {
             if (boltProtocolVersion >= BoltProtocolVersion.V4_4)

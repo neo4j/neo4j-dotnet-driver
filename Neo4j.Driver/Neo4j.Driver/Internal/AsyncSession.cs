@@ -182,7 +182,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                             Database = _database,
                             Bookmarks = LastBookmarks,
                             Config = options,
-                            ImpersonatedUser = ImpersonatedUser(),
+                            SessionConfig = SessionConfig,
                             FetchSize = _fetchSize,
                             BookmarksTracker = this,
                             ResultResourceHandler = this

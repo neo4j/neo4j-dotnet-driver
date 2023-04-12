@@ -542,7 +542,7 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 var acp = new AutoCommitParams
                 {
-                    ImpersonatedUser = new("Douglas Fir")
+                    SessionConfig = new SessionConfig("Douglas Fir")
                 };
 
                 var exception = await Record.ExceptionAsync(
@@ -564,7 +564,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var acp = new AutoCommitParams
                 {
                     Query = new Query("..."),
-                    ImpersonatedUser = new("Douglas Fir")
+                    SessionConfig = new SessionConfig("Douglas Fir")
                 };
 
                 var exception = await Record.ExceptionAsync(

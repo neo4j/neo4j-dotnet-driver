@@ -301,7 +301,7 @@ namespace Neo4j.Driver.Tests.Routing
                             It.IsAny<SessionConfig>(),
                             Bookmarks.Empty))
                     .ReturnsAsync(
-                        (Uri uri, AccessMode m, string d, string u, Bookmarks b, IAuthToken a) => NewConnectionMock(uri, m));
+                        (Uri uri, AccessMode m, string d, string u, Bookmarks b) => NewConnectionMock(uri, m));
 
                 var balancer = new LoadBalancer(clusterPoolMock.Object, routingTableManager.Object);
 

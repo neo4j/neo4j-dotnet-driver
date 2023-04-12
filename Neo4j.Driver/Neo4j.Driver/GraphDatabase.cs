@@ -227,11 +227,12 @@ public static class GraphDatabase
 
         EnsureNoRoutingContextOnBolt(uri, routingContext);
 
-        var connectionProvider = parsedUri.IsRoutingUri()
+        IConnectionProvider connectionProvider = parsedUri.IsRoutingUri()
             ? new LoadBalancer(
                 connectionFactory,
                 routingSettings,
                 connectionPoolSettings,
+                connectionSettings,
                 logger,
                 config.NotificationsConfig)
             : new ConnectionPool(
@@ -239,9 +240,9 @@ public static class GraphDatabase
                     connectionFactory,
                     connectionPoolSettings,
                     logger,
+                    connectionSettings,
                     null,
-                    config.NotificationsConfig) as
-                IConnectionProvider;
+                    config.NotificationsConfig);
 
         return new Internal.Driver(
             parsedUri,

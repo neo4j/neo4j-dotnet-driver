@@ -48,7 +48,10 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
         [InlineData(5, 0)]
         public void ShouldIncludeImpersonatedUserKeyWithBoltVersionGreaterThan44(int major, int minor)
         {
-            var rm = new RunWithMetadataMessage(new BoltProtocolVersion(major, minor), null, impersonatedUser: "jeff");
+            var rm = new RunWithMetadataMessage(
+                new BoltProtocolVersion(major, minor),
+                null,
+                sessionConfig: new SessionConfig("jeff"));
             rm.Query.Should().BeNull();
             rm.Metadata.Should().ContainKey("imp_user").WhichValue.Should().Be("jeff");
 
@@ -72,7 +75,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
                 },
                 AccessMode.Read,
                 "neo4j",
-                "jeff");
+                new SessionConfig("jeff"));
 
             rm.Metadata.Should().ContainKey("bookmarks").WhichValue.Should().BeEquivalentTo(new[] { "bm:a" });
             rm.Metadata.Should().ContainKey("tx_timeout").WhichValue.Should().Be(1000L);

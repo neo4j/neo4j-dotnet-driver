@@ -290,11 +290,11 @@ namespace Neo4j.Driver.Tests.Routing
                 var discovery = new Mock<IDiscovery>();
                 discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), null, null, Bookmarks.Empty))
                     .Callback(
-                        (IConnection c, string _, string _, Bookmarks _) =>
+                        (IConnection c, string _, SessionConfig _, Bookmarks _) =>
                             throw new NotSupportedException($"Unknown uri: {c.Server.Address}"));
 
                 discovery.Setup(x => x.DiscoverAsync(connA, "", null, Bookmarks.Empty))
-                    .Callback((IConnection _, string _, string _, Bookmarks _) => routingTable.Remove(uriA))
+                    .Callback((IConnection _, string _, SessionConfig _, Bookmarks _) => routingTable.Remove(uriA))
                     .Throws(new SessionExpiredException("failed init"));
 
                 discovery.Setup(x => x.DiscoverAsync(connB, "", null, Bookmarks.Empty))
@@ -426,7 +426,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var discovery = new Mock<IDiscovery>();
                 discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty))
                     .Callback(
-                        (IConnection c, string _, string _, Bookmarks _) =>
+                        (IConnection c, string _, SessionConfig _, Bookmarks _) =>
                             throw new NotSupportedException($"Unknown uri: {c.Server.Address}"));
 
                 discovery.Setup(x => x.DiscoverAsync(connA, "", null, Bookmarks.Empty))
@@ -466,7 +466,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var discovery = new Mock<IDiscovery>();
                 discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty))
                     .Callback(
-                        (IConnection c, string _, string _, Bookmarks _) =>
+                        (IConnection c, string _, SessionConfig _, Bookmarks _) =>
                             throw new NotSupportedException($"Unknown uri: {c.Server?.Address}"));
 
                 discovery.Setup(x => x.DiscoverAsync(connA, "", null, Bookmarks.Empty))

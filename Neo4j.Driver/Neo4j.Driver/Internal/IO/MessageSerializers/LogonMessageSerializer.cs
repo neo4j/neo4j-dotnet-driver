@@ -37,6 +37,6 @@ internal sealed class LogonMessageSerializer : WriteOnlySerializer
         }
 
         writer.WriteStructHeader(1, MessageFormat.MsgLogon);
-        writer.WriteDictionary(msg.MetaData);
+        writer.WriteDictionary(msg.Auth);
     }
 }
