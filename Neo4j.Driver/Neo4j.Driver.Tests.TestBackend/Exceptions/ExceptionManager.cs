@@ -104,7 +104,7 @@ internal static class ExceptionManager
                 new
                 {
                     id = newError.uniqueId,
-                    errorType = ex.InnerException.GetType().Name,
+                    errorType = ex.InnerException?.GetType().Name ?? ex.GetType().Name,
                     msg = exceptionMessage
                 });
         }

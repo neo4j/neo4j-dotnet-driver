@@ -70,6 +70,7 @@ internal sealed class PullResponseHandler : MetadataCollectingResponseHandler
     public override void OnFailure(IResponsePipelineError error)
     {
         _streamBuilder.PullCompleted(false, error);
+        error.EnsureThrown();
     }
 
     public override void OnIgnored()

@@ -53,7 +53,6 @@ internal interface IBoltProtocolMessageFactory
         Bookmarks bookmarks,
         TransactionConfig config,
         AccessMode mode,
-        SessionConfig sessionConfig,
         INotificationsConfig notificationsConfig);
 }
 
@@ -152,7 +151,6 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
         Bookmarks bookmarks,
         TransactionConfig config,
         AccessMode mode,
-        SessionConfig sessionConfig,
         INotificationsConfig notificationsConfig)
     {
         return new BeginMessage(
@@ -161,7 +159,7 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
             bookmarks,
             config,
             mode,
-            sessionConfig,
+            connection.SessionConfig,
             notificationsConfig);
     }
 }

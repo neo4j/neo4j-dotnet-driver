@@ -93,9 +93,9 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         return _clusterConnectionPool.UpdateAsync(added, removed);
     }
 
-    public Task<IConnection> CreateClusterConnectionAsync(Uri uri)
+    public Task<IConnection> CreateClusterConnectionAsync(Uri uri, SessionConfig sessionConfig)
     {
-        return CreateClusterConnectionAsync(uri, AccessMode.Write, null, null, Bookmarks.Empty);
+        return CreateClusterConnectionAsync(uri, AccessMode.Write, null, sessionConfig, Bookmarks.Empty);
     }
 
     public IDictionary<string, string> RoutingContext { get; set; }

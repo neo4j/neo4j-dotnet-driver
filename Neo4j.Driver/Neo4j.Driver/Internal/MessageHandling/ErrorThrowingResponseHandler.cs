@@ -17,14 +17,27 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Connector;
 
-namespace Neo4j.Driver.Internal.Routing;
+namespace Neo4j.Driver.Internal.MessageHandling;
 
-internal interface IClusterConnectionPoolManager
+internal class ErrorThrowingResponseHandler : IResponseHandler
 {
-    Task AddConnectionPoolAsync(IEnumerable<Uri> uris);
-    Task UpdateConnectionPoolAsync(IEnumerable<Uri> added, IEnumerable<Uri> removed);
-    Task<IConnection> CreateClusterConnectionAsync(Uri uri, SessionConfig sessionConfig);
+    public static ErrorThrowingResponseHandler Instance { get; } = new();
+
+    public void OnSuccess(IDictionary<string, object> metadata)
+    {
+    }
+
+    public void OnRecord(object[] fieldValues)
+    {
+    }
+
+    public void OnFailure(IResponsePipelineError error)
+    {
+        error.EnsureThrown();
+    }
+
+    public void OnIgnored()
+    {
+    }
 }

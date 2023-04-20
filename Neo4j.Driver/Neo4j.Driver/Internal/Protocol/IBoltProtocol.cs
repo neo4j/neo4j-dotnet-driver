@@ -17,6 +17,7 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 
@@ -50,7 +51,6 @@ internal interface IBoltProtocol
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
-        SessionConfig sessionConfig,
         INotificationsConfig notificationsConfig);
 
     Task<IResultCursor> RunInExplicitTransactionAsync(

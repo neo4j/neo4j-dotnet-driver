@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
@@ -44,6 +45,7 @@ internal sealed class SocketConnection : IConnection
     private readonly string _userAgent;
 
     private string _id;
+    private SessionConfig _sessionConfig;
 
     internal SocketConnection(
         Uri uri,
@@ -52,6 +54,7 @@ internal sealed class SocketConnection : IConnection
         string userAgent,
         BufferSettings bufferSettings,
         IDictionary<string, string> routingContext,
+        IAuthTokenManager authTokenManager,
         ILogger logger = null)
     {
         _idPrefix = $"conn-{uri.Host}:{uri.Port}-";
@@ -65,6 +68,7 @@ internal sealed class SocketConnection : IConnection
 
         _responsePipeline = new ResponsePipeline(_logger);
         RoutingContext = routingContext;
+        AuthTokenManager = authTokenManager;
         _protocolFactory = BoltProtocolFactory.Default;
     }
 
@@ -75,6 +79,7 @@ internal sealed class SocketConnection : IConnection
         string userAgent,
         ILogger logger,
         ServerInfo server,
+        IAuthTokenManager authTokenManager,
         IResponsePipeline responsePipeline = null,
         IBoltProtocolFactory protocolFactory = null)
     {
@@ -82,6 +87,7 @@ internal sealed class SocketConnection : IConnection
         AuthToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
         _userAgent = userAgent ?? throw new ArgumentNullException(nameof(userAgent));
         _serverInfo = server ?? throw new ArgumentNullException(nameof(server));
+        AuthTokenManager = authTokenManager;
         RoutingContext = null;
 
         _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
@@ -133,9 +139,12 @@ internal sealed class SocketConnection : IConnection
             _sendLock.Release();
         }
 
+        _sessionConfig = sessionConfig;
         var authToken = sessionConfig?.AuthToken ?? AuthToken;
         await BoltProtocol.AuthenticateAsync(this, _userAgent, authToken, notificationsConfig).ConfigureAwait(false);
     }
+
+    public IAuthTokenManager AuthTokenManager { get; }
 
     public async Task ReAuthAsync(
         IAuthToken newAuthToken,
@@ -149,6 +158,13 @@ internal sealed class SocketConnection : IConnection
         await BoltProtocol.ReAuthAsync(this, newAuthToken);
         AuthToken = newAuthToken;
         ReAuthorizationRequired = false;
+    }
+
+    public Task NotifyTokenExpiredAsync()
+    {
+        return _sessionConfig?.AuthToken is null
+            ? AuthTokenManager.OnTokenExpiredAsync(AuthToken)
+            : Task.CompletedTask;
     }
 
     public async Task SyncAsync()
@@ -295,6 +311,8 @@ internal sealed class SocketConnection : IConnection
         _client.UseUtcEncoded();
     }
 
+    public SessionConfig SessionConfig => _sessionConfig;
+
     public Task LoginAsync(string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
     {
         return BoltProtocol.AuthenticateAsync(this, userAgent, authToken, notificationsConfig);
@@ -332,7 +350,6 @@ internal sealed class SocketConnection : IConnection
             database,
             bookmarks,
             config,
-            sessionConfig,
             notificationsConfig);
     }
 

@@ -107,7 +107,7 @@ internal class RoutingTableManager : IRoutingTableManager
     public async Task<IServerInfo> GetServerInfoAsync(Uri uri, string database)
     {
         var bufferedExceptions = new List<Exception>();
-        var conn = await _poolManager.CreateClusterConnectionAsync(uri).ConfigureAwait(false);
+        var conn = await _poolManager.CreateClusterConnectionAsync(uri, null).ConfigureAwait(false);
         if (conn == null)
         {
             throw new ServiceUnavailableException("Could not create connection");
@@ -123,7 +123,7 @@ internal class RoutingTableManager : IRoutingTableManager
             try
             {
                 var reportedConnection =
-                    await _poolManager.CreateClusterConnectionAsync(table).ConfigureAwait(false);
+                    await _poolManager.CreateClusterConnectionAsync(table, null).ConfigureAwait(false);
 
                 await reportedConnection.CloseAsync().ConfigureAwait(false);
                 return reportedConnection.Server;
@@ -305,7 +305,7 @@ internal class RoutingTableManager : IRoutingTableManager
             triedUris?.Add(router);
             try
             {
-                var conn = await _poolManager.CreateClusterConnectionAsync(router).ConfigureAwait(false);
+                var conn = await _poolManager.CreateClusterConnectionAsync(router, sessionConfig).ConfigureAwait(false);
 
                 if (conn == null)
                 {

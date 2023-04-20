@@ -18,6 +18,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Util;
@@ -38,6 +39,8 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
         CancellationToken cancellationToken = default);
 
     Task ReAuthAsync(IAuthToken newAuthToken, CancellationToken cancellationToken = default);
+
+    Task NotifyTokenExpiredAsync();
 
     // send all and receive all
     Task SyncAsync();
@@ -68,6 +71,8 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
     void SetReadTimeoutInSeconds(int seconds);
 
     void SetUseUtcEncodedDateTime();
+
+    public SessionConfig SessionConfig { get; }
 }
 
 internal interface IConnectionRunner

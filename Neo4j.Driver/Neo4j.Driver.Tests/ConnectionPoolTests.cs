@@ -29,6 +29,7 @@ using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Util;
+using Neo4j.Driver.Reactive.Internal;
 using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
 using Xunit.Abstractions;
@@ -117,7 +118,7 @@ namespace Neo4j.Driver.Tests
 
                 //Then
                 mock.Verify(
-                    x => x.InitAsync(It.IsAny<INotificationsConfig>(), It.IsAny<CancellationToken>()),
+                    x => x.InitAsync(It.IsAny<INotificationsConfig>(), It.IsAny<SessionConfig>(), It.IsAny<CancellationToken>()),
                     Times.Once);
             }
 
@@ -262,6 +263,7 @@ namespace Neo4j.Driver.Tests
                 var connMock = new Mock<IPooledConnection>();
                 connMock.Setup(x => x.InitAsync(
                         It.IsAny<INotificationsConfig>(),
+                        It.IsAny<SessionConfig>(),
                         It.IsAny<CancellationToken>()))
                     .Throws<NotImplementedException>();
 
@@ -1711,11 +1713,11 @@ namespace Neo4j.Driver.Tests
                 IConnectionReleaseManager releaseManager,
                 SocketSettings socketSettings,
                 IAuthToken authToken,
-                Func<IAuthToken, CancellationToken, Task> taskCompletedAsync,
+                IAuthTokenManager authTokenManager,
                 string userAgent,
                 IDictionary<string, string> routingContext)
             {
-                return new PooledConnection(_connection, (_, _) => Task.CompletedTask, releaseManager);
+                return new PooledConnection(_connection, releaseManager);
             }
         }
     }

@@ -175,7 +175,7 @@ namespace Neo4j.Driver.Tests.Routing
                     .Returns(Task.CompletedTask)
                     .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(InitialUri));
 
-                poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(InitialUri))
+                poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(InitialUri, TODO))
                     .ReturnsAsync(Mock.Of<IConnection>());
 
                 var discovery = new Mock<IDiscovery>();
@@ -214,7 +214,7 @@ namespace Neo4j.Driver.Tests.Routing
                     .Returns(Task.CompletedTask)
                     .Callback<IEnumerable<Uri>>(r => r.Single().Should().Be(t));
 
-                poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(t)).ReturnsAsync(Mock.Of<IConnection>());
+                poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(t, TODO)).ReturnsAsync(Mock.Of<IConnection>());
 
                 var initialUriSet = new HashSet<Uri> { s, t };
                 var mockProvider = new Mock<IInitialServerAddressProvider>();
@@ -253,7 +253,7 @@ namespace Neo4j.Driver.Tests.Routing
                 // This ensures that uri and uri2 will return in order
                 var routingTable = new RoutingTable(null, new List<Uri> { uriA, uriB });
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
-                poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>()))
+                poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>(), TODO))
                     .ReturnsAsync((ClusterConnection)null);
 
                 var discovery = new Mock<IDiscovery>();
@@ -283,7 +283,7 @@ namespace Neo4j.Driver.Tests.Routing
                 // This ensures that uri and uri2 will return in order
                 var routingTable = new RoutingTable(null, new List<Uri> { uriA, uriB });
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
-                poolManagerMock.SetupSequence(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>()))
+                poolManagerMock.SetupSequence(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>(), TODO))
                     .ReturnsAsync(connA)
                     .ReturnsAsync(connB);
 
@@ -318,7 +318,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var uri = new Uri("neo4j://123:456");
                 var routingTable = new RoutingTable(null, new List<Uri> { uri });
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
-                poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(uri))
+                poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(uri, TODO))
                     .Returns(Task.FromResult(new Mock<IConnection>().Object));
 
                 var discovery = new Mock<IDiscovery>();
@@ -345,7 +345,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var uri = new Uri("neo4j://123:456");
                 var routingTable = new RoutingTable(null, new List<Uri> { uri });
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
-                poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(uri))
+                poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(uri, TODO))
                     .ReturnsAsync(new Mock<IConnection>().Object);
 
                 var discovery = new Mock<IDiscovery>();
@@ -375,7 +375,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var uri = new Uri("neo4j://123:456");
                 var routingTable = new RoutingTable(null, new List<Uri> { uri });
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
-                poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(uri))
+                poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(uri, TODO))
                     .ReturnsAsync(new Mock<IConnection>().Object);
 
                 var discovery = new Mock<IDiscovery>();
@@ -419,7 +419,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 var routingTable = new RoutingTable(null, new List<Uri> { uriA, uriB });
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
-                poolManagerMock.SetupSequence(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>()))
+                poolManagerMock.SetupSequence(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>(), TODO))
                     .ReturnsAsync(connA)
                     .ReturnsAsync(connB);
 
@@ -460,7 +460,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 var routingTable = new RoutingTable(null, new List<Uri> { uriA });
                 var poolManagerMock = new Mock<IClusterConnectionPoolManager>();
-                poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>()))
+                poolManagerMock.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>(), TODO))
                     .ReturnsAsync(connA);
 
                 var discovery = new Mock<IDiscovery>();
@@ -503,11 +503,11 @@ namespace Neo4j.Driver.Tests.Routing
 
                 var poolManager = new Mock<IClusterConnectionPoolManager>();
                 poolManager
-                    .Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>()))
+                    .Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>(), TODO))
                     .ReturnsAsync(Mock.Of<IConnection>());
 
                 poolManager
-                    .Setup(x => x.CreateClusterConnectionAsync(uriE))
+                    .Setup(x => x.CreateClusterConnectionAsync(uriE, TODO))
                     .ReturnsAsync(connE);
 
                 var discovery = new Mock<IDiscovery>();
@@ -566,10 +566,10 @@ namespace Neo4j.Driver.Tests.Routing
                 var routingTable = Mock.Of<IRoutingTable>();
 
                 var poolManager = new Mock<IClusterConnectionPoolManager>();
-                poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>()))
+                poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>(), TODO))
                     .Throws(new Neo4jException("timed out"));
 
-                poolManager.Setup(x => x.CreateClusterConnectionAsync(uriE)).ReturnsAsync(connE);
+                poolManager.Setup(x => x.CreateClusterConnectionAsync(uriE, TODO)).ReturnsAsync(connE);
 
                 var discovery = new Mock<IDiscovery>();
                 discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty))
@@ -729,7 +729,7 @@ namespace Neo4j.Driver.Tests.Routing
                     .ReturnsAsync(barRoutingTable);
 
                 var poolManager = new Mock<IClusterConnectionPoolManager>();
-                poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>()))
+                poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>(), TODO))
                     .ReturnsAsync(Mock.Of<IConnection>);
 
                 var initialAddressProvider = new Mock<IInitialServerAddressProvider>();
@@ -777,7 +777,7 @@ namespace Neo4j.Driver.Tests.Routing
                     .ReturnsAsync(barRoutingTable);
 
                 var poolManager = new Mock<IClusterConnectionPoolManager>();
-                poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>()))
+                poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>(), TODO))
                     .ReturnsAsync(Mock.Of<IConnection>);
 
                 var initialAddressProvider = new Mock<IInitialServerAddressProvider>();
@@ -828,7 +828,7 @@ namespace Neo4j.Driver.Tests.Routing
                     .ThrowsAsync(new FatalDiscoveryException("message"));
 
                 var poolManager = new Mock<IClusterConnectionPoolManager>();
-                poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>()))
+                poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>(), TODO))
                     .ReturnsAsync(Mock.Of<IConnection>());
 
                 var initialAddressProvider = new Mock<IInitialServerAddressProvider>();
@@ -869,7 +869,7 @@ namespace Neo4j.Driver.Tests.Routing
                     .ThrowsAsync(error);
 
                 var poolManager = new Mock<IClusterConnectionPoolManager>();
-                poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>()))
+                poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>(), TODO))
                     .ReturnsAsync(Mock.Of<IConnection>());
 
                 var initialAddressProvider = new Mock<IInitialServerAddressProvider>();
@@ -900,7 +900,7 @@ namespace Neo4j.Driver.Tests.Routing
                     .ReturnsAsync(rt);
 
                 var poolManager = new Mock<IClusterConnectionPoolManager>();
-                poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>()))
+                poolManager.Setup(x => x.CreateClusterConnectionAsync(It.IsAny<Uri>(), TODO))
                     .ReturnsAsync(Mock.Of<IConnection>());
 
                 var initialAddressProvider = new Mock<IInitialServerAddressProvider>();

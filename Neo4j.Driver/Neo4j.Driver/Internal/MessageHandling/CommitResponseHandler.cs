@@ -41,4 +41,9 @@ internal sealed class CommitResponseHandler : MetadataCollectingResponseHandler
             GetMetadata<BookmarksCollector, Bookmarks>(),
             GetMetadata<DatabaseInfoCollector, IDatabaseInfo>());
     }
+
+    public override void OnFailure(IResponsePipelineError error)
+    {
+        error.EnsureThrown();
+    }
 }

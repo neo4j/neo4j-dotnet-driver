@@ -69,8 +69,7 @@ internal class ConnectionValidator : IConnectionValidator
     {
         var isRequirable = connection.IsOpen &&
             !HasBeenIdleForTooLong(connection) &&
-            !HasBeenAliveForTooLong(connection) &&
-            !HasBeenMarkedForReauthorization(connection);
+            !HasBeenAliveForTooLong(connection);
 
         if (isRequirable)
         {

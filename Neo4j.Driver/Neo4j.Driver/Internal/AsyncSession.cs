@@ -129,16 +129,17 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         return BeginTransactionAsync(action, true);
     }
 
-    public async Task<IAsyncTransaction> BeginTransactionAsync(
+    public Task<IAsyncTransaction> BeginTransactionAsync(
         Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult)
     {
-        var tx = await TryExecuteAsync(
-                _logger,
-                () => BeginTransactionWithoutLoggingAsync(_defaultMode, action, disposeUnconsumedSessionResult))
-            .ConfigureAwait(false);
-
-        return tx;
+        return BeginTransactionAsync(_defaultMode, action, disposeUnconsumedSessionResult);
+        // var tx = await TryExecuteAsync(
+        //         _logger,
+        //         () => BeginTransactionWithoutLoggingAsync(_defaultMode, action, disposeUnconsumedSessionResult))
+        //     .ConfigureAwait(false);
+        //
+        // return tx;
     }
 
     public async Task<IAsyncTransaction> BeginTransactionAsync(
@@ -356,9 +357,9 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
             _fetchSize,
             SessionConfig);
 
-        await tx.BeginTransactionAsync(config).ConfigureAwait(false);
-        _transaction = tx;
-        return _transaction;
+            await tx.BeginTransactionAsync(config).ConfigureAwait(false);
+            _transaction = tx;
+            return _transaction;
     }
 
     private async Task AcquireConnectionAndDbNameAsync(AccessMode mode)
@@ -375,8 +376,10 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                 LastBookmarks)
             .ConfigureAwait(false);
 
-        var token = SessionConfig?.AuthToken ??
-            await _connectionProvider.ConnectionSettings.AuthTokenManager.GetTokenAsync();
+        var connectionToken = _connection.ReAuthorizationRequired ? null : _connection.AuthToken;
+        _connection.ReAuthorizationRequired = false;
+        var token = SessionConfig?.AuthToken ?? connectionToken;
+        token ??= await _connectionProvider.ConnectionSettings.AuthTokenManager.GetTokenAsync();
 
         await _connection.ReAuthAsync(token);
 

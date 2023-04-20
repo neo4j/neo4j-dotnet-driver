@@ -295,7 +295,7 @@ internal sealed class ConnectionPool : IConnectionPool
 
         try
         {
-            conn = await NewPooledConnection();
+            conn = await NewPooledConnection(sessionConfig);
 
             if (conn == null)
             {
@@ -319,7 +319,7 @@ internal sealed class ConnectionPool : IConnectionPool
         }
     }
 
-    private async Task<IPooledConnection> NewPooledConnection()
+    private async Task<IPooledConnection> NewPooledConnection(SessionConfig sessionConfig)
     {
         if (!TryIncrementPoolSize())
         {
@@ -328,11 +328,13 @@ internal sealed class ConnectionPool : IConnectionPool
 
         _poolMetricsListener?.ConnectionCreating();
 
+        var token = sessionConfig?.AuthToken ?? await _connectionSettings.AuthTokenManager.GetTokenAsync();
+
         return _connectionFactory.Create(_uri,
             this,
             _connectionSettings.SocketSettings,
-            await _connectionSettings.AuthTokenManager.GetTokenAsync(),
-            _connectionSettings.AuthTokenManager.OnTokenExpiredAsync,
+            token,
+            _connectionSettings.AuthTokenManager,
             _connectionSettings.UserAgent,
             RoutingContext);
     }
@@ -476,6 +478,7 @@ internal sealed class ConnectionPool : IConnectionPool
     {
         if (_idleConnections.TryTake(out var connection))
         {
+            connection.ReAuthorizationRequired = true;
             return connection;
         }
 
@@ -502,6 +505,7 @@ internal sealed class ConnectionPool : IConnectionPool
             await Task.Delay(SpinningWaitInterval, cancellationToken).ConfigureAwait(false);
             if (_idleConnections.TryTake(out var idle))
             {
+                idle.ReAuthorizationRequired = true;
                 return idle;
             }
         }

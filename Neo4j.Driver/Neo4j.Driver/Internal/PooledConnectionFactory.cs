@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal;
@@ -30,7 +31,7 @@ internal interface IPooledConnectionFactory
         IConnectionReleaseManager releaseManager,
         SocketSettings socketSettings,
         IAuthToken authToken,
-        Func<IAuthToken, CancellationToken, Task> tokenExpiredAsync,
+        IAuthTokenManager authTokenManager,
         string userAgent,
         IDictionary<string, string> routingContext);
 }
@@ -51,13 +52,20 @@ internal class PooledConnectionFactory : IPooledConnectionFactory
         IConnectionReleaseManager releaseManager,
         SocketSettings socketSettings,
         IAuthToken authToken,
-        Func<IAuthToken, CancellationToken, Task> tokenExpiredAsync,
+        IAuthTokenManager authTokenManager,
         string userAgent,
         IDictionary<string, string> routingContext)
     {
         return new PooledConnection(
-            new SocketConnection(uri, socketSettings, authToken, userAgent, _bufferSettings, routingContext, _logger),
-            tokenExpiredAsync,
+            new SocketConnection(
+                uri,
+                socketSettings,
+                authToken,
+                userAgent,
+                _bufferSettings,
+                routingContext,
+                authTokenManager,
+                _logger),
             releaseManager ?? throw new ArgumentNullException(nameof(releaseManager)));
     }
 }

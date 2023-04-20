@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Util;
@@ -39,6 +40,8 @@ internal abstract class DelegatedConnection : IConnection
     public string Database => Delegate.Database;
 
     public IDictionary<string, string> RoutingContext => Delegate.RoutingContext;
+
+    public Task NotifyTokenExpiredAsync() => Delegate.NotifyTokenExpiredAsync();
 
     public async Task SyncAsync()
     {
@@ -178,6 +181,8 @@ internal abstract class DelegatedConnection : IConnection
         Delegate.SetUseUtcEncodedDateTime();
     }
 
+    public SessionConfig SessionConfig => Delegate.SessionConfig;
+
     public Task LoginAsync(string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
     {
         return BoltProtocol.AuthenticateAsync(this, userAgent, authToken, notificationsConfig);
@@ -220,7 +225,6 @@ internal abstract class DelegatedConnection : IConnection
             database,
             bookmarks,
             config,
-            sessionConfig,
             notificationsConfig);
     }
 

@@ -17,23 +17,19 @@
 
 using System;
 using System.Diagnostics;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Connector;
 
 internal class PooledConnection : DelegatedConnection, IPooledConnection
 {
-    private readonly Func<IAuthToken, CancellationToken, Task> _tokenExpiredAsync;
     private readonly IConnectionReleaseManager _releaseManager;
 
     public PooledConnection(
         IConnection conn,
-        Func<IAuthToken, CancellationToken, Task> tokenExpiredAsync,
         IConnectionReleaseManager releaseManager = null)
         : base(conn)
     {
-        _tokenExpiredAsync = tokenExpiredAsync;
         _releaseManager = releaseManager;
         // IdleTimer starts to count when the connection is put back to the pool.
         IdleTimer = new StopwatchBasedTimer();
@@ -47,8 +43,6 @@ internal class PooledConnection : DelegatedConnection, IPooledConnection
     /// has been marked as has unrecoverable errors will be eventually closed when returning back to the pool. <br/><br/>
     /// </summary>
     internal bool HasUnrecoverableError { get; private set; }
-
-    public bool ReAuthorizationRequired { get; set; } = false;
 
     public async Task ClearConnectionAsync()
     {

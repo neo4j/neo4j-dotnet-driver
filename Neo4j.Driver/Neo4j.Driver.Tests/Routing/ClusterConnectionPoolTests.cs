@@ -97,7 +97,7 @@ namespace Neo4j.Driver.Tests.Routing
                 // Given
                 var mockedConnectionPool = new Mock<IConnectionPool>();
                 var mockedConnection = new Mock<IPooledConnection>();
-                mockedConnection.Setup(c => c.InitAsync(null, CancellationToken.None))
+                mockedConnection.Setup(c => c.InitAsync(null, It.IsAny<SessionConfig>(), CancellationToken.None))
                     .Returns(Task.FromException(new InvalidOperationException("An exception")));
 
                 mockedConnectionPool.Setup(
@@ -122,7 +122,10 @@ namespace Neo4j.Driver.Tests.Routing
                 var exception =
                     await Record.ExceptionAsync(() => connection.InitAsync(null));
 
-                mockedConnection.Verify(c => c.InitAsync(null, CancellationToken.None), Times.Once);
+                mockedConnection.Verify(
+                    c => c.InitAsync(null, It.IsAny<SessionConfig>(), CancellationToken.None),
+                    Times.Once);
+
                 exception.Should().BeOfType<InvalidOperationException>();
                 exception.Message.Should().Be("An exception");
             }

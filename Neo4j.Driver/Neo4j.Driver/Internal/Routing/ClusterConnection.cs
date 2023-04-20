@@ -26,7 +26,10 @@ internal class ClusterConnection : DelegatedConnection
     private readonly IErrorHandler _errorHandler;
     private readonly Uri _uri;
 
-    public ClusterConnection(IConnection connection, Uri uri, IErrorHandler errorHandler)
+    public ClusterConnection(
+        IConnection connection,
+        Uri uri,
+        IErrorHandler errorHandler)
         : base(connection)
     {
         _uri = uri;

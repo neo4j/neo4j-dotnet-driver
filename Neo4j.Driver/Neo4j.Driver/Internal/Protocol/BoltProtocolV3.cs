@@ -17,7 +17,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
@@ -55,7 +59,6 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
 
     private async Task EnqueueLogon(IConnection connection, IAuthToken authToken)
     {
-        connection.ClearQueueAsync();
         var logonMessage = _protocolMessageFactory.NewLogonMessage(connection, authToken);
         await connection.EnqueueAsync(logonMessage, NoOpResponseHandler.Instance).ConfigureAwait(false);
     }
@@ -108,7 +111,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
 
-        ValidateImpersonatedUserForVersion(connection, sessionConfig);
+        ValidateImpersonatedUserForVersion(connection);
 
         connection.ConfigureMode(AccessMode.Read);
 
@@ -143,7 +146,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         AutoCommitParams autoCommitParams,
         INotificationsConfig notificationsConfig)
     {
-        ValidateImpersonatedUserForVersion(connection, autoCommitParams.SessionConfig);
+        ValidateImpersonatedUserForVersion(connection);
         ValidateDatabase(connection, autoCommitParams.Database);
         ValidateNotificationsForVersion(connection, notificationsConfig);
 
@@ -172,7 +175,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         await connection.EnqueueAsync(autoCommitMessage, runHandler).ConfigureAwait(false);
         await connection.EnqueueAsync(PullAllMessage.Instance, pullAllHandler).ConfigureAwait(false);
 
-        await connection.SendAsync().ConfigureAwait(false);
+        await HandleTokenExpirySyncAsync(connection).ConfigureAwait(false);
         return streamBuilder.CreateCursor();
     }
 
@@ -181,10 +184,9 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
-        SessionConfig sessionConfig,
         INotificationsConfig notificationsConfig)
     {
-        ValidateImpersonatedUserForVersion(connection, sessionConfig);
+        ValidateImpersonatedUserForVersion(connection);
         ValidateDatabase(connection, database);
         ValidateNotificationsForVersion(connection, notificationsConfig);
 
@@ -197,11 +199,34 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             bookmarks,
             config,
             mode,
-            sessionConfig,
             notificationsConfig);
 
-        await connection.EnqueueAsync(message, NoOpResponseHandler.Instance).ConfigureAwait(false);
-        await connection.SyncAsync().ConfigureAwait(false);
+        await connection.EnqueueAsync(message, ErrorThrowingResponseHandler.Instance).ConfigureAwait(false);
+        await HandleTokenExpirySyncAsync(connection).ConfigureAwait(false);
+    }
+
+    internal static async Task HandleTokenExpirySyncAsync(IConnection connection)
+    {
+        try
+        {
+            await connection.SyncAsync().ConfigureAwait(false);
+        }
+        catch (TokenExpiredException)
+        {
+            connection.ReAuthorizationRequired = true;
+            await connection.NotifyTokenExpiredAsync();
+            throw;
+        }
+        catch (AuthorizationException)
+        {
+            connection.ReAuthorizationRequired = true;
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // other exceptions are ignored here as in a NoOpResponseHandler
+            Debug.Print(ex.ToString());
+        }
     }
 
     public async Task<IResultCursor> RunInExplicitTransactionAsync(
@@ -228,7 +253,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
 
         await connection.EnqueueAsync(message, runHandler).ConfigureAwait(false);
         await connection.EnqueueAsync(PullAllMessage.Instance, pullAllHandler).ConfigureAwait(false);
-        await connection.SendAsync().ConfigureAwait(false);
+        await HandleTokenExpirySyncAsync(connection).ConfigureAwait(false);
 
         return streamBuilder.CreateCursor();
     }
@@ -238,13 +263,13 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         var handler = _protocolHandlerFactory.NewCommitResponseHandler(bookmarksTracker);
 
         await connection.EnqueueAsync(CommitMessage.Instance, handler).ConfigureAwait(false);
-        await connection.SyncAsync().ConfigureAwait(false);
+        await HandleTokenExpirySyncAsync(connection).ConfigureAwait(false);
     }
 
     public async Task RollbackTransactionAsync(IConnection connection)
     {
         await connection.EnqueueAsync(RollbackMessage.Instance, NoOpResponseHandler.Instance).ConfigureAwait(false);
-        await connection.SyncAsync().ConfigureAwait(false);
+        await HandleTokenExpirySyncAsync(connection);
     }
     
     // TODO: Refactor validation methods into a separate class or move to message classes so the checks aren't duplicated. 
@@ -263,9 +288,9 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         }
     }
 
-    internal static void ValidateImpersonatedUserForVersion(IConnection conn, SessionConfig sessionConfig)
+    internal static void ValidateImpersonatedUserForVersion(IConnection conn)
     {
-        if (conn.Version < BoltProtocolVersion.V4_4 && !string.IsNullOrWhiteSpace(sessionConfig?.ImpersonatedUser))
+        if (conn.Version < BoltProtocolVersion.V4_4 && !string.IsNullOrWhiteSpace(conn.SessionConfig?.ImpersonatedUser))
         {
             throw new ArgumentException(
                 $"Bolt Protocol {conn.Version} does not support impersonatedUser, " +

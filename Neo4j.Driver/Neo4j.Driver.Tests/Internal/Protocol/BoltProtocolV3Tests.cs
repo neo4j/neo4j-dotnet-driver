@@ -387,6 +387,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V3_0);
+                mockConn.SetupGet(x => x.SessionConfig).Returns(new SessionConfig("Douglas Fire"));
 
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocolV3.Instance.BeginTransactionAsync(
@@ -394,7 +395,6 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         null,
                         TransactionConfig.Default,
-                        new SessionConfig("Douglas Fire"),
                         null));
 
                 exception.Should().BeOfType<ArgumentException>();
@@ -416,7 +416,6 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         null,
                         TransactionConfig.Default,
-                        null,
                         new NotificationsDisabledConfig()));
 
                 exception.Should().BeOfType<ArgumentOutOfRangeException>();
@@ -437,7 +436,6 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         null,
                         TransactionConfig.Default,
-                        null,
                         new NotificationsDisabledConfig()));
 
                 exception.Should().BeNull();
@@ -455,7 +453,6 @@ namespace Neo4j.Driver.Internal.Protocol
                         "db",
                         null,
                         TransactionConfig.Default,
-                        null,
                         null));
 
                 exception.Should().BeOfType<ClientException>();
@@ -474,7 +471,6 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         null,
                         TransactionConfig.Default,
-                        null,
                         null));
 
                 exception.Should().BeOfType<InvalidOperationException>();
@@ -496,7 +492,6 @@ namespace Neo4j.Driver.Internal.Protocol
                             It.IsAny<Bookmarks>(),
                             It.IsAny<TransactionConfig>(),
                             It.IsAny<AccessMode>(),
-                            It.IsAny<SessionConfig>(),
                             It.IsAny<INotificationsConfig>()))
                     .Returns(fakeMessage);
 
@@ -509,11 +504,10 @@ namespace Neo4j.Driver.Internal.Protocol
                     null,
                     bookmarks,
                     tc,
-                    null,
                     null);
 
                 msgFactory.Verify(
-                    x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null, null),
+                    x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
                     Times.Once);
 
                 mockConn.Verify(
