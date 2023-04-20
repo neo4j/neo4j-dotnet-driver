@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers;
@@ -28,7 +29,7 @@ internal sealed class PointSerializer : IPackStreamSerializer
     public const int Point3DStructSize = 4;
     internal static readonly PointSerializer Instance = new();
 
-    public IEnumerable<byte> ReadableStructs => new[] { Point2DStructType, Point3DStructType };
+    public byte[] ReadableStructs => new[] { Point2DStructType, Point3DStructType };
     public IEnumerable<Type> WritableTypes => new[] { typeof(Point) };
 
     public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
@@ -91,6 +92,37 @@ internal sealed class PointSerializer : IPackStreamSerializer
 
             default:
                 throw new ProtocolException($"{GetType().Name}: Dimension('{point.Dimension}') is not supported.");
+        }
+    }
+
+    public object DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    {
+        switch (signature)
+        {
+            case Point2DStructType:
+            {
+                PackStream.EnsureStructSize("Point2D", Point2DStructSize, size);
+                var srId = reader.ReadInteger();
+                var x = reader.ReadDouble();
+                var y = reader.ReadDouble();
+
+                return new Point(srId, x, y);
+            }
+
+            case Point3DStructType:
+            {
+                PackStream.EnsureStructSize("Point3D", Point3DStructSize, size);
+                var srId = reader.ReadInteger();
+                var x = reader.ReadDouble();
+                var y = reader.ReadDouble();
+                var z = reader.ReadDouble();
+
+                return new Point(srId, x, y, z);
+            }
+
+            default:
+                throw new ProtocolException(
+                    $"Unsupported struct signature {signature} passed to {nameof(PointSerializer)}!");
         }
     }
 }

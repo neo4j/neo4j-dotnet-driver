@@ -24,7 +24,7 @@ internal sealed class NodeSerializer : ReadOnlySerializer
 {
     public const byte Node = (byte)'N';
     internal static readonly NodeSerializer Instance = new();
-    public override IEnumerable<byte> ReadableStructs => new[] { Node };
+    public override byte[] ReadableStructs => new[] { Node };
 
     public override object Deserialize(PackStreamReader reader)
     {

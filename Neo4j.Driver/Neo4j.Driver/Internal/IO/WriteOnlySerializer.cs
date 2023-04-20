@@ -23,7 +23,7 @@ namespace Neo4j.Driver.Internal.IO;
 
 internal abstract class WriteOnlySerializer : IPackStreamSerializer
 {
-    public IEnumerable<byte> ReadableStructs => Enumerable.Empty<byte>();
+    public byte[] ReadableStructs => Array.Empty<byte>();
 
     public object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte signature, long size)
     {
@@ -36,6 +36,11 @@ internal abstract class WriteOnlySerializer : IPackStreamSerializer
     public virtual void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
     {
         Serialize(writer, value);
+    }
+
+    public object DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    {
+        throw new NotImplementedException();
     }
 
     public abstract void Serialize(PackStreamWriter writer, object value);

@@ -24,6 +24,7 @@ namespace Neo4j.Driver.Internal.IO;
 internal abstract class ReadOnlySerializer : IPackStreamSerializer
 {
     public IEnumerable<Type> WritableTypes => Enumerable.Empty<Type>();
+    public abstract byte[] ReadableStructs { get; }
 
     public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
     {
@@ -31,12 +32,27 @@ internal abstract class ReadOnlySerializer : IPackStreamSerializer
             $"{GetType().Name}: It is not allowed to send a value of type {value?.GetType().Name} to the server.");
     }
 
-    public abstract IEnumerable<byte> ReadableStructs { get; }
-
     public virtual object Deserialize(BoltProtocolVersion _, PackStreamReader reader, byte __, long ___)
     {
         return Deserialize(reader);
     }
 
-    public abstract object Deserialize(PackStreamReader reader);
+    public virtual object Deserialize(PackStreamReader reader)
+    {
+        throw new NotImplementedException();
+    }
+
+    public virtual object DeserializeSpan(
+        BoltProtocolVersion version,
+        SpanPackStreamReader reader,
+        byte signature,
+        int size)
+    {
+        return Deserialize(reader);
+    }
+
+    public virtual object Deserialize(SpanPackStreamReader reader)
+    {
+        throw new NotImplementedException();
+    }
 }

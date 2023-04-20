@@ -19,14 +19,40 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.IO;
 
-internal sealed class PackStreamReader
+internal interface IPackStreamReader
 {
-    private static readonly byte[] EmptyByteArray = Array.Empty<byte>();
-    private readonly ByteBuffers _buffers;
-    private readonly MessageFormat _format;
+    object Read();
+    IResponseMessage ReadMessage();
+    Dictionary<string, object> ReadMap();
+    IList<object> ReadList();
+    object ReadStruct();
+    object ReadNull();
+    bool ReadBoolean();
+    int ReadInteger();
+    long ReadLong();
+    double ReadDouble();
+    string ReadString();
+    byte[] ReadBytes();
+    long ReadMapHeader();
+    long ReadListHeader();
+    byte ReadStructSignature();
+    long ReadStructHeader();
+    byte NextByte();
+    short NextShort();
+    int NextInt();
+    long NextLong();
+    double NextDouble();
+    byte PeekByte();
+}
+
+internal sealed class PackStreamReader : IPackStreamReader
+{
+    public readonly ByteBuffers _buffers;
+    public readonly MessageFormat _format;
 
     public MemoryStream Stream;
 
@@ -42,6 +68,19 @@ internal sealed class PackStreamReader
         var type = PeekNextType();
         var result = ReadValue(type);
         return result;
+    }
+
+    public IResponseMessage ReadMessage()
+    {
+        var size = ReadStructHeader();
+        var signature = ReadStructSignature();
+
+        if (_format.ReaderStructHandlers.TryGetValue(signature, out var handler))
+        {
+            return (IResponseMessage)handler.Deserialize(_format.Version, this, signature, size);
+        }
+
+        throw new ProtocolException("Unknown structure type: " + signature);
     }
 
     public Dictionary<string, object> ReadMap()
@@ -261,7 +300,7 @@ internal sealed class PackStreamReader
     {
         if (size == 0)
         {
-            return EmptyByteArray;
+            return Array.Empty<byte>();
         }
 
         var heapBuffer = new byte[size];

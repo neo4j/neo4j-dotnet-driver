@@ -24,7 +24,7 @@ internal sealed class UnboundRelationshipSerializer : ReadOnlySerializer
 {
     public const byte UnboundRelationship = (byte)'r';
     internal static readonly UnboundRelationshipSerializer Instance = new();
-    public override IEnumerable<byte> ReadableStructs => new[] { UnboundRelationship };
+    public override byte[] ReadableStructs => new[] { UnboundRelationship };
 
     public override object Deserialize(PackStreamReader reader)
     {

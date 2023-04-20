@@ -16,12 +16,14 @@
 // limitations under the License.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.IO.ValueSerializers;
 using Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
+using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal;
 
@@ -61,10 +63,10 @@ internal sealed class MessageFormat
     {
         Version = version;
         // Response Message Types
-        AddHandler(FailureMessageSerializer.Instance);
-        AddHandler(IgnoredMessageSerializer.Instance);
-        AddHandler(RecordMessageSerializer.Instance);
-        AddHandler(SuccessMessageSerializer.Instance);
+        AddMessageHandler(FailureMessageSerializer.Instance);
+        AddMessageHandler(IgnoredMessageSerializer.Instance);
+        AddMessageHandler(RecordMessageSerializer.Instance);
+        AddMessageHandler(SuccessMessageSerializer.Instance);
 
         // Add V2 Spatial Types
         AddHandler(PointSerializer.Instance);
@@ -131,7 +133,14 @@ internal sealed class MessageFormat
     public IReadOnlyDictionary<Type, IPackStreamSerializer> WriteStructHandlers => _writerStructHandlers;
 
     public BoltProtocolVersion Version { get; }
+    private readonly Dictionary<byte, IPackStreamMessageDeserializer> _messageReaders = new();
+    public IReadOnlyDictionary<byte, IPackStreamMessageDeserializer> MessageReaders => _messageReaders;
 
+    private void AddMessageHandler<T>(T instance) where T : class, IPackStreamMessageDeserializer, IPackStreamSerializer
+    {
+        _messageReaders.Add(instance.ReadableStructs[0], instance);
+    }
+    
     private void AddHandler<T>(T instance) where T : class, IPackStreamSerializer
     {
         foreach (var readableStruct in instance.ReadableStructs)
@@ -168,4 +177,9 @@ internal sealed class MessageFormat
             _writerStructHandlers.Remove(type);
         }
     }
+}
+
+internal interface IPackStreamMessageDeserializer
+{
+    IResponseMessage DeserializeMessage(BoltProtocolVersion formatVersion, SpanPackStreamReader packStreamReader);
 }

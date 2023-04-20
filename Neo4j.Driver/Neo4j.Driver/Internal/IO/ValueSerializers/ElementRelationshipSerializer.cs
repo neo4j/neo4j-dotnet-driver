@@ -24,7 +24,7 @@ internal sealed class ElementRelationshipSerializer : ReadOnlySerializer
 {
     public const byte Relationship = (byte)'R';
     internal static readonly ElementRelationshipSerializer Instance = new();
-    public override IEnumerable<byte> ReadableStructs => new[] { Relationship };
+    public override byte[] ReadableStructs => new[] { Relationship };
 
     public override object Deserialize(PackStreamReader reader)
     {

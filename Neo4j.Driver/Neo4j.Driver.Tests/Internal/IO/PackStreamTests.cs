@@ -127,7 +127,7 @@ namespace Neo4j.Driver.Internal.IO
 
         private class StructTypeSerializer : IPackStreamSerializer
         {
-            public IEnumerable<byte> ReadableStructs => new[] { (byte)'S' };
+            public byte[] ReadableStructs => new[] { (byte)'S' };
 
             public IEnumerable<Type> WritableTypes => new[] { typeof(StructType) };
 
@@ -151,6 +151,11 @@ namespace Neo4j.Driver.Internal.IO
                 {
                     writer.Write(innerValue);
                 }
+            }
+
+            public object DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+            {
+                throw new NotImplementedException();
             }
         }
     }
