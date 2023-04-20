@@ -19,14 +19,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.IO;
 
 internal sealed class PackStreamReader
 {
-    private static readonly byte[] EmptyByteArray = Array.Empty<byte>();
-    private readonly ByteBuffers _buffers;
-    private readonly MessageFormat _format;
+    public readonly ByteBuffers _buffers;
+    public readonly MessageFormat _format;
 
     public MemoryStream Stream;
 
@@ -42,6 +42,19 @@ internal sealed class PackStreamReader
         var type = PeekNextType();
         var result = ReadValue(type);
         return result;
+    }
+
+    public IResponseMessage ReadMessage()
+    {
+        var size = ReadStructHeader();
+        var signature = ReadStructSignature();
+
+        if (_format.ReaderStructHandlers.TryGetValue(signature, out var handler))
+        {
+            return (IResponseMessage)handler.Deserialize(_format.Version, this, signature, size);
+        }
+
+        throw new ProtocolException("Unknown structure type: " + signature);
     }
 
     public Dictionary<string, object> ReadMap()
@@ -261,7 +274,7 @@ internal sealed class PackStreamReader
     {
         if (size == 0)
         {
-            return EmptyByteArray;
+            return Array.Empty<byte>();
         }
 
         var heapBuffer = new byte[size];
