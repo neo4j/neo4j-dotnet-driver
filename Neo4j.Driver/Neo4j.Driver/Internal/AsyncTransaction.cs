@@ -193,6 +193,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
         internal override async Task OnErrorAsync(Exception error)
         {
+            await base.OnErrorAsync(error).ConfigureAwait(false);
             await _transaction.MarkToCloseAsync().ConfigureAwait(false);
             throw error;
         }

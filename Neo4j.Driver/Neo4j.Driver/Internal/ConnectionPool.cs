@@ -146,15 +146,26 @@ internal sealed class ConnectionPool : IConnectionPool
 
         try
         {
-            var connection = await TryExecuteAsync(
-                    _logger,
-                    () => AcquireOrTimeoutAsync(database, sessionConfig, mode, _connectionAcquisitionTimeout),
-                    "Failed to acquire a connection from connection pool asynchronously.")
-                .ConfigureAwait(false);
+            do
+            {
+                var connection = await TryExecuteAsync(
+                        _logger,
+                        () => AcquireOrTimeoutAsync(database, sessionConfig, mode, _connectionAcquisitionTimeout),
+                        "Failed to acquire a connection from connection pool asynchronously.")
+                    .ConfigureAwait(false);
 
-            await connection.ValidateCredsAsync().ConfigureAwait(false);
-            _poolMetricsListener?.PoolAcquired();
-            return connection;
+                try
+                {
+                    await connection.ValidateCredsAsync().ConfigureAwait(false);
+                    _poolMetricsListener?.PoolAcquired();
+                    return connection;
+                }
+                catch (ReauthException)
+                {
+                    connection.StaleCredentials = true;
+                    await connection.CloseAsync().ConfigureAwait(false);
+                }
+            } while (true);
         }
         catch
         {

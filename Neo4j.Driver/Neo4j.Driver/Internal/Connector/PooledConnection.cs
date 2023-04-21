@@ -24,6 +24,7 @@ namespace Neo4j.Driver.Internal.Connector;
 internal class PooledConnection : DelegatedConnection, IPooledConnection
 {
     private readonly IConnectionReleaseManager _releaseManager;
+    private bool _staleCredentials;
 
     public PooledConnection(
         IConnection conn,
@@ -74,8 +75,22 @@ internal class PooledConnection : DelegatedConnection, IPooledConnection
     public ITimer IdleTimer { get; }
     public ITimer LifetimeTimer { get; }
 
+    public bool StaleCredentials
+    {
+        get => _staleCredentials;
+        set
+        {
+            if (value)
+            {
+                HasUnrecoverableError = true;
+            }
+            _staleCredentials = value;
+        }
+    }
+
     internal override async Task OnErrorAsync(Exception error)
     {
+        await base.OnErrorAsync(error).ConfigureAwait(false);
         if (!error.IsRecoverableError())
         {
             HasUnrecoverableError = true;
