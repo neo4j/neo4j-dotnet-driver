@@ -73,6 +73,7 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
     void SetUseUtcEncodedDateTime();
 
     public SessionConfig SessionConfig { get; }
+    Task ValidateCredsAsync();
 }
 
 internal interface IConnectionRunner
