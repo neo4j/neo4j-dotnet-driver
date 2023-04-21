@@ -182,6 +182,11 @@ internal abstract class DelegatedConnection : IConnection
     }
 
     public SessionConfig SessionConfig => Delegate.SessionConfig;
+    
+    public Task ValidateCredsAsync()
+    {
+        return Delegate.ValidateCredsAsync();
+    }
 
     public Task LoginAsync(string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
     {

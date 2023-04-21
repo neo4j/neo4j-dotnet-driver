@@ -1,0 +1,95 @@
+From 89eae301077f0e9b379212cedcdc23040516f010 Mon Sep 17 00:00:00 2001
+From: grant lodge <6323995+thelonelyvulpes@users.noreply.github.com>
+Date: Fri, 21 Apr 2023 11:06:33 +0100
+Subject: [PATCH] Fix routing requests not using the same logic for credentials
+ refreshing.
+
+---
+ Neo4j.Driver/Neo4j.Driver/Internal/AsyncSession.cs     |  9 +--------
+ Neo4j.Driver/Neo4j.Driver/Internal/ConnectionPool.cs   |  1 +
+ .../Internal/Connector/DelegatedConnection.cs          |  5 +++++
+ .../Neo4j.Driver/Internal/Connector/IConnection.cs     |  1 +
+ .../Internal/Connector/SocketConnection.cs             | 10 ++++++++++
+ 5 files changed, 18 insertions(+), 8 deletions(-)
+
+diff --git a/Neo4j.Driver/Neo4j.Driver/Internal/AsyncSession.cs b/Neo4j.Driver/Neo4j.Driver/Internal/AsyncSession.cs
+index 433a2ebe..11bcbb96 100644
+--- a/Neo4j.Driver/Neo4j.Driver/Internal/AsyncSession.cs
++++ b/Neo4j.Driver/Neo4j.Driver/Internal/AsyncSession.cs
+@@ -376,14 +376,7 @@ private async Task AcquireConnectionAndDbNameAsync(AccessMode mode)
+                 SessionConfig,
+                 LastBookmarks)
+             .ConfigureAwait(false);
+-
+-        var connectionToken = _connection.ReAuthorizationRequired ? null : _connection.AuthToken;
+-        _connection.ReAuthorizationRequired = false;
+-        var token = SessionConfig?.AuthToken ?? connectionToken;
+-        token ??= await _connectionProvider.ConnectionSettings.AuthTokenManager.GetTokenAsync();
+-
+-        await _connection.ReAuthAsync(token);
+-
++        
+         //Update the database. If a routing request occurred it may have returned a differing DB alias name that needs to be used for the
+         //rest of the sessions lifetime.
+         _database = _connection.Database;
+diff --git a/Neo4j.Driver/Neo4j.Driver/Internal/ConnectionPool.cs b/Neo4j.Driver/Neo4j.Driver/Internal/ConnectionPool.cs
+index fb114544..037e495d 100644
+--- a/Neo4j.Driver/Neo4j.Driver/Internal/ConnectionPool.cs
++++ b/Neo4j.Driver/Neo4j.Driver/Internal/ConnectionPool.cs
+@@ -152,6 +152,7 @@ public ConnectionPoolStatus Status
+                     "Failed to acquire a connection from connection pool asynchronously.")
+                 .ConfigureAwait(false);
+ 
++            await connection.ValidateCredsAsync().ConfigureAwait(false);
+             _poolMetricsListener?.PoolAcquired();
+             return connection;
+         }
+diff --git a/Neo4j.Driver/Neo4j.Driver/Internal/Connector/DelegatedConnection.cs b/Neo4j.Driver/Neo4j.Driver/Internal/Connector/DelegatedConnection.cs
+index 2018da86..38ae1e60 100644
+--- a/Neo4j.Driver/Neo4j.Driver/Internal/Connector/DelegatedConnection.cs
++++ b/Neo4j.Driver/Neo4j.Driver/Internal/Connector/DelegatedConnection.cs
+@@ -182,6 +182,11 @@ public void SetUseUtcEncodedDateTime()
+     }
+ 
+     public SessionConfig SessionConfig => Delegate.SessionConfig;
++    
++    public Task ValidateCredsAsync()
++    {
++        return Delegate.ValidateCredsAsync();
++    }
+ 
+     public Task LoginAsync(string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
+     {
+diff --git a/Neo4j.Driver/Neo4j.Driver/Internal/Connector/IConnection.cs b/Neo4j.Driver/Neo4j.Driver/Internal/Connector/IConnection.cs
+index 48007798..856d5b24 100644
+--- a/Neo4j.Driver/Neo4j.Driver/Internal/Connector/IConnection.cs
++++ b/Neo4j.Driver/Neo4j.Driver/Internal/Connector/IConnection.cs
+@@ -73,6 +73,7 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
+     void SetUseUtcEncodedDateTime();
+ 
+     public SessionConfig SessionConfig { get; }
++    Task ValidateCredsAsync();
+ }
+ 
+ internal interface IConnectionRunner
+diff --git a/Neo4j.Driver/Neo4j.Driver/Internal/Connector/SocketConnection.cs b/Neo4j.Driver/Neo4j.Driver/Internal/Connector/SocketConnection.cs
+index eb78ec08..8b9dec28 100644
+--- a/Neo4j.Driver/Neo4j.Driver/Internal/Connector/SocketConnection.cs
++++ b/Neo4j.Driver/Neo4j.Driver/Internal/Connector/SocketConnection.cs
+@@ -312,6 +312,16 @@ public void SetUseUtcEncodedDateTime()
+     }
+ 
+     public SessionConfig SessionConfig => _sessionConfig;
++    
++    public async Task ValidateCredsAsync()
++    {
++        var connectionToken = ReAuthorizationRequired ? null : AuthToken;
++        ReAuthorizationRequired = false;
++        var token = SessionConfig?.AuthToken ?? connectionToken;
++        token ??= await AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
++
++        await ReAuthAsync(token).ConfigureAwait(false);
++    }
+ 
+     public Task LoginAsync(string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
+     {

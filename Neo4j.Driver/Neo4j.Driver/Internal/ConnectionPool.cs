@@ -152,6 +152,7 @@ internal sealed class ConnectionPool : IConnectionPool
                     "Failed to acquire a connection from connection pool asynchronously.")
                 .ConfigureAwait(false);
 
+            await connection.ValidateCredsAsync().ConfigureAwait(false);
             _poolMetricsListener?.PoolAcquired();
             return connection;
         }

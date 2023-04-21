@@ -312,6 +312,16 @@ internal sealed class SocketConnection : IConnection
     }
 
     public SessionConfig SessionConfig => _sessionConfig;
+    
+    public async Task ValidateCredsAsync()
+    {
+        var connectionToken = ReAuthorizationRequired ? null : AuthToken;
+        ReAuthorizationRequired = false;
+        var token = SessionConfig?.AuthToken ?? connectionToken;
+        token ??= await AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
+
+        await ReAuthAsync(token).ConfigureAwait(false);
+    }
 
     public Task LoginAsync(string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
     {

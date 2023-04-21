@@ -375,14 +375,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                 SessionConfig,
                 LastBookmarks)
             .ConfigureAwait(false);
-
-        var connectionToken = _connection.ReAuthorizationRequired ? null : _connection.AuthToken;
-        _connection.ReAuthorizationRequired = false;
-        var token = SessionConfig?.AuthToken ?? connectionToken;
-        token ??= await _connectionProvider.ConnectionSettings.AuthTokenManager.GetTokenAsync();
-
-        await _connection.ReAuthAsync(token);
-
+        
         //Update the database. If a routing request occurred it may have returned a differing DB alias name that needs to be used for the
         //rest of the sessions lifetime.
         _database = _connection.Database;
