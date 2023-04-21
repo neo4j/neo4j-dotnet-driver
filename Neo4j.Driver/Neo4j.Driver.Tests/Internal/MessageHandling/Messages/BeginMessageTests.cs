@@ -126,7 +126,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
                 bookmarks,
                 new TransactionConfig(txMeta, TimeSpan.FromSeconds(1)),
                 AccessMode.Read,
-               new SessionConfig("Douglas Fir"),
+                new SessionConfig("Douglas Fir"),
                 new NotificationsConfig(Severity.Warning, new[] { Category.Generic }));
 
             message.Metadata.Should().ContainKey("bookmarks").WhichValue.Should().BeEquivalentTo(new[] { "bm:a" });

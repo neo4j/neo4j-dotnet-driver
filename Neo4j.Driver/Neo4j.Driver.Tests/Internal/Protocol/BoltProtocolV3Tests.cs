@@ -453,6 +453,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         "db",
                         null,
                         TransactionConfig.Default,
+                        null,
                         null));
 
                 exception.Should().BeOfType<ClientException>();
@@ -471,6 +472,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         null,
                         TransactionConfig.Default,
+                        null,
                         null));
 
                 exception.Should().BeOfType<InvalidOperationException>();
@@ -504,10 +506,11 @@ namespace Neo4j.Driver.Internal.Protocol
                     null,
                     bookmarks,
                     tc,
+                    null,
                     null);
 
                 msgFactory.Verify(
-                    x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
+                    x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null, null),
                     Times.Once);
 
                 mockConn.Verify(
