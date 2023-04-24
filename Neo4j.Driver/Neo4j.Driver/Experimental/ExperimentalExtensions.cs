@@ -48,15 +48,26 @@ public static class ExperimentalExtensions
     /// <example>
     /// The following example configures and executes a simple query, then iterates over the results.
     /// <code language="cs">
-    /// var queryResult = await driver
+    /// var eagerResult = await driver
     ///     .ExecutableQuery("MATCH (m:Movie) WHERE m.released > $releaseYear RETURN m.title AS title")
     ///     .WithParameters(new { releaseYear = 2005 })
     ///     .ExecuteAsync();
-    ///
-    /// foreach(var record in queryResult)
+    /// <para></para>
+    /// foreach(var record in eagerResult.Result)
     /// {
     ///     Console.WriteLine(record["title"].As&lt;string&gt;());
     /// }
+    /// </code>
+    /// <para></para>
+    /// The following example gets a single scalar value from a query.
+    ///<code>
+    /// var born = await driver
+    ///     .ExecutableQuery("MATCH (p:Person WHERE p.name = $name) RETURN p.born AS born")
+    ///     .WithStreamProcessor(async stream => (await stream.Where(_ => true).FirstAsync())["born"].As&lt;int&gt;())
+    ///     .WithParameters(new Dictionary&lt;string, object&gt; { ["name"] = "Tom Hanks" })
+    ///     .ExecuteAsync();
+    /// <para></para>
+    /// Console.WriteLine($"Tom Hanks born {born.Result}");
     /// </code>
     /// </example>
     /// <param name="driver">The driver.</param>

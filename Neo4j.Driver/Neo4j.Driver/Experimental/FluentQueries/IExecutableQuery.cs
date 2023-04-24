@@ -51,12 +51,16 @@ public interface IExecutableQuery<T>
     /// <returns>The executable query object allowing method chaining.</returns>
     IExecutableQuery<T> WithParameters(Dictionary<string, object> parameters);
 
+    /// <summary>
+    /// There is no guarantee that anything in Neo4j.Driver.Experimental namespace will be in a next minor version.
+    /// Adds a stream processor function that will be called, passing the <see cref="IAsyncEnumerable{IRecord}"/> of
+    /// records returned from the query. The value returned from this callback property will be present in the
+    /// <see cref="EagerResult{T}.Result"/> property of the result returned from executing the query.
+    /// </summary>
+    /// <param name="streamProcessor">The stream processor function.</param>
+    /// <returns>The executable query object allowing method chaining.</returns>
     IExecutableQuery<TResult> WithStreamProcessor<TResult>(
-        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor,
-        CancellationToken cancellationToken = default);
-
-    // removing since behaviour is different to WithParameters, pending discussion
-    // IExecutableQuery WithParameter(string name, object value);
+        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor);
 
     /// <summary>
     /// Executes the query as configured and returns the results, fully materialised.

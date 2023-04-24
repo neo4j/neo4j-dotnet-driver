@@ -77,8 +77,7 @@ internal class ExecutableQuery<T> : IExecutableQuery<T>
     }
 
     public IExecutableQuery<TResult> WithStreamProcessor<TResult>(
-        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor,
-        CancellationToken cancellationToken = default)
+        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor)
     {
         return new ExecutableQuery<TResult>(_query, _driver, _queryConfig, streamProcessor);
     }
