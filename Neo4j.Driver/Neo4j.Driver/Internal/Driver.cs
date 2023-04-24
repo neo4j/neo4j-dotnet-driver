@@ -223,6 +223,19 @@ internal sealed class Driver : IInternalDriver
         }
     }
 
+    public Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
+        Query query,
+        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor,
+        QueryConfig config = null,
+        CancellationToken cancellationToken = default)
+    {
+        return ExecuteQueryAsyncInternal(
+            query,
+            config,
+            cancellationToken,
+            TransformCursor(streamProcessor));
+    }
+
     private static Func<IResultCursor, CancellationToken, Task<EagerResult<TResult>>> TransformCursor<TResult>(
         Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor)
     {
