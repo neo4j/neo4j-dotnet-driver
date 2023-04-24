@@ -28,7 +28,7 @@ internal class ExecuteQuery : IProtocolObject
 {
     public ExecuteQueryDto data { get; set; }
     [JsonIgnore]
-    public EagerResult<IRecord> Result { get; set; }
+    public EagerResult<IReadOnlyList<IRecord>> Result { get; set; }
 
     [JsonIgnore] public EagerResult<IReadOnlyList<IRecord>> Result { get; set; }
 
