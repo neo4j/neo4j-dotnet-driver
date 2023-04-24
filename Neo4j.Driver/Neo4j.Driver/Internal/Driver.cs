@@ -133,6 +133,12 @@ internal sealed class Driver : IInternalDriver
         return _connectionProvider.SupportsMultiDbAsync();
     }
 
+    //Non public facing api. Used for testing with testkit only
+    public IRoutingTable GetRoutingTable(string database)
+    {
+        return _connectionProvider.GetRoutingTable(database);
+    }
+
     public void Dispose()
     {
         Dispose(true);
