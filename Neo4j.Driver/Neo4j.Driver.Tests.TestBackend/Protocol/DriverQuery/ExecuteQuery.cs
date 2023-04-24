@@ -27,10 +27,9 @@ namespace Neo4j.Driver.Tests.TestBackend;
 internal class ExecuteQuery : IProtocolObject
 {
     public ExecuteQueryDto data { get; set; }
+
     [JsonIgnore]
     public EagerResult<IReadOnlyList<IRecord>> Result { get; set; }
-
-    [JsonIgnore] public EagerResult<IReadOnlyList<IRecord>> Result { get; set; }
 
     public override async Task Process()
     {

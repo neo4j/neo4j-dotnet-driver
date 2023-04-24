@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Preview;
 
 namespace Neo4j.Driver.Experimental.FluentQueries;
 

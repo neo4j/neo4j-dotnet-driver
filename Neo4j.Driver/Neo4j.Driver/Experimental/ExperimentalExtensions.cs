@@ -18,6 +18,7 @@
 using System.Collections.Generic;
 using Neo4j.Driver.Experimental.FluentQueries;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Preview;
 
 namespace Neo4j.Driver.Experimental;
 
@@ -38,7 +39,7 @@ public static class ExperimentalExtensions
         this SessionConfigBuilder builder,
         IBookmarkManager bookmarkManager)
     {
-        return builder.WithBookmarkManager(bookmarkManager);
+        return WithBookmarkManager(builder, bookmarkManager);
     }
 
     /// <summary>

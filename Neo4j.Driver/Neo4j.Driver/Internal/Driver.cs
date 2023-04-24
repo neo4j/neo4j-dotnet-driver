@@ -169,12 +169,6 @@ internal sealed class Driver : IInternalDriver
         CloseAsync().GetAwaiter().GetResult();
     }
 
-    //Non public facing api. Used for testing with testkit only
-    public IRoutingTable GetRoutingTable(string database)
-    {
-        return _connectionProvider.GetRoutingTable(database);
-    }
-
     private void Dispose(bool disposing)
     {
         if (IsClosed)
@@ -227,19 +221,6 @@ internal sealed class Driver : IInternalDriver
             return await session.ExecuteWriteAsync(x => Work(query, x, cursorProcessor, cancellationToken))
                 .ConfigureAwait(false);
         }
-    }
-
-    public Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
-        Query query,
-        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor,
-        QueryConfig config = null,
-        CancellationToken cancellationToken = default)
-    {
-        return ExecuteQueryAsyncInternal(
-            query,
-            config,
-            cancellationToken,
-            TransformCursor(streamProcessor));
     }
 
     private static Func<IResultCursor, CancellationToken, Task<EagerResult<TResult>>> TransformCursor<TResult>(
