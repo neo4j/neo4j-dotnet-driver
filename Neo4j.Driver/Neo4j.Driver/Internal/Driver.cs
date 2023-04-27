@@ -177,10 +177,11 @@ internal sealed class Driver : IInternalDriver
         }
 
         var eagerResult = await ExecuteQueryAsyncInternal(
-            query,
-            config,
-            cancellationToken,
-            TransformCursor(Process));
+                query,
+                config,
+                cancellationToken,
+                TransformCursor(Process))
+            .ConfigureAwait(false);
 
         return new ExecutionSummary(eagerResult.Summary, eagerResult.Keys);
     }
@@ -258,7 +259,7 @@ internal sealed class Driver : IInternalDriver
         {
             var processedStream = await streamProcessor(cursor);
             var summary = await cursor.ConsumeAsync().ConfigureAwait(false);
-            var keys = await cursor.KeysAsync();
+            var keys = await cursor.KeysAsync().ConfigureAwait(false);
             return new EagerResult<TResult>(processedStream, summary, keys);
         }
 
