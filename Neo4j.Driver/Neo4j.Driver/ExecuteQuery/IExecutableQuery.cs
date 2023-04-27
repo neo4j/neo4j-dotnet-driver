@@ -56,8 +56,8 @@ public interface IExecutableQuery<TIn, TOut> : IConfiguredQuery<TIn, TOut>
     /// from a query, and return the value that will be given as the result of the query.
     /// </summary>
     /// <param name="streamProcessor">An asynchronous method that will process the supplied asynchronous
-    /// stream of records.</param>
-    /// <typeparam name="TResult">The type of the return value from <see cref="streamProcessor"/>.</typeparam>
+    /// stream of records. </param>
+    /// <typeparam name="TResult">The type of the return value from <paramref name="streamProcessor"/>.</typeparam>
     /// <returns>The same instance which can only be used to execute the query.</returns>
     IReducedExecutableQuery<TResult> WithStreamProcessor<TResult>(
         Func<IAsyncEnumerable<TIn>, Task<TResult>> streamProcessor);
@@ -79,21 +79,22 @@ public interface IConfiguredQuery<TIn, TOut>
     IConfiguredQuery<TIn, TOut> WithFilter(Func<TOut, bool> filter);
 
     /// <summary>
-    /// Specifies a mapping that will be used to turn items of type <see cref="TOut"/> into items of type
-    /// <see cref="TNext"/>.
+    /// Specifies a mapping that will be used to turn items of type <typeparamref name="TOut"/> into items of type
+    /// <typeparamref name="TNext"/>.
     /// </summary>
     /// <param name="map">The mapping function.</param>
     /// <typeparam name="TNext">The output type of the mapping function.</typeparam>
-    /// <returns>A new instance whose input type is <see cref="TOut"/> and whose input type is <see cref="TNext"/>
+    /// <returns>A new instance whose input type is <typeparamref name="TOut"/> and whose input type is
+    /// <typeparamref name="TNext"/>.
     /// </returns>
     IConfiguredQuery<TOut, TNext> WithMap<TNext>(Func<TOut, TNext> map);
 
     /// <summary>
-    /// Specifies a method of reducing many items of type <see cref="TOut"/> into one instance of type
-    /// <see cref="TResult"/>.
+    /// Specifies a method of reducing many items of type <typeparamref name="TOut"/> into one instance of type
+    /// <typeparamref name="TResult"/>.
     /// </summary>
     /// <param name="seed">The initial value of the resulting value.</param>
-    /// <param name="accumulate">A method that will accumulate each value of type <see cref="TOut"/> into
+    /// <param name="accumulate">A method that will accumulate each value of type <typeparamref name="TOut"/> into
     /// the result value.</param>
     /// <typeparam name="TResult">The type of the reduced result.</typeparam>
     /// <returns>The same instance which can only be used to execute the query.</returns>
@@ -102,15 +103,15 @@ public interface IConfiguredQuery<TIn, TOut>
         Func<TResult, TOut, TResult> accumulate);
 
     /// <summary>
-    /// Specifies a method of reducing many items of type <see cref="TOut"/> into one instance of type
-    /// <see cref="TResult"/>, using one method to accumulate the values into a value of type <see cref="TAccumulate"/>
-    /// and another to turn the accumulated value into a result.
+    /// Specifies a method of reducing many items of type <typeparamref name="TOut"/> into one instance of type
+    /// <typeparamref name="TResult"/>, using one method to accumulate the values into a value of type
+    /// <typeparamref name="TAccumulate"/> and another to turn the accumulated value into a result.
     /// </summary>
     /// <param name="seed">The initial value of the accumulating value.</param>
-    /// <param name="accumulate">A method that will accumulate each value of type <see cref="TOut"/> into
+    /// <param name="accumulate">A method that will accumulate each value of type <typeparamref name="TOut"/> into
     /// the accumulated value.</param>
     /// <param name="selectResult">A method that will turn the accumulated value into a value of type
-    /// <see cref="TResult"/>.</param>
+    /// <typeparamref name="TResult"/>.</param>
     /// <typeparam name="TAccumulate"></typeparam>
     /// <typeparam name="TResult">The type of the reduced result.</typeparam>
     /// <returns>The same instance which can only be used to execute the query.</returns>
@@ -128,6 +129,11 @@ public interface IConfiguredQuery<TIn, TOut>
     Task<EagerResult<IReadOnlyList<TOut>>> ExecuteAsync(CancellationToken token = default);
 }
 
+/// <summary>
+/// A query that has been configured fully and now can only be executed.
+/// </summary>
+/// <typeparam name="TOut">The type of result that the <see cref="EagerResult{T}"/> returned
+/// from the <see cref="ExecuteAsync"/> will contain.</typeparam>
 public interface IReducedExecutableQuery<TOut>
 {
     /// <summary>

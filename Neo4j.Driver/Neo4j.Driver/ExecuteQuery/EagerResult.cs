@@ -20,6 +20,7 @@ namespace Neo4j.Driver;
 /// <summary>
 /// Complete, materialised result from a cypher query.
 /// </summary>
+/// <typeparam name="T">The type of the value that will be in the <see cref="Result"/> property.</typeparam>
 public sealed class EagerResult<T>
 {
     internal EagerResult(T result, IResultSummary summary, string[] keys)

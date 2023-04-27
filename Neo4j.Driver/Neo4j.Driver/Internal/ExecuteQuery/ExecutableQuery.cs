@@ -69,6 +69,7 @@ internal class ExecutableQuery<TIn, TOut> : IExecutableQuery<TIn, TOut>, IQueryR
         return this;
     }
 
+    /// <inheritdoc/>
     public IReducedExecutableQuery<TResult> WithStreamProcessor<TResult>(
         Func<IAsyncEnumerable<TIn>, Task<TResult>> streamProcessor)
     {
