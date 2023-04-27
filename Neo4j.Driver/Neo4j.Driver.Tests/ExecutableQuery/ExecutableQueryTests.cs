@@ -19,10 +19,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
 using Neo4j.Driver.FluentQueries;
+using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Preview;
 using Xunit;
 
@@ -31,7 +33,7 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
     public class ExecutableQueryTests
     {
         [Fact]
-        public async void ShouldReturnSimpleList()
+        public async Task ShouldReturnSimpleList()
         {
             var autoMock = new AutoMocker(MockBehavior.Loose);
 
@@ -55,7 +57,7 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
         }
 
         [Fact]
-        public async void ShouldReturnFilteredList()
+        public async Task ShouldReturnFilteredList()
         {
             var autoMock = new AutoMocker(MockBehavior.Loose);
 
@@ -81,7 +83,7 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
         }
 
         [Fact]
-        public async void ShouldReturnMappedList()
+        public async Task ShouldReturnMappedList()
         {
             var autoMock = new AutoMocker(MockBehavior.Loose);
 
@@ -107,7 +109,43 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
         }
 
         [Fact]
-        public async void ShouldReturnMappedAndFilteredList()
+        public async Task ShouldReturnCorrectResultSummary()
+        {
+            var autoMock = new AutoMocker(MockBehavior.Loose);
+
+            var query = new Query("fake cypher");
+            var summary = new SummaryBuilder(
+                query,
+                autoMock.GetMock<IServerInfo>().Object).Build();
+
+            var keys = new[] { "alpha", "bravo", "charlie" };
+
+            autoMock.GetMock<IQueryRowSource<int>>()
+                .Setup(x => x.GetRowsAsync(It.IsAny<Action<int>>(), It.IsAny<CancellationToken>()))
+                .Callback(
+                    (Action<int> p, CancellationToken t) =>
+                    {
+                        for (var i = 0; i < 10; i++)
+                        {
+                            p(i);
+                        }
+                    })
+                .ReturnsAsync(new ExecutionSummary(summary, keys));
+
+            var subject = new ExecutableQuery<int, int>(autoMock.GetMock<IQueryRowSource<int>>().Object, i => i);
+
+            var result = await subject
+                .WithMap(i => i + 100)
+                .WithMap(i => i + 100)
+                .WithFilter(i => i < 5)
+                .ExecuteAsync();
+
+            result.Keys.Should().BeSameAs(keys);
+            result.Summary.Should().BeSameAs(summary);
+        }
+
+        [Fact]
+        public async Task ShouldReturnMappedAndFilteredList()
         {
             var autoMock = new AutoMocker(MockBehavior.Loose);
 
@@ -134,7 +172,7 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
         }
 
         [Fact]
-        public async void ShouldReturnMultiMappedAndFilteredList()
+        public async Task ShouldReturnMultiMappedAndFilteredList()
         {
             var autoMock = new AutoMocker(MockBehavior.Loose);
 
@@ -153,7 +191,7 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
             var subject = new ExecutableQuery<int, int>(autoMock.GetMock<IQueryRowSource<int>>().Object, i => i);
 
             var result = await subject
-                .WithMap(i => i * 2)   // 0, 2, 4.. 198
+                .WithMap(i => i * 2) // 0, 2, 4.. 198
                 .WithFilter(i => i < 100) // 0, 2, 4.. 98
                 .WithMap(i => i / 2) // 0, 1, 2.. 49
                 .WithFilter(i => i < 20) // 0, 1, 2.. 19
@@ -165,7 +203,7 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
         }
 
         [Fact]
-        public async void ShouldReturnReducedValue()
+        public async Task ShouldReturnReducedValue()
         {
             var autoMock = new AutoMocker(MockBehavior.Loose);
 
@@ -191,7 +229,7 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
         }
 
         [Fact]
-        public async void ShouldReturnMappedReducedValue()
+        public async Task ShouldReturnMappedReducedValue()
         {
             var autoMock = new AutoMocker(MockBehavior.Loose);
 
@@ -218,7 +256,7 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
         }
 
         [Fact]
-        public async void ShouldReturnMappedTransformedReducedValue()
+        public async Task ShouldReturnMappedTransformedReducedValue()
         {
             var autoMock = new AutoMocker(MockBehavior.Loose);
 
@@ -245,7 +283,7 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
         }
 
         [Fact]
-        public async void ShouldSetConfg()
+        public async Task ShouldSetConfig()
         {
             var autoMock = new AutoMocker(MockBehavior.Loose);
             var config = new QueryConfig();
@@ -265,7 +303,7 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
         }
 
         [Fact]
-        public async void ShouldSetParameters()
+        public async Task ShouldSetParametersWithObject()
         {
             var autoMock = new AutoMocker(MockBehavior.Loose);
             var parameters = new { Shaken = true, Stirred = false };
@@ -285,7 +323,7 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
         }
 
         [Fact]
-        public async void ShouldSetParametersWithDictionary()
+        public async Task ShouldSetParametersWithDictionary()
         {
             var autoMock = new AutoMocker(MockBehavior.Loose);
             var parameters = new Dictionary<string, object>
@@ -306,6 +344,55 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
                 .ExecuteAsync();
 
             driver.Verify(x => x.SetParameters(parameters));
+        }
+
+        [Fact]
+        public async Task ShouldUseStreamProcessor()
+        {
+            var autoMock = new AutoMocker(MockBehavior.Loose);
+
+            async IAsyncEnumerable<int> GetInts(int start, int count)
+            {
+                foreach(var i in Enumerable.Range(start, count))
+                {
+                    await Task.Yield();
+                    yield return i;
+                }
+            }
+
+            var driverMock = autoMock.GetMock<IDriverRowSource<int>>();
+            driverMock
+                .Setup(
+                    x => x.ProcessStreamAsync(
+                        It.IsAny<Func<IAsyncEnumerable<int>, Task<int>>>(),
+                        It.IsAny<CancellationToken>()))
+                .Returns<Func<IAsyncEnumerable<int>, Task<int>>, CancellationToken>(
+                    (p, _) =>
+                        Task.FromResult(
+                            new EagerResult<int>(
+                                p(GetInts(0, 10)).GetAwaiter().GetResult(),
+                                null,
+                                null)));
+
+            var subject = new ExecutableQuery<int, int>(driverMock.Object, i => i);
+
+            var rnd = Random.Shared.Next();
+
+            var queryExecution = await subject.WithStreamProcessor(
+                    async stream =>
+                    {
+                        var result = rnd;
+
+                        await foreach (var i in stream)
+                        {
+                            result += i;
+                        }
+
+                        return result;
+                    })
+                .ExecuteAsync();
+
+            queryExecution.Result.Should().Be(45 + rnd);
         }
     }
 }

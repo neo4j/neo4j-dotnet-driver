@@ -45,13 +45,13 @@ public class ExistingCluster : ICausalCluster
         var uri = Environment.GetEnvironmentVariable(ClusterUri);
         var password = Environment.GetEnvironmentVariable(ClusterPassword);
         // both of the two above env var should be provided.
-        return !uri.IsNullOrEmpty() && !password.IsNullOrEmpty();
+        return !string.IsNullOrEmpty(uri) && !string.IsNullOrEmpty(password);
     }
 
     private static string GetEnvOrThrow(string env)
     {
         var value = Environment.GetEnvironmentVariable(env);
-        if (value.IsNullOrEmpty())
+        if (string.IsNullOrEmpty(value))
         {
             throw new ArgumentException($"Missing env variable {env}");
         }
@@ -62,6 +62,6 @@ public class ExistingCluster : ICausalCluster
     private static string GetEnvOrDefault(string env, string defaultValue)
     {
         var value = Environment.GetEnvironmentVariable(env);
-        return value.IsNullOrEmpty() ? defaultValue : value;
+        return string.IsNullOrEmpty(value) ? defaultValue : value;
     }
 }

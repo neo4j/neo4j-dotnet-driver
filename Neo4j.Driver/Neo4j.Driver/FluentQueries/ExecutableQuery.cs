@@ -42,7 +42,7 @@ internal class ExecutableQuery<TIn, TOut> : IExecutableQuery<TIn, TOut>, IQueryR
 
     public IExecutableQuery<TIn, TOut> WithConfig(QueryConfig config)
     {
-        if (_rowSource is IDriverRowSource<IRecord> driverRowSource)
+        if (_rowSource is IDriverRowSource<TIn> driverRowSource)
         {
             driverRowSource.SetConfig(config);
         }
@@ -52,7 +52,7 @@ internal class ExecutableQuery<TIn, TOut> : IExecutableQuery<TIn, TOut>, IQueryR
 
     public IExecutableQuery<TIn, TOut> WithParameters(object parameters)
     {
-        if (_rowSource is IDriverRowSource<IRecord> driverRowSource)
+        if (_rowSource is IDriverRowSource<TIn> driverRowSource)
         {
             driverRowSource.SetParameters(parameters);
         }
@@ -62,7 +62,7 @@ internal class ExecutableQuery<TIn, TOut> : IExecutableQuery<TIn, TOut>, IQueryR
 
     public IExecutableQuery<TIn, TOut> WithParameters(Dictionary<string, object> parameters)
     {
-        if (_rowSource is IDriverRowSource<IRecord> driverRowSource)
+        if (_rowSource is IDriverRowSource<TIn> driverRowSource)
         {
             driverRowSource.SetParameters(parameters);
         }
