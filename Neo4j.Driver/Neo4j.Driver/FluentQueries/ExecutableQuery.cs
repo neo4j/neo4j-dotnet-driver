@@ -20,9 +20,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Preview;
 
-namespace Neo4j.Driver.FluentQueries;
+namespace Neo4j.Driver;
 
 internal class ExecutableQuery<TIn, TOut> : IExecutableQuery<TIn, TOut>, IQueryRowSource<TOut>
 {
@@ -70,7 +69,7 @@ internal class ExecutableQuery<TIn, TOut> : IExecutableQuery<TIn, TOut>, IQueryR
         return this;
     }
 
-    public IStreamProcessorExecutableQuery<TResult> WithStreamProcessor<TResult>(
+    public IReducedExecutableQuery<TResult> WithStreamProcessor<TResult>(
         Func<IAsyncEnumerable<TIn>, Task<TResult>> streamProcessor)
     {
         if (_rowSource is IDriverRowSource<TIn> driverRowSource)

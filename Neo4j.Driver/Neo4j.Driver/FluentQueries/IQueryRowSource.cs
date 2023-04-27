@@ -19,7 +19,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.FluentQueries;
+namespace Neo4j.Driver;
 
 internal record ExecutionSummary(IResultSummary Summary, string[] Keys);
 

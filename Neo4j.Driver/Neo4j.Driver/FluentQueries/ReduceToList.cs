@@ -17,7 +17,7 @@
 
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.FluentQueries;
+namespace Neo4j.Driver;
 
 internal static class ReduceToList<T>
 {

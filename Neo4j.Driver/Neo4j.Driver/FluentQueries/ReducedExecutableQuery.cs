@@ -18,9 +18,8 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Preview;
 
-namespace Neo4j.Driver.FluentQueries;
+namespace Neo4j.Driver;
 
 internal class ReducedExecutableQuery<TSource, TAccumulate, TResult> : IReducedExecutableQuery<TResult>
 {

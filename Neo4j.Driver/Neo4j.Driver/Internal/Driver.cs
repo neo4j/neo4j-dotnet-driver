@@ -19,11 +19,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.FluentQueries;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;
-using Neo4j.Driver.Preview;
 
 namespace Neo4j.Driver.Internal;
 
@@ -246,42 +244,6 @@ internal sealed class Driver : IInternalDriver
         }
     }
 
-    /// <summary>
-    /// There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.
-    /// Gets an <see cref="IExecutableQuery&lt;IRecord&gt;"/> that can be used to configure and execute a query using fluent
-    /// method chaining.
-    /// </summary>
-    /// <example>
-    /// The following example configures and executes a simple query, then iterates over the results.
-    /// <code language="cs">
-    ///  var eagerResult = await driver
-    ///      .ExecutableQueryBuilder("MATCH (m:Movie) WHERE m.released > $releaseYear RETURN m.title AS title")
-    ///      .WithParameters(new { releaseYear = 2005 })
-    ///      .ExecuteAsync();
-    ///  <para></para>
-    ///  foreach(var record in eagerResult.Result)
-    ///  {
-    ///      Console.WriteLine(record["title"].As&lt;string&gt;());
-    ///  }
-    ///  </code>
-    /// <para></para>
-    /// The following example gets a single scalar value from a query.
-    /// <code>
-    ///  var born = await driver
-    ///      .ExecutableQueryBuilder("MATCH (p:Person WHERE p.name = $name) RETURN p.born AS born")
-    ///      .WithStreamProcessor(async stream => (await stream.Where(_ => true).FirstAsync())["born"].As&lt;int&gt;())
-    ///      .WithParameters(new Dictionary&lt;string, object&gt; { ["name"] = "Tom Hanks" })
-    ///      .ExecuteAsync();
-    ///  <para></para>
-    ///  Console.WriteLine($"Tom Hanks born {born.Result}");
-    ///  </code>
-    /// </example>
-    /// <param name="driver">The driver.</param>
-    /// <param name="cypher">The cypher of the query.</param>
-    /// <returns>
-    /// An <see cref="IExecutableQuery&lt;IRecord&gt;"/> that can be used to configure and execute a query using
-    /// fluent method chaining.
-    /// </returns>
     public IExecutableQuery<IRecord, IRecord> ExecutableQuery(string cypher)
     {
         return new ExecutableQuery<IRecord, IRecord>(new DriverRowSource(this, cypher), x => x);

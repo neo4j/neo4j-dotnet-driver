@@ -23,9 +23,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
-using Neo4j.Driver.FluentQueries;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver.Preview;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.ExecutableQuery
@@ -40,7 +38,7 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
             autoMock.GetMock<IQueryRowSource<int>>()
                 .Setup(x => x.GetRowsAsync(It.IsAny<Action<int>>(), It.IsAny<CancellationToken>()))
                 .Callback(
-                    (Action<int> p, CancellationToken t) =>
+                    (Action<int> p, CancellationToken _) =>
                     {
                         for (var i = 0; i < 10; i++)
                         {
@@ -64,7 +62,7 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
             autoMock.GetMock<IQueryRowSource<int>>()
                 .Setup(x => x.GetRowsAsync(It.IsAny<Action<int>>(), It.IsAny<CancellationToken>()))
                 .Callback(
-                    (Action<int> p, CancellationToken t) =>
+                    (Action<int> p, CancellationToken _) =>
                     {
                         for (var i = 0; i < 10; i++)
                         {
@@ -90,7 +88,7 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
             autoMock.GetMock<IQueryRowSource<int>>()
                 .Setup(x => x.GetRowsAsync(It.IsAny<Action<int>>(), It.IsAny<CancellationToken>()))
                 .Callback(
-                    (Action<int> p, CancellationToken t) =>
+                    (Action<int> p, CancellationToken _) =>
                     {
                         for (var i = 0; i < 10; i++)
                         {
@@ -123,7 +121,7 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
             autoMock.GetMock<IQueryRowSource<int>>()
                 .Setup(x => x.GetRowsAsync(It.IsAny<Action<int>>(), It.IsAny<CancellationToken>()))
                 .Callback(
-                    (Action<int> p, CancellationToken t) =>
+                    (Action<int> p, CancellationToken _) =>
                     {
                         for (var i = 0; i < 10; i++)
                         {
@@ -152,7 +150,7 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
             autoMock.GetMock<IQueryRowSource<int>>()
                 .Setup(x => x.GetRowsAsync(It.IsAny<Action<int>>(), It.IsAny<CancellationToken>()))
                 .Callback(
-                    (Action<int> p, CancellationToken t) =>
+                    (Action<int> p, CancellationToken _) =>
                     {
                         for (var i = 0; i < 10; i++)
                         {
@@ -179,7 +177,7 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
             autoMock.GetMock<IQueryRowSource<int>>()
                 .Setup(x => x.GetRowsAsync(It.IsAny<Action<int>>(), It.IsAny<CancellationToken>()))
                 .Callback(
-                    (Action<int> p, CancellationToken t) =>
+                    (Action<int> p, CancellationToken _) =>
                     {
                         for (var i = 0; i < 100; i++)
                         {
@@ -210,7 +208,7 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
             autoMock.GetMock<IQueryRowSource<int>>()
                 .Setup(x => x.GetRowsAsync(It.IsAny<Action<int>>(), It.IsAny<CancellationToken>()))
                 .Callback(
-                    (Action<int> p, CancellationToken t) =>
+                    (Action<int> p, CancellationToken _) =>
                     {
                         for (var i = 0; i < 10; i++)
                         {
@@ -236,7 +234,7 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
             autoMock.GetMock<IQueryRowSource<int>>()
                 .Setup(x => x.GetRowsAsync(It.IsAny<Action<int>>(), It.IsAny<CancellationToken>()))
                 .Callback(
-                    (Action<int> p, CancellationToken t) =>
+                    (Action<int> p, CancellationToken _) =>
                     {
                         for (var i = 0; i < 10; i++)
                         {
@@ -263,7 +261,7 @@ namespace Neo4j.Driver.Tests.ExecutableQuery
             autoMock.GetMock<IQueryRowSource<int>>()
                 .Setup(x => x.GetRowsAsync(It.IsAny<Action<int>>(), It.IsAny<CancellationToken>()))
                 .Callback(
-                    (Action<int> p, CancellationToken t) =>
+                    (Action<int> p, CancellationToken _) =>
                     {
                         for (var i = 0; i < 10; i++)
                         {

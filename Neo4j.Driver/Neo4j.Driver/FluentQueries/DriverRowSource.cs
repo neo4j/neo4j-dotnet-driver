@@ -20,16 +20,14 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Preview;
 
-namespace Neo4j.Driver.FluentQueries;
+namespace Neo4j.Driver;
 
 internal interface IDriverRowSource<T> : IQueryRowSource<T>
 {
     void SetConfig(QueryConfig config);
     void SetParameters(Dictionary<string, object> parameters);
     void SetParameters(object parameters);
-
     Task<EagerResult<TResult>> ProcessStreamAsync<TResult>(
         Func<IAsyncEnumerable<T>, Task<TResult>> streamProcessor,
         CancellationToken cancellationToken = default);

@@ -19,16 +19,10 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Preview;
 
-namespace Neo4j.Driver.FluentQueries;
+namespace Neo4j.Driver;
 
-public interface IStreamProcessorExecutableQuery<TResult>
-{
-    Task<EagerResult<TResult>> ExecuteAsync(CancellationToken token = default);
-}
-
-internal class StreamProcessorExecutableQuery<TSource, TResult> : IStreamProcessorExecutableQuery<TResult>
+internal class StreamProcessorExecutableQuery<TSource, TResult> : IReducedExecutableQuery<TResult>
 {
     private readonly IDriverRowSource<TSource> _driverRowSource;
     private readonly Func<IAsyncEnumerable<TSource>, Task<TResult>> _streamProcessor;

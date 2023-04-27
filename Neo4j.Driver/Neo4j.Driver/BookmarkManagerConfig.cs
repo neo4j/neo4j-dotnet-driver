@@ -21,7 +21,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Preview;
+namespace Neo4j.Driver;
 
 /// <summary>
 /// The <see cref="BookmarkManagerConfig"/> record encapsulates configuration values for initializing a new
@@ -31,7 +31,7 @@ namespace Neo4j.Driver.Preview;
 /// </summary>
 /// <remarks>
 /// The default <see cref="IBookmarkManagerFactory"/> can be accessed from
-/// <see cref="GraphDatabase.BookmarkManagerFactory"/>.
+/// <see cref="Preview.GraphDatabase.BookmarkManagerFactory"/>.
 /// </remarks>
 public record BookmarkManagerConfig
 {
