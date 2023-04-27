@@ -168,7 +168,7 @@ internal sealed class Driver : IInternalDriver
     {
         async Task<int> Process(IAsyncEnumerable<IRecord> records)
         {
-            await foreach (var record in records)
+            await foreach (var record in records.ConfigureAwait(false))
             {
                 streamProcessor(record);
             }

@@ -98,7 +98,7 @@ internal class Controller
     {
         var restartConnection = restartInitialState;
 
-        Trace.WriteLine("Starting Controller.Accumulate");
+        Trace.WriteLine("Starting Controller.Process");
 
         Exception storedException = new TestKitClientException("Error from client");
 

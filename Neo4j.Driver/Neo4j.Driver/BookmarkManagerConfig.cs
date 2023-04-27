@@ -31,7 +31,7 @@ namespace Neo4j.Driver;
 /// </summary>
 /// <remarks>
 /// The default <see cref="IBookmarkManagerFactory"/> can be accessed from
-/// <see cref="Preview.GraphDatabase.BookmarkManagerFactory"/>.
+/// <see cref="GraphDatabase.BookmarkManagerFactory"/>.
 /// </remarks>
 public record BookmarkManagerConfig
 {

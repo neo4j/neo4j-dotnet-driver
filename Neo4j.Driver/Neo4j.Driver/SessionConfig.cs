@@ -281,7 +281,7 @@ public sealed class SessionConfigBuilder
     }
 
     /// <summary>
-    /// <Sets the <see cref="IBookmarkManager"/> for maintaining bookmarks for the lifetime of the session.
+    /// Sets the <see cref="IBookmarkManager"/> for maintaining bookmarks for the lifetime of the session.
     /// </summary>
     /// <param name="bookmarkManager">An instance of <see cref="IBookmarkManager"/> to use in the session.</param>
     /// <returns>this <see cref="SessionConfigBuilder"/> instance.</returns>

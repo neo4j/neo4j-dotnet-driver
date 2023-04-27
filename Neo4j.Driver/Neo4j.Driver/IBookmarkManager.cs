@@ -24,7 +24,7 @@ namespace Neo4j.Driver;
 /// The <see cref="IBookmarkManager"/> interface is intended for implementation by classes that provide convenient
 /// interfacing with <see cref="Bookmarks"/> in both the driver and user code.
 /// </summary>
-/// <see cref="ConfigBuilder."/>
+/// <seealso cref="SessionConfigBuilder.WithBookmarkManager"/>
 public interface IBookmarkManager
 {
     /// <summary>
