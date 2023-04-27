@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.FluentQueries;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;
@@ -97,6 +98,15 @@ internal sealed class Driver : IInternalDriver
         return session;
     }
 
+    public Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
+        Query query,
+        Func<IAsyncEnumerable<IRecord>, Task<TResult>> streamProcessor,
+        QueryConfig config = null,
+        CancellationToken cancellationToken = default)
+    {
+        return ExecuteQueryAsyncInternal(query, config, cancellationToken, TransformCursor(streamProcessor));
+    }
+
     public Task CloseAsync()
     {
         return Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0
@@ -151,17 +161,30 @@ internal sealed class Driver : IInternalDriver
             : new ValueTask(Task.CompletedTask);
     }
 
-    public Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
+    public async Task<ExecutionSummary> GetRowsAsync(
         Query query,
-        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor,
-        QueryConfig config = null,
-        CancellationToken cancellationToken = default)
+        QueryConfig config,
+        Action<IRecord> streamProcessor,
+        CancellationToken cancellationToken
+    )
     {
-        return ExecuteQueryAsyncInternal(
+        async Task<int> Process(IAsyncEnumerable<IRecord> records)
+        {
+            await foreach (var record in records)
+            {
+                streamProcessor(record);
+            }
+
+            return 0;
+        }
+
+        var eagerResult = await ExecuteQueryAsyncInternal(
             query,
             config,
             cancellationToken,
-            TransformCursor(streamProcessor));
+            TransformCursor(Process));
+
+        return new ExecutionSummary(eagerResult.Summary, eagerResult.Keys);
     }
 
     private void Close()
@@ -223,8 +246,49 @@ internal sealed class Driver : IInternalDriver
         }
     }
 
+    /// <summary>
+    /// There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.
+    /// Gets an <see cref="IExecutableQuery&lt;IRecord&gt;"/> that can be used to configure and execute a query using fluent
+    /// method chaining.
+    /// </summary>
+    /// <example>
+    /// The following example configures and executes a simple query, then iterates over the results.
+    /// <code language="cs">
+    ///  var eagerResult = await driver
+    ///      .ExecutableQueryBuilder("MATCH (m:Movie) WHERE m.released > $releaseYear RETURN m.title AS title")
+    ///      .WithParameters(new { releaseYear = 2005 })
+    ///      .ExecuteAsync();
+    ///  <para></para>
+    ///  foreach(var record in eagerResult.Result)
+    ///  {
+    ///      Console.WriteLine(record["title"].As&lt;string&gt;());
+    ///  }
+    ///  </code>
+    /// <para></para>
+    /// The following example gets a single scalar value from a query.
+    /// <code>
+    ///  var born = await driver
+    ///      .ExecutableQueryBuilder("MATCH (p:Person WHERE p.name = $name) RETURN p.born AS born")
+    ///      .WithStreamProcessor(async stream => (await stream.Where(_ => true).FirstAsync())["born"].As&lt;int&gt;())
+    ///      .WithParameters(new Dictionary&lt;string, object&gt; { ["name"] = "Tom Hanks" })
+    ///      .ExecuteAsync();
+    ///  <para></para>
+    ///  Console.WriteLine($"Tom Hanks born {born.Result}");
+    ///  </code>
+    /// </example>
+    /// <param name="driver">The driver.</param>
+    /// <param name="cypher">The cypher of the query.</param>
+    /// <returns>
+    /// An <see cref="IExecutableQuery&lt;IRecord&gt;"/> that can be used to configure and execute a query using
+    /// fluent method chaining.
+    /// </returns>
+    public IExecutableQuery<IRecord, IRecord> ExecutableQuery(string cypher)
+    {
+        return new ExecutableQuery<IRecord, IRecord>(new DriverRowSource(this, cypher), x => x);
+    }
+
     private static Func<IResultCursor, CancellationToken, Task<EagerResult<TResult>>> TransformCursor<TResult>(
-        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor)
+        Func<IAsyncEnumerable<IRecord>, Task<TResult>> streamProcessor)
     {
         async Task<EagerResult<TResult>> TransformCursorImpl(
             IResultCursor cursor,

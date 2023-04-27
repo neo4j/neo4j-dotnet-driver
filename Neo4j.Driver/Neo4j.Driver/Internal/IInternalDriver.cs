@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.FluentQueries;
 using Neo4j.Driver.Preview;
 
 namespace Neo4j.Driver.Internal;
@@ -29,7 +30,14 @@ internal interface IInternalDriver : IDriver
 
     Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
         Query query,
-        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor,
+        Func<IAsyncEnumerable<IRecord>, Task<TResult>> streamProcessor,
         QueryConfig config = null,
         CancellationToken cancellationToken = default);
+
+    Task<ExecutionSummary> GetRowsAsync(
+        Query query,
+        QueryConfig config,
+        Action<IRecord> streamProcessor,
+        CancellationToken cancellationToken
+    );
 }
