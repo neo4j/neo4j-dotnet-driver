@@ -126,8 +126,6 @@ var queryOp = await driver
 
 A cypher execution result is comprised of a stream records followed by a result summary. The stream can be accessed directly by using the `WithStreamProcessor` method as shown above. The stream implements `IAsyncEnumerable<IRecord>` and as such can be accessed with normal Linq methods by adding the `System.Linq.Async` package to your project. The `ExecuteAsync` method will return an `EagerResult<T>`, where `T` is the type of value returned from the method passed to `WithStreamProcessor`. This value will be stored in the `Result` property of the `EagerResult`, with the `Summary` and `Keys` property containing further information about the execution of the query.
 
-Process result records using `ResultCursorExtensions`:
-
 #### Value Types
 
 Values in a record are currently exposed as of `object` type.
