@@ -257,7 +257,7 @@ internal sealed class Driver : IInternalDriver
             IResultCursor cursor,
             CancellationToken cancellationToken)
         {
-            var processedStream = await streamProcessor(cursor);
+            var processedStream = await streamProcessor(cursor).ConfigureAwait(false);
             var summary = await cursor.ConsumeAsync().ConfigureAwait(false);
             var keys = await cursor.KeysAsync().ConfigureAwait(false);
             return new EagerResult<TResult>(processedStream, summary, keys);
