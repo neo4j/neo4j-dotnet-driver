@@ -18,7 +18,6 @@
 using System;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.Preview;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.BookmarkManager

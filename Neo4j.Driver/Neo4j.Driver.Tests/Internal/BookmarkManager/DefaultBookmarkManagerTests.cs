@@ -20,7 +20,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Preview;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.BookmarkManager

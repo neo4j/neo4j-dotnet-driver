@@ -20,7 +20,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Types;
-using Neo4j.Driver.Preview;
 
 namespace Neo4j.Driver;
 
@@ -281,8 +280,12 @@ public sealed class SessionConfigBuilder
         return _config;
     }
 
-    /// <summary>marked as internal until API is solidified.</summary>
-    internal SessionConfigBuilder WithBookmarkManager(IBookmarkManager bookmarkManager)
+    /// <summary>
+    /// Sets the <see cref="IBookmarkManager"/> for maintaining bookmarks for the lifetime of the session.
+    /// </summary>
+    /// <param name="bookmarkManager">An instance of <see cref="IBookmarkManager"/> to use in the session.</param>
+    /// <returns>this <see cref="SessionConfigBuilder"/> instance.</returns>
+    public SessionConfigBuilder WithBookmarkManager(IBookmarkManager bookmarkManager)
     {
         _config.BookmarkManager = bookmarkManager;
         return this;

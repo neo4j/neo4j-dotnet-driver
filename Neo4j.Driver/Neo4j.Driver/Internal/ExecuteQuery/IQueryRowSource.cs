@@ -1,25 +1,29 @@
 ﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
-// 
+//
 // This file is part of Neo4j.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-namespace Neo4j.Driver.Internal;
 
-internal class BookmarkManagerFactory : IBookmarkManagerFactory
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Neo4j.Driver;
+
+internal record ExecutionSummary(IResultSummary Summary, string[] Keys);
+
+internal interface IQueryRowSource<out T>
 {
-    public IBookmarkManager NewBookmarkManager(BookmarkManagerConfig config = null)
-    {
-        return new DefaultBookmarkManager(config ?? new BookmarkManagerConfig());
-    }
+    Task<ExecutionSummary> GetRowsAsync(Action<T> rowProcessor, CancellationToken cancellationToken = default);
 }

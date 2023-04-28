@@ -14,12 +14,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-namespace Neo4j.Driver.Internal;
 
-internal class BookmarkManagerFactory : IBookmarkManagerFactory
+using System.Collections.Generic;
+
+namespace Neo4j.Driver;
+
+internal static class ReduceToList<T>
 {
-    public IBookmarkManager NewBookmarkManager(BookmarkManagerConfig config = null)
+    public static List<T> Seed() => new();
+
+    public static List<T> Accumulate(List<T> list, T item)
     {
-        return new DefaultBookmarkManager(config ?? new BookmarkManagerConfig());
+        list.Add(item);
+        return list;
+    }
+
+    public static IReadOnlyList<T> SelectResult(List<T> accumulation)
+    {
+        return accumulation;
     }
 }

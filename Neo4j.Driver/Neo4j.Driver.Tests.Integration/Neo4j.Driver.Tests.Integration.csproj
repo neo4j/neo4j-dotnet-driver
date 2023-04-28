@@ -19,11 +19,11 @@
     </PropertyGroup>
     <ItemGroup>
         <Content Include="App.config" />
-        <PackageReference Include="Castle.Core" Version="4.4.1" />
+        <PackageReference Include="Castle.Core" Version="5.1.1" />
         <PackageReference Include="FluentAssertions" Version="5.10.3" />
         <PackageReference Include="Microsoft.Reactive.Testing" Version="5.0.0" />
-        <PackageReference Include="Moq" Version="4.15.2" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
+        <PackageReference Include="Moq" Version="4.18.4" />
         <PackageReference Include="Portable.BouncyCastle" Version="1.8.8" />
         <PackageReference Include="System.Reactive" Version="5.0.0" />
         <PackageReference Include="TeamCity.VSTest.TestAdapter" Version="1.0.23" />

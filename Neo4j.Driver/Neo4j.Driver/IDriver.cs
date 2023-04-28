@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver;
@@ -93,4 +94,15 @@ public interface IDriver : IDisposable, IAsyncDisposable
     /// cluster support multi-databases, otherwise false.
     /// </returns>
     Task<bool> SupportsMultiDbAsync();
+
+    /// <summary>
+    /// Gets an <see cref="IExecutableQuery&lt;IRecord, IRecord&gt;"/> that can be used to configure and execute a query
+    /// using fluent method chaining.
+    /// </summary>
+    /// <param name="cypher">The cypher of the query.</param>
+    /// <returns>
+    /// An <see cref="IExecutableQuery&lt;IRecord, IRecord&gt;"/> that can be used to configure and execute a query using
+    /// fluent method chaining.
+    /// </returns>
+    IExecutableQuery<IRecord, IRecord> ExecutableQuery(string cypher);
 }

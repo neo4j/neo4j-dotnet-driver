@@ -22,7 +22,6 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;
-using Neo4j.Driver.Preview;
 
 namespace Neo4j.Driver.Internal;
 
@@ -97,6 +96,15 @@ internal sealed class Driver : IInternalDriver
         return session;
     }
 
+    public Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
+        Query query,
+        Func<IAsyncEnumerable<IRecord>, Task<TResult>> streamProcessor,
+        QueryConfig config = null,
+        CancellationToken cancellationToken = default)
+    {
+        return ExecuteQueryAsyncInternal(query, config, cancellationToken, TransformCursor(streamProcessor));
+    }
+
     public Task CloseAsync()
     {
         return Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0
@@ -133,6 +141,12 @@ internal sealed class Driver : IInternalDriver
         return _connectionProvider.SupportsMultiDbAsync();
     }
 
+    //Non public facing api. Used for testing with testkit only
+    public IRoutingTable GetRoutingTable(string database)
+    {
+        return _connectionProvider.GetRoutingTable(database);
+    }
+
     public void Dispose()
     {
         Dispose(true);
@@ -145,28 +159,36 @@ internal sealed class Driver : IInternalDriver
             : new ValueTask(Task.CompletedTask);
     }
 
-    public Task<EagerResult<TResult>> ExecuteQueryAsync<TResult>(
+    public async Task<ExecutionSummary> GetRowsAsync(
         Query query,
-        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor,
-        QueryConfig config = null,
-        CancellationToken cancellationToken = default)
+        QueryConfig config,
+        Action<IRecord> streamProcessor,
+        CancellationToken cancellationToken
+    )
     {
-        return ExecuteQueryAsyncInternal(
-            query,
-            config,
-            cancellationToken,
-            TransformCursor(streamProcessor));
+        async Task<int> Process(IAsyncEnumerable<IRecord> records)
+        {
+            await foreach (var record in records.ConfigureAwait(false))
+            {
+                streamProcessor(record);
+            }
+
+            return 0;
+        }
+
+        var eagerResult = await ExecuteQueryAsyncInternal(
+                query,
+                config,
+                cancellationToken,
+                TransformCursor(Process))
+            .ConfigureAwait(false);
+
+        return new ExecutionSummary(eagerResult.Summary, eagerResult.Keys);
     }
 
     private void Close()
     {
         CloseAsync().GetAwaiter().GetResult();
-    }
-
-    //Non public facing api. Used for testing with testkit only
-    public IRoutingTable GetRoutingTable(string database)
-    {
-        return _connectionProvider.GetRoutingTable(database);
     }
 
     private void Dispose(bool disposing)
@@ -223,16 +245,21 @@ internal sealed class Driver : IInternalDriver
         }
     }
 
+    public IExecutableQuery<IRecord, IRecord> ExecutableQuery(string cypher)
+    {
+        return new ExecutableQuery<IRecord, IRecord>(new DriverRowSource(this, cypher), x => x);
+    }
+
     private static Func<IResultCursor, CancellationToken, Task<EagerResult<TResult>>> TransformCursor<TResult>(
-        Func<IAsyncEnumerable<IRecord>, ValueTask<TResult>> streamProcessor)
+        Func<IAsyncEnumerable<IRecord>, Task<TResult>> streamProcessor)
     {
         async Task<EagerResult<TResult>> TransformCursorImpl(
             IResultCursor cursor,
             CancellationToken cancellationToken)
         {
-            var processedStream = await streamProcessor(cursor);
+            var processedStream = await streamProcessor(cursor).ConfigureAwait(false);
             var summary = await cursor.ConsumeAsync().ConfigureAwait(false);
-            var keys = await cursor.KeysAsync();
+            var keys = await cursor.KeysAsync().ConfigureAwait(false);
             return new EagerResult<TResult>(processedStream, summary, keys);
         }
 

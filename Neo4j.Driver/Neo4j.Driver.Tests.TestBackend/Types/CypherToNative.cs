@@ -49,7 +49,7 @@ internal class CypherToNativeObject
 
 internal class SimpleValue
 {
-    public object? value { get; set; }
+    public object value { get; set; }
 }
 
 public class DateTimeParameterValue

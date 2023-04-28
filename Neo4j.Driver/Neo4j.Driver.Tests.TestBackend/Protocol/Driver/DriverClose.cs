@@ -26,7 +26,7 @@ internal class DriverClose : IProtocolObject
     public override async Task Process()
     {
         var driver = ((NewDriver)ObjManager.GetObject(data.driverId)).Driver;
-        await driver.CloseAsync();
+        await driver.DisposeAsync();
     }
 
     public override string Respond()

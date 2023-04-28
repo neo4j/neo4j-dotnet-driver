@@ -185,6 +185,14 @@ public static class GraphDatabase
         return CreateDriver(uri, config, connectionFactory, connectionSettings);
     }
 
+    /// <summary>
+    /// Gets a new <see cref="IBookmarkManagerFactory"/>, which can construct a new default
+    /// <see cref="IBookmarkManager"/> instance.<br/>
+    /// The <see cref="IBookmarkManager"/> instance should be passed to <see cref="SessionConfigBuilder"/>
+    /// when opening a new session with <see cref="SessionConfigBuilder.WithBookmarkManager"/>.
+    /// </summary>
+    public static IBookmarkManagerFactory BookmarkManagerFactory => new BookmarkManagerFactory();
+
     internal static IDriver CreateDriver(
         Uri uri,
         Config config,

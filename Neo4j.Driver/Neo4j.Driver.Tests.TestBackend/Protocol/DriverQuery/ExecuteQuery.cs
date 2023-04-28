@@ -19,7 +19,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Neo4j.Driver.Preview;
 using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
@@ -28,7 +27,8 @@ internal class ExecuteQuery : IProtocolObject
 {
     public ExecuteQueryDto data { get; set; }
 
-    [JsonIgnore] public EagerResult<IReadOnlyList<IRecord>> Result { get; set; }
+    [JsonIgnore]
+    public EagerResult<IReadOnlyList<IRecord>> Result { get; set; }
 
     public override async Task Process()
     {

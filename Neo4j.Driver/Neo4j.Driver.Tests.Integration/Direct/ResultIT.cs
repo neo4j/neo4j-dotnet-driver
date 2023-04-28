@@ -177,7 +177,12 @@ public sealed class ResultIT : DirectDriverTestBase
             notification.Code.Should().NotBeNullOrEmpty();
             notification.Description.Should().NotBeNullOrEmpty();
             notification.Title.Should().NotBeNullOrEmpty();
-            notification.Severity.Should().NotBeNullOrEmpty();
+            notification.RawSeverityLevel.Should().NotBeNullOrEmpty();
+
+#pragma warning disable CS0618 // deprecated method
+            notification.Severity.Should().Be(notification.RawSeverityLevel);
+#pragma warning restore CS0618
+
             notification.Position.Should().NotBeNull();
         }
         finally

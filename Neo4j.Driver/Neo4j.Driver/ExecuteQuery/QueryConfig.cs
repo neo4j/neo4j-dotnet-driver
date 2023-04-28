@@ -19,7 +19,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Preview;
+namespace Neo4j.Driver;
 
 /// <summary>Configuration for running queries using the simplified api.</summary>
 public class QueryConfig
