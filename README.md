@@ -61,10 +61,8 @@ PM> Install-Package Neo4j.Driver.Signed
 Connect to a Neo4j database
 
 ```csharp
-using (var driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.Basic("neo4j", "password")))
-{
-    var queryOperation = await driver.ExecutableQuery("CREATE (n) RETURN n").ExecuteAsync();
-}
+using var driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.Basic("neo4j", "password"));
+var queryOperation = await driver.ExecutableQuery("CREATE (n) RETURN n").ExecuteAsync();
 ```
 
 There are a few points that need to be highlighted when adding this driver into your project:
@@ -77,7 +75,7 @@ There are a few points that need to be highlighted when adding this driver into 
 
 #### Query Execution Result
 
-The result of executing a query in the way shown above is an `EagerResult<T>`, where `T` is the type of data returned from the query. In the simplest case, this will be an `IReadOnlyList<IRecord>`, which is a fully materialised list of the records returned by the query. Other types of results can be used by using the fluent API exposed by the `IExecutableQuery` type. 
+The result of executing a query in the way shown above is an `EagerResult<T>`, where `T` is the type of data returned from the query. In the simplest case, this will be an `IReadOnlyList<IRecord>`, which is a fully materialized list of the records returned by the query. Other types of results can be used by using the fluent API exposed by the `IExecutableQuery` type. 
 
 ##### Examples
 
@@ -123,6 +121,12 @@ var queryOp = await driver
     .ExecuteAsync();
 // queryOp.Result is `double`, the average of all the ages
 ```
+
+#### Record Stream
+
+A cypher execution result is comprised of a stream records followed by a result summary. The stream can be accessed directly by using the `WithStreamProcessor` method as shown above. The stream implements `IAsyncEnumerable<IRecord>` and as such can be accessed with normal Linq methods by adding the `System.Linq.Async` package to your project. The `ExecuteAsync` method will return an `EagerResult<T>`, where `T` is the type of value returned from the method passed to `WithStreamProcessor`. This value will be stored in the `Result` property of the `EagerResult`, with the `Summary` and `Keys` property containing further information about the execution of the query.
+
+Process result records using `ResultCursorExtensions`:
 
 #### Value Types
 
