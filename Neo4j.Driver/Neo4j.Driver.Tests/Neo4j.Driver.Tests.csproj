@@ -19,7 +19,8 @@
         <PackageReference Include="FluentAssertions" Version="5.10.3" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
         <PackageReference Include="Microsoft.Reactive.Testing" Version="5.0.0" />
-        <PackageReference Include="Moq" Version="4.15.2" />
+        <PackageReference Include="Moq" Version="4.18.4" />
+        <PackageReference Include="Moq.AutoMock" Version="3.5.0" />
         <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
         <PackageReference Include="TeamCity.VSTest.TestAdapter" Version="1.0.23" />
         <PackageReference Include="xunit" Version="$(XunitVersion)" />

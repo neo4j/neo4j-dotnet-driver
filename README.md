@@ -61,53 +61,70 @@ PM> Install-Package Neo4j.Driver.Signed
 Connect to a Neo4j database
 
 ```csharp
-IDriver driver = GraphDatabase.Driver("neo4j://localhost:7687", AuthTokens.Basic("username", "pasSW0rd"));
-IAsyncSession session = driver.AsyncSession(o => o.WithDatabase("neo4j"));
-try
-{
-    IResultCursor cursor = await session.RunAsync("CREATE (n) RETURN n");
-    await cursor.ConsumeAsync();
-}
-finally
-{
-    await session.CloseAsync();
-}
-
-...
-await driver.CloseAsync();
+using var driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.Basic("neo4j", "password"));
+var queryOperation = await driver.ExecutableQuery("CREATE (n) RETURN n").ExecuteAsync();
 ```
 
 There are a few points that need to be highlighted when adding this driver into your project:
 
-* Each `IDriver` instance maintains a pool of connections inside, as a result, it is recommended to only use **one
-  driver per application**.
-* It is considerably cheap to create new sessions and transactions, as sessions and transactions do not create new
-  connections as long as there are free connections available in the connection pool.
+* Each `IDriver` instance maintains a pool of connections inside; as a result, it is recommended that you use **only one driver per application**.
+* It is considerably cheap to create new sessions and transactions, as sessions and transactions do not create new  connections as long as there are free connections available in the connection pool.
 * The driver is thread-safe, while the session or the transaction is not thread-safe.
 
 ### Parsing Result Values
 
-#### Record Stream
+#### Query Execution Result
 
-A cypher execution result is comprised of a stream records followed by a result summary.
-The records inside the result are accessible via `FetchAsync` and `Current` methods on `IResultCursor`.
-Our recommended way to access these result records is to make use of methods provided by `ResultCursorExtensions` such
-as `SingleAsync`, `ToListAsync`, and `ForEachAsync`.
+The result of executing a query in the way shown above is an `EagerResult<T>`, where `T` is the type of data returned from the query. In the simplest case, this will be an `IReadOnlyList<IRecord>`, which is a fully materialized list of the records returned by the query. Other types of results can be used by using the fluent API exposed by the `IExecutableQuery` type. 
 
-Process result records using `ResultCursorExtensions`:
+##### Examples
 
 ```csharp
-IResultCursor cursor = await session.RunAsync("MATCH (a:Person) RETURN a.name as name");
-List<string> people = await cursor.ToListAsync(record => record["name"].As<string>());
+var queryOp = await driver
+    .ExecutableQuery("MATCH (person:Person) RETURN person")
+    .WithMap(r => r["person"].As<INode>()["name"].As<string>())
+    .ExecuteAsync();
+// queryOp.Result is IReadOnlyList<string>
+
+var queryOp = await driver
+    .ExecutableQuery("MATCH (person:Person) RETURN person")
+    .WithMap(r => r["person"].As<INode>()["name"].As<string>())
+    .WithFilter(s => s.StartsWith("A"))
+    .ExecuteAsync();
+// queryOp.Result is IReadOnlyList<string> - note that this type of filtering 
+// is done on the client and is not a substitute for filtering in the Cypher
+
+var queryOp = await driver
+    .ExecutableQuery("MATCH (person:Person) RETURN person")
+    .WithMap(r => r["person"].As<INode>()["age"].As<int>())
+    .WithReduce(() => 0, (r, n) => r + n)
+    .ExecuteAsync();
+// queryOp.Result is `int`, the sum of all the ages
+
+var queryOp = await driver
+    .ExecutableQuery("MATCH (person:Person) RETURN person")
+    .WithStreamProcessor(
+        async stream =>
+        {
+            double total = 0;
+            int count = 0;
+
+            await foreach(var record in stream)
+            {
+                var ages = record["person"].As<INode>()["age"].As<string>();
+                total += age;
+                count++;
+            }
+
+            return total / count;
+        })
+    .ExecuteAsync();
+// queryOp.Result is `double`, the average of all the ages
 ```
 
-The records are exposed as a record stream in the sense that:
+#### Record Stream
 
-* A record is accessible once it is received by the client. It is not needed for the whole result set to be received
-  before it can be visited.
-* Each record can only be visited (a.k.a. consumed) once.
-
-Records on a result cannot be accessed if the session or transaction where the result is created has been closed.
+A cypher execution result is comprised of a stream records followed by a result summary. The stream can be accessed directly by using the `WithStreamProcessor` method as shown above. The stream implements `IAsyncEnumerable<IRecord>` and as such can be accessed with normal Linq methods by adding the `System.Linq.Async` package to your project. The `ExecuteAsync` method will return an `EagerResult<T>`, where `T` is the type of value returned from the method passed to `WithStreamProcessor`. This value will be stored in the `Result` property of the `EagerResult`, with the `Summary` and `Keys` property containing further information about the execution of the query.
 
 #### Value Types
 

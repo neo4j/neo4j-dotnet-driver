@@ -18,14 +18,13 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Preview;
+namespace Neo4j.Driver;
 
 /// <summary>
-/// Preview: Subject to change.<br/> The <see cref="IBookmarkManager"/> interface is intended for
-/// implementation by classes that provide convenient interfacing with <see cref="Bookmarks"/> in both the driver and user
-/// code.
+/// The <see cref="IBookmarkManager"/> interface is intended for implementation by classes that provide convenient
+/// interfacing with <see cref="Bookmarks"/> in both the driver and user code.
 /// </summary>
-/// <see cref="PreviewExtensions.WithBookmarkManager"/>
+/// <seealso cref="SessionConfigBuilder.WithBookmarkManager"/>
 public interface IBookmarkManager
 {
     /// <summary>

@@ -15,12 +15,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Preview;
+namespace Neo4j.Driver;
 
 /// <summary>
-/// There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.
-/// Complete result from a cypher query.
+/// Complete, materialized result from a cypher query.
 /// </summary>
+/// <typeparam name="T">The type of the value that will be in the <see cref="Result"/> property.</typeparam>
 public sealed class EagerResult<T>
 {
     internal EagerResult(T result, IResultSummary summary, string[] keys)
@@ -31,19 +31,16 @@ public sealed class EagerResult<T>
     }
 
     /// <summary>
-    /// There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.
     /// Least common set of fields in <see cref="Result"/>.
     /// </summary>
     public string[] Keys { get; init; }
 
     /// <summary>
-    /// There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.
-    /// All Records from query.
+    /// The materialized result of the query.
     /// </summary>
     public T Result { get; init; }
 
     /// <summary>
-    /// There is no guarantee that anything in Neo4j.Driver.Preview namespace will be in a next minor version.
     /// Query summary.
     /// </summary>
     public IResultSummary Summary { get; init; }

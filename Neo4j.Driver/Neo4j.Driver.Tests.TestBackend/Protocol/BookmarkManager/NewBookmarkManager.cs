@@ -18,7 +18,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Preview;
 using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
@@ -62,7 +61,7 @@ internal class NewBookmarkManager : IProtocolObject
         }
 
         BookmarkManager =
-            Preview.GraphDatabase.BookmarkManagerFactory.NewBookmarkManager(
+            GraphDatabase.BookmarkManagerFactory.NewBookmarkManager(
                 new BookmarkManagerConfig(initialBookmarks, BookmarkSupplier, NotifyBookmarks));
 
         return Task.CompletedTask;
