@@ -89,6 +89,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         await EnqueueLogon(connection, newAuthToken).ConfigureAwait(false);
         // we don't sync here because the logoff/logon should be pipelined with whatever
         // comes next from the driver
+        await connection.SendAsync().ConfigureAwait(false);
     }
 
     public async Task LogoutAsync(IConnection connection)
@@ -175,7 +176,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         await connection.EnqueueAsync(autoCommitMessage, runHandler).ConfigureAwait(false);
         await connection.EnqueueAsync(PullAllMessage.Instance, pullAllHandler).ConfigureAwait(false);
 
-        await HandleTokenExpirySyncAsync(connection).ConfigureAwait(false);
+        await connection.SendAsync().ConfigureAwait(false);
         return streamBuilder.CreateCursor();
     }
 
@@ -202,31 +203,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             notificationsConfig);
 
         await connection.EnqueueAsync(message, ErrorThrowingResponseHandler.Instance).ConfigureAwait(false);
-        await HandleTokenExpirySyncAsync(connection).ConfigureAwait(false);
-    }
-
-    internal static async Task HandleTokenExpirySyncAsync(IConnection connection)
-    {
-        try
-        {
-            await connection.SyncAsync().ConfigureAwait(false);
-        }
-        catch (TokenExpiredException)
-        {
-            connection.ReAuthorizationRequired = true;
-            await connection.NotifyTokenExpiredAsync();
-            throw;
-        }
-        catch (AuthorizationException)
-        {
-            connection.ReAuthorizationRequired = true;
-            throw;
-        }
-        catch (Exception ex)
-        {
-            // other exceptions are ignored here as in a NoOpResponseHandler
-            Debug.Print(ex.ToString());
-        }
+        await connection.SyncAsync().ConfigureAwait(false);
     }
 
     public async Task<IResultCursor> RunInExplicitTransactionAsync(
@@ -253,7 +230,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
 
         await connection.EnqueueAsync(message, runHandler).ConfigureAwait(false);
         await connection.EnqueueAsync(PullAllMessage.Instance, pullAllHandler).ConfigureAwait(false);
-        await HandleTokenExpirySyncAsync(connection).ConfigureAwait(false);
+        await connection.SendAsync().ConfigureAwait(false);
 
         return streamBuilder.CreateCursor();
     }
@@ -263,13 +240,13 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         var handler = _protocolHandlerFactory.NewCommitResponseHandler(bookmarksTracker);
 
         await connection.EnqueueAsync(CommitMessage.Instance, handler).ConfigureAwait(false);
-        await HandleTokenExpirySyncAsync(connection).ConfigureAwait(false);
+        await connection.SyncAsync().ConfigureAwait(false);
     }
 
     public async Task RollbackTransactionAsync(IConnection connection)
     {
         await connection.EnqueueAsync(RollbackMessage.Instance, NoOpResponseHandler.Instance).ConfigureAwait(false);
-        await HandleTokenExpirySyncAsync(connection);
+        await connection.SyncAsync().ConfigureAwait(false);
     }
     
     // TODO: Refactor validation methods into a separate class or move to message classes so the checks aren't duplicated. 

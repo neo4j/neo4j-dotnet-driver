@@ -146,18 +146,24 @@ internal sealed class SocketConnection : IConnection
 
     public IAuthTokenManager AuthTokenManager { get; }
 
-    public async Task ReAuthAsync(
+    public Task ReAuthAsync(
         IAuthToken newAuthToken,
         CancellationToken cancellationToken = default)
     {
         if (newAuthToken.Equals(AuthToken) && !ReAuthorizationRequired)
         {
-            return;
+            return Task.CompletedTask;
         }
 
-        await BoltProtocol.ReAuthAsync(this, newAuthToken);
+        if (Version < BoltProtocolVersion.V5_1)
+        {
+            throw new ReauthException();
+        }
+
+        // Assume success, if Reauth fails we destroy the connection.
         AuthToken = newAuthToken;
         ReAuthorizationRequired = false;
+        return BoltProtocol.ReAuthAsync(this, newAuthToken);
     }
 
     public Task NotifyTokenExpiredAsync()
@@ -408,4 +414,8 @@ internal sealed class SocketConnection : IConnection
     {
         return $"[{id}]";
     }
+}
+
+internal class ReauthException : Exception
+{
 }

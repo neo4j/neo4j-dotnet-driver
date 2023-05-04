@@ -39,6 +39,7 @@ internal class ClusterConnection : DelegatedConnection
 
     internal override async Task OnErrorAsync(Exception error)
     {
+        await base.OnErrorAsync(error).ConfigureAwait(false);
         if (error is ServiceUnavailableException)
         {
             await _errorHandler.OnConnectionErrorAsync(_uri, Database, error).ConfigureAwait(false);

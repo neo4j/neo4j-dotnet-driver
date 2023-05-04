@@ -129,8 +129,7 @@ internal sealed class BoltProtocol : IBoltProtocol
             await connection.EnqueueAsync(pullMessage, pullHandler).ConfigureAwait(false);
         }
 
-        await HandleTokenExpirySyncAsync(connection).ConfigureAwait(false);
-
+        await connection.SendAsync().ConfigureAwait(false);
         return streamBuilder.CreateCursor();
     }
 
@@ -181,14 +180,14 @@ internal sealed class BoltProtocol : IBoltProtocol
             await connection.EnqueueAsync(pullMessage, pullHandler).ConfigureAwait(false);
         }
 
-        await HandleTokenExpirySyncAsync(connection).ConfigureAwait(false);
+        await connection.SendAsync().ConfigureAwait(false);
         return streamBuilder.CreateCursor();
     }
-
-    private static Task HandleTokenExpirySyncAsync(IConnection connection)
-    {
-        return BoltProtocolV3.HandleTokenExpirySyncAsync(connection);
-    }
+    //
+    // private static Task HandleTokenExpirySyncAsync(IConnection connection)
+    // {
+    //     return BoltProtocolV3.HandleTokenExpirySyncAsync(connection);
+    // }
 
     public Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker)
     {
@@ -213,7 +212,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         var logonMessage = _protocolMessageFactory.NewLogonMessage(connection, authToken);
         await connection.EnqueueAsync(logonMessage, ErrorThrowingResponseHandler.Instance).ConfigureAwait(false);
 
-        await HandleTokenExpirySyncAsync(connection).ConfigureAwait(false);
+        await connection.SyncAsync().ConfigureAwait(false);
     }
 
     private async Task<IReadOnlyDictionary<string, object>> GetRoutingTableWithQueryAsync(
@@ -302,7 +301,7 @@ internal sealed class BoltProtocol : IBoltProtocol
                 summaryBuilder);
 
             await connection.EnqueueAsync(pullMessage, pullResponseHandler).ConfigureAwait(false);
-            await HandleTokenExpirySyncAsync(connection).ConfigureAwait(false);
+            await connection.SendAsync().ConfigureAwait(false);
         };
     }
 

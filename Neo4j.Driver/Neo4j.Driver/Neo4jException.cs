@@ -362,7 +362,7 @@ public class AuthorizationException : SecurityException
 public class TokenExpiredException : SecurityException
 {
     private const string ErrorCode = "Neo.ClientError.Security.TokenExpired";
-
+    internal bool Notified = false;
     /// <summary>Create a new <see cref="TokenExpiredException"/> with an error message.</summary>
     /// <param name="message">The error message.</param>
     public TokenExpiredException(string message) : base(ErrorCode, message)

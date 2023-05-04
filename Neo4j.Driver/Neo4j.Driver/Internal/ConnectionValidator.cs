@@ -69,7 +69,8 @@ internal class ConnectionValidator : IConnectionValidator
     {
         var isRequirable = connection.IsOpen &&
             !HasBeenIdleForTooLong(connection) &&
-            !HasBeenAliveForTooLong(connection);
+            !HasBeenAliveForTooLong(connection) && 
+            !MarkedStale(connection);
 
         if (isRequirable)
         {
@@ -77,6 +78,11 @@ internal class ConnectionValidator : IConnectionValidator
         }
 
         return isRequirable;
+    }
+
+    private bool MarkedStale(IPooledConnection connection)
+    {
+        return connection.StaleCredentials;
     }
 
     private void RestartIdleTimer(IPooledConnection connection)
