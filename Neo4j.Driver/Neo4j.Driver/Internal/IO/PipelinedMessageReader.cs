@@ -104,10 +104,15 @@ internal sealed class PipelinedMessageReader : IMessageReader
     private async Task<IResponseMessage?> ReadNextMessage(PackStreamReader reader, PipeReader pipeReader)
     {
         ResetCancellation();
-        var headerMemory = new Memory<byte>(reader._buffers.LongBuffer).Slice(2);
+        var headerMemory = new Memory<byte>(reader._buffers.LongBuffer).Slice(0, 2);
         // Read Bolt protocol chunk header
         var readResult = await pipeReader.ReadAtLeastAsync(2, _source.Token);
+        if (readResult.IsCompleted && readResult.Buffer.Length < 2)
+        {
+            throw new IOException("Unexpected end of stream, unable to read expected data from the network connection");
+        }
         var lengthSlice = readResult.Buffer.Slice(0, 2);
+        
         lengthSlice.CopyTo(headerMemory.Span);
         
         var size = BinaryPrimitives.ReadInt16BigEndian(headerMemory.Span);
@@ -145,6 +150,11 @@ internal sealed class PipelinedMessageReader : IMessageReader
             {
                 ResetCancellation();
                 readResult = await pipeReader.ReadAtLeastAsync(minimumRead, _source.Token);
+                if (readResult.IsCompleted && readResult.Buffer.Length < minimumRead)
+                {
+                    throw new IOException(
+                        "Unexpected end of stream, unable to read expected data from the network connection");
+                }
             }
             
             // Read the chunk header,
