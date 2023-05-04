@@ -60,7 +60,18 @@ internal sealed class PipelinedMessageReader : IMessageReader
             {
                 // Read Message
                 var message = await ReadNextMessage(reader, pipeReader);
-                message?.Dispatch(pipeline);
+                if (message == null)
+                {
+                    continue;
+                }
+
+                message.Dispatch(pipeline);
+
+                // If the message is a failure message, we should stop reading.
+                if (message is FailureMessage)
+                {
+                    break;
+                }
             }
 
             await pipeReader.CompleteAsync();
