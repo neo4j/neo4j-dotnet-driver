@@ -19,9 +19,9 @@ using System;
 
 namespace Neo4j.Driver.Auth;
 
-public record TemporalAuthData
+public record AuthTokenAndExpiration
 {
-    public TemporalAuthData(IAuthToken token, DateTime? expiry = default)
+    public AuthTokenAndExpiration(IAuthToken token, DateTime? expiry = default)
     {
         this.Token = token;
         this.Expiry = expiry ?? DateTime.MaxValue;

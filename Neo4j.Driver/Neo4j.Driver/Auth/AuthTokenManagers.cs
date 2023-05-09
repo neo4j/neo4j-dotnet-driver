@@ -47,7 +47,7 @@ public static class AuthTokenManagers
     /// </summary>
     /// <param name="tokenProviderAsync">An async function that will obtain a new auth token and expiry time.</param>
     /// <returns></returns>
-    public static IAuthTokenManager Temporal(Func<Task<TemporalAuthData>> tokenProviderAsync)
+    public static IAuthTokenManager Temporal(Func<Task<AuthTokenAndExpiration>> tokenProviderAsync)
     {
         return new TemporalAuthTokenManager(tokenProviderAsync);
     }

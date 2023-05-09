@@ -32,8 +32,8 @@ namespace Neo4j.Driver.Tests.Auth
         public async Task ShouldRequestToken()
         {
             var basicToken = AuthTokens.Basic("uid", "pwd");
-            var authData = new TemporalAuthData(basicToken, new DateTime(2023, 02, 28));
-            Task<TemporalAuthData> GetToken()
+            var authData = new AuthTokenAndExpiration(basicToken, new DateTime(2023, 02, 28));
+            Task<AuthTokenAndExpiration> GetToken()
             {
                 return Task.FromResult(authData);
             }
@@ -48,12 +48,12 @@ namespace Neo4j.Driver.Tests.Auth
         public async Task ShouldCacheToken()
         {
             var basicToken = AuthTokens.Basic("uid", "pwd");
-            var authData = new TemporalAuthData(
+            var authData = new AuthTokenAndExpiration(
                 basicToken,
                 new DateTime(2023, 02, 28, 15, 0, 0)); // expires at 3pm
 
             int callCount = 0;
-            Task<TemporalAuthData> GetToken()
+            Task<AuthTokenAndExpiration> GetToken()
             {
                 callCount++;
                 return Task.FromResult(authData);
@@ -78,17 +78,17 @@ namespace Neo4j.Driver.Tests.Auth
         public async Task ShouldRenewTokenAfterExpiryTime()
         {
             var firstToken = AuthTokens.Basic("first", "token");
-            var firstAuthData = new TemporalAuthData(
+            var firstAuthData = new AuthTokenAndExpiration(
                 firstToken,
                 new DateTime(2023, 02, 28, 15, 0, 0)); // expires at 3pm
 
             var secondToken = AuthTokens.Basic("second", "token");
-            var secondAuthData = new TemporalAuthData(
+            var secondAuthData = new AuthTokenAndExpiration(
                 secondToken,
                 new DateTime(2023, 02, 28, 16, 0, 0)); // expires at 4pm
 
             int callCount = 0;
-            Task<TemporalAuthData> GetToken()
+            Task<AuthTokenAndExpiration> GetToken()
             {
                 if (callCount == 0)
                 {
@@ -128,18 +128,18 @@ namespace Neo4j.Driver.Tests.Auth
         public async Task ShouldRefreshTokenOnExpiry()
         {
             var firstToken = AuthTokens.Basic("first", "token");
-            var firstAuthData = new TemporalAuthData(
+            var firstAuthData = new AuthTokenAndExpiration(
                 firstToken,
                 new DateTime(2023, 02, 28, 15, 0, 0)); // expires at 3pm
 
             var secondToken = AuthTokens.Basic("second", "token");
-            var secondAuthData = new TemporalAuthData(
+            var secondAuthData = new AuthTokenAndExpiration(
                 secondToken,
                 new DateTime(2023, 02, 28, 16, 0, 0)); // expires at 4pm
 
             int callCount = 0;
 
-            Task<TemporalAuthData> GetToken()
+            Task<AuthTokenAndExpiration> GetToken()
             {
                 if (callCount == 0)
                 {

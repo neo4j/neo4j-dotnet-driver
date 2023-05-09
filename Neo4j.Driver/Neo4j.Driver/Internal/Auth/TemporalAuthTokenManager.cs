@@ -26,23 +26,23 @@ namespace Neo4j.Driver.Internal.Auth;
 internal class TemporalAuthTokenManager : IAuthTokenManager
 {
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly Func<Task<TemporalAuthData>> _tokenProviderAsync;
-    private Task<TemporalAuthData> _lastAuthRequest;
-    private TemporalAuthData _currentAuthData;
+    private readonly Func<Task<AuthTokenAndExpiration>> _tokenProviderAsync;
+    private Task<AuthTokenAndExpiration> _lastAuthRequest;
+    private AuthTokenAndExpiration _currentAuthTokenAndExpiration;
     private SemaphoreSlim _sync;
 
     /// <summary>
     /// Constructs a new instance of the <see cref="TemporalAuthTokenManager"/> class.
     /// </summary>
     /// <param name="tokenProviderAsync">The sync method that will be used to obtain new tokens.</param>
-    public TemporalAuthTokenManager(Func<Task<TemporalAuthData>> tokenProviderAsync)
+    public TemporalAuthTokenManager(Func<Task<AuthTokenAndExpiration>> tokenProviderAsync)
         : this(new DateTimeProvider(), tokenProviderAsync)
     {
     }
 
     internal TemporalAuthTokenManager(
         IDateTimeProvider dateTimeProvider,
-        Func<Task<TemporalAuthData>> tokenProviderAsync)
+        Func<Task<AuthTokenAndExpiration>> tokenProviderAsync)
     {
         _dateTimeProvider = dateTimeProvider;
         _tokenProviderAsync = tokenProviderAsync;
@@ -56,9 +56,9 @@ internal class TemporalAuthTokenManager : IAuthTokenManager
 
         try
         {
-            if (_currentAuthData is not null && _currentAuthData.Expiry > _dateTimeProvider.Now())
+            if (_currentAuthTokenAndExpiration is not null && _currentAuthTokenAndExpiration.Expiry > _dateTimeProvider.Now())
             {
-                return _currentAuthData.Token;
+                return _currentAuthTokenAndExpiration.Token;
             }
 
             if (_lastAuthRequest is null)
@@ -66,9 +66,9 @@ internal class TemporalAuthTokenManager : IAuthTokenManager
                 ScheduleTokenFetch();
             }
 
-            _currentAuthData = await _lastAuthRequest!;
+            _currentAuthTokenAndExpiration = await _lastAuthRequest!;
             _lastAuthRequest = null;
-            return _currentAuthData.Token;
+            return _currentAuthTokenAndExpiration.Token;
         }
         finally
         {
@@ -83,7 +83,7 @@ internal class TemporalAuthTokenManager : IAuthTokenManager
 
         try
         {
-            if (token == _currentAuthData?.Token && _lastAuthRequest is null)
+            if (token == _currentAuthTokenAndExpiration?.Token && _lastAuthRequest is null)
             {
                 ScheduleTokenFetch();
             }
@@ -96,7 +96,7 @@ internal class TemporalAuthTokenManager : IAuthTokenManager
 
     private void ScheduleTokenFetch()
     {
-        _currentAuthData = null;
+        _currentAuthTokenAndExpiration = null;
         _lastAuthRequest = _tokenProviderAsync(); // storing the task here, not waiting for the token
     }
 }
