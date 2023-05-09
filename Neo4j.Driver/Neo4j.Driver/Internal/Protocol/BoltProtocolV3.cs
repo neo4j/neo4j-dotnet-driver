@@ -78,6 +78,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
 
     public async Task ReAuthAsync(IConnection connection, IAuthToken newAuthToken)
     {
+        connection.ClearQueue();
         if (connection.Version < BoltProtocolVersion.V5_1)
         {
             throw new ClientException(
@@ -89,7 +90,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         await EnqueueLogon(connection, newAuthToken).ConfigureAwait(false);
         // we don't sync here because the logoff/logon should be pipelined with whatever
         // comes next from the driver
-        await connection.SendAsync().ConfigureAwait(false);
+        //await connection.SendAsync().ConfigureAwait(false);
     }
 
     public async Task LogoutAsync(IConnection connection)
@@ -185,11 +186,14 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
+        SessionConfig sessionConfig,
         INotificationsConfig notificationsConfig)
     {
         ValidateImpersonatedUserForVersion(connection);
         ValidateDatabase(connection, database);
         ValidateNotificationsForVersion(connection, notificationsConfig);
+
+        await connection.ReAuthAsync(sessionConfig?.AuthToken);
 
         var mode = connection.Mode ??
             throw new InvalidOperationException("Connection should have its Mode property set.");

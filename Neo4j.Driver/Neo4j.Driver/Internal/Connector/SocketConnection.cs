@@ -141,7 +141,8 @@ internal sealed class SocketConnection : IConnection
 
         _sessionConfig = sessionConfig;
         var authToken = sessionConfig?.AuthToken ?? AuthToken;
-        await BoltProtocol.AuthenticateAsync(this, _userAgent, authToken, notificationsConfig).ConfigureAwait(false);
+        await BoltProtocol.AuthenticateAsync(this, _userAgent, authToken, notificationsConfig)
+            .ConfigureAwait(false);
     }
 
     public IAuthTokenManager AuthTokenManager { get; }
@@ -150,7 +151,7 @@ internal sealed class SocketConnection : IConnection
         IAuthToken newAuthToken,
         CancellationToken cancellationToken = default)
     {
-        if (newAuthToken.Equals(AuthToken) && !ReAuthorizationRequired)
+        if (newAuthToken is null || (newAuthToken.Equals(AuthToken) && !ReAuthorizationRequired))
         {
             return Task.CompletedTask;
         }
@@ -221,7 +222,7 @@ internal sealed class SocketConnection : IConnection
         }
     }
 
-    public void ClearQueueAsync()
+    public void ClearQueue()
     {
         _messages.Clear();
     }
@@ -326,7 +327,7 @@ internal sealed class SocketConnection : IConnection
         var token = SessionConfig?.AuthToken ?? connectionToken;
         token ??= await AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
 
-        await ReAuthAsync(token).ConfigureAwait(false);
+        //await ReAuthAsync(token).ConfigureAwait(false);
     }
 
     public Task LoginAsync(string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
@@ -366,6 +367,7 @@ internal sealed class SocketConnection : IConnection
             database,
             bookmarks,
             config,
+            sessionConfig,
             notificationsConfig);
     }
 

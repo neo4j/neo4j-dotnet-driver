@@ -51,6 +51,7 @@ internal interface IBoltProtocol
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
+        SessionConfig sessionConfig,
         INotificationsConfig notificationsConfig);
 
     Task<IResultCursor> RunInExplicitTransactionAsync(

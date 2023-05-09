@@ -132,9 +132,9 @@ internal abstract class DelegatedConnection : IConnection
         }
     }
 
-    public void ClearQueueAsync()
+    public void ClearQueue()
     {
-        Delegate.ClearQueueAsync();
+        Delegate.ClearQueue();
     }
 
     public virtual bool IsOpen => Delegate.IsOpen;
@@ -230,6 +230,7 @@ internal abstract class DelegatedConnection : IConnection
             database,
             bookmarks,
             config,
+            sessionConfig,
             notificationsConfig);
     }
 

@@ -116,6 +116,7 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         var runHandler = _protocolHandlerFactory.NewRunResponseHandler(streamBuilder, summaryBuilder);
 
+        await connection.ReAuthAsync(autoCommitParams.SessionConfig?.AuthToken);
         await connection.EnqueueAsync(runMessage, runHandler).ConfigureAwait(false);
 
         if (!autoCommitParams.Reactive)
@@ -138,6 +139,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
+        SessionConfig sessionConfig,
         INotificationsConfig notificationsConfig)
     {
         BoltProtocolV3.ValidateImpersonatedUserForVersion(connection);
@@ -147,6 +149,7 @@ internal sealed class BoltProtocol : IBoltProtocol
             database,
             bookmarks,
             config,
+            sessionConfig,
             notificationsConfig);
     }
 
@@ -209,8 +212,8 @@ internal sealed class BoltProtocol : IBoltProtocol
         var helloHandler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
         await connection.EnqueueAsync(helloMessage, helloHandler).ConfigureAwait(false);
 
-        var logonMessage = _protocolMessageFactory.NewLogonMessage(connection, authToken);
-        await connection.EnqueueAsync(logonMessage, ErrorThrowingResponseHandler.Instance).ConfigureAwait(false);
+        // var logonMessage = _protocolMessageFactory.NewLogonMessage(connection, authToken);
+        // await connection.EnqueueAsync(logonMessage, ErrorThrowingResponseHandler.Instance).ConfigureAwait(false);
 
         await connection.SyncAsync().ConfigureAwait(false);
     }

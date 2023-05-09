@@ -53,7 +53,7 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
 
     Task EnqueueAsync(IRequestMessage message, IResponseHandler handler);
 
-    void ClearQueueAsync();
+    void ClearQueue();
 
     // Enqueue a reset message
     Task ResetAsync();
