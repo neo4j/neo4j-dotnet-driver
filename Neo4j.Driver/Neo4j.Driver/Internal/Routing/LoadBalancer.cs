@@ -148,7 +148,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
 
     public ConnectionSettings ConnectionSettings => _connectionSettings;
 
-    public async Task<bool> SupportsMultiDbAsync()
+    private async Task<T> CheckConnectionSupport<T>(Func<IConnection, T> check)
     {
         var uris = _initialServerAddressProvider.Get();
         await AddConnectionPoolAsync(uris).ConfigureAwait(false);
@@ -165,9 +165,9 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
                         Simple.Bookmarks)
                     .ConfigureAwait(false);
 
-                var multiDb = connection.SupportsMultiDatabase();
+                var result = check(connection);
                 await connection.CloseAsync().ConfigureAwait(false);
-                return multiDb;
+                return result;
             }
             catch (SecurityException)
             {
@@ -182,6 +182,16 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         throw new ServiceUnavailableException(
             $"Failed to perform multi-databases feature detection with the following servers: {uris.ToContentString()} ",
             new AggregateException(exceptions));
+    }
+
+    public Task<bool> SupportsMultiDbAsync()
+    {
+        return CheckConnectionSupport(c => c.SupportsMultiDatabase());
+    }
+
+    public Task<bool> SupportsReAuthAsync()
+    {
+        return CheckConnectionSupport(c => c.SupportsReAuth());
     }
 
     public IRoutingTable GetRoutingTable(string database)

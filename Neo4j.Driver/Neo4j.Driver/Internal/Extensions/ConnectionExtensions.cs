@@ -25,4 +25,9 @@ internal static class ConnectionExtensions
     {
         return connection.Version >= BoltProtocolVersion.V4_0;
     }
+
+    public static bool SupportsReAuth(this IConnection connection)
+    {
+        return connection.Version >= BoltProtocolVersion.V5_1;
+    }
 }

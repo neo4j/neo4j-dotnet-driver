@@ -96,6 +96,15 @@ public interface IDriver : IDisposable, IAsyncDisposable
     Task<bool> SupportsMultiDbAsync();
 
     /// <summary>
+    /// Asynchronously verify if the driver supports re-auth.
+    /// </summary>
+    /// <returns>
+    /// A task that represents the asynchronous operation. The task result contains True if the remote server and/or
+    /// cluster support re-auth, otherwise false.
+    /// </returns>
+    Task<bool> SupportsSessionAuthAsync();
+
+    /// <summary>
     /// Gets an <see cref="IExecutableQuery&lt;IRecord, IRecord&gt;"/> that can be used to configure and execute a query
     /// using fluent method chaining.
     /// </summary>
@@ -105,4 +114,5 @@ public interface IDriver : IDisposable, IAsyncDisposable
     /// fluent method chaining.
     /// </returns>
     IExecutableQuery<IRecord, IRecord> ExecutableQuery(string cypher);
+
 }

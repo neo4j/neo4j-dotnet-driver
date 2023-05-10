@@ -160,8 +160,9 @@ internal sealed class ConnectionPool : IConnectionPool
                     _poolMetricsListener?.PoolAcquired();
                     return connection;
                 }
-                catch (ReauthException)
+                catch (ReauthException ex)
                 {
+                    _logger.Debug(ex.ToString());
                     connection.StaleCredentials = true;
                     await connection.CloseAsync().ConfigureAwait(false);
                 }
@@ -240,16 +241,26 @@ internal sealed class ConnectionPool : IConnectionPool
 
     public ConnectionSettings ConnectionSettings => _connectionSettings;
 
-    public async Task<bool> SupportsMultiDbAsync()
+    private async Task<T> CheckConnectionSupport<T>(Func<IConnection, T> check)
     {
         // Establish a connection with the server and immediately close it.
         var connection = await AcquireAsync(Simple.Mode, Simple.Database, null, Simple.Bookmarks)
             .ConfigureAwait(false);
 
-        var multiDb = connection.SupportsMultiDatabase();
+        var multiDb = check(connection);
         await connection.CloseAsync().ConfigureAwait(false);
 
         return multiDb;
+    }
+
+    public Task<bool> SupportsMultiDbAsync()
+    {
+        return CheckConnectionSupport(c => c.SupportsMultiDatabase());
+    }
+
+    public Task<bool> SupportsReAuthAsync()
+    {
+        return CheckConnectionSupport(c => c.SupportsReAuth());
     }
 
     public IRoutingTable GetRoutingTable(string database)

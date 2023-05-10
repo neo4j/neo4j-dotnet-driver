@@ -141,6 +141,11 @@ internal sealed class Driver : IInternalDriver
         return _connectionProvider.SupportsMultiDbAsync();
     }
 
+    public Task<bool> SupportsSessionAuthAsync()
+    {
+        return _connectionProvider.SupportsReAuthAsync();
+    }
+
     //Non public facing api. Used for testing with testkit only
     public IRoutingTable GetRoutingTable(string database)
     {

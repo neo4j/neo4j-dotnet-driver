@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend;
@@ -25,7 +26,9 @@ internal class CheckSessionAuthSupport : IProtocolObject
 
     public override string Respond()
     {
-        return new ProtocolResponse("SessionAuthSupport", new { id = uniqueId, available = true }).Encode();
+        var driver = (NewDriver)ObjManager.GetObject(data.driverId);
+        var support = driver.Driver.SupportsSessionAuthAsync().GetAwaiter().GetResult();
+        return new ProtocolResponse("SessionAuthSupport", new { id = uniqueId, available = support }).Encode();
     }
 
     public class CheckSessionAuthSupportDto

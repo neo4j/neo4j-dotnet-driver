@@ -32,6 +32,7 @@ internal interface IConnectionProvider : IAsyncDisposable
         SessionConfig sessionConfig,
         Bookmarks bookmarks);
     Task<bool> SupportsMultiDbAsync();
+    Task<bool> SupportsReAuthAsync();
     IRoutingTable GetRoutingTable(string database);
     Task<IServerInfo> VerifyConnectivityAndGetInfoAsync();
     ConnectionSettings ConnectionSettings { get; }
