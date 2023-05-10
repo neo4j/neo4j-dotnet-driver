@@ -181,8 +181,12 @@ internal abstract class DelegatedConnection : IConnection
         Delegate.SetUseUtcEncodedDateTime();
     }
 
-    public SessionConfig SessionConfig => Delegate.SessionConfig;
-    
+    public SessionConfig SessionConfig
+    {
+        get => Delegate.SessionConfig;
+        set => Delegate.SessionConfig = value;
+    }
+
     public Task ValidateCredsAsync()
     {
         return Delegate.ValidateCredsAsync();

@@ -20,7 +20,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Extensions;
 using Neo4j.Driver.Internal.Logging;
@@ -156,6 +155,7 @@ internal sealed class ConnectionPool : IConnectionPool
 
                 try
                 {
+                    connection.SessionConfig = sessionConfig;
                     await connection.ValidateCredsAsync().ConfigureAwait(false);
                     _poolMetricsListener?.PoolAcquired();
                     return connection;
@@ -202,6 +202,7 @@ internal sealed class ConnectionPool : IConnectionPool
                     }
 
                     connection.Configure(null, null);
+                    connection.SessionConfig = null;
 
                     // Add back to idle pool
                     _idleConnections.Add(connection);
@@ -518,6 +519,7 @@ internal sealed class ConnectionPool : IConnectionPool
             if (_idleConnections.TryTake(out var idle))
             {
                 idle.ReAuthorizationRequired = true;
+                await idle.ReAuthAsync(sessionConfig?.AuthToken, cancellationToken).ConfigureAwait(false);
                 return idle;
             }
         }
