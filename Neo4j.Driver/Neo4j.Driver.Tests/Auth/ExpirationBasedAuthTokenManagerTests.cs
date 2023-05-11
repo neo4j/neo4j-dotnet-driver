@@ -26,7 +26,7 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests.Auth
 {
-    public class TemporalAuthDataManagerTests
+    public class ExpirationBasedAuthTokenManagerTests
     {
         [Fact]
         public async Task ShouldRequestToken()
@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Tests.Auth
                 return Task.FromResult(authData);
             }
 
-            var subject = new TemporalAuthTokenManager(GetToken);
+            var subject = new ExpirationBasedAuthTokenManager(GetToken);
 
             var returnedToken = await subject.GetTokenAsync();
             returnedToken.Should().Be(basicToken);
@@ -64,7 +64,7 @@ namespace Neo4j.Driver.Tests.Auth
                 .Setup(x => x.Now())
                 .Returns(new DateTime(2023, 02, 28, 10, 0, 0)); // it is currently 10am
 
-            var subject = new TemporalAuthTokenManager(dateTimeProvider.Object, GetToken);
+            var subject = new ExpirationBasedAuthTokenManager(dateTimeProvider.Object, GetToken);
 
             // call twice
             await subject.GetTokenAsync();
@@ -114,7 +114,7 @@ namespace Neo4j.Driver.Tests.Auth
                         return new DateTime(2023, 02, 28, 16, 0, 0); // after that, 4pm (expired)
                     });
 
-            var subject = new TemporalAuthTokenManager(dateTimeProvider.Object, GetToken);
+            var subject = new ExpirationBasedAuthTokenManager(dateTimeProvider.Object, GetToken);
             var firstReturnedToken = await subject.GetTokenAsync();
             await subject.GetTokenAsync(); // do a couple more times so that a new one should be requested
             await subject.GetTokenAsync();
@@ -155,7 +155,7 @@ namespace Neo4j.Driver.Tests.Auth
                 .Setup(x => x.Now())
                 .Returns(new DateTime(2023, 01, 01, 09, 00, 00)); // before expiry of first token
 
-            var subject = new TemporalAuthTokenManager(dateTimeProvider.Object, GetToken);
+            var subject = new ExpirationBasedAuthTokenManager(dateTimeProvider.Object, GetToken);
             var firstReturnedToken = await subject.GetTokenAsync();
             await subject.OnTokenExpiredAsync(firstReturnedToken);
             var secondReturnedToken = await subject.GetTokenAsync();

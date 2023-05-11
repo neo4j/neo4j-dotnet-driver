@@ -23,7 +23,7 @@ using Neo4j.Driver.Internal.Services;
 
 namespace Neo4j.Driver.Internal.Auth;
 
-internal class TemporalAuthTokenManager : IAuthTokenManager
+internal class ExpirationBasedAuthTokenManager : IAuthTokenManager
 {
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly Func<Task<AuthTokenAndExpiration>> _tokenProviderAsync;
@@ -32,15 +32,15 @@ internal class TemporalAuthTokenManager : IAuthTokenManager
     private SemaphoreSlim _sync;
 
     /// <summary>
-    /// Constructs a new instance of the <see cref="TemporalAuthTokenManager"/> class.
+    /// Constructs a new instance of the <see cref="ExpirationBasedAuthTokenManager"/> class.
     /// </summary>
     /// <param name="tokenProviderAsync">The sync method that will be used to obtain new tokens.</param>
-    public TemporalAuthTokenManager(Func<Task<AuthTokenAndExpiration>> tokenProviderAsync)
+    public ExpirationBasedAuthTokenManager(Func<Task<AuthTokenAndExpiration>> tokenProviderAsync)
         : this(new DateTimeProvider(), tokenProviderAsync)
     {
     }
 
-    internal TemporalAuthTokenManager(
+    internal ExpirationBasedAuthTokenManager(
         IDateTimeProvider dateTimeProvider,
         Func<Task<AuthTokenAndExpiration>> tokenProviderAsync)
     {

@@ -397,6 +397,11 @@ namespace Neo4j.Driver.Tests
                 return Task.FromResult(true);
             }
 
+            public Task<bool> SupportsReAuthAsync()
+            {
+                throw new NotImplementedException();
+            }
+
             public IRoutingTable GetRoutingTable(string database)
             {
                 throw new NotSupportedException();

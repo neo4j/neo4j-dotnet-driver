@@ -25,9 +25,15 @@ using Neo4j.Driver.Internal.Auth;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class NewAuthTokenManager : TestAuthTokenManager
+internal abstract class TestAuthTokenManager : IProtocolObject, IAuthTokenManager
 {
-    private Controller _controller;
+    public abstract Task<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default);
+    public abstract Task OnTokenExpiredAsync(IAuthToken token, CancellationToken cancellationToken = default);
+}
+
+internal class NewExpirationBasedAuthTokenManager : TestAuthTokenManager
+{
+    protected Controller _controller;
     public object data { get; set; }
 
     public override Task Process(Controller controller)
@@ -38,29 +44,29 @@ internal class NewAuthTokenManager : TestAuthTokenManager
 
     public override string Respond()
     {
-        return new ProtocolResponse("AuthTokenManager", uniqueId).Encode();
+        return new ProtocolResponse("ExpirationBasedAuthTokenManager", uniqueId).Encode();
     }
 
     public override async Task<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default)
     {
         var requestId = Guid.NewGuid().ToString();
         await _controller.SendResponse(GetAuthRequest(requestId)).ConfigureAwait(false);
-        var result = await _controller.TryConsumeStreamObjectOfType<AuthTokenManagerGetAuthCompleted>()
+        var result = await _controller.TryConsumeStreamObjectOfType<ExpirationBasedAuthTokenProviderCompleted>()
             .ConfigureAwait(false);
 
         if (result.data.requestId == requestId)
         {
-            return new AuthToken(result.data.auth.data.ToDictionary());
+            return new AuthToken(result.data.auth.data.auth.data.ToDictionary());
         }
 
         throw new Exception("GetTokenAsync: request IDs did not match");
     }
 
-    private string GetAuthRequest(string requestId)
+    protected string GetAuthRequest(string requestId)
     {
         return new ProtocolResponse(
-            "AuthTokenManagerGetAuthRequest",
-            new { authTokenManagerId = uniqueId, id = requestId }).Encode();
+            "ExpirationBasedAuthTokenProviderRequest",
+            new { expirationBasedAuthTokenManagerId = uniqueId, id = requestId }).Encode();
     }
 
     public override async Task OnTokenExpiredAsync(IAuthToken token, CancellationToken cancellationToken = default)
@@ -86,10 +92,10 @@ internal class NewAuthTokenManager : TestAuthTokenManager
         var content = authToken.Content;
 
         return new ProtocolResponse(
-            "AuthTokenManagerOnAuthExpiredRequest",
+            "AuthTokenManagerOnAuthExpiredCompleted",
             new
             {
-                authTokenManagerId = uniqueId,
+                ExpirationBasedAuthTokenManagerId = uniqueId,
                 id = requestId,
                 auth = new
                 {

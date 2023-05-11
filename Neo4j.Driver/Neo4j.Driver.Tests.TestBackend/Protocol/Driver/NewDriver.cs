@@ -66,7 +66,7 @@ internal class NewDriver : IProtocolObject
         }
         else
         {
-            var authDataManager = ObjManager.GetObject<NewAuthTokenManager>(data.authTokenManagerId);
+            var authDataManager = ObjManager.GetObject<TestAuthTokenManager>(data.authTokenManagerId);
             Driver = GraphDatabase.Driver(data.uri, authDataManager, DriverConfig);
         }
 
