@@ -52,7 +52,7 @@ internal class ExpirationBasedAuthTokenManager : IAuthTokenManager
     /// <inheritdoc/>
     public async Task<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default)
     {
-        await _sync.WaitAsync(cancellationToken);
+        await _sync.WaitAsync(cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -66,7 +66,7 @@ internal class ExpirationBasedAuthTokenManager : IAuthTokenManager
                 ScheduleTokenFetch();
             }
 
-            _currentAuthTokenAndExpiration = await _lastAuthRequest!;
+            _currentAuthTokenAndExpiration = await _lastAuthRequest!.ConfigureAwait(false);
             _lastAuthRequest = null;
             return _currentAuthTokenAndExpiration.Token;
         }
@@ -79,7 +79,7 @@ internal class ExpirationBasedAuthTokenManager : IAuthTokenManager
     /// <inheritdoc/>
     public async Task OnTokenExpiredAsync(IAuthToken token, CancellationToken cancellationToken = default)
     {
-        await _sync.WaitAsync(cancellationToken);
+        await _sync.WaitAsync(cancellationToken).ConfigureAwait(false);
 
         try
         {

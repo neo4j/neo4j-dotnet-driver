@@ -320,12 +320,12 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                         throw;
                     }
                 },
-                ex =>
+                async ex =>
                 {
                     if (ex is TokenExpiredException)
                     {
-                        _connectionProvider.ConnectionSettings.AuthTokenManager?.OnTokenExpiredAsync(
-                            _connection.AuthToken);
+                        await (_connectionProvider.ConnectionSettings.AuthTokenManager?.OnTokenExpiredAsync(
+                            _connection.AuthToken) ?? Task.CompletedTask).ConfigureAwait(false);
                     }
 
                     return true;

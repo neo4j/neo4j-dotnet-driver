@@ -92,10 +92,10 @@ internal class NewExpirationBasedAuthTokenManager : TestAuthTokenManager
         var content = authToken.Content;
 
         return new ProtocolResponse(
-            "AuthTokenManagerOnAuthExpiredCompleted",
+            "ExpirationBasedAuthTokenProviderRequest",
             new
             {
-                ExpirationBasedAuthTokenManagerId = uniqueId,
+                expirationBasedAuthTokenManagerId = uniqueId,
                 id = requestId,
                 auth = new
                 {

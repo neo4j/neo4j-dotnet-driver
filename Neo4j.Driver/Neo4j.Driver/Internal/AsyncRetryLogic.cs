@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal;
 
 internal interface IAsyncRetryLogic
 {
-    Task<T> RetryAsync<T>(Func<Task<T>> runTxAsyncFunc, Func<Exception, bool> onException = null);
+    Task<T> RetryAsync<T>(Func<Task<T>> runTxAsyncFunc, Func<Exception, Task<bool>> onException = null);
 }
 
 internal class AsyncRetryLogic : IAsyncRetryLogic
@@ -49,7 +49,7 @@ internal class AsyncRetryLogic : IAsyncRetryLogic
         _jitterFactor = RetryDelayJitterFactor;
     }
 
-    public async Task<T> RetryAsync<T>(Func<Task<T>> runTxAsyncFunc, Func<Exception, bool> onException = null)
+    public async Task<T> RetryAsync<T>(Func<Task<T>> runTxAsyncFunc, Func<Exception, Task<bool>> onException = null)
     {
         var exceptions = new List<Exception>();
         var timer = new Stopwatch();
@@ -69,7 +69,14 @@ internal class AsyncRetryLogic : IAsyncRetryLogic
             catch (Exception e) when (e.CanBeRetried())
             {
                 exceptions.Add(e);
-                shouldRetry = onException?.Invoke(e) ?? true;
+                if (onException != null)
+                {
+                    shouldRetry = await onException(e).ConfigureAwait(false);
+                }
+                else
+                {
+                    shouldRetry = true;
+                }
 
                 // we want the retry to happen at least twice and as much as the max retry time allows 
                 shouldRetry = shouldRetry && retryCount < 2 || timer.ElapsedMilliseconds < _maxRetryTimeMs;
