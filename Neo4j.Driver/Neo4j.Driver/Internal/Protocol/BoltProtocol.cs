@@ -116,7 +116,7 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         var runHandler = _protocolHandlerFactory.NewRunResponseHandler(streamBuilder, summaryBuilder);
 
-        await connection.ReAuthAsync(autoCommitParams.SessionConfig?.AuthToken);
+        // await connection.ReAuthAsync(autoCommitParams.SessionConfig?.AuthToken, false);
         await connection.EnqueueAsync(runMessage, runHandler).ConfigureAwait(false);
 
         if (!autoCommitParams.Reactive)
@@ -186,11 +186,6 @@ internal sealed class BoltProtocol : IBoltProtocol
         await connection.SendAsync().ConfigureAwait(false);
         return streamBuilder.CreateCursor();
     }
-    //
-    // private static Task HandleTokenExpirySyncAsync(IConnection connection)
-    // {
-    //     return BoltProtocolV3.HandleTokenExpirySyncAsync(connection);
-    // }
 
     public Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker)
     {

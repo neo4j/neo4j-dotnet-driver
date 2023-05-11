@@ -165,6 +165,10 @@ internal sealed class ConnectionPool : IConnectionPool
                     _logger.Debug(ex.ToString());
                     connection.StaleCredentials = true;
                     await connection.CloseAsync().ConfigureAwait(false);
+                    if (ex.IsUserSwitching)
+                    {
+                        throw;
+                    }
                 }
             } while (true);
         }
@@ -530,7 +534,7 @@ internal sealed class ConnectionPool : IConnectionPool
             if (_idleConnections.TryTake(out var idle))
             {
                 idle.ReAuthorizationRequired = true;
-                await idle.ReAuthAsync(sessionConfig?.AuthToken, cancellationToken).ConfigureAwait(false);
+                await idle.ReAuthAsync(sessionConfig?.AuthToken, false, cancellationToken).ConfigureAwait(false);
                 return idle;
             }
         }

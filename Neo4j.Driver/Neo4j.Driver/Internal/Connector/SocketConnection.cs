@@ -149,16 +149,22 @@ internal sealed class SocketConnection : IConnection
 
     public Task ReAuthAsync(
         IAuthToken newAuthToken,
+        bool switching,
         CancellationToken cancellationToken = default)
     {
+        if (switching && !this.SupportsReAuth())
+        {
+            throw new ReauthException(switching);
+        }
+        
         if (newAuthToken is null || (newAuthToken.Equals(AuthToken) && !ReAuthorizationRequired))
         {
             return Task.CompletedTask;
         }
 
-        if (Version < BoltProtocolVersion.V5_1)
+        if (!this.SupportsReAuth())
         {
-            throw new ReauthException();
+            throw new ReauthException(switching);
         }
 
         // Assume success, if Reauth fails we destroy the connection.
@@ -169,9 +175,12 @@ internal sealed class SocketConnection : IConnection
 
     public Task NotifyTokenExpiredAsync()
     {
-        return _sessionConfig?.AuthToken is null
-            ? AuthTokenManager.OnTokenExpiredAsync(AuthToken)
-            : Task.CompletedTask;
+        if (SessionConfig?.AuthToken != null)
+        {
+            return Task.CompletedTask;
+        }
+
+        return AuthTokenManager.OnTokenExpiredAsync(AuthToken);
     }
 
     public async Task SyncAsync()
@@ -224,7 +233,7 @@ internal sealed class SocketConnection : IConnection
 
     public void ClearQueue()
     {
-        _messages.Clear();
+        // _messages.Clear();
     }
 
     public Task ResetAsync()
@@ -331,7 +340,7 @@ internal sealed class SocketConnection : IConnection
         var token = SessionConfig?.AuthToken ?? connectionToken;
         token ??= await AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
 
-        await ReAuthAsync(token).ConfigureAwait(false);
+        await ReAuthAsync(token, SessionConfig?.AuthToken != null).ConfigureAwait(false);
     }
 
     public Task LoginAsync(string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
@@ -422,6 +431,14 @@ internal sealed class SocketConnection : IConnection
     }
 }
 
-internal class ReauthException : Exception
+internal class ReauthException : UnsupportedFeatureException
 {
+    internal readonly bool IsUserSwitching;
+
+    public ReauthException(bool isUserSwitching) : base(
+        "Attempted to use reauthentication or user switching but the " +
+        "server does not support it. Please upgrade to neo4j 5.6.0 or later.")
+    {
+        IsUserSwitching = isUserSwitching;
+    }
 }

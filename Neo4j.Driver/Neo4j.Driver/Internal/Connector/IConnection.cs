@@ -38,7 +38,7 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
         SessionConfig sessionConfig = null,
         CancellationToken cancellationToken = default);
 
-    Task ReAuthAsync(IAuthToken newAuthToken, CancellationToken cancellationToken = default);
+    Task ReAuthAsync(IAuthToken newAuthToken, bool IsUserSwitching, CancellationToken cancellationToken = default);
 
     Task NotifyTokenExpiredAsync();
 

@@ -370,13 +370,13 @@ internal class RoutingTableManager : IRoutingTableManager
     private static bool IsFailFastException(Exception ex)
     {
         return ex
-            is FatalDiscoveryException // Neo.ClientError.Database.DatabaseNotFound
+            is (FatalDiscoveryException // Neo.ClientError.Database.DatabaseNotFound
             or InvalidBookmarkException // Neo.ClientError.Transaction.InvalidBookmark
             or InvalidBookmarkMixtureException // Neo.ClientError.Transaction.InvalidBookmarkMixture
             or ArgumentErrorException // Neo.ClientError.Statement.ArgumentError
             or ProtocolException // Neo.ClientError.Request.Invalid and (special to .NET driver) Neo.ClientError.Request.InvalidFormat
             or TypeException // Neo.ClientError.Statement.TypeError
             or SecurityException // Neo.ClientError.Security.*
-            and not AuthorizationException; // except Neo.ClientError.Security.AuthorizationExpired
+            or UnsupportedFeatureException) and not AuthorizationException; // except Neo.ClientError.Security.AuthorizationExpired
     }
 }

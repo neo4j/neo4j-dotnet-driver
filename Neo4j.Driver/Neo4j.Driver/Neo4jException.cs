@@ -575,3 +575,21 @@ public class TransactionClosedException : ClientException
     {
     }
 }
+
+/// <summary>
+/// The exception that is thrown when calling an operation in the driver which uses a server feature that is not
+/// available on the connected server version.
+/// </summary>
+[DataContract]
+public class UnsupportedFeatureException : ClientException
+{
+    public override bool IsRetriable => false;
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="message"></param>
+    internal UnsupportedFeatureException(string message) : base(message)
+    {
+    }
+}

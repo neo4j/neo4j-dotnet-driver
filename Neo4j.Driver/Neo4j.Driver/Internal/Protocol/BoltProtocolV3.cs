@@ -189,8 +189,6 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         ValidateDatabase(connection, database);
         ValidateNotificationsForVersion(connection, notificationsConfig);
 
-        await connection.ReAuthAsync(sessionConfig?.AuthToken);
-
         var mode = connection.Mode ??
             throw new InvalidOperationException("Connection should have its Mode property set.");
 
