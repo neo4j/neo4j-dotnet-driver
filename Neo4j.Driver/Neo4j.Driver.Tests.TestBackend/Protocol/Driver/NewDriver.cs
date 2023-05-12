@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Auth;
+using Neo4j.Driver.Internal.Auth;
 using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
@@ -66,8 +67,16 @@ internal class NewDriver : IProtocolObject
         }
         else
         {
-            var authDataManager = ObjManager.GetObject<TestAuthTokenManager>(data.authTokenManagerId);
-            Driver = GraphDatabase.Driver(data.uri, authDataManager, DriverConfig);
+            var authDataManager = ObjManager.GetObject(data.authTokenManagerId);
+            
+            if (authDataManager is NewExpirationBasedAuthTokenManager ebatm)
+            {
+                Driver = GraphDatabase.Driver(data.uri, ebatm.tokenManager, DriverConfig);
+            }
+            else
+            {
+                Driver = GraphDatabase.Driver(data.uri, authDataManager as IAuthTokenManager, DriverConfig);
+            }
         }
 
         return Task.CompletedTask;

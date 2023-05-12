@@ -31,23 +31,20 @@ internal abstract class TestAuthTokenManager : IProtocolObject, IAuthTokenManage
     public abstract Task OnTokenExpiredAsync(IAuthToken token, CancellationToken cancellationToken = default);
 }
 
-internal class NewExpirationBasedAuthTokenManager : TestAuthTokenManager
+internal class NewExpirationBasedAuthTokenManager : IProtocolObject
 {
     protected Controller _controller;
+    public ExpirationBasedAuthTokenManager tokenManager;
     public object data { get; set; }
-
+    
     public override Task Process(Controller controller)
     {
         _controller = controller;
+        tokenManager = new ExpirationBasedAuthTokenManager(GetTokenAsync);
         return Task.CompletedTask;
     }
 
-    public override string Respond()
-    {
-        return new ProtocolResponse("ExpirationBasedAuthTokenManager", uniqueId).Encode();
-    }
-
-    public override async Task<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default)
+    public async Task<AuthTokenAndExpiration> GetTokenAsync()
     {
         var requestId = Guid.NewGuid().ToString();
         await _controller.SendResponse(GetAuthRequest(requestId)).ConfigureAwait(false);
@@ -56,52 +53,23 @@ internal class NewExpirationBasedAuthTokenManager : TestAuthTokenManager
 
         if (result.data.requestId == requestId)
         {
-            return new AuthToken(result.data.auth.data.auth.data.ToDictionary());
+            return new AuthTokenAndExpiration(
+                new AuthToken(result.data.auth.data.auth.data.ToDictionary()),
+                DateTime.Now.AddMilliseconds(result.data.auth.data.expiresInMs));
         }
 
         throw new Exception("GetTokenAsync: request IDs did not match");
     }
 
+    public override string Respond()
+    {
+        return new ProtocolResponse("ExpirationBasedAuthTokenManager", uniqueId).Encode();
+    }
+    
     protected string GetAuthRequest(string requestId)
     {
         return new ProtocolResponse(
             "ExpirationBasedAuthTokenProviderRequest",
             new { expirationBasedAuthTokenManagerId = uniqueId, id = requestId }).Encode();
-    }
-
-    public override async Task OnTokenExpiredAsync(IAuthToken token, CancellationToken cancellationToken = default)
-    {
-        var requestId = Guid.NewGuid().ToString();
-        await _controller.SendResponse(GetAuthExpiredRequest(requestId, token)).ConfigureAwait(false);
-        var result = await _controller.TryConsumeStreamObjectOfType<AuthTokenManagerOnAuthExpiredCompleted>()
-            .ConfigureAwait(false);
-
-        if (result.data.requestId != requestId)
-        {
-            throw new Exception("OnTokenExpiredAsync: request IDs did not match");
-        }
-    }
-
-    private string GetAuthExpiredRequest(string requestId, IAuthToken token)
-    {
-        if (token is not AuthToken authToken)
-        {
-            return null;
-        }
-
-        var content = authToken.Content;
-
-        return new ProtocolResponse(
-            "ExpirationBasedAuthTokenProviderRequest",
-            new
-            {
-                expirationBasedAuthTokenManagerId = uniqueId,
-                id = requestId,
-                auth = new
-                {
-                    name = "AuthorizationToken",
-                    data = content
-                }
-            }).Encode();
     }
 }
