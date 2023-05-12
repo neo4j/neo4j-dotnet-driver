@@ -112,7 +112,6 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         }
 
         var conn = await AcquireConnectionAsync(mode, database, sessionConfig, bookmarks).ConfigureAwait(false);
-        conn.ReAuthorizationRequired = true;
 
         if (IsClosed)
         {

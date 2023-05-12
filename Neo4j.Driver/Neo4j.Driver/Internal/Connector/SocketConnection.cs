@@ -109,7 +109,7 @@ internal sealed class SocketConnection : IConnection
     /// <summary>Internal Set used for tests.</summary>
     public IBoltProtocol BoltProtocol { get; internal set; }
 
-    public bool ReAuthorizationRequired { get; set; }
+    public AuthorizationStatus AuthorizationStatus { get; set; }
 
     public void ConfigureMode(AccessMode? mode)
     {
@@ -138,38 +138,40 @@ internal sealed class SocketConnection : IConnection
         {
             _sendLock.Release();
         }
-
+        
         _sessionConfig = sessionConfig;
         var authToken = sessionConfig?.AuthToken ?? AuthToken;
-        await BoltProtocol.AuthenticateAsync(this, _userAgent, authToken, notificationsConfig)
-            .ConfigureAwait(false);
+        if (!this.SupportsReAuth() && sessionConfig?.AuthToken != null)
+        {
+            // Not allowed.
+            throw new ReauthException(true);
+        }
+        await BoltProtocol.AuthenticateAsync(this, _userAgent, authToken, notificationsConfig).ConfigureAwait(false);
+
+        if (this.SupportsReAuth() || sessionConfig?.AuthToken == null)
+        {
+            AuthorizationStatus = AuthorizationStatus.FreshlyAuthenticated;
+        }
+        else
+        {
+            AuthorizationStatus = AuthorizationStatus.SessionToken;
+        }
     }
 
     public IAuthTokenManager AuthTokenManager { get; }
 
     public Task ReAuthAsync(
         IAuthToken newAuthToken,
-        bool switching,
         CancellationToken cancellationToken = default)
     {
-        if (switching && !this.SupportsReAuth())
-        {
-            throw new ReauthException(switching);
-        }
-        
-        if (newAuthToken is null || (newAuthToken.Equals(AuthToken) && !ReAuthorizationRequired))
-        {
-            return Task.CompletedTask;
-        }
-
         if (!this.SupportsReAuth())
         {
-            throw new ReauthException(switching);
+            // if we are attempting to reauthenticate on 5.0 or earlier, throw an exception.
+            throw new ReauthException(false);
         }
-
         // Assume success, if Reauth fails we destroy the connection.
         AuthToken = newAuthToken;
-        ReAuthorizationRequired = false;
+        AuthorizationStatus = AuthorizationStatus.FreshlyAuthenticated;
         return BoltProtocol.ReAuthAsync(this, newAuthToken);
     }
 
@@ -335,12 +337,42 @@ internal sealed class SocketConnection : IConnection
 
     public async Task ValidateCredsAsync()
     {
-        var connectionToken = ReAuthorizationRequired ? null : AuthToken;
-        ReAuthorizationRequired = false;
-        var token = SessionConfig?.AuthToken ?? connectionToken;
-        token ??= await AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
-
-        await ReAuthAsync(token, SessionConfig?.AuthToken != null).ConfigureAwait(false);
+        var token = AuthToken;
+        if (AuthorizationStatus == AuthorizationStatus.TokenExpired)
+        {
+            if (!this.SupportsReAuth())
+            {
+                // This shouldn't happen, connections that don't support re-auth should be cleaned up by the pool.
+                throw new ReauthException(false);
+            }
+            // Get a new token
+            token = await AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
+            if (token == null || token.Equals(AuthToken))
+            {
+                // the token is not valid for re-auth and will infinitely fail, so we need to destroy the connection.
+                throw new InvalidOperationException(
+                    "Attempted to use a token that is not valid for re-authentication.");
+            }   
+        }
+        else if (SessionConfig?.AuthToken != null)
+        {
+            if (!this.SupportsReAuth())
+            {
+                throw new ReauthException(true);
+            }
+            // user switching
+            token = SessionConfig.AuthToken;
+        } 
+        else if (AuthorizationStatus == AuthorizationStatus.Pooled)
+        {
+            token = await AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
+        }
+        
+        // The token has changed or the connection needs to re-authenticate but can use the same credentials.
+        if (AuthorizationStatus == AuthorizationStatus.AuthorizationExpired || !token.Equals(AuthToken))
+        {
+            await ReAuthAsync(token).ConfigureAwait(false);
+        }
     }
 
     public Task LoginAsync(string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)

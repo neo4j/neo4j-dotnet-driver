@@ -38,7 +38,6 @@ internal sealed class ConnectionPool : IConnectionPool
     private const int SpinningWaitInterval = 500;
     private readonly TimeSpan _connectionAcquisitionTimeout;
     private readonly IPooledConnectionFactory _connectionFactory;
-    private readonly ConnectionSettings _connectionSettings;
 
     private readonly IConnectionValidator _connectionValidator;
 
@@ -80,7 +79,7 @@ internal sealed class ConnectionPool : IConnectionPool
         _connectionAcquisitionTimeout = connectionPoolSettings.ConnectionAcquisitionTimeout;
 
         _connectionFactory = connectionFactory;
-        _connectionSettings = connectionSettings;
+        ConnectionSettings = connectionSettings;
 
         var connIdleTimeout = connectionPoolSettings.ConnectionIdleTimeout;
         var maxConnectionLifetime = connectionPoolSettings.MaxConnectionLifetime;
@@ -156,19 +155,24 @@ internal sealed class ConnectionPool : IConnectionPool
                 try
                 {
                     connection.SessionConfig = sessionConfig;
-                    await connection.ValidateCredsAsync().ConfigureAwait(false);
+                    if (connection.AuthorizationStatus != AuthorizationStatus.FreshlyAuthenticated 
+                     && connection.AuthorizationStatus != AuthorizationStatus.SessionToken)
+                    {
+                        await connection.ValidateCredsAsync().ConfigureAwait(false);
+                    }
+
                     _poolMetricsListener?.PoolAcquired();
                     return connection;
                 }
                 catch (ReauthException ex)
                 {
                     _logger.Debug(ex.ToString());
-                    connection.StaleCredentials = true;
-                    await connection.CloseAsync().ConfigureAwait(false);
                     if (ex.IsUserSwitching)
                     {
                         throw;
                     }
+
+                    await DestroyConnectionAsync(connection).ConfigureAwait(false);
                 }
             } while (true);
         }
@@ -243,19 +247,7 @@ internal sealed class ConnectionPool : IConnectionPool
         return connection.Server;
     }
 
-    public ConnectionSettings ConnectionSettings => _connectionSettings;
-
-    private async Task<T> CheckConnectionSupport<T>(Func<IConnection, T> check)
-    {
-        // Establish a connection with the server and immediately close it.
-        var connection = await AcquireAsync(Simple.Mode, Simple.Database, null, Simple.Bookmarks)
-            .ConfigureAwait(false);
-
-        var multiDb = check(connection);
-        await connection.CloseAsync().ConfigureAwait(false);
-
-        return multiDb;
-    }
+    public ConnectionSettings ConnectionSettings { get; }
 
     public Task<bool> SupportsMultiDbAsync()
     {
@@ -293,26 +285,42 @@ internal sealed class ConnectionPool : IConnectionPool
         return new ValueTask(CloseAsync());
     }
 
-    /// <summary>
-    /// When a connection is marked as requiring reauthorization then all older connections also need to be marked in
-    /// such a way. This will cause such marked connections to be closed and re-established with new authorization next time
-    /// they are used.
-    /// </summary>
-    /// <param name="connection"></param>
-    /// <returns></returns>
-    public void MarkConnectionsForReauthorization(IPooledConnection connection)
+    public void OnPoolMemberException(IPooledConnection connection, Exception exception)
     {
-        var connectionAge = connection.LifetimeTimer.ElapsedMilliseconds;
-
-        connection.ReAuthorizationRequired = true;
-
-        foreach (var inUseConn in _inUseConnections)
+        if (exception is TokenExpiredException)
         {
-            if (inUseConn.LifetimeTimer.ElapsedMilliseconds >= connectionAge)
+            // if a token exception occured the pool member, all connections in the pool that are using that token
+            // should be closed. This is because the token is now invalid and all connections using it will fail.
+            foreach (var conn in _inUseConnections)
             {
-                inUseConn.ReAuthorizationRequired = true;
+                if (connection.AuthToken.Equals(conn.AuthToken))
+                {
+                    conn.AuthorizationStatus = AuthorizationStatus.TokenExpired;
+                }
             }
         }
+        if (exception is AuthorizationException)
+        {   
+            foreach (var conn in _inUseConnections)
+            {
+                if (connection.AuthToken.Equals(conn.AuthToken))
+                {
+                    conn.AuthorizationStatus = AuthorizationStatus.AuthorizationExpired;
+                }
+            }
+        }
+    }
+
+    private async Task<T> CheckConnectionSupport<T>(Func<IConnection, T> check)
+    {
+        // Establish a connection with the server and immediately close it.
+        var connection = await AcquireAsync(Simple.Mode, Simple.Database, null, Simple.Bookmarks)
+            .ConfigureAwait(false);
+
+        var multiDb = check(connection);
+        await connection.CloseAsync().ConfigureAwait(false);
+
+        return multiDb;
     }
 
     private async Task<IPooledConnection> CreateNewPooledConnectionAsync(
@@ -356,14 +364,16 @@ internal sealed class ConnectionPool : IConnectionPool
 
         _poolMetricsListener?.ConnectionCreating();
 
-        var token = sessionConfig?.AuthToken ?? await _connectionSettings.AuthTokenManager.GetTokenAsync();
+        var token = sessionConfig?.AuthToken ??
+            await ConnectionSettings.AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
 
-        return _connectionFactory.Create(_uri,
+        return _connectionFactory.Create(
+            _uri,
             this,
-            _connectionSettings.SocketSettings,
+            ConnectionSettings.SocketSettings,
             token,
-            _connectionSettings.AuthTokenManager,
-            _connectionSettings.UserAgent,
+            ConnectionSettings.AuthTokenManager,
+            ConnectionSettings.UserAgent,
             RoutingContext);
     }
 
@@ -468,6 +478,7 @@ internal sealed class ConnectionPool : IConnectionPool
             }
 
             var connection = await GetPooledOrNewConnectionAsync(sessionConfig, cancellationToken).ConfigureAwait(false);
+
             if (_connectionValidator.OnRequire(connection))
             {
                 await AddConnectionAsync(connection).ConfigureAwait(false);
@@ -506,7 +517,9 @@ internal sealed class ConnectionPool : IConnectionPool
     {
         if (_idleConnections.TryTake(out var connection))
         {
-            connection.ReAuthorizationRequired = true;
+            if (connection.AuthorizationStatus == AuthorizationStatus.FreshlyAuthenticated)
+                connection.AuthorizationStatus = AuthorizationStatus.Pooled;
+
             return connection;
         }
 
@@ -533,8 +546,8 @@ internal sealed class ConnectionPool : IConnectionPool
             await Task.Delay(SpinningWaitInterval, cancellationToken).ConfigureAwait(false);
             if (_idleConnections.TryTake(out var idle))
             {
-                idle.ReAuthorizationRequired = true;
-                await idle.ReAuthAsync(sessionConfig?.AuthToken, false, cancellationToken).ConfigureAwait(false);
+                if (idle.AuthorizationStatus == AuthorizationStatus.FreshlyAuthenticated)
+                    idle.AuthorizationStatus = AuthorizationStatus.Pooled;
                 return idle;
             }
         }

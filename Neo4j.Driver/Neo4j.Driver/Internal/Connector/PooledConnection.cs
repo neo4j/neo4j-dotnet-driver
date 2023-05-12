@@ -95,14 +95,10 @@ internal class PooledConnection : DelegatedConnection, IPooledConnection
         {
             HasUnrecoverableError = true;
         }
-
+        
         if (error is Neo4jException)
         {
-            if (error.IsAuthorizationError())
-            {
-                _releaseManager.MarkConnectionsForReauthorization(this);
-            }
-
+            _releaseManager.OnPoolMemberException(this, error);
             throw error;
         }
 

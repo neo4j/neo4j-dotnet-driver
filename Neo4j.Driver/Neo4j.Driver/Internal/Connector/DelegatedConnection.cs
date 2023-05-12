@@ -108,12 +108,11 @@ internal abstract class DelegatedConnection : IConnection
 
     public async Task ReAuthAsync(
         IAuthToken newAuthToken,
-        bool IsUserSwitching,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            await Delegate.ReAuthAsync(newAuthToken, IsUserSwitching, cancellationToken).ConfigureAwait(false);
+            await Delegate.ReAuthAsync(newAuthToken, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -143,10 +142,10 @@ internal abstract class DelegatedConnection : IConnection
     public IServerInfo Server => Delegate.Server;
 
     public IBoltProtocol BoltProtocol => Delegate.BoltProtocol;
-    public bool ReAuthorizationRequired
+    public AuthorizationStatus AuthorizationStatus
     {
-        get => Delegate.ReAuthorizationRequired;
-        set => Delegate.ReAuthorizationRequired = value;
+        get => Delegate.AuthorizationStatus;
+        set => Delegate.AuthorizationStatus = value;
     }
 
     public bool UtcEncodedDateTime => Delegate.UtcEncodedDateTime;
@@ -258,7 +257,7 @@ internal abstract class DelegatedConnection : IConnection
     {
         if (error is TokenExpiredException te)
         {
-            ReAuthorizationRequired = true;
+            AuthorizationStatus = AuthorizationStatus.TokenExpired;
             if (te.Notified == false)
             {
                 await NotifyTokenExpiredAsync().ConfigureAwait(false);
@@ -267,7 +266,7 @@ internal abstract class DelegatedConnection : IConnection
         }
         else if (error is AuthorizationException)
         {
-            ReAuthorizationRequired = true;
+            AuthorizationStatus = AuthorizationStatus.AuthorizationExpired;
         }
     }
 
