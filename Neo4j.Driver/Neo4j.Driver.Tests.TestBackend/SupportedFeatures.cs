@@ -69,8 +69,9 @@ internal static class SupportedFeatures
             //"Optimization:ImplicitDefaultArguments",
             //"Optimization:MinimalResets",
             "Optimization:PullPipelining",
-            "Optimization:AuthPipelining"
+            "Optimization:AuthPipelining",
             //"Optimization:ResultListFetchAll",
+            "Backend:MockTime",
         };
     }
 

@@ -518,7 +518,9 @@ internal sealed class ConnectionPool : IConnectionPool
         if (_idleConnections.TryTake(out var connection))
         {
             if (connection.AuthorizationStatus == AuthorizationStatus.FreshlyAuthenticated)
+            {
                 connection.AuthorizationStatus = AuthorizationStatus.Pooled;
+            }
 
             return connection;
         }

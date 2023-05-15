@@ -233,11 +233,6 @@ internal sealed class SocketConnection : IConnection
         }
     }
 
-    public void ClearQueue()
-    {
-        // _messages.Clear();
-    }
-
     public Task ResetAsync()
     {
         return BoltProtocol.ResetAsync(this);

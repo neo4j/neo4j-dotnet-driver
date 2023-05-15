@@ -132,11 +132,6 @@ internal abstract class DelegatedConnection : IConnection
         }
     }
 
-    public void ClearQueue()
-    {
-        Delegate.ClearQueue();
-    }
-
     public virtual bool IsOpen => Delegate.IsOpen;
 
     public IServerInfo Server => Delegate.Server;

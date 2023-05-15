@@ -40,7 +40,7 @@ internal class NewExpirationBasedAuthTokenManager : IProtocolObject
     public override Task Process(Controller controller)
     {
         _controller = controller;
-        tokenManager = new ExpirationBasedAuthTokenManager(GetTokenAsync);
+        tokenManager = new ExpirationBasedAuthTokenManager(FakeTime.Instance, GetTokenAsync);
         return Task.CompletedTask;
     }
 
@@ -53,9 +53,13 @@ internal class NewExpirationBasedAuthTokenManager : IProtocolObject
 
         if (result.data.requestId == requestId)
         {
-            return new AuthTokenAndExpiration(
-                new AuthToken(result.data.auth.data.auth.data.ToDictionary()),
-                DateTime.Now.AddMilliseconds(result.data.auth.data.expiresInMs));
+            var token = new AuthToken(result.data.auth.data.auth.data.ToDictionary());
+            var expiresInMs = result.data.auth.data.expiresInMs;
+            var expiry = expiresInMs == 0
+                ? DateTime.MaxValue
+                : FakeTime.Instance.Now().AddMilliseconds(expiresInMs);
+
+            return new AuthTokenAndExpiration(token, expiry);
         }
 
         throw new Exception("GetTokenAsync: request IDs did not match");
