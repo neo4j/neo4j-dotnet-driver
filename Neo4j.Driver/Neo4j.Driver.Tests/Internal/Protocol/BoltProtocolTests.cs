@@ -165,6 +165,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
+                mockConn.SetupProperty(x => x.SessionConfig);
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocol.Instance.GetRoutingTableAsync(mockConn.Object, null, new("douglas fir"), null));
 
@@ -539,6 +540,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
+                mockConn.SetupProperty(x => x.SessionConfig);
 
                 var acp = new AutoCommitParams
                 {
@@ -829,6 +831,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
+                mockConn.SetupProperty(x => x.SessionConfig);
 
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocol.Instance.BeginTransactionAsync(

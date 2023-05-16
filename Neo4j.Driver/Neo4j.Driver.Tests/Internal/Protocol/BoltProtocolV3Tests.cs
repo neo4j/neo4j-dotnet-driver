@@ -126,6 +126,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V3_0);
+                mockConn.SetupProperty(x => x.SessionConfig);
 
                 var ex = await Record.ExceptionAsync(
                     () => BoltProtocolV3.Instance.GetRoutingTableAsync(mockConn.Object, "db", new("Douglas Fir"), null));
@@ -219,6 +220,7 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V3_0);
+                mockConn.SetupProperty(x => x.SessionConfig);
 
                 var acp = new AutoCommitParams
                 {
@@ -395,6 +397,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         null,
                         TransactionConfig.Default,
+                        null,
                         null));
 
                 exception.Should().BeOfType<ArgumentException>();
@@ -416,6 +419,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         null,
                         TransactionConfig.Default,
+                        null,
                         new NotificationsDisabledConfig()));
 
                 exception.Should().BeOfType<ArgumentOutOfRangeException>();
@@ -436,6 +440,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         null,
                         TransactionConfig.Default,
+                        null,
                         new NotificationsDisabledConfig()));
 
                 exception.Should().BeNull();
@@ -510,11 +515,11 @@ namespace Neo4j.Driver.Internal.Protocol
                     null);
 
                 msgFactory.Verify(
-                    x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null, null),
+                    x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
                     Times.Once);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(fakeMessage, NoOpResponseHandler.Instance),
+                    x => x.EnqueueAsync(fakeMessage, ErrorThrowingResponseHandler.Instance),
                     Times.Once);
 
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);

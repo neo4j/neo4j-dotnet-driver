@@ -73,7 +73,8 @@ internal class ConnectionValidator : IConnectionValidator
 
     private bool AuthStatusIsRecoverable(IConnection connection)
     {
-        return connection.AuthorizationStatus == AuthorizationStatus.FreshlyAuthenticated || connection.AuthorizationStatus == AuthorizationStatus.Pooled || connection.SupportsReAuth();
+        return connection.AuthorizationStatus is AuthorizationStatus.FreshlyAuthenticated or AuthorizationStatus.Pooled
+         || connection.SupportsReAuth();
     }
 
     public bool OnRequire(IPooledConnection connection)

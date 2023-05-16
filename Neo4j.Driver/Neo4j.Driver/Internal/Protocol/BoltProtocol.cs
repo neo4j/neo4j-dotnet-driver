@@ -82,6 +82,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
 
+        connection.SessionConfig = sessionConfig;
         BoltProtocolV3.ValidateImpersonatedUserForVersion(connection);
 
         return connection.Version >= BoltProtocolVersion.V4_3
@@ -94,6 +95,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         AutoCommitParams autoCommitParams,
         INotificationsConfig notificationsConfig)
     {
+        connection.SessionConfig = autoCommitParams.SessionConfig;
         BoltProtocolV3.ValidateImpersonatedUserForVersion(connection);
         BoltProtocolV3.ValidateNotificationsForVersion(connection, notificationsConfig);
 
@@ -142,6 +144,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         SessionConfig sessionConfig,
         INotificationsConfig notificationsConfig)
     {
+        connection.SessionConfig = sessionConfig;
         BoltProtocolV3.ValidateImpersonatedUserForVersion(connection);
         BoltProtocolV3.ValidateNotificationsForVersion(connection, notificationsConfig);
         return _boltProtocolV3.BeginTransactionAsync(

@@ -44,6 +44,8 @@ namespace Neo4j.Driver.Tests
             {
                 var mock = new Mock<IConnection>();
                 mock.Setup(x => x.IsOpen).Returns(true);
+                mock.Setup(x => x.ToString()).Returns("ReusableConnectionFactory");
+                mock.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 return new MockedConnectionFactory(mock.Object);
             }
         }
@@ -289,6 +291,7 @@ namespace Neo4j.Driver.Tests
             {
                 var conns = new BlockingCollection<IPooledConnection>();
                 var closedMock = new Mock<IPooledConnection>();
+                closedMock.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 closedMock.Setup(x => x.IsOpen).Returns(false);
 
                 conns.Add(closedMock.Object);
@@ -319,6 +322,7 @@ namespace Neo4j.Driver.Tests
             {
                 var conns = new BlockingCollection<IPooledConnection>();
                 var mock = new Mock<IPooledConnection>();
+                mock.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 mock.Setup(x => x.IsOpen).Returns(true);
                 mock.Setup(x => x.LifetimeTimer).Returns(MockedTimer);
 
@@ -342,6 +346,7 @@ namespace Neo4j.Driver.Tests
                 var conns = new BlockingCollection<IPooledConnection>();
                 var healthyMock = new Mock<IPooledConnection>();
                 healthyMock.Setup(x => x.IsOpen).Returns(true);
+                healthyMock.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 healthyMock.Setup(x => x.LifetimeTimer).Returns(MockedTimer);
                 var unhealthyMock = new Mock<IPooledConnection>();
                 unhealthyMock.Setup(x => x.IsOpen).Returns(false);
@@ -367,6 +372,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mock = new Mock<IPooledConnection>();
+                mock.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 mock.Setup(x => x.IsOpen).Returns(true);
                 var timerMock = new Mock<ITimer>();
                 timerMock.Setup(x => x.ElapsedMilliseconds).Returns(1000);
@@ -415,6 +421,7 @@ namespace Neo4j.Driver.Tests
                 mock.Setup(x => x.IdleTimer).Returns(timerMock.Object);
                 var idleTooLongId = "Molly";
                 mock.Setup(x => x.ToString()).Returns(idleTooLongId);
+                mock.Setup(x =>x.Version).Returns(BoltProtocolVersion.V5_0);
 
                 var conns = new BlockingCollection<IPooledConnection>();
                 conns.Add(mock.Object);
@@ -427,7 +434,16 @@ namespace Neo4j.Driver.Tests
                         MaxConnectionLifetime = Config.InfiniteInterval // disable life time check
                     });
 
-                var pool = new ConnectionPool(ReusableConnectionFactory, conns, poolSettings: poolSettings);
+                var connectionSettings = new ConnectionSettings(
+                    new Uri("bolt://localhost:7687"),
+                    AuthTokenManagers.None,
+                    Config.Default);
+
+                var pool = new ConnectionPool(
+                    ReusableConnectionFactory,
+                    conns,
+                    poolSettings: poolSettings,
+                    connectionSettings: connectionSettings);
 
                 pool.NumberOfIdleConnections.Should().Be(1);
                 pool.NumberOfInUseConnections.Should().Be(0);
@@ -447,6 +463,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldGetTokenFromAuthManager()
             {
                 var mockConnection = new Mock<IPooledConnection>();
+                mockConnection.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 mockConnection.Setup(x => x.IsOpen).Returns(true);
                 var timerMock = new Mock<ITimer>();
                 timerMock.Setup(x => x.ElapsedMilliseconds).Returns(1000);
@@ -791,6 +808,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mock = new Mock<IPooledConnection>();
+                mock.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 mock.Setup(x => x.IsOpen).Returns(true);
                 var timerMock = new Mock<ITimer>();
                 mock.Setup(x => x.IdleTimer).Returns(timerMock.Object);
@@ -822,6 +840,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mock = new Mock<IPooledConnection>();
+                mock.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 mock.Setup(x => x.IsOpen).Returns(true);
                 var timerMock = new Mock<ITimer>();
                 mock.Setup(x => x.IdleTimer).Returns(timerMock.Object);
@@ -857,6 +876,7 @@ namespace Neo4j.Driver.Tests
                 pool.NumberOfInUseConnections.Should().Be(0);
 
                 var mock = new Mock<IPooledConnection>();
+                mock.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 inUseConns.TryAdd(mock.Object);
                 pool.NumberOfInUseConnections.Should().Be(1);
 
@@ -1078,6 +1098,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldReportCorrectPoolSizeWhenIdleConnectionsAreNotAllowed()
             {
                 var connectionMock = new Mock<IConnection>();
+                connectionMock.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 connectionMock.Setup(x => x.IsOpen).Returns(true);
 
                 var pool = CreatePool(connectionMock.Object, 0, 5);
@@ -1114,6 +1135,7 @@ namespace Neo4j.Driver.Tests
                 var protocol = new Mock<IBoltProtocol>();
                 var connectionMock = new Mock<IConnection>();
                 connectionMock.Setup(x => x.IsOpen).Returns(true);
+                connectionMock.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 connectionMock.Setup(x => x.BoltProtocol).Returns(protocol.Object);
 
                 var pool = CreatePool(connectionMock.Object, 5, 5);
@@ -1149,6 +1171,7 @@ namespace Neo4j.Driver.Tests
             {
                 var connectionMock = new Mock<IConnection>();
                 connectionMock.Setup(x => x.IsOpen).Returns(true);
+                connectionMock.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 var pool = CreatePool(connectionMock.Object, 5, 5);
 
                 var rnd = new Random(Guid.NewGuid().GetHashCode());
@@ -1199,6 +1222,7 @@ namespace Neo4j.Driver.Tests
             public async void ShouldReportCorrectPoolSizeWhenIdleConnectionsAreNotAllowedAsync()
             {
                 var connectionMock = new Mock<IConnection>();
+                connectionMock.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 connectionMock.Setup(x => x.IsOpen).Returns(true);
 
                 var pool = CreatePool(connectionMock.Object, 0, 5);
@@ -1234,6 +1258,7 @@ namespace Neo4j.Driver.Tests
             {
                 var connectionMock = new Mock<IConnection>();
                 connectionMock.Setup(x => x.IsOpen).Returns(true);
+                connectionMock.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 var pool = CreatePool(connectionMock.Object, 5, 5);
 
                 var rnd = new Random(Guid.NewGuid().GetHashCode());
@@ -1574,6 +1599,9 @@ namespace Neo4j.Driver.Tests
                 openConnMock.Setup(x => x.IsOpen)
                     .Returns(true)
                     .Callback(() => pool.DeactivateAsync().Wait());
+
+                openConnMock.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
+
 
                 idleConnections.Add(openConnMock.Object);
                 pool.NumberOfIdleConnections.Should().Be(1);

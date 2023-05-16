@@ -79,8 +79,8 @@ internal sealed class SocketConnection : IConnection
         string userAgent,
         ILogger logger,
         ServerInfo server,
-        IAuthTokenManager authTokenManager,
         IResponsePipeline responsePipeline = null,
+        IAuthTokenManager authTokenManager = null,
         IBoltProtocolFactory protocolFactory = null)
     {
         _client = socketClient ?? throw new ArgumentNullException(nameof(socketClient));

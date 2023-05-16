@@ -122,8 +122,7 @@ public static class GraphDatabase
         return Driver(new Uri(uri), authToken);
     }
 
-
-    public static IDriver Driver(string uri, IAuthTokenManager authTokenManager)
+    internal static IDriver Driver(string uri, IAuthTokenManager authTokenManager)
     {
         return Driver(new Uri(uri), authTokenManager);
     }
@@ -145,7 +144,7 @@ public static class GraphDatabase
         return Driver(uri, authToken, null);
     }
 
-    public static IDriver Driver(Uri uri, IAuthTokenManager authTokenManager)
+    internal static IDriver Driver(Uri uri, IAuthTokenManager authTokenManager)
     {
         return Driver(uri, authTokenManager, null);
     }
@@ -170,7 +169,7 @@ public static class GraphDatabase
         return Driver(new Uri(uri), authToken, action);
     }
 
-    public static IDriver Driver(string uri, IAuthTokenManager authTokenManager, Action<ConfigBuilder> action)
+    internal static IDriver Driver(string uri, IAuthTokenManager authTokenManager, Action<ConfigBuilder> action)
     {
         return Driver(new Uri(uri), authTokenManager, action);
     }
@@ -194,7 +193,7 @@ public static class GraphDatabase
         return Driver(uri, AuthTokenManagers.Static(authToken), action);
     }
 
-    public static IDriver Driver(Uri uri, IAuthTokenManager authTokenManager, Action<ConfigBuilder> action)
+    internal static IDriver Driver(Uri uri, IAuthTokenManager authTokenManager, Action<ConfigBuilder> action)
     {
         uri = uri ?? throw new ArgumentNullException(nameof(uri));
         authTokenManager = authTokenManager ?? throw new ArgumentNullException(nameof(authTokenManager));
