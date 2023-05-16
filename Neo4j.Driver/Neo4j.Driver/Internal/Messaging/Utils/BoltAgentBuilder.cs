@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -24,35 +25,38 @@ namespace Neo4j.Driver.Internal.Messaging.Utils;
 
 internal static class BoltAgentBuilder
 {
-    private static readonly Lazy<string> LazyAgent = new(GetBoltAgent, LazyThreadSafetyMode.PublicationOnly);
+    private static readonly Lazy<Dictionary<string, string>> LazyAgent = new(GetBoltAgent, LazyThreadSafetyMode.PublicationOnly);
 
-    public static string Agent => LazyAgent.Value;
+    public static Dictionary<string, string> Agent => LazyAgent.Value;
 
     /// <summary>
     /// This string follows a common format and other teams across neo4j rely on it. <br/> Changes need to be in
     /// accordance with company policy.
     /// </summary>
-    private static string GetBoltAgent()
+    private static Dictionary<string, string> GetBoltAgent()
     {
         var version = typeof(BoltAgentBuilder).Assembly.GetName().Version;
         if (version == null)
         {
             throw new ClientException("Could not collect assembly version of driver required for handshake.");
         }
-
+        
         var os = OsString();
         var env = DotnetString();
 
-        return $"neo4j-dotnet/{version.Major}.{version.Minor}.{version.Build}{os}{env}";
+        return new Dictionary<string, string>
+        {
+            ["product"] = $"neo4j-dotnet/{version.Major}.{version.Minor}.{version.Build}",
+            ["language_details"] = env,
+            ["platform"] = os
+        };
     }
 
     private static string DotnetString()
     {
         try
         {
-            var regex = new Regex(@"\.net ([a-z]+)", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
-            var framework = regex.Replace(RuntimeInformation.FrameworkDescription, ".NET-$1").Replace(' ', '/');
-            return $" {framework}";
+            return RuntimeInformation.FrameworkDescription;
         }
         catch (Exception)
         {
@@ -66,7 +70,7 @@ internal static class BoltAgentBuilder
         {
             var arch = RuntimeInformation.ProcessArchitecture;
             var os = RuntimeInformation.OSDescription;
-            return $" ({os};{arch})";
+            return $"{os};{arch}";
         }
         catch (Exception)
         {

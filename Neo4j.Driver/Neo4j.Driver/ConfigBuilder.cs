@@ -262,16 +262,14 @@ public sealed class ConfigBuilder
     }
 
     /// <summary>
-    /// Sets the User Agent.<br/>
-    /// If not set by user the default sent to the server will be "neo4j-dotnet/x.y.z (operating system; architecture)
-    /// dotnet-runtime/dotnet-version" where x is the  major version and y is the minor version and z is build. <br/>
-    /// Example: neo4j-dotnet/5.8.0 (Windows NT; X64) .NET/6.0.3
+    /// Sets the userAgent. Used to get and set the User Agent string. If not used the default will be
+    /// "neo4j-dotnet/x.y" where x is the major version and y is the minor version.
     /// </summary>
     /// <param name="userAgent">The user agent string</param>
     /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithUserAgent(string userAgent)
     {
-        _config.UserAgent = userAgent;
+        _config.UserAgent = userAgent ?? throw new ArgumentNullException(nameof(userAgent));
         return this;
     }
 

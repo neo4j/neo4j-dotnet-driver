@@ -35,6 +35,7 @@ namespace Neo4j.Driver.Tests
     public class SocketConnectionTests
     {
         private static IAuthToken AuthToken => AuthTokens.None;
+        private static string UserAgent => ConnectionSettings.DefaultUserAgent;
         private static ILogger Logger => new Mock<ILogger>().Object;
         private static Uri uri => new("http://neo4j.com");
         private static ServerInfo Server => new(uri);
@@ -52,7 +53,7 @@ namespace Neo4j.Driver.Tests
             return new SocketConnection(
                 socketClient,
                 AuthToken,
-                null,
+                UserAgent,
                 logger ?? Logger,
                 server,
                 pipeline,
@@ -97,7 +98,7 @@ namespace Neo4j.Driver.Tests
                     .Throws(new IOException("I will stop socket conn from initialization"));
 
                 // ReSharper disable once ObjectCreationAsStatement
-                var conn = new SocketConnection(mockClient.Object, AuthToken, null, Logger, Server);
+                var conn = new SocketConnection(mockClient.Object, AuthToken, UserAgent, Logger, Server);
                 // When
                 var error = await Record.ExceptionAsync(() => conn.InitAsync(null));
                 // Then
