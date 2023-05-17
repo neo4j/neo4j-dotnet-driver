@@ -95,7 +95,6 @@ internal sealed class BoltProtocol : IBoltProtocol
         AutoCommitParams autoCommitParams,
         INotificationsConfig notificationsConfig)
     {
-        connection.SessionConfig = autoCommitParams.SessionConfig;
         BoltProtocolV3.ValidateImpersonatedUserForVersion(connection);
         BoltProtocolV3.ValidateNotificationsForVersion(connection, notificationsConfig);
 

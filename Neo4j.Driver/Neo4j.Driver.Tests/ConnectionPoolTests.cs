@@ -89,7 +89,9 @@ namespace Neo4j.Driver.Tests
                 new MockedConnectionFactory(),
                 idleConnections,
                 inUseConnections,
-                validator: new ConnectionValidator(Config.InfiniteInterval, Config.InfiniteInterval));
+                validator: new ConnectionValidator(Config.InfiniteInterval, Config.InfiniteInterval),
+                connectionSettings: new ConnectionSettings(new Uri("bolt://localhost:7687"), AuthTokenManagers.None,
+                    Config.Default));
         }
 
         public class AcquireMethod
@@ -415,6 +417,7 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mock = new Mock<IPooledConnection>();
+                mock.Setup(x => x.AuthorizationStatus).Returns(AuthorizationStatus.FreshlyAuthenticated);
                 mock.Setup(x => x.IsOpen).Returns(true);
                 var timerMock = new Mock<ITimer>();
                 timerMock.Setup(x => x.ElapsedMilliseconds).Returns(10);
@@ -499,62 +502,35 @@ namespace Neo4j.Driver.Tests
             [InlineData(500)]
             public async Task ShouldAcquireNewWhenBeingUsedConcurrentlyBy(int numberOfThreads)
             {
-                var ids = new List<string>();
-                for (var i = 0; i < numberOfThreads; i++)
-                {
-                    ids.Add($"{i}");
-                }
-
                 var mockConns = new Queue<Mock<IPooledConnection>>();
                 var conns = new BlockingCollection<IPooledConnection>();
                 for (var i = 0; i < numberOfThreads; i++)
                 {
                     var mock = new Mock<IPooledConnection>();
+                    mock.Setup(x => x.AuthorizationStatus).Returns(AuthorizationStatus.FreshlyAuthenticated);
+                    mock.Setup(x => x.Version).Returns(BoltProtocolVersion.V4_4);
                     mock.Setup(x => x.IsOpen).Returns(true);
-                    mock.Setup(x => x.ToString()).Returns(ids[i]);
+                    mock.Setup(x => x.ToString()).Returns(i.ToString());
                     conns.Add(mock.Object);
                     mockConns.Enqueue(mock);
                 }
 
                 var pool = NewConnectionPoolWithConnectionTimeoutCheckDisabled(conns);
-
                 pool.NumberOfIdleConnections.Should().Be(numberOfThreads);
                 pool.NumberOfInUseConnections.Should().Be(0);
 
-                var receivedIds = new List<string>();
-
-                var tasks = new Task[numberOfThreads];
-                for (var i = 0; i < numberOfThreads; i++)
+                async Task<string> AcquireConnection(int i)
                 {
-                    var localI = i;
-                    tasks[localI] =
-                        Task.Run(
-                            async () =>
-                            {
-                                try
-                                {
-                                    await Task.Delay(500);
-                                    var conn = await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
-                                    lock (receivedIds)
-                                    {
-                                        receivedIds.Add(conn.ToString());
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    _output.WriteLine($"Task[{localI}] died: {ex}");
-                                }
-                            });
+                    var conn = await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
+                    return conn.ToString();
                 }
 
-                await Task.WhenAll(tasks);
-
+                var tasks = await Task.WhenAll(Enumerable.Range(0, numberOfThreads).Select(AcquireConnection));
+                var receivedIds = tasks.ToList();
                 receivedIds.Count.Should().Be(numberOfThreads);
-                foreach (var receivedId in receivedIds)
-                {
-                    receivedIds.Should().ContainSingle(x => x == receivedId);
-                    ids.Should().Contain(receivedId);
-                }
+                receivedIds.Should().OnlyHaveUniqueItems();
+                var ids = Enumerable.Range(0, numberOfThreads).Select(x => x.ToString());
+                receivedIds.Should().BeEquivalentTo(ids);
 
                 foreach (var mock in mockConns)
                 {
@@ -585,6 +561,7 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var idleConnections = new BlockingCollection<IPooledConnection>();
                 var healthyMock = new Mock<IPooledConnection>();
+                healthyMock.Setup(x => x.AuthorizationStatus).Returns(AuthorizationStatus.FreshlyAuthenticated);
                 var pool = NewConnectionPoolWithConnectionTimeoutCheckDisabled(idleConnections);
 
                 pool.NumberOfIdleConnections.Should().Be(0);
@@ -1745,7 +1722,9 @@ namespace Neo4j.Driver.Tests
                 string userAgent,
                 IDictionary<string, string> routingContext)
             {
-                return new PooledConnection(_connection, releaseManager);
+                var conn =  new PooledConnection(_connection, releaseManager);
+                conn.AuthorizationStatus = AuthorizationStatus.FreshlyAuthenticated;
+                return conn;
             }
         }
     }
