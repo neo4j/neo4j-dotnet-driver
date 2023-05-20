@@ -190,10 +190,10 @@ internal sealed class PipelinedMessageReader : IMessageReader
         ReadResult readResult,
         List<short> sizes)
     {
-        var packStreamReader = new PackStreamReader(
+        var packStreamReader = new SequencePackStreamReader(
             reader._format,
-            new MemoryStream(readResult.Buffer.Slice(2, sizes[0]).ToArray()),
-            reader._buffers);
+            reader._buffers,
+            new SequenceReader<byte>(readResult.Buffer.Slice(2, sizes[0])));
 
         var end = sizes[0] + 4;
         // Advance to end of message by create a buffer slice from the end of the chunk.
@@ -213,12 +213,12 @@ internal sealed class PipelinedMessageReader : IMessageReader
         // Copy all chunks into memory
         CopyToMemory(sizes, readResult, memory, pipeReader);
         // convert memory to array
-        var bytes = memory.Memory.Span.Slice(0, totalSize).ToArray();
+        var bytes = memory.Memory.Span.Slice(0, totalSize);
         // Create a new stream from the array and parse it
-        var packStreamReader = new PackStreamReader(
+        var packStreamReader = new SequencePackStreamReader(
             reader._format,
-            new MemoryStream(bytes),
-            reader._buffers);
+            reader._buffers,
+            new SequenceReader<byte>(new ReadOnlySequence<byte>(memory.Memory.Slice(0, totalSize))));
         
         return packStreamReader.ReadMessage();
     }

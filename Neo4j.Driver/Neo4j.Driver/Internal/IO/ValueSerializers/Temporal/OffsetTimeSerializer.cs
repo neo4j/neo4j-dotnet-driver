@@ -26,7 +26,7 @@ internal sealed class OffsetTimeSerializer : IPackStreamSerializer
     public const int StructSize = 2;
     internal static readonly OffsetTimeSerializer Instance = new();
 
-    public IEnumerable<byte> ReadableStructs => new[] { StructType };
+    public byte[] ReadableStructs => new[] { StructType };
 
     public IEnumerable<Type> WritableTypes => new[] { typeof(OffsetTime) };
 
@@ -47,5 +47,15 @@ internal sealed class OffsetTimeSerializer : IPackStreamSerializer
         writer.WriteStructHeader(StructSize, StructType);
         writer.WriteLong(time.ToNanoOfDay());
         writer.WriteInt(time.OffsetSeconds);
+    }
+
+    public object DeserializeSequence(BoltProtocolVersion version, SequencePackStreamReader reader, byte signature, int size)
+    {
+        PackStream.EnsureStructSize("Time", StructSize, size);
+
+        var nanosOfDay = reader.ReadLong();
+        var offsetSeconds = reader.ReadInteger();
+
+        return new OffsetTime(TemporalHelpers.NanoOfDayToTime(nanosOfDay), offsetSeconds);
     }
 }

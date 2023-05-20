@@ -25,7 +25,7 @@ internal class PathSerializer : ReadOnlySerializer
 {
     public const byte Path = (byte)'P';
     internal static readonly PathSerializer Instance = new();
-    public override IEnumerable<byte> ReadableStructs => new[] { Path };
+    public override byte[] ReadableStructs => new[] { Path };
 
     public override object Deserialize(PackStreamReader reader)
     {

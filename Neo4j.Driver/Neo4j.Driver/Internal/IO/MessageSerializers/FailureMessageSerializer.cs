@@ -21,12 +21,12 @@ using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers;
 
-internal sealed class FailureMessageSerializer : ReadOnlySerializer
+internal sealed class FailureMessageSerializer : ReadOnlySerializer, IPackStreamMessageDeserializer
 {
     internal static FailureMessageSerializer Instance = new();
 
     private static readonly byte[] StructTags = { MessageFormat.MsgFailure };
-    public override IEnumerable<byte> ReadableStructs => StructTags;
+    public override byte[] ReadableStructs => StructTags;
 
     public override object Deserialize(
         BoltProtocolVersion boltProtocolVersion,
@@ -55,9 +55,30 @@ internal sealed class FailureMessageSerializer : ReadOnlySerializer
         return new FailureMessage(code, message);
     }
 
-    public override object Deserialize(PackStreamReader reader)
+    public IResponseMessage DeserializeMessage(
+        BoltProtocolVersion formatVersion,
+        SequencePackStreamReader packStreamReader,
+        byte signature,
+        int size)
     {
-        // overload not required for this serializer.
-        throw new NotImplementedException();
+        var values = packStreamReader.ReadMap();
+        var code = values["code"]?.ToString();
+        var message = values["message"]?.ToString();
+
+        // codes were fixed in bolt 5, so we need to interpret these codes.
+        if (formatVersion.MajorVersion < 5)
+        {
+            if (code == "Neo.TransientError.Transaction.Terminated")
+            {
+                code = "Neo.ClientError.Transaction.Terminated";
+            }
+
+            if (code == "Neo.TransientError.Transaction.LockClientStopped")
+            {
+                code = "Neo.ClientError.Transaction.LockClientStopped";
+            }
+        }
+
+        return new FailureMessage(code, message);
     }
 }
