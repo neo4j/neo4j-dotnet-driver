@@ -52,5 +52,22 @@ internal abstract class ReadOnlySerializer : IPackStreamSerializer
         return Deserialize(reader);
     }
 
-    public virtual object Deserialize(PackStreamReader reader) { throw new NotImplementedException(); }
+    public virtual object Deserialize(PackStreamReader reader)
+    {
+        throw new NotImplementedException();
+    }
+
+    public virtual object DeserializeSpan(
+        BoltProtocolVersion version,
+        SpanPackStreamReader reader,
+        byte signature,
+        int size)
+    {
+        return Deserialize(reader);
+    }
+
+    public virtual object Deserialize(SpanPackStreamReader reader)
+    {
+        throw new NotImplementedException();
+    }
 }

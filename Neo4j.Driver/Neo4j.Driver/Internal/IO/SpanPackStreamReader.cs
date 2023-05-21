@@ -16,33 +16,30 @@
 // limitations under the License.
 
 using System;
-using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.IO;
 
-internal ref struct SequencePackStreamReader
+internal ref struct SpanPackStreamReader
 {
     private readonly MessageFormat _format;
-    private Span<byte> _span;
-    private SequenceReader<byte> _reader;
+    private ReadOnlySpan<byte> _reader;
+    private int _idx = 0;
     private readonly CancellationToken _cancellationToken;
 
-    public SequencePackStreamReader(
+    public SpanPackStreamReader(
         MessageFormat format,
-        ByteBuffers buffers,
-        SequenceReader<byte> reader,
+        ReadOnlySpan<byte> reader,
         CancellationToken cancellationToken = default)
     {
         _cancellationToken = cancellationToken;
         _reader = reader;
         _format = format;
-        _span = new Span<byte>(buffers.LongBuffer);
     }
 
     public object Read()
@@ -176,7 +173,7 @@ internal ref struct SequencePackStreamReader
 
     public IResponseMessage ReadMessage()
     {
-        var size = ReadStructHeader();
+        var _ = ReadStructHeader();
         var signature = NextByte();
 
         if (_format.MessageReaders.TryGetValue(signature, out var handler))
@@ -223,7 +220,7 @@ internal ref struct SequencePackStreamReader
 
         if (_format.ReaderStructHandlers.TryGetValue(signature, out var handler))
         {
-            return handler.DeserializeSequence(_format.Version, this, signature, size);
+            return handler.DeserializeSpan(_format.Version, this, signature, size);
         }
 
         throw new ProtocolException("Unknown structure type: " + signature);
@@ -361,9 +358,10 @@ internal ref struct SequencePackStreamReader
             return Array.Empty<byte>();
         }
 
+        var slice = _reader.Slice(_idx, length);
         var data = new byte[length];
-        _reader.TryCopyTo(data.AsSpan());
-        _reader.Advance(length);
+        slice.CopyTo(new Span<byte>(data));
+        _idx += length;
         return data;
     }
 
@@ -403,19 +401,9 @@ internal ref struct SequencePackStreamReader
 
     private string ReadString(int length)
     {
-        if (length < 8)
-        {
-            var span = _span.Slice(0, length);
-            _reader.TryCopyTo(span);
-            _reader.Advance(length);
-            return Encoding.UTF8.GetString(span);
-        }
-
-        using var memory = MemoryPool<byte>.Shared.Rent(length);
-        var buffer = memory.Memory.Span.Slice(0, length);
-        _reader.TryCopyTo(buffer);
-        _reader.Advance(length);
-        return Encoding.UTF8.GetString(buffer);
+        var slice = _reader.Slice(_idx, length);
+        _idx += length;
+        return Encoding.UTF8.GetString(slice);
     }
 
     public int ReadMapHeader()
@@ -508,43 +496,41 @@ internal ref struct SequencePackStreamReader
 
     public byte NextByte()
     {
-        _reader.TryRead(out var b);
+        var b = _reader[_idx];
+        _idx++;
         return b;
     }
 
     public short NextShort()
     {
-        var slice = _span.Slice(0, 2);
-        _reader.TryCopyTo(slice);
-        _reader.Advance(2);
+        var slice = _reader.Slice(_idx, 2);
+        _idx += 2;
         return BinaryPrimitives.ReadInt16BigEndian(slice);
     }
 
     public int NextInt()
     {
-        var slice = _span.Slice(0, 4);
-        _reader.TryCopyTo(slice);
-        _reader.Advance(4);
+        var slice = _reader.Slice(_idx, 4);
+        _idx += 4;
         return BinaryPrimitives.ReadInt32BigEndian(slice);
     }
 
     public long NextLong()
     {
-        _reader.TryCopyTo(_span);
-        _reader.Advance(8);
-        return BinaryPrimitives.ReadInt64BigEndian(_span);
+        var slice = _reader.Slice(_idx, 8);
+        _idx += 8;
+        return BinaryPrimitives.ReadInt64BigEndian(slice);
     }
 
     public double NextDouble()
     {
-        _reader.TryCopyTo(_span);
-        _reader.Advance(8);
-        return BinaryPrimitives.ReadDoubleBigEndian(_span);
+        var slice = _reader.Slice(_idx, 8);
+        _idx += 8;
+        return BinaryPrimitives.ReadDoubleBigEndian(slice);
     }
 
     public byte PeekByte()
     {
-        _reader.TryPeek(out var b);
-        return b;
+        return _reader[_idx];
     }
 }

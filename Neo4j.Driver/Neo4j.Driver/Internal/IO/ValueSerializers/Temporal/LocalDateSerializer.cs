@@ -65,6 +65,15 @@ internal sealed class LocalDateSerializer : IPackStreamSerializer
         return TemporalHelpers.EpochDaysToDate(epochDays);
     }
 
+    public object DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    {
+        PackStream.EnsureStructSize("Date", StructSize, size);
+
+        var epochDays = reader.ReadLong();
+
+        return TemporalHelpers.EpochDaysToDate(epochDays);
+    }
+
     private static void WriteLocalDate(PackStreamWriter writer, object value)
     {
         var date = value.CastOrThrow<LocalDate>();

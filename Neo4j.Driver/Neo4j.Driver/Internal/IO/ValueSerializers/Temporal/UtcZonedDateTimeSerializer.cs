@@ -93,4 +93,22 @@ internal class UtcZonedDateTimeSerializer : IPackStreamSerializer
 
         return new ZonedDateTime(time, nanosOfSecond, zone);
     }
+
+    public object DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    {
+        PackStream.EnsureStructSize($"ZonedDateTime[{(char)signature}]", StructSize, size);
+
+        var time = reader.ReadLong();
+        var nanosOfSecond = reader.ReadInteger();
+
+        var zone = signature switch
+        {
+            StructTypeWithId => Zone.Of(reader.ReadString()),
+            StructTypeWithOffset => Zone.Of(reader.ReadInteger()),
+            _ => throw new ProtocolException(
+                $"Unsupported struct signature {signature} passed to {nameof(UtcZonedDateTimeSerializer)}.")
+        };
+
+        return new ZonedDateTime(time, nanosOfSecond, zone);
+    }
 }

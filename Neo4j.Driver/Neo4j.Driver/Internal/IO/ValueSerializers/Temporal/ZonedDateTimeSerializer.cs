@@ -106,4 +106,29 @@ internal sealed class ZonedDateTimeSerializer : IPackStreamSerializer
                     $"Unsupported struct signature {signature} passed to {nameof(ZonedDateTimeSerializer)}!");
         }
     }
+
+    public object DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    {
+        PackStream.EnsureStructSize($"ZonedDateTime[{(char)signature}]", StructSize, size);
+
+        var epochSecondsUtc = reader.ReadLong();
+        var nanosOfSecond = reader.ReadInteger();
+
+        switch (signature)
+        {
+            case StructTypeWithId:
+                return new ZonedDateTime(
+                    TemporalHelpers.EpochSecondsAndNanoToDateTime(epochSecondsUtc, nanosOfSecond),
+                    Zone.Of(reader.ReadString()));
+
+            case StructTypeWithOffset:
+                return new ZonedDateTime(
+                    TemporalHelpers.EpochSecondsAndNanoToDateTime(epochSecondsUtc, nanosOfSecond),
+                    Zone.Of(reader.ReadInteger()));
+
+            default:
+                throw new ProtocolException(
+                    $"Unsupported struct signature {signature} passed to {nameof(ZonedDateTimeSerializer)}!");
+        }
+    }
 }

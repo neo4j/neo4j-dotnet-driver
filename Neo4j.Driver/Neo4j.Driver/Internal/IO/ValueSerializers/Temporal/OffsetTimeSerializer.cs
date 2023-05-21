@@ -58,4 +58,14 @@ internal sealed class OffsetTimeSerializer : IPackStreamSerializer
 
         return new OffsetTime(TemporalHelpers.NanoOfDayToTime(nanosOfDay), offsetSeconds);
     }
+
+    public object DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    {
+        PackStream.EnsureStructSize("Time", StructSize, size);
+
+        var nanosOfDay = reader.ReadLong();
+        var offsetSeconds = reader.ReadInteger();
+
+        return new OffsetTime(TemporalHelpers.NanoOfDayToTime(nanosOfDay), offsetSeconds);
+    }
 }

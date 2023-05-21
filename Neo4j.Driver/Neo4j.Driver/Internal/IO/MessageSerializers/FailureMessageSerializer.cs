@@ -57,9 +57,32 @@ internal sealed class FailureMessageSerializer : ReadOnlySerializer, IPackStream
 
     public IResponseMessage DeserializeMessage(
         BoltProtocolVersion formatVersion,
-        SequencePackStreamReader packStreamReader,
-        byte signature,
-        int size)
+        SequencePackStreamReader packStreamReader)
+    {
+        var values = packStreamReader.ReadMap();
+        var code = values["code"]?.ToString();
+        var message = values["message"]?.ToString();
+
+        // codes were fixed in bolt 5, so we need to interpret these codes.
+        if (formatVersion.MajorVersion < 5)
+        {
+            if (code == "Neo.TransientError.Transaction.Terminated")
+            {
+                code = "Neo.ClientError.Transaction.Terminated";
+            }
+
+            if (code == "Neo.TransientError.Transaction.LockClientStopped")
+            {
+                code = "Neo.ClientError.Transaction.LockClientStopped";
+            }
+        }
+
+        return new FailureMessage(code, message);
+    }
+
+    public IResponseMessage DeserializeMessage(
+        BoltProtocolVersion formatVersion,
+        SpanPackStreamReader packStreamReader)
     {
         var values = packStreamReader.ReadMap();
         var code = values["code"]?.ToString();

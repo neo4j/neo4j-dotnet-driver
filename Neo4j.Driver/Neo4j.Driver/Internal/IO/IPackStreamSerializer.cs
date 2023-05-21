@@ -30,4 +30,5 @@ internal interface IPackStreamSerializer
     object Deserialize(BoltProtocolVersion version, PackStreamReader reader, byte signature, long size);
     void Serialize(BoltProtocolVersion version, PackStreamWriter writer, object value);
     object DeserializeSequence(BoltProtocolVersion version, SequencePackStreamReader reader, byte signature, int size);
+    object DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size);
 }

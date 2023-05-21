@@ -35,9 +35,14 @@ internal sealed class IgnoredMessageSerializer : ReadOnlySerializer, IPackStream
 
     public IResponseMessage DeserializeMessage(
         BoltProtocolVersion formatVersion,
-        SequencePackStreamReader packStreamReader,
-        byte signature,
-        int size)
+        SequencePackStreamReader packStreamReader)
+    {
+        return IgnoredMessage.Instance;
+    }
+
+    public IResponseMessage DeserializeMessage(
+        BoltProtocolVersion formatVersion,
+        SpanPackStreamReader packStreamReader)
     {
         return IgnoredMessage.Instance;
     }

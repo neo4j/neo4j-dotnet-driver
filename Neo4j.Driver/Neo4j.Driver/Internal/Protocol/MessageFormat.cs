@@ -182,14 +182,9 @@ internal sealed class MessageFormat
 internal interface IPackStreamMessageDeserializer
 {
     IResponseMessage DeserializeMessage(BoltProtocolVersion formatVersion, 
-        SequencePackStreamReader packStreamReader, byte signature, int size);
-}
+        SequencePackStreamReader packStreamReader);
 
-internal interface IPackStreamStructDeserializer
-{
-    object DeserializeMessage(
+    IResponseMessage DeserializeMessage(
         BoltProtocolVersion formatVersion,
-        SequencePackStreamReader sequencePackStreamReader,
-        byte signature,
-        int size);
+        SpanPackStreamReader packStreamReader);
 }

@@ -56,4 +56,12 @@ internal class LocalDateTimeSerializer : IPackStreamSerializer
         var nanosOfSecond = reader.ReadInteger();
         return TemporalHelpers.EpochSecondsAndNanoToDateTime(epochSeconds, nanosOfSecond);
     }
+
+    public object DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    {
+        PackStream.EnsureStructSize("LocalDateTime", StructSize, size);
+        var epochSeconds = reader.ReadLong();
+        var nanosOfSecond = reader.ReadInteger();
+        return TemporalHelpers.EpochSecondsAndNanoToDateTime(epochSeconds, nanosOfSecond);
+    }
 }

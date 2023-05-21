@@ -43,5 +43,10 @@ internal abstract class WriteOnlySerializer : IPackStreamSerializer
         throw new NotImplementedException();
     }
 
+    public object DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    {
+        throw new NotImplementedException();
+    }
+
     public abstract void Serialize(PackStreamWriter writer, object value);
 }

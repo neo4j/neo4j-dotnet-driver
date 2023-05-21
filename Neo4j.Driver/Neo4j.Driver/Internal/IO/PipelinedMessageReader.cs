@@ -138,7 +138,7 @@ internal sealed class PipelinedMessageReader : IMessageReader
         // Read chunk data storing the lengths of each chunk in a list so we can construct multi chunk messages.
         // Because we don't know the length of the message we can't allocate a single buffer to read the entire message
         // ahead of the reads.
-        var sizes = new List<short>(1);
+        var sizes = new List<short>(2);
         // The Total size of the message is the sum of all the chunk sizes for quickly calculating the minimum read size.
         var totalSize = 0;
         while (size != 0)
@@ -149,11 +149,11 @@ internal sealed class PipelinedMessageReader : IMessageReader
             // if there is no next chunk it will read the end of the message marker.
             // Given a hypothetical message with 2 chunks, 6 bytes across the two chunks the total data is 12 bytes.
             // e.g. 0x00, 0x04 0x04, 0x03, 0x02, 0x01, 0x00, 0x02, 0x03, 0x04, 0x00, 0x00
-            // 0x00, 0x04  <- First chunk header
+            // 0x00, 0x04, <- First chunk header
             // 0x04, 0x03, 0x02, 0x01, <- First chunk body
-            // 0x00, 0x02,  <- Second chunk header
-            // 0x03, 0x04,  <- Second chunk body
-            // 0x00, 0x00 <- end of message marker
+            // 0x00, 0x02, <- Second chunk header
+            // 0x03, 0x04, <- Second chunk body
+            // 0x00, 0x00  <- end of message marker
             var minimumRead = totalSize + 2 * (sizes.Count + 1);
 
             // if we have all the data needed for this chunk we can skip the read as it was already read to the buffer.
@@ -178,7 +178,7 @@ internal sealed class PipelinedMessageReader : IMessageReader
         // If there is only one chunk and it is a single segment, we can just read it directly
         if (sizes.Count == 1 && readResult.Buffer.Slice(2, totalSize).IsSingleSegment)
         {
-            return RawParse(reader, pipeReader, readResult, sizes);
+            return RawParse(reader, pipeReader, readResult, totalSize);
         }
         // Otherwise we need to copy the data into a single buffer to parse it.
         return CondenseChunksAndParse(reader, pipeReader, totalSize, sizes, readResult);
@@ -188,14 +188,13 @@ internal sealed class PipelinedMessageReader : IMessageReader
         PackStreamReader reader,
         PipeReader pipeReader,
         ReadResult readResult,
-        List<short> sizes)
+        int size)
     {
-        var packStreamReader = new SequencePackStreamReader(
+        var packStreamReader = new SpanPackStreamReader(
             reader._format,
-            reader._buffers,
-            new SequenceReader<byte>(readResult.Buffer.Slice(2, sizes[0])));
+            readResult.Buffer.FirstSpan.Slice(2, size));
 
-        var end = sizes[0] + 4;
+        var end = size + 4;
         // Advance to end of message by create a buffer slice from the end of the chunk.
         pipeReader.AdvanceTo(readResult.Buffer.Slice(end).Start);
         return packStreamReader.ReadMessage();

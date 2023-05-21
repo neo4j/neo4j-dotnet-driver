@@ -36,9 +36,13 @@ internal sealed class SuccessMessageSerializer : ReadOnlySerializer, IPackStream
 
     public IResponseMessage DeserializeMessage(
         BoltProtocolVersion formatVersion,
-        SequencePackStreamReader packStreamReader,
-        byte signature,
-        int size)
+        SequencePackStreamReader packStreamReader)
+    {
+        var map = packStreamReader.ReadMap();
+        return new SuccessMessage(map);
+    }
+
+    public IResponseMessage DeserializeMessage(BoltProtocolVersion formatVersion, SpanPackStreamReader packStreamReader)
     {
         var map = packStreamReader.ReadMap();
         return new SuccessMessage(map);
