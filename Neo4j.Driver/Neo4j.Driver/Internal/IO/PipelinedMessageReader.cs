@@ -214,10 +214,9 @@ internal sealed class PipelinedMessageReader : IMessageReader
         // convert memory to array
         var bytes = memory.Memory.Span.Slice(0, totalSize);
         // Create a new stream from the array and parse it
-        var packStreamReader = new SequencePackStreamReader(
+        var packStreamReader = new SpanPackStreamReader(
             reader._format,
-            reader._buffers,
-            new SequenceReader<byte>(new ReadOnlySequence<byte>(memory.Memory.Slice(0, totalSize))));
+            bytes);
         
         return packStreamReader.ReadMessage();
     }
@@ -234,6 +233,38 @@ internal sealed class PipelinedMessageReader : IMessageReader
             memoryPosition += chunkSize;
             streamStart = streamStart + chunkSize + 2;
         }
+        // Advance to end of message by create a buffer slice from the end of the chunk.
+        pipeReader.AdvanceTo(readResult.Buffer.Slice(streamStart).Start);
+    }
+
+    private static ReadOnlySequence<byte> ToSequence(
+        List<short> sizes,
+        ReadResult readResult,
+        IMemoryOwner<byte> memory,
+        PipeReader pipeReader)
+    {
+        var memoryPosition = 0;
+        var streamStart = 2;
+        
+        bool initial = true;
+        ReadOnlySequence<byte> sequence = default;
+
+        foreach (var chunkSize in sizes)
+        {
+            var chunk = readResult.Buffer.Slice(streamStart, chunkSize);
+            if (initial)
+            {
+                sequence = chunk;
+            }
+            else
+            {
+                sequence = new ReadOnlySequence<byte>(sequence., 0, chunk, 0);
+            }
+            
+            memoryPosition += chunkSize;
+            streamStart = streamStart + chunkSize + 2;
+        }
+
         // Advance to end of message by create a buffer slice from the end of the chunk.
         pipeReader.AdvanceTo(readResult.Buffer.Slice(streamStart).Start);
     }
