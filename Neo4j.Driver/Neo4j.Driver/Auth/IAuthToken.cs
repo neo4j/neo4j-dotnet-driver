@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// ReSharper disable once CheckNamespace - public type moved into Auth foldernamespace Neo4j.Driver;
+namespace Neo4j.Driver;
 
 /// <summary>
 /// An authentication token is used to authenticate with a Neo4j instance. It usually contains a <c>Principal</c>,

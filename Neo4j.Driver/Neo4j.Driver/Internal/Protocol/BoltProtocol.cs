@@ -17,14 +17,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading.Tasks;
-using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver.Internal;
 

@@ -266,3 +266,6 @@ testkit/CAs/*
 testkit/CustomCAs/customRoot.crt
 
 testkit/CustomCAs/customRoot2.crt
+
+# generated docs
+Docs/

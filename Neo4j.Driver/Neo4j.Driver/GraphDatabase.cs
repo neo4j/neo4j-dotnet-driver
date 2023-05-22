@@ -19,7 +19,6 @@ using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;
