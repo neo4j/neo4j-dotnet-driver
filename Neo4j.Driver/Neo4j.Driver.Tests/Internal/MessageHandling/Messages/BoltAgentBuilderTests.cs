@@ -26,9 +26,14 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
         [Fact]
         public void ShouldReturnBoltAgent()
         {
-            var version = typeof(BoltAgentBuilderTests).Assembly.GetName().Version;
             var agent = BoltAgentBuilder.Agent;
-            agent.Should().HaveCount(3);
+            agent.Should()
+                .HaveCount(3)
+                .And.ContainKey("platform")
+                .And.ContainKey("language_details")
+                .And.ContainKey("product")
+                .WhichValue.Should()
+                .MatchRegex(@"^neo4j-dotnet/\d\.\d+\.\d+$");
         }
     }
 }
