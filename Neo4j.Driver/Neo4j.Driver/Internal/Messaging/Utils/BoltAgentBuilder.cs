@@ -18,14 +18,15 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using System.Threading;
 
 namespace Neo4j.Driver.Internal.Messaging.Utils;
 
 internal static class BoltAgentBuilder
 {
-    private static readonly Lazy<Dictionary<string, string>> LazyAgent = new(GetBoltAgent, LazyThreadSafetyMode.PublicationOnly);
+    private static readonly Lazy<Dictionary<string, string>> LazyAgent = new(
+        GetBoltAgent,
+        LazyThreadSafetyMode.PublicationOnly);
 
     public static Dictionary<string, string> Agent => LazyAgent.Value;
 
@@ -40,16 +41,24 @@ internal static class BoltAgentBuilder
         {
             throw new ClientException("Could not collect assembly version of driver required for handshake.");
         }
-        
+
         var os = OsString();
         var env = DotnetString();
 
-        return new Dictionary<string, string>
+        var boltAgent = new Dictionary<string, string>(3);
+        boltAgent["product"] = $"neo4j-dotnet/{version.Major}.{version.Minor}.{version.Build}";
+
+        if (!string.IsNullOrEmpty(os))
         {
-            ["product"] = $"neo4j-dotnet/{version.Major}.{version.Minor}.{version.Build}",
-            ["language_details"] = env,
-            ["platform"] = os
-        };
+            boltAgent["platform"] = os;
+        }
+
+        if (!string.IsNullOrEmpty(env))
+        {
+            boltAgent["language_details"] = env;
+        }
+
+        return boltAgent;
     }
 
     private static string DotnetString()
