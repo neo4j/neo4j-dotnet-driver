@@ -212,15 +212,15 @@ namespace Neo4j.Driver.Tests.Types
         }
 
         [Theory]
-        [InlineData(1947, 12, 17, 23, 5, 54, 192794500, 1500, "1947-12-17T23:05:54.192794500+00:25 Ambiguous")]
-        [InlineData(1947, 12, 5, 0, 5, 54, 192794500, -1500, "1947-12-05T00:05:54.192794500-00:25 Ambiguous")]
-        [InlineData(1947, 12, 17, 23, 5, 54, 192794500, 1501, "1947-12-17T23:05:54.192794500+00:25:01 Ambiguous")]
-        [InlineData(1947, 12, 5, 0, 5, 54, 192794500, -1499, "1947-12-05T00:05:54.192794500-00:24:59 Ambiguous")]
-        [InlineData(1947, 12, 5, 0, 5, 54, 0, 1800, "1947-12-05T00:05:54+00:30 Ambiguous")]
-        [InlineData(5, 1, 5, 0, 5, 54, 0, -1800, "0005-01-05T00:05:54-00:30 Ambiguous")]
-        [InlineData(-5, 1, 5, 0, 5, 54, 1250, 0, "-0005-01-05T00:05:54.000001250Z Ambiguous")]
-        [InlineData(999999, 1, 1, 5, 1, 25, 1, 64800, "999999-01-01T05:01:25.000000001+18:00 Ambiguous")]
-        [InlineData(-999999, 1, 1, 5, 1, 25, 1, -60000, "-999999-01-01T05:01:25.000000001-16:40 Ambiguous")]
+        [InlineData(1947, 12, 17, 23, 5, 54, 192794500, 1500, "1947-12-17T23:05:54.192794500+00:25")]
+        [InlineData(1947, 12, 5, 0, 5, 54, 192794500, -1500, "1947-12-05T00:05:54.192794500-00:25")]
+        [InlineData(1947, 12, 17, 23, 5, 54, 192794500, 1501, "1947-12-17T23:05:54.192794500+00:25:01")]
+        [InlineData(1947, 12, 5, 0, 5, 54, 192794500, -1499, "1947-12-05T00:05:54.192794500-00:24:59")]
+        [InlineData(1947, 12, 5, 0, 5, 54, 0, 1800, "1947-12-05T00:05:54+00:30")]
+        [InlineData(5, 1, 5, 0, 5, 54, 0, -1800, "0005-01-05T00:05:54-00:30")]
+        [InlineData(-5, 1, 5, 0, 5, 54, 1250, 0, "-0005-01-05T00:05:54.000001250Z")]
+        [InlineData(999999, 1, 1, 5, 1, 25, 1, 64800, "999999-01-01T05:01:25.000000001+18:00")]
+        [InlineData(-999999, 1, 1, 5, 1, 25, 1, -60000, "-999999-01-01T05:01:25.000000001-16:40")]
         public void ShouldGenerateCorrectString(int year, int month, int day, int hour, int minute, int second, int nanosecond, int offsetSeconds, string expected)
         {
             var cypherDateTime =
@@ -387,8 +387,8 @@ namespace Neo4j.Driver.Tests.Types
             var dateStr1 = Convert.ToString(date);
             var dateStr2 = Convert.ChangeType(date, typeof(string));
 
-            dateStr1.Should().Be("1947-12-16T12:15:59.660000999+01:00 Ambiguous");
-            dateStr2.Should().Be("1947-12-16T12:15:59.660000999+01:00 Ambiguous");
+            dateStr1.Should().Be("1947-12-16T12:15:59.660000999+01:00");
+            dateStr2.Should().Be("1947-12-16T12:15:59.660000999+01:00");
         }
 
         [Fact]
