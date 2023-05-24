@@ -148,5 +148,19 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
 
             exception.Should().BeOfType<ArgumentOutOfRangeException>();
         }
+
+        [Theory]
+        [InlineData(5, 3)]
+        public void ShouldContainBoltAgentAbove53(int major, int minor)
+        {
+            var message =
+                new HelloMessage(
+                    new BoltProtocolVersion(major, minor),
+                    "User-Agent",
+                    null,
+                    default(INotificationsConfig));
+
+            message.Metadata.Should().ContainKey("bolt_agent");
+        }
     }
 }
