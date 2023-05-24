@@ -541,12 +541,13 @@ namespace Neo4j.Driver.Internal.Protocol
             {
                 var mockConn = new Mock<IConnection>();
                 mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
-                mockConn.SetupProperty(x => x.SessionConfig);
 
                 var acp = new AutoCommitParams
                 {
                     SessionConfig = new SessionConfig("Douglas Fir")
                 };
+
+                mockConn.SetupGet(x => x.SessionConfig).Returns(new SessionConfig("Douglas Fir"));
 
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocol.Instance.RunInAutoCommitTransactionAsync(mockConn.Object, acp, null));

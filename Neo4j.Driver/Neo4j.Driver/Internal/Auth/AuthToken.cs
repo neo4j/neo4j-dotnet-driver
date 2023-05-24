@@ -68,11 +68,6 @@ internal class AuthToken : IAuthToken
     {
         return Content != null ? Content.GetHashCode() : 0;
     }
-
-    public override string ToString()
-    {
-        return string.Join("; ", Content.Select(kvp => $"{kvp.Key}: {kvp.Value}"));
-    }
 }
 
 internal static class AuthTokenExtensions

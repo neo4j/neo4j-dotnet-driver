@@ -331,7 +331,7 @@ internal sealed class ConnectionPool : IConnectionPool
 
         try
         {
-            conn = await NewPooledConnection(sessionConfig);
+            conn = await NewPooledConnection(sessionConfig).ConfigureAwait(false);
 
             if (conn == null)
             {
@@ -511,7 +511,7 @@ internal sealed class ConnectionPool : IConnectionPool
         throw GetDriverDisposedException(nameof(ConnectionPool));
     }
 
-    private async Task<IPooledConnection> GetPooledOrNewConnectionAsync(
+    private Task<IPooledConnection> GetPooledOrNewConnectionAsync(
         SessionConfig sessionConfig,
         CancellationToken cancellationToken)
     {
@@ -522,10 +522,10 @@ internal sealed class ConnectionPool : IConnectionPool
                 connection.AuthorizationStatus = AuthorizationStatus.Pooled;
             }
 
-            return connection;
+            return Task.FromResult(connection);
         }
 
-        return await CreateNewConnectionOrGetIdleAsync(sessionConfig, cancellationToken);
+        return CreateNewConnectionOrGetIdleAsync(sessionConfig, cancellationToken);
     }
 
     private async Task<IPooledConnection> CreateNewConnectionOrGetIdleAsync(

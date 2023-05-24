@@ -49,7 +49,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
 
         var message = _protocolMessageFactory.NewHelloMessage(connection, userAgent, authToken);
         var handler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
-        await connection.EnqueueAsync(message, handler);
+        await connection.EnqueueAsync(message, handler).ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);
     }        
 
