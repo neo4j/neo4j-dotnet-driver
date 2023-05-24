@@ -31,8 +31,8 @@ internal static class BoltAgentBuilder
     public static Dictionary<string, string> Agent => LazyAgent.Value;
 
     /// <summary>
-    /// This string follows a common format and other teams across neo4j rely on it. <br/> Changes need to be in
-    /// accordance with company policy.
+    /// This Dictionary follows a common format and other teams across neo4j rely on it.
+    /// Changes need to be in accordance with company policy.
     /// </summary>
     private static Dictionary<string, string> GetBoltAgent()
     {
@@ -45,8 +45,10 @@ internal static class BoltAgentBuilder
         var os = OsString();
         var env = DotnetString();
 
-        var boltAgent = new Dictionary<string, string>(3);
-        boltAgent["product"] = $"neo4j-dotnet/{version.Major}.{version.Minor}.{version.Build}";
+        var boltAgent = new Dictionary<string, string>(3)
+        {
+            ["product"] = $"neo4j-dotnet/{version.Major}.{version.Minor}.{version.Build}"
+        };
 
         if (!string.IsNullOrEmpty(os))
         {
