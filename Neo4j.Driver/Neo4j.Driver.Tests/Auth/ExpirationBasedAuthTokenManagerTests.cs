@@ -19,6 +19,7 @@ using System;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Moq.AutoMock;
 using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Services;
@@ -28,17 +29,17 @@ namespace Neo4j.Driver.Tests.Auth
 {
     public class ExpirationBasedAuthTokenManagerTests
     {
+        private readonly AutoMocker _autoMocker = new(MockBehavior.Strict);
+
         [Fact]
         public async Task ShouldRequestToken()
         {
             var basicToken = AuthTokens.Basic("uid", "pwd");
             var authData = new AuthTokenAndExpiration(basicToken, new DateTime(2023, 02, 28));
-            Task<AuthTokenAndExpiration> GetToken()
-            {
-                return Task.FromResult(authData);
-            }
 
-            var subject = new ExpirationBasedAuthTokenManager(GetToken);
+            _autoMocker.GetMock<IExpiringAuthTokenProvider>().Setup(x => x.GetTokenAsync()).ReturnsAsync(authData);
+
+            var subject = _autoMocker.CreateInstance<ExpirationBasedAuthTokenManager>();
 
             var returnedToken = await subject.GetTokenAsync();
             returnedToken.Should().Be(basicToken);
@@ -52,26 +53,21 @@ namespace Neo4j.Driver.Tests.Auth
                 basicToken,
                 new DateTime(2023, 02, 28, 15, 0, 0)); // expires at 3pm
 
-            int callCount = 0;
-            Task<AuthTokenAndExpiration> GetToken()
-            {
-                callCount++;
-                return Task.FromResult(authData);
-            }
+            var tokenProviderMock = _autoMocker.GetMock<IExpiringAuthTokenProvider>();
+            tokenProviderMock.Setup(x => x.GetTokenAsync()).ReturnsAsync(authData);
 
-            var dateTimeProvider = new Mock<IDateTimeProvider>();
-            dateTimeProvider
+            _autoMocker.GetMock<IDateTimeProvider>()
                 .Setup(x => x.Now())
                 .Returns(new DateTime(2023, 02, 28, 10, 0, 0)); // it is currently 10am
 
-            var subject = new ExpirationBasedAuthTokenManager(dateTimeProvider.Object, GetToken);
+            var subject = _autoMocker.CreateInstance<ExpirationBasedAuthTokenManager>(true);
 
             // call twice
             await subject.GetTokenAsync();
             var returnedToken = await subject.GetTokenAsync();
 
             returnedToken.Should().Be(basicToken);
-            callCount.Should().Be(1);
+            tokenProviderMock.Verify(x => x.GetTokenAsync(), Times.Once);
         }
 
         [Fact]
@@ -87,34 +83,18 @@ namespace Neo4j.Driver.Tests.Auth
                 secondToken,
                 new DateTime(2023, 02, 28, 16, 0, 0)); // expires at 4pm
 
-            int callCount = 0;
-            Task<AuthTokenAndExpiration> GetToken()
-            {
-                if (callCount == 0)
-                {
-                    callCount++;
-                    return Task.FromResult(firstAuthData);
-                }
+            _autoMocker.GetMock<IExpiringAuthTokenProvider>()
+                .SetupSequence(x => x.GetTokenAsync())
+                .ReturnsAsync(firstAuthData)
+                .ReturnsAsync(secondAuthData);
 
-                return Task.FromResult(secondAuthData);
-            }
+            _autoMocker.GetMock<IDateTimeProvider>()
+                .SetupSequence(x => x.Now())
+                .Returns(new DateTime(2023, 02, 28, 10, 0, 0)) // first time, 10am
+                .Returns(new DateTime(2023, 02, 28, 16, 0, 0)); // after that, 4pm (expired)
 
-            var dateTimeProvider = new Mock<IDateTimeProvider>();
-            bool dateRequested = false;
-            dateTimeProvider
-                .Setup(x => x.Now())
-                .Returns(() =>
-                    {
-                        if (!dateRequested)
-                        {
-                            dateRequested = true;
-                            return new DateTime(2023, 02, 28, 10, 0, 0); // first time, 10am
-                        }
+            var subject = _autoMocker.CreateInstance<ExpirationBasedAuthTokenManager>(true);
 
-                        return new DateTime(2023, 02, 28, 16, 0, 0); // after that, 4pm (expired)
-                    });
-
-            var subject = new ExpirationBasedAuthTokenManager(dateTimeProvider.Object, GetToken);
             var firstReturnedToken = await subject.GetTokenAsync();
             await subject.GetTokenAsync(); // do a couple more times so that a new one should be requested
             await subject.GetTokenAsync();
@@ -137,25 +117,17 @@ namespace Neo4j.Driver.Tests.Auth
                 secondToken,
                 new DateTime(2023, 02, 28, 16, 0, 0)); // expires at 4pm
 
-            int callCount = 0;
+            _autoMocker.GetMock<IExpiringAuthTokenProvider>()
+                .SetupSequence(x => x.GetTokenAsync())
+                .ReturnsAsync(firstAuthData)
+                .ReturnsAsync(secondAuthData);
 
-            Task<AuthTokenAndExpiration> GetToken()
-            {
-                if (callCount == 0)
-                {
-                    callCount++;
-                    return Task.FromResult(firstAuthData);
-                }
-
-                return Task.FromResult(secondAuthData);
-            }
-
-            var dateTimeProvider = new Mock<IDateTimeProvider>();
-            dateTimeProvider
+            _autoMocker.GetMock<IDateTimeProvider>()
                 .Setup(x => x.Now())
                 .Returns(new DateTime(2023, 01, 01, 09, 00, 00)); // before expiry of first token
 
-            var subject = new ExpirationBasedAuthTokenManager(dateTimeProvider.Object, GetToken);
+            var subject = _autoMocker.CreateInstance<ExpirationBasedAuthTokenManager>(true);
+
             var firstReturnedToken = await subject.GetTokenAsync();
             await subject.OnTokenExpiredAsync(firstReturnedToken);
             var secondReturnedToken = await subject.GetTokenAsync();

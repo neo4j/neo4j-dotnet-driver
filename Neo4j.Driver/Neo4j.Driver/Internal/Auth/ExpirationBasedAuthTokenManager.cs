@@ -25,27 +25,23 @@ namespace Neo4j.Driver.Internal.Auth;
 
 internal class ExpirationBasedAuthTokenManager : IAuthTokenManager
 {
+    private readonly IExpiringAuthTokenProvider _expiringAuthTokenProvider;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly Func<Task<AuthTokenAndExpiration>> _tokenProviderAsync;
     private Task<AuthTokenAndExpiration> _lastAuthRequest;
     private AuthTokenAndExpiration _currentAuthTokenAndExpiration;
     private SemaphoreSlim _sync;
 
-    /// <summary>
-    /// Constructs a new instance of the <see cref="ExpirationBasedAuthTokenManager"/> class.
-    /// </summary>
-    /// <param name="tokenProviderAsync">The sync method that will be used to obtain new tokens.</param>
-    public ExpirationBasedAuthTokenManager(Func<Task<AuthTokenAndExpiration>> tokenProviderAsync)
-        : this(new DateTimeProvider(), tokenProviderAsync)
+    public ExpirationBasedAuthTokenManager(IExpiringAuthTokenProvider expiringAuthTokenProvider)
+        : this(new DateTimeProvider(), expiringAuthTokenProvider)
     {
     }
 
     internal ExpirationBasedAuthTokenManager(
         IDateTimeProvider dateTimeProvider,
-        Func<Task<AuthTokenAndExpiration>> tokenProviderAsync)
+        IExpiringAuthTokenProvider expiringAuthTokenProvider)
     {
         _dateTimeProvider = dateTimeProvider;
-        _tokenProviderAsync = tokenProviderAsync;
+        _expiringAuthTokenProvider = expiringAuthTokenProvider;
         _sync = new SemaphoreSlim(1);
     }
 
@@ -56,7 +52,8 @@ internal class ExpirationBasedAuthTokenManager : IAuthTokenManager
 
         try
         {
-            if (_currentAuthTokenAndExpiration is not null && _currentAuthTokenAndExpiration.Expiry > _dateTimeProvider.Now())
+            if (_currentAuthTokenAndExpiration is not null &&
+                _currentAuthTokenAndExpiration.Expiry > _dateTimeProvider.Now())
             {
                 return _currentAuthTokenAndExpiration.Token;
             }
@@ -97,6 +94,8 @@ internal class ExpirationBasedAuthTokenManager : IAuthTokenManager
     private void ScheduleTokenFetch()
     {
         _currentAuthTokenAndExpiration = null;
-        _lastAuthRequest = _tokenProviderAsync(); // storing the task here, not waiting for the token
+
+        // storing the task here, not waiting for the token
+        _lastAuthRequest = _expiringAuthTokenProvider.GetTokenAsync();
     }
 }

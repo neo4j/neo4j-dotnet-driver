@@ -15,30 +15,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-
+using System.Threading.Tasks;
 namespace Neo4j.Driver.Auth;
 
-public record AuthTokenAndExpiration
+/// <summary>
+/// Provides auth tokens that expire.
+/// </summary>
+public interface IExpiringAuthTokenProvider
 {
-    public AuthTokenAndExpiration(IAuthToken token, DateTime? expiry = default)
-    {
-        this.Token = token;
-        this.Expiry = expiry ?? DateTime.MaxValue;
-    }
-
-    public AuthTokenAndExpiration(IAuthToken token, int expiresInMs)
-    {
-        this.Token = token;
-        this.Expiry = DateTime.UtcNow.AddMilliseconds(expiresInMs);
-    }
-
-    public IAuthToken Token { get; init; }
-    public DateTime Expiry { get; init; }
-
-    public void Deconstruct(out IAuthToken Token, out DateTime? Expiry)
-    {
-        Token = this.Token;
-        Expiry = this.Expiry;
-    }
+    /// <summary>
+    /// Gets a new auth token and expiration time.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    Task<AuthTokenAndExpiration> GetTokenAsync();
 }

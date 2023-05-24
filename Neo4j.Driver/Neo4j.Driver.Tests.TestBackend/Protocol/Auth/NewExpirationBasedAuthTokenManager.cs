@@ -40,7 +40,7 @@ internal class NewExpirationBasedAuthTokenManager : IProtocolObject
     public override Task Process(Controller controller)
     {
         _controller = controller;
-        tokenManager = new ExpirationBasedAuthTokenManager(FakeTime.Instance, GetTokenAsync);
+        tokenManager = new ExpirationBasedAuthTokenManager(FakeTime.Instance, new ExpiringAuthTokenProvider(GetTokenAsync));
         return Task.CompletedTask;
     }
 

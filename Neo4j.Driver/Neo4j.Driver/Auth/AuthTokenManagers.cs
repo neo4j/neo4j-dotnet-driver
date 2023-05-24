@@ -45,10 +45,25 @@ public static class AuthTokenManagers
     /// whenever a new token is required. It will handle caching of the token and will only call the
     /// function when a new token is needed or the existing cached token has expired.
     /// </summary>
-    /// <param name="tokenProviderAsync">An async function that will obtain a new auth token and expiry time.</param>
-    /// <returns></returns>
+    /// <param name="tokenProviderAsync">An function that will be called when a new token is needed.</param>
+    /// <returns>The <see cref="IAuthTokenManager"/> that will call the provided function when a new token
+    /// is needed.</returns>
     public static IAuthTokenManager ExpirationBased(Func<Task<AuthTokenAndExpiration>> tokenProviderAsync)
     {
-        return new ExpirationBasedAuthTokenManager(tokenProviderAsync);
+        return new ExpirationBasedAuthTokenManager(new ExpiringAuthTokenProvider(tokenProviderAsync));
+    }
+
+    /// <summary>
+    /// An implementation of <see cref="IAuthTokenManager"/> that will call the provided token provider
+    /// whenever a new token is required. It will handle caching of the token and will only call the
+    /// function when a new token is needed or the existing cached token has expired.
+    /// </summary>
+    /// <param name="expiringAuthTokenProvider">An <see cref="IExpiringAuthTokenProvider"/> that will be called
+    /// when a new token is needed.</param>
+    /// <returns>The <see cref="IAuthTokenManager"/> that will call the provided function when a new token
+    /// is needed. </returns>
+    public static IAuthTokenManager ExpirationBased(IExpiringAuthTokenProvider expiringAuthTokenProvider)
+    {
+        return new ExpirationBasedAuthTokenManager(expiringAuthTokenProvider);
     }
 }
