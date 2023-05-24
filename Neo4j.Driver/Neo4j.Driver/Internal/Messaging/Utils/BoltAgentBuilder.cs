@@ -31,7 +31,7 @@ internal static class BoltAgentBuilder
     public static Dictionary<string, string> Agent => LazyAgent.Value;
 
     /// <summary>
-    /// This string follows a common format and other teams across neo4j rely on it. <br/> Changes need to be in
+    /// This Dictionary follows a common format and other teams across neo4j rely on it. <br/> Changes need to be in
     /// accordance with company policy.
     /// </summary>
     private static Dictionary<string, string> GetBoltAgent()
