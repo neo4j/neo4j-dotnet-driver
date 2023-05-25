@@ -32,7 +32,7 @@ internal class ExpirationBasedAuthTokenManager : IAuthTokenManager
     private SemaphoreSlim _sync;
 
     public ExpirationBasedAuthTokenManager(IExpiringAuthTokenProvider expiringAuthTokenProvider)
-        : this(new DateTimeProvider(), expiringAuthTokenProvider)
+        : this(DateTimeProvider.Instance, expiringAuthTokenProvider)
     {
     }
 

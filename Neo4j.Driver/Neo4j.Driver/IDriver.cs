@@ -114,4 +114,10 @@ public interface IDriver : IDisposable, IAsyncDisposable
     /// </returns>
     IExecutableQuery<IRecord, IRecord> ExecutableQuery(string cypher);
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="authToken"></param>
+    /// <returns></returns>
+    Task<bool> VerifyAuthenticationAsync(IAuthToken authToken);
 }

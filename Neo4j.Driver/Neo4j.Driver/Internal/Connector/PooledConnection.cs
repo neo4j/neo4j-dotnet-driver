@@ -91,7 +91,7 @@ internal class PooledConnection : DelegatedConnection, IPooledConnection
     internal override async Task OnErrorAsync(Exception error)
     {
         await base.OnErrorAsync(error).ConfigureAwait(false);
-        if (!error.IsRecoverableError())
+        if (!(error.IsRecoverableError() || (Version >= BoltProtocolVersion.V5_1 && error is AuthorizationException or TokenExpiredException)))
         {
             HasUnrecoverableError = true;
         }

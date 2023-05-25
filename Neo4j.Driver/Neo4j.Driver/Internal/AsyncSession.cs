@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 using static Neo4j.Driver.Internal.Util.ConfigBuilders;
@@ -318,16 +319,6 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
 
                         throw;
                     }
-                },
-                async ex =>
-                {
-                    if (ex is TokenExpiredException)
-                    {
-                        await (_connectionProvider.ConnectionSettings.AuthTokenManager?.OnTokenExpiredAsync(
-                            _connection.AuthToken) ?? Task.CompletedTask).ConfigureAwait(false);
-                    }
-
-                    return true;
                 }));
     }
 
@@ -360,7 +351,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
             return _transaction;
     }
 
-    private async Task AcquireConnectionAndDbNameAsync(AccessMode mode)
+    private async Task AcquireConnectionAndDbNameAsync(AccessMode mode, bool forceAuth = false)
     {
         if (_useBookmarkManager)
         {
@@ -371,7 +362,8 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                 mode,
                 _database,
                 SessionConfig,
-                LastBookmarks)
+                LastBookmarks,
+                forceAuth)
             .ConfigureAwait(false);
         
         //Update the database. If a routing request occurred it may have returned a differing DB alias name that needs to be used for the
@@ -407,5 +399,26 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     private string ImpersonatedUser()
     {
         return SessionConfig is not null ? SessionConfig.ImpersonatedUser : string.Empty;
+    }
+
+    public async Task<bool> VerifyConnectivityAsync()
+    {
+        var authCodeExceptions = new []{
+            "Neo.ClientError.Security.CredentialsExpired",
+            "Neo.ClientError.Security.Forbidden",
+            "Neo.ClientError.Security.TokenExpired",
+            "Neo.ClientError.Security.Unauthorized"
+        };
+
+        try
+        {
+            await AcquireConnectionAndDbNameAsync(AccessMode.Read, true).ConfigureAwait(false);
+        }
+        catch (Neo4jException neoException) when (authCodeExceptions.Contains(neoException.Code))
+        {
+            return false;
+        }
+
+        return true;
     }
 }

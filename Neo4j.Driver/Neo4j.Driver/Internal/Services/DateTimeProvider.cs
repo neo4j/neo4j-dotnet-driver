@@ -26,5 +26,11 @@ internal interface IDateTimeProvider
 
 internal class DateTimeProvider : IDateTimeProvider
 {
+    internal static IDateTimeProvider Instance => StaticInstance;
+    internal static IDateTimeProvider StaticInstance = new DateTimeProvider();
+    
+    private DateTimeProvider()
+    {
+    }
     public DateTime Now() => DateTime.UtcNow;
 }

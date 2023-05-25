@@ -19,6 +19,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Auth;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Util;
@@ -79,6 +81,8 @@ internal abstract class DelegatedConnection : IConnection
     }
 
     public BoltProtocolVersion Version => Delegate.Version;
+
+    public IAuthTokenManager AuthTokenManager => Delegate.AuthTokenManager;
 
     public void ConfigureMode(AccessMode? mode)
     {
@@ -254,6 +258,10 @@ internal abstract class DelegatedConnection : IConnection
             AuthorizationStatus = AuthorizationStatus.TokenExpired;
             if (te.Notified == false)
             {
+                if (AuthTokenManager is not StaticAuthTokenManager)
+                {
+                    te.Retriable = true;
+                }
                 await NotifyTokenExpiredAsync().ConfigureAwait(false);
                 te.Notified = true;
             }

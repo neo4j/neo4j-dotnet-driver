@@ -77,9 +77,9 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
                 new BoltProtocolVersion(major, minor),
                 null,
                 null,
-                (IDictionary<string, string>)null);
+                new Dictionary<string, string>());
 
-            helloMessage.ToString().Should().Be("HELLO [{user_agent, NULL}, {routing, NULL}]");
+            helloMessage.ToString().Should().Be("HELLO [{user_agent, NULL}, {routing, []}]");
         }
 
         [Theory]
@@ -109,7 +109,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
                 null,
                 (IDictionary<string, string>)null);
 
-            helloMessage.ToString().Should().Be("HELLO [{user_agent, NULL}, {routing, NULL}, {patch_bolt, [utc]}]");
+            helloMessage.ToString().Should().Be("HELLO [{user_agent, NULL}, {patch_bolt, [utc]}]");
         }
 
         [Theory]
@@ -129,7 +129,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
             helloMessage.ToString()
                 .Should()
                 .Be(
-                    "HELLO [{scheme, basic}, {principal, jeff}, {credentials, ******}, {user_agent, NULL}, {routing, NULL}]");
+                    "HELLO [{scheme, basic}, {principal, jeff}, {credentials, ******}, {user_agent, NULL}]");
         }
 
         [Theory]

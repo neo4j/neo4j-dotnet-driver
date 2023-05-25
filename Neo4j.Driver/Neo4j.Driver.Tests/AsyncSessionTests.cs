@@ -377,7 +377,8 @@ namespace Neo4j.Driver.Tests
                 AccessMode mode,
                 string database,
                 Driver.SessionConfig sessionConfig,
-                Bookmarks bookmarks)
+                Bookmarks bookmarks,
+                bool forceAuth = false)
             {
                 return Task.FromResult(Connection);
             }
@@ -391,6 +392,7 @@ namespace Neo4j.Driver.Tests
                 new Uri("neo4j://myTest.org"),
                 AuthTokenManagers.Static(AuthTokens.None),
                 Config.Default);
+
 
             public Task<bool> SupportsMultiDbAsync()
             {

@@ -30,7 +30,8 @@ internal interface IConnectionProvider : IAsyncDisposable
         AccessMode mode,
         string database,
         SessionConfig sessionConfig,
-        Bookmarks bookmarks);
+        Bookmarks bookmarks,
+        bool forceAuth);
     Task<bool> SupportsMultiDbAsync();
     Task<bool> SupportsReAuthAsync();
     IRoutingTable GetRoutingTable(string database);

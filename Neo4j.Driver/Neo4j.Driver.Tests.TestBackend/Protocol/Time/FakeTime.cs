@@ -21,15 +21,9 @@ using Neo4j.Driver.Internal.Services;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-public class FakeTime : IDateTimeProvider
+internal class FakeTimeHolder
 {
-    public static FakeTime Instance = new();
-
-    private DateTime? _frozenTime;
-    public DateTime Now() => _frozenTime ?? DateTime.Now;
-    public void Freeze() => _frozenTime = DateTime.Now;
-    public void Advance(int milliseconds) => _frozenTime = Now().AddMilliseconds(milliseconds);
-    public void Unfreeze() => _frozenTime = null;
+    internal static IDateTimeProvider OriginalTimeProvider;
 }
 
 internal class FakeTimeInstall : IProtocolObject
@@ -38,17 +32,20 @@ internal class FakeTimeInstall : IProtocolObject
 
     public override Task Process()
     {
+        FakeTimeHolder.OriginalTimeProvider = DateTimeProvider.StaticInstance;
+        DateTimeProvider.StaticInstance = FakeTime.Instance;
         FakeTime.Instance.Freeze();
         return Task.CompletedTask;
     }
 
-    public override string Respond() => new ProtocolResponse("FakeTimeAck").Encode();
+    public override string Respond()
+    {
+        return new ProtocolResponse("FakeTimeAck").Encode();
+    }
 }
 
 internal class FakeTimeTick : IProtocolObject
 {
-    public record DataType(int incrementMs);
-
     public DataType data { get; set; }
 
     public override Task Process()
@@ -57,7 +54,12 @@ internal class FakeTimeTick : IProtocolObject
         return Task.CompletedTask;
     }
 
-    public override string Respond() => new ProtocolResponse("FakeTimeAck").Encode();
+    public override string Respond()
+    {
+        return new ProtocolResponse("FakeTimeAck").Encode();
+    }
+
+    public record DataType(int incrementMs);
 }
 
 internal class FakeTimeUninstall : IProtocolObject
@@ -66,9 +68,40 @@ internal class FakeTimeUninstall : IProtocolObject
 
     public override Task Process()
     {
+        DateTimeProvider.StaticInstance = FakeTimeHolder.OriginalTimeProvider;
         FakeTime.Instance.Unfreeze();
         return Task.CompletedTask;
     }
 
-    public override string Respond() => new ProtocolResponse("FakeTimeAck").Encode();
+    public override string Respond()
+    {
+        return new ProtocolResponse("FakeTimeAck").Encode();
+    }
+}
+
+public class FakeTime : IDateTimeProvider
+{
+    public static FakeTime Instance = new();
+
+    private DateTime? _frozenTime;
+
+    public DateTime Now()
+    {
+        return _frozenTime ?? DateTime.Now;
+    }
+
+    public void Freeze()
+    {
+        _frozenTime = DateTime.Now;
+    }
+
+    public void Advance(int milliseconds)
+    {
+        _frozenTime = Now().AddMilliseconds(milliseconds);
+    }
+
+    public void Unfreeze()
+    {
+        _frozenTime = null;
+    }
 }

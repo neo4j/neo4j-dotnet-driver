@@ -138,7 +138,8 @@ internal sealed class ConnectionPool : IConnectionPool
         AccessMode mode,
         string database,
         SessionConfig sessionConfig,
-        Bookmarks bookmarks)
+        Bookmarks bookmarks,
+        bool forceAuth = false)
     {
         _poolMetricsListener?.PoolAcquiring();
 
@@ -155,10 +156,18 @@ internal sealed class ConnectionPool : IConnectionPool
                 try
                 {
                     connection.SessionConfig = sessionConfig;
+                    if (forceAuth)
+                    {
+                        connection.AuthorizationStatus = AuthorizationStatus.AuthorizationExpired;
+                    }
                     if (connection.AuthorizationStatus != AuthorizationStatus.FreshlyAuthenticated 
                      && connection.AuthorizationStatus != AuthorizationStatus.SessionToken)
                     {
                         await connection.ValidateCredsAsync().ConfigureAwait(false);
+                        if (forceAuth)
+                        {
+                            await connection.SyncAsync().ConfigureAwait(false);
+                        }
                     }
 
                     _poolMetricsListener?.PoolAcquired();

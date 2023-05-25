@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Neo4j.Driver.Internal.Services;
 using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.Routing;
@@ -52,7 +53,7 @@ internal class RoutingTable : IRoutingTable
         ExpireAfterSeconds = expireAfterSeconds;
         try
         {
-            _expirationTimeStamp = DateTime.Now.AddSeconds(Convert.ToDouble(expireAfterSeconds));
+            _expirationTimeStamp = DateTimeProvider.Instance.Now().AddSeconds(Convert.ToDouble(expireAfterSeconds));
         }
         catch
         {
@@ -72,12 +73,12 @@ internal class RoutingTable : IRoutingTable
         return _routers.Count < MinRouterCount ||
             (mode == AccessMode.Read && _readers.IsEmpty) ||
             (mode == AccessMode.Write && _writers.IsEmpty) ||
-            DateTime.Now >= _expirationTimeStamp;
+            DateTimeProvider.Instance.Now() >= _expirationTimeStamp;
     }
 
     public bool IsExpiredFor(TimeSpan duration)
     {
-        return (DateTime.Now - _expirationTimeStamp).TotalMilliseconds >= duration.TotalMilliseconds;
+        return (DateTimeProvider.Instance.Now() - _expirationTimeStamp).TotalMilliseconds >= duration.TotalMilliseconds;
     }
 
     public bool IsReadingInAbsenceOfWriter(AccessMode mode)

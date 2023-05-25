@@ -208,7 +208,6 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         var logonMessage = _protocolMessageFactory.NewLogonMessage(connection, authToken);
         await connection.EnqueueAsync(logonMessage, ErrorThrowingResponseHandler.Instance).ConfigureAwait(false);
-
         await connection.SyncAsync().ConfigureAwait(false);
     }
 

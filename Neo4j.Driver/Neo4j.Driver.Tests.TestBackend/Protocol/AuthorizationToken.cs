@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -36,5 +37,21 @@ internal class AuthorizationToken : IProtocolObject
         public string credentials { get; set; }
         public string realm { get; set; }
         public Dictionary<string, object> parameters { get; set; }
+    }
+
+    public IAuthToken AsToken()
+    {
+        var authTokenData = data;
+        return authTokenData.scheme switch
+        {
+            AuthSchemes.Bearer => AuthTokens.Bearer(authTokenData.credentials),
+            AuthSchemes.Kerberos => AuthTokens.Kerberos(authTokenData.credentials),
+            _ => AuthTokens.Custom(
+                authTokenData.principal,
+                authTokenData.credentials,
+                authTokenData.realm,
+                authTokenData.scheme,
+                authTokenData.parameters)
+        };
     }
 }

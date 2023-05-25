@@ -255,6 +255,15 @@ internal sealed class Driver : IInternalDriver
         return new ExecutableQuery<IRecord, IRecord>(new DriverRowSource(this, cypher), x => x);
     }
 
+    public async Task<bool> VerifyAuthenticationAsync(IAuthToken authToken)
+    {
+        var session = AsyncSession(x => x.WithAuthToken(authToken).WithDatabase("system")) as AsyncSession;
+        await using (session.ConfigureAwait(false))
+        {
+            return await session.VerifyConnectivityAsync().ConfigureAwait(false);
+        }
+    }
+
     private static Func<IResultCursor, CancellationToken, Task<EagerResult<TResult>>> TransformCursor<TResult>(
         Func<IAsyncEnumerable<IRecord>, Task<TResult>> streamProcessor)
     {

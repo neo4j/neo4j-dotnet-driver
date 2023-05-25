@@ -181,7 +181,7 @@ internal sealed class SocketConnection : IConnection
         {
             return Task.CompletedTask;
         }
-
+        
         return AuthTokenManager.OnTokenExpiredAsync(AuthToken);
     }
 

@@ -363,6 +363,9 @@ public class TokenExpiredException : SecurityException
 {
     private const string ErrorCode = "Neo.ClientError.Security.TokenExpired";
     internal bool Notified = false;
+    internal bool Retriable = false;
+    public override bool IsRetriable => Retriable;
+
     /// <summary>Create a new <see cref="TokenExpiredException"/> with an error message.</summary>
     /// <param name="message">The error message.</param>
     public TokenExpiredException(string message) : base(ErrorCode, message)

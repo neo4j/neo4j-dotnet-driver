@@ -83,14 +83,15 @@ internal class ClusterConnectionPool : IClusterConnectionPool
         AccessMode mode,
         string database,
         SessionConfig sessionConfig,
-        Bookmarks bookmarks)
+        Bookmarks bookmarks,
+        bool forceAuth)
     {
         if (!_pools.TryGetValue(uri, out var pool))
         {
             return Task.FromResult((IConnection)null);
         }
 
-        return pool.AcquireAsync(mode, database, sessionConfig, bookmarks);
+        return pool.AcquireAsync(mode, database, sessionConfig, bookmarks, forceAuth);
     }
 
     public async Task AddAsync(IEnumerable<Uri> servers)

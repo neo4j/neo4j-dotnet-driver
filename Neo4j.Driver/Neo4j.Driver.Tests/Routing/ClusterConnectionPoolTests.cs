@@ -84,7 +84,8 @@ namespace Neo4j.Driver.Tests.Routing
                     AccessMode.Write,
                     null,
                     null,
-                    Bookmarks.Empty);
+                    Bookmarks.Empty,
+                    false);
 
                 // Then
                 connection.Should().BeNull();
@@ -102,7 +103,7 @@ namespace Neo4j.Driver.Tests.Routing
 
                 mockedConnectionPool.Setup(
                         x =>
-                            x.AcquireAsync(It.IsAny<AccessMode>(), It.IsAny<string>(), null, It.IsAny<Bookmarks>()))
+                            x.AcquireAsync(It.IsAny<AccessMode>(), It.IsAny<string>(), null, It.IsAny<Bookmarks>(), false))
                     .ReturnsAsync(mockedConnection.Object);
 
                 var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
@@ -115,7 +116,7 @@ namespace Neo4j.Driver.Tests.Routing
                 connectionPoolDict[ServerUri].Should().Be(mockedConnectionPool.Object);
 
                 // When
-                var connection = await pool.AcquireAsync(ServerUri, AccessMode.Write, null, null, Bookmarks.Empty);
+                var connection = await pool.AcquireAsync(ServerUri, AccessMode.Write, null, null, Bookmarks.Empty, false);
 
                 // Then
                 connection.Should().NotBeNull();
@@ -146,7 +147,8 @@ namespace Neo4j.Driver.Tests.Routing
                                 It.IsAny<AccessMode>(),
                                 It.IsAny<string>(),
                                 It.IsAny<SessionConfig>(),
-                                It.IsAny<Bookmarks>()))
+                                It.IsAny<Bookmarks>(),
+                                false))
                     .ReturnsAsync(mockedConnection.Object);
 
                 var connectionPoolDict = new ConcurrentDictionary<Uri, IConnectionPool>();
@@ -158,7 +160,8 @@ namespace Neo4j.Driver.Tests.Routing
                     AccessMode.Write,
                     null,
                     null,
-                    Bookmarks.Empty);
+                    Bookmarks.Empty,
+                    false);
 
                 if (expectedResult)
                 {

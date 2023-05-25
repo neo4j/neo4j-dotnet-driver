@@ -53,25 +53,6 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         await connection.SyncAsync().ConfigureAwait(false);
     }        
 
-    private async Task EnqueueLogon(IConnection connection, IAuthToken authToken)
-    {
-        var logonMessage = _protocolMessageFactory.NewLogonMessage(connection, authToken);
-        await connection.EnqueueAsync(logonMessage, NoOpResponseHandler.Instance).ConfigureAwait(false);
-    }
-
-    public async Task LoginAsync(IConnection connection, string userAgent, IAuthToken authToken)
-    {
-        var helloMessage = _protocolMessageFactory.NewHelloMessage(connection, userAgent, authToken);
-        var helloResponseHandler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
-        await connection.EnqueueAsync(helloMessage, helloResponseHandler).ConfigureAwait(false);
-        if (connection.Version >= BoltProtocolVersion.V5_1)
-        {
-            await EnqueueLogon(connection, authToken).ConfigureAwait(false);
-        }
-
-        await connection.SyncAsync().ConfigureAwait(false);
-    }
-
     public async Task ReAuthAsync(IConnection connection, IAuthToken newAuthToken)
     {
         if (connection.Version < BoltProtocolVersion.V5_1)
@@ -82,7 +63,8 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         }
 
         await connection.EnqueueAsync(LogoffMessage.Instance, NoOpResponseHandler.Instance).ConfigureAwait(false);
-        await EnqueueLogon(connection, newAuthToken).ConfigureAwait(false);
+        var logon = _protocolMessageFactory.NewLogonMessage(connection, newAuthToken);
+        await connection.EnqueueAsync(logon, ErrorThrowingResponseHandler.Instance).ConfigureAwait(false);
         // we don't sync here because the logoff/logon should be pipelined with whatever
         // comes next from the driver
     }

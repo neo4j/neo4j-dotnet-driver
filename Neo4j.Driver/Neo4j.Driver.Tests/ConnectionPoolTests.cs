@@ -265,6 +265,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldCloseConnectionIfFailedToCreate()
             {
                 var connMock = new Mock<IPooledConnection>();
+                connMock.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V5_0);
                 connMock.Setup(x => x.InitAsync(
                         It.IsAny<INotificationsConfig>(),
                         It.IsAny<SessionConfig>(),

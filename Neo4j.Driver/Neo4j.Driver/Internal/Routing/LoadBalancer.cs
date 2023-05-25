@@ -104,14 +104,15 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         AccessMode mode,
         string database,
         SessionConfig sessionConfig,
-        Bookmarks bookmarks)
+        Bookmarks bookmarks,
+        bool forceAuth = false)
     {
         if (IsClosed)
         {
             throw GetDriverDisposedException(nameof(LoadBalancer));
         }
 
-        var conn = await AcquireConnectionAsync(mode, database, sessionConfig, bookmarks).ConfigureAwait(false);
+        var conn = await AcquireConnectionAsync(mode, database, sessionConfig, bookmarks, forceAuth).ConfigureAwait(false);
 
         if (IsClosed)
         {
@@ -225,7 +226,8 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         AccessMode mode,
         string database,
         SessionConfig sessionConfig,
-        Bookmarks bookmarks)
+        Bookmarks bookmarks,
+        bool forceAuth)
     {
         var routingTable = await _routingTableManager
             .EnsureRoutingTableForModeAsync(mode, database, sessionConfig, bookmarks)
@@ -260,7 +262,8 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
                     mode,
                     routingTable.Database,
                     sessionConfig,
-                    bookmarks)
+                    bookmarks,
+                    forceAuth)
                 .ConfigureAwait(false);
 
             if (conn != null)
@@ -279,12 +282,13 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         AccessMode mode,
         string database,
         SessionConfig sessionConfig,
-        Bookmarks bookmarks)
+        Bookmarks bookmarks,
+        bool forceAuth = false)
     {
         try
         {
             var conn = await _clusterConnectionPool
-                .AcquireAsync(uri, mode, database, sessionConfig, bookmarks)
+                .AcquireAsync(uri, mode, database, sessionConfig, bookmarks, forceAuth)
                 .ConfigureAwait(false);
 
             if (conn != null)

@@ -49,7 +49,7 @@ internal sealed class HelloMessage : IRequestMessage
             Metadata = new Dictionary<string, object> { [UserAgentMetadataKey] = userAgent };
         }
 
-        if (version >= BoltProtocolVersion.V4_1)
+        if (version >= BoltProtocolVersion.V4_1 && routingContext != null)
         {
             Metadata.Add(RoutingMetadataKey, routingContext);
         }
@@ -71,11 +71,15 @@ internal sealed class HelloMessage : IRequestMessage
             throw new ArgumentOutOfRangeException(nameof(version), version, "should be Bolt version 5.1+");
         }
 
-        Metadata = new Dictionary<string, object>
+        Metadata = new Dictionary<string, object>(3)
         {
             [UserAgentMetadataKey] = userAgent,
-            [RoutingMetadataKey] = routingContext
         };
+
+        if (routingContext != null)
+        {
+            Metadata[RoutingMetadataKey] = routingContext;
+        }
 
         if (version >= BoltProtocolVersion.V5_2)
         {

@@ -40,29 +40,8 @@ internal class NewDriver : IProtocolObject
 
         if (data.authorizationToken != null)
         {
-            IAuthToken authToken;
-            var authTokenData = data.authorizationToken.data;
-            switch (authTokenData.scheme)
-            {
-                case AuthSchemes.Bearer:
-                    authToken = AuthTokens.Bearer(authTokenData.credentials);
-                    break;
-
-                case AuthSchemes.Kerberos:
-                    authToken = AuthTokens.Kerberos(authTokenData.credentials);
-                    break;
-
-                default:
-                    authToken = AuthTokens.Custom(
-                        authTokenData.principal,
-                        authTokenData.credentials,
-                        authTokenData.realm,
-                        authTokenData.scheme,
-                        authTokenData.parameters);
-
-                    break;
-            }
-
+            IAuthToken authToken = data.authorizationToken.AsToken();
+           
             Driver = GraphDatabase.Driver(data.uri, authToken, DriverConfig);
         }
         else
