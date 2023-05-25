@@ -27,6 +27,8 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
     public const int MaxMinorVersion = 84;
 
     private const int PackingIntValue = 0x00FF;
+    
+    public static readonly BoltProtocolVersion Unknown = new(1, 0);
 
     public static readonly BoltProtocolVersion V3_0 = new(3, 0);
     public static readonly BoltProtocolVersion V4_0 = new(4, 0);

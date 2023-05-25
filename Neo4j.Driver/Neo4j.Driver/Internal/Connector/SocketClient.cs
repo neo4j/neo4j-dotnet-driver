@@ -56,6 +56,7 @@ internal sealed class SocketClient : ISocketClient
         IPackStreamFactory packstreamFactory = null,
         IBoltHandshaker boltHandshaker = null)
     {
+        Version = BoltProtocolVersion.Unknown;
         _uri = uri;
         _bufferSettings = bufferSettings;
         _logger = logger;
