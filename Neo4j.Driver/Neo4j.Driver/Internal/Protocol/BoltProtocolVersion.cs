@@ -37,6 +37,7 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
     public static readonly BoltProtocolVersion V5_0 = new(5, 0);
     public static readonly BoltProtocolVersion V5_1 = new(5, 1);
     public static readonly BoltProtocolVersion V5_2 = new(5, 2);
+    public static readonly BoltProtocolVersion V5_3 = new(5, 3);
     
     private readonly int _compValue;
 

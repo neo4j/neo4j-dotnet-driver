@@ -28,6 +28,8 @@ internal sealed class HelloMessage : IRequestMessage
 {
     private const string UserAgentMetadataKey = "user_agent";
     private const string RoutingMetadataKey = "routing";
+    private const string BoltAgentMetadataKey = "bolt_agent";
+    private const string PatchBoltMetadataKey = "patch_bolt";
 
     public HelloMessage(
         BoltProtocolVersion version,
@@ -42,7 +44,10 @@ internal sealed class HelloMessage : IRequestMessage
 
         if (authToken?.Count > 0)
         {
-            Metadata = new Dictionary<string, object>(authToken) { [UserAgentMetadataKey] = userAgent };
+            Metadata = new Dictionary<string, object>(authToken)
+            {
+                [UserAgentMetadataKey] = userAgent
+            };
         }
         else
         {
@@ -56,7 +61,7 @@ internal sealed class HelloMessage : IRequestMessage
 
         if (version >= BoltProtocolVersion.V4_3 && version < BoltProtocolVersion.V5_0)
         {
-            Metadata.Add("patch_bolt", new[] { "utc" });
+            Metadata.Add(PatchBoltMetadataKey, new[] { "utc" });
         }
     }
 
@@ -73,7 +78,7 @@ internal sealed class HelloMessage : IRequestMessage
 
         Metadata = new Dictionary<string, object>(3)
         {
-            [UserAgentMetadataKey] = userAgent,
+            [UserAgentMetadataKey] = userAgent
         };
 
         if (routingContext != null)
@@ -84,6 +89,11 @@ internal sealed class HelloMessage : IRequestMessage
         if (version >= BoltProtocolVersion.V5_2)
         {
             NotificationsMetadataWriter.AddNotificationsConfigToMetadata(Metadata, notificationsConfig);
+        }
+
+        if (version >= BoltProtocolVersion.V5_3)
+        {
+            Metadata.Add(BoltAgentMetadataKey, BoltAgentBuilder.Agent);
         }
     }
 
