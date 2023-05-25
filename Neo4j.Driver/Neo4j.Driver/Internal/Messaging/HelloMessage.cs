@@ -54,7 +54,10 @@ internal sealed class HelloMessage : IRequestMessage
             Metadata = new Dictionary<string, object> { [UserAgentMetadataKey] = userAgent };
         }
 
-        Metadata.Add(RoutingMetadataKey, routingContext);
+        if (version >= BoltProtocolVersion.V4_1)
+        {
+            Metadata.Add(RoutingMetadataKey, routingContext);
+        }
 
         if (version >= BoltProtocolVersion.V4_3 && version < BoltProtocolVersion.V5_0)
         {
