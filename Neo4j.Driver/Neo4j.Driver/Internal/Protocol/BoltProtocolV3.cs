@@ -64,7 +64,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
 
         await connection.EnqueueAsync(LogoffMessage.Instance, NoOpResponseHandler.Instance).ConfigureAwait(false);
         var logon = _protocolMessageFactory.NewLogonMessage(connection, newAuthToken);
-        await connection.EnqueueAsync(logon, ErrorThrowingResponseHandler.Instance).ConfigureAwait(false);
+        await connection.EnqueueAsync(logon, NoOpResponseHandler.Instance).ConfigureAwait(false);
         // we don't sync here because the logoff/logon should be pipelined with whatever
         // comes next from the driver
     }
@@ -183,7 +183,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             mode,
             notificationsConfig);
 
-        await connection.EnqueueAsync(message, ErrorThrowingResponseHandler.Instance).ConfigureAwait(false);
+        await connection.EnqueueAsync(message, NoOpResponseHandler.Instance).ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);
     }
 

@@ -519,7 +519,7 @@ namespace Neo4j.Driver.Internal.Protocol
                     Times.Once);
 
                 mockConn.Verify(
-                    x => x.EnqueueAsync(fakeMessage, ErrorThrowingResponseHandler.Instance),
+                    x => x.EnqueueAsync(fakeMessage, NoOpResponseHandler.Instance),
                     Times.Once);
 
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
