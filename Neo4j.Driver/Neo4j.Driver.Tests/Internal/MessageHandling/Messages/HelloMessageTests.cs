@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
                 null,
                 (IDictionary<string, string>)null);
 
-            helloMessage.ToString().Should().Be("HELLO [{user_agent, NULL}]");
+            helloMessage.ToString().Should().Be("HELLO [{user_agent, NULL}, {routing, NULL}]");
         }
 
         [Theory]
@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
                 (IDictionary<string, string>)null);
 
             helloMessage.Metadata.Should().ContainKey("user_agent").WhichValue.Should().Be("jeff");
-            helloMessage.ToString().Should().Be("HELLO [{user_agent, jeff}]");
+            helloMessage.ToString().Should().Be("HELLO [{user_agent, jeff}, {routing, NULL}]");
         }
 
         [Theory]
