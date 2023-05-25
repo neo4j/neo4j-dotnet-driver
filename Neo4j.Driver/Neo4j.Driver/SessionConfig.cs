@@ -320,7 +320,8 @@ public sealed class SessionConfigBuilder
     /// Override configuration for which <see cref="INotification"/>s should be emitted for the lifetime of the
     /// session. <br/> Unspecified configuration will be provided by configuration specified in the server or the driver's
     /// <see cref="ConfigBuilder.WithNotifications"/>. <br/> If the driver has disabled notifications with
-    /// <see cref="ConfigBuilder.WithNotificationsDisabled"/>, the unspecified values will be provided by the server.
+    /// <see cref="ConfigBuilder.WithNotificationsDisabled"/>, the unspecified values will be provided by the server. <br/>
+    /// Disabling categories or severities allows the server to skip analysis for those, which can speed up query execution.
     /// </summary>
     /// <remarks>Cannot be used with: <see cref="WithNotificationsDisabled"/>.</remarks>
     /// <param name="minimumSeverity">

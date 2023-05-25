@@ -343,7 +343,8 @@ public sealed class ConfigBuilder
 
     /// <summary>
     /// Override configuration for which <see cref="INotification"/>s should be emitted for the lifetime of the
-    /// driver. <br/> Unspecified configuration will be provided by configuration in the server.
+    /// driver. <br/> Unspecified configuration will be provided by configuration in the server. <br/>
+    /// Disabling categories or severities allows the server to skip analysis for those, which can speed up query execution.
     /// </summary>
     /// <remarks>Cannot be used with: <see cref="WithNotificationsDisabled"/>.</remarks>
     /// <param name="minimumSeverity">
