@@ -128,17 +128,16 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         return BeginTransactionAsync(action, true);
     }
 
-    public Task<IAsyncTransaction> BeginTransactionAsync(
+    public async Task<IAsyncTransaction> BeginTransactionAsync(
         Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult)
     {
-        return BeginTransactionAsync(_defaultMode, action, disposeUnconsumedSessionResult);
-        // var tx = await TryExecuteAsync(
-        //         _logger,
-        //         () => BeginTransactionWithoutLoggingAsync(_defaultMode, action, disposeUnconsumedSessionResult))
-        //     .ConfigureAwait(false);
-        //
-        // return tx;
+        var tx = await TryExecuteAsync(
+                _logger,
+                () => BeginTransactionWithoutLoggingAsync(_defaultMode, action, disposeUnconsumedSessionResult))
+            .ConfigureAwait(false);
+        
+        return tx;
     }
 
     public async Task<IAsyncTransaction> BeginTransactionAsync(
@@ -344,11 +343,12 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
             LastBookmarks,
             _reactive,
             _fetchSize,
-            SessionConfig);
+            SessionConfig,
+            _notificationsConfig);
 
-            await tx.BeginTransactionAsync(config).ConfigureAwait(false);
-            _transaction = tx;
-            return _transaction;
+        await tx.BeginTransactionAsync(config).ConfigureAwait(false);
+        _transaction = tx;
+        return _transaction;
     }
 
     private async Task AcquireConnectionAndDbNameAsync(AccessMode mode, bool forceAuth = false)
