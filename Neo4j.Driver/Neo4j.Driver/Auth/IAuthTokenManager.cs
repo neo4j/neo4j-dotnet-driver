@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Auth;
 public interface IAuthTokenManager
 {
     /// <summary>
-    /// Asynchronously retrieves a valid token. This method will be called often; the object should cache the token
+    /// Asynchronously retrieves a valid token. This method will be called often; the implementer should cache the token
     /// until a new one is required.
     /// </summary>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
@@ -43,6 +43,5 @@ public interface IAuthTokenManager
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// A <see cref="Task" /> representing the asynchronous operation.
     /// </returns>
-    /// <param name="token">The token that is expired.</param>
     Task OnTokenExpiredAsync(IAuthToken token, CancellationToken cancellationToken = default);
 }

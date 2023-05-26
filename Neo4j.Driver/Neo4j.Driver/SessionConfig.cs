@@ -243,7 +243,15 @@ public sealed class SessionConfigBuilder
         return this;
     }
 
-    /// <summary>Sets the auth token to be used for the session.</summary>
+    /// <summary>
+    /// Use this overwrite the authentication information for the session. This requires the server to support
+    /// re-authentication on the protocol level. You can check this by calling
+    /// <see cref="IDriver.SupportsSessionAuthAsync"/>.
+    /// <para/>
+    /// It is not possible to overwrite the authentication information for the session with no authentication,
+    /// i.e., downgrade the authentication at session level. Instead, you should create a driver with no authentication
+    /// and upgrade the authentication at session level as needed.
+    /// </summary>
     /// <param name="authToken">The auth token.</param>
     /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
     /// <seealso cref="SessionConfig.AuthToken"/>
