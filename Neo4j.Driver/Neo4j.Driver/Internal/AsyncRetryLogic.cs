@@ -80,11 +80,6 @@ internal class AsyncRetryLogic : IAsyncRetryLogic
                     delayMs *= _multiplier;
                 }
             }
-            catch (Exception e) when (!e.CanBeRetried())
-            {
-                _logger.Trace(e.Message);
-                throw;
-            }
         } while (shouldRetry);
 
         timer.Stop();
