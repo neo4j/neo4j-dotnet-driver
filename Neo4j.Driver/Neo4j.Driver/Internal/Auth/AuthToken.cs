@@ -22,7 +22,7 @@ using System.Linq;
 namespace Neo4j.Driver.Internal.Auth;
 
 /// <summary>A simple common token for authentication schemes that easily convert to an auth token map</summary>
-internal class AuthToken : IAuthToken
+internal sealed class AuthToken : IAuthToken
 {
     public const string SchemeKey = "scheme";
     public const string PrincipalKey = "principal";

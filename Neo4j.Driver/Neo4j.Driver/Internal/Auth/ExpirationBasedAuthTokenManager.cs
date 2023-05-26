@@ -27,7 +27,6 @@ internal class ExpirationBasedAuthTokenManager : IAuthTokenManager
 {
     private readonly IExpiringAuthTokenProvider _expiringAuthTokenProvider;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private Task<AuthTokenAndExpiration> _lastAuthRequest;
     private AuthTokenAndExpiration _currentAuthTokenAndExpiration;
     private SemaphoreSlim _sync;
 
@@ -58,13 +57,7 @@ internal class ExpirationBasedAuthTokenManager : IAuthTokenManager
                 return _currentAuthTokenAndExpiration.Token;
             }
 
-            if (_lastAuthRequest is null)
-            {
-                ScheduleTokenFetch();
-            }
-
-            _currentAuthTokenAndExpiration = await _lastAuthRequest!.ConfigureAwait(false);
-            _lastAuthRequest = null;
+            _currentAuthTokenAndExpiration = await _expiringAuthTokenProvider.GetTokenAsync()!.ConfigureAwait(false);
             return _currentAuthTokenAndExpiration.Token;
         }
         finally
@@ -72,7 +65,7 @@ internal class ExpirationBasedAuthTokenManager : IAuthTokenManager
             _sync.Release();
         }
     }
-
+    
     /// <inheritdoc/>
     public async Task OnTokenExpiredAsync(IAuthToken token, CancellationToken cancellationToken = default)
     {
@@ -80,9 +73,10 @@ internal class ExpirationBasedAuthTokenManager : IAuthTokenManager
 
         try
         {
-            if (token == _currentAuthTokenAndExpiration?.Token && _lastAuthRequest is null)
+            if (_currentAuthTokenAndExpiration?.Token != null && Equals(token, _currentAuthTokenAndExpiration?.Token))
             {
-                ScheduleTokenFetch();
+                _currentAuthTokenAndExpiration =
+                    await _expiringAuthTokenProvider.GetTokenAsync()!.ConfigureAwait(false);
             }
         }
         finally
@@ -91,11 +85,4 @@ internal class ExpirationBasedAuthTokenManager : IAuthTokenManager
         }
     }
 
-    private void ScheduleTokenFetch()
-    {
-        _currentAuthTokenAndExpiration = null;
-
-        // storing the task here, not waiting for the token
-        _lastAuthRequest = _expiringAuthTokenProvider.GetTokenAsync();
-    }
 }

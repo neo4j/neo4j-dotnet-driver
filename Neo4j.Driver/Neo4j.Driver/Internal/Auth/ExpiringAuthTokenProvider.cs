@@ -30,8 +30,8 @@ internal class ExpiringAuthTokenProvider : IExpiringAuthTokenProvider
         _tokenProviderAsync = tokenProviderAsync;
     }
 
-    public async Task<AuthTokenAndExpiration> GetTokenAsync()
+    public Task<AuthTokenAndExpiration> GetTokenAsync()
     {
-        return await _tokenProviderAsync().ConfigureAwait(false);
+        return _tokenProviderAsync();
     }
 }
