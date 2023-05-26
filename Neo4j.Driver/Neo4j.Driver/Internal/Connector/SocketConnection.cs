@@ -21,6 +21,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Auth;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
@@ -71,7 +72,7 @@ internal sealed class SocketConnection : IConnection
         AuthTokenManager = authTokenManager;
         _protocolFactory = BoltProtocolFactory.Default;
     }
-
+    
     // for test only
     internal SocketConnection(
         ISocketClient socketClient,
@@ -146,8 +147,17 @@ internal sealed class SocketConnection : IConnection
             // Not allowed.
             throw new ReauthException(true);
         }
-        await BoltProtocol.AuthenticateAsync(this, _userAgent, authToken, notificationsConfig).ConfigureAwait(false);
 
+        try
+        {
+            await BoltProtocol.AuthenticateAsync(this, _userAgent, authToken, notificationsConfig)
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            await HandleAuthErrorAsync(ex).ConfigureAwait(false);
+            throw;
+        }
         if (this.SupportsReAuth() || sessionConfig?.AuthToken == null)
         {
             AuthorizationStatus = AuthorizationStatus.FreshlyAuthenticated;
@@ -225,11 +235,46 @@ internal sealed class SocketConnection : IConnection
 
             await _client.ReceiveOneAsync(_responsePipeline).ConfigureAwait(false);
 
+            await HandleAuthErrorAsync(_responsePipeline).ConfigureAwait(false);
             _responsePipeline.AssertNoFailure();
         }
         finally
         {
             _recvLock.Release();
+        }
+    }
+
+    private Task HandleAuthErrorAsync(IResponsePipeline responsePipeline)
+    {
+        return responsePipeline.IsHealthy(out var error)
+            ? Task.CompletedTask
+            : HandleAuthErrorAsync(error);
+    }
+
+    private async Task HandleAuthErrorAsync(Exception error)
+    {
+        switch (error)
+        {
+            case TokenExpiredException te:
+            {
+                AuthorizationStatus = AuthorizationStatus.TokenExpired;
+                if (te.Notified == false)
+                {
+                    if (AuthTokenManager is not StaticAuthTokenManager)
+                    {
+                        te.Retriable = true;
+                    }
+
+                    await NotifyTokenExpiredAsync().ConfigureAwait(false);
+                    te.Notified = true;
+                }
+
+                break;
+            }
+
+            case AuthorizationException:
+                AuthorizationStatus = AuthorizationStatus.AuthorizationExpired;
+                break;
         }
     }
 
@@ -438,7 +483,8 @@ internal sealed class SocketConnection : IConnection
             }
 
             await _client.ReceiveAsync(_responsePipeline).ConfigureAwait(false);
-
+            
+            await HandleAuthErrorAsync(_responsePipeline).ConfigureAwait(false);
             _responsePipeline.AssertNoFailure();
         }
         finally

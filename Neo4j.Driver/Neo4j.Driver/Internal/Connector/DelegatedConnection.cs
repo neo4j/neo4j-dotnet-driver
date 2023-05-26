@@ -251,25 +251,9 @@ internal abstract class DelegatedConnection : IConnection
         return BoltProtocol.RollbackTransactionAsync(this);
     }
 
-    internal virtual async Task OnErrorAsync(Exception error)
+    internal virtual Task OnErrorAsync(Exception error)
     {
-        if (error is TokenExpiredException te)
-        {
-            AuthorizationStatus = AuthorizationStatus.TokenExpired;
-            if (te.Notified == false)
-            {
-                if (AuthTokenManager is not StaticAuthTokenManager)
-                {
-                    te.Retriable = true;
-                }
-                await NotifyTokenExpiredAsync().ConfigureAwait(false);
-                te.Notified = true;
-            }
-        }
-        else if (error is AuthorizationException)
-        {
-            AuthorizationStatus = AuthorizationStatus.AuthorizationExpired;
-        }
+        return Task.CompletedTask;
     }
 
     public override string ToString()

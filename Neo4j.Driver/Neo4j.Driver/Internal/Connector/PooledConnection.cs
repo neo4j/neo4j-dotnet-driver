@@ -88,9 +88,8 @@ internal class PooledConnection : DelegatedConnection, IPooledConnection
         }
     }
 
-    internal override async Task OnErrorAsync(Exception error)
+    internal override Task OnErrorAsync(Exception error)
     {
-        await base.OnErrorAsync(error).ConfigureAwait(false);
         if (!(error.IsRecoverableError() || SupportsReauth(error)))
         {
             HasUnrecoverableError = true;

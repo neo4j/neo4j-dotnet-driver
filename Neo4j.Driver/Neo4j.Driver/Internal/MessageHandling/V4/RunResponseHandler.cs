@@ -53,7 +53,6 @@ internal sealed class RunResponseHandler : MetadataCollectingResponseHandler
     public override void OnFailure(IResponsePipelineError error)
     {
         _streamBuilder.RunCompleted(NoQueryId, null, error);
-        error.EnsureThrown();
     }
 
     public override void OnIgnored()

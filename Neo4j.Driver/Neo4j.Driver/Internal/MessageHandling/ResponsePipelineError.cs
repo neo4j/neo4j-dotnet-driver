@@ -30,6 +30,8 @@ internal sealed class ResponsePipelineError : IResponsePipelineError
         _thrown = false;
     }
 
+    public Exception Exception => _exception;
+
     public void EnsureThrown()
     {
         if (_thrown)
