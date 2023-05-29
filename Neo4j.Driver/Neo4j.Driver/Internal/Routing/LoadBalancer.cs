@@ -32,7 +32,6 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
     private readonly IClusterConnectionPool _clusterConnectionPool;
     private readonly IInitialServerAddressProvider _initialServerAddressProvider;
     private readonly ILoadBalancingStrategy _loadBalancingStrategy;
-    private readonly ConnectionSettings _connectionSettings;
     private readonly ILogger _logger;
     private readonly IRoutingTableManager _routingTableManager;
 
@@ -49,7 +48,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         RoutingSetting = routingSettings;
         RoutingContext = RoutingSetting.RoutingContext;
 
-        _connectionSettings = connectionSettings;
+        ConnectionSettings = connectionSettings;
         _logger = logger;
 
         _clusterConnectionPool = new ClusterConnectionPool(
@@ -112,7 +111,8 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             throw GetDriverDisposedException(nameof(LoadBalancer));
         }
 
-        var conn = await AcquireConnectionAsync(mode, database, sessionConfig, bookmarks, forceAuth).ConfigureAwait(false);
+        var conn = await AcquireConnectionAsync(mode, database, sessionConfig, bookmarks, forceAuth)
+            .ConfigureAwait(false);
 
         if (IsClosed)
         {
@@ -146,43 +146,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             "ensure the database is running and that there is a working network connection to it.");
     }
 
-    public ConnectionSettings ConnectionSettings => _connectionSettings;
-
-    private async Task<T> CheckConnectionSupport<T>(Func<IConnection, T> check)
-    {
-        var uris = _initialServerAddressProvider.Get();
-        await AddConnectionPoolAsync(uris).ConfigureAwait(false);
-        var exceptions = new List<Exception>();
-        foreach (var uri in uris)
-        {
-            try
-            {
-                var connection = await CreateClusterConnectionAsync(
-                        uri,
-                        Simple.Mode,
-                        Simple.Database,
-                        null,
-                        Simple.Bookmarks)
-                    .ConfigureAwait(false);
-
-                var result = check(connection);
-                await connection.CloseAsync().ConfigureAwait(false);
-                return result;
-            }
-            catch (SecurityException)
-            {
-                throw; // immediately stop
-            }
-            catch (Exception e)
-            {
-                exceptions.Add(e); // save and continue with the next server
-            }
-        }
-
-        throw new ServiceUnavailableException(
-            $"Failed to perform multi-databases feature detection with the following servers: {uris.ToContentString()} ",
-            new AggregateException(exceptions));
-    }
+    public ConnectionSettings ConnectionSettings { get; }
 
     public Task<bool> SupportsMultiDbAsync()
     {
@@ -220,6 +184,42 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
     public void OnWriteError(Uri uri, string database)
     {
         _routingTableManager.ForgetWriter(uri, database);
+    }
+
+    private async Task<T> CheckConnectionSupport<T>(Func<IConnection, T> check)
+    {
+        var uris = _initialServerAddressProvider.Get();
+        await AddConnectionPoolAsync(uris).ConfigureAwait(false);
+        var exceptions = new List<Exception>();
+        foreach (var uri in uris)
+        {
+            try
+            {
+                var connection = await CreateClusterConnectionAsync(
+                        uri,
+                        Simple.Mode,
+                        Simple.Database,
+                        null,
+                        Simple.Bookmarks)
+                    .ConfigureAwait(false);
+
+                var result = check(connection);
+                await connection.CloseAsync().ConfigureAwait(false);
+                return result;
+            }
+            catch (SecurityException)
+            {
+                throw; // immediately stop
+            }
+            catch (Exception e)
+            {
+                exceptions.Add(e); // save and continue with the next server
+            }
+        }
+
+        throw new ServiceUnavailableException(
+            $"Failed to perform multi-databases feature detection with the following servers: {uris.ToContentString()} ",
+            new AggregateException(exceptions));
     }
 
     private async Task<IConnection> AcquireConnectionAsync(

@@ -27,32 +27,31 @@ namespace Neo4j.Driver.Internal.Connector;
 
 internal enum AuthorizationStatus : byte
 {
-    /// <summary>
-    /// The connection is not authorized.
-    /// </summary>
+    /// <summary>The connection is not authorized.</summary>
     None = 0,
-    /// <summary>
-    /// The connection is authorized and ready to use.
-    /// </summary>
+
+    /// <summary>The connection is authorized and ready to use.</summary>
     FreshlyAuthenticated = 1,
+
     /// <summary>
-    /// The connection is authorized using a session token but the connection doesn't support reauthentication.
-    /// the connection when returned to the pool should close itself.
+    /// The connection is authorized using a session token but the connection doesn't support reauthentication. the
+    /// connection when returned to the pool should close itself.
     /// </summary>
     SessionToken = 2,
+
     /// <summary>
-    /// The connection's token has expired, it should reauthenticate with a new token.
-    /// Drivers that do not support token expiration should treat this as a fatal error.
+    /// The connection's token has expired, it should reauthenticate with a new token. Drivers that do not support
+    /// token expiration should treat this as a fatal error.
     /// </summary>
     TokenExpired = 3,
+
     /// <summary>
-    /// The connections authorization has expired, it should reauthenticate.
-    /// the current token is valid, but can be updated.
+    /// The connections authorization has expired, it should reauthenticate. the current token is valid, but can be
+    /// updated.
     /// </summary>
     AuthorizationExpired = 4,
-    /// <summary>
-    /// The connection was previously pooled, revalidate.
-    /// </summary>
+
+    /// <summary>The connection was previously pooled, revalidate.</summary>
     Pooled = 5
 }
 
@@ -61,6 +60,8 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
     IBoltProtocol BoltProtocol { get; }
     AuthorizationStatus AuthorizationStatus { get; set; }
     IAuthTokenManager AuthTokenManager { get; }
+
+    public SessionConfig SessionConfig { get; set; }
 
     void ConfigureMode(AccessMode? mode);
     void Configure(string database, AccessMode? mode);
@@ -101,8 +102,6 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
     void SetReadTimeoutInSeconds(int seconds);
 
     void SetUseUtcEncodedDateTime();
-
-    public SessionConfig SessionConfig { get; set; }
     Task ValidateCredsAsync();
 }
 

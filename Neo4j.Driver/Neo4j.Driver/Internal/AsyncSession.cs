@@ -19,7 +19,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 using static Neo4j.Driver.Internal.Util.ConfigBuilders;
@@ -39,6 +38,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     private readonly long _fetchSize;
 
     private readonly ILogger _logger;
+    private readonly INotificationsConfig _notificationsConfig;
     private readonly bool _reactive;
 
     private readonly IAsyncRetryLogic _retryLogic;
@@ -50,7 +50,6 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     private bool _disposed;
     private Bookmarks _initialBookmarks;
     private bool _isOpen = true;
-    private readonly INotificationsConfig _notificationsConfig;
     private Task<IResultCursor> _result; // last session run result if any
 
     private AsyncTransaction _transaction;
@@ -74,7 +73,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         _defaultMode = config.DefaultAccessMode;
         _fetchSize = config.FetchSize ?? defaultFetchSize;
         _notificationsConfig = config.NotificationsConfig;
-        
+
         _useBookmarkManager = config.BookmarkManager != null;
         if (_useBookmarkManager)
         {
@@ -136,7 +135,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                 _logger,
                 () => BeginTransactionWithoutLoggingAsync(_defaultMode, action, disposeUnconsumedSessionResult))
             .ConfigureAwait(false);
-        
+
         return tx;
     }
 
@@ -365,7 +364,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                 LastBookmarks,
                 forceAuth)
             .ConfigureAwait(false);
-        
+
         //Update the database. If a routing request occurred it may have returned a differing DB alias name that needs to be used for the
         //rest of the sessions lifetime.
         _database = _connection.Database;
@@ -403,7 +402,8 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
 
     public async Task<bool> VerifyConnectivityAsync()
     {
-        var authCodeExceptions = new []{
+        var authCodeExceptions = new[]
+        {
             "Neo.ClientError.Security.CredentialsExpired",
             "Neo.ClientError.Security.Forbidden",
             "Neo.ClientError.Security.TokenExpired",

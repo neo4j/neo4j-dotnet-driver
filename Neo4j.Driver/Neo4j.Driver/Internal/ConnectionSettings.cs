@@ -24,7 +24,11 @@ namespace Neo4j.Driver.Internal;
 
 internal class ConnectionSettings
 {
-    internal ConnectionSettings(Uri uri, IAuthTokenManager authTokenManager, Config config, IHostResolver hostResolver = null)
+    internal ConnectionSettings(
+        Uri uri,
+        IAuthTokenManager authTokenManager,
+        Config config,
+        IHostResolver hostResolver = null)
     {
         AuthTokenManager = authTokenManager;
         UserAgent = config.UserAgent;

@@ -160,8 +160,9 @@ internal sealed class ConnectionPool : IConnectionPool
                     {
                         connection.AuthorizationStatus = AuthorizationStatus.AuthorizationExpired;
                     }
-                    if (connection.AuthorizationStatus != AuthorizationStatus.FreshlyAuthenticated 
-                     && connection.AuthorizationStatus != AuthorizationStatus.SessionToken)
+
+                    if (connection.AuthorizationStatus != AuthorizationStatus.FreshlyAuthenticated &&
+                        connection.AuthorizationStatus != AuthorizationStatus.SessionToken)
                     {
                         await connection.ValidateCredsAsync().ConfigureAwait(false);
                         if (forceAuth)
@@ -308,8 +309,9 @@ internal sealed class ConnectionPool : IConnectionPool
                 }
             }
         }
+
         if (exception is AuthorizationException)
-        {   
+        {
             foreach (var conn in _inUseConnections)
             {
                 if (connection.AuthToken.Equals(conn.AuthToken))
@@ -486,7 +488,8 @@ internal sealed class ConnectionPool : IConnectionPool
                 ThrowServerUnavailableExceptionDueToDeactivated();
             }
 
-            var connection = await GetPooledOrNewConnectionAsync(sessionConfig, cancellationToken).ConfigureAwait(false);
+            var connection =
+                await GetPooledOrNewConnectionAsync(sessionConfig, cancellationToken).ConfigureAwait(false);
 
             if (_connectionValidator.OnRequire(connection))
             {
@@ -558,7 +561,10 @@ internal sealed class ConnectionPool : IConnectionPool
             if (_idleConnections.TryTake(out var idle))
             {
                 if (idle.AuthorizationStatus == AuthorizationStatus.FreshlyAuthenticated)
+                {
                     idle.AuthorizationStatus = AuthorizationStatus.Pooled;
+                }
+
                 return idle;
             }
         }

@@ -51,7 +51,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         var handler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
         await connection.EnqueueAsync(message, handler).ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);
-    }        
+    }
 
     public async Task ReAuthAsync(IConnection connection, IAuthToken newAuthToken)
     {
@@ -229,7 +229,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         await connection.EnqueueAsync(RollbackMessage.Instance, NoOpResponseHandler.Instance).ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);
     }
-    
+
     // TODO: Refactor validation methods into a separate class or move to message classes so the checks aren't duplicated. 
     internal static void ValidateDatabase(IConnection connection, string database)
     {
@@ -255,8 +255,10 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
                 "but has been passed a non-null impersonated user string");
         }
     }
-    
-    internal static void ValidateNotificationsForVersion(IConnection connection, INotificationsConfig notificationsConfig)
+
+    internal static void ValidateNotificationsForVersion(
+        IConnection connection,
+        INotificationsConfig notificationsConfig)
     {
         if (notificationsConfig != null && connection.Version < BoltProtocolVersion.V5_2)
         {

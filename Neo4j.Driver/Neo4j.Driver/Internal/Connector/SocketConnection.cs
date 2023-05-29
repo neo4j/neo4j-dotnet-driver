@@ -46,7 +46,6 @@ internal sealed class SocketConnection : IConnection
     private readonly string _userAgent;
 
     private string _id;
-    private SessionConfig _sessionConfig;
 
     internal SocketConnection(
         Uri uri,
@@ -72,7 +71,7 @@ internal sealed class SocketConnection : IConnection
         AuthTokenManager = authTokenManager;
         _protocolFactory = BoltProtocolFactory.Default;
     }
-    
+
     // for test only
     internal SocketConnection(
         ISocketClient socketClient,
@@ -139,8 +138,8 @@ internal sealed class SocketConnection : IConnection
         {
             _sendLock.Release();
         }
-        
-        _sessionConfig = sessionConfig;
+
+        SessionConfig = sessionConfig;
         var authToken = sessionConfig?.AuthToken ?? AuthToken;
         if (!this.SupportsReAuth() && sessionConfig?.AuthToken != null)
         {
@@ -158,6 +157,7 @@ internal sealed class SocketConnection : IConnection
             await HandleAuthErrorAsync(ex).ConfigureAwait(false);
             throw;
         }
+
         if (this.SupportsReAuth() || sessionConfig?.AuthToken == null)
         {
             AuthorizationStatus = AuthorizationStatus.FreshlyAuthenticated;
@@ -179,6 +179,7 @@ internal sealed class SocketConnection : IConnection
             // if we are attempting to reauthenticate on 5.0 or earlier, throw an exception.
             throw new ReauthException(false);
         }
+
         // Assume success, if Reauth fails we destroy the connection.
         AuthToken = newAuthToken;
         AuthorizationStatus = AuthorizationStatus.FreshlyAuthenticated;
@@ -191,7 +192,7 @@ internal sealed class SocketConnection : IConnection
         {
             return Task.CompletedTask;
         }
-        
+
         return AuthTokenManager.OnTokenExpiredAsync(AuthToken);
     }
 
@@ -241,40 +242,6 @@ internal sealed class SocketConnection : IConnection
         finally
         {
             _recvLock.Release();
-        }
-    }
-
-    private Task HandleAuthErrorAsync(IResponsePipeline responsePipeline)
-    {
-        return responsePipeline.IsHealthy(out var error)
-            ? Task.CompletedTask
-            : HandleAuthErrorAsync(error);
-    }
-
-    private async Task HandleAuthErrorAsync(Exception error)
-    {
-        switch (error)
-        {
-            case TokenExpiredException te:
-            {
-                AuthorizationStatus = AuthorizationStatus.TokenExpired;
-                if (te.Notified == false)
-                {
-                    if (AuthTokenManager is not StaticAuthTokenManager)
-                    {
-                        te.Retriable = true;
-                    }
-
-                    await NotifyTokenExpiredAsync().ConfigureAwait(false);
-                    te.Notified = true;
-                }
-
-                break;
-            }
-
-            case AuthorizationException:
-                AuthorizationStatus = AuthorizationStatus.AuthorizationExpired;
-                break;
         }
     }
 
@@ -369,11 +336,7 @@ internal sealed class SocketConnection : IConnection
         _client.UseUtcEncoded();
     }
 
-    public SessionConfig SessionConfig
-    {
-        get => _sessionConfig;
-        set => _sessionConfig = value;
-    }
+    public SessionConfig SessionConfig { get; set; }
 
     public async Task ValidateCredsAsync()
     {
@@ -385,6 +348,7 @@ internal sealed class SocketConnection : IConnection
                 // This shouldn't happen, connections that don't support re-auth should be cleaned up by the pool.
                 throw new ReauthException(false);
             }
+
             // Get a new token
             token = await AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
             if (token == null || token.Equals(AuthToken))
@@ -392,7 +356,7 @@ internal sealed class SocketConnection : IConnection
                 // the token is not valid for re-auth and will infinitely fail, so we need to destroy the connection.
                 throw new InvalidOperationException(
                     "Attempted to use a token that is not valid for re-authentication.");
-            }   
+            }
         }
         else if (SessionConfig?.AuthToken != null)
         {
@@ -400,14 +364,15 @@ internal sealed class SocketConnection : IConnection
             {
                 throw new ReauthException(true);
             }
+
             // user switching
             token = SessionConfig.AuthToken;
-        } 
+        }
         else if (AuthorizationStatus == AuthorizationStatus.Pooled)
         {
             token = await AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
         }
-        
+
         // The token has changed or the connection needs to re-authenticate but can use the same credentials.
         if (AuthorizationStatus == AuthorizationStatus.AuthorizationExpired || !token.Equals(AuthToken))
         {
@@ -471,6 +436,40 @@ internal sealed class SocketConnection : IConnection
         return BoltProtocol.RollbackTransactionAsync(this);
     }
 
+    private Task HandleAuthErrorAsync(IResponsePipeline responsePipeline)
+    {
+        return responsePipeline.IsHealthy(out var error)
+            ? Task.CompletedTask
+            : HandleAuthErrorAsync(error);
+    }
+
+    private async Task HandleAuthErrorAsync(Exception error)
+    {
+        switch (error)
+        {
+            case TokenExpiredException te:
+            {
+                AuthorizationStatus = AuthorizationStatus.TokenExpired;
+                if (te.Notified == false)
+                {
+                    if (AuthTokenManager is not StaticAuthTokenManager)
+                    {
+                        te.Retriable = true;
+                    }
+
+                    await NotifyTokenExpiredAsync().ConfigureAwait(false);
+                    te.Notified = true;
+                }
+
+                break;
+            }
+
+            case AuthorizationException:
+                AuthorizationStatus = AuthorizationStatus.AuthorizationExpired;
+                break;
+        }
+    }
+
     private async Task ReceiveAsync()
     {
         await _recvLock.WaitAsync().ConfigureAwait(false);
@@ -483,7 +482,7 @@ internal sealed class SocketConnection : IConnection
             }
 
             await _client.ReceiveAsync(_responsePipeline).ConfigureAwait(false);
-            
+
             await HandleAuthErrorAsync(_responsePipeline).ConfigureAwait(false);
             _responsePipeline.AssertNoFailure();
         }

@@ -21,16 +21,15 @@ namespace Neo4j.Driver.Internal.MessageHandling;
 
 internal sealed class ResponsePipelineError : IResponsePipelineError
 {
-    private readonly Exception _exception;
     private volatile bool _thrown;
 
     public ResponsePipelineError(Exception exception)
     {
-        _exception = exception ?? throw new ArgumentNullException(nameof(exception));
+        Exception = exception ?? throw new ArgumentNullException(nameof(exception));
         _thrown = false;
     }
 
-    public Exception Exception => _exception;
+    public Exception Exception { get; }
 
     public void EnsureThrown()
     {
@@ -47,13 +46,13 @@ internal sealed class ResponsePipelineError : IResponsePipelineError
             }
 
             _thrown = true;
-            throw _exception;
+            throw Exception;
         }
     }
 
     public void EnsureThrownIf<T>()
     {
-        if (_thrown || _exception is not T)
+        if (_thrown || Exception is not T)
         {
             return;
         }
@@ -66,7 +65,7 @@ internal sealed class ResponsePipelineError : IResponsePipelineError
             }
 
             _thrown = true;
-            throw _exception;
+            throw Exception;
         }
     }
 }

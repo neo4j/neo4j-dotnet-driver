@@ -22,8 +22,8 @@ namespace Neo4j.Driver.Internal.MessageHandling;
 
 internal interface IResponsePipeline
 {
-    bool IsHealthy(out Exception error);
     bool HasNoPendingMessages { get; }
+    bool IsHealthy(out Exception error);
 
     void Enqueue(IResponseHandler handler);
 

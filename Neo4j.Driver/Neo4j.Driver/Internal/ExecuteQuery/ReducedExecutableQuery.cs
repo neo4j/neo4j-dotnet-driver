@@ -1,14 +1,14 @@
 ﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
-//
+// 
 // This file is part of Neo4j.
-//
+// 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-//
+// 
 //     http://www.apache.org/licenses/LICENSE-2.0
-//
+// 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,11 +23,11 @@ namespace Neo4j.Driver;
 
 internal class ReducedExecutableQuery<TSource, TAccumulate, TResult> : IReducedExecutableQuery<TResult>
 {
-    private readonly Query _query;
-    private readonly IQueryRowSource<TSource> _rowSource;
-    private readonly QueryConfig _queryConfig;
-    private readonly Func<TAccumulate> _seed;
     private readonly Func<TAccumulate, TSource, TAccumulate> _accumulate;
+    private readonly Query _query;
+    private readonly QueryConfig _queryConfig;
+    private readonly IQueryRowSource<TSource> _rowSource;
+    private readonly Func<TAccumulate> _seed;
     private readonly Func<TAccumulate, TResult> _selectResult;
 
     internal ReducedExecutableQuery(

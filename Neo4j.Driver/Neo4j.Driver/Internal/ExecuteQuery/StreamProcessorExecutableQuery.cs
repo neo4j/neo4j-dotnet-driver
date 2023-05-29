@@ -29,7 +29,7 @@ internal class StreamProcessorExecutableQuery<TSource, TResult> : IReducedExecut
 
     public StreamProcessorExecutableQuery(
         IDriverRowSource<TSource> driverRowSource,
-        Func<IAsyncEnumerable<TSource>,Task<TResult>> streamProcessor)
+        Func<IAsyncEnumerable<TSource>, Task<TResult>> streamProcessor)
     {
         _driverRowSource = driverRowSource;
         _streamProcessor = streamProcessor;

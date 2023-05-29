@@ -141,7 +141,7 @@ public class TransientException : Neo4jException
     {
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override bool IsRetriable => true;
 }
 
@@ -197,7 +197,7 @@ public class ServiceUnavailableException : Neo4jException
     {
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override bool IsRetriable => true;
 }
 
@@ -222,7 +222,7 @@ public class SessionExpiredException : Neo4jException
     {
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override bool IsRetriable => true;
 }
 
@@ -246,7 +246,7 @@ public class ConnectionReadTimeoutException : Neo4jException
     {
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override bool IsRetriable => true;
 }
 
@@ -346,7 +346,7 @@ public class AuthorizationException : SecurityException
     {
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override bool IsRetriable => true;
 
     internal static bool IsAuthorizationError(string code)
@@ -364,13 +364,14 @@ public class TokenExpiredException : SecurityException
     private const string ErrorCode = "Neo.ClientError.Security.TokenExpired";
     internal bool Notified = false;
     internal bool Retriable = false;
-    public override bool IsRetriable => Retriable;
 
     /// <summary>Create a new <see cref="TokenExpiredException"/> with an error message.</summary>
     /// <param name="message">The error message.</param>
     public TokenExpiredException(string message) : base(ErrorCode, message)
     {
     }
+
+    public override bool IsRetriable => Retriable;
 
     internal static bool IsTokenExpiredError(string code)
     {
@@ -586,13 +587,11 @@ public class TransactionClosedException : ClientException
 [DataContract]
 public class UnsupportedFeatureException : ClientException
 {
-    public override bool IsRetriable => false;
-    
-    /// <summary>
-    /// 
-    /// </summary>
+    /// <summary></summary>
     /// <param name="message"></param>
     internal UnsupportedFeatureException(string message) : base(message)
     {
     }
+
+    public override bool IsRetriable => false;
 }

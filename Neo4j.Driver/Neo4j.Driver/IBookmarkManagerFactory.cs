@@ -18,8 +18,8 @@
 namespace Neo4j.Driver;
 
 /// <summary>
-/// The <see cref="IBookmarkManagerFactory"/> interface is intended for
-/// classes that construct instances of an <see cref="IBookmarkManager"/> implementation.
+/// The <see cref="IBookmarkManagerFactory"/> interface is intended for classes that construct instances of an
+/// <see cref="IBookmarkManager"/> implementation.
 /// </summary>
 public interface IBookmarkManagerFactory
 {

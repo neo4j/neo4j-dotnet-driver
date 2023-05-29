@@ -141,9 +141,7 @@ public sealed class SessionConfig
         internal set => _impersonatedUser = !string.IsNullOrEmpty(value) ? value : throw new ArgumentNullException();
     }
 
-    /// <summary>
-    /// The auth token that will be used for this session. This overrides any auth settings on the driver object.
-    /// </summary>
+    /// <summary>The auth token that will be used for this session. This overrides any auth settings on the driver object.</summary>
     public IAuthToken AuthToken { get; internal set; }
 
     internal IBookmarkManager BookmarkManager { get; set; }
@@ -245,12 +243,11 @@ public sealed class SessionConfigBuilder
 
     /// <summary>
     /// Use this overwrite the authentication information for the session. This requires the server to support
-    /// re-authentication on the protocol level. You can check this by calling
-    /// <see cref="IDriver.SupportsSessionAuthAsync"/>.
+    /// re-authentication on the protocol level. You can check this by calling <see cref="IDriver.SupportsSessionAuthAsync"/>.
     /// <para/>
-    /// It is not possible to overwrite the authentication information for the session with no authentication,
-    /// i.e., downgrade the authentication at session level. Instead, you should create a driver with no authentication
-    /// and upgrade the authentication at session level as needed.
+    /// It is not possible to overwrite the authentication information for the session with no authentication, i.e., downgrade
+    /// the authentication at session level. Instead, you should create a driver with no authentication and upgrade the
+    /// authentication at session level as needed.
     /// </summary>
     /// <param name="authToken">The auth token.</param>
     /// <returns>this <see cref="SessionConfigBuilder"/> instance</returns>
@@ -313,9 +310,7 @@ public sealed class SessionConfigBuilder
         return _config;
     }
 
-    /// <summary>
-    /// Sets the <see cref="IBookmarkManager"/> for maintaining bookmarks for the lifetime of the session.
-    /// </summary>
+    /// <summary>Sets the <see cref="IBookmarkManager"/> for maintaining bookmarks for the lifetime of the session.</summary>
     /// <param name="bookmarkManager">An instance of <see cref="IBookmarkManager"/> to use in the session.</param>
     /// <returns>this <see cref="SessionConfigBuilder"/> instance.</returns>
     public SessionConfigBuilder WithBookmarkManager(IBookmarkManager bookmarkManager)

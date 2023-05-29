@@ -130,7 +130,6 @@ internal sealed class Driver : IInternalDriver
         }
     }
 
-
     public Task VerifyConnectivityAsync()
     {
         return GetServerInfoAsync();
@@ -144,12 +143,6 @@ internal sealed class Driver : IInternalDriver
     public Task<bool> SupportsSessionAuthAsync()
     {
         return _connectionProvider.SupportsReAuthAsync();
-    }
-
-    //Non public facing api. Used for testing with testkit only
-    public IRoutingTable GetRoutingTable(string database)
-    {
-        return _connectionProvider.GetRoutingTable(database);
     }
 
     public void Dispose()
@@ -189,6 +182,26 @@ internal sealed class Driver : IInternalDriver
             .ConfigureAwait(false);
 
         return new ExecutionSummary(eagerResult.Summary, eagerResult.Keys);
+    }
+
+    public IExecutableQuery<IRecord, IRecord> ExecutableQuery(string cypher)
+    {
+        return new ExecutableQuery<IRecord, IRecord>(new DriverRowSource(this, cypher), x => x);
+    }
+
+    public async Task<bool> VerifyAuthenticationAsync(IAuthToken authToken)
+    {
+        var session = AsyncSession(x => x.WithAuthToken(authToken).WithDatabase("system")) as AsyncSession;
+        await using (session.ConfigureAwait(false))
+        {
+            return await session.VerifyConnectivityAsync().ConfigureAwait(false);
+        }
+    }
+
+    //Non public facing api. Used for testing with testkit only
+    public IRoutingTable GetRoutingTable(string database)
+    {
+        return _connectionProvider.GetRoutingTable(database);
     }
 
     private void Close()
@@ -247,20 +260,6 @@ internal sealed class Driver : IInternalDriver
 
             return await session.ExecuteWriteAsync(x => Work(query, x, cursorProcessor, cancellationToken))
                 .ConfigureAwait(false);
-        }
-    }
-
-    public IExecutableQuery<IRecord, IRecord> ExecutableQuery(string cypher)
-    {
-        return new ExecutableQuery<IRecord, IRecord>(new DriverRowSource(this, cypher), x => x);
-    }
-
-    public async Task<bool> VerifyAuthenticationAsync(IAuthToken authToken)
-    {
-        var session = AsyncSession(x => x.WithAuthToken(authToken).WithDatabase("system")) as AsyncSession;
-        await using (session.ConfigureAwait(false))
-        {
-            return await session.VerifyConnectivityAsync().ConfigureAwait(false);
         }
     }
 

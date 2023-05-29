@@ -30,6 +30,14 @@ public static class GraphDatabase
 {
     internal const int DefaultBoltPort = 7687;
 
+    /// <summary>
+    /// Gets a new <see cref="IBookmarkManagerFactory"/>, which can construct a new default
+    /// <see cref="IBookmarkManager"/> instance.<br/> The <see cref="IBookmarkManager"/> instance should be passed to
+    /// <see cref="SessionConfigBuilder"/> when opening a new session with
+    /// <see cref="SessionConfigBuilder.WithBookmarkManager"/>.
+    /// </summary>
+    public static IBookmarkManagerFactory BookmarkManagerFactory => new BookmarkManagerFactory();
+
     /// <summary>Returns a driver for a Neo4j instance with default configuration settings.</summary>
     /// <param name="uri">
     /// The URI to the Neo4j instance. Should be in the form
@@ -173,7 +181,6 @@ public static class GraphDatabase
         return Driver(new Uri(uri), authTokenManager, action);
     }
 
-
     /// <summary>Returns a driver for a Neo4j instance with custom configuration.</summary>
     /// <param name="uri">
     /// The URI to the Neo4j instance. Should be in the form
@@ -206,14 +213,6 @@ public static class GraphDatabase
         return CreateDriver(uri, config, connectionFactory, connectionSettings);
     }
 
-    /// <summary>
-    /// Gets a new <see cref="IBookmarkManagerFactory"/>, which can construct a new default
-    /// <see cref="IBookmarkManager"/> instance.<br/>
-    /// The <see cref="IBookmarkManager"/> instance should be passed to <see cref="SessionConfigBuilder"/>
-    /// when opening a new session with <see cref="SessionConfigBuilder.WithBookmarkManager"/>.
-    /// </summary>
-    public static IBookmarkManagerFactory BookmarkManagerFactory => new BookmarkManagerFactory();
-
     internal static IDriver CreateDriver(
         Uri uri,
         Config config,
@@ -242,13 +241,13 @@ public static class GraphDatabase
                 logger,
                 config.NotificationsConfig)
             : new ConnectionPool(
-                    parsedUri,
-                    connectionFactory,
-                    connectionPoolSettings,
-                    logger,
-                    connectionSettings,
-                    null,
-                    config.NotificationsConfig);
+                parsedUri,
+                connectionFactory,
+                connectionPoolSettings,
+                logger,
+                connectionSettings,
+                null,
+                config.NotificationsConfig);
 
         return new Internal.Driver(
             parsedUri,

@@ -25,7 +25,7 @@ public enum NotificationSeverity
 {
     /// <summary><see cref="INotification"/>'s severity is a value unknown to this driver version.</summary>
     Unknown,
-    
+
     /// <summary>
     /// <see cref="INotification"/>'s severity is Warning.<br/> We recommend user intervention for
     /// <see cref="Warning"/> notifications.

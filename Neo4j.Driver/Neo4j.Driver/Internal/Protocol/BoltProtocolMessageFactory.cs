@@ -125,7 +125,7 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
             ? null
             : authToken.AsDictionary();
 
-       return new HelloMessage(
+        return new HelloMessage(
             connection.Version,
             userAgent,
             authDict,

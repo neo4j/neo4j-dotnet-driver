@@ -20,7 +20,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Auth;
-using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Util;
@@ -42,7 +41,10 @@ internal abstract class DelegatedConnection : IConnection
 
     public IDictionary<string, string> RoutingContext => Delegate.RoutingContext;
 
-    public Task NotifyTokenExpiredAsync() => Delegate.NotifyTokenExpiredAsync();
+    public Task NotifyTokenExpiredAsync()
+    {
+        return Delegate.NotifyTokenExpiredAsync();
+    }
 
     public async Task SyncAsync()
     {
@@ -140,6 +142,7 @@ internal abstract class DelegatedConnection : IConnection
     public IServerInfo Server => Delegate.Server;
 
     public IBoltProtocol BoltProtocol => Delegate.BoltProtocol;
+
     public AuthorizationStatus AuthorizationStatus
     {
         get => Delegate.AuthorizationStatus;

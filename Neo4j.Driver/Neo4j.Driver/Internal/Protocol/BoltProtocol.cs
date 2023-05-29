@@ -51,7 +51,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         BoltProtocolV3.ValidateNotificationsForVersion(connection, notificationsConfig);
 
         return connection.Version >= BoltProtocolVersion.V5_1
-            ?  AuthenticateWithLogonAsync(connection, userAgent, authToken, notificationsConfig)
+            ? AuthenticateWithLogonAsync(connection, userAgent, authToken, notificationsConfig)
             : _boltProtocolV3.AuthenticateAsync(connection, userAgent, authToken, notificationsConfig);
     }
 

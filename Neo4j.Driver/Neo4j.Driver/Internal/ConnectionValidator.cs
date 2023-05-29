@@ -71,17 +71,11 @@ internal class ConnectionValidator : IConnectionValidator
         return true;
     }
 
-    private bool AuthStatusIsRecoverable(IConnection connection)
-    {
-        return connection.AuthorizationStatus is AuthorizationStatus.FreshlyAuthenticated or AuthorizationStatus.Pooled
-         || connection.SupportsReAuth();
-    }
-
     public bool OnRequire(IPooledConnection connection)
     {
         var isRequirable = connection.IsOpen &&
             !HasBeenIdleForTooLong(connection) &&
-            !HasBeenAliveForTooLong(connection) && 
+            !HasBeenAliveForTooLong(connection) &&
             !MarkedStale(connection) &&
             AuthStatusIsRecoverable(connection);
 
@@ -91,6 +85,13 @@ internal class ConnectionValidator : IConnectionValidator
         }
 
         return isRequirable;
+    }
+
+    private bool AuthStatusIsRecoverable(IConnection connection)
+    {
+        return connection.AuthorizationStatus is AuthorizationStatus.FreshlyAuthenticated
+                or AuthorizationStatus.Pooled ||
+            connection.SupportsReAuth();
     }
 
     private bool MarkedStale(IPooledConnection connection)

@@ -1,14 +1,14 @@
 ﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
-//
+// 
 // This file is part of Neo4j.
-//
+// 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-//
+// 
 //     http://www.apache.org/licenses/LICENSE-2.0
-//
+// 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,16 +16,13 @@
 // limitations under the License.
 
 using System.Threading.Tasks;
+
 namespace Neo4j.Driver.Auth;
 
-/// <summary>
-/// Provides auth tokens that expire.
-/// </summary>
+/// <summary>Provides auth tokens that expire.</summary>
 public interface IExpiringAuthTokenProvider
 {
-    /// <summary>
-    /// Gets a new auth token and expiration time.
-    /// </summary>
+    /// <summary>Gets a new auth token and expiration time.</summary>
     /// <returns>A task that represents the asynchronous operation.</returns>
     Task<AuthTokenAndExpiration> GetTokenAsync();
 }

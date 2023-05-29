@@ -28,11 +28,11 @@ internal interface IConnectionPoolFactory
 internal class ConnectionPoolFactory : IConnectionPoolFactory
 {
     private readonly IPooledConnectionFactory _connectionFactory;
+    private readonly ConnectionSettings _connectionSettings;
     private readonly ILogger _logger;
     private readonly INotificationsConfig _notificationsConfig;
     private readonly ConnectionPoolSettings _poolSettings;
     private readonly IDictionary<string, string> _routingContext;
-    private readonly ConnectionSettings _connectionSettings;
 
     public ConnectionPoolFactory(
         IPooledConnectionFactory connectionFactory,

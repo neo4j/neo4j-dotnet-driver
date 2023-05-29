@@ -84,6 +84,7 @@ internal class PooledConnection : DelegatedConnection, IPooledConnection
             {
                 HasUnrecoverableError = true;
             }
+
             _staleCredentials = value;
         }
     }
@@ -94,7 +95,7 @@ internal class PooledConnection : DelegatedConnection, IPooledConnection
         {
             HasUnrecoverableError = true;
         }
-        
+
         if (error is Neo4jException)
         {
             _releaseManager.OnPoolMemberException(this, error);
@@ -116,9 +117,9 @@ internal class PooledConnection : DelegatedConnection, IPooledConnection
 
     private bool SupportsReauth(Exception error)
     {
-        return AuthorizationStatus != AuthorizationStatus.None 
-         && Version >= BoltProtocolVersion.V5_1 
-         && error is AuthorizationException or TokenExpiredException;
+        return AuthorizationStatus != AuthorizationStatus.None &&
+            Version >= BoltProtocolVersion.V5_1 &&
+            error is AuthorizationException or TokenExpiredException;
     }
 }
 

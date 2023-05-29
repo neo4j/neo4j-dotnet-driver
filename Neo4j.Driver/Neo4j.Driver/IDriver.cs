@@ -66,13 +66,15 @@ public interface IDriver : IDisposable, IAsyncDisposable
     /// <returns>A task that represents the asynchronous operation. The task result contains the connected server's info.</returns>
     Task<IServerInfo> GetServerInfoAsync();
 
-    /// <summary>
-    /// Asynchronously verify if the driver can connect to the remote server.
-    /// </summary>
-    ///  <remarks>Even if this method returns false, the driver still need to be closed via
-    /// <see cref="CloseAsync"/> or disposed to free up all resources.</remarks>
-    /// <returns>A task that represents the asynchronous operation.<br/>
-    /// The task result contains if the driver successfully connected to the remote server.</returns>
+    /// <summary>Asynchronously verify if the driver can connect to the remote server.</summary>
+    /// <remarks>
+    /// Even if this method returns false, the driver still need to be closed via <see cref="CloseAsync"/> or disposed
+    /// to free up all resources.
+    /// </remarks>
+    /// <returns>
+    /// A task that represents the asynchronous operation.<br/> The task result contains if the driver successfully
+    /// connected to the remote server.
+    /// </returns>
     Task<bool> TryVerifyConnectivityAsync();
 
     /// <summary>
@@ -94,9 +96,7 @@ public interface IDriver : IDisposable, IAsyncDisposable
     /// </returns>
     Task<bool> SupportsMultiDbAsync();
 
-    /// <summary>
-    /// Asynchronously verify if the driver supports re-auth.
-    /// </summary>
+    /// <summary>Asynchronously verify if the driver supports re-auth.</summary>
     /// <returns>
     /// A task that represents the asynchronous operation. The task result contains True if the remote server and/or
     /// cluster support re-auth, otherwise false.
@@ -104,23 +104,23 @@ public interface IDriver : IDisposable, IAsyncDisposable
     Task<bool> SupportsSessionAuthAsync();
 
     /// <summary>
-    /// Gets an <see cref="IExecutableQuery&lt;IRecord, IRecord&gt;"/> that can be used to configure and execute a query
-    /// using fluent method chaining.
+    /// Gets an <see cref="IExecutableQuery&lt;IRecord, IRecord&gt;"/> that can be used to configure and execute a
+    /// query using fluent method chaining.
     /// </summary>
     /// <param name="cypher">The cypher of the query.</param>
     /// <returns>
-    /// An <see cref="IExecutableQuery&lt;IRecord, IRecord&gt;"/> that can be used to configure and execute a query using
-    /// fluent method chaining.
+    /// An <see cref="IExecutableQuery&lt;IRecord, IRecord&gt;"/> that can be used to configure and execute a query
+    /// using fluent method chaining.
     /// </returns>
     IExecutableQuery<IRecord, IRecord> ExecutableQuery(string cypher);
 
     /// <summary>
-    /// Asynchronously verify if the driver can connect using the <paramref name="authToken"/>.<br/>
-    /// Try to establish a working read connection to the remote server or a member of a cluster and exchange some
-    /// data.In a cluster, there is no guarantee about which server will be contacted. If the data exchange is
-    /// successful and the authentication information is valid, true is returned. Otherwise, the error will be matched
-    /// against a list of known authentication errors.If the error is on that list, false is returned indicating that
-    /// the authentication information is invalid. If the not on the list, the error is thrown.
+    /// Asynchronously verify if the driver can connect using the <paramref name="authToken"/>.<br/> Try to establish
+    /// a working read connection to the remote server or a member of a cluster and exchange some data.In a cluster, there is
+    /// no guarantee about which server will be contacted. If the data exchange is successful and the authentication
+    /// information is valid, true is returned. Otherwise, the error will be matched against a list of known authentication
+    /// errors.If the error is on that list, false is returned indicating that the authentication information is invalid. If
+    /// the not on the list, the error is thrown.
     /// </summary>
     /// <param name="authToken">Auth token to verify.</param>
     /// <returns> A task that represents the asynchronous operation. </returns>

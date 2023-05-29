@@ -377,6 +377,7 @@ internal class RoutingTableManager : IRoutingTableManager
             or ProtocolException // Neo.ClientError.Request.Invalid and (special to .NET driver) Neo.ClientError.Request.InvalidFormat
             or TypeException // Neo.ClientError.Statement.TypeError
             or SecurityException // Neo.ClientError.Security.*
-            or UnsupportedFeatureException) and not AuthorizationException; // except Neo.ClientError.Security.AuthorizationExpired
+            or UnsupportedFeatureException)
+            and not AuthorizationException; // except Neo.ClientError.Security.AuthorizationExpired
     }
 }

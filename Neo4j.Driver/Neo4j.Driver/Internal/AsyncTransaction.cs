@@ -33,13 +33,13 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
     private readonly IConnection _connection;
     private readonly long _fetchSize;
-    private readonly SessionConfig _sessionConfig;
     private readonly ILogger _logger;
     private readonly INotificationsConfig _notificationsConfig;
     private readonly bool _reactive;
     private readonly ITransactionResourceHandler _resourceHandler;
 
     private readonly IList<Task<IResultCursor>> _results = new List<Task<IResultCursor>>();
+    private readonly SessionConfig _sessionConfig;
 
     private Bookmarks _bookmarks;
 
