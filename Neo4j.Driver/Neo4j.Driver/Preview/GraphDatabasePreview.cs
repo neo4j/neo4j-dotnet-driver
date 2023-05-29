@@ -41,7 +41,7 @@ public class GraphDatabasePreview
         return GraphDatabase.Driver(uri, authTokenManager);
     }
 
-    /// <summary>Returns a driver for a Neo4j instance with default configuration settings.</summary>
+    /// <summary>Returns a driver for a Neo4j instance with custom configuration.</summary>
     /// <param name="uri">
     /// The URI to the Neo4j instance. Should be in the form
     /// <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>. If <c>port</c> is not supplied the default of <c>7687</c> will
@@ -61,7 +61,7 @@ public class GraphDatabasePreview
         return GraphDatabase.Driver(uri, authTokenManager, action);
     }
 
-    /// <summary>Returns a driver for a Neo4j instance with default configuration settings.</summary>
+    /// <summary>Returns a driver for a Neo4j instance with custom configuration.</summary>
     /// <param name="uri">
     /// The URI to the Neo4j instance. Should be in the form
     /// <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>. If <c>port</c> is not supplied the default of <c>7687</c> will
