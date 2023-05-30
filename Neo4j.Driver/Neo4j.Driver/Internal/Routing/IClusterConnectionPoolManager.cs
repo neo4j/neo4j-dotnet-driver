@@ -26,5 +26,5 @@ internal interface IClusterConnectionPoolManager
 {
     Task AddConnectionPoolAsync(IEnumerable<Uri> uris);
     Task UpdateConnectionPoolAsync(IEnumerable<Uri> added, IEnumerable<Uri> removed);
-    Task<IConnection> CreateClusterConnectionAsync(Uri uri);
+    Task<IConnection> CreateClusterConnectionAsync(Uri uri, SessionConfig sessionConfig);
 }

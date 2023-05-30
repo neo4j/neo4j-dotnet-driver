@@ -20,6 +20,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Auth;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
@@ -30,8 +32,6 @@ namespace Neo4j.Driver.Internal.Connector;
 
 internal sealed class SocketConnection : IConnection
 {
-    private readonly IAuthToken _authToken;
-
     private readonly ISocketClient _client;
     private readonly string _idPrefix;
 
@@ -49,22 +49,26 @@ internal sealed class SocketConnection : IConnection
 
     internal SocketConnection(
         Uri uri,
-        ConnectionSettings connectionSettings,
+        SocketSettings socketSettings,
+        IAuthToken authToken,
+        string userAgent,
         BufferSettings bufferSettings,
         IDictionary<string, string> routingContext,
+        IAuthTokenManager authTokenManager,
         ILogger logger = null)
     {
         _idPrefix = $"conn-{uri.Host}:{uri.Port}-";
         _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
         _logger = new PrefixLogger(logger, FormatPrefix(_id));
 
-        _client = new SocketClient(uri, connectionSettings.SocketSettings, bufferSettings, _logger, null);
-        _authToken = connectionSettings.AuthToken;
-        _userAgent = connectionSettings.UserAgent;
+        _client = new SocketClient(uri, socketSettings, bufferSettings, _logger, null);
+        AuthToken = authToken;
+        _userAgent = userAgent;
         _serverInfo = new ServerInfo(uri);
 
         _responsePipeline = new ResponsePipeline(_logger);
         RoutingContext = routingContext;
+        AuthTokenManager = authTokenManager;
         _protocolFactory = BoltProtocolFactory.Default;
     }
 
@@ -76,12 +80,14 @@ internal sealed class SocketConnection : IConnection
         ILogger logger,
         ServerInfo server,
         IResponsePipeline responsePipeline = null,
+        IAuthTokenManager authTokenManager = null,
         IBoltProtocolFactory protocolFactory = null)
     {
         _client = socketClient ?? throw new ArgumentNullException(nameof(socketClient));
-        _authToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
+        AuthToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
         _userAgent = userAgent ?? throw new ArgumentNullException(nameof(userAgent));
         _serverInfo = server ?? throw new ArgumentNullException(nameof(server));
+        AuthTokenManager = authTokenManager;
         RoutingContext = null;
 
         _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
@@ -103,6 +109,8 @@ internal sealed class SocketConnection : IConnection
     /// <summary>Internal Set used for tests.</summary>
     public IBoltProtocol BoltProtocol { get; internal set; }
 
+    public AuthorizationStatus AuthorizationStatus { get; set; }
+
     public void ConfigureMode(AccessMode? mode)
     {
         Mode = mode;
@@ -114,7 +122,10 @@ internal sealed class SocketConnection : IConnection
         Database = database;
     }
 
-    public async Task InitAsync(INotificationsConfig notificationsConfig, CancellationToken cancellationToken = default)
+    public async Task InitAsync(
+        INotificationsConfig notificationsConfig,
+        SessionConfig sessionConfig = null,
+        CancellationToken cancellationToken = default)
     {
         await _sendLock.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -128,7 +139,61 @@ internal sealed class SocketConnection : IConnection
             _sendLock.Release();
         }
 
-        await LoginAsync(_userAgent, _authToken, notificationsConfig).ConfigureAwait(false);
+        SessionConfig = sessionConfig;
+        var authToken = sessionConfig?.AuthToken ?? AuthToken;
+        if (!this.SupportsReAuth() && sessionConfig?.AuthToken != null)
+        {
+            // Not allowed.
+            throw new ReauthException(true);
+        }
+
+        try
+        {
+            await BoltProtocol.AuthenticateAsync(this, _userAgent, authToken, notificationsConfig)
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            await HandleAuthErrorAsync(ex).ConfigureAwait(false);
+            throw;
+        }
+
+        if (this.SupportsReAuth() || sessionConfig?.AuthToken == null)
+        {
+            AuthorizationStatus = AuthorizationStatus.FreshlyAuthenticated;
+        }
+        else
+        {
+            AuthorizationStatus = AuthorizationStatus.SessionToken;
+        }
+    }
+
+    public IAuthTokenManager AuthTokenManager { get; }
+
+    public Task ReAuthAsync(
+        IAuthToken newAuthToken,
+        CancellationToken cancellationToken = default)
+    {
+        if (!this.SupportsReAuth())
+        {
+            // if we are attempting to reauthenticate on 5.0 or earlier, throw an exception.
+            throw new ReauthException(false);
+        }
+
+        // Assume success, if Reauth fails we destroy the connection.
+        AuthToken = newAuthToken;
+        AuthorizationStatus = AuthorizationStatus.FreshlyAuthenticated;
+        return BoltProtocol.ReAuthAsync(this, newAuthToken);
+    }
+
+    public Task NotifyTokenExpiredAsync()
+    {
+        if (SessionConfig?.AuthToken != null)
+        {
+            return Task.CompletedTask;
+        }
+
+        return AuthTokenManager.OnTokenExpiredAsync(AuthToken);
     }
 
     public async Task SyncAsync()
@@ -171,6 +236,7 @@ internal sealed class SocketConnection : IConnection
 
             await _client.ReceiveOneAsync(_responsePipeline).ConfigureAwait(false);
 
+            await HandleAuthErrorAsync(_responsePipeline).ConfigureAwait(false);
             _responsePipeline.AssertNoFailure();
         }
         finally
@@ -188,6 +254,7 @@ internal sealed class SocketConnection : IConnection
     public IServerInfo Server => _serverInfo;
 
     public bool UtcEncodedDateTime { get; private set; }
+    public IAuthToken AuthToken { get; private set; }
 
     public void UpdateId(string newConnId)
     {
@@ -269,6 +336,50 @@ internal sealed class SocketConnection : IConnection
         _client.UseUtcEncoded();
     }
 
+    public SessionConfig SessionConfig { get; set; }
+
+    public async Task ValidateCredsAsync()
+    {
+        var token = AuthToken;
+        if (AuthorizationStatus == AuthorizationStatus.TokenExpired)
+        {
+            if (!this.SupportsReAuth())
+            {
+                // This shouldn't happen, connections that don't support re-auth should be cleaned up by the pool.
+                throw new ReauthException(false);
+            }
+
+            // Get a new token
+            token = await AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
+            if (token == null || token.Equals(AuthToken))
+            {
+                // the token is not valid for re-auth and will infinitely fail, so we need to destroy the connection.
+                throw new InvalidOperationException(
+                    "Attempted to use a token that is not valid for re-authentication.");
+            }
+        }
+        else if (SessionConfig?.AuthToken != null)
+        {
+            if (!this.SupportsReAuth())
+            {
+                throw new ReauthException(true);
+            }
+
+            // user switching
+            token = SessionConfig.AuthToken;
+        }
+        else if (AuthorizationStatus == AuthorizationStatus.Pooled)
+        {
+            token = await AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
+        }
+
+        // The token has changed or the connection needs to re-authenticate but can use the same credentials.
+        if (AuthorizationStatus == AuthorizationStatus.AuthorizationExpired || !token.Equals(AuthToken))
+        {
+            await ReAuthAsync(token).ConfigureAwait(false);
+        }
+    }
+
     public Task LoginAsync(string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
     {
         return BoltProtocol.AuthenticateAsync(this, userAgent, authToken, notificationsConfig);
@@ -281,10 +392,10 @@ internal sealed class SocketConnection : IConnection
 
     public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks)
     {
-        return BoltProtocol.GetRoutingTableAsync(this, database, impersonatedUser, bookmarks);
+        return BoltProtocol.GetRoutingTableAsync(this, database, sessionConfig, bookmarks);
     }
 
     public Task<IResultCursor> RunInAutoCommitTransactionAsync(
@@ -298,7 +409,7 @@ internal sealed class SocketConnection : IConnection
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         INotificationsConfig notificationsConfig)
     {
         return BoltProtocol.BeginTransactionAsync(
@@ -306,7 +417,7 @@ internal sealed class SocketConnection : IConnection
             database,
             bookmarks,
             config,
-            impersonatedUser,
+            sessionConfig,
             notificationsConfig);
     }
 
@@ -325,6 +436,40 @@ internal sealed class SocketConnection : IConnection
         return BoltProtocol.RollbackTransactionAsync(this);
     }
 
+    private Task HandleAuthErrorAsync(IResponsePipeline responsePipeline)
+    {
+        return responsePipeline.IsHealthy(out var error)
+            ? Task.CompletedTask
+            : HandleAuthErrorAsync(error);
+    }
+
+    private async Task HandleAuthErrorAsync(Exception error)
+    {
+        switch (error)
+        {
+            case TokenExpiredException te:
+            {
+                AuthorizationStatus = AuthorizationStatus.TokenExpired;
+                if (te.Notified == false)
+                {
+                    if (AuthTokenManager is not StaticAuthTokenManager)
+                    {
+                        te.Retriable = true;
+                    }
+
+                    await NotifyTokenExpiredAsync().ConfigureAwait(false);
+                    te.Notified = true;
+                }
+
+                break;
+            }
+
+            case AuthorizationException:
+                AuthorizationStatus = AuthorizationStatus.AuthorizationExpired;
+                break;
+        }
+    }
+
     private async Task ReceiveAsync()
     {
         await _recvLock.WaitAsync().ConfigureAwait(false);
@@ -338,6 +483,7 @@ internal sealed class SocketConnection : IConnection
 
             await _client.ReceiveAsync(_responsePipeline).ConfigureAwait(false);
 
+            await HandleAuthErrorAsync(_responsePipeline).ConfigureAwait(false);
             _responsePipeline.AssertNoFailure();
         }
         finally
@@ -354,5 +500,17 @@ internal sealed class SocketConnection : IConnection
     private static string FormatPrefix(string id)
     {
         return $"[{id}]";
+    }
+}
+
+internal class ReauthException : UnsupportedFeatureException
+{
+    internal readonly bool IsUserSwitching;
+
+    public ReauthException(bool isUserSwitching) : base(
+        "Attempted to use reauthentication or user switching but the " +
+        "server does not support it. Please upgrade to neo4j 5.6.0 or later.")
+    {
+        IsUserSwitching = isUserSwitching;
     }
 }

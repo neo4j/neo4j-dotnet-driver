@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.MessageHandling;
@@ -22,6 +23,7 @@ namespace Neo4j.Driver.Internal.MessageHandling;
 internal interface IResponsePipeline
 {
     bool HasNoPendingMessages { get; }
+    bool IsHealthy(out Exception error);
 
     void Enqueue(IResponseHandler handler);
 

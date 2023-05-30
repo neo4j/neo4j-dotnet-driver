@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging.Utils;
@@ -75,11 +76,12 @@ internal sealed class HelloMessage : IRequestMessage
             throw new ArgumentOutOfRangeException(nameof(version), version, "should be Bolt version 5.1+");
         }
 
-        Metadata = new Dictionary<string, object>
+        Metadata = new Dictionary<string, object>(3)
         {
-            [RoutingMetadataKey] = routingContext,
             [UserAgentMetadataKey] = userAgent
         };
+
+        Metadata[RoutingMetadataKey] = routingContext;
 
         if (version >= BoltProtocolVersion.V5_2)
         {

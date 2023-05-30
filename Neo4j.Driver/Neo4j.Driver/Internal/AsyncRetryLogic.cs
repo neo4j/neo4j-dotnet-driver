@@ -69,7 +69,6 @@ internal class AsyncRetryLogic : IAsyncRetryLogic
             catch (Exception e) when (e.CanBeRetried())
             {
                 exceptions.Add(e);
-
                 // we want the retry to happen at least twice and as much as the max retry time allows 
                 shouldRetry = retryCount < 2 || timer.ElapsedMilliseconds < _maxRetryTimeMs;
 

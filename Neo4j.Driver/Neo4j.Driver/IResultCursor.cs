@@ -52,8 +52,8 @@ public interface IResultCursor : IAsyncEnumerable<IRecord>
     /// Asynchronously gets the <see cref="IResultSummary"/> after streaming the whole records to the client. If the
     /// records in the result are not fully consumed, then calling this method will discard all remaining records to yield the
     /// summary. If you want to obtain the summary without discarding the records, consider buffering the unconsumed result
-    /// using <see cref="ResultCursorExtensions.ToListAsync(IResultCursor)"/>. If all records in the records stream are already consumed, then
-    /// this method will return the summary directly.
+    /// using <see cref="ResultCursorExtensions.ToListAsync(IResultCursor)"/>. If all records in the records stream are already
+    /// consumed, then this method will return the summary directly.
     /// </summary>
     /// <returns>A task returning the result summary of the running query.</returns>
     Task<IResultSummary> ConsumeAsync();

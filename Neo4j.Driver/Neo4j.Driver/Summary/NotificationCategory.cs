@@ -25,7 +25,7 @@ public enum NotificationCategory
 {
     /// <summary>the <see cref="INotification"/>'s category is a value unknown to this driver version.</summary>
     Unknown,
-    
+
     /// <summary>The given hint cannot be satisfied.</summary>
     Hint,
 

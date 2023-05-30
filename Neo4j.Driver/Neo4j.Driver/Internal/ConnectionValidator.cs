@@ -17,6 +17,7 @@
 
 using System;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal;
 
@@ -60,6 +61,11 @@ internal class ConnectionValidator : IConnectionValidator
             return false;
         }
 
+        if (!AuthStatusIsRecoverable(connection))
+        {
+            return false;
+        }
+
         RestartIdleTimer(connection);
 
         return true;
@@ -70,7 +76,8 @@ internal class ConnectionValidator : IConnectionValidator
         var isRequirable = connection.IsOpen &&
             !HasBeenIdleForTooLong(connection) &&
             !HasBeenAliveForTooLong(connection) &&
-            !HasBeenMarkedForReauthorization(connection);
+            !MarkedStale(connection) &&
+            AuthStatusIsRecoverable(connection);
 
         if (isRequirable)
         {
@@ -78,6 +85,18 @@ internal class ConnectionValidator : IConnectionValidator
         }
 
         return isRequirable;
+    }
+
+    private bool AuthStatusIsRecoverable(IConnection connection)
+    {
+        return connection.AuthorizationStatus is AuthorizationStatus.FreshlyAuthenticated
+                or AuthorizationStatus.Pooled ||
+            connection.SupportsReAuth();
+    }
+
+    private bool MarkedStale(IPooledConnection connection)
+    {
+        return connection.StaleCredentials;
     }
 
     private void RestartIdleTimer(IPooledConnection connection)
@@ -124,10 +143,5 @@ internal class ConnectionValidator : IConnectionValidator
         }
 
         return false;
-    }
-
-    private bool HasBeenMarkedForReauthorization(IPooledConnection connection)
-    {
-        return connection.ReAuthorizationRequired;
     }
 }

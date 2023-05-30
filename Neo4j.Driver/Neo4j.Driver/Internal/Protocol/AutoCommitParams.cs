@@ -28,6 +28,7 @@ internal sealed record AutoCommitParams
     public string Database { get; init; }
     public Bookmarks Bookmarks { get; init; }
     public TransactionConfig Config { get; init; }
-    public string ImpersonatedUser { get; init; }
+
+    public SessionConfig SessionConfig { get; init; }
     public long FetchSize { get; init; } = Neo4j.Driver.Config.Infinite;
 }

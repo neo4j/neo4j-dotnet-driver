@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
 
@@ -39,6 +40,7 @@ internal interface IBoltProtocolMessageFactory
     RouteMessageV43 NewRouteMessageV43(IConnection connection, Bookmarks bookmarks, string database);
     DiscardMessage NewDiscardMessage(long id, long discardSize);
     HelloMessage NewHelloMessage(IConnection connection, string userAgent, IAuthToken authToken);
+    LogonMessage NewLogonMessage(IConnection connection, IAuthToken authToken);
 
     HelloMessage NewAuthlessHelloMessage(
         IConnection connection,
@@ -51,10 +53,7 @@ internal interface IBoltProtocolMessageFactory
         Bookmarks bookmarks,
         TransactionConfig config,
         AccessMode mode,
-        string impersonatedUser,
         INotificationsConfig notificationsConfig);
-
-    LogonMessage NewLogonMessage(IConnection connection, IAuthToken authToken);
 }
 
 internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
@@ -73,7 +72,7 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
             autoCommitParams.Config,
             connection.Mode ?? throw new InvalidOperationException("Connection should have its Mode property set."),
             autoCommitParams.Database,
-            autoCommitParams.ImpersonatedUser,
+            autoCommitParams.SessionConfig,
             notificationsConfig);
     }
 
@@ -122,10 +121,14 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
         string userAgent,
         IAuthToken authToken)
     {
+        var authDict = connection.Version >= BoltProtocolVersion.V5_1
+            ? null
+            : authToken.AsDictionary();
+
         return new HelloMessage(
             connection.Version,
             userAgent,
-            authToken.AsDictionary(),
+            authDict,
             connection.RoutingContext);
     }
 
@@ -148,7 +151,6 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
         Bookmarks bookmarks,
         TransactionConfig config,
         AccessMode mode,
-        string impersonatedUser,
         INotificationsConfig notificationsConfig)
     {
         return new BeginMessage(
@@ -157,7 +159,7 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
             bookmarks,
             config,
             mode,
-            impersonatedUser,
+            connection.SessionConfig,
             notificationsConfig);
     }
 }

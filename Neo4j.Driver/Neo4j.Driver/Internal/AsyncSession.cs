@@ -38,6 +38,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     private readonly long _fetchSize;
 
     private readonly ILogger _logger;
+    private readonly INotificationsConfig _notificationsConfig;
     private readonly bool _reactive;
 
     private readonly IAsyncRetryLogic _retryLogic;
@@ -49,7 +50,6 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     private bool _disposed;
     private Bookmarks _initialBookmarks;
     private bool _isOpen = true;
-    private readonly INotificationsConfig _notificationsConfig;
     private Task<IResultCursor> _result; // last session run result if any
 
     private AsyncTransaction _transaction;
@@ -73,7 +73,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         _defaultMode = config.DefaultAccessMode;
         _fetchSize = config.FetchSize ?? defaultFetchSize;
         _notificationsConfig = config.NotificationsConfig;
-        
+
         _useBookmarkManager = config.BookmarkManager != null;
         if (_useBookmarkManager)
         {
@@ -180,7 +180,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                             Database = _database,
                             Bookmarks = LastBookmarks,
                             Config = options,
-                            ImpersonatedUser = ImpersonatedUser(),
+                            SessionConfig = SessionConfig,
                             FetchSize = _fetchSize,
                             BookmarksTracker = this,
                             ResultResourceHandler = this
@@ -342,7 +342,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
             LastBookmarks,
             _reactive,
             _fetchSize,
-            ImpersonatedUser(),
+            SessionConfig,
             _notificationsConfig);
 
         await tx.BeginTransactionAsync(config).ConfigureAwait(false);
@@ -350,17 +350,22 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         return _transaction;
     }
 
-    private async Task AcquireConnectionAndDbNameAsync(AccessMode mode)
+    private async Task AcquireConnectionAndDbNameAsync(AccessMode mode, bool forceAuth = false)
     {
         if (_useBookmarkManager)
         {
             LastBookmarks = await GetBookmarksAsync().ConfigureAwait(false);
         }
 
-        _connection = await _connectionProvider.AcquireAsync(mode, _database, ImpersonatedUser(), LastBookmarks)
+        _connection = await _connectionProvider.AcquireAsync(
+                mode,
+                _database,
+                SessionConfig,
+                LastBookmarks,
+                forceAuth)
             .ConfigureAwait(false);
 
-        //Update the database. If a routing request occurred it may have returned a differing DB alias name that needs to be used for the 
+        //Update the database. If a routing request occurred it may have returned a differing DB alias name that needs to be used for the
         //rest of the sessions lifetime.
         _database = _connection.Database;
     }
@@ -393,5 +398,27 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     private string ImpersonatedUser()
     {
         return SessionConfig is not null ? SessionConfig.ImpersonatedUser : string.Empty;
+    }
+
+    public async Task<bool> VerifyConnectivityAsync()
+    {
+        var authCodeExceptions = new[]
+        {
+            "Neo.ClientError.Security.CredentialsExpired",
+            "Neo.ClientError.Security.Forbidden",
+            "Neo.ClientError.Security.TokenExpired",
+            "Neo.ClientError.Security.Unauthorized"
+        };
+
+        try
+        {
+            await AcquireConnectionAndDbNameAsync(AccessMode.Read, true).ConfigureAwait(false);
+        }
+        catch (Neo4jException neoException) when (authCodeExceptions.Contains(neoException.Code))
+        {
+            return false;
+        }
+
+        return true;
     }
 }

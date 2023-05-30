@@ -45,11 +45,12 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
         new(
             () =>
             {
-                const int goGoBolt = 0x6060B017;
+                //This is a 'magic' handshake identifier to indicate we're using 'BOLT'
+                //                    ('GO GO BOLT')
+                const int goGoBolt = 0x_60_60_B017;
 
                 var versions = new[]
                 {
-                    //This is a 'magic' handshake identifier to indicate we're using 'BOLT' ('GOGOBOLT')
                     goGoBolt,
                     // 4 versions max.
                     BoltProtocolVersion.V5_3.PackToIntRange(BoltProtocolVersion.V5_0),

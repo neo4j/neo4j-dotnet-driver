@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 //TransientException = DriverError
@@ -69,7 +70,8 @@ internal static class ExceptionManager
         { typeof(ArgumentErrorException), "ArgumentError" },
         { typeof(TypeException), "TypeError" },
         { typeof(ForbiddenException), "ForbiddenError" },
-        { typeof(UnknownSecurityException), "OtherSecurityException" }
+        { typeof(UnknownSecurityException), "OtherSecurityException" },
+        { typeof(ReauthException), "UnsupportedFeatureException"}
     };
 
     internal static ProtocolResponse GenerateExceptionResponse(Exception ex)
@@ -104,7 +106,7 @@ internal static class ExceptionManager
                 new
                 {
                     id = newError.uniqueId,
-                    errorType = ex.InnerException.GetType().Name,
+                    errorType = ex.InnerException?.GetType().Name ?? ex.GetType().Name,
                     msg = exceptionMessage
                 });
         }
@@ -118,9 +120,8 @@ internal static class ExceptionManager
                     msg = ex.Message
                 });
         }
-
-        Trace.WriteLine(
-            $"Exception thrown {outerExceptionMessage}\n     which contained -- {exceptionMessage}\n{ex.StackTrace}");
+        
+        Trace.WriteLine($"Unhandled exception thrown {ex}");
 
         return new ProtocolResponse("BackendError", new { msg = exceptionMessage });
     }

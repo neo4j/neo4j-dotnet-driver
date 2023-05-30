@@ -415,7 +415,7 @@ public class ExamplesAsync
         public async Task TestCustomAuthExample()
         {
             // Given
-            var driver = CreateDriverWithCustomizedAuth(Uri, User, Password, "native", "basic", null);
+            var driver = CreateDriverWithCustomizedAuth(Uri, User, Password, "native", AuthSchemes.Basic, null);
             await using var session = driver.AsyncSession();
             // When & Then
             var result = await session.RunAsync("RETURN 1");

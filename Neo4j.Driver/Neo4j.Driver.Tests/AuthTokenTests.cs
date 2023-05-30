@@ -17,7 +17,7 @@
 
 using System.Collections.Generic;
 using FluentAssertions;
-using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Auth;
 using Xunit;
 
 namespace Neo4j.Driver.Tests
@@ -32,7 +32,7 @@ namespace Neo4j.Driver.Tests
                 var authToken = AuthTokens.Basic("zhenli", "toufu");
                 var dict = authToken.AsDictionary();
                 dict.Count.Should().Be(3);
-                dict["scheme"].Should().Be("basic");
+                dict["scheme"].Should().Be(AuthSchemes.Basic);
                 dict["principal"].Should().Be("zhenli");
                 dict["credentials"].Should().Be("toufu");
                 dict.ContainsKey("realm").Should().BeFalse();
@@ -44,7 +44,7 @@ namespace Neo4j.Driver.Tests
                 var authToken = AuthTokens.Basic("zhenli", "toufu", "foo");
                 var dict = authToken.AsDictionary();
                 dict.Count.Should().Be(4);
-                dict["scheme"].Should().Be("basic");
+                dict["scheme"].Should().Be(AuthSchemes.Basic);
                 dict["principal"].Should().Be("zhenli");
                 dict["credentials"].Should().Be("toufu");
                 dict["realm"].Should().Be("foo");
@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Tests
                 var authToken = AuthTokens.Kerberos("aBase64Str");
                 var dict = authToken.AsDictionary();
                 dict.Count.Should().Be(3);
-                dict["scheme"].Should().Be("kerberos");
+                dict["scheme"].Should().Be(AuthSchemes.Kerberos);
                 dict["principal"].Should().Be("");
                 dict["credentials"].Should().Be("aBase64Str");
             }

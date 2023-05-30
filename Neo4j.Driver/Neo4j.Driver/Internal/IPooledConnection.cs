@@ -25,8 +25,7 @@ internal interface IPooledConnection : IConnection
     ITimer IdleTimer { get; }
 
     ITimer LifetimeTimer { get; }
-
-    bool ReAuthorizationRequired { get; set; }
+    bool StaleCredentials { get; set; }
 
     /// <summary>Try to reset the connection to a clean state.</summary>
     Task ClearConnectionAsync();

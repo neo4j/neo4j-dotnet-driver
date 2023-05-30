@@ -19,8 +19,8 @@ namespace Neo4j.Driver;
 
 /// <summary>
 /// Used In conjunction with <see cref="Category"/> to filter which <see cref="INotification"/>s will be sent in
-/// <see cref="IResultSummary.Notifications"/>.<br/><br/> Can be used in
-/// <see cref="ConfigBuilder.WithNotifications"/> and <see cref="SessionConfigBuilder.WithNotifications"/>.
+/// <see cref="IResultSummary.Notifications"/>.<br/><br/> Can be used in <see cref="ConfigBuilder.WithNotifications"/> and
+/// <see cref="SessionConfigBuilder.WithNotifications"/>.
 /// </summary>
 public enum Severity
 {

@@ -18,20 +18,62 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.Connector;
 
+internal enum AuthorizationStatus : byte
+{
+    /// <summary>The connection is not authorized.</summary>
+    None = 0,
+
+    /// <summary>The connection is authorized and ready to use.</summary>
+    FreshlyAuthenticated = 1,
+
+    /// <summary>
+    /// The connection is authorized using a session token but the connection doesn't support reauthentication. the
+    /// connection when returned to the pool should close itself.
+    /// </summary>
+    SessionToken = 2,
+
+    /// <summary>
+    /// The connection's token has expired, it should reauthenticate with a new token. Drivers that do not support
+    /// token expiration should treat this as a fatal error.
+    /// </summary>
+    TokenExpired = 3,
+
+    /// <summary>
+    /// The connections authorization has expired, it should reauthenticate. the current token is valid, but can be
+    /// updated.
+    /// </summary>
+    AuthorizationExpired = 4,
+
+    /// <summary>The connection was previously pooled, revalidate.</summary>
+    Pooled = 5
+}
+
 internal interface IConnection : IConnectionDetails, IConnectionRunner
 {
     IBoltProtocol BoltProtocol { get; }
+    AuthorizationStatus AuthorizationStatus { get; set; }
+    IAuthTokenManager AuthTokenManager { get; }
+
+    public SessionConfig SessionConfig { get; set; }
 
     void ConfigureMode(AccessMode? mode);
     void Configure(string database, AccessMode? mode);
 
-    Task InitAsync(INotificationsConfig notificationsConfig, CancellationToken cancellationToken = default);
+    Task InitAsync(
+        INotificationsConfig notificationsConfig,
+        SessionConfig sessionConfig = null,
+        CancellationToken cancellationToken = default);
+
+    Task ReAuthAsync(IAuthToken newAuthToken, CancellationToken cancellationToken = default);
+
+    Task NotifyTokenExpiredAsync();
 
     // send all and receive all
     Task SyncAsync();
@@ -60,6 +102,7 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
     void SetReadTimeoutInSeconds(int seconds);
 
     void SetUseUtcEncodedDateTime();
+    Task ValidateCredsAsync();
 }
 
 internal interface IConnectionRunner
@@ -73,7 +116,7 @@ internal interface IConnectionRunner
 
     Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks);
 
     Task<IResultCursor> RunInAutoCommitTransactionAsync(
@@ -84,7 +127,7 @@ internal interface IConnectionRunner
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         INotificationsConfig notificationsConfig);
 
     Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize);
@@ -101,4 +144,5 @@ internal interface IConnectionDetails
     IDictionary<string, string> RoutingContext { get; }
     BoltProtocolVersion Version { get; }
     bool UtcEncodedDateTime { get; }
+    IAuthToken AuthToken { get; }
 }

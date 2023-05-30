@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using FluentAssertions;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 using Xunit.Abstractions;
@@ -317,7 +318,7 @@ public class Examples
         public void TestCustomAuthExample()
         {
             // Given
-            using var driver = CreateDriverWithCustomizedAuth(Uri, User, Password, "native", "basic", null);
+            using var driver = CreateDriverWithCustomizedAuth(Uri, User, Password, "native", AuthSchemes.Basic, null);
             using var session = driver.Session();
             // When & Then
             session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);

@@ -38,6 +38,18 @@ internal sealed class ResponsePipeline : IResponsePipeline
         _error = null;
     }
 
+    public bool IsHealthy(out Exception error)
+    {
+        if (_error != null)
+        {
+            error = _error.Exception;
+            return false;
+        }
+
+        error = null;
+        return true;
+    }
+
     public bool HasNoPendingMessages => _handlers.IsEmpty;
 
     public void Enqueue(IResponseHandler handler)

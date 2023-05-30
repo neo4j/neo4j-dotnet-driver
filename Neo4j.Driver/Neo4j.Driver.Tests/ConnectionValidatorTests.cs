@@ -50,6 +50,7 @@ namespace Neo4j.Driver.Tests
             {
                 var conn = new Mock<IPooledConnection>();
                 conn.Setup(x => x.IsOpen).Returns(false);
+                conn.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 var validator = NewConnectionValidator();
                 var result = await validator.OnReleaseAsync(conn.Object);
                 result.Should().BeFalse();
@@ -60,6 +61,7 @@ namespace Neo4j.Driver.Tests
             {
                 var conn = new Mock<IPooledConnection>();
                 conn.Setup(x => x.IsOpen).Returns(true);
+                conn.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 conn.Setup(x => x.ClearConnectionAsync())
                     .Returns(Task.FromException(new InvalidOperationException()));
 
@@ -69,11 +71,12 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
-            public async Task ShouldResetIdleTimmer()
+            public async Task ShouldResetIdleTimer()
             {
                 var conn = new Mock<IPooledConnection>();
                 var idleTimer = new Mock<ITimer>();
                 conn.Setup(x => x.IsOpen).Returns(true);
+                conn.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 conn.Setup(x => x.IdleTimer).Returns(idleTimer.Object);
 
                 var validator = NewConnectionValidator(TimeSpan.Zero);
@@ -91,6 +94,7 @@ namespace Neo4j.Driver.Tests
             {
                 var conn = new Mock<IPooledConnection>();
                 conn.Setup(x => x.IsOpen).Returns(false);
+                conn.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 var validator = NewConnectionValidator();
                 validator.OnRequire(conn.Object).Should().BeFalse();
             }
@@ -100,6 +104,7 @@ namespace Neo4j.Driver.Tests
             {
                 var conn = new Mock<IPooledConnection>();
                 conn.Setup(x => x.IsOpen).Returns(true);
+                conn.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 conn.Setup(x => x.IdleTimer).Returns(MockTimer(10));
 
                 var validator = NewConnectionValidator(TimeSpan.Zero);
@@ -111,6 +116,7 @@ namespace Neo4j.Driver.Tests
             {
                 var conn = new Mock<IPooledConnection>();
                 conn.Setup(x => x.IsOpen).Returns(true);
+                conn.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 conn.Setup(x => x.IdleTimer).Returns(MockTimer(10));
                 conn.Setup(x => x.LifetimeTimer).Returns(MockTimer(10));
 
@@ -125,6 +131,7 @@ namespace Neo4j.Driver.Tests
                 var idleTimmer = new Mock<ITimer>();
                 idleTimmer.Setup(x => x.ElapsedMilliseconds).Returns(10);
                 conn.Setup(x => x.IsOpen).Returns(true);
+                conn.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 conn.Setup(x => x.IdleTimer).Returns(idleTimmer.Object);
                 conn.Setup(x => x.LifetimeTimer).Returns(MockTimer(10));
 

@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Util;
@@ -39,6 +40,11 @@ internal abstract class DelegatedConnection : IConnection
     public string Database => Delegate.Database;
 
     public IDictionary<string, string> RoutingContext => Delegate.RoutingContext;
+
+    public Task NotifyTokenExpiredAsync()
+    {
+        return Delegate.NotifyTokenExpiredAsync();
+    }
 
     public async Task SyncAsync()
     {
@@ -78,6 +84,8 @@ internal abstract class DelegatedConnection : IConnection
 
     public BoltProtocolVersion Version => Delegate.Version;
 
+    public IAuthTokenManager AuthTokenManager => Delegate.AuthTokenManager;
+
     public void ConfigureMode(AccessMode? mode)
     {
         Delegate.ConfigureMode(mode);
@@ -88,11 +96,28 @@ internal abstract class DelegatedConnection : IConnection
         Delegate.Configure(database, mode);
     }
 
-    public async Task InitAsync(INotificationsConfig notificationsConfig, CancellationToken cancellationToken = default)
+    public async Task InitAsync(
+        INotificationsConfig notificationsConfig,
+        SessionConfig sessionConfig = null,
+        CancellationToken cancellationToken = default)
     {
         try
         {
-            await Delegate.InitAsync(notificationsConfig, cancellationToken).ConfigureAwait(false);
+            await Delegate.InitAsync(notificationsConfig, sessionConfig, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            await OnErrorAsync(e).ConfigureAwait(false);
+        }
+    }
+
+    public async Task ReAuthAsync(
+        IAuthToken newAuthToken,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await Delegate.ReAuthAsync(newAuthToken, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -115,9 +140,17 @@ internal abstract class DelegatedConnection : IConnection
     public virtual bool IsOpen => Delegate.IsOpen;
 
     public IServerInfo Server => Delegate.Server;
+
     public IBoltProtocol BoltProtocol => Delegate.BoltProtocol;
 
+    public AuthorizationStatus AuthorizationStatus
+    {
+        get => Delegate.AuthorizationStatus;
+        set => Delegate.AuthorizationStatus = value;
+    }
+
     public bool UtcEncodedDateTime => Delegate.UtcEncodedDateTime;
+    public IAuthToken AuthToken => Delegate.AuthToken;
 
     public void UpdateId(string newConnId)
     {
@@ -149,6 +182,17 @@ internal abstract class DelegatedConnection : IConnection
         Delegate.SetUseUtcEncodedDateTime();
     }
 
+    public SessionConfig SessionConfig
+    {
+        get => Delegate.SessionConfig;
+        set => Delegate.SessionConfig = value;
+    }
+
+    public Task ValidateCredsAsync()
+    {
+        return Delegate.ValidateCredsAsync();
+    }
+
     public Task LoginAsync(string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
     {
         return BoltProtocol.AuthenticateAsync(this, userAgent, authToken, notificationsConfig);
@@ -166,10 +210,10 @@ internal abstract class DelegatedConnection : IConnection
 
     public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks)
     {
-        return BoltProtocol.GetRoutingTableAsync(this, database, impersonatedUser, bookmarks);
+        return BoltProtocol.GetRoutingTableAsync(this, database, sessionConfig, bookmarks);
     }
 
     public Task<IResultCursor> RunInAutoCommitTransactionAsync(
@@ -183,7 +227,7 @@ internal abstract class DelegatedConnection : IConnection
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         INotificationsConfig notificationsConfig)
     {
         return BoltProtocol.BeginTransactionAsync(
@@ -191,7 +235,7 @@ internal abstract class DelegatedConnection : IConnection
             database,
             bookmarks,
             config,
-            impersonatedUser,
+            sessionConfig,
             notificationsConfig);
     }
 

@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using FluentAssertions;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;

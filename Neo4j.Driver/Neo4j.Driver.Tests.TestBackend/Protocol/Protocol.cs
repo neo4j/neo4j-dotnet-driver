@@ -17,6 +17,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
@@ -38,53 +40,11 @@ public class TestKitClientException : Exception
 
 public static class Protocol
 {
-    public static readonly HashSet<Type> ProtocolTypes =
-        new()
-        {
-            typeof(NewDriver),
-            typeof(DriverClose),
-            typeof(NewSession),
-            typeof(SessionClose),
-            typeof(AuthorizationToken),
-            typeof(SessionRun),
-            typeof(TransactionRun),
-            typeof(TransactionCommit),
-            typeof(TransactionRollback),
-            typeof(TransactionClose),
-            typeof(SessionReadTransaction),
-            typeof(SessionWriteTransaction),
-            typeof(SessionBeginTransaction),
-            typeof(Result),
-            typeof(ResultNext),
-            typeof(ResultPeek),
-            typeof(ResultList),
-            typeof(ResultSingle),
-            typeof(ResultConsume),
-            typeof(RetryablePositive),
-            typeof(RetryableNegative),
-            typeof(ProtocolException),
-            typeof(SessionLastBookmarks),
-            typeof(VerifyConnectivity),
-            typeof(GetServerInfo),
-            typeof(CheckMultiDBSupport),
-            typeof(CheckDriverIsEncrypted),
-            typeof(ResolverResolutionCompleted),
-            typeof(StartTest),
-            typeof(GetFeatures),
-            typeof(GetRoutingTable),
-            typeof(CypherTypeField),
-            typeof(NewBookmarkManager),
-            typeof(BookmarkManagerClose),
-            typeof(BookmarkManagerConsumerRequest),
-            typeof(BookmarkManagerSupplierRequest),
-            typeof(BookmarksConsumerCompleted),
-            typeof(BookmarksSupplierCompleted),
-            typeof(ExecuteQuery)
-        };
-
-    static Protocol()
-    {
-    }
+    public static readonly HashSet<Type> ProtocolTypes = new(
+        Assembly
+            .GetExecutingAssembly()
+            .DefinedTypes
+            .Where(t => t.IsAssignableTo(typeof(IProtocolObject))));
 
     public static void ValidateType(string typeName)
     {

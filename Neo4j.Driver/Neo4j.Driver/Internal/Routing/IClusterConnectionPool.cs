@@ -29,8 +29,9 @@ internal interface IClusterConnectionPool : IAsyncDisposable
         Uri uri,
         AccessMode mode,
         string database,
-        string impersonatedUser,
-        Bookmarks bookmarks);
+        SessionConfig sessionConfig,
+        Bookmarks bookmarks,
+        bool forceAuth);
 
     // Add a set of uri to this pool
     Task AddAsync(IEnumerable<Uri> uris);

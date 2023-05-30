@@ -24,8 +24,11 @@ namespace Neo4j.Driver.Internal.Connector;
 internal class PooledConnection : DelegatedConnection, IPooledConnection
 {
     private readonly IConnectionReleaseManager _releaseManager;
+    private bool _staleCredentials;
 
-    public PooledConnection(IConnection conn, IConnectionReleaseManager releaseManager = null)
+    public PooledConnection(
+        IConnection conn,
+        IConnectionReleaseManager releaseManager = null)
         : base(conn)
     {
         _releaseManager = releaseManager;
@@ -41,8 +44,6 @@ internal class PooledConnection : DelegatedConnection, IPooledConnection
     /// has been marked as has unrecoverable errors will be eventually closed when returning back to the pool. <br/><br/>
     /// </summary>
     internal bool HasUnrecoverableError { get; private set; }
-
-    public bool ReAuthorizationRequired { get; set; } = false;
 
     public async Task ClearConnectionAsync()
     {
@@ -74,20 +75,30 @@ internal class PooledConnection : DelegatedConnection, IPooledConnection
     public ITimer IdleTimer { get; }
     public ITimer LifetimeTimer { get; }
 
+    public bool StaleCredentials
+    {
+        get => _staleCredentials;
+        set
+        {
+            if (value)
+            {
+                HasUnrecoverableError = true;
+            }
+
+            _staleCredentials = value;
+        }
+    }
+
     internal override Task OnErrorAsync(Exception error)
     {
-        if (!error.IsRecoverableError())
+        if (!(error.IsRecoverableError() || SupportsReauth(error)))
         {
             HasUnrecoverableError = true;
         }
 
         if (error is Neo4jException)
         {
-            if (error.IsAuthorizationError())
-            {
-                _releaseManager.MarkConnectionsForReauthorization(this);
-            }
-
+            _releaseManager.OnPoolMemberException(this, error);
             throw error;
         }
 
@@ -102,6 +113,13 @@ internal class PooledConnection : DelegatedConnection, IPooledConnection
         }
 
         throw error;
+    }
+
+    private bool SupportsReauth(Exception error)
+    {
+        return AuthorizationStatus != AuthorizationStatus.None &&
+            Version >= BoltProtocolVersion.V5_1 &&
+            error is AuthorizationException or TokenExpiredException;
     }
 }
 

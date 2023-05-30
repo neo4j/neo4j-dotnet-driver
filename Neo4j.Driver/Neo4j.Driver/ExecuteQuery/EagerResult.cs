@@ -17,9 +17,7 @@
 
 namespace Neo4j.Driver;
 
-/// <summary>
-/// Complete, materialized result from a cypher query.
-/// </summary>
+/// <summary>Complete, materialized result from a cypher query.</summary>
 /// <typeparam name="T">The type of the value that will be in the <see cref="Result"/> property.</typeparam>
 public sealed class EagerResult<T>
 {
@@ -30,19 +28,13 @@ public sealed class EagerResult<T>
         Keys = keys;
     }
 
-    /// <summary>
-    /// Least common set of fields in <see cref="Result"/>.
-    /// </summary>
+    /// <summary>Least common set of fields in <see cref="Result"/>.</summary>
     public string[] Keys { get; init; }
 
-    /// <summary>
-    /// The materialized result of the query.
-    /// </summary>
+    /// <summary>The materialized result of the query.</summary>
     public T Result { get; init; }
 
-    /// <summary>
-    /// Query summary.
-    /// </summary>
+    /// <summary>Query summary.</summary>
     public IResultSummary Summary { get; init; }
 
     /// <summary>Deconstructs the result into its constituent parts.</summary>

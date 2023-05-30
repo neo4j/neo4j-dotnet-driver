@@ -21,22 +21,22 @@ using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers;
 
-internal class LogonMessageSerializer : WriteOnlySerializer
+internal sealed class LogonMessageSerializer : WriteOnlySerializer
 {
-    public static readonly LogonMessageSerializer Instance = new();
+    internal static LogonMessageSerializer Instance = new();
 
     private static readonly Type[] Types = { typeof(LogonMessage) };
     public override IEnumerable<Type> WritableTypes => Types;
 
     public override void Serialize(PackStreamWriter writer, object value)
     {
-        if (value is not LogonMessage message)
+        if (value is not LogonMessage msg)
         {
             throw new ArgumentOutOfRangeException(
                 $"Encountered {value?.GetType().Name} where {nameof(LogonMessage)} was expected");
         }
 
         writer.WriteStructHeader(1, MessageFormat.MsgLogon);
-        writer.WriteDictionary(message.Auth);
+        writer.WriteDictionary(msg.Auth);
     }
 }

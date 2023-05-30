@@ -28,6 +28,8 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
 
     private const int PackingIntValue = 0x00FF;
 
+    public static readonly BoltProtocolVersion Unknown = new(1, 0);
+
     public static readonly BoltProtocolVersion V3_0 = new(3, 0);
     public static readonly BoltProtocolVersion V4_0 = new(4, 0);
     public static readonly BoltProtocolVersion V4_1 = new(4, 1);
@@ -38,7 +40,7 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
     public static readonly BoltProtocolVersion V5_1 = new(5, 1);
     public static readonly BoltProtocolVersion V5_2 = new(5, 2);
     public static readonly BoltProtocolVersion V5_3 = new(5, 3);
-    
+
     private readonly int _compValue;
 
     public BoltProtocolVersion(int majorVersion, int minorVersion)
@@ -136,7 +138,7 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
 
     public override bool Equals(object obj)
     {
-        return ReferenceEquals(this, obj) || obj is BoltProtocolVersion other && Equals(other);
+        return ReferenceEquals(this, obj) || (obj is BoltProtocolVersion other && Equals(other));
     }
 
     public bool Equals(int majorVersion, int minorVersion)
