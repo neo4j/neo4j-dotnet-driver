@@ -37,10 +37,9 @@ internal interface IInternalAsyncSession : IAsyncSession
         Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult);
 
-    Task<EagerResult<TResult>> ExecuteSingleQueryTransactionAsync<TResult>(
+    Task<EagerResult<T>> ExecuteQueryAsync<T>(
         Query query,
-        QueryConfig queryConfig,
-        TransactionConfig txConfig,
-        CancellationToken cancellationToken,
-        Func<IResultCursor, CancellationToken, Task<EagerResult<TResult>>> cursorProcessor);
+        QueryConfig config,
+        Func<IResultCursor, CancellationToken, Task<EagerResult<T>>> cursorProcessor,
+        CancellationToken cancellationToken);
 }

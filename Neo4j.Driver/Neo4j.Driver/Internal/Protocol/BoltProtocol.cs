@@ -225,7 +225,6 @@ internal sealed class BoltProtocol : IBoltProtocol
             config.Bookmarks,
             config.Config,
             config.AccessMode,
-            config.ImpersonatedUser,
             config.NotificationsConfig);
 
         var runMessage = _protocolMessageFactory.NewRunWithMetadataMessage(connection, query, null);

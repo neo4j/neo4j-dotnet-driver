@@ -245,6 +245,20 @@ internal sealed class SocketConnection : IConnection
         }
     }
 
+    public void Enqueue(IRequestMessage messages, IResponseHandler handlers)
+    {
+        _sendLock.Wait();
+        try
+        {
+            _messages.Enqueue(messages);
+            _responsePipeline.Enqueue(handlers);
+        }
+        finally
+        {
+            _sendLock.Release();
+        }
+    }
+
     public Task ResetAsync()
     {
         return BoltProtocol.ResetAsync(this);
@@ -324,25 +338,6 @@ internal sealed class SocketConnection : IConnection
             _sendLock.Release();
         }
     }
-
-
-    public void Enqueue(ReadOnlySpan<IRequestMessage> messages, ReadOnlySpan<IResponseHandler> handlers)
-    {
-        _sendLock.Wait();
-        try
-        {
-            for (var i = 0; i < messages.Length; i++)
-            {
-                _messages.Enqueue(messages[i]);
-                _responsePipeline.Enqueue(handlers[i]);
-            }
-        }
-        finally
-        {
-            _sendLock.Release();
-        }
-    }
-
 
     public void SetReadTimeoutInSeconds(int seconds)
     {

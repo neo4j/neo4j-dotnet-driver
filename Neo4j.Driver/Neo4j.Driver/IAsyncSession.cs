@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver;
@@ -229,4 +230,5 @@ public interface IAsyncSession : IAsyncQueryRunner
     /// </param>
     /// <returns>A task of a stream of result values and associated metadata.</returns>
     Task<IResultCursor> RunAsync(Query query, Action<TransactionConfigBuilder> action = null);
+
 }

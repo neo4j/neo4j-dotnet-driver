@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
@@ -191,6 +192,55 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
 
         _result = result;
         return result;
+    }
+
+    public async Task<EagerResult<T>> ExecuteQueryAsync<T>(Query query, QueryConfig config, Func<IResultCursor, CancellationToken, Task<EagerResult<T>>> cursorProcessor, CancellationToken cancellationToken)
+    {
+        var bookmarks = Array.Empty<string>();
+        if (config.BookmarkManager != null)
+        {
+            bookmarks = await config.BookmarkManager.GetBookmarksAsync(cancellationToken).ConfigureAwait(false);
+        }
+        var txConfig = new TxConfig
+        {
+            AccessMode = config.Routing == RoutingControl.Readers ? AccessMode.Read : AccessMode.Write,
+            Bookmarks = Bookmarks.From(bookmarks),
+            Config = TransactionConfig.Default,
+            Database = config.Database,
+            FetchSize = Config.Default.FetchSize,
+            ImpersonatedUser = config.ImpersonatedUser,
+            NotificationsConfig = _notificationsConfig
+        };
+
+        return await _retryLogic.RetryAsync(
+            async () =>
+            {
+                await AcquireConnectionAndDbNameAsync(txConfig.AccessMode).ConfigureAwait(false);
+                try
+                {
+                    var cursor = await _connection.RunQueryInTransaction(query, txConfig).ConfigureAwait(false);
+                    var results = await cursorProcessor(cursor, cancellationToken).ConfigureAwait(false);
+                    await _connection.CommitTransactionAsync(this);
+                    return results;
+                }
+                catch (Exception e)
+                {
+                    try
+                    {
+                        await _connection.RollbackTransactionAsync().ConfigureAwait(false);
+                    }
+                    catch (Exception inner)
+                    {
+                        throw new AggregateException(e, inner);
+                    }
+
+                    throw;
+                }
+                finally
+                {
+                    await _connection.CloseAsync().ConfigureAwait(false);
+                }
+            }).ConfigureAwait(false);
     }
 
     public Task<T> ReadTransactionAsync<T>(

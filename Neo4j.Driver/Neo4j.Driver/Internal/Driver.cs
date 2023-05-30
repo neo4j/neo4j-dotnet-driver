@@ -249,16 +249,10 @@ internal sealed class Driver : IInternalDriver
         query = query ?? throw new ArgumentNullException(nameof(query));
         config ??= new QueryConfig();
 
-        var session = AsyncSession(x => ApplyConfig(config, x));
+        var session = AsyncSession(x => ApplyConfig(config, x)) as AsyncSession;
         await using (session.ConfigureAwait(false))
         {
-            if (config.Routing == RoutingControl.Readers)
-            {
-                return await session.ExecuteReadAsync(x => Work(query, x, cursorProcessor, cancellationToken))
-                    .ConfigureAwait(false);
-            }
-
-            return await session.ExecuteWriteAsync(x => Work(query, x, cursorProcessor, cancellationToken))
+            return await session.ExecuteQueryAsync(query, config, cursorProcessor, cancellationToken)
                 .ConfigureAwait(false);
         }
     }

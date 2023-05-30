@@ -19,6 +19,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
@@ -27,46 +28,58 @@ public class Program
     private static IPAddress Address;
     private static uint Port;
 
-    private static void Main(string[] args)
+    private static async Task Main(string[] args)
     {
-        var consoleTraceListener = new TextWriterTraceListener(Console.Out);
-        Trace.Listeners.Add(consoleTraceListener);
+        var driver = GraphDatabase.Driver("bolt://127.0.0.1:7687", AuthTokens.Basic("neo4j", "hu8ji9ko0"));
 
-        try
+        var sw = Stopwatch.StartNew();
+        for (var i = 0; i < 1000; i++)
         {
-            ArgumentsValidation(args);
+            var result = await driver.ExecutableQuery("match (n: Person {name: 'Andy'}) return n.name").ExecuteAsync();
+        }
+        sw.Stop();
 
-            using (var connection = new Connection(Address.ToString(), Port))
-            {
-                var controller = new Controller(connection);
+        Console.WriteLine($"Time taken to select 1000 results: {sw.ElapsedMilliseconds}ms");
 
-                try
-                {
-                    controller.Process(true, e => { return true; }).Wait();
-                }
-                catch (Exception ex)
-                {
-                    Trace.WriteLine(
-                        $"It looks like the ExceptionExtensions system has failed in an unexpected way. \n{ex}");
-                }
-                finally
-                {
-                    connection.StopServer();
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Trace.WriteLine(ex.Message);
-            Trace.WriteLine($"Exception Details: \n {ex.StackTrace}");
-        }
-        finally
-        {
-            Trace.Flush();
-            Trace.Listeners.Remove(consoleTraceListener);
-            consoleTraceListener.Close();
-            Trace.Close();
-        }
+
+        // var consoleTraceListener = new TextWriterTraceListener(Console.Out);
+        // Trace.Listeners.Add(consoleTraceListener);
+        //
+        // try
+        // {
+        //     ArgumentsValidation(args);
+        //
+        //     using (var connection = new Connection(Address.ToString(), Port))
+        //     {
+        //         var controller = new Controller(connection);
+        //
+        //         try
+        //         {
+        //             controller.Process(true, e => { return true; }).Wait();
+        //         }
+        //         catch (Exception ex)
+        //         {
+        //             Trace.WriteLine(
+        //                 $"It looks like the ExceptionExtensions system has failed in an unexpected way. \n{ex}");
+        //         }
+        //         finally
+        //         {
+        //             connection.StopServer();
+        //         }
+        //     }
+        // }
+        // catch (Exception ex)
+        // {
+        //     Trace.WriteLine(ex.Message);
+        //     Trace.WriteLine($"Exception Details: \n {ex.StackTrace}");
+        // }
+        // finally
+        // {
+        //     Trace.Flush();
+        //     Trace.Listeners.Remove(consoleTraceListener);
+        //     consoleTraceListener.Close();
+        //     Trace.Close();
+        // }
     }
 
     private static void ArgumentsValidation(string[] args)

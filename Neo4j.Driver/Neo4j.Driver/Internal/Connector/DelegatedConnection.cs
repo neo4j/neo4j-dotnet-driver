@@ -137,6 +137,11 @@ internal abstract class DelegatedConnection : IConnection
         }
     }
 
+    public void Enqueue(IRequestMessage messages, IResponseHandler handlers)
+    {
+        Delegate.Enqueue(messages, handlers);
+    }
+
     public virtual bool IsOpen => Delegate.IsOpen;
 
     public IServerInfo Server => Delegate.Server;
@@ -252,6 +257,11 @@ internal abstract class DelegatedConnection : IConnection
     public Task RollbackTransactionAsync()
     {
         return BoltProtocol.RollbackTransactionAsync(this);
+    }
+
+    public Task<IResultCursor> RunQueryInTransaction(Query query, TxConfig config)
+    {
+        return BoltProtocol.RunQueryInTransaction(this, query, config);
     }
 
     internal virtual Task OnErrorAsync(Exception error)
