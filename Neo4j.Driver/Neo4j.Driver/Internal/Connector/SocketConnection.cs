@@ -325,6 +325,25 @@ internal sealed class SocketConnection : IConnection
         }
     }
 
+
+    public void Enqueue(ReadOnlySpan<IRequestMessage> messages, ReadOnlySpan<IResponseHandler> handlers)
+    {
+        _sendLock.Wait();
+        try
+        {
+            for (var i = 0; i < messages.Length; i++)
+            {
+                _messages.Enqueue(messages[i]);
+                _responsePipeline.Enqueue(handlers[i]);
+            }
+        }
+        finally
+        {
+            _sendLock.Release();
+        }
+    }
+
+
     public void SetReadTimeoutInSeconds(int seconds)
     {
         _client.SetReadTimeoutInSeconds(seconds);
@@ -468,6 +487,11 @@ internal sealed class SocketConnection : IConnection
                 AuthorizationStatus = AuthorizationStatus.AuthorizationExpired;
                 break;
         }
+    }
+    
+    public Task<IResultCursor> RunQueryInTransaction(Query query, TxConfig config)
+    {
+        return BoltProtocol.RunQueryInTransaction(this, query, config);
     }
 
     private async Task ReceiveAsync()

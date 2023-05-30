@@ -230,6 +230,11 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         await connection.SyncAsync().ConfigureAwait(false);
     }
 
+    public Task<IResultCursor> RunQueryInTransaction(IConnection connection, Query query, TxConfig config)
+    {
+        throw new NotImplementedException();
+    }
+
     // TODO: Refactor validation methods into a separate class or move to message classes so the checks aren't duplicated. 
     internal static void ValidateDatabase(IConnection connection, string database)
     {

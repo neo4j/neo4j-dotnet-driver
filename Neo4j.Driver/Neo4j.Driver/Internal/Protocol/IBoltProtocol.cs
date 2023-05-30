@@ -61,4 +61,9 @@ internal interface IBoltProtocol
 
     Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker);
     Task RollbackTransactionAsync(IConnection connection);
+
+    Task<IResultCursor> RunQueryInTransaction(
+        IConnection connection,
+        Query query,
+        TxConfig config);
 }

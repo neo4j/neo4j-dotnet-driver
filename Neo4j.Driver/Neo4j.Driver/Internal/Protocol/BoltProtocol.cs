@@ -196,6 +196,48 @@ internal sealed class BoltProtocol : IBoltProtocol
         return _boltProtocolV3.RollbackTransactionAsync(connection);
     }
 
+    public async Task<IResultCursor> RunQueryInTransaction(
+        IConnection connection,
+        Query query,
+        TxConfig config)
+    {
+        var streamBuilder = EnqueueMessages(connection, query, config);
+        await connection.SendAsync().ConfigureAwait(false);
+        return streamBuilder.CreateCursor();
+    }
+
+    private IResultCursorBuilder EnqueueMessages(IConnection connection, Query query, TxConfig config)
+    {
+        var summaryBuilder = new SummaryBuilder(query, connection.Server);
+        var streamBuilder = _protocolHandlerFactory.NewResultCursorBuilder(
+            summaryBuilder,
+            connection,
+            RequestMore,
+            CancelRequest,
+            null,
+            null,
+            config.FetchSize,
+            false);
+
+        var beginMessage = _protocolMessageFactory.NewBeginMessage(
+            connection,
+            config.Database,
+            config.Bookmarks,
+            config.Config,
+            config.AccessMode,
+            config.ImpersonatedUser,
+            config.NotificationsConfig);
+
+        var runMessage = _protocolMessageFactory.NewRunWithMetadataMessage(connection, query, null);
+        var pullMessage = _protocolMessageFactory.NewPullMessage(config.FetchSize);
+        var runHandler = _protocolHandlerFactory.NewRunResponseHandler(streamBuilder, summaryBuilder);
+        var pullHandler = _protocolHandlerFactory.NewPullResponseHandler(null, streamBuilder, summaryBuilder);
+        connection.Enqueue(beginMessage, NoOpResponseHandler.Instance);
+        connection.Enqueue(runMessage, runHandler);
+        connection.Enqueue(pullMessage, pullHandler);
+        return streamBuilder;
+    }
+
     private async Task AuthenticateWithLogonAsync(
         IConnection connection,
         string userAgent,
@@ -320,4 +362,15 @@ internal sealed class BoltProtocol : IBoltProtocol
             await connection.SendAsync().ConfigureAwait(false);
         };
     }
+}
+
+internal record TxConfig
+{
+    public Bookmarks Bookmarks;
+    public TransactionConfig Config;
+    public string Database;
+    public long FetchSize;
+    public string ImpersonatedUser;
+    public INotificationsConfig NotificationsConfig;
+    public AccessMode AccessMode { get; set; }
 }

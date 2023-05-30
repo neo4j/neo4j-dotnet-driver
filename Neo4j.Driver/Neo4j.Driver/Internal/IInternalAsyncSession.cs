@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal;
@@ -35,4 +36,11 @@ internal interface IInternalAsyncSession : IAsyncSession
         Query query,
         Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult);
+
+    Task<EagerResult<TResult>> ExecuteSingleQueryTransactionAsync<TResult>(
+        Query query,
+        QueryConfig queryConfig,
+        TransactionConfig txConfig,
+        CancellationToken cancellationToken,
+        Func<IResultCursor, CancellationToken, Task<EagerResult<TResult>>> cursorProcessor);
 }

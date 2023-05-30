@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -86,6 +87,8 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
 
     Task EnqueueAsync(IRequestMessage message, IResponseHandler handler);
 
+    void Enqueue(IRequestMessage messages, IResponseHandler handlers);
+
     // Enqueue a reset message
     Task ResetAsync();
 
@@ -133,6 +136,8 @@ internal interface IConnectionRunner
     Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize);
     Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker);
     Task RollbackTransactionAsync();
+
+    Task<IResultCursor> RunQueryInTransaction(Query query, TxConfig config);
 }
 
 internal interface IConnectionDetails
