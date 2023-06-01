@@ -590,7 +590,7 @@ public class UnsupportedFeatureException : ClientException
     public override bool IsRetriable => false;
     
     /// <summary>
-    /// Create a new <see cref="UnsupportedFeatureException"/> with an error message.
+    /// Creates a new <see cref="UnsupportedFeatureException"/> with an error message.
     /// </summary>
     /// <param name="message">The error message</param>
     internal UnsupportedFeatureException(string message) : base(message)
