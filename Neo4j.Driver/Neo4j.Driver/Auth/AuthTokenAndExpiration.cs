@@ -16,26 +16,48 @@
 // limitations under the License.
 
 using System;
+using Neo4j.Driver.Internal.Services;
 
 namespace Neo4j.Driver.Auth;
 
+/// <summary>
+/// Represents an auth token and its expiration.
+/// </summary>
 public record AuthTokenAndExpiration
 {
+    /// <summary>
+    /// Initializes a new instance of <see cref="AuthTokenAndExpiration"/>.
+    /// </summary>
+    /// <param name="token">The auth token.</param>
+    /// <param name="expiry">The date and time when the token expires.</param>
     public AuthTokenAndExpiration(IAuthToken token, DateTime? expiry = default)
     {
         Token = token;
         Expiry = expiry ?? DateTime.MaxValue;
     }
 
+    /// <summary>
+    /// Initializes a new instance of <see cref="AuthTokenAndExpiration"/>.
+    /// </summary>
+    /// <param name="token">The auth token.</param>
+    /// <param name="expiresInMs">The number of milliseconds after which the token expires.</param>
     public AuthTokenAndExpiration(IAuthToken token, int expiresInMs)
     {
-        Token = token;
-        Expiry = DateTime.UtcNow.AddMilliseconds(expiresInMs);
+        this.Token = token;
+        this.Expiry = DateTimeProvider.StaticInstance.Now().AddMilliseconds(expiresInMs);
     }
 
+    /// <summary>The auth token.</summary>
     public IAuthToken Token { get; init; }
+
+    /// <summary>The date and time when the token expires.</summary>
     public DateTime Expiry { get; init; }
 
+    /// <summary>
+    /// Deconstructs the <see cref="AuthTokenAndExpiration"/> into its components.
+    /// </summary>
+    /// <param name="Token">The auth token.</param>
+    /// <param name="Expiry">The date and time when the token expires.</param>
     public void Deconstruct(out IAuthToken Token, out DateTime? Expiry)
     {
         Token = this.Token;
