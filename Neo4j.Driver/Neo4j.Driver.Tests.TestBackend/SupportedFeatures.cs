@@ -25,6 +25,7 @@ internal static class SupportedFeatures
     {
         FeaturesList = new List<string>
         {
+            "Backend:MockTime",
             "ConfHint:connection.recv_timeout_seconds",
             "AuthorizationExpiredTreatment",
             "Detail:ClosedDriverIsEncrypted",
@@ -72,7 +73,6 @@ internal static class SupportedFeatures
             "Optimization:AuthPipelining",
             "Optimization:PullPipelining",
             //"Optimization:ResultListFetchAll",
-            "Backend:MockTime",
         };
     }
 
