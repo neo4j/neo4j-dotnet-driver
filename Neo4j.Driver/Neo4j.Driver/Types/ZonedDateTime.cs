@@ -80,7 +80,7 @@ public sealed class ZonedDateTime : TemporalValue, IEquatable<ZonedDateTime>, IC
         Nanosecond = nanos;
         Zone = zone;
 
-        if (utcSeconds is < -62_135_596_800 or > 253_402_300_799)
+        if (utcSeconds is < TemporalHelpers.DateTimeOffsetMinSeconds or > TemporalHelpers.DateTimeOffsetMaxSeconds)
         {
             if (zone is ZoneOffset zo)
             {
