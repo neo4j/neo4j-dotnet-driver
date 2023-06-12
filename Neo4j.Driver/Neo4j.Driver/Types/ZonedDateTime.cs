@@ -548,9 +548,10 @@ public sealed class ZonedDateTime : TemporalValue, IEquatable<ZonedDateTime>, IC
 
     private DateTime ClrFriendly(LocalDateTime local)
     {
-        var year = Math.Abs(local.Year) % 4 == 0
-            ? // is leap year?
-            local.Year < 1
+        var abs = Math.Abs(local.Year);
+        // we can only offset years that are in the CLR range, so we need to offset the year
+        var year = abs % 4 == 0 && (abs % 100 != 0 || abs % 400 == 0)
+            ? local.Year < 1
                 ? 4 // first leap year in CLR type range
                 : 9996 // last leap year in CLR type range
             : local.Year < 1
