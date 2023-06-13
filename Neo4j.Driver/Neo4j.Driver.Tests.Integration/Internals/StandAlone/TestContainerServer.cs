@@ -85,6 +85,7 @@ internal sealed class TestContainerServer : ISingleServer
     }
 
     public IDriver Driver { get; }
+    public Pkcs12Store Pkcs12Store { get; private set; }
 
 
     private void WriteCerts()
@@ -100,7 +101,7 @@ internal sealed class TestContainerServer : ISingleServer
         var trustedPemFile = Path.Combine(trustedDir, pubCertFilename);
         var keyFile = Path.Combine(boltDir, keyFilename);
 
-        var store = CertificateUtils.CreateCert("localhost", DateTime.Now.AddYears(-1),
+        Pkcs12Store = CertificateUtils.CreateCert("localhost", DateTime.Now.AddYears(-1),
             DateTime.Now.AddYears(1),
             null, null, null);
 
@@ -108,9 +109,9 @@ internal sealed class TestContainerServer : ISingleServer
         File.Delete(trustedPemFile);
         File.Delete(keyFile);
 
-        CertificateUtils.DumpPem(store.GetCertificate(), pemFile);
-        CertificateUtils.DumpPem(store.GetCertificate(), trustedPemFile);
-        CertificateUtils.DumpPem(store.GetKey(), keyFile);
+        CertificateUtils.DumpPem(Pkcs12Store.GetCertificate(), pemFile);
+        CertificateUtils.DumpPem(Pkcs12Store.GetCertificate(), trustedPemFile);
+        CertificateUtils.DumpPem(Pkcs12Store.GetKey(), keyFile);
     }
 
     private string TryCreatePath(string root, string dir)

@@ -33,9 +33,7 @@ public class CertificateTrustIT : IClassFixture<CertificateTrustIT.CertificateTr
     public CertificateTrustIT(CertificateTrustIntegrationTestFixture fixture)
     {
         Server = fixture.StandAlone;
-        Pkcs12 = CertificateUtils.CreateCert("localhost", DateTime.Now.AddYears(-1),
-            DateTime.Now.AddYears(1),
-            null, null, null);
+        Pkcs12 = (Server as TestContainerServer).Pkcs12Store;
     }
 
     public ISingleServer Server { get; }
@@ -55,33 +53,22 @@ public class CertificateTrustIT : IClassFixture<CertificateTrustIT.CertificateTr
             new CertificateTrustManager(true, new[] {Pkcs12.GetDotnetCertificate()}));
     }
 
-    // [ShouldNotRunInTestKitFact]
-    // public async Task
-    //     CertificateTrustManager_ShouldTrustIfHostnameDiffersWhenHostnameVerificationIsDisabled()
-    // {
-    //     await VerifySuccess(new Uri("bolt://another.host.domain:7687"),
-    //         new CertificateTrustManager(false, new[] {Pkcs12.GetDotnetCertificate()}));
-    // }
-    //
-    // [ShouldNotRunInTestKitFact]
-    // public async Task CertificateTrustManager_ShouldNotTrustIfNotValid()
-    // {
-    //     try
-    //     {
-    //         var pkcs12 = CertificateUtils.CreateCert("localhost", DateTime.Now.AddYears(-1),
-    //             DateTime.Now.AddDays(-1),
-    //             null, null, null);
-    //
-    //         Server.RestartServerWithCertificate(pkcs12);
-    //
-    //         await VerifyFailure(Server.BoltUri,
-    //             new CertificateTrustManager(true, new[] {pkcs12.GetDotnetCertificate()}));
-    //     }
-    //     finally
-    //     {
-    //         Server.RestartServerWithCertificate(Pkcs12);
-    //     }
-    // }
+    [ShouldNotRunInTestKitFact]
+    public Task CertificateTrustManager_ShouldTrustIfHostnameDiffersWhenHostnameVerificationIsDisabled()
+    {
+        return VerifySuccess(new Uri("bolt://another.host.domain:7687"), 
+            new CertificateTrustManager(false, new[] {Pkcs12.GetDotnetCertificate()}));
+    }
+    
+    [ShouldNotRunInTestKitFact]
+    public async Task CertificateTrustManager_ShouldNotTrustIfNotValid()
+    {
+        var pkcs12 = CertificateUtils.CreateCert("localhost", DateTime.Now.AddYears(-1),
+            DateTime.Now.AddDays(-1),
+            null, null, null);
+        await VerifyFailure(Server.BoltUri,
+            new CertificateTrustManager(true, new[] {pkcs12.GetDotnetCertificate()}));
+    }
 
     [ShouldNotRunInTestKitFact]
     public async Task CertificateTrustManager_ShouldNotTrustIfCertificateIsNotTrusted()
@@ -128,6 +115,7 @@ public class CertificateTrustIT : IClassFixture<CertificateTrustIT.CertificateTr
         var ex = await Record.ExceptionAsync(() => TestConnectivity(target,
             Config.Builder.WithTrustManager(trustManager).WithEncryptionLevel(encryptionLevel).Build()
         ));
+        
         ex.Should().BeNull();
     }
 
