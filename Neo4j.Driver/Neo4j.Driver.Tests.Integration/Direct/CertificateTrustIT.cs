@@ -33,7 +33,7 @@ public class CertificateTrustIT : IClassFixture<CertificateTrustIT.CertificateTr
     public CertificateTrustIT(CertificateTrustIntegrationTestFixture fixture)
     {
         Server = fixture.StandAlone;
-        Pkcs12 = Pkcs12 = CertificateUtils.CreateCert("localhost", DateTime.Now.AddYears(-1),
+        Pkcs12 = CertificateUtils.CreateCert("localhost", DateTime.Now.AddYears(-1),
             DateTime.Now.AddYears(1),
             null, null, null);
     }
@@ -90,7 +90,6 @@ public class CertificateTrustIT : IClassFixture<CertificateTrustIT.CertificateTr
             DateTime.Now.AddYears(1),
             null, null, null);
 
-        await Task.Delay(100000000);
         await VerifyFailure(Server.BoltUri,
             new CertificateTrustManager(true, new[] {pkcs12Untrusted.GetDotnetCertificate()}));
     }
