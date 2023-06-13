@@ -25,13 +25,10 @@ namespace Neo4j.Driver.IntegrationTests
 {
     public class RequireTestContainerDatabaseAttribute : FactAttribute
     {
-	    public RequireTestContainerDatabaseAttribute()
-	    {
-		    if (!SingleServerFixture.UsingOwnedDatabase)
-		    {
-			    Skip = "Not using testcontainer database";
-		    }
-	    }
+        public RequireTestContainerDatabaseAttribute()
+        {
+            if (!SingleServerFixture.UsingOwnedDatabase) Skip = "Not using testcontainer database";
+        }
     }
 
     public enum VersionComparison
@@ -40,56 +37,54 @@ namespace Neo4j.Driver.IntegrationTests
         LessThanOrEqualTo,
         EqualTo,
         GreaterThanOrEqualTo,
-        GreaterThan,
+        GreaterThan
     }
 
-	public static class RequireServer
-	{ 
-		public static bool RequiredServerAvailable(string versionText, VersionComparison versionCompare, StringBuilder skipText)
-		{
-			var satisfy = true;
+    public static class RequireServer
+    {
+        public static bool RequiredServerAvailable(string versionText, VersionComparison versionCompare,
+            StringBuilder skipText)
+        {
+            var satisfy = true;
 
-			if (!string.IsNullOrWhiteSpace(versionText))
-			{
-				var version = ServerVersion.From(versionText);
-				var availableVersion = ServerVersion.From(TestConfiguration.ServerVersion());
+            if (!string.IsNullOrWhiteSpace(versionText))
+            {
+                var version = ServerVersion.From(versionText);
+                var availableVersion = ServerVersion.From(TestConfiguration.ServerVersion());
 
-				
-				switch (versionCompare)
-				{
-					case VersionComparison.LessThan:
-						satisfy = availableVersion.CompareTo(version) < 0;
-						break;
-					case VersionComparison.LessThanOrEqualTo:
-						satisfy = availableVersion.CompareTo(version) <= 0;
-						break;
-					case VersionComparison.EqualTo:
-						satisfy = availableVersion.CompareTo(version) == 0;
-						break;
-					case VersionComparison.GreaterThanOrEqualTo:
-						satisfy = availableVersion.CompareTo(version) >= 0;
-						break;
-					case VersionComparison.GreaterThan:
-						satisfy = availableVersion.CompareTo(version) > 0;
-						break;
-					default:
-						throw new ArgumentOutOfRangeException(nameof(versionCompare));
-				}
 
-				if (!satisfy)
-				{
-					skipText.AppendLine(
-						$"Test requires available server version {availableVersion} to be {versionCompare.ToString()} {version}.");
-				}
-			}
+                switch (versionCompare)
+                {
+                    case VersionComparison.LessThan:
+                        satisfy = availableVersion.CompareTo(version) < 0;
+                        break;
+                    case VersionComparison.LessThanOrEqualTo:
+                        satisfy = availableVersion.CompareTo(version) <= 0;
+                        break;
+                    case VersionComparison.EqualTo:
+                        satisfy = availableVersion.CompareTo(version) == 0;
+                        break;
+                    case VersionComparison.GreaterThanOrEqualTo:
+                        satisfy = availableVersion.CompareTo(version) >= 0;
+                        break;
+                    case VersionComparison.GreaterThan:
+                        satisfy = availableVersion.CompareTo(version) > 0;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(versionCompare));
+                }
 
-			return satisfy;
-		}
-	}
+                if (!satisfy)
+                    skipText.AppendLine(
+                        $"Test requires available server version {availableVersion} to be {versionCompare.ToString()} {version}.");
+            }
 
+            return satisfy;
+        }
+    }
 
     /// <summary>
-    /// Use `RequireServerFact` tag for the tests that require a single instance
+    ///     Use `RequireServerFact` tag for the tests that require a single instance
     /// </summary>
     public class RequireServerFactAttribute : FactAttribute
     {
@@ -98,18 +93,15 @@ namespace Neo4j.Driver.IntegrationTests
         {
             var skipText = new StringBuilder();
 
-            if (!TestConfiguration.SingleServerAvailable())
-            {
-                skipText.AppendLine(TestConfiguration.TestRequireBoltkit);
-            }
+            if (!TestConfiguration.SingleServerAvailable()) skipText.AppendLine(TestConfiguration.TestRequireBoltkit);
 
-			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
+            RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
 
-			if (skipText.Length > 0) 
-				Skip = skipText.ToString();
-		}
+            if (skipText.Length > 0)
+                Skip = skipText.ToString();
+        }
     }
-    
+
     public sealed class RequireEnterpriseEdition : RequireServerFactAttribute
     {
         public RequireEnterpriseEdition(string versionText = null,
@@ -117,13 +109,8 @@ namespace Neo4j.Driver.IntegrationTests
             : base(versionText, versionCompare)
         {
             if (string.IsNullOrEmpty(Skip))
-            {
-
                 if (!TestConfiguration.IsEnterprise())
-                {
                     Skip = "Test requires Neo4j enterprise edition.";
-                }
-            }
         }
     }
 
@@ -136,42 +123,33 @@ namespace Neo4j.Driver.IntegrationTests
             if (string.IsNullOrEmpty(Skip))
             {
                 if (!TestConfiguration.IpV6Available())
-                {
                     Skip = "IPv6 is not available";
-                }
-                else if (!TestConfiguration.IpV6Enabled())
-                {
-                    Skip = "IPv6 is disabled";
-                }
+                else if (!TestConfiguration.IpV6Enabled()) Skip = "IPv6 is disabled";
             }
         }
     }
 
     /// <summary>
-    /// Use `RequireServerTheory` tag for the tests that require a single instance
+    ///     Use `RequireServerTheory` tag for the tests that require a single instance
     /// </summary>
     public class RequireServerTheoryAttribute : TheoryAttribute
     {
+        public RequireServerTheoryAttribute(string versionText = null,
+            VersionComparison versionCompare = VersionComparison.EqualTo)
+        {
+            var skipText = new StringBuilder();
 
-		public RequireServerTheoryAttribute(string versionText = null,
-			VersionComparison versionCompare = VersionComparison.EqualTo)
-		{
-			var skipText = new StringBuilder();
+            if (!TestConfiguration.SingleServerAvailable()) skipText.AppendLine(TestConfiguration.TestRequireBoltkit);
 
-			if (!TestConfiguration.SingleServerAvailable())
-			{
-				skipText.AppendLine(TestConfiguration.TestRequireBoltkit);
-			}
+            RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
 
-			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
-
-			if (skipText.Length > 0)
-				Skip = skipText.ToString();
-		}
+            if (skipText.Length > 0)
+                Skip = skipText.ToString();
+        }
     }
 
     /// <summary>
-    /// Use `RequireClusterFact` tag for the tests that require a cluster
+    ///     Use `RequireClusterFact` tag for the tests that require a cluster
     /// </summary>
     public class RequireClusterFactAttribute : FactAttribute
     {
@@ -180,54 +158,44 @@ namespace Neo4j.Driver.IntegrationTests
         {
             var skipText = new StringBuilder();
 
-            if (!TestConfiguration.IsClusterAvailable())
-            {
-                skipText.AppendLine(TestConfiguration.TestRequireBoltkit);
-            }
+            if (!TestConfiguration.IsClusterAvailable()) skipText.AppendLine(TestConfiguration.TestRequireBoltkit);
 
-			RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
+            RequireServer.RequiredServerAvailable(versionText, versionCompare, skipText);
 
-			if (skipText.Length > 0)
-				Skip = skipText.ToString();
-		}
+            if (skipText.Length > 0)
+                Skip = skipText.ToString();
+        }
     }
 
     /// <summary>
-    /// Use `RequireClusterTheory` tag for the tests that require a cluster
+    ///     Use `RequireClusterTheory` tag for the tests that require a cluster
     /// </summary>
     public class RequireClusterTheoryAttribute : TheoryAttribute
     {
         public RequireClusterTheoryAttribute()
         {
             var isClusterSupported = TestConfiguration.IsClusterAvailable();
-            if (!isClusterSupported)
-            {
-                Skip = "Cluster not available";
-            }
+            if (!isClusterSupported) Skip = "Cluster not available";
         }
     }
 
-	public class ShouldNotRunInTestKitFact : FactAttribute 
+    public class ShouldNotRunInTestKitFact : FactAttribute
     {
         public ShouldNotRunInTestKitFact()
-		{
-            string envVariable = Environment.GetEnvironmentVariable("TEST_NEO4J_USING_TESTKIT");
-            if (!string.IsNullOrEmpty(envVariable)  &&  envVariable.Equals("true", StringComparison.OrdinalIgnoreCase))
-			{
-                Skip = "Test is not run in TestKit";                
-			}
-		}
+        {
+            var envVariable = Environment.GetEnvironmentVariable("TEST_NEO4J_USING_TESTKIT");
+            if (!string.IsNullOrEmpty(envVariable) && envVariable.Equals("true", StringComparison.OrdinalIgnoreCase))
+                Skip = "Test is not run in TestKit";
+        }
     }
 
     public class ShouldNotRunInTestKit_RequireServerFactAttribute : RequireServerFactAttribute
-	{
+    {
         public ShouldNotRunInTestKit_RequireServerFactAttribute()
-		{
-            string envVariable = Environment.GetEnvironmentVariable("TEST_NEO4J_USING_TESTKIT");
+        {
+            var envVariable = Environment.GetEnvironmentVariable("TEST_NEO4J_USING_TESTKIT");
             if (!string.IsNullOrEmpty(envVariable) && envVariable.Equals("true", StringComparison.OrdinalIgnoreCase))
-            {
                 Skip = "Test is not run in TestKit";
-            }
         }
     }
 }
