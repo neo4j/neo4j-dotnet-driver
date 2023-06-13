@@ -18,7 +18,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNet.Testcontainers.Builders;
@@ -92,25 +91,7 @@ internal sealed class TestContainerServer : ISingleServer
     {
         TryCreatePath(null, _dataPath);
         
-        string boltDir;
-        try
-        {
-            boltDir = TryCreatePath(_dataPath, "bolt");
-        }
-        catch (UnauthorizedAccessException)
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                throw; // very unexpected in windows.
-            
-            // when neo4j container starts up it will run CHOWN against the boltDir,
-            // this permission change is then reflected in the host OS.
-            var absolute = Path.GetFullPath(Path.Combine(_dataPath, "bolt"));
-            Console.WriteLine(
-                "Found existing pem files, reusing them, the files may be out of date or partially missing and could result in failed tests. " +
-                $"To recreate files, try removing the existing directory: {absolute}.\nNote: requires elevated permissions.");
-            return;
-        }
-        
+        var boltDir = TryCreatePath(_dataPath, "bolt");
         var trustedDir = TryCreatePath(boltDir, "trusted");
 
         var pubCertFilename = "public.crt";
@@ -119,7 +100,7 @@ internal sealed class TestContainerServer : ISingleServer
         var trustedPemFile = Path.Combine(trustedDir, pubCertFilename);
         var keyFile = Path.Combine(boltDir, keyFilename);
 
-        var storeLazy = CertificateUtils.CreateCert("localhost", DateTime.Now.AddYears(-1),
+        var store = CertificateUtils.CreateCert("localhost", DateTime.Now.AddYears(-1),
             DateTime.Now.AddYears(1),
             null, null, null);
 
@@ -127,9 +108,9 @@ internal sealed class TestContainerServer : ISingleServer
         File.Delete(trustedPemFile);
         File.Delete(keyFile);
 
-        CertificateUtils.DumpPem(storeLazy.GetCertificate(), pemFile);
-        CertificateUtils.DumpPem(storeLazy.GetCertificate(), trustedPemFile);
-        CertificateUtils.DumpPem(storeLazy.GetKey(), keyFile);
+        CertificateUtils.DumpPem(store.GetCertificate(), pemFile);
+        CertificateUtils.DumpPem(store.GetCertificate(), trustedPemFile);
+        CertificateUtils.DumpPem(store.GetKey(), keyFile);
     }
 
     private string TryCreatePath(string root, string dir)
