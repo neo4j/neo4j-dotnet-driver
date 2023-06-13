@@ -24,6 +24,7 @@ using System.Threading.Tasks;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 using Neo4j.Driver.IntegrationTests.Internals;
+using Org.BouncyCastle.Pkcs;
 
 namespace Neo4j.Driver.IntegrationTests;
 
@@ -41,12 +42,12 @@ internal sealed class TestContainerServer : ISingleServer
 
         Driver = GraphDatabase.Driver(BoltUri, AuthToken);
         _dataPath = Path.Combine(Environment.CurrentDirectory, "data");
-
+        
         _container = TestContainerBuilder
             .ImageBase(4, 4, true)
             .WithPortBinding(int.Parse(Neo4jDefaultInstallation.BoltPort), 7687)
             .WithPortBinding(7474, 7474)
-            .WithBindMount(_dataPath, "/var/lib/neo4j/certificates/")
+            .WithBindMount(_dataPath, "/var/local/")
             .WithEnvironment(BuildEnvVars())
             .WithWaitStrategy(
                 Wait.ForUnixContainer().UntilPortIsAvailable(int.Parse(Neo4jDefaultInstallation.BoltPort)))
@@ -147,7 +148,8 @@ internal sealed class TestContainerServer : ISingleServer
             ["NEO4J_ACCEPT_LICENSE_AGREEMENT"] = "yes",
             ["NEO4J_dbms_backup_enabled"] = "false",
             ["NEO4J_dbms_connector_bolt_tls__level"] = "OPTIONAL",
-            ["NEO4J_dbms_ssl_policy_bolt_enabled"] = "true"
+            ["NEO4J_dbms_ssl_policy_bolt_enabled"] = "true",
+            ["NEO4J_dbms_ssl_policy_bolt_base__directory"] = "/var/local/bolt"
         };
 
         if (Neo4jDefaultInstallation.Password != "neo4j")
@@ -158,6 +160,15 @@ internal sealed class TestContainerServer : ISingleServer
     }
 
     public static async Task<ISingleServer> NewServerAsync()
+    {
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+        var instance = new TestContainerServer();
+        instance.WriteCerts();
+        await instance._container.StartAsync(cancellationTokenSource.Token);
+        return instance;
+    }
+
+    public static async Task<ISingleServer> NewServerAsync(Pkcs12Store cert)
     {
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(5));
         var instance = new TestContainerServer();
