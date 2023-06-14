@@ -18,13 +18,14 @@
 using System;
 using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests;
-
-public interface ISingleServer : IAsyncLifetime
+namespace Neo4j.Driver.IntegrationTests
 {
-    IDriver Driver { get; }
-    Uri HttpUri { get; }
-    Uri BoltUri { get; }
-    Uri BoltRoutingUri { get; }
-    IAuthToken AuthToken { get; }
+    public interface ISingleServer : IAsyncLifetime
+    {
+        IDriver Driver { get; }
+        Uri HttpUri { get; }
+        Uri BoltUri { get; }
+        Uri BoltRoutingUri { get; }
+        IAuthToken AuthToken { get; }
+    }
 }

@@ -19,30 +19,31 @@ using System.Threading.Tasks;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests;
-
-[CollectionDefinition(CollectionName)]
-public sealed class SingleServerCollection : ICollectionFixture<SingleServerFixture>
+namespace Neo4j.Driver.IntegrationTests
 {
-    public const string CollectionName = "StandAloneIntegration";
-}
-
-public sealed class SingleServerFixture : IAsyncLifetime
-{
-    public ISingleServer SingleServerDbms { get; private set; }
-    public static bool UsingOwnedDatabase => !ExistingSingleServer.IsServerProvided();
-
-    public async Task InitializeAsync()
+    [CollectionDefinition(CollectionName)]
+    public sealed class SingleServerCollection : ICollectionFixture<SingleServerFixture>
     {
-        if (ExistingSingleServer.IsServerProvided())
-            SingleServerDbms = new ExistingSingleServer();
-        else
-            SingleServerDbms = await TestContainerServer.NewServerAsync();
+        public const string CollectionName = "StandAloneIntegration";
     }
 
-    public async Task DisposeAsync()
+    public sealed class SingleServerFixture : IAsyncLifetime
     {
-        if (SingleServerDbms != null)
-            await SingleServerDbms.DisposeAsync();
+        public ISingleServer SingleServerDbms { get; private set; }
+        public static bool UsingOwnedDatabase => !ExistingSingleServer.IsServerProvided();
+
+        public async Task InitializeAsync()
+        {
+            if (ExistingSingleServer.IsServerProvided())
+                SingleServerDbms = new ExistingSingleServer();
+            else
+                SingleServerDbms = await TestContainerServer.NewServerAsync();
+        }
+
+        public async Task DisposeAsync()
+        {
+            if (SingleServerDbms != null)
+                await SingleServerDbms.DisposeAsync();
+        }
     }
 }

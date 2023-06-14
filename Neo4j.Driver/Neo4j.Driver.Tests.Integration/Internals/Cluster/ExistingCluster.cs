@@ -19,71 +19,72 @@ using System;
 using System.Threading.Tasks;
 using Castle.Core.Internal;
 
-namespace Neo4j.Driver.IntegrationTests.Internals;
-
-public sealed class ExistingCluster : ICausalCluster
+namespace Neo4j.Driver.IntegrationTests.Internals
 {
-    private const string ClusterUri = "NEO4J_URI";
-    private const string ClusterPassword = "NEO4J_PASSWORD";
-    private const string ClusterUser = "NEO4J_USER";
-
-    public Uri BoltRoutingUri { get; }
-
-    public IAuthToken AuthToken { get; }
-
-    public ExistingCluster()
+    public sealed class ExistingCluster : ICausalCluster
     {
-        AuthToken = AuthTokens.Basic(
-            GetEnvOrDefault(ClusterUser, Neo4jDefaultInstallation.User),
-            GetEnvOrThrow(ClusterPassword));
+        private const string ClusterUri = "NEO4J_URI";
+        private const string ClusterPassword = "NEO4J_PASSWORD";
+        private const string ClusterUser = "NEO4J_USER";
+
+        public Uri BoltRoutingUri { get; }
+
+        public IAuthToken AuthToken { get; }
+
+        public ExistingCluster()
+        {
+            AuthToken = AuthTokens.Basic(
+                GetEnvOrDefault(ClusterUser, Neo4jDefaultInstallation.User),
+                GetEnvOrThrow(ClusterPassword));
             
-        BoltRoutingUri = new Uri(GetEnvOrThrow(ClusterUri));
-    }
+            BoltRoutingUri = new Uri(GetEnvOrThrow(ClusterUri));
+        }
         
-    public static bool IsClusterProvided()
-    {
-        var uri = Environment.GetEnvironmentVariable(ClusterUri);
-
-        if (string.IsNullOrWhiteSpace(uri))
-            return false;
-        
-        try
+        public static bool IsClusterProvided()
         {
-            var parsed = new Uri(uri);
-            if (!parsed.Scheme.StartsWith("neo4j"))
+            var uri = Environment.GetEnvironmentVariable(ClusterUri);
+
+            if (string.IsNullOrWhiteSpace(uri))
                 return false;
-        }
-        catch (UriFormatException)
-        {
-            return false;
-        }
+        
+            try
+            {
+                var parsed = new Uri(uri);
+                if (!parsed.Scheme.StartsWith("neo4j"))
+                    return false;
+            }
+            catch (UriFormatException)
+            {
+                return false;
+            }
 
-        var password = Environment.GetEnvironmentVariable(ClusterPassword);
+            var password = Environment.GetEnvironmentVariable(ClusterPassword);
  
-        return !password.IsNullOrEmpty();
-    }
+            return !password.IsNullOrEmpty();
+        }
 
-    private static string GetEnvOrThrow(string env)
-    {
-        var value = Environment.GetEnvironmentVariable(env);
-        if (value.IsNullOrEmpty())
-            throw new ArgumentException($"Missing env variable {env}");
-        return value;
-    }
+        private static string GetEnvOrThrow(string env)
+        {
+            var value = Environment.GetEnvironmentVariable(env);
+            if (value.IsNullOrEmpty())
+                throw new ArgumentException($"Missing env variable {env}");
+            return value;
+        }
 
-    private static string GetEnvOrDefault(string env, string defaultValue)
-    {
-        var value = Environment.GetEnvironmentVariable(env);
-        return value.IsNullOrEmpty() ? defaultValue : value;
-    }
+        private static string GetEnvOrDefault(string env, string defaultValue)
+        {
+            var value = Environment.GetEnvironmentVariable(env);
+            return value.IsNullOrEmpty() ? defaultValue : value;
+        }
 
-    public Task InitializeAsync()
-    {
-        return Task.CompletedTask;
-    }
+        public Task InitializeAsync()
+        {
+            return Task.CompletedTask;
+        }
 
-    public Task DisposeAsync()
-    {
-        return Task.CompletedTask;
+        public Task DisposeAsync()
+        {
+            return Task.CompletedTask;
+        }
     }
 }

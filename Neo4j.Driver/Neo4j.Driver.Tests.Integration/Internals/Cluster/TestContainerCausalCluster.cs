@@ -26,89 +26,90 @@ using DotNet.Testcontainers.Containers;
 using DotNet.Testcontainers.Networks;
 using Neo4j.Driver.IntegrationTests.Internals;
 
-namespace Neo4j.Driver.IntegrationTests;
-
-public class TestContainerCausalCluster : ICausalCluster
+namespace Neo4j.Driver.IntegrationTests
 {
-    public Uri BoltRoutingUri { get; }
-    public IAuthToken AuthToken { get; }
-
-    private readonly IContainer[] _containers;
-    private static readonly int[] Ports = {7689, 7690, 7691};
-    private readonly INetwork _network;
-
-    public TestContainerCausalCluster()
+    public class TestContainerCausalCluster : ICausalCluster
     {
-        BoltRoutingUri = new UriBuilder("neo4j", "localhost", Ports[0]).Uri;
-        AuthToken = AuthTokens.Basic(Neo4jDefaultInstallation.User, Neo4jDefaultInstallation.Password);
-        _network = new NetworkBuilder()
-            .WithName("tc-cc")
-            .WithDriver(NetworkDriver.Bridge)
-            .Build();
-        _containers = Ports.Select(BuildContainer).ToArray();
-    }
+        public Uri BoltRoutingUri { get; }
+        public IAuthToken AuthToken { get; }
 
-    private IContainer BuildContainer(int port)
-    {
-        var member = Array.IndexOf(Ports, port) + 1;
-        var name = $"tc-cc-node-{member}";
-        var eps = String.Join(",", Ports.Select((_, y) => $"tc-cc-node-{y+1}:5000"));
+        private readonly IContainer[] _containers;
+        private static readonly int[] Ports = {7689, 7690, 7691};
+        private readonly INetwork _network;
 
-        // 4.4 cluster config.
-        var environment = new Dictionary<string, string>
+        public TestContainerCausalCluster()
         {
-            ["NEO4J_ACCEPT_LICENSE_AGREEMENT"] = "yes",
-            ["NEO4J_dbms_routing_enabled"] = "true",
-            ["NEO4J_dbms_backup_enabled"] = "false",
-            ["NEO4J_dbms_mode"] = "CORE",
-            ["NEO4J_dbms_memory_pagecache_size"] = "100M",
-            ["NEO4J_dbms_memory_heap_initial__size"] = "100M",
-            ["NEO4J_causal__clustering_initial__discovery__members"] = eps,
-            ["NEO4J_causal__clustering_minimum__core__cluster__size__at__formation"] = "3",
-            ["NEO4J_causal__clustering_discovery__advertised__address"] = $"{name}:5000",
-            ["NEO4J_causal__clustering_transaction__advertised__address"] = $"{name}:6000",
-            ["NEO4J_causal__clustering_raft__advertised__address"] = $"{name}:7000",
-            ["NEO4J_dbms_connector_bolt_listen__address"] = $":{port}"
-        };
-
-        if (Neo4jDefaultInstallation.Password != "neo4j")
-        {
-            var auth = $"{Neo4jDefaultInstallation.User}/{Neo4jDefaultInstallation.Password}";
-            environment.Add("NEO4J_AUTH", auth);
+            BoltRoutingUri = new UriBuilder("neo4j", "localhost", Ports[0]).Uri;
+            AuthToken = AuthTokens.Basic(Neo4jDefaultInstallation.User, Neo4jDefaultInstallation.Password);
+            _network = new NetworkBuilder()
+                .WithName("tc-cc")
+                .WithDriver(NetworkDriver.Bridge)
+                .Build();
+            _containers = Ports.Select(BuildContainer).ToArray();
         }
+
+        private IContainer BuildContainer(int port)
+        {
+            var member = Array.IndexOf(Ports, port) + 1;
+            var name = $"tc-cc-node-{member}";
+            var eps = String.Join(",", Ports.Select((_, y) => $"tc-cc-node-{y+1}:5000"));
+
+            // 4.4 cluster config.
+            var environment = new Dictionary<string, string>
+            {
+                ["NEO4J_ACCEPT_LICENSE_AGREEMENT"] = "yes",
+                ["NEO4J_dbms_routing_enabled"] = "true",
+                ["NEO4J_dbms_backup_enabled"] = "false",
+                ["NEO4J_dbms_mode"] = "CORE",
+                ["NEO4J_dbms_memory_pagecache_size"] = "100M",
+                ["NEO4J_dbms_memory_heap_initial__size"] = "100M",
+                ["NEO4J_causal__clustering_initial__discovery__members"] = eps,
+                ["NEO4J_causal__clustering_minimum__core__cluster__size__at__formation"] = "3",
+                ["NEO4J_causal__clustering_discovery__advertised__address"] = $"{name}:5000",
+                ["NEO4J_causal__clustering_transaction__advertised__address"] = $"{name}:6000",
+                ["NEO4J_causal__clustering_raft__advertised__address"] = $"{name}:7000",
+                ["NEO4J_dbms_connector_bolt_listen__address"] = $":{port}"
+            };
+
+            if (Neo4jDefaultInstallation.Password != "neo4j")
+            {
+                var auth = $"{Neo4jDefaultInstallation.User}/{Neo4jDefaultInstallation.Password}";
+                environment.Add("NEO4J_AUTH", auth);
+            }
         
-        return TestContainerBuilder
-            .ImageBase(4, 4, true)
-            .WithPortBinding(port, port)
-            .WithName(name)
-            .WithNetwork(_network)
-            .WithEnvironment(environment)
-            .WithWaitStrategy(Wait.ForUnixContainer().UntilPortIsAvailable(port))
-            .Build();
-    }
-
-    public void Configure(ConfigBuilder builder)
-    {
-    }
-
-    public async Task InitializeAsync()
-    {
-        await _network.CreateAsync();
-        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
-        await Task.WhenAll(_containers.Select(x => x.StartAsync(cts.Token)));
-    }
-
-    public async Task DisposeAsync()
-    {
-        try
-        {
-            await Task.WhenAll(_containers.Select(x => x.StopAsync()));
+            return TestContainerBuilder
+                .ImageBase(4, 4, true)
+                .WithPortBinding(port, port)
+                .WithName(name)
+                .WithNetwork(_network)
+                .WithEnvironment(environment)
+                .WithWaitStrategy(Wait.ForUnixContainer().UntilPortIsAvailable(port))
+                .Build();
         }
-        catch (Exception)
+
+        public void Configure(ConfigBuilder builder)
         {
-            // Ignore.
         }
+
+        public async Task InitializeAsync()
+        {
+            await _network.CreateAsync();
+            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+            await Task.WhenAll(_containers.Select(x => x.StartAsync(cts.Token)));
+        }
+
+        public async Task DisposeAsync()
+        {
+            try
+            {
+                await Task.WhenAll(_containers.Select(x => x.StopAsync()));
+            }
+            catch (Exception)
+            {
+                // Ignore.
+            }
         
-        await _network.DeleteAsync();
+            await _network.DeleteAsync();
+        }
     }
 }

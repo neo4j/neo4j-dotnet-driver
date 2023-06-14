@@ -18,10 +18,11 @@
 using System;
 using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests.Internals;
-
-public interface ICausalCluster : IAsyncLifetime
+namespace Neo4j.Driver.IntegrationTests.Internals
 {
-    Uri BoltRoutingUri { get; }
-    IAuthToken AuthToken { get; }
+    public interface ICausalCluster : IAsyncLifetime
+    {
+        Uri BoltRoutingUri { get; }
+        IAuthToken AuthToken { get; }
+    }
 }

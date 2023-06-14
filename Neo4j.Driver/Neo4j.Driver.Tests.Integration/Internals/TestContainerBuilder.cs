@@ -19,14 +19,15 @@ using System;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Images;
 
-namespace Neo4j.Driver.IntegrationTests;
-
-public static class TestContainerBuilder
+namespace Neo4j.Driver.IntegrationTests
 {
-    public static ContainerBuilder ImageBase(int major, int minor, bool enterprise)
+    public static class TestContainerBuilder
     {
-        var enterpriseSuffix = enterprise ? "-enterprise" : String.Empty;
-        return new ContainerBuilder()
-            .WithImage(new DockerImage("library", "neo4j", $"{major}.{minor}{enterpriseSuffix}"));
+        public static ContainerBuilder ImageBase(int major, int minor, bool enterprise)
+        {
+            var enterpriseSuffix = enterprise ? "-enterprise" : String.Empty;
+            return new ContainerBuilder()
+                .WithImage(new DockerImage("library", "neo4j", $"{major}.{minor}{enterpriseSuffix}"));
+        }
     }
 }

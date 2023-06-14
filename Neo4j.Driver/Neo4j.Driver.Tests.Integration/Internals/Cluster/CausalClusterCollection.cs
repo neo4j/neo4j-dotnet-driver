@@ -19,32 +19,33 @@ using System.Threading.Tasks;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Xunit;
 
-namespace Neo4j.Driver.IntegrationTests;
-
-[CollectionDefinition(CollectionName)]
-public sealed class CausalClusterCollection : ICollectionFixture<CausalClusterFixture>
+namespace Neo4j.Driver.IntegrationTests
 {
-    public const string CollectionName = "CausalClusterIntegration";
-}
-
-public sealed class CausalClusterFixture : IAsyncLifetime
-{
-    public ICausalCluster Cluster { get; }
-
-    public CausalClusterFixture()
+    [CollectionDefinition(CollectionName)]
+    public sealed class CausalClusterCollection : ICollectionFixture<CausalClusterFixture>
     {
-        Cluster = ExistingCluster.IsClusterProvided()
-            ? new ExistingCluster()
-            : new TestContainerCausalCluster();
+        public const string CollectionName = "CausalClusterIntegration";
     }
 
-    public Task InitializeAsync()
+    public sealed class CausalClusterFixture : IAsyncLifetime
     {
-        return Cluster.InitializeAsync();
-    }
+        public ICausalCluster Cluster { get; }
 
-    public Task DisposeAsync()
-    {
-        return Cluster.DisposeAsync();
+        public CausalClusterFixture()
+        {
+            Cluster = ExistingCluster.IsClusterProvided()
+                ? new ExistingCluster()
+                : new TestContainerCausalCluster();
+        }
+
+        public Task InitializeAsync()
+        {
+            return Cluster.InitializeAsync();
+        }
+
+        public Task DisposeAsync()
+        {
+            return Cluster.DisposeAsync();
+        }
     }
 }
