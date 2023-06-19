@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 //The only imported needed for using this driver
 using Neo4j.Driver;
@@ -38,7 +39,7 @@ namespace Neo4j.Driver.Examples
         [SuppressMessage("ReSharper", "xUnit1013")]
         public class AutocommitTransactionExample : BaseExample
         {
-            public AutocommitTransactionExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public AutocommitTransactionExample(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -65,7 +66,7 @@ namespace Neo4j.Driver.Examples
 
         public class BasicAuthExample : BaseExample
         {
-            public BasicAuthExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public BasicAuthExample(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -92,7 +93,7 @@ namespace Neo4j.Driver.Examples
 
         public class ConfigConnectionPoolExample : BaseExample
         {
-            public ConfigConnectionPoolExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public ConfigConnectionPoolExample(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -122,7 +123,7 @@ namespace Neo4j.Driver.Examples
 
         public class ConfigConnectionTimeoutExample : BaseExample
         {
-            public ConfigConnectionTimeoutExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public ConfigConnectionTimeoutExample(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -150,7 +151,7 @@ namespace Neo4j.Driver.Examples
 
         public class ConfigMaxRetryTimeExample : BaseExample
         {
-            public ConfigMaxRetryTimeExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public ConfigMaxRetryTimeExample(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -178,7 +179,7 @@ namespace Neo4j.Driver.Examples
 
         public class ConfigTrustExample : BaseExample
         {
-            public ConfigTrustExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public ConfigTrustExample(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -206,7 +207,7 @@ namespace Neo4j.Driver.Examples
 
         public class ConfigUnencryptedExample : BaseExample
         {
-            public ConfigUnencryptedExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public ConfigUnencryptedExample(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -233,6 +234,7 @@ namespace Neo4j.Driver.Examples
         }
 
         [SuppressMessage("ReSharper", "xUnit1013")]
+        [Collection(SingleServerCollection.CollectionName)]
         public class ConfigCustomResolverExample
         {
             private const string Username = "neo4j";
@@ -242,8 +244,9 @@ namespace Neo4j.Driver.Examples
             private IDriver CreateDriverWithCustomResolver(string virtualUri, IAuthToken token,
                 params ServerAddress[] addresses)
             {
-                return GraphDatabase.Driver(virtualUri, token,
-                    o => o.WithResolver(new ListAddressResolver(addresses)).WithEncryptionLevel(EncryptionLevel.None));
+                return GraphDatabase.Driver(virtualUri, token, 
+                    o => o.WithResolver(new ListAddressResolver(addresses))
+                        .WithEncryptionLevel(EncryptionLevel.None));
             }
 
             public void AddPerson(string name)
@@ -276,31 +279,23 @@ namespace Neo4j.Driver.Examples
             }
             // end::config-custom-resolver[]
 
-            [RequireBoltStubServerFactAttribute]
+            [RequireTestContainerDatabase]
             public void TestCustomResolverExample()
             {
-                using (var server1 = BoltStubServer.Start("V4/get_routing_table_only", 9001))
-                {
-                    using (var server2 = BoltStubServer.Start("V4/return_1", 9002))
-                    {
-                        using (var driver =
-                            CreateDriverWithCustomResolver("neo4j://x.example.com", AuthTokens.None,
-                                ServerAddress.From("127.0.0.1", 9001)))
-                        {
-                            using (var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Read)))
-                            {
-                                // When & Then
-                                session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
-                            }
-                        }
-                    }
-                }
+                using var driver =
+                    CreateDriverWithCustomResolver($"neo4j://host.docker.internal:{Neo4jDefaultInstallation.BoltPort}",
+                        AuthTokens.Basic(Neo4jDefaultInstallation.User, Neo4jDefaultInstallation.Password),
+                        ServerAddress.From(Neo4jDefaultInstallation.BoltHost, int.Parse(Neo4jDefaultInstallation.BoltPort)));
+                using var session = driver.Session(o => o.WithDefaultAccessMode(AccessMode.Read));
+                
+                // When & Then
+                session.Run("RETURN 1").Single()[0].As<int>().Should().Be(1);
             }
         }
 
         public class CustomAuthExample : BaseExample
         {
-            public CustomAuthExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public CustomAuthExample(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -330,7 +325,7 @@ namespace Neo4j.Driver.Examples
 
         public class KerberosAuthExample : BaseExample
         {
-            public KerberosAuthExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public KerberosAuthExample(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -357,7 +352,7 @@ namespace Neo4j.Driver.Examples
 		
 		public class BearerAuthExample : BaseExample
 		{
-			public BearerAuthExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+			public BearerAuthExample(ITestOutputHelper output, SingleServerFixture fixture)
 				: base(output, fixture)
 			{
 			}
@@ -384,7 +379,7 @@ namespace Neo4j.Driver.Examples
 
 		public class CypherErrorExample : BaseExample
         {
-            public CypherErrorExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public CypherErrorExample(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -423,7 +418,7 @@ namespace Neo4j.Driver.Examples
 
         public class DriverLifecycleExampleTest : BaseExample
         {
-            public DriverLifecycleExampleTest(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public DriverLifecycleExampleTest(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -477,7 +472,7 @@ namespace Neo4j.Driver.Examples
 
         public class HelloWorldExampleTest : BaseExample
         {
-            public HelloWorldExampleTest(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public HelloWorldExampleTest(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -554,7 +549,7 @@ namespace Neo4j.Driver.Examples
 
         public class ReadWriteTransactionExample : BaseExample
         {
-            public ReadWriteTransactionExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public ReadWriteTransactionExample(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -592,7 +587,7 @@ namespace Neo4j.Driver.Examples
 
         public class ResultConsumeExample : BaseExample
         {
-            public ResultConsumeExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public ResultConsumeExample(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -624,7 +619,7 @@ namespace Neo4j.Driver.Examples
 
         public class ResultRetainExample : BaseExample
         {
-            public ResultRetainExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public ResultRetainExample(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -666,7 +661,7 @@ namespace Neo4j.Driver.Examples
         {
             private readonly IDriver _baseDriver;
 
-            public ServiceUnavailableExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public ServiceUnavailableExample(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
                 _baseDriver = Driver;
@@ -716,7 +711,7 @@ namespace Neo4j.Driver.Examples
         [SuppressMessage("ReSharper", "xUnit1013")]
         public class SessionExample : BaseExample
         {
-            public SessionExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public SessionExample(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -744,7 +739,7 @@ namespace Neo4j.Driver.Examples
         [SuppressMessage("ReSharper", "xUnit1013")]
         public class TransactionFunctionExample : BaseExample
         {
-            public TransactionFunctionExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public TransactionFunctionExample(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -772,7 +767,7 @@ namespace Neo4j.Driver.Examples
         [SuppressMessage("ReSharper", "xUnit1013")]
         public class TransactionTimeoutConfigExample : BaseExample
         {
-            public TransactionTimeoutConfigExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public TransactionTimeoutConfigExample(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -802,7 +797,7 @@ namespace Neo4j.Driver.Examples
         [SuppressMessage("ReSharper", "xUnit1013")]
         public class TransactionMetadataConfigExample : BaseExample
         {
-            public TransactionMetadataConfigExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public TransactionMetadataConfigExample(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -831,7 +826,7 @@ namespace Neo4j.Driver.Examples
         
         public class DatabaseSelectionExampleTest : BaseExample
         {
-            public DatabaseSelectionExampleTest(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public DatabaseSelectionExampleTest(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -928,7 +923,7 @@ namespace Neo4j.Driver.Examples
         [SuppressMessage("ReSharper", "xUnit1013")]
         public class PassBookmarksExample : BaseExample
         {
-            public PassBookmarksExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+            public PassBookmarksExample(ITestOutputHelper output, SingleServerFixture fixture)
                 : base(output, fixture)
             {
             }
@@ -1045,22 +1040,23 @@ namespace Neo4j.Driver.Examples
         }
     }
 
-    [Collection(SAIntegrationCollection.CollectionName)]
+
+    [Collection(SingleServerCollection.CollectionName)]
     public abstract class BaseExample : IDisposable
     {
         private bool _disposed = false;
         protected ITestOutputHelper Output { get; }
         protected IDriver Driver { set; get; }
-        protected string Uri = Neo4jDefaultInstallation.BoltUri;
-        protected string User = Neo4jDefaultInstallation.User;
-        protected string Password = Neo4jDefaultInstallation.Password;
+        protected string Uri => Neo4jDefaultInstallation.BoltUri;
+        protected string User => Neo4jDefaultInstallation.User;
+        protected string Password => Neo4jDefaultInstallation.Password;
 
         ~BaseExample() => Dispose(false);
 
-        protected BaseExample(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+        protected BaseExample(ITestOutputHelper output, SingleServerFixture fixture)
         {
             Output = output;
-            Driver = fixture.StandAloneSharedInstance.Driver;
+            Driver = fixture.SingleServerDbms.Driver;
         }
 
         public void Dispose()

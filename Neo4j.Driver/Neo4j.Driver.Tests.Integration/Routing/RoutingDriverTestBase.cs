@@ -23,7 +23,7 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Routing
 {
-    [Collection(CCIntegrationCollection.CollectionName)]
+    [Collection(CausalClusterCollection.CollectionName)]
     public abstract class RoutingDriverTestBase : IDisposable
     {
         private bool _disposed = false;
@@ -37,7 +37,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
 
         ~RoutingDriverTestBase() => Dispose(false);
 
-        public RoutingDriverTestBase(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)
+        public RoutingDriverTestBase(ITestOutputHelper output, CausalClusterFixture fixture)
         {
             Output = output;
             Cluster = fixture.Cluster;
@@ -47,7 +47,6 @@ namespace Neo4j.Driver.IntegrationTests.Routing
                 builder =>
                 {
                     builder.WithLogger(TestLogger.Create(output));
-                    Cluster.Configure(builder);
                 });
         }
 

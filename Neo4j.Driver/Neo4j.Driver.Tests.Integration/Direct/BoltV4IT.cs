@@ -29,7 +29,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 {
     public class BoltV4IT : DirectDriverTestBase
     {
-        public BoltV4IT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+        public BoltV4IT(ITestOutputHelper output, SingleServerFixture fixture)
             : base(output, fixture)
         {
         }
@@ -95,7 +95,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
         public async Task ShouldReturnDatabaseInfoForDefaultDatabaseWhenSpecifiedInTxFunc()
         {
-            Console.WriteLine($"Version = {ServerVersion.From(BoltkitHelper.ServerVersion())}");
+            Console.WriteLine($"Version = {ServerVersion.From(TestConfiguration.ServerVersion())}");
             await VerifyDatabaseNameOnSummaryTxFunc("neo4j", "neo4j");
         }
 

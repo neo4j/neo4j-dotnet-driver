@@ -1,9 +1,0 @@
-!: BOLT 4
-!: AUTO HELLO
-!: AUTO RESET
-
-C:  RUN "CREATE (n: { id: $x }) RETURN $x" {"x": 1} {}
-    PULL {"n": 1000}
-S:  SUCCESS {"fields": ["x"]}
-    RECORD [1]
-    SUCCESS {}

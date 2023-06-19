@@ -30,7 +30,7 @@ namespace Neo4j.Driver.IntegrationTests.Routing
     {
         private readonly IDriver _driver;
 
-        public BoltV4IT(ITestOutputHelper output, CausalClusterIntegrationTestFixture fixture)
+        public BoltV4IT(ITestOutputHelper output, CausalClusterFixture fixture)
             : base(output, fixture)
         {
             _driver = GraphDatabase.Driver(Cluster.BoltRoutingUri, Cluster.AuthToken,

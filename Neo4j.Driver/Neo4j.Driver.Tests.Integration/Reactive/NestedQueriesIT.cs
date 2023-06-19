@@ -34,7 +34,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 {
     public class NestedQueriesIT : AbstractRxIT
     {
-        public NestedQueriesIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+        public NestedQueriesIT(ITestOutputHelper output, SingleServerFixture fixture)
             : base(output, fixture)
         {
         }

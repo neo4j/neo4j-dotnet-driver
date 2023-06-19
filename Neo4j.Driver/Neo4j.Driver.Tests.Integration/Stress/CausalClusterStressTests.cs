@@ -28,15 +28,12 @@ using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress
 {
-    [Collection(CCIntegrationCollection.CollectionName)]
+    [Collection(CausalClusterCollection.CollectionName)]
     public class CausalClusterStressTests : StressTest<CausalClusterStressTests.Context>
     {
-        private readonly CausalClusterIntegrationTestFixture _cluster;
-
-        public CausalClusterStressTests(ITestOutputHelper output, CausalClusterIntegrationTestFixture cluster) :
-            base(output, cluster.Cluster.BoltRoutingUri, cluster.Cluster.AuthToken, cluster.Cluster.Configure)
+        public CausalClusterStressTests(ITestOutputHelper output, CausalClusterFixture cluster) :
+            base(output, cluster.Cluster.BoltRoutingUri, cluster.Cluster.AuthToken)
         {
-            _cluster = cluster;
         }
 
         protected override Context CreateContext()

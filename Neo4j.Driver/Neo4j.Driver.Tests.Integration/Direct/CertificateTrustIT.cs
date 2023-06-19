@@ -25,26 +25,27 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Connector.Trust;
 using Org.BouncyCastle.Pkcs;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Neo4j.Driver.IntegrationTests.Direct
 {
-    public class CertificateTrustIT : IClassFixture<CertificateTrustIT.CertificateTrustIntegrationTestFixture>
+    public class CertificateTrustIT : DirectDriverTestBase
     {
-        public StandAlone Server { get; }
-        public Pkcs12Store Pkcs12 { get; }
-
-        public CertificateTrustIT(CertificateTrustIntegrationTestFixture fixture)
+        public CertificateTrustIT(ITestOutputHelper output, SingleServerFixture fixture) : base(output, fixture)
         {
-            Server = fixture.StandAlone;
-            Pkcs12 = fixture.Pkcs12;
+            Server = fixture.SingleServerDbms;
+            Pkcs12 = (Server as TestContainerServer)?.Pkcs12Store;
         }
 
+        public ISingleServer Server { get; }
+        public Pkcs12Store Pkcs12 { get; }
+    
         [ShouldNotRunInTestKitFact]
         public async Task CertificateTrustManager_ShouldTrust()
         {
             await VerifySuccess(Server.BoltUri,
-                                new CertificateTrustManager(true, new[] {Pkcs12.GetDotnetCertificate()}), 
-                                EncryptionLevel.None);
+                new CertificateTrustManager(true, new[] {Pkcs12.GetDotnetCertificate()}),
+                EncryptionLevel.None);
         }
 
         [ShouldNotRunInTestKitFact]
@@ -55,31 +56,20 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         }
 
         [ShouldNotRunInTestKitFact]
-        public async Task
-            CertificateTrustManager_ShouldTrustIfHostnameDiffersWhenHostnameVerificationIsDisabled()
+        public Task CertificateTrustManager_ShouldTrustIfHostnameDiffersWhenHostnameVerificationIsDisabled()
         {
-            await VerifySuccess(new Uri("bolt://another.host.domain:7687"),
+            return VerifySuccess(new Uri("bolt://another.host.domain:7687"), 
                 new CertificateTrustManager(false, new[] {Pkcs12.GetDotnetCertificate()}));
         }
-
+    
         [ShouldNotRunInTestKitFact]
         public async Task CertificateTrustManager_ShouldNotTrustIfNotValid()
         {
-            try
-            {
-                var pkcs12 = CertificateUtils.CreateCert("localhost", DateTime.Now.AddYears(-1),
-                    DateTime.Now.AddDays(-1),
-                    null, null, null);
-
-                Server.RestartServerWithCertificate(pkcs12);
-
-                await VerifyFailure(Server.BoltUri,
-                    new CertificateTrustManager(true, new[] {pkcs12.GetDotnetCertificate()}));
-            }
-            finally
-            {
-                Server.RestartServerWithCertificate(Pkcs12);
-            }
+            var pkcs12 = CertificateUtils.CreateCert("localhost", DateTime.Now.AddYears(-1),
+                DateTime.Now.AddDays(-1),
+                null, null, null);
+            await VerifyFailure(Server.BoltUri,
+                new CertificateTrustManager(true, new[] {pkcs12.GetDotnetCertificate()}));
         }
 
         [ShouldNotRunInTestKitFact]
@@ -108,7 +98,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         [ShouldNotRunInTestKitFact]
         public async Task InsecureTrustManager_ShouldTrustIfHostnameDiffersWhenHostnameVerificationIsDisabled()
         {
-            await VerifySuccess(new Uri("bolt://another.host.domain:7687"), new InsecureTrustManager(false), EncryptionLevel.None);
+            await VerifySuccess(new Uri("bolt://another.host.domain:7687"), new InsecureTrustManager(false),
+                EncryptionLevel.None);
         }
 
         private async Task VerifyFailure(Uri target, TrustManager trustManager)
@@ -120,31 +111,25 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 .Contain("Failed to establish encrypted connection with server");
         }
 
-        private async Task VerifySuccess(Uri target, TrustManager trustManager, EncryptionLevel encryptionLevel = EncryptionLevel.Encrypted)
+        private async Task VerifySuccess(Uri target, TrustManager trustManager,
+            EncryptionLevel encryptionLevel = EncryptionLevel.Encrypted)
         {
             var ex = await Record.ExceptionAsync(() => TestConnectivity(target,
                 Config.Builder.WithTrustManager(trustManager).WithEncryptionLevel(encryptionLevel).Build()
             ));
+        
             ex.Should().BeNull();
         }
 
         private async Task TestConnectivity(Uri target, Config config)
         {
-            using (var driver = SetupWithCustomResolver(target, config))
-            {
-                var session = driver.AsyncSession();
-                try
-                {
-                    var cursor = await session.RunAsync("RETURN 1");
-                    var records = await cursor.ToListAsync(r => r[0].As<int>());
+            using var driver = SetupWithCustomResolver(target, config);
+            await using var session = driver.AsyncSession();
 
-                    records.Should().BeEquivalentTo(1);
-                }
-                finally
-                {
-                    await session.CloseAsync();
-                }
-            }
+            var cursor = await session.RunAsync("RETURN 1");
+            var records = await cursor.ToListAsync(r => r[0].As<int>());
+
+            records.Should().BeEquivalentTo(1);
         }
 
         private IDriver SetupWithCustomResolver(Uri overridenUri, Config config)
@@ -159,10 +144,10 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             return GraphDatabase.CreateDriver(overridenUri, config, connectionFactory);
         }
 
-        private class CustomHostResolver : IHostResolver
+        private sealed class CustomHostResolver : IHostResolver
         {
-            private readonly Uri _target;
             private readonly IHostResolver _original;
+            private readonly Uri _target;
 
             public CustomHostResolver(Uri target, IHostResolver original)
             {
@@ -178,59 +163,6 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             public Task<IPAddress[]> ResolveAsync(string hostname)
             {
                 return _original.ResolveAsync(_target.Host);
-            }
-        }
-
-        // ReSharper disable once ClassNeverInstantiated.Global
-        public class CertificateTrustIntegrationTestFixture : IDisposable
-        {
-            public StandAlone StandAlone { get; }
-            public Pkcs12Store Pkcs12 { get; }
-
-            ~CertificateTrustIntegrationTestFixture() => Dispose(false);
-
-            public CertificateTrustIntegrationTestFixture()
-            {
-                if (!BoltkitHelper.ServerAvailable())
-                {
-                    return;
-                }
-
-                try
-                {
-                    Pkcs12 = CertificateUtils.CreateCert("localhost", DateTime.Now.AddYears(-1),
-                        DateTime.Now.AddYears(1),
-                        null, null, null);
-                    StandAlone = new StandAlone(Pkcs12);
-                }
-                catch (Exception)
-                {
-                    Dispose();
-                    throw;
-                }
-            }
-
-
-            private bool _disposed = false;
-            public void Dispose()
-            {
-                Dispose(true);
-                GC.SuppressFinalize(this);
-            }
-
-            protected virtual void Dispose(bool disposing)
-			{
-                if (_disposed)
-                    return;
-
-                if(disposing)
-				{
-                    //Dispose managed state (managed objects).
-                    StandAlone?.Dispose();
-                    StandAlone?.UpdateCertificate(Pkcs12);
-                }
-
-                _disposed = true;
             }
         }
     }

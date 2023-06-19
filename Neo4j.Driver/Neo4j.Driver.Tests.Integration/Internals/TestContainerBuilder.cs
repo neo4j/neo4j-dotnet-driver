@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+// Copyright (c) 2002-2023 "Neo4j,"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -14,17 +14,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-using System;
-using Neo4j.Driver;
 
-namespace Neo4j.Driver.IntegrationTests.Internals
+using System;
+using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Images;
+
+namespace Neo4j.Driver.IntegrationTests
 {
-    public interface ISingleInstance
+    public static class TestContainerBuilder
     {
-        Uri HttpUri { get; }
-        Uri BoltUri { get; }
-        Uri BoltRoutingUri { get; }
-        string HomePath { get; }
-        IAuthToken AuthToken { get; }
+        public static ContainerBuilder ImageBase(int major, int minor, bool enterprise)
+        {
+            var enterpriseSuffix = enterprise ? "-enterprise" : String.Empty;
+            return new ContainerBuilder()
+                .WithImage(new DockerImage("library", "neo4j", $"{major}.{minor}{enterpriseSuffix}"));
+        }
     }
 }

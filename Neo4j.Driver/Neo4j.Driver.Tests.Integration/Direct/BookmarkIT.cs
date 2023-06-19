@@ -31,7 +31,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
         private IDriver Driver => Server.Driver;
 
-        public BookmarkIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
+        public BookmarkIT(ITestOutputHelper output, SingleServerFixture fixture) : base(output, fixture)
         {
         }
 

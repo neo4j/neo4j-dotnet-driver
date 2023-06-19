@@ -54,13 +54,13 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             {
                 case ZoneId zone:
                     writer.WriteStructHeader(StructSize, StructTypeWithId);
-                    writer.Write(TemporalHelpers.UtcEpochSeconds(dateTime));
+                    writer.Write(dateTime.UtcSeconds);
                     writer.Write(dateTime.Nanosecond);
                     writer.Write(zone.Id);
                     break;
                 case ZoneOffset zone:
                     writer.WriteStructHeader(StructSize, StructTypeWithOffset);
-                    writer.Write(TemporalHelpers.UtcEpochSeconds(dateTime));
+                    writer.Write(dateTime.UtcSeconds);
                     writer.Write(dateTime.Nanosecond);
                     writer.Write(zone.OffsetSeconds);
                     break;

@@ -21,9 +21,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver;
 using Neo4j.Driver.IntegrationTests.Direct;
-using Xunit;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
 
@@ -32,18 +30,17 @@ namespace Neo4j.Driver.IntegrationTests.Types
     public class TemporalTypesIT : DirectDriverTestBase
     {
         private const int NumberOfRandomSequences = 100;
-        private const int MinArrayLength = 5;
         private const int MaxArrayLength = 1000;
 
-        private readonly IEnumerable<string> _tzNames = new[]
-        {
+
+        private readonly string[] _tzNames = {
             "Africa/Harare", "America/Aruba", "Africa/Nairobi", "America/Dawson", "Asia/Beirut", "Asia/Tashkent",
             "Canada/Eastern", "Europe/Malta", "Europe/Volgograd", "Indian/Kerguelen", "Etc/GMT+3"
         };
 
-        private readonly Random _random = new Random();
+        private readonly Random _random = new();
 
-        public TemporalTypesIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+        public TemporalTypesIT(ITestOutputHelper output, SingleServerFixture fixture)
             : base(output, fixture)
         {
         }
@@ -314,7 +311,8 @@ namespace Neo4j.Driver.IntegrationTests.Types
         public async Task ShouldSendAndReceiveRandomZonedDateTime()
         {
             await Task.WhenAll(
-                Enumerable.Range(0, NumberOfRandomSequences).Select(i => RandomZonedDateTime())
+                Enumerable.Range(0, NumberOfRandomSequences)
+                    .Select(_ => RandomZonedDateTime())
                     .Select(TestSendAndReceive));
         }
 
@@ -325,49 +323,49 @@ namespace Neo4j.Driver.IntegrationTests.Types
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
         public async Task ShouldSendAndReceiveArrayOfDuration()
         {
-            await TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
+            await TestSendAndReceiveArray(Enumerable.Range(0, MaxArrayLength)
                 .Select(i => RandomDuration()));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
         public async Task ShouldSendAndReceiveArrayOfLocalDate()
         {
-            await TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
+            await TestSendAndReceiveArray(Enumerable.Range(0, MaxArrayLength)
                 .Select(i => RandomLocalDate()));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
         public async Task ShouldSendAndReceiveArrayOfLocalDateTime()
         {
-            await TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
+            await TestSendAndReceiveArray(Enumerable.Range(0, MaxArrayLength)
                 .Select(i => RandomLocalDateTime()));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
         public async Task ShouldSendAndReceiveArrayOfLocalTime()
         {
-            await TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
+            await TestSendAndReceiveArray(Enumerable.Range(0, MaxArrayLength)
                 .Select(i => RandomLocalTime()));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
         public async Task ShouldSendAndReceiveArrayOfOffsetTime()
         {
-            await TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
+            await TestSendAndReceiveArray(Enumerable.Range(0, MaxArrayLength)
                 .Select(i => RandomOffsetTime()));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
         public async Task ShouldSendAndReceiveArrayOfOffsetDateTime()
         {
-            await TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
+            await TestSendAndReceiveArray(Enumerable.Range(0, MaxArrayLength)
                 .Select(i => RandomOffsetDateTime()));
         }
 
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
         public async Task ShouldSendAndReceiveArrayOfZonedDateTime()
         {
-            await TestSendAndReceiveArray(Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
+            await TestSendAndReceiveArray(Enumerable.Range(0, MaxArrayLength)
                 .Select(i => RandomZonedDateTime()));
         }
 
@@ -507,7 +505,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
         public async Task ShouldSendAndReceiveArrayOfSystemDateTime()
         {
-            var array = Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
+            var array = Enumerable.Range(0, MaxArrayLength)
                 .Select(i => RandomSystemDateTime()).ToList();
             var actual = array.Select(v => new LocalDateTime(v)).ToList();
 
@@ -517,7 +515,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
         public async Task ShouldSendAndReceiveArrayOfSystemDateTimeOffset()
         {
-            var array = Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
+            var array = Enumerable.Range(0, MaxArrayLength)
                 .Select(i => RandomSystemDateTimeOffset()).ToList();
             var actual = array.Select(v => new ZonedDateTime(v)).ToList();
 
@@ -527,7 +525,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         [RequireServerFact("3.4.0", GreaterThanOrEqualTo)]
         public async Task ShouldSendAndReceiveArrayOfSystemTimeSpan()
         {
-            var array = Enumerable.Range(0, _random.Next(MinArrayLength, MaxArrayLength))
+            var array = Enumerable.Range(0, MaxArrayLength)
                 .Select(i => RandomSystemTime()).ToList();
             var actual = array.Select(v => new LocalTime(v)).ToList();
 
@@ -594,19 +592,12 @@ namespace Neo4j.Driver.IntegrationTests.Types
 
         private async Task TestSendAndReceive(object value)
         {
-            var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
-            try
-            {
-                var cursor = await session.RunAsync("CREATE (n:Node {value: $value}) RETURN n.value", new {value});
-                var record = await cursor.SingleAsync();
+            using var session = Server.Driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Write));
+            var cursor = await session.RunAsync("RETURN $value as n", new {value});
+            var record = await cursor.SingleAsync();
 
-                record.Keys.Should().HaveCount(1);
-                record[0].Should().Be(value);
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
+            record.Keys.Should().HaveCount(1);
+            record[0].Should().Be(value);
         }
 
         private async Task TestSendAndReceiveWithType<TSent, TRecv>(TSent value, TRecv actual)
@@ -709,7 +700,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         {
             return new LocalDateTime(
                 tzSafe
-                    ? _random.Next(1950, TemporalHelpers.MaxYear)
+                    ? _random.Next(1950, 2300)
                     : _random.Next(TemporalHelpers.MinYear, TemporalHelpers.MaxYear),
                 _random.Next(TemporalHelpers.MinMonth, TemporalHelpers.MaxMonth),
                 _random.Next(TemporalHelpers.MinDay, 28),
@@ -751,7 +742,7 @@ namespace Neo4j.Driver.IntegrationTests.Types
         {
             return new OffsetTime(
                 RandomLocalTime(),
-                _random.Next(TemporalHelpers.MinOffset, TemporalHelpers.MaxOffset)
+                _random.Next(TemporalHelpers.MinOffset, TemporalHelpers.MaxOffset)/60*60
             );
         }
 

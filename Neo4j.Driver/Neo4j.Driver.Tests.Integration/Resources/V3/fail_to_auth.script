@@ -1,6 +1,0 @@
-!: BOLT 3
-!: AUTO HELLO
-!: AUTO RESET
-!: AUTO GOODBYE
-
-S: FAILURE {"code": "Neo.ClientError.Security.Unauthorized", "message": "blabla"}

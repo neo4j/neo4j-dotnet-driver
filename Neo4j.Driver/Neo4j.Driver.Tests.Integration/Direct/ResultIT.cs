@@ -33,7 +33,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
     {
         private IDriver Driver => Server.Driver;
 
-        public ResultIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
+        public ResultIT(ITestOutputHelper output, SingleServerFixture fixture) : base(output, fixture)
         {
         }
 
@@ -57,12 +57,9 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
                 summary.QueryType.Should().Be(QueryType.WriteOnly);
 
-                var serverInfo = summary.Server;
-
-                var boltAddress = Neo4jDefaultInstallation.BoltUri.Replace("bolt://", string.Empty);
-                serverInfo.Address.Should().Be(boltAddress);
                 summary.ResultAvailableAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
                 summary.ResultConsumedAfter.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
+                ValidateServer(summary.Server);
             }
             finally
             {
@@ -177,15 +174,23 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 
                 var summary = await cursor.ConsumeAsync();
 
-                var boltAddress = Neo4jDefaultInstallation.BoltUri.Replace(Neo4jDefaultInstallation.BoltHeader, string.Empty);
                 summary.Should().NotBeNull();
                 summary.Counters.NodesCreated.Should().Be(0);
-                summary.Server.Address.Should().Contain(boltAddress);
+                ValidateServer(summary.Server);
             }
             finally
             {
                 await session.CloseAsync();
             }
+        }
+
+        private static void ValidateServer(IServerInfo serverInfo)
+        {
+            serverInfo.Should().NotBeNull();
+            serverInfo.Address.Should().NotBeNullOrEmpty();
+            serverInfo.Agent.Should().NotBeNullOrEmpty();
+            serverInfo.Version.Should().NotBeNullOrEmpty();
+            serverInfo.ProtocolVersion.Should().NotBeNullOrEmpty();
         }
 
         [RequireServerFact]
@@ -197,10 +202,9 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 var cursor = await session.RunAsync("unwind range(1,3) as n return n");
                 var summary = await cursor.ConsumeAsync();
 
-                var boltAddress = Neo4jDefaultInstallation.BoltUri.Replace(Neo4jDefaultInstallation.BoltHeader, string.Empty);
                 summary.Should().NotBeNull();
                 summary.Counters.NodesCreated.Should().Be(0);
-                summary.Server.Address.Should().Contain(boltAddress);
+                ValidateServer(summary.Server);
 
                 await AssertCannotAccessRecords(cursor);
                 await CanAccessSummary(cursor);

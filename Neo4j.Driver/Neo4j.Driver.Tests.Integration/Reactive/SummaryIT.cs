@@ -17,17 +17,18 @@
 
 using System;
 using System.Linq;
+using System.Reactive;
 using System.Reactive.Linq;
 using FluentAssertions;
 using Microsoft.Reactive.Testing;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Reactive;
-using Xunit;
 using Xunit.Abstractions;
 using Neo4j.Driver.Internal;
 using static Neo4j.Driver.IntegrationTests.VersionComparison;
 using static Neo4j.Driver.Reactive.Utils;
 using static Neo4j.Driver.Tests.Assertions;
+using Notification = Neo4j.Driver.Internal.Result.Notification;
 
 namespace Neo4j.Driver.IntegrationTests.Reactive
 {
@@ -39,7 +40,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             ~Specs() => Dispose(false);
 
-            protected Specs(ITestOutputHelper output, StandAloneIntegrationTestFixture standAlone)
+            protected Specs(ITestOutputHelper output, SingleServerFixture standAlone)
                 : base(output, standAlone)
             {
             }
@@ -49,14 +50,12 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnNonNullSummary()
             {
-                NewRunnable()
+                var summary = NewRunnable()
                     .Run("UNWIND RANGE(1,10) AS n RETURN n")
                     .Consume()
-                    .WaitForCompletion()
-                    .AssertEqual(
-                        OnNext<IResultSummary>(0, s => s != null),
-                        OnCompleted<IResultSummary>(0)
-                    );
+                    .FirstOrDefaultAsync()
+                    .Wait();
+                summary.Should().NotBeNull();
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
@@ -119,14 +118,23 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
             public void ShouldReturnUpdateStatisticsWithIndexRemove()
             {
-                // Ensure that an index exists
-                using (var session = Server.Driver.Session())
-                {
-                    session.Run("CREATE INDEX on :Label(prop)").Consume();
-                }
+                TryPrep("CREATE INDEX on :Label(prop)");
 
-                VerifySummary("DROP INDEX on :Label(prop)", null,
+                VerifySummary("DROP INDEX on :Label(prop)", null, 
                     MatchesSummary(new {Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0)}));
+            }
+
+            protected virtual void TryPrep(string query)
+            {
+                using var session = Server.Driver.Session();
+                try
+                {
+                    session.Run(query).Consume();
+                }
+                catch (Neo4jException)
+                {
+                    // ignore.
+                }
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
@@ -140,10 +148,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             public void ShouldReturnUpdateStatisticsWithConstraintRemove()
             {
                 // Ensure that a constraint exists
-                using (var session = Server.Driver.Session())
-                {
-                    session.Run("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE").Consume();
-                }
+                TryPrep("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE");
 
                 VerifySummary("DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE", null,
                     MatchesSummary(new {Counters = new Counters(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0)}));
@@ -172,8 +177,8 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                             Profile = default(IProfiledPlan)
                         }, 
                         opts => opts.Excluding(x => x.SelectedMemberPath == "Plan.OperatorType") 
-                                    .Excluding(x => x.SelectedMemberPath == "Plan.Arguments")
-                                    .Excluding(x => x.SelectedMemberPath == "Plan.Children")));
+                            .Excluding(x => x.SelectedMemberPath == "Plan.Arguments")
+                            .Excluding(x => x.SelectedMemberPath == "Plan.Children")));
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
@@ -212,39 +217,39 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             private void VerifySummary(string query, object parameters, Func<IResultSummary, bool> predicate)
             {
-                NewRunnable()
+                var summary = NewRunnable()
                     .Run(query, parameters)
                     .Consume()
-                    .WaitForCompletion()
-                    .AssertEqual(
-                        OnNext(0, predicate),
-                        OnCompleted<IResultSummary>(0)
-                    );
+                    .FirstOrDefaultAsync()
+                    .Wait();
+
+                predicate(summary).Should().BeTrue();
             }
 
             protected override void Dispose(bool disposing)
             {
                 if (_disposed)
                     return;
-
+                
                 if (disposing)
                 {
-                    using (var session = Server.Driver.Session())
+                    using var session = Server.Driver.Session();
+                
+                    var constaints = session.Run("CALL db.constraints()").ToList();
+                    foreach (var drop in constaints)
                     {
-                        foreach (var drop in session.Run("CALL db.constraints()").ToList())
+                        if (drop.Values.TryGetValue("name", out var name))
                         {
-                            if (drop.Values.TryGetValue("name", out var name))
-                            {
-                                session.Run($"DROP CONSTRAINT {name}").Consume();
-                            }
+                            session.Run($"DROP CONSTRAINT {name}").Consume();
                         }
+                    }
 
-                        foreach (var drop in session.Run("CALL db.indexes()").ToList())
+                    var indices = session.Run("CALL db.indexes()").ToList();
+                    foreach (var drop in indices)
+                    {
+                        if (drop.Values.TryGetValue("name", out var name))
                         {
-                            if (drop.Values.TryGetValue("name", out var name))
-                            {
-                                session.Run($"DROP INDEX {name}").Consume();
-                            }
+                            session.Run($"DROP INDEX {name}").Consume();
                         }
                     }
                 }
@@ -263,7 +268,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             ~Session() => Dispose(false);
 
-            public Session(ITestOutputHelper output, StandAloneIntegrationTestFixture standAlone)
+            public Session(ITestOutputHelper output, SingleServerFixture standAlone)
                 : base(output, standAlone)
             {
                 rxSession = NewSession();
@@ -281,7 +286,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
                 if (disposing)
                 {
-                    rxSession.Close<int>().WaitForCompletion();
+                    rxSession.Close<object>().ToArray().Wait();
                 }
 
                 //Mark as disposed
@@ -300,13 +305,13 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 
             ~Transaction() => Dispose(false);
 
-            public Transaction(ITestOutputHelper output, StandAloneIntegrationTestFixture standAlone)
+            public Transaction(ITestOutputHelper output, SingleServerFixture standAlone)
                 : base(output, standAlone)
             {
                 rxSession = NewSession();
                 rxTransaction = rxSession.BeginTransaction().SingleAsync().Wait();
             }
-
+            
             protected override IRxRunnable NewRunnable()
             {
                 return rxTransaction;
@@ -316,16 +321,15 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
             {
                 if (_disposed)
                     return;
-
+        
                 if (disposing)
                 {
-                    rxTransaction.Commit<int>().WaitForCompletion();
-                    rxSession.Close<int>().WaitForCompletion();
+                    rxTransaction.Commit<int>().ToList().Wait();
                 }
-
+        
                 //Mark as disposed
                 _disposed = true;
-
+        
                 base.Dispose(disposing);
             }
         }

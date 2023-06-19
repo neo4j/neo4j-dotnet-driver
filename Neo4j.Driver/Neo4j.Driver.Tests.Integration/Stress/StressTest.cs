@@ -36,8 +36,7 @@ using static Neo4j.Driver.IntegrationTests.VersionComparison;
 
 namespace Neo4j.Driver.IntegrationTests.Stress
 {
-    public abstract class StressTest<TContext> : IDisposable
-        where TContext : StressTestContext
+    public abstract class StressTest<TContext> : IDisposable where TContext : StressTestContext
     {
         private bool _disposed = false;
         private const bool LoggingEnabled = false;
@@ -111,9 +110,9 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 		#region Blocking Stress Test
 
 		[RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
-		public async Task Blocking()
+		public Task Blocking()
         {
-            await RunStressTest(LaunchBlockingWorkers);
+            return RunStressTest(LaunchBlockingWorkers);
         }
 
         private IList<IBlockingCommand<TContext>> CreateBlockingCommands()
@@ -184,7 +183,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 				AsyncFailingCommandInTx
 				AsyncFailingCommandTxFunc
 			*/
-
+            
 			var result = new List<IAsyncCommand<TContext>>
 			{
 				new AsyncReadCommandTxFunc<TContext>(_driver, false),
@@ -204,26 +203,23 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         {
             var commands = CreateAsyncCommands();
 
-            var tasks = new List<Task>();
+            var tasks = new Task[StressTestThreadCount];
             for (var i = 0; i < StressTestThreadCount; i++)
             {
-                tasks.Add(LaunchAsyncWorkerThread(context, commands));
+                tasks[i] = LaunchAsyncWorkerThread(context, commands);
             }
 
             return tasks;
         }
 
-        private static Task LaunchAsyncWorkerThread(TContext context, IList<IAsyncCommand<TContext>> commands)
+        private static async Task LaunchAsyncWorkerThread(TContext context, IList<IAsyncCommand<TContext>> commands)
         {
-            return Task.Factory.StartNew(() =>
+            while (!context.Stopped)
             {
-                while (!context.Stopped)
-                {
-                    Task.WaitAll(Enumerable.Range(1, StressTestAsyncBatchSize)
-                        .Select(_ => commands.RandomElement().ExecuteAsync(context))
-                        .ToArray());
-                }
-            }, TaskCreationOptions.LongRunning);
+                await Task.WhenAll(Enumerable.Range(1, StressTestAsyncBatchSize)
+                    .Select(_ => commands.RandomElement().ExecuteAsync(context))
+                    .ToArray());
+            }
         }
 
         #endregion
@@ -259,17 +255,14 @@ namespace Neo4j.Driver.IntegrationTests.Stress
             return tasks;
         }
 
-        private static Task LaunchRxWorkerThread(TContext context, IList<IRxCommand<TContext>> commands)
+        private static async Task LaunchRxWorkerThread(TContext context, IList<IRxCommand<TContext>> commands)
         {
-            return Task.Factory.StartNew(() =>
+            while (!context.Stopped)
             {
-                while (!context.Stopped)
-                {
-                    Task.WaitAll(Enumerable.Range(1, StressTestAsyncBatchSize)
-                        .Select(_ => commands.RandomElement().ExecuteAsync(context))
-                        .ToArray());
-                }
-            }, TaskCreationOptions.LongRunning);
+                await Task.WhenAll(Enumerable.Range(1, StressTestAsyncBatchSize)
+                    .Select(_ => commands.RandomElement().ExecuteAsync(context))
+                    .ToArray());              
+            }
         }
 
 		#endregion
@@ -287,24 +280,24 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         {
             var timer = Stopwatch.StartNew();
 
-            var session = driver.AsyncSession();
-            try
+            await using var session = driver.AsyncSession();
+            await session.WriteTransactionAsync(async txc =>
             {
                 for (var batchIndex = 0; batchIndex < batchCount; batchIndex++)
                 {
-                    await session.WriteTransactionAsync(txc => Task.WhenAll(
-                        Enumerable.Range(1, batchSize)
-                            .Select(index => (batchIndex * batchSize) + index)
-                            .Batch(batchBuffer)
-                            .Select(indices =>
-                                txc.RunAsync(CreateBatchNodesQuery(indices))
-                                    .ContinueWith(t => t.Result.ConsumeAsync()).Unwrap()).ToArray()));
+                    var queries = Enumerable.Range(1, batchSize)
+                        .Select(index => batchIndex * batchSize + index)
+                        .Batch(batchBuffer)
+                        .Select(indices => CreateBatchNodesQuery(indices))
+                        .ToArray();
+                    
+                    foreach (var query in queries)
+                    {
+                        var c = await txc.RunAsync(query);
+                        await c.ConsumeAsync();
+                    }
                 }
-            }
-            finally
-            {
-                await session.CloseAsync();
-            }
+            });
 
             _output.WriteLine("Creating nodes with Async API took: {0}ms", timer.ElapsedMilliseconds);
 
@@ -734,7 +727,7 @@ namespace Neo4j.Driver.IntegrationTests.Stress
         private async Task RunStressTest(Func<TContext, IEnumerable<Task>> launcher)
         {
             var context = CreateContext();
-            var workers = launcher(context);
+            var workers = launcher(context).ToList();
 
 			if (!workers.Any())
 				return;
@@ -746,25 +739,27 @@ namespace Neo4j.Driver.IntegrationTests.Stress
 
             PrintStats(context);
 
-            VerifyResults(context);
+            await VerifyResults(context);
         }
 
 
-        private void VerifyResults(TContext context)
+        private Task VerifyResults(TContext context)
         {
-            VerifyNodesCreated(context.CreatedNodesCount);
             VerifyReadQueryDistribution(context);
+            return VerifyNodesCreated(context.CreatedNodesCount);
         }
 
-        private void VerifyNodesCreated(long expected)
+        private async Task VerifyNodesCreated(long expected)
         {
-            using (var session = _driver.Session(o => o.WithDefaultAccessMode(AccessMode.Write)))
+            await using var session = _driver.AsyncSession(o => o.WithDefaultAccessMode(AccessMode.Read));
+            var count = await session.ReadTransactionAsync(async tx =>
             {
-                var count = session.Run("MATCH (n) RETURN count(n) as createdNodes")
-                    .Select(r => r["createdNodes"].As<long>()).Single();
-
-                count.Should().Be(expected);
-            }
+                var cursor = await tx.RunAsync("MATCH (n) RETURN count(n) as createdNodes");
+                var record = await cursor.SingleAsync();
+                return record["createdNodes"].As<long>();
+            });
+                
+            count.Should().Be(expected);
         }
 
         #endregion

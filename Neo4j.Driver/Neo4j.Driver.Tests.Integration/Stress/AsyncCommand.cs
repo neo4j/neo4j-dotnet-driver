@@ -23,40 +23,42 @@ namespace Neo4j.Driver.IntegrationTests.Stress
     public abstract class AsyncCommand<TContext> : IAsyncCommand<TContext>
         where TContext : StressTestContext
     {
-        protected readonly IDriver _driver;
-        protected readonly bool _useBookmark;
+        protected readonly IDriver Driver;
+        protected readonly bool UseBookmark;
 
         protected AsyncCommand(IDriver driver, bool useBookmark)
         {
-            _driver = driver ?? throw new ArgumentNullException(nameof(driver));
-            _useBookmark = useBookmark;
+            Driver = driver ?? throw new ArgumentNullException(nameof(driver));
+            UseBookmark = useBookmark;
         }
 
         public IAsyncSession NewSession(AccessMode mode, TContext context)
         {
-            return _driver.AsyncSession(o =>
-                o.WithDefaultAccessMode(mode)
-                    .WithBookmarks(_useBookmark ? new[] {context.Bookmark} : Array.Empty<Bookmark>()));
+            var bookmarks = UseBookmark 
+                ? new[] {context.Bookmark}
+                : Array.Empty<Bookmark>();
+            
+            return Driver.AsyncSession(o => o.WithDefaultAccessMode(mode).WithBookmarks(bookmarks));
         }
 
-        public Task<IAsyncTransaction> BeginTransaction(IAsyncSession session, TContext context)
+        public async Task<IAsyncTransaction> BeginTransaction(IAsyncSession session, TContext context)
         {
-            if (_useBookmark)
+            if (!UseBookmark)
             {
-                while (true)
+                return await session.BeginTransactionAsync();
+            }
+            
+            while (true)
+            {
+                try
                 {
-                    try
-                    {
-                        return session.BeginTransactionAsync();
-                    }
-                    catch (TransientException)
-                    {
-                        context.BookmarkFailed();
-                    }
+                    return await session.BeginTransactionAsync();
+                }
+                catch (TransientException)
+                {
+                    context.BookmarkFailed();
                 }
             }
-
-            return session.BeginTransactionAsync();
         }
 
         public abstract Task ExecuteAsync(TContext context);

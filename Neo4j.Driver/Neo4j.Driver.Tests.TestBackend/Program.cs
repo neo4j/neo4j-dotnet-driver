@@ -14,14 +14,13 @@ namespace Neo4j.Driver.Tests.TestBackend
         private static IPAddress Address = null;
         private static uint Port = 0;
         
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             var consoleTraceListener = new TextWriterTraceListener(Console.Out);
             Trace.Listeners.Add(consoleTraceListener);
 
             try
             {
-
                 ArgumentsValidation(args);
 
 				using (var connection = new Connection(Address.ToString(), Port))
@@ -29,9 +28,9 @@ namespace Neo4j.Driver.Tests.TestBackend
 					Controller controller = new Controller(connection);
 
 					try
-					{
-						controller.Process(true, e => { return true; }).Wait();
-					}
+                    {
+                        await controller.Process(true, e => true);
+                    }
 					catch (Exception ex)
 					{
 						Trace.WriteLine($"It looks like the ExceptionExtensions system has failed in an unexpected way. \n{ex}");
@@ -43,7 +42,7 @@ namespace Neo4j.Driver.Tests.TestBackend
 
 				}
             }
-            catch(System.Exception ex)
+            catch(Exception ex)
             {
                 Trace.WriteLine(ex.Message);
                 Trace.WriteLine($"Exception Details: \n {ex.StackTrace}");

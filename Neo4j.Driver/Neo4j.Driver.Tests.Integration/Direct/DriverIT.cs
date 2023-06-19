@@ -30,7 +30,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
 {
     public class DriverIT : DirectDriverTestBase
     {
-        public DriverIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture) : base(output, fixture)
+        public DriverIT(ITestOutputHelper output, SingleServerFixture fixture) : base(output, fixture)
         {
         }
 

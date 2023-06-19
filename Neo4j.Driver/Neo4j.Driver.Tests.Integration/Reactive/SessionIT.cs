@@ -34,7 +34,7 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
 {
     public class SessionIT : AbstractRxIT
     {
-        public SessionIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
+        public SessionIT(ITestOutputHelper output, SingleServerFixture fixture)
             : base(output, fixture)
         {
         }
