@@ -56,11 +56,6 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     .FirstOrDefaultAsync()
                     .Wait();
                 summary.Should().NotBeNull();
-                // .WaitForCompletion()
-                // .AssertEqual(
-                //     OnNext<IResultSummary>(0, s => s != null),
-                //     OnCompleted<IResultSummary>(0)
-                // );
             }
 
             [RequireServerFact("4.0.0", GreaterThanOrEqualTo)]
@@ -229,11 +224,6 @@ namespace Neo4j.Driver.IntegrationTests.Reactive
                     .Wait();
 
                 predicate(summary).Should().BeTrue();
-                // .WaitForCompletion()
-                // .AssertEqual(
-                //     OnNext(0, predicate),
-                //     OnCompleted<IResultSummary>(0)
-                // );
             }
 
             protected override void Dispose(bool disposing)
