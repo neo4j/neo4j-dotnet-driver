@@ -23,6 +23,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.TestUtil;
 using Xunit;
 
 namespace Neo4j.Driver.Tests
@@ -33,7 +34,7 @@ namespace Neo4j.Driver.Tests
         [MemberData(nameof(NonTransientErrors))]
         public async Task ShouldNotRetryOnNonTransientErrors(Exception error)
         {
-            var retryLogic = new AsyncRetryLogic(TimeSpan.FromSeconds(5), null);
+            var retryLogic = new AsyncRetryLogic(TimeSpan.FromSeconds(5), new TestLogger(Console.WriteLine));
             var work = CreateFailingWork(0, error);
 
             var exc = await Record.ExceptionAsync(() => retryLogic.RetryAsync(() => work.Work(null)));

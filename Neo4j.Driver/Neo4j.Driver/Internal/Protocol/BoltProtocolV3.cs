@@ -49,9 +49,24 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
 
         var message = _protocolMessageFactory.NewHelloMessage(connection, userAgent, authToken);
         var handler = _protocolHandlerFactory.NewHelloResponseHandler(connection);
-
         await connection.EnqueueAsync(message, handler).ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);
+    }
+
+    public async Task ReAuthAsync(IConnection connection, IAuthToken newAuthToken)
+    {
+        if (connection.Version < BoltProtocolVersion.V5_1)
+        {
+            throw new ClientException(
+                "Driver is connected to a server that does not support re-authorisation. " +
+                "Please upgrade to neo4j 5.5.0 or later in order to use this functionality");
+        }
+
+        await connection.EnqueueAsync(LogoffMessage.Instance, NoOpResponseHandler.Instance).ConfigureAwait(false);
+        var logon = _protocolMessageFactory.NewLogonMessage(connection, newAuthToken);
+        await connection.EnqueueAsync(logon, NoOpResponseHandler.Instance).ConfigureAwait(false);
+        // we don't sync here because the logoff/logon should be pipelined with whatever
+        // comes next from the driver
     }
 
     public async Task LogoutAsync(IConnection connection)
@@ -68,13 +83,14 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
     public async Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         IConnection connection,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks)
     {
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
 
-        ValidateImpersonatedUserForVersion(connection, impersonatedUser);
+        connection.SessionConfig = sessionConfig;
+        ValidateImpersonatedUserForVersion(connection);
 
         connection.ConfigureMode(AccessMode.Read);
 
@@ -109,7 +125,8 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         AutoCommitParams autoCommitParams,
         INotificationsConfig notificationsConfig)
     {
-        ValidateImpersonatedUserForVersion(connection, autoCommitParams.ImpersonatedUser);
+        connection.SessionConfig = autoCommitParams.SessionConfig;
+        ValidateImpersonatedUserForVersion(connection);
         ValidateDatabase(connection, autoCommitParams.Database);
         ValidateNotificationsForVersion(connection, notificationsConfig);
 
@@ -147,10 +164,11 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         INotificationsConfig notificationsConfig)
     {
-        ValidateImpersonatedUserForVersion(connection, impersonatedUser);
+        connection.SessionConfig = sessionConfig;
+        ValidateImpersonatedUserForVersion(connection);
         ValidateDatabase(connection, database);
         ValidateNotificationsForVersion(connection, notificationsConfig);
 
@@ -163,7 +181,6 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             bookmarks,
             config,
             mode,
-            impersonatedUser,
             notificationsConfig);
 
         await connection.EnqueueAsync(message, NoOpResponseHandler.Instance).ConfigureAwait(false);
@@ -212,7 +229,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         await connection.EnqueueAsync(RollbackMessage.Instance, NoOpResponseHandler.Instance).ConfigureAwait(false);
         await connection.SyncAsync().ConfigureAwait(false);
     }
-    
+
     // TODO: Refactor validation methods into a separate class or move to message classes so the checks aren't duplicated. 
     internal static void ValidateDatabase(IConnection connection, string database)
     {
@@ -229,22 +246,19 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         }
     }
 
-    internal static void ValidateImpersonatedUserForVersion(IConnection conn, string impersonatedUser)
+    internal static void ValidateImpersonatedUserForVersion(IConnection conn)
     {
-        if (conn.Version >= BoltProtocolVersion.V4_4)
-        {
-            return;
-        }
-
-        if (!string.IsNullOrWhiteSpace(impersonatedUser))
+        if (conn.Version < BoltProtocolVersion.V4_4 && !string.IsNullOrWhiteSpace(conn.SessionConfig?.ImpersonatedUser))
         {
             throw new ArgumentException(
                 $"Bolt Protocol {conn.Version} does not support impersonatedUser, " +
                 "but has been passed a non-null impersonated user string");
         }
     }
-    
-    internal static void ValidateNotificationsForVersion(IConnection connection, INotificationsConfig notificationsConfig)
+
+    internal static void ValidateNotificationsForVersion(
+        IConnection connection,
+        INotificationsConfig notificationsConfig)
     {
         if (notificationsConfig != null && connection.Version < BoltProtocolVersion.V5_2)
         {

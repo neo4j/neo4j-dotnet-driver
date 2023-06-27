@@ -65,19 +65,25 @@ internal sealed class BoltProtocol : IBoltProtocol
         return _boltProtocolV3.ResetAsync(connection);
     }
 
+    public Task ReAuthAsync(IConnection connection, IAuthToken newAuthToken)
+    {
+        return _boltProtocolV3.ReAuthAsync(connection, newAuthToken);
+    }
+
     public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         IConnection connection,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks)
     {
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
 
-        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, impersonatedUser);
+        connection.SessionConfig = sessionConfig;
+        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection);
 
         return connection.Version >= BoltProtocolVersion.V4_3
-            ? GetRoutingTableWithRouteMessageAsync(connection, database, impersonatedUser, bookmarks)
+            ? GetRoutingTableWithRouteMessageAsync(connection, database, sessionConfig?.ImpersonatedUser, bookmarks)
             : GetRoutingTableWithQueryAsync(connection, database, bookmarks);
     }
 
@@ -86,7 +92,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         AutoCommitParams autoCommitParams,
         INotificationsConfig notificationsConfig)
     {
-        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, autoCommitParams.ImpersonatedUser);
+        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection);
         BoltProtocolV3.ValidateNotificationsForVersion(connection, notificationsConfig);
 
         var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
@@ -108,6 +114,7 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         var runHandler = _protocolHandlerFactory.NewRunResponseHandler(streamBuilder, summaryBuilder);
 
+        // await connection.ReAuthAsync(autoCommitParams.SessionConfig?.AuthToken, false);
         await connection.EnqueueAsync(runMessage, runHandler).ConfigureAwait(false);
 
         if (!autoCommitParams.Reactive)
@@ -122,7 +129,6 @@ internal sealed class BoltProtocol : IBoltProtocol
         }
 
         await connection.SendAsync().ConfigureAwait(false);
-
         return streamBuilder.CreateCursor();
     }
 
@@ -131,18 +137,18 @@ internal sealed class BoltProtocol : IBoltProtocol
         string database,
         Bookmarks bookmarks,
         TransactionConfig config,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         INotificationsConfig notificationsConfig)
     {
-        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection, impersonatedUser);
+        connection.SessionConfig = sessionConfig;
+        BoltProtocolV3.ValidateImpersonatedUserForVersion(connection);
         BoltProtocolV3.ValidateNotificationsForVersion(connection, notificationsConfig);
-
         return _boltProtocolV3.BeginTransactionAsync(
             connection,
             database,
             bookmarks,
             config,
-            impersonatedUser,
+            sessionConfig,
             notificationsConfig);
     }
 
@@ -202,7 +208,6 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         var logonMessage = _protocolMessageFactory.NewLogonMessage(connection, authToken);
         await connection.EnqueueAsync(logonMessage, NoOpResponseHandler.Instance).ConfigureAwait(false);
-
         await connection.SyncAsync().ConfigureAwait(false);
     }
 
@@ -277,6 +282,7 @@ internal sealed class BoltProtocol : IBoltProtocol
     }
 
     // Internal for tests.
+
     internal Func<IResultStreamBuilder, long, long, Task> RequestMore(
         IConnection connection,
         SummaryBuilder summaryBuilder,
@@ -296,6 +302,7 @@ internal sealed class BoltProtocol : IBoltProtocol
     }
 
     // Internal for tests.
+
     internal Func<IResultStreamBuilder, long, Task> CancelRequest(
         IConnection connection,
         SummaryBuilder summaryBuilder,

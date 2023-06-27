@@ -40,7 +40,10 @@ namespace Neo4j.Driver.Tests
         [InlineData(typeof(TokenExpiredException))]
         public async Task ShouldHaveUnrecoverableErrorOnErrorAsync(Type exceptionType)
         {
-            var connection = new Mock<IConnection>().Object;
+            var connectionMock = new Mock<IConnection>();
+            connectionMock.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V5_0);
+            var connection = connectionMock.Object;
+
             var releaseManager = new Mock<IConnectionReleaseManager>().Object;
             var pooledConnection = new PooledConnection(connection, releaseManager);
             var exception = (Exception)Activator.CreateInstance(exceptionType, "Testing exception");
@@ -55,7 +58,10 @@ namespace Neo4j.Driver.Tests
         [InlineData(typeof(SocketException))]
         public async Task ShouldReturnConnectionErrorOnErrorAsync(Type exceptionType)
         {
-            var connection = new Mock<IConnection>().Object;
+            var connectionMock = new Mock<IConnection>();
+            connectionMock.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V5_0);
+            var connection = connectionMock.Object;
+            
             var releaseManager = new Mock<IConnectionReleaseManager>().Object;
             var pooledConnection = new PooledConnection(connection, releaseManager);
             var exception = (Exception)Activator.CreateInstance(exceptionType);
@@ -67,15 +73,20 @@ namespace Neo4j.Driver.Tests
         [Fact]
         public async Task ShouldCloseConnectionOnAuthorizationException()
         {
-            var connection = new Mock<IConnection>();
+            var connectionMock = new Mock<IConnection>();
+            connectionMock.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V5_0);
+            var connection = connectionMock.Object;
+
             var releaseManager = new Mock<IConnectionReleaseManager>();
-            var pooledConnection = new PooledConnection(connection.Object, releaseManager.Object);
+            var pooledConnection = new PooledConnection(
+                connection,
+                releaseManager.Object);
 
             var resultException = await Record.ExceptionAsync(
                 () =>
                     pooledConnection.OnErrorAsync(new AuthorizationException("Authorization error")));
 
-            releaseManager.Verify(rm => rm.MarkConnectionsForReauthorization(pooledConnection), Times.Once());
+            releaseManager.Verify(rm => rm.OnPoolMemberException(pooledConnection, It.IsAny<Exception>()), Times.Once());
         }
     }
 }

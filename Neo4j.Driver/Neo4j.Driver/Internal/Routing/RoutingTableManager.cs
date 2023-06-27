@@ -74,7 +74,7 @@ internal class RoutingTableManager : IRoutingTableManager
     public async Task<IRoutingTable> EnsureRoutingTableForModeAsync(
         AccessMode mode,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks)
     {
         database = database ?? string.Empty;
@@ -91,7 +91,7 @@ internal class RoutingTableManager : IRoutingTableManager
                 return existingTable;
             }
 
-            var refreshedTable = await UpdateRoutingTableAsync(mode, database, impersonatedUser, bookmarks)
+            var refreshedTable = await UpdateRoutingTableAsync(mode, database, sessionConfig, bookmarks)
                 .ConfigureAwait(false);
 
             await UpdateAsync(refreshedTable).ConfigureAwait(false);
@@ -107,7 +107,7 @@ internal class RoutingTableManager : IRoutingTableManager
     public async Task<IServerInfo> GetServerInfoAsync(Uri uri, string database)
     {
         var bufferedExceptions = new List<Exception>();
-        var conn = await _poolManager.CreateClusterConnectionAsync(uri).ConfigureAwait(false);
+        var conn = await _poolManager.CreateClusterConnectionAsync(uri, null).ConfigureAwait(false);
         if (conn == null)
         {
             throw new ServiceUnavailableException("Could not create connection");
@@ -123,7 +123,7 @@ internal class RoutingTableManager : IRoutingTableManager
             try
             {
                 var reportedConnection =
-                    await _poolManager.CreateClusterConnectionAsync(table).ConfigureAwait(false);
+                    await _poolManager.CreateClusterConnectionAsync(table, null).ConfigureAwait(false);
 
                 await reportedConnection.CloseAsync().ConfigureAwait(false);
                 return reportedConnection.Server;
@@ -218,7 +218,7 @@ internal class RoutingTableManager : IRoutingTableManager
     internal async Task<IRoutingTable> UpdateRoutingTableAsync(
         AccessMode mode,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks)
     {
         if (database == null)
@@ -247,7 +247,7 @@ internal class RoutingTableManager : IRoutingTableManager
                 existingTable,
                 mode,
                 database,
-                impersonatedUser,
+                sessionConfig,
                 bookmarks,
                 triedUris)
             .ConfigureAwait(false);
@@ -268,7 +268,7 @@ internal class RoutingTableManager : IRoutingTableManager
                         existingTable,
                         mode,
                         database,
-                        impersonatedUser,
+                        sessionConfig,
                         bookmarks)
                     .ConfigureAwait(false);
 
@@ -290,7 +290,7 @@ internal class RoutingTableManager : IRoutingTableManager
         IRoutingTable routingTable,
         AccessMode mode,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmarks,
         ISet<Uri> triedUris = null)
     {
@@ -305,7 +305,7 @@ internal class RoutingTableManager : IRoutingTableManager
             triedUris?.Add(router);
             try
             {
-                var conn = await _poolManager.CreateClusterConnectionAsync(router).ConfigureAwait(false);
+                var conn = await _poolManager.CreateClusterConnectionAsync(router, sessionConfig).ConfigureAwait(false);
 
                 if (conn == null)
                 {
@@ -316,7 +316,7 @@ internal class RoutingTableManager : IRoutingTableManager
                     try
                     {
                         var newRoutingTable =
-                            await _discovery.DiscoverAsync(conn, database, impersonatedUser, bookmarks)
+                            await _discovery.DiscoverAsync(conn, database, sessionConfig, bookmarks)
                                 .ConfigureAwait(false);
 
                         if (!newRoutingTable.IsStale(mode))
@@ -370,13 +370,14 @@ internal class RoutingTableManager : IRoutingTableManager
     private static bool IsFailFastException(Exception ex)
     {
         return ex
-            is FatalDiscoveryException // Neo.ClientError.Database.DatabaseNotFound
+            is (FatalDiscoveryException // Neo.ClientError.Database.DatabaseNotFound
             or InvalidBookmarkException // Neo.ClientError.Transaction.InvalidBookmark
             or InvalidBookmarkMixtureException // Neo.ClientError.Transaction.InvalidBookmarkMixture
             or ArgumentErrorException // Neo.ClientError.Statement.ArgumentError
             or ProtocolException // Neo.ClientError.Request.Invalid and (special to .NET driver) Neo.ClientError.Request.InvalidFormat
             or TypeException // Neo.ClientError.Statement.TypeError
             or SecurityException // Neo.ClientError.Security.*
+            or UnsupportedFeatureException)
             and not AuthorizationException; // except Neo.ClientError.Security.AuthorizationExpired
     }
 }

@@ -19,6 +19,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Neo4j.Driver.Auth;
+using Neo4j.Driver.Internal.Auth;
 using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
@@ -31,37 +33,32 @@ internal class NewDriver : IProtocolObject
 
     [JsonIgnore] private Controller Control { get; set; }
 
-    public override async Task Process(Controller controller)
+    public override Task Process(Controller controller)
     {
         Control = controller;
-        var authTokenData = data.authorizationToken.data;
 
-        IAuthToken authToken;
 
-        switch (authTokenData.scheme)
+        if (data.authorizationToken != null)
         {
-            case "bearer":
-                authToken = AuthTokens.Bearer(authTokenData.credentials);
-                break;
-
-            case "kerberos":
-                authToken = AuthTokens.Kerberos(authTokenData.credentials);
-                break;
-
-            default:
-                authToken = AuthTokens.Custom(
-                    authTokenData.principal,
-                    authTokenData.credentials,
-                    authTokenData.realm,
-                    authTokenData.scheme,
-                    authTokenData.parameters);
-
-                break;
+            IAuthToken authToken = data.authorizationToken.AsToken();
+           
+            Driver = GraphDatabase.Driver(data.uri, authToken, DriverConfig);
+        }
+        else
+        {
+            var authDataManager = ObjManager.GetObject(data.authTokenManagerId);
+            
+            if (authDataManager is NewExpirationBasedAuthTokenManager ebatm)
+            {
+                Driver = GraphDatabase.Driver(data.uri, ebatm.tokenManager, DriverConfig);
+            }
+            else
+            {
+                Driver = GraphDatabase.Driver(data.uri, authDataManager as IAuthTokenManager, DriverConfig);
+            }
         }
 
-        Driver = GraphDatabase.Driver(data.uri, authToken, DriverConfig);
-
-        await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     public override string Respond()
@@ -178,6 +175,7 @@ internal class NewDriver : IProtocolObject
 
         public string uri { get; set; }
         public AuthorizationToken authorizationToken { get; set; } = new();
+        public string authTokenManagerId { get; set; } = "";
         public string userAgent { get; set; }
         public bool resolverRegistered { get; set; } = false;
         public bool domainNameResolverRegistered { get; set; } = false;

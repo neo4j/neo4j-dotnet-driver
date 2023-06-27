@@ -21,7 +21,10 @@ namespace Neo4j.Driver;
 
 internal static class ReduceToList<T>
 {
-    public static List<T> Seed() => new();
+    public static List<T> Seed()
+    {
+        return new List<T>();
+    }
 
     public static List<T> Accumulate(List<T> list, T item)
     {

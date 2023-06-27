@@ -25,7 +25,7 @@ internal interface IRoutingTableManager
     Task<IRoutingTable> EnsureRoutingTableForModeAsync(
         AccessMode mode,
         string database,
-        string impersonatedUser,
+        SessionConfig sessionConfig,
         Bookmarks bookmark);
 
     Task<IServerInfo> GetServerInfoAsync(Uri uri, string database);

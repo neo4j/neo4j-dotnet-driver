@@ -17,6 +17,7 @@
 
 using System;
 using System.IO;
+using Neo4j.Driver.Auth;
 
 namespace Neo4j.Driver.IntegrationTests.Internals;
 

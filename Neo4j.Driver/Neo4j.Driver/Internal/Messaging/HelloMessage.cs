@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging.Utils;
@@ -27,6 +28,8 @@ internal sealed class HelloMessage : IRequestMessage
 {
     private const string UserAgentMetadataKey = "user_agent";
     private const string RoutingMetadataKey = "routing";
+    private const string BoltAgentMetadataKey = "bolt_agent";
+    private const string PatchBoltMetadataKey = "patch_bolt";
 
     public HelloMessage(
         BoltProtocolVersion version,
@@ -41,7 +44,10 @@ internal sealed class HelloMessage : IRequestMessage
 
         if (authToken?.Count > 0)
         {
-            Metadata = new Dictionary<string, object>(authToken) { [UserAgentMetadataKey] = userAgent };
+            Metadata = new Dictionary<string, object>(authToken)
+            {
+                [UserAgentMetadataKey] = userAgent
+            };
         }
         else
         {
@@ -55,7 +61,7 @@ internal sealed class HelloMessage : IRequestMessage
 
         if (version >= BoltProtocolVersion.V4_3 && version < BoltProtocolVersion.V5_0)
         {
-            Metadata.Add("patch_bolt", new[] { "utc" });
+            Metadata.Add(PatchBoltMetadataKey, new[] { "utc" });
         }
     }
 
@@ -70,15 +76,21 @@ internal sealed class HelloMessage : IRequestMessage
             throw new ArgumentOutOfRangeException(nameof(version), version, "should be Bolt version 5.1+");
         }
 
-        Metadata = new Dictionary<string, object>
+        Metadata = new Dictionary<string, object>(3)
         {
-            [UserAgentMetadataKey] = userAgent,
-            [RoutingMetadataKey] = routingContext
+            [UserAgentMetadataKey] = userAgent
         };
+
+        Metadata[RoutingMetadataKey] = routingContext;
 
         if (version >= BoltProtocolVersion.V5_2)
         {
             NotificationsMetadataWriter.AddNotificationsConfigToMetadata(Metadata, notificationsConfig);
+        }
+
+        if (version >= BoltProtocolVersion.V5_3)
+        {
+            Metadata.Add(BoltAgentMetadataKey, BoltAgentBuilder.Agent);
         }
     }
 

@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Routing;
@@ -28,6 +29,14 @@ namespace Neo4j.Driver;
 public static class GraphDatabase
 {
     internal const int DefaultBoltPort = 7687;
+
+    /// <summary>
+    /// Gets a new <see cref="IBookmarkManagerFactory"/>, which can construct a new default
+    /// <see cref="IBookmarkManager"/> instance.<br/> The <see cref="IBookmarkManager"/> instance should be passed to
+    /// <see cref="SessionConfigBuilder"/> when opening a new session with
+    /// <see cref="SessionConfigBuilder.WithBookmarkManager"/>.
+    /// </summary>
+    public static IBookmarkManagerFactory BookmarkManagerFactory => new BookmarkManagerFactory();
 
     /// <summary>Returns a driver for a Neo4j instance with default configuration settings.</summary>
     /// <param name="uri">
@@ -120,6 +129,11 @@ public static class GraphDatabase
         return Driver(new Uri(uri), authToken);
     }
 
+    internal static IDriver Driver(string uri, IAuthTokenManager authTokenManager)
+    {
+        return Driver(new Uri(uri), authTokenManager);
+    }
+
     /// <summary>Returns a driver for a Neo4j instance with default configuration settings.</summary>
     /// <param name="uri">
     /// The URI to the Neo4j instance. Should be in the form
@@ -135,6 +149,11 @@ public static class GraphDatabase
     public static IDriver Driver(Uri uri, IAuthToken authToken)
     {
         return Driver(uri, authToken, null);
+    }
+
+    internal static IDriver Driver(Uri uri, IAuthTokenManager authTokenManager)
+    {
+        return Driver(uri, authTokenManager, null);
     }
 
     /// <summary>Returns a driver for a Neo4j instance with custom configuration.</summary>
@@ -157,6 +176,11 @@ public static class GraphDatabase
         return Driver(new Uri(uri), authToken, action);
     }
 
+    internal static IDriver Driver(string uri, IAuthTokenManager authTokenManager, Action<ConfigBuilder> action)
+    {
+        return Driver(new Uri(uri), authTokenManager, action);
+    }
+
     /// <summary>Returns a driver for a Neo4j instance with custom configuration.</summary>
     /// <param name="uri">
     /// The URI to the Neo4j instance. Should be in the form
@@ -172,26 +196,22 @@ public static class GraphDatabase
     /// <returns>A new driver to the database instance specified by the <paramref name="uri"/>.</returns>
     public static IDriver Driver(Uri uri, IAuthToken authToken, Action<ConfigBuilder> action)
     {
+        return Driver(uri, AuthTokenManagers.Static(authToken), action);
+    }
+
+    internal static IDriver Driver(Uri uri, IAuthTokenManager authTokenManager, Action<ConfigBuilder> action)
+    {
         uri = uri ?? throw new ArgumentNullException(nameof(uri));
-        authToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
+        authTokenManager = authTokenManager ?? throw new ArgumentNullException(nameof(authTokenManager));
 
         var config = ConfigBuilders.BuildConfig(action);
 
-        var connectionSettings = new ConnectionSettings(uri, authToken, config);
+        var connectionSettings = new ConnectionSettings(uri, authTokenManager, config);
         var bufferSettings = new BufferSettings(config);
-        var connectionFactory =
-            new PooledConnectionFactory(connectionSettings, bufferSettings, config.Logger);
+        var connectionFactory = new PooledConnectionFactory(bufferSettings, config.Logger);
 
         return CreateDriver(uri, config, connectionFactory, connectionSettings);
     }
-
-    /// <summary>
-    /// Gets a new <see cref="IBookmarkManagerFactory"/>, which can construct a new default
-    /// <see cref="IBookmarkManager"/> instance.<br/>
-    /// The <see cref="IBookmarkManager"/> instance should be passed to <see cref="SessionConfigBuilder"/>
-    /// when opening a new session with <see cref="SessionConfigBuilder.WithBookmarkManager"/>.
-    /// </summary>
-    public static IBookmarkManagerFactory BookmarkManagerFactory => new BookmarkManagerFactory();
 
     internal static IDriver CreateDriver(
         Uri uri,
@@ -212,21 +232,22 @@ public static class GraphDatabase
 
         EnsureNoRoutingContextOnBolt(uri, routingContext);
 
-        var connectionProvider = parsedUri.IsRoutingUri()
+        IConnectionProvider connectionProvider = parsedUri.IsRoutingUri()
             ? new LoadBalancer(
                 connectionFactory,
                 routingSettings,
                 connectionPoolSettings,
+                connectionSettings,
                 logger,
                 config.NotificationsConfig)
             : new ConnectionPool(
-                    parsedUri,
-                    connectionFactory,
-                    connectionPoolSettings,
-                    logger,
-                    null,
-                    config.NotificationsConfig) as
-                IConnectionProvider;
+                parsedUri,
+                connectionFactory,
+                connectionPoolSettings,
+                logger,
+                connectionSettings,
+                null,
+                config.NotificationsConfig);
 
         return new Internal.Driver(
             parsedUri,

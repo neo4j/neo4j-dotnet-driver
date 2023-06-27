@@ -29,7 +29,7 @@ internal sealed class RunWithMetadataMessage : TransactionStartingMessage
         TransactionConfig config = null,
         AccessMode mode = AccessMode.Write,
         string database = null,
-        string impersonatedUser = null,
+        SessionConfig sessionConfig = null,
         INotificationsConfig notificationsConfig = null)
         : base(
             version,
@@ -39,7 +39,7 @@ internal sealed class RunWithMetadataMessage : TransactionStartingMessage
             config?.Metadata,
             mode,
             notificationsConfig,
-            impersonatedUser)
+            sessionConfig)
     {
         Query = query;
     }

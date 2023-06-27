@@ -141,7 +141,7 @@ public class TransientException : Neo4jException
     {
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override bool IsRetriable => true;
 }
 
@@ -197,7 +197,7 @@ public class ServiceUnavailableException : Neo4jException
     {
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override bool IsRetriable => true;
 }
 
@@ -222,7 +222,7 @@ public class SessionExpiredException : Neo4jException
     {
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override bool IsRetriable => true;
 }
 
@@ -246,7 +246,7 @@ public class ConnectionReadTimeoutException : Neo4jException
     {
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override bool IsRetriable => true;
 }
 
@@ -346,7 +346,7 @@ public class AuthorizationException : SecurityException
     {
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override bool IsRetriable => true;
 
     internal static bool IsAuthorizationError(string code)
@@ -362,12 +362,16 @@ public class AuthorizationException : SecurityException
 public class TokenExpiredException : SecurityException
 {
     private const string ErrorCode = "Neo.ClientError.Security.TokenExpired";
+    internal bool Notified = false;
+    internal bool Retriable = false;
 
     /// <summary>Create a new <see cref="TokenExpiredException"/> with an error message.</summary>
     /// <param name="message">The error message.</param>
     public TokenExpiredException(string message) : base(ErrorCode, message)
     {
     }
+
+    public override bool IsRetriable => Retriable;
 
     internal static bool IsTokenExpiredError(string code)
     {
@@ -572,6 +576,24 @@ public class TransactionClosedException : ClientException
     /// <summary>Create a new <see cref="TransactionClosedException"/> with an error message.</summary>
     /// <param name="message">The error message</param>
     public TransactionClosedException(string message) : base(message)
+    {
+    }
+}
+
+/// <summary>
+/// The exception that is thrown when calling an operation in the driver which uses a server feature that is not
+/// available on the connected server version.
+/// </summary>
+[DataContract]
+public class UnsupportedFeatureException : ClientException
+{
+    public override bool IsRetriable => false;
+    
+    /// <summary>
+    /// Creates a new <see cref="UnsupportedFeatureException"/> with an error message.
+    /// </summary>
+    /// <param name="message">The error message</param>
+    internal UnsupportedFeatureException(string message) : base(message)
     {
     }
 }

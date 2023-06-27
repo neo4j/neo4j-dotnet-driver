@@ -26,8 +26,17 @@ namespace Neo4j.Driver.Internal;
 internal interface IConnectionProvider : IAsyncDisposable
 {
     IDictionary<string, string> RoutingContext { get; set; }
-    Task<IConnection> AcquireAsync(AccessMode mode, string database, string impersonatedUser, Bookmarks bookmarks);
+    ConnectionSettings ConnectionSettings { get; }
+
+    Task<IConnection> AcquireAsync(
+        AccessMode mode,
+        string database,
+        SessionConfig sessionConfig,
+        Bookmarks bookmarks,
+        bool forceAuth);
+
     Task<bool> SupportsMultiDbAsync();
+    Task<bool> SupportsReAuthAsync();
     IRoutingTable GetRoutingTable(string database);
     Task<IServerInfo> VerifyConnectivityAndGetInfoAsync();
 }

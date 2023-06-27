@@ -17,6 +17,7 @@
 
 using System;
 using System.Linq;
+using Neo4j.Driver.Auth;
 using Org.BouncyCastle.Pkcs;
 
 namespace Neo4j.Driver.IntegrationTests.Internals;

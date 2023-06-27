@@ -17,11 +17,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
-namespace Neo4j.Driver.Internal;
+namespace Neo4j.Driver.Internal.Auth;
 
 /// <summary>A simple common token for authentication schemes that easily convert to an auth token map</summary>
-internal class AuthToken : IAuthToken
+internal sealed class AuthToken : IAuthToken
 {
     public const string SchemeKey = "scheme";
     public const string PrincipalKey = "principal";
@@ -31,23 +32,57 @@ internal class AuthToken : IAuthToken
 
     public AuthToken(IDictionary<string, object> content)
     {
-        Content = content ?? throw new ArgumentNullException(nameof(content));
+        content = content ?? throw new ArgumentNullException(nameof(content));
+        Content = new Dictionary<string, object>();
+        foreach (var (key, value) in content)
+        {
+            if (value is not null)
+            {
+                Content[key] = value;
+            }
+        }
     }
 
     public IDictionary<string, object> Content { get; }
+
+    public override bool Equals(object obj)
+    {
+        return obj is AuthToken a && Equals(a);
+    }
+
+    protected bool Equals(AuthToken other)
+    {
+        if (ReferenceEquals(this, other))
+        {
+            return true;
+        }
+
+        var equal =
+            Content.Count == other.Content.Count &&
+            Content.All(kvp => other.Content[kvp.Key].Equals(kvp.Value));
+
+        return equal;
+    }
+
+    public override int GetHashCode()
+    {
+        return Content != null ? Content.GetHashCode() : 0;
+    }
 }
 
 internal static class AuthTokenExtensions
 {
     public static IDictionary<string, object> AsDictionary(this IAuthToken authToken)
     {
-        if (authToken is AuthToken)
+        if (authToken is not AuthToken token)
         {
-            return ((AuthToken)authToken).Content;
+            throw new ClientException(
+                $"Unknown authentication token, `{authToken}`. Please use one of the supported " +
+                $"tokens from `{nameof(AuthTokens)}`.");
         }
 
-        throw new ClientException(
-            $"Unknown authentication token, `{authToken}`. Please use one of the supported " +
-            $"tokens from `{nameof(AuthTokens)}`.");
+        return token.Content
+            .Where(kvp => kvp.Value is not null)
+            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
     }
 }

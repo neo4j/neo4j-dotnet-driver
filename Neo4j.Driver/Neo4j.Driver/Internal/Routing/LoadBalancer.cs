@@ -41,12 +41,14 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         IPooledConnectionFactory connectionFactory,
         RoutingSettings routingSettings,
         ConnectionPoolSettings poolSettings,
+        ConnectionSettings connectionSettings,
         ILogger logger,
         INotificationsConfig notificationsConfig)
     {
         RoutingSetting = routingSettings;
         RoutingContext = RoutingSetting.RoutingContext;
 
+        ConnectionSettings = connectionSettings;
         _logger = logger;
 
         _clusterConnectionPool = new ClusterConnectionPool(
@@ -54,6 +56,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             connectionFactory,
             RoutingSetting,
             poolSettings,
+            connectionSettings,
             logger,
             notificationsConfig);
 
@@ -89,9 +92,9 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         return _clusterConnectionPool.UpdateAsync(added, removed);
     }
 
-    public Task<IConnection> CreateClusterConnectionAsync(Uri uri)
+    public Task<IConnection> CreateClusterConnectionAsync(Uri uri, SessionConfig sessionConfig)
     {
-        return CreateClusterConnectionAsync(uri, AccessMode.Write, null, null, Bookmarks.Empty);
+        return CreateClusterConnectionAsync(uri, AccessMode.Write, null, sessionConfig, Bookmarks.Empty);
     }
 
     public IDictionary<string, string> RoutingContext { get; set; }
@@ -99,15 +102,17 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
     public async Task<IConnection> AcquireAsync(
         AccessMode mode,
         string database,
-        string impersonatedUser,
-        Bookmarks bookmarks)
+        SessionConfig sessionConfig,
+        Bookmarks bookmarks,
+        bool forceAuth = false)
     {
         if (IsClosed)
         {
             throw GetDriverDisposedException(nameof(LoadBalancer));
         }
 
-        var conn = await AcquireConnectionAsync(mode, database, impersonatedUser, bookmarks).ConfigureAwait(false);
+        var conn = await AcquireConnectionAsync(mode, database, sessionConfig, bookmarks, forceAuth)
+            .ConfigureAwait(false);
 
         if (IsClosed)
         {
@@ -141,40 +146,16 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             "ensure the database is running and that there is a working network connection to it.");
     }
 
-    public async Task<bool> SupportsMultiDbAsync()
+    public ConnectionSettings ConnectionSettings { get; }
+
+    public Task<bool> SupportsMultiDbAsync()
     {
-        var uris = _initialServerAddressProvider.Get();
-        await AddConnectionPoolAsync(uris).ConfigureAwait(false);
-        var exceptions = new List<Exception>();
-        foreach (var uri in uris)
-        {
-            try
-            {
-                var connection = await CreateClusterConnectionAsync(
-                        uri,
-                        Simple.Mode,
-                        Simple.Database,
-                        null,
-                        Simple.Bookmarks)
-                    .ConfigureAwait(false);
+        return CheckConnectionSupport(c => c.SupportsMultiDatabase());
+    }
 
-                var multiDb = connection.SupportsMultiDatabase();
-                await connection.CloseAsync().ConfigureAwait(false);
-                return multiDb;
-            }
-            catch (SecurityException)
-            {
-                throw; // immediately stop
-            }
-            catch (Exception e)
-            {
-                exceptions.Add(e); // save and continue with the next server
-            }
-        }
-
-        throw new ServiceUnavailableException(
-            $"Failed to perform multi-databases feature detection with the following servers: {uris.ToContentString()} ",
-            new AggregateException(exceptions));
+    public Task<bool> SupportsReAuthAsync()
+    {
+        return CheckConnectionSupport(c => c.SupportsReAuth());
     }
 
     public IRoutingTable GetRoutingTable(string database)
@@ -205,14 +186,51 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         _routingTableManager.ForgetWriter(uri, database);
     }
 
+    private async Task<T> CheckConnectionSupport<T>(Func<IConnection, T> check)
+    {
+        var uris = _initialServerAddressProvider.Get();
+        await AddConnectionPoolAsync(uris).ConfigureAwait(false);
+        var exceptions = new List<Exception>();
+        foreach (var uri in uris)
+        {
+            try
+            {
+                var connection = await CreateClusterConnectionAsync(
+                        uri,
+                        Simple.Mode,
+                        Simple.Database,
+                        null,
+                        Simple.Bookmarks)
+                    .ConfigureAwait(false);
+
+                var result = check(connection);
+                await connection.CloseAsync().ConfigureAwait(false);
+                return result;
+            }
+            catch (SecurityException)
+            {
+                throw; // immediately stop
+            }
+            catch (Exception e)
+            {
+                exceptions.Add(e); // save and continue with the next server
+            }
+        }
+
+        throw new ServiceUnavailableException(
+            $"Failed to perform multi-databases feature detection with the following servers: {uris.ToContentString()} ",
+            new AggregateException(exceptions));
+    }
+
     private async Task<IConnection> AcquireConnectionAsync(
         AccessMode mode,
         string database,
-        string impersonatedUser,
-        Bookmarks bookmarks)
+        SessionConfig sessionConfig,
+        Bookmarks bookmarks,
+        bool forceAuth)
     {
         var routingTable = await _routingTableManager
-            .EnsureRoutingTableForModeAsync(mode, database, impersonatedUser, bookmarks)
+            .EnsureRoutingTableForModeAsync(mode, database, sessionConfig, bookmarks)
             .ConfigureAwait(false);
 
         while (true)
@@ -239,7 +257,13 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
                 break;
             }
 
-            var conn = await CreateClusterConnectionAsync(uri, mode, routingTable.Database, impersonatedUser, bookmarks)
+            var conn = await CreateClusterConnectionAsync(
+                    uri,
+                    mode,
+                    routingTable.Database,
+                    sessionConfig,
+                    bookmarks,
+                    forceAuth)
                 .ConfigureAwait(false);
 
             if (conn != null)
@@ -257,12 +281,14 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         Uri uri,
         AccessMode mode,
         string database,
-        string impersonatedUser,
-        Bookmarks bookmarks)
+        SessionConfig sessionConfig,
+        Bookmarks bookmarks,
+        bool forceAuth = false)
     {
         try
         {
-            var conn = await _clusterConnectionPool.AcquireAsync(uri, mode, database, impersonatedUser, bookmarks)
+            var conn = await _clusterConnectionPool
+                .AcquireAsync(uri, mode, database, sessionConfig, bookmarks, forceAuth)
                 .ConfigureAwait(false);
 
             if (conn != null)

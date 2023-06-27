@@ -146,7 +146,7 @@ internal class Controller
             }
             catch (TestKitProtocolException ex)
             {
-                Trace.WriteLine($"TestKit protocol exception detected: {ex.Message}");
+                Trace.WriteLine($"TestKit protocol exception detected: {ex}");
                 await ResponseWriter.WriteResponseAsync(ExceptionManager.GenerateExceptionResponse(ex));
                 storedException = ex;
                 restartConnection = true;
@@ -160,14 +160,14 @@ internal class Controller
             catch (IOException ex)
             {
                 //Handled outside of the exception manager because there is no connection to reply on.
-                Trace.WriteLine($"Socket exception detected: {ex.Message}");
+                Trace.WriteLine($"Socket exception detected: {ex}");
 
                 storedException = ex;
                 restartConnection = true;
             }
             catch (Exception ex)
             {
-                Trace.WriteLine($"General exception detected, restarting connection: {ex.Message}");
+                Trace.WriteLine($"General exception detected, restarting connection: {ex}");
                 storedException = ex;
                 restartConnection = true;
             }
