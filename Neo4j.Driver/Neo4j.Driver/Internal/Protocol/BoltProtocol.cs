@@ -22,6 +22,7 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.Internal.Telemetry;
 
 namespace Neo4j.Driver.Internal;
 
@@ -107,6 +108,7 @@ internal sealed class BoltProtocol : IBoltProtocol
             autoCommitParams.FetchSize,
             autoCommitParams.Reactive);
 
+        autoCommitParams.Query.QueryApiType = QueryApiTypeIdentifier.AutoCommit;
         var runMessage = _protocolMessageFactory.NewRunWithMetadataMessage(
             connection,
             autoCommitParams,

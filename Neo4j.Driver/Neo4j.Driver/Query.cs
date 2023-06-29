@@ -17,6 +17,7 @@
 
 using System.Collections.Generic;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Telemetry;
 
 namespace Neo4j.Driver;
 
@@ -25,7 +26,7 @@ public class Query
 {
     /// <summary>Create a query with no query parameters.</summary>
     /// <param name="text">The query's text</param>
-    public Query(string text) : this(text, (object)null)
+    public Query(string text) : this(text, null)
     {
     }
 
@@ -61,4 +62,6 @@ public class Query
     {
         return $"`{Text}`, {Parameters.ToContentString()}";
     }
+
+    internal string QueryApiType { get; set; } = QueryApiTypeIdentifier.Unknown;
 }

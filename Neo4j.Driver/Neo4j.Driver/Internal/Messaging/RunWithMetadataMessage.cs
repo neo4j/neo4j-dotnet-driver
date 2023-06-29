@@ -17,10 +17,11 @@
 
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
+using Neo4j.Driver.Internal.Telemetry;
 
 namespace Neo4j.Driver.Internal.Messaging;
 
-internal sealed class RunWithMetadataMessage : TransactionStartingMessage
+internal sealed class RunWithMetadataMessage : TransactionStartingMessage, IApiUsage
 {
     public RunWithMetadataMessage(
         BoltProtocolVersion version,
@@ -42,6 +43,7 @@ internal sealed class RunWithMetadataMessage : TransactionStartingMessage
             sessionConfig)
     {
         Query = query;
+        _apiName = query.QueryApiType;
     }
 
     public Query Query { get; }
@@ -52,4 +54,8 @@ internal sealed class RunWithMetadataMessage : TransactionStartingMessage
     {
         return $"RUN {Query} {Metadata.ToContentString()}";
     }
+
+    private string _apiName;
+    /// <inheritdoc />
+    string IApiUsage.ApiName => _apiName;
 }

@@ -22,6 +22,7 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.Internal.Telemetry;
 
 namespace Neo4j.Driver.Internal;
 
@@ -130,6 +131,8 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         ValidateDatabase(connection, autoCommitParams.Database);
         ValidateNotificationsForVersion(connection, notificationsConfig);
 
+        autoCommitParams.Query.QueryApiType = QueryApiTypeIdentifier.AutoCommit;
+
         var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
         var streamBuilder = _protocolHandlerFactory.NewResultCursorBuilder(
             summaryBuilder,
@@ -193,6 +196,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         bool reactive,
         long fetchSize = Config.Infinite)
     {
+        query.QueryApiType = QueryApiTypeIdentifier.UnmanagedTransaction;
         var summaryBuilder = new SummaryBuilder(query, connection.Server);
         var streamBuilder = _protocolHandlerFactory.NewResultCursorBuilder(
             summaryBuilder,

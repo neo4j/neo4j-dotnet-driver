@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
@@ -82,6 +83,11 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
         INotificationsConfig notificationsConfig)
     {
         return new RunWithMetadataMessage(connection.Version, query, notificationsConfig: notificationsConfig);
+    }
+
+    public TelemetryMessage NewTelemetryMessage(IReadOnlyDictionary<string, int> apiUsage)
+    {
+        return new TelemetryMessage(apiUsage);
     }
 
     public PullMessage NewPullMessage(long fetchSize)
