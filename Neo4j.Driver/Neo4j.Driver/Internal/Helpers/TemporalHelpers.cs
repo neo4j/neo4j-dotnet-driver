@@ -55,6 +55,8 @@ internal static class TemporalHelpers
     private const long Days0000To1970 = DaysPerCycle * 5L - (30L * 365L + 7L);
     private const int DaysPerCycle = 146_097;
     private const int NanosecondsPerTick = 100;
+    internal const long DateTimeOffsetMinSeconds = -62_135_596_800;
+    internal const long DateTimeOffsetMaxSeconds = 253_402_300_799;
 
     public static long ToNanoOfDay(this IHasTimeComponents time)
     {
