@@ -71,6 +71,7 @@ public sealed class ZonedDateTime : TemporalValue,
         UtcSeconds = utcSeconds;
         Nanosecond = nanos;
         Zone = zone;
+        
 
         if (utcSeconds is < TemporalHelpers.DateTimeOffsetMinSeconds or > TemporalHelpers.DateTimeOffsetMaxSeconds)
         {
@@ -90,9 +91,32 @@ public sealed class ZonedDateTime : TemporalValue,
                 SetAmbiguous(AmbiguityReason.RuleLookupTruncatedToClrRange);
 
                 var utc = TemporalHelpers.EpochSecondsAndNanoToDateTime(utcSeconds, Nanosecond);
-                var offset = zone.OffsetSecondsAt(ClrFriendly(utc));
-                _offsetSeconds = offset;
-                var local = TemporalHelpers.EpochSecondsAndNanoToDateTime(utcSeconds + offset, Nanosecond);
+                try
+                {
+                    var offset = zone.OffsetSecondsAt(ClrFriendly(utc));
+                    _offsetSeconds = offset;
+                    var local = TemporalHelpers.EpochSecondsAndNanoToDateTime(utcSeconds + offset, Nanosecond);
+                    Year = local.Year;
+                    Month = local.Month;
+                    Day = local.Day;
+                    Hour = local.Hour;
+                    Minute = local.Minute;
+                    Second = local.Second;
+                }
+                catch (TimeZoneNotFoundException)
+                {
+                    UnknownZoneInfo = true;
+                }
+            }
+        }
+        else
+        {
+            try
+            {
+                var utc = DateTimeOffset.FromUnixTimeSeconds(UtcSeconds)
+                    .AddTicks(TemporalHelpers.ExtractTicksFromNanosecond(TruncatedNanos()));
+
+                var local = utc.Add(LookupOffsetAt(utc.UtcDateTime));
                 Year = local.Year;
                 Month = local.Month;
                 Day = local.Day;
@@ -100,21 +124,14 @@ public sealed class ZonedDateTime : TemporalValue,
                 Minute = local.Minute;
                 Second = local.Second;
             }
-        }
-        else
-        {
-            var utc = DateTimeOffset.FromUnixTimeSeconds(UtcSeconds)
-                .AddTicks(TemporalHelpers.ExtractTicksFromNanosecond(TruncatedNanos()));
-
-            var local = utc.Add(LookupOffsetAt(utc.UtcDateTime));
-            Year = local.Year;
-            Month = local.Month;
-            Day = local.Day;
-            Hour = local.Hour;
-            Minute = local.Minute;
-            Second = local.Second;
+            catch (TimeZoneNotFoundException)
+            {
+                UnknownZoneInfo = true;
+            }
         }
     }
+
+    public bool UnknownZoneInfo { get; set; }
 
     /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from given <see cref="DateTimeOffset"/> value.</summary>
     /// <param name="dateTimeOffset"></param>
@@ -363,15 +380,23 @@ public sealed class ZonedDateTime : TemporalValue,
             }
             else
             {
-                SetAmbiguous(
-                    AmbiguityReason.UnspecifiedDateTimeKind |
-                    AmbiguityReason.ZoneIdLookUpWithLocalTime |
-                    AmbiguityReason.RuleLookupTruncatedToClrRange);
+                try
+                {
+                    SetAmbiguous(
+                        AmbiguityReason.UnspecifiedDateTimeKind |
+                        AmbiguityReason.ZoneIdLookUpWithLocalTime |
+                        AmbiguityReason.RuleLookupTruncatedToClrRange);
 
-                var local = new LocalDateTime(year, month, day, hour, month, second, nanosecond);
-                var offset = LookupOffsetAt(ClrFriendly(local));
-                _offsetSeconds = offset.Seconds;
-                UtcSeconds = local.ToEpochSeconds() - _offsetSeconds.Value;
+                    var local = new LocalDateTime(year, month, day, hour, month, second, nanosecond);
+                    var offset = LookupOffsetAt(ClrFriendly(local));
+                    _offsetSeconds = offset.Seconds;
+                    UtcSeconds = local.ToEpochSeconds() - _offsetSeconds.Value;
+                }
+                catch (TimeZoneNotFoundException)
+                {
+                    UnknownZoneInfo = true;
+                }
+ 
             }
         }
         else
@@ -395,15 +420,22 @@ public sealed class ZonedDateTime : TemporalValue,
             }
             else
             {
-                SetAmbiguous(AmbiguityReason.UnspecifiedDateTimeKind | AmbiguityReason.ZoneIdLookUpWithLocalTime);
-                var local = new DateTime(Year, Month, Day, Hour, Minute, Second, DateTimeKind.Unspecified)
-                    .AddTicks(TemporalHelpers.ExtractTicksFromNanosecond(TruncatedNanos()));
+                try
+                {
+                    SetAmbiguous(AmbiguityReason.UnspecifiedDateTimeKind | AmbiguityReason.ZoneIdLookUpWithLocalTime);
+                    var local = new DateTime(Year, Month, Day, Hour, Minute, Second, DateTimeKind.Unspecified)
+                        .AddTicks(TemporalHelpers.ExtractTicksFromNanosecond(TruncatedNanos()));
 
-                var dto = new DateTimeOffset(Year, Month, Day, Hour, Minute, Second, LookupOffsetAt(local))
-                    .AddTicks(TemporalHelpers.ExtractTicksFromNanosecond(TruncatedNanos()));
+                    var dto = new DateTimeOffset(Year, Month, Day, Hour, Minute, Second, LookupOffsetAt(local))
+                        .AddTicks(TemporalHelpers.ExtractTicksFromNanosecond(TruncatedNanos()));
 
-                _offsetSeconds = (int)dto.Offset.TotalSeconds;
-                UtcSeconds = dto.ToUnixTimeSeconds();
+                    _offsetSeconds = (int)dto.Offset.TotalSeconds;
+                    UtcSeconds = dto.ToUnixTimeSeconds();
+                }
+                catch (TimeZoneNotFoundException)
+                {
+                    UnknownZoneInfo = true;
+                }
             }
         }
     }
