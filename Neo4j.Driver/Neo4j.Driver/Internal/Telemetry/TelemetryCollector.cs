@@ -23,7 +23,7 @@ namespace Neo4j.Driver.Internal.Telemetry;
 
 internal interface ITelemetryCollector
 {
-    void CollectApiUsage(string apiName);
+    void CollectApiUsage();
     bool BatchSizeReached { get; }
     TelemetryMessage CreateMessage();
     void Clear();
@@ -35,9 +35,9 @@ internal class TelemetryCollector : ITelemetryCollector
     private readonly Counter<string> _apiUsage = new();
 
     /// <inheritdoc />
-    public void CollectApiUsage(string apiName)
+    public void CollectApiUsage()
     {
-        _apiUsage[apiName] += 1;
+        _apiUsage[Driver.QueryApiType.Value]++;
     }
 
     /// <inheritdoc />

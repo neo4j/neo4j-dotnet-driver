@@ -45,7 +45,6 @@ internal class DriverRowSource : IDriverRowSource<IRecord>
     {
         _driver = driver;
         _query = new Query(cypher);
-        _query.QueryApiType = QueryApiTypeIdentifier.DriverLevel;
     }
 
     public Task<ExecutionSummary> GetRowsAsync(

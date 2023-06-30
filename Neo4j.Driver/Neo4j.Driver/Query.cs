@@ -62,6 +62,4 @@ public class Query
     {
         return $"`{Text}`, {Parameters.ToContentString()}";
     }
-
-    internal string QueryApiType { get; set; } = QueryApiTypeIdentifier.Unknown;
 }

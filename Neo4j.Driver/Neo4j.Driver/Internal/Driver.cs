@@ -28,6 +28,8 @@ namespace Neo4j.Driver.Internal;
 
 internal sealed class Driver : IInternalDriver
 {
+    public static AsyncLocal<string> QueryApiType { get; } = new();
+
     private readonly DefaultBookmarkManager _bookmarkManager;
 
     private readonly IConnectionProvider _connectionProvider;
@@ -249,6 +251,7 @@ internal sealed class Driver : IInternalDriver
     {
         query = query ?? throw new ArgumentNullException(nameof(query));
         config ??= new QueryConfig();
+        QueryApiType.Value = QueryApiTypeIdentifier.DriverLevel;
 
         var session = AsyncSession(x => ApplyConfig(config, x));
         await using (session.ConfigureAwait(false))

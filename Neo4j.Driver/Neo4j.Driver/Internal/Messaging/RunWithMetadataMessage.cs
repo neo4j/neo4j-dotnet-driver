@@ -43,7 +43,6 @@ internal sealed class RunWithMetadataMessage : TransactionStartingMessage, IApiU
             sessionConfig)
     {
         Query = query;
-        _apiName = query.QueryApiType;
     }
 
     public Query Query { get; }
@@ -54,8 +53,4 @@ internal sealed class RunWithMetadataMessage : TransactionStartingMessage, IApiU
     {
         return $"RUN {Query} {Metadata.ToContentString()}";
     }
-
-    private string _apiName;
-    /// <inheritdoc />
-    string IApiUsage.ApiName => _apiName;
 }

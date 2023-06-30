@@ -108,7 +108,6 @@ internal sealed class BoltProtocol : IBoltProtocol
             autoCommitParams.FetchSize,
             autoCommitParams.Reactive);
 
-        autoCommitParams.Query.QueryApiType = QueryApiTypeIdentifier.AutoCommit;
         var runMessage = _protocolMessageFactory.NewRunWithMetadataMessage(
             connection,
             autoCommitParams,

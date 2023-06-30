@@ -19,5 +19,4 @@ namespace Neo4j.Driver.Internal.Telemetry;
 
 internal interface IApiUsage
 {
-    string ApiName { get; }
 }

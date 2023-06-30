@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Telemetry;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 using static Neo4j.Driver.Internal.Util.ConfigBuilders;
 
@@ -131,6 +132,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult)
     {
+        Driver.QueryApiType.Value = QueryApiTypeIdentifier.UnmanagedTransaction;
         var tx = await TryExecuteAsync(
                 _logger,
                 () => BeginTransactionWithoutLoggingAsync(_defaultMode, action, disposeUnconsumedSessionResult))
@@ -157,6 +159,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult)
     {
+        Driver.QueryApiType.Value = QueryApiTypeIdentifier.AutoCommit;
         var options = BuildTransactionConfig(action);
         var result = TryExecuteAsync(
             _logger,
@@ -292,6 +295,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         Func<IAsyncTransaction, Task<T>> work,
         Action<TransactionConfigBuilder> action)
     {
+        Driver.QueryApiType.Value = QueryApiTypeIdentifier.TransactionFunction;
         return TryExecuteAsync(
             _logger,
             () => _retryLogic.RetryAsync(

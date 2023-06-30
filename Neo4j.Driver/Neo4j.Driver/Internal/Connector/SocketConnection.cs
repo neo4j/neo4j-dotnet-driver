@@ -207,9 +207,9 @@ internal sealed class SocketConnection : IConnection
         var telemetryCollected = false;
         foreach (var message in _messages)
         {
-            if (message is IApiUsage apiUsage)
+            if (message is IApiUsage)
             {
-                _telemetryCollector.CollectApiUsage(apiUsage.ApiName);
+                _telemetryCollector.CollectApiUsage();
                 telemetryCollected = true;
             }
         }

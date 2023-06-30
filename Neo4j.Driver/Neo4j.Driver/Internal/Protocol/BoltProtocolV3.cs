@@ -131,8 +131,6 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         ValidateDatabase(connection, autoCommitParams.Database);
         ValidateNotificationsForVersion(connection, notificationsConfig);
 
-        autoCommitParams.Query.QueryApiType = QueryApiTypeIdentifier.AutoCommit;
-
         var summaryBuilder = new SummaryBuilder(autoCommitParams.Query, connection.Server);
         var streamBuilder = _protocolHandlerFactory.NewResultCursorBuilder(
             summaryBuilder,
@@ -196,7 +194,6 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         bool reactive,
         long fetchSize = Config.Infinite)
     {
-        query.QueryApiType = QueryApiTypeIdentifier.UnmanagedTransaction;
         var summaryBuilder = new SummaryBuilder(query, connection.Server);
         var streamBuilder = _protocolHandlerFactory.NewResultCursorBuilder(
             summaryBuilder,
