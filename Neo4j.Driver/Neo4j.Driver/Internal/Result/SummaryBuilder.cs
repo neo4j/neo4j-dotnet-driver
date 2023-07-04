@@ -320,13 +320,12 @@ internal class Notification : INotification
         Title = title;
         Description = description;
         Position = position;
-        Severity = severity;
         RawSeverityLevel = severity;
         RawCategory = rawCategory;
     }
 
     public string RawSeverityLevel { get; }
-    public NotificationSeverity SeverityLevel => ParseSeverity(Severity);
+    public NotificationSeverity SeverityLevel => ParseSeverity(RawSeverityLevel);
     public string RawCategory { get; }
     public NotificationCategory Category => ParseCategory(RawCategory);
     public string Code { get; }
@@ -335,7 +334,7 @@ internal class Notification : INotification
     public IInputPosition Position { get; }
 
     [Obsolete("Deprecated, Replaced by RawSeverityLevel. Will be removed in 6.0")]
-    public string Severity { get; }
+    public string Severity => RawSeverityLevel;
 
     private NotificationCategory ParseCategory(string category)
     {

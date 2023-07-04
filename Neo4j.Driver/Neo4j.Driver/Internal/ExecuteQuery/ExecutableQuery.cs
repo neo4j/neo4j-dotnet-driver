@@ -28,8 +28,6 @@ internal class ExecutableQuery<TIn, TOut> : IExecutableQuery<TIn, TOut>, IQueryR
     private readonly List<Func<TOut, bool>> _filters = new();
     private readonly Func<TIn, TOut> _mapper;
     private readonly IQueryRowSource<TIn> _rowSource;
-    private Action<TOut, TIn, TOut> _accumulateValue;
-    private Func<TOut> _reduceSeed;
 
     internal ExecutableQuery(
         IQueryRowSource<TIn> rowSource,

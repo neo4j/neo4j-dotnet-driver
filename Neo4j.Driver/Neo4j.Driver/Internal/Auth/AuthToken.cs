@@ -50,7 +50,7 @@ internal sealed class AuthToken : IAuthToken
         return obj is AuthToken a && Equals(a);
     }
 
-    protected bool Equals(AuthToken other)
+    private bool Equals(AuthToken other)
     {
         if (ReferenceEquals(this, other))
         {
