@@ -17,7 +17,6 @@
 
 using System.Collections.Generic;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.Telemetry;
 
 namespace Neo4j.Driver;
 

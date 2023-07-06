@@ -19,7 +19,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.Telemetry;
 using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver;

@@ -17,7 +17,6 @@
 
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
-using Neo4j.Driver.Internal.Telemetry;
 
 namespace Neo4j.Driver.Internal.Messaging;
 
