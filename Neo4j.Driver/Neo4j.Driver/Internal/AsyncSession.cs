@@ -132,7 +132,6 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult)
     {
-        Driver.QueryApiType.Value = QueryApiTypeIdentifier.UnmanagedTransaction;
         var tx = await TryExecuteAsync(
                 _logger,
                 () => BeginTransactionWithoutLoggingAsync(_defaultMode, action, disposeUnconsumedSessionResult))
@@ -295,7 +294,12 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         Func<IAsyncTransaction, Task<T>> work,
         Action<TransactionConfigBuilder> action)
     {
-        Driver.QueryApiType.Value = QueryApiTypeIdentifier.TransactionFunction;
+        // if the api type is not already set, set it to transaction function
+        if (string.IsNullOrEmpty(Driver.QueryApiType.Value))
+        {
+            Driver.QueryApiType.Value = QueryApiTypeIdentifier.TransactionFunction;
+        }
+
         return TryExecuteAsync(
             _logger,
             () => _retryLogic.RetryAsync(

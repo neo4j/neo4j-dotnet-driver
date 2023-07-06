@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
@@ -87,7 +88,9 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
 
     public TelemetryMessage NewTelemetryMessage(IReadOnlyDictionary<string, int> apiUsage)
     {
-        return new TelemetryMessage(apiUsage);
+        // make a copy of the data so that it represents the data at the time of creation
+        var newData = apiUsage.ToDictionary(x => x.Key, x => x.Value);
+        return new TelemetryMessage(newData);
     }
 
     public PullMessage NewPullMessage(long fetchSize)

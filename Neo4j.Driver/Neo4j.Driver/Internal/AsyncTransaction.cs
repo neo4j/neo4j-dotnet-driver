@@ -21,6 +21,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Telemetry;
 
 namespace Neo4j.Driver.Internal;
 
@@ -84,6 +85,11 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
     public override Task<IResultCursor> RunAsync(Query query)
     {
+        if (string.IsNullOrEmpty(Driver.QueryApiType.Value))
+        {
+            Driver.QueryApiType.Value = QueryApiTypeIdentifier.UnmanagedTransaction;
+        }
+
         var result = _state.RunAsync(query, _connection, _logger, _reactive, _fetchSize, out var nextState);
         _state = nextState;
         _results.Add(result);

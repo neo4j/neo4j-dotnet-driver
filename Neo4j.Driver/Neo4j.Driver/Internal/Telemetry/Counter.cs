@@ -26,10 +26,11 @@ internal class Counter<T>
     // if that key has not been set yet
     private readonly ConcurrentDictionary<T, int> _counterValues = new();
 
-    public int this[T key]
+    public int this[T key] => _counterValues.TryGetValue(key, out var value) ? value : 0;
+
+    public void Increment(T key)
     {
-        get => _counterValues.TryGetValue(key, out var value) ? value : 0;
-        set => _counterValues[key] = value;
+        _counterValues.AddOrUpdate(key, 1, (_, value) => value + 1);
     }
 
     public IReadOnlyDictionary<T, int> CounterValues => _counterValues;

@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.Linq;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 
@@ -35,4 +36,10 @@ internal class TelemetryMessage : IRequestMessage
 
     /// <inheritdoc />
     public IPackStreamSerializer Serializer => TelemetryMessageSerializer.Instance;
+
+    public override string ToString()
+    {
+        var apiStr = _api.Select(x => $"{x.Key}={x.Value}").ToList();
+        return $"TELEMETRY api=<{string.Join(", ", apiStr)}>";
+    }
 }

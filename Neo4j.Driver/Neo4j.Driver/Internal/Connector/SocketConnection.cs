@@ -203,26 +203,6 @@ internal sealed class SocketConnection : IConnection
 
     public async Task SyncAsync()
     {
-        // record telemetry if necessary
-        var telemetryCollected = false;
-        foreach (var message in _messages)
-        {
-            if (message is IApiUsage)
-            {
-                _telemetryCollector.CollectApiUsage();
-                telemetryCollected = true;
-            }
-        }
-
-        // add a telemetry message if we have enough now
-        if (telemetryCollected && _telemetryCollector.BatchSizeReached)
-        {
-            _messages.Enqueue(_telemetryCollector.CreateMessage());
-            _responsePipeline.Enqueue(NoOpResponseHandler.Instance);
-            _telemetryCollector.Clear();
-            _logger?.Debug("Added a telemetry message to the outgoing queue.");
-        }
-
         await SendAsync().ConfigureAwait(false);
         await ReceiveAsync().ConfigureAwait(false);
     }
@@ -236,8 +216,35 @@ internal sealed class SocketConnection : IConnection
         }
 
         await _sendLock.WaitAsync().ConfigureAwait(false);
+
         try
         {
+            // record telemetry if necessary
+            var telemetryCollected = false;
+
+            lock (_telemetryCollector)
+            {
+                foreach (var message in _messages)
+                {
+                    if (message is IApiUsage)
+                    {
+                        _telemetryCollector.CollectApiUsage();
+                        telemetryCollected = true;
+                        Driver.QueryApiType.Value = string.Empty;
+                    }
+                }
+
+                // add a telemetry message if we have enough now
+                if (telemetryCollected && _telemetryCollector.BatchSizeReached)
+                {
+                    var msg = _telemetryCollector.CreateMessage();
+                    _telemetryCollector.Clear();
+
+                    _messages.Enqueue(msg);
+                    _responsePipeline.Enqueue(NoOpResponseHandler.Instance);
+                }
+            }
+
             // send
             await _client.SendAsync(_messages).ConfigureAwait(false);
 

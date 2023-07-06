@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using Neo4j.Driver.Internal.Messaging;
 
@@ -31,17 +32,19 @@ internal interface ITelemetryCollector
 
 internal class TelemetryCollector : ITelemetryCollector
 {
+    private const int BatchSize = 20;
+
     public static readonly TelemetryCollector Default = new();
     private readonly Counter<string> _apiUsage = new();
 
     /// <inheritdoc />
     public void CollectApiUsage()
     {
-        _apiUsage[Driver.QueryApiType.Value]++;
+        _apiUsage.Increment(Driver.QueryApiType.Value);
     }
 
     /// <inheritdoc />
-    public bool BatchSizeReached => _apiUsage.Count >= 20;
+    public bool BatchSizeReached => _apiUsage.CounterValues.Values.Sum() >= BatchSize;
 
     /// <inheritdoc />
     public TelemetryMessage CreateMessage()
