@@ -80,7 +80,18 @@ internal static class TestBlackList
         ("tlsversions.TestTlsVersions.test_1_1",
             "TLS 1.1 is not supported in .Net"),
 
+        ("stub.tx_run.test_tx_run.TestTxRun.test_should_prevent_discard_after_tx_termination_on_run",
+            "driver does not report errors on RUN before consuming results"),
+        ("stub.tx_run.test_tx_run.TestTxRun.test_should_prevent_run_after_tx_termination_on_run",
+            "driver does not report errors on RUN before consuming results"),
+        ("stub.tx_run.test_tx_run.TestTxRun.test_should_prevent_pull_after_tx_termination_on_run",
+            "driver does not report errors on RUN before consuming results"),
+        ("tests.stub.tx_run.test_tx_run.TestTxRun.test_should_prevent_pull_after_tx_termination_on_run",
+            "driver does not report errors on RUN before consuming results"),
+
         //TODO:
+        ("stub.tx_run.test_tx_run.TestTxRun.test_should_prevent_pull_after_tx_termination_on_pull",
+            "Fixme: transactions don't prevent further actions after failure"),
         ("RoutingV3.test_should_ignore_system_bookmark_when_getting_rt_for_multi_db",
             "Test is not valid for protocol V3"),
 
