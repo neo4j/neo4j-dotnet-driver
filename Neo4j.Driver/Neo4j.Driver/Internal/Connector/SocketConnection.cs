@@ -219,31 +219,7 @@ internal sealed class SocketConnection : IConnection
 
         try
         {
-            // record telemetry if necessary
-            var telemetryCollected = false;
-
-            lock (_telemetryCollector)
-            {
-                foreach (var message in _messages)
-                {
-                    if (message is IApiUsage)
-                    {
-                        _telemetryCollector.CollectApiUsage();
-                        telemetryCollected = true;
-                        Driver.QueryApiType.Value = string.Empty;
-                    }
-                }
-
-                // add a telemetry message if we have enough now
-                if (telemetryCollected && _telemetryCollector.BatchSizeReached)
-                {
-                    var msg = _telemetryCollector.CreateMessage();
-                    _telemetryCollector.Clear();
-
-                    _messages.Enqueue(msg);
-                    _responsePipeline.Enqueue(NoOpResponseHandler.Instance);
-                }
-            }
+            CollectTelemetry();
 
             // send
             await _client.SendAsync(_messages).ConfigureAwait(false);
@@ -253,6 +229,41 @@ internal sealed class SocketConnection : IConnection
         finally
         {
             _sendLock.Release();
+        }
+    }
+
+    private void CollectTelemetry()
+    {
+        if (Version < BoltProtocolVersion.V5_4)
+        {
+            // telemetry not supported before 5.4
+            return;
+        }
+
+        lock (_telemetryCollector)
+        {
+            var telemetryCollected = false;
+
+            if(_messages.Any(m => m is IApiUsage))
+            {
+                // pipelining several RUN messages is not supported by this method since
+                // we cannot tell which RUN message the telemetry data belongs to
+                _telemetryCollector.CollectApiUsage();
+                telemetryCollected = true;
+                Driver.QueryApiType.Value = string.Empty;
+            }
+
+            // add a telemetry message if we have enough now
+            if (telemetryCollected && _telemetryCollector.BatchSizeReached)
+            {
+                // create a message and clear the collector because the metrics aren't additive
+                var msg = _telemetryCollector.CreateMessage();
+                _telemetryCollector.Clear();
+
+                // pipeline the message along with the rest of the messages
+                _messages.Enqueue(msg);
+                _responsePipeline.Enqueue(NoOpResponseHandler.Instance);
+            }
         }
     }
 
