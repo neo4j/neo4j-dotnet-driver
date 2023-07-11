@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using FluentAssertions;
 using Xunit;
 
@@ -401,5 +402,38 @@ namespace Neo4j.Driver.Tests.Types
                 testAction.Should().Throw<InvalidCastException>();
             }
         }
+
+        [Fact]
+        public void ShouldSupportUnknownZoneIds()
+        {
+            var date = new ZonedDateTime(0, 0, Zone.Of("Europe/Neo4j"));
+            // Unknown ZoneIds should not be able to be converted to a local DateTime or DateTimeOffset 
+            Record.Exception(() => date.ToDateTimeOffset()).Should().BeOfType<TimeZoneNotFoundException>();
+            Record.Exception(() => date.LocalDateTime).Should().BeOfType<TimeZoneNotFoundException>();
+            
+            // But they should be able to be converted to a UTC DateTime.
+            date.UtcDateTime.Should().Be(new DateTime(1970, 1, 1, 0, 0, 0, 0 , DateTimeKind.Utc));
+            date.ToString().Should().Be("{UtcSeconds: 0, Nanoseconds: 0, Zone: [Europe/Neo4j]}");
+            date.UtcSeconds.Should().Be(0);
+            date.Zone.Should().Be(Zone.Of("Europe/Neo4j"));
+            date.Nanosecond.Should().Be(0);
+            date.Ambiguous.Should().Be(false);
+        }
+
+        public static TheoryData<Func<ZonedDateTime>> NullZoneConstructors = new()
+        {
+            () => new ZonedDateTime(0, 0, null),
+            () => new ZonedDateTime(DateTime.Now, null),
+            () => new ZonedDateTime(new LocalDateTime(DateTime.Now), null),
+            () => new ZonedDateTime(2020, 12, 31, 12, 0, 0, null)
+        };
+        
+        [Theory]
+        [MemberData(nameof(NullZoneConstructors))]
+        public void ShouldThrowWithNullZoneId(Func<ZonedDateTime> ctor)
+        {
+            Record.Exception(ctor).Should().BeOfType<ArgumentNullException>();
+        }
+
     }
 }

@@ -70,8 +70,7 @@ public sealed class ZonedDateTime : TemporalValue,
     {
         UtcSeconds = utcSeconds;
         Nanosecond = nanos;
-        Zone = zone;
-        
+        Zone = zone ?? throw new ArgumentNullException(nameof(zone));
 
         if (utcSeconds is < TemporalHelpers.DateTimeOffsetMinSeconds or > TemporalHelpers.DateTimeOffsetMaxSeconds)
         {
@@ -246,7 +245,7 @@ public sealed class ZonedDateTime : TemporalValue,
     /// <param name="zoneId"></param>
     public ZonedDateTime(DateTime dateTime, string zoneId)
     {
-        Zone = Zone.Of(zoneId);
+        Zone = zoneId != null ? Zone.Of(zoneId) : throw new ArgumentNullException(nameof(zoneId));
         Nanosecond = TemporalHelpers.ExtractNanosecondFromTicks(dateTime.Ticks);
 
         if (dateTime.Kind == DateTimeKind.Utc)
@@ -396,7 +395,6 @@ public sealed class ZonedDateTime : TemporalValue,
                 {
                     UnknownZoneInfo = true;
                 }
- 
             }
         }
         else
@@ -475,6 +473,11 @@ public sealed class ZonedDateTime : TemporalValue,
     {
         get
         {
+            if (UnknownZoneInfo)
+            {
+                throw new TimeZoneNotFoundException();
+            }
+            
             TemporalHelpers.AssertNoTruncation(this, nameof(DateTime));
             TemporalHelpers.AssertNoOverflow(this, nameof(DateTime));
 
@@ -490,13 +493,22 @@ public sealed class ZonedDateTime : TemporalValue,
     {
         get
         {
+            DateTimeOffset dto;
+            try
+            {
+                dto = DateTimeOffset.FromUnixTimeSeconds(UtcSeconds);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                throw new ValueOverflowException(
+                    $"The value of {nameof(UtcSeconds)} is too large or small to be represented by {nameof(DateTime)}");
+            }
+
             TemporalHelpers.AssertNoTruncation(this, nameof(DateTime));
-            TemporalHelpers.AssertNoOverflow(this, nameof(DateTime));
 
-            var dateTimeOffset = DateTimeOffset.FromUnixTimeSeconds(UtcSeconds)
-                .AddTicks(TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond));
+            dto = dto.AddTicks(TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond));
 
-            return dateTimeOffset.UtcDateTime;
+            return dto.UtcDateTime;
         }
     }
 
@@ -656,6 +668,11 @@ public sealed class ZonedDateTime : TemporalValue,
     /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
     public DateTimeOffset ToDateTimeOffset()
     {
+        if (UnknownZoneInfo)
+        {
+            throw new TimeZoneNotFoundException();
+        }
+
         TemporalHelpers.AssertNoTruncation(this, nameof(DateTimeOffset));
         TemporalHelpers.AssertNoOverflow(this, nameof(DateTimeOffset));
 
@@ -698,6 +715,11 @@ public sealed class ZonedDateTime : TemporalValue,
     /// <returns>String representation of this Point.</returns>
     public override string ToString()
     {
+        if (UnknownZoneInfo)
+        {
+            return @$"{{UtcSeconds: {UtcSeconds}, Nanoseconds: {Nanosecond}, Zone: {Zone}}}"; 
+        }
+        
         var isoDate = TemporalHelpers.ToIsoDateString(Year, Month, Day);
         var isoTime = TemporalHelpers.ToIsoTimeString(Hour, Minute, Second, Nanosecond);
         return $"{isoDate}T{isoTime}{Zone}";
