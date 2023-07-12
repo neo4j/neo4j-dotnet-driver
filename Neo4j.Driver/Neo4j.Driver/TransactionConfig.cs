@@ -117,13 +117,14 @@ public sealed class TransactionConfigBuilder
     /// by the database. This functionality allows to limit query/transaction execution time. Specified timeout overrides the
     /// default timeout configured in the database using <code>dbms.transaction.timeout</code> setting. Leave this field
     /// unmodified to use default timeout configured on database. Setting a zero timeout will result in no timeout.
+    /// <para/>
+    /// If the timeout is not an exact number of milliseconds, it will be rounded up to the next millisecond.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">
-    /// If the value given to transaction timeout in milliseconds is less than
-    /// zero
+    /// If the value given to transaction timeout in milliseconds is less than zero.
     /// </exception>
-    /// <param name="timeout">the new timeout</param>
-    /// <returns>this <see cref="TransactionConfigBuilder"/> instance</returns>
+    /// <param name="timeout">The new timeout.</param>
+    /// <returns>this <see cref="TransactionConfigBuilder"/> instance.</returns>
     public TransactionConfigBuilder WithTimeout(TimeSpan? timeout)
     {
         _config.Timeout = FixSubmilliseconds(timeout);
