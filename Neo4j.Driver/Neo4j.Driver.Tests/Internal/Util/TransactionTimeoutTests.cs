@@ -28,12 +28,16 @@ namespace Neo4j.Driver.Internal.Util
         [Theory]
         [InlineData(0, 0, 0)]
         [InlineData(0, 1, 1)]
+        [InlineData(0.1, 0, 1)]
         [InlineData(1, 0, 1)]
         [InlineData(1, 1, 2)]
+        [InlineData(1.23, 0, 2)]
         [InlineData(598, 1, 599)]
+        [InlineData(598.2, 0, 599)]
         [InlineData(2000, 96, 2001)]
+        [InlineData(2000.8, 0, 2001)]
         public void ShouldRoundSubmillisecondTimeoutsToMilliseconds(
-            int milliseconds,
+            double milliseconds,
             int ticks,
             int expectedMilliseconds)
         {
