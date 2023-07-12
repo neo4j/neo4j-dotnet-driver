@@ -139,7 +139,7 @@ public sealed class TransactionConfigBuilder
 
         if (timeout.Value.Ticks % TimeSpan.TicksPerMillisecond == 0)
         {
-            return timeout.Value;
+            return timeout;
         }
 
         var result = TimeSpan.FromMilliseconds(Math.Ceiling(timeout.Value.TotalMilliseconds));
