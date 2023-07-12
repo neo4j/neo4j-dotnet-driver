@@ -88,6 +88,8 @@ internal static class TestBlackList
             "driver does not report errors on RUN before consuming results"),
         ("tests.stub.tx_run.test_tx_run.TestTxRun.test_should_prevent_pull_after_tx_termination_on_run",
             "driver does not report errors on RUN before consuming results"),
+        ("stub.tx_run.test_tx_run.TestTxRun.test_should_prevent_commit_after_tx_termination",
+            "driver does not report errors on RUN before consuming results"),
 
         //TODO:
         ("stub.tx_run.test_tx_run.TestTxRun.test_should_prevent_pull_after_tx_termination_on_pull",
