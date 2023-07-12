@@ -137,14 +137,12 @@ public sealed class TransactionConfigBuilder
             return null;
         }
 
-        var result = timeout.Value;
-
         if (timeout.Value.Ticks % TimeSpan.TicksPerMillisecond == 0)
         {
-            return result;
+            return timeout.Value;
         }
 
-        result = TimeSpan.FromMilliseconds(Math.Ceiling(timeout.Value.TotalMilliseconds));
+        var result = TimeSpan.FromMilliseconds(Math.Ceiling(timeout.Value.TotalMilliseconds));
         _logger?.Info(
             "Transaction timeout {timeout} contains sub-millisecond precision and will be rounded up to {result}.",
             timeout,
