@@ -195,8 +195,12 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
 
     private TransactionConfig BuildTransactionConfig(Action<TransactionConfigBuilder> action)
     {
-        var builder = new TransactionConfigBuilder(_logger, TransactionConfig.Default);
-        action?.Invoke(builder);
+        if (action == null)
+        {
+            return TransactionConfig.Default;
+        }
+        var builder = new TransactionConfigBuilder(_logger, new TransactionConfig());
+        action.Invoke(builder);
         return builder.Build();
     }
 
