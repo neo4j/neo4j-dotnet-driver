@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Tests
             {
                 new object[] { null },
                 new object[] { (TimeSpan?)TimeSpan.Zero },
-                new object[] { (TimeSpan?)TimeSpan.FromMilliseconds(0.1) },
+                new object[] { (TimeSpan?)TimeSpan.FromMilliseconds(1) },
                 new object[] { (TimeSpan?)TimeSpan.FromMinutes(30) },
                 new object[] { (TimeSpan?)TimeSpan.MaxValue }
             };

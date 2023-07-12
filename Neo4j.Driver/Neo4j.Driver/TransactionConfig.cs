@@ -132,9 +132,9 @@ public sealed class TransactionConfigBuilder
 
     private TimeSpan? FixSubmilliseconds(TimeSpan? timeout)
     {
-        if(timeout == null)
+        if(timeout == null || timeout == TimeSpan.MaxValue)
         {
-            return null;
+            return timeout;
         }
 
         if (timeout.Value.Ticks % TimeSpan.TicksPerMillisecond == 0)
