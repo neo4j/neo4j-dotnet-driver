@@ -49,8 +49,6 @@ public sealed class TransactionConfig
         _timeout = timeout;
     }
 
-    internal static TransactionConfigBuilder Builder => new(new TransactionConfig());
-
     /// <summary>
     /// Transaction timeout. Transactions that execute longer than the configured timeout will be terminated by the
     /// database. This functionality allows to limit query/transaction execution time. Specified timeout overrides the default
@@ -103,10 +101,14 @@ public sealed class TransactionConfig
 /// <summary>The builder to create a <see cref="TransactionConfig"/></summary>
 public sealed class TransactionConfigBuilder
 {
+    private readonly ILogger _logger;
     private readonly TransactionConfig _config;
 
-    internal TransactionConfigBuilder(TransactionConfig config)
+    internal TransactionConfigBuilder(
+        ILogger logger,
+        TransactionConfig config)
     {
+        _logger = logger;
         _config = config;
     }
 
@@ -124,8 +126,31 @@ public sealed class TransactionConfigBuilder
     /// <returns>this <see cref="TransactionConfigBuilder"/> instance</returns>
     public TransactionConfigBuilder WithTimeout(TimeSpan? timeout)
     {
-        _config.Timeout = timeout;
+        _config.Timeout = FixSubmilliseconds(timeout);
         return this;
+    }
+
+    private TimeSpan? FixSubmilliseconds(TimeSpan? timeout)
+    {
+        if(timeout == null)
+        {
+            return null;
+        }
+
+        var result = timeout.Value;
+
+        if (timeout.Value.Ticks % TimeSpan.TicksPerMillisecond == 0)
+        {
+            return result;
+        }
+
+        result = TimeSpan.FromMilliseconds(Math.Ceiling(timeout.Value.TotalMilliseconds));
+        _logger?.Info(
+            "Transaction timeout {timeout} contains sub-millisecond precision and will be rounded up to {result}.",
+            timeout,
+            result);
+
+        return result;
     }
 
     /// <summary>

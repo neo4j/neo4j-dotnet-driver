@@ -21,23 +21,6 @@ namespace Neo4j.Driver.Internal.Util;
 
 internal static class ConfigBuilders
 {
-    public static TransactionConfig BuildTransactionConfig(Action<TransactionConfigBuilder> action)
-    {
-        TransactionConfig config;
-        if (action == null)
-        {
-            config = TransactionConfig.Default;
-        }
-        else
-        {
-            var builder = TransactionConfig.Builder;
-            action.Invoke(builder);
-            config = builder.Build();
-        }
-
-        return config;
-    }
-
     public static SessionConfig BuildSessionConfig(Action<SessionConfigBuilder> action)
     {
         SessionConfig config;

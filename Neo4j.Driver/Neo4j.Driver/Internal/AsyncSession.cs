@@ -193,6 +193,13 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         return result;
     }
 
+    private TransactionConfig BuildTransactionConfig(Action<TransactionConfigBuilder> action)
+    {
+        var builder = new TransactionConfigBuilder(_logger, TransactionConfig.Default);
+        action.Invoke(builder);
+        return builder.Build();
+    }
+
     public Task<T> ReadTransactionAsync<T>(
         Func<IAsyncTransaction, Task<T>> work,
         Action<TransactionConfigBuilder> action = null)
