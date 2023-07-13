@@ -18,6 +18,7 @@
 using System;
 using System.Collections;
 using FluentAssertions;
+using Neo4j.Driver.Internal;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Types
@@ -425,6 +426,46 @@ namespace Neo4j.Driver.Tests.Types
             {
                 testAction.Should().Throw<InvalidCastException>();
             }
+        }
+
+        [Fact]
+        public void ShouldCreateMinZonedDateTime()
+        {
+            var zone = new ZonedDateTime(TemporalHelpers.MinUtcForZonedDateTime, 0, Zone.Of(0));
+            zone.Year.Should().Be(-999_999_999);
+            zone.Month.Should().Be(1);
+            zone.Day.Should().Be(1);
+            zone.Hour.Should().Be(0);
+            zone.Minute.Should().Be(0);
+            zone.Second.Should().Be(0);
+            zone.Nanosecond.Should().Be(0);
+        }
+
+        [Fact]
+        public void ShouldCreateMinZonedDateTimeFromComponents()
+        {
+            var zone = new ZonedDateTime(-999_999_999, 1, 1, 0, 0, 0, Zone.Of(0));
+            zone.UtcSeconds.Should().Be(TemporalHelpers.MinUtcForZonedDateTime);
+        }
+
+        [Fact]
+        public void ShouldCreateMaxZonedDateTime()
+        {
+            var zone = new ZonedDateTime(TemporalHelpers.MaxUtcForZonedDateTime, 0, Zone.Of(0));
+            zone.Year.Should().Be(999_999_999);
+            zone.Month.Should().Be(12);
+            zone.Day.Should().Be(31);
+            zone.Hour.Should().Be(23);
+            zone.Minute.Should().Be(59);
+            zone.Second.Should().Be(59);
+            zone.Nanosecond.Should().Be(0);
+        }
+
+        [Fact]
+        public void ShouldCreateMaxZonedDateTimeFromComponents()
+        {
+            var zone = new ZonedDateTime(999_999_999, 12, 31, 23, 59, 59, Zone.Of(0));
+            zone.UtcSeconds.Should().Be(TemporalHelpers.MaxUtcForZonedDateTime);
         }
     }
 }

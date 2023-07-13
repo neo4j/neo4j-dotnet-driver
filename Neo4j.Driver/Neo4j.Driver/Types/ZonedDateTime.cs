@@ -331,8 +331,8 @@ public sealed class ZonedDateTime : TemporalValue,
     }
 
     /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from individual date time component values</summary>
-    /// <param name="year"></param>
-    /// <param name="month"></param>
+    /// <param name="year">Year in Locale.</param>
+    /// <param name="month">Month in Locale.</param>
     /// <param name="day"></param>
     /// <param name="hour"></param>
     /// <param name="minute"></param>
@@ -448,6 +448,7 @@ public sealed class ZonedDateTime : TemporalValue,
             else
             {
                 SetAmbiguous(AmbiguityReason.UnspecifiedDateTimeKind | AmbiguityReason.ZoneIdLookUpWithLocalTime);
+                
                 var local = new DateTime(Year, Month, Day, Hour, Minute, Second, DateTimeKind.Unspecified)
                     .AddTicks(TemporalHelpers.ExtractTicksFromNanosecond(TruncatedNanos()));
 
@@ -488,15 +489,16 @@ public sealed class ZonedDateTime : TemporalValue,
     public long UtcSeconds { get; }
 
     /// <summary>
-    /// Gets the number of Ticks from the Unix Epoch (00:00:00 UTC, Thursday, 1 January 1970). Truncates Nanoseconds
+    /// Gets the number of Ticks from the Unix Epoch (00:00:00 UTC, Thursday, 1 January 1970). Truncates <see cref="Nanosecond"/>
     /// to closest tick.
     /// </summary>
-    public long Ticks => UtcSeconds * TimeSpan.TicksPerSecond + TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond);
+    public long EpochTicks => UtcSeconds * TimeSpan.TicksPerSecond + TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond);
 
     /// <summary>The time zone that this instance represents.</summary>
     public Zone Zone { get; }
 
     /// <summary>Gets a <see cref="DateTime"/> value that represents the local date and time of this instance.</summary>
+    /// <exception cref="TimeZoneNotFoundException">If <see cref="Zone"/> is not known locally.</exception>
     /// <exception cref="ValueOverflowException">If the value cannot be represented with DateTime</exception>
     /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
     public DateTime LocalDateTime
@@ -543,6 +545,7 @@ public sealed class ZonedDateTime : TemporalValue,
     }
 
     /// <summary></summary>
+    /// <exception cref="TimeZoneNotFoundException">If <see cref="Zone"/> is not known locally.</exception>
     public int OffsetSeconds => _offsetSeconds ?? LookupOffsetFromZone();
 
     /// <summary>Gets a <see cref="TimeSpan"/> value that represents the offset of this instance.</summary>
