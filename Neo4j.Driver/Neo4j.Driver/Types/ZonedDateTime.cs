@@ -46,8 +46,8 @@ public sealed class ZonedDateTime : TemporalValue,
         UnspecifiedDateTimeKind,
 
         /// <summary>
-        /// The lookup of the offset will be completed with a value truncated to the range of CLR types meaning that any
-        /// rules that may apply outside of the CLR ranges are not applied.
+        /// The lookup of the offset will be completed with a value truncated to the range of BCL types meaning that any
+        /// rules that may apply outside of the BCL ranges are not applied.
         /// </summary>
         RuleLookupTruncatedToClrRange
     }
@@ -59,13 +59,19 @@ public sealed class ZonedDateTime : TemporalValue,
     private readonly int? _offsetSeconds;
 
     /// <summary>
-    /// Create a new instance of <see cref="ZonedDateTime"/> using delta from unix epoch (1970-1-1 00:00:00.00 UTC).
-    /// <br/> Allows handling values in range for neo4j and outside of the range of CLR types (<see cref="DateTime"/>,
+    /// Create a new instance of <see cref="ZonedDateTime"/> using delta from unix epoch (1970-1-1 00:00:00.00 UTC). <br/>
+    /// Allows handling values in range for neo4j and outside of the range of BCL date types (<see cref="DateTime"/>,
     /// <see cref="DateTimeOffset"/>).
+    /// <remarks>
+    /// When <paramref name="utcSeconds"/> is outside of BCL date ranges (-62_135_596_800, 253_402_300_799) and
+    /// <paramref name="zone"/> is a <see cref="ZoneId"/> the <see cref="ZonedDateTime"/> instance will be marked as
+    /// <see cref="Ambiguous"/>.
+    /// </remarks>
+    /// <remarks></remarks>
     /// </summary>
-    /// <param name="utcSeconds">Unix epoch delta</param>
-    /// <param name="nanos"></param>
-    /// <param name="zone"></param>
+    /// <param name="utcSeconds">Seconds from unix epoch (1970-1-1 00:00:00.00 UTC).</param>
+    /// <param name="nanos">Nanoseconds of the second.</param>
+    /// <param name="zone">Zone for offsetting utc to local.</param>
     public ZonedDateTime(long utcSeconds, int nanos, Zone zone)
     {
         UtcSeconds = utcSeconds;
@@ -130,7 +136,24 @@ public sealed class ZonedDateTime : TemporalValue,
         }
     }
 
-    public bool UnknownZoneInfo { get; set; }
+    /// <summary>
+    /// Create a new instance of <see cref="ZonedDateTime"/> using delta from unix epoch (1970-1-1 00:00:00.00 UTC). <br/>
+    /// Allows handling values in range for neo4j and outside of the range of BCL date types (<see cref="DateTime"/>,
+    /// <see cref="DateTimeOffset"/>).
+    /// <remarks>
+    /// When <paramref name="ticks"/> is outside of BCL date ranges (-621_355_968_000_000_000,
+    /// 2_534_023_009_990_000_000) and <paramref name="zone"/> is a <see cref="ZoneId"/> the <see cref="ZonedDateTime"/>
+    /// instance will be marked as <see cref="Ambiguous"/>.
+    /// </remarks>
+    /// </summary>
+    /// <param name="ticks">ticks from unix epoch (1970-1-1 00:00:00.00 UTC).</param>
+    /// <param name="zone">Zone for offsetting utc to local.</param>
+    public ZonedDateTime(long ticks, Zone zone) : this(
+        ticks / TimeSpan.TicksPerSecond,
+        (int)(ticks % TimeSpan.TicksPerSecond * 100),
+        zone)
+    {
+    }
 
     /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from given <see cref="DateTimeOffset"/> value.</summary>
     /// <param name="dateTimeOffset"></param>
@@ -243,6 +266,7 @@ public sealed class ZonedDateTime : TemporalValue,
     /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from given <see cref="DateTime"/> value.</summary>
     /// <param name="dateTime"></param>
     /// <param name="zoneId"></param>
+    /// <exception cref="TimeZoneNotFoundException">When constructing </exception>
     public ZonedDateTime(DateTime dateTime, string zoneId)
     {
         Zone = zoneId != null ? Zone.Of(zoneId) : throw new ArgumentNullException(nameof(zoneId));
@@ -252,14 +276,21 @@ public sealed class ZonedDateTime : TemporalValue,
         {
             var dto = new DateTimeOffset(dateTime);
             UtcSeconds = dto.ToUnixTimeSeconds();
-            var local = dto.ToOffset(LookupOffsetAt(dto.UtcDateTime));
-            _offsetSeconds = (int)local.Offset.TotalSeconds;
-            Year = local.Year;
-            Month = local.Month;
-            Day = local.Day;
-            Hour = local.Hour;
-            Minute = local.Minute;
-            Second = local.Second;
+            try
+            {
+                var local = dto.ToOffset(LookupOffsetAt(dto.UtcDateTime));
+                _offsetSeconds = (int)local.Offset.TotalSeconds;
+                Year = local.Year;
+                Month = local.Month;
+                Day = local.Day;
+                Hour = local.Hour;
+                Minute = local.Minute;
+                Second = local.Second;
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                UnknownZoneInfo = true;
+            }
         }
         else
         {
@@ -379,22 +410,15 @@ public sealed class ZonedDateTime : TemporalValue,
             }
             else
             {
-                try
-                {
-                    SetAmbiguous(
-                        AmbiguityReason.UnspecifiedDateTimeKind |
-                        AmbiguityReason.ZoneIdLookUpWithLocalTime |
-                        AmbiguityReason.RuleLookupTruncatedToClrRange);
+                SetAmbiguous(
+                    AmbiguityReason.UnspecifiedDateTimeKind |
+                    AmbiguityReason.ZoneIdLookUpWithLocalTime |
+                    AmbiguityReason.RuleLookupTruncatedToClrRange);
 
-                    var local = new LocalDateTime(year, month, day, hour, month, second, nanosecond);
-                    var offset = LookupOffsetAt(ClrFriendly(local));
-                    _offsetSeconds = offset.Seconds;
-                    UtcSeconds = local.ToEpochSeconds() - _offsetSeconds.Value;
-                }
-                catch (TimeZoneNotFoundException)
-                {
-                    UnknownZoneInfo = true;
-                }
+                var local = new LocalDateTime(year, month, day, hour, month, second, nanosecond);
+                var offset = LookupOffsetAt(ClrFriendly(local));
+                _offsetSeconds = offset.Seconds;
+                UtcSeconds = local.ToEpochSeconds() - _offsetSeconds.Value;
             }
         }
         else
@@ -418,22 +442,15 @@ public sealed class ZonedDateTime : TemporalValue,
             }
             else
             {
-                try
-                {
-                    SetAmbiguous(AmbiguityReason.UnspecifiedDateTimeKind | AmbiguityReason.ZoneIdLookUpWithLocalTime);
-                    var local = new DateTime(Year, Month, Day, Hour, Minute, Second, DateTimeKind.Unspecified)
-                        .AddTicks(TemporalHelpers.ExtractTicksFromNanosecond(TruncatedNanos()));
+                SetAmbiguous(AmbiguityReason.UnspecifiedDateTimeKind | AmbiguityReason.ZoneIdLookUpWithLocalTime);
+                var local = new DateTime(Year, Month, Day, Hour, Minute, Second, DateTimeKind.Unspecified)
+                    .AddTicks(TemporalHelpers.ExtractTicksFromNanosecond(TruncatedNanos()));
 
-                    var dto = new DateTimeOffset(Year, Month, Day, Hour, Minute, Second, LookupOffsetAt(local))
-                        .AddTicks(TemporalHelpers.ExtractTicksFromNanosecond(TruncatedNanos()));
+                var dto = new DateTimeOffset(Year, Month, Day, Hour, Minute, Second, LookupOffsetAt(local))
+                    .AddTicks(TemporalHelpers.ExtractTicksFromNanosecond(TruncatedNanos()));
 
-                    _offsetSeconds = (int)dto.Offset.TotalSeconds;
-                    UtcSeconds = dto.ToUnixTimeSeconds();
-                }
-                catch (TimeZoneNotFoundException)
-                {
-                    UnknownZoneInfo = true;
-                }
+                _offsetSeconds = (int)dto.Offset.TotalSeconds;
+                UtcSeconds = dto.ToUnixTimeSeconds();
             }
         }
     }
@@ -451,6 +468,8 @@ public sealed class ZonedDateTime : TemporalValue,
     {
     }
 
+    public bool UnknownZoneInfo { get; set; }
+
     /// <summary>Reason why this instance is could be ambiguous.</summary>
     public AmbiguityReason Reason { get; private set; } = AmbiguityReason.None;
 
@@ -462,6 +481,12 @@ public sealed class ZonedDateTime : TemporalValue,
     /// 4.4.1 a fix to a long standing issue of not having a monotonic datetime used on construction or transmission.
     /// </summary>
     public long UtcSeconds { get; }
+
+    /// <summary>
+    /// Gets the number of Ticks from the Unix Epoch (00:00:00 UTC, Thursday, 1 January 1970). Truncates Nanoseconds
+    /// to closest tick.
+    /// </summary>
+    public long Ticks => UtcSeconds * TimeSpan.TicksPerSecond + TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond);
 
     /// <summary>The time zone that this instance represents.</summary>
     public Zone Zone { get; }
@@ -477,7 +502,7 @@ public sealed class ZonedDateTime : TemporalValue,
             {
                 throw new TimeZoneNotFoundException();
             }
-            
+
             TemporalHelpers.AssertNoTruncation(this, nameof(DateTime));
             TemporalHelpers.AssertNoOverflow(this, nameof(DateTime));
 
@@ -591,22 +616,22 @@ public sealed class ZonedDateTime : TemporalValue,
         return GetHashCode() == other.GetHashCode();
     }
 
-    /// <summary>Gets the year component of this instance.</summary>
+    /// <summary>Gets the year component of this instance in the Locale of <see cref="Zone"/>.</summary>
     public int Year { get; }
 
-    /// <summary>Gets the month component of this instance.</summary>
+    /// <summary>Gets the month component of this instance in the Locale of <see cref="Zone"/>.</summary>
     public int Month { get; }
 
-    /// <summary>Gets the day of month component of this instance.</summary>
+    /// <summary>Gets the day of month component of this instance in the Locale of <see cref="Zone"/>.</summary>
     public int Day { get; }
 
-    /// <summary>Gets the hour component of this instance.</summary>
+    /// <summary>Gets the hour component of this instance in the Locale of <see cref="Zone"/>.</summary>
     public int Hour { get; }
 
-    /// <summary>Gets the minute component of this instance.</summary>
+    /// <summary>Gets the minute component of this instance in the Locale of <see cref="Zone"/>.</summary>
     public int Minute { get; }
 
-    /// <summary>Gets the second component of this instance.</summary>
+    /// <summary>Gets the second component of this instance in the Locale of <see cref="Zone"/>.</summary>
     public int Second { get; }
 
     /// <summary>Gets the nanosecond component of this instance.</summary>
@@ -717,9 +742,9 @@ public sealed class ZonedDateTime : TemporalValue,
     {
         if (UnknownZoneInfo)
         {
-            return @$"{{UtcSeconds: {UtcSeconds}, Nanoseconds: {Nanosecond}, Zone: {Zone}}}"; 
+            return @$"{{UtcSeconds: {UtcSeconds}, Nanoseconds: {Nanosecond}, Zone: {Zone}}}";
         }
-        
+
         var isoDate = TemporalHelpers.ToIsoDateString(Year, Month, Day);
         var isoTime = TemporalHelpers.ToIsoTimeString(Hour, Minute, Second, Nanosecond);
         return $"{isoDate}T{isoTime}{Zone}";

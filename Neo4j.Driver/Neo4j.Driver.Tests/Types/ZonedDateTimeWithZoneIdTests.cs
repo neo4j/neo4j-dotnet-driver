@@ -423,11 +423,12 @@ namespace Neo4j.Driver.Tests.Types
         public static TheoryData<Func<ZonedDateTime>> NullZoneConstructors = new()
         {
             () => new ZonedDateTime(0, 0, null),
+            () => new ZonedDateTime(0, null),
             () => new ZonedDateTime(DateTime.Now, null),
             () => new ZonedDateTime(new LocalDateTime(DateTime.Now), null),
             () => new ZonedDateTime(2020, 12, 31, 12, 0, 0, null)
         };
-        
+
         [Theory]
         [MemberData(nameof(NullZoneConstructors))]
         public void ShouldThrowWithNullZoneId(Func<ZonedDateTime> ctor)
@@ -435,5 +436,18 @@ namespace Neo4j.Driver.Tests.Types
             Record.Exception(ctor).Should().BeOfType<ArgumentNullException>();
         }
 
+        public static TheoryData<Func<ZonedDateTime>> LocalConstructorsWithUnkownZoneIds = new()
+        {
+            () => new ZonedDateTime(DateTime.Now, "Europe/Neo4j"),
+            () => new ZonedDateTime(2020, 12, 31, 12, 0, 0, new ZoneId("Europe/Neo4j")),
+            () => new ZonedDateTime(new LocalDateTime(DateTime.Now), new ZoneId("Europe/Neo4j"))
+        };
+
+        [Theory]
+        [MemberData(nameof(LocalConstructorsWithUnkownZoneIds))]
+        public void ShouldThrowExceptionWhenNonMonotonicTimeProvidedAndUnknownZoneId(Func<ZonedDateTime> ctor)
+        {
+            Record.Exception(ctor).Should().BeOfType<TimeZoneNotFoundException>();
+        }
     }
 }
