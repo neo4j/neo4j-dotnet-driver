@@ -410,7 +410,7 @@ public sealed class ZonedDateTime : TemporalValue,
             if (zone is ZoneOffset zo)
             {
                 _offsetSeconds = zo.OffsetSeconds;
-                var epoch = new LocalDateTime(year, month, day, hour, month, second, nanosecond).ToEpochSeconds();
+                var epoch = new LocalDateTime(year, month, day, hour, minute, second, nanosecond).ToEpochSeconds();
                 UtcSeconds = epoch - _offsetSeconds.Value;
             }
             else
@@ -420,7 +420,7 @@ public sealed class ZonedDateTime : TemporalValue,
                     AmbiguityReason.ZoneIdLookUpWithLocalTime |
                     AmbiguityReason.RuleLookupTruncatedToClrRange);
 
-                var local = new LocalDateTime(year, month, day, hour, month, second, nanosecond);
+                var local = new LocalDateTime(year, month, day, hour, minute, second, nanosecond);
                 var offset = LookupOffsetAt(ClrFriendly(local));
                 _offsetSeconds = offset.Seconds;
                 UtcSeconds = local.ToEpochSeconds() - _offsetSeconds.Value;
@@ -434,7 +434,7 @@ public sealed class ZonedDateTime : TemporalValue,
                 var mod = Math.Abs(zo.OffsetSeconds);
                 if (mod % 60 > 0 || mod > 50400)
                 {
-                    var epoch = new LocalDateTime(year, month, day, hour, month, second, nanosecond).ToEpochSeconds();
+                    var epoch = new LocalDateTime(year, month, day, hour, minute, second, nanosecond).ToEpochSeconds();
                     UtcSeconds = epoch - _offsetSeconds.Value;
                 }
                 else

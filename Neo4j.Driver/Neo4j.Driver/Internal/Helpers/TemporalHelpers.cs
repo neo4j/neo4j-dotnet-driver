@@ -57,8 +57,8 @@ internal static class TemporalHelpers
     private const int NanosecondsPerTick = 100;
     internal const long DateTimeOffsetMinSeconds = -62_135_596_800;
     internal const long DateTimeOffsetMaxSeconds = 253_402_300_799;
-    internal const long MinUtcForZonedDateTime = -31557014167219199L;
-    internal const long MaxUtcForZonedDateTime = 31556889864403198L; 
+    internal const long MinUtcForZonedDateTime = -31557014135596800;
+    internal const long MaxUtcForZonedDateTime = 31556889832780799; 
 
     public static long ToNanoOfDay(this IHasTimeComponents time)
     {
