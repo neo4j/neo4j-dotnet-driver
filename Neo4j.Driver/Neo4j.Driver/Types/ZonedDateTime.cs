@@ -408,7 +408,7 @@ public sealed class ZonedDateTime : TemporalValue,
 
             var local = new LocalDateTime(year, month, day, hour, minute, second, nanosecond);
             var offset = LookupOffsetAt(ClrFriendly(local));
-            _offsetSeconds = offset.Seconds;
+            _offsetSeconds = (int)offset.TotalSeconds;
             UtcSeconds = local.ToEpochSeconds() - _offsetSeconds.Value;
         }
     }
@@ -685,12 +685,7 @@ public sealed class ZonedDateTime : TemporalValue,
     {
         unchecked
         {
-            var hashCode = Year;
-            hashCode = (hashCode * 397) ^ Month;
-            hashCode = (hashCode * 397) ^ Day;
-            hashCode = (hashCode * 397) ^ Hour;
-            hashCode = (hashCode * 397) ^ Second;
-            hashCode = (hashCode * 397) ^ Nanosecond;
+            var hashCode = Nanosecond;
             hashCode = (hashCode * 397) ^ Zone.GetHashCode();
             hashCode = (hashCode * 397) ^ UtcSeconds.GetHashCode();
             return hashCode;
