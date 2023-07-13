@@ -46,8 +46,8 @@ public sealed class ZonedDateTime : TemporalValue,
         UnspecifiedDateTimeKind,
 
         /// <summary>
-        /// The lookup of the offset will be completed with a value truncated to the range of BCL types meaning that any
-        /// rules that may apply outside of the BCL ranges are not applied.
+        /// The lookup of the offset will be completed with a value truncated to the range of BCL date/time types meaning that any
+        /// rules that may apply outside of the BCL date/time type range are not applied.
         /// </summary>
         RuleLookupTruncatedToClrRange
     }
@@ -60,10 +60,10 @@ public sealed class ZonedDateTime : TemporalValue,
 
     /// <summary>
     /// Create a new instance of <see cref="ZonedDateTime"/> using delta from unix epoch (1970-1-1 00:00:00.00 UTC). <br/>
-    /// Allows handling values in range for neo4j and outside of the range of BCL date types (<see cref="DateTime"/>,
+    /// Allows handling values in range for neo4j and outside of the range of BCL date/time types (<see cref="DateTime"/>,
     /// <see cref="DateTimeOffset"/>).
     /// <remarks>
-    /// When <paramref name="utcSeconds"/> is outside of BCL date ranges (-62_135_596_800, 253_402_300_799) and
+    /// When <paramref name="utcSeconds"/> is outside of BCL date/time types range (-62_135_596_800, 253_402_300_799) and
     /// <paramref name="zone"/> is a <see cref="ZoneId"/> the <see cref="ZonedDateTime"/> instance will be marked as
     /// <see cref="Ambiguous"/>.
     /// </remarks>
@@ -74,6 +74,11 @@ public sealed class ZonedDateTime : TemporalValue,
     /// <param name="zone">Zone for offsetting utc to local.</param>
     public ZonedDateTime(long utcSeconds, int nanos, Zone zone)
     {
+        if (utcSeconds is > TemporalHelpers.MaxUtcForZonedDateTime or < TemporalHelpers.MinUtcForZonedDateTime)
+        {
+            throw new ArgumentOutOfRangeException(nameof(utcSeconds));
+        }
+        
         UtcSeconds = utcSeconds;
         Nanosecond = nanos;
         Zone = zone ?? throw new ArgumentNullException(nameof(zone));

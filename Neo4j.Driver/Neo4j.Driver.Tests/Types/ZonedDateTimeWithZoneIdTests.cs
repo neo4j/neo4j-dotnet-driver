@@ -422,8 +422,8 @@ namespace Neo4j.Driver.Tests.Types
 
         public static TheoryData<Func<ZonedDateTime>> NullZoneConstructors = new()
         {
-            () => new ZonedDateTime(0, 0, null),
-            () => new ZonedDateTime(0, null),
+            () => new ZonedDateTime(0L, 0, null),
+            () => new ZonedDateTime(0L, null),
             () => new ZonedDateTime(DateTime.Now, null),
             () => new ZonedDateTime(new LocalDateTime(DateTime.Now), null),
             () => new ZonedDateTime(2020, 12, 31, 12, 0, 0, null)

@@ -57,6 +57,8 @@ internal static class TemporalHelpers
     private const int NanosecondsPerTick = 100;
     internal const long DateTimeOffsetMinSeconds = -62_135_596_800;
     internal const long DateTimeOffsetMaxSeconds = 253_402_300_799;
+    internal const long MinUtcForZonedDateTime = -31557014167219199L;
+    internal const long MaxUtcForZonedDateTime = 31556889864403198L; 
 
     public static long ToNanoOfDay(this IHasTimeComponents time)
     {
@@ -112,7 +114,7 @@ internal static class TemporalHelpers
     {
         var epochDay = FloorDiv(epochSeconds, SecondsPerDay);
         var secondsOfDay = FloorMod(epochSeconds, SecondsPerDay);
-        var nanoOfDay = secondsOfDay * NanosPerSecond + nano;
+        var nanoOfDay = secondsOfDay * NanosPerSecond + nano;   
 
         ComponentsOfEpochDays(epochDay, out var year, out var month, out var day);
         ComponentsOfNanoOfDay(nanoOfDay, out var hour, out var minute, out var second, out var nanosecond);
