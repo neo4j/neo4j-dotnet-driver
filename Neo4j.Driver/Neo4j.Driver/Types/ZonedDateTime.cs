@@ -46,8 +46,8 @@ public sealed class ZonedDateTime : TemporalValue,
         UnspecifiedDateTimeKind,
 
         /// <summary>
-        /// The lookup of the offset will be completed with a value truncated to the range of BCL date/time types meaning that any
-        /// rules that may apply outside of the BCL date/time type range are not applied.
+        /// The lookup of the offset will be completed with a value truncated to the range of BCL date/time types meaning
+        /// that any rules that may apply outside of the BCL date/time type range are not applied.
         /// </summary>
         RuleLookupTruncatedToClrRange
     }
@@ -63,8 +63,8 @@ public sealed class ZonedDateTime : TemporalValue,
     /// Allows handling values in range for neo4j and outside of the range of BCL date/time types (<see cref="DateTime"/>,
     /// <see cref="DateTimeOffset"/>).
     /// <remarks>
-    /// When <paramref name="utcSeconds"/> is outside of BCL date/time types range (-62_135_596_800, 253_402_300_799) and
-    /// <paramref name="zone"/> is a <see cref="ZoneId"/> the <see cref="ZonedDateTime"/> instance will be marked as
+    /// When <paramref name="utcSeconds"/> is outside of BCL date/time types range (-62_135_596_800, 253_402_300_799)
+    /// and <paramref name="zone"/> is a <see cref="ZoneId"/> the <see cref="ZonedDateTime"/> instance will be marked as
     /// <see cref="Ambiguous"/>.
     /// </remarks>
     /// <remarks></remarks>
@@ -78,55 +78,36 @@ public sealed class ZonedDateTime : TemporalValue,
         {
             throw new ArgumentOutOfRangeException(nameof(utcSeconds));
         }
-        
+
         UtcSeconds = utcSeconds;
         Nanosecond = nanos;
         Zone = zone ?? throw new ArgumentNullException(nameof(zone));
 
-        if (utcSeconds is < TemporalHelpers.DateTimeOffsetMinSeconds or > TemporalHelpers.DateTimeOffsetMaxSeconds)
+        if (zone is ZoneOffset zo)
         {
-            if (zone is ZoneOffset zo)
-            {
-                _offsetSeconds = zo.OffsetSeconds;
-                var local = TemporalHelpers.EpochSecondsAndNanoToDateTime(utcSeconds + zo.OffsetSeconds, Nanosecond);
-                Year = local.Year;
-                Month = local.Month;
-                Day = local.Day;
-                Hour = local.Hour;
-                Minute = local.Minute;
-                Second = local.Second;
-            }
-            else
-            {
-                SetAmbiguous(AmbiguityReason.RuleLookupTruncatedToClrRange);
-
-                var utc = TemporalHelpers.EpochSecondsAndNanoToDateTime(utcSeconds, Nanosecond);
-                try
-                {
-                    var offset = zone.OffsetSecondsAt(ClrFriendly(utc));
-                    _offsetSeconds = offset;
-                    var local = TemporalHelpers.EpochSecondsAndNanoToDateTime(utcSeconds + offset, Nanosecond);
-                    Year = local.Year;
-                    Month = local.Month;
-                    Day = local.Day;
-                    Hour = local.Hour;
-                    Minute = local.Minute;
-                    Second = local.Second;
-                }
-                catch (TimeZoneNotFoundException)
-                {
-                    UnknownZoneInfo = true;
-                }
-            }
+            _offsetSeconds = zo.OffsetSeconds;
+            var local = TemporalHelpers.EpochSecondsAndNanoToDateTime(utcSeconds + zo.OffsetSeconds, Nanosecond);
+            Year = local.Year;
+            Month = local.Month;
+            Day = local.Day;
+            Hour = local.Hour;
+            Minute = local.Minute;
+            Second = local.Second;
         }
         else
         {
+            if (utcSeconds is < TemporalHelpers.DateTimeOffsetMinSeconds
+                or > TemporalHelpers.DateTimeOffsetMaxSeconds)
+            {
+                SetAmbiguous(AmbiguityReason.RuleLookupTruncatedToClrRange);
+            }
+
+            var utc = TemporalHelpers.EpochSecondsAndNanoToDateTime(utcSeconds, Nanosecond);
             try
             {
-                var utc = DateTimeOffset.FromUnixTimeSeconds(UtcSeconds)
-                    .AddTicks(TemporalHelpers.ExtractTicksFromNanosecond(TruncatedNanos()));
-
-                var local = utc.Add(LookupOffsetAt(utc.UtcDateTime));
+                var offset = zone.OffsetSecondsAt(ClrFriendly(utc));
+                _offsetSeconds = offset;
+                var local = TemporalHelpers.EpochSecondsAndNanoToDateTime(utcSeconds + offset, Nanosecond);
                 Year = local.Year;
                 Month = local.Month;
                 Day = local.Day;
@@ -405,59 +386,30 @@ public sealed class ZonedDateTime : TemporalValue,
         Minute = minute;
         Second = second;
 
-        if (Year is > 9999 or < 1)
+        if (zone is ZoneOffset zo)
         {
-            if (zone is ZoneOffset zo)
-            {
-                _offsetSeconds = zo.OffsetSeconds;
-                var epoch = new LocalDateTime(year, month, day, hour, minute, second, nanosecond).ToEpochSeconds();
-                UtcSeconds = epoch - _offsetSeconds.Value;
-            }
-            else
+            _offsetSeconds = zo.OffsetSeconds;
+            var epoch = new LocalDateTime(year, month, day, hour, minute, second, nanosecond).ToEpochSeconds();
+            UtcSeconds = epoch - _offsetSeconds.Value;
+        }
+        else
+        {
+            if (Year is > 9999 or < 1)
             {
                 SetAmbiguous(
                     AmbiguityReason.UnspecifiedDateTimeKind |
                     AmbiguityReason.ZoneIdLookUpWithLocalTime |
                     AmbiguityReason.RuleLookupTruncatedToClrRange);
-
-                var local = new LocalDateTime(year, month, day, hour, minute, second, nanosecond);
-                var offset = LookupOffsetAt(ClrFriendly(local));
-                _offsetSeconds = offset.Seconds;
-                UtcSeconds = local.ToEpochSeconds() - _offsetSeconds.Value;
-            }
-        }
-        else
-        {
-            if (zone is ZoneOffset zo)
-            {
-                _offsetSeconds = zo.OffsetSeconds;
-                var mod = Math.Abs(zo.OffsetSeconds);
-                if (mod % 60 > 0 || mod > 50400)
-                {
-                    var epoch = new LocalDateTime(year, month, day, hour, minute, second, nanosecond).ToEpochSeconds();
-                    UtcSeconds = epoch - _offsetSeconds.Value;
-                }
-                else
-                {
-                    var dto = new DateTimeOffset(Year, Month, Day, Hour, Minute, Second, zo.Offset)
-                        .AddTicks(TemporalHelpers.ExtractTicksFromNanosecond(TruncatedNanos()));
-
-                    UtcSeconds = dto.ToUnixTimeSeconds();
-                }
             }
             else
             {
                 SetAmbiguous(AmbiguityReason.UnspecifiedDateTimeKind | AmbiguityReason.ZoneIdLookUpWithLocalTime);
-                
-                var local = new DateTime(Year, Month, Day, Hour, Minute, Second, DateTimeKind.Unspecified)
-                    .AddTicks(TemporalHelpers.ExtractTicksFromNanosecond(TruncatedNanos()));
-
-                var dto = new DateTimeOffset(Year, Month, Day, Hour, Minute, Second, LookupOffsetAt(local))
-                    .AddTicks(TemporalHelpers.ExtractTicksFromNanosecond(TruncatedNanos()));
-
-                _offsetSeconds = (int)dto.Offset.TotalSeconds;
-                UtcSeconds = dto.ToUnixTimeSeconds();
             }
+
+            var local = new LocalDateTime(year, month, day, hour, minute, second, nanosecond);
+            var offset = LookupOffsetAt(ClrFriendly(local));
+            _offsetSeconds = offset.Seconds;
+            UtcSeconds = local.ToEpochSeconds() - _offsetSeconds.Value;
         }
     }
 
@@ -489,10 +441,11 @@ public sealed class ZonedDateTime : TemporalValue,
     public long UtcSeconds { get; }
 
     /// <summary>
-    /// Gets the number of Ticks from the Unix Epoch (00:00:00 UTC, Thursday, 1 January 1970). Truncates <see cref="Nanosecond"/>
-    /// to closest tick.
+    /// Gets the number of Ticks from the Unix Epoch (00:00:00 UTC, Thursday, 1 January 1970). Truncates
+    /// <see cref="Nanosecond"/> to closest tick.
     /// </summary>
-    public long EpochTicks => UtcSeconds * TimeSpan.TicksPerSecond + TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond);
+    public long EpochTicks =>
+        UtcSeconds * TimeSpan.TicksPerSecond + TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond);
 
     /// <summary>The time zone that this instance represents.</summary>
     public Zone Zone { get; }
