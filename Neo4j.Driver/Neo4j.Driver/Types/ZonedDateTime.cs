@@ -252,7 +252,7 @@ public sealed class ZonedDateTime : TemporalValue,
     /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from given <see cref="DateTime"/> value.</summary>
     /// <param name="dateTime"></param>
     /// <param name="zoneId"></param>
-    /// <exception cref="TimeZoneNotFoundException">When constructing </exception>
+    /// <exception cref="TimeZoneNotFoundException"></exception>
     public ZonedDateTime(DateTime dateTime, string zoneId)
     {
         Zone = zoneId != null ? Zone.Of(zoneId) : throw new ArgumentNullException(nameof(zoneId));
@@ -306,6 +306,7 @@ public sealed class ZonedDateTime : TemporalValue,
     /// <param name="minute"></param>
     /// <param name="second"></param>
     /// <param name="zone"></param>
+    [Obsolete("Deperecated")]
     public ZonedDateTime(int year, int month, int day, int hour, int minute, int second, Zone zone)
         : this(year, month, day, hour, minute, second, 0, zone)
     {
@@ -320,6 +321,7 @@ public sealed class ZonedDateTime : TemporalValue,
     /// <param name="second"></param>
     /// <param name="nanosecond"></param>
     /// <param name="zone"></param>
+    [Obsolete("Deperecated")]
     public ZonedDateTime(
         int year,
         int month,
@@ -412,18 +414,54 @@ public sealed class ZonedDateTime : TemporalValue,
             UtcSeconds = local.ToEpochSeconds() - _offsetSeconds.Value;
         }
     }
-
+    
+    /// <summary>
+    /// Deprecated Constructor for internal use only.
+    /// Can be when <see cref="ZonedDateTimeSerializer"/> is removed.
+    /// </summary>
+    /// <param name="dateTime"></param>
+    /// <param name="zone"></param>
     internal ZonedDateTime(IHasDateTimeComponents dateTime, Zone zone)
-        : this(
-            dateTime.Year,
-            dateTime.Month,
-            dateTime.Day,
-            dateTime.Hour,
-            dateTime.Minute,
-            dateTime.Second,
-            dateTime.Nanosecond,
-            zone)
     {
+        zone = zone ?? throw new ArgumentNullException(nameof(zone));
+
+        SetAmbiguous(AmbiguityReason.UnspecifiedDateTimeKind);
+
+        Zone = zone;
+        Nanosecond = dateTime.Nanosecond;
+
+        Year = dateTime.Year;
+        Month = dateTime.Month;
+        Day = dateTime.Day;
+        Hour = dateTime.Hour;
+        Minute = dateTime.Minute;
+        Second = dateTime.Second;
+
+        if (zone is ZoneOffset zo)
+        {
+            _offsetSeconds = zo.OffsetSeconds;
+            var epoch = new LocalDateTime(Year, Month, Day, Hour, Minute, Second, Nanosecond).ToEpochSeconds();
+            UtcSeconds = epoch - _offsetSeconds.Value;
+        }
+        else
+        {
+            if (Year is > 9999 or < 1)
+            {
+                SetAmbiguous(
+                    AmbiguityReason.UnspecifiedDateTimeKind |
+                    AmbiguityReason.ZoneIdLookUpWithLocalTime |
+                    AmbiguityReason.RuleLookupTruncatedToClrRange);
+            }
+            else
+            {
+                SetAmbiguous(AmbiguityReason.UnspecifiedDateTimeKind | AmbiguityReason.ZoneIdLookUpWithLocalTime);
+            }
+
+            var local = new LocalDateTime(Year, Month, Day, Hour, Minute, Second, Nanosecond);
+            var offset = LookupOffsetAt(ClrFriendly(local));
+            _offsetSeconds = (int)offset.TotalSeconds;
+            UtcSeconds = local.ToEpochSeconds() - _offsetSeconds.Value;
+        }
     }
 
     public bool UnknownZoneInfo { get; set; }

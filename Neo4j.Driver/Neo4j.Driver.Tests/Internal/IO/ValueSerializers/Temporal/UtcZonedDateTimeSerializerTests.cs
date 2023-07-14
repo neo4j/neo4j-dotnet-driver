@@ -120,7 +120,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
         public void ShouldSerializeDateTimeWithZoneId_Windows_Istanbul()
         {
             var inDate = new ZonedDateTime(1978, 12, 16, 12, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
-            var expected = (seconds: 282652559L, nanos: 128000987L, zoneId: "Europe/Istanbul");
+            var expected = (seconds: 282648959, nanos: 128000987L, zoneId: "Europe/Istanbul");
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer;
             writer.Write(inDate);
@@ -140,7 +140,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
         public void ShouldDeserializeDateTimeWithZoneId_Windows_Istanbul()
         {
             var expected = new ZonedDateTime(1978, 12, 16, 12, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
-            var inDate = (seconds: 282652559L, nanos: 128000987L, zoneId: "Europe/Istanbul");
+            var inDate = (seconds: 282648959, nanos: 128000987L, zoneId: "Europe/Istanbul");
             var writerMachine = CreateWriterMachine();
             var writer = writerMachine.Writer;
 
