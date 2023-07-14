@@ -24,8 +24,6 @@ namespace Neo4j.Driver;
 internal class ReducedExecutableQuery<TSource, TAccumulate, TResult> : IReducedExecutableQuery<TResult>
 {
     private readonly Func<TAccumulate, TSource, TAccumulate> _accumulate;
-    private readonly Query _query;
-    private readonly QueryConfig _queryConfig;
     private readonly IQueryRowSource<TSource> _rowSource;
     private readonly Func<TAccumulate> _seed;
     private readonly Func<TAccumulate, TResult> _selectResult;
