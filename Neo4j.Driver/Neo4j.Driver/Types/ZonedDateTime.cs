@@ -123,8 +123,8 @@ public sealed class ZonedDateTime : TemporalValue,
     }
 
     /// <summary>
-    /// Create a new instance of <see cref="ZonedDateTime"/> using delta from unix epoch (1970-1-1 00:00:00.00 UTC). <br/>
-    /// Allows handling values in range for neo4j and outside of the range of BCL date types (<see cref="DateTime"/>,
+    /// Create a new instance of <see cref="ZonedDateTime"/> using delta from unix epoch (1970-1-1 00:00:00.00 UTC) in ticks.
+    /// <br/> Allows handling values in range for neo4j and outside of the range of BCL date types (<see cref="DateTime"/>,
     /// <see cref="DateTimeOffset"/>).
     /// <remarks>
     /// When <paramref name="ticks"/> is outside of BCL date ranges (-621_355_968_000_000_000,
@@ -250,8 +250,8 @@ public sealed class ZonedDateTime : TemporalValue,
     }
 
     /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from given <see cref="DateTime"/> value.</summary>
-    /// <param name="dateTime"></param>
-    /// <param name="zoneId"></param>
+    /// <param name="dateTime">Date time instance, should be local or utc.</param>
+    /// <param name="zoneId">Zone </param>
     /// <exception cref="TimeZoneNotFoundException"></exception>
     public ZonedDateTime(DateTime dateTime, string zoneId)
     {
@@ -298,21 +298,21 @@ public sealed class ZonedDateTime : TemporalValue,
         }
     }
 
-    /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from individual date time component values</summary>
-    /// <param name="year"></param>
-    /// <param name="month"></param>
-    /// <param name="day"></param>
-    /// <param name="hour"></param>
-    /// <param name="minute"></param>
-    /// <param name="second"></param>
+    /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from individual local date time component values.</summary>
+    /// <param name="year">Local year value.</param>
+    /// <param name="month">Local month value.</param>
+    /// <param name="day">Local day value.</param>
+    /// <param name="hour">Local hour value.</param>
+    /// <param name="minute">Local minute value.</param>
+    /// <param name="second">Local second value.</param>
     /// <param name="zone"></param>
-    [Obsolete("Deperecated")]
+    [Obsolete("Deprecated, This constructor does not support a kind, so not known if utc or local.")]
     public ZonedDateTime(int year, int month, int day, int hour, int minute, int second, Zone zone)
         : this(year, month, day, hour, minute, second, 0, zone)
     {
     }
 
-    /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from individual date time component values</summary>
+    /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from individual local date time component values.</summary>
     /// <param name="year">Year in Locale.</param>
     /// <param name="month">Month in Locale.</param>
     /// <param name="day"></param>
@@ -321,7 +321,7 @@ public sealed class ZonedDateTime : TemporalValue,
     /// <param name="second"></param>
     /// <param name="nanosecond"></param>
     /// <param name="zone"></param>
-    [Obsolete("Deperecated")]
+    [Obsolete("Deprecated, This constructor does not support a kind, so not known if utc or local.")]
     public ZonedDateTime(
         int year,
         int month,
@@ -332,47 +332,7 @@ public sealed class ZonedDateTime : TemporalValue,
         int nanosecond,
         Zone zone)
     {
-        Throw.ArgumentOutOfRangeException.IfValueNotBetween(
-            year,
-            TemporalHelpers.MinYear,
-            TemporalHelpers.MaxYear,
-            nameof(year));
-
-        Throw.ArgumentOutOfRangeException.IfValueNotBetween(
-            month,
-            TemporalHelpers.MinMonth,
-            TemporalHelpers.MaxMonth,
-            nameof(month));
-
-        Throw.ArgumentOutOfRangeException.IfValueNotBetween(
-            day,
-            TemporalHelpers.MinDay,
-            TemporalHelpers.MaxDayOfMonth(year, month),
-            nameof(day));
-
-        Throw.ArgumentOutOfRangeException.IfValueNotBetween(
-            hour,
-            TemporalHelpers.MinHour,
-            TemporalHelpers.MaxHour,
-            nameof(hour));
-
-        Throw.ArgumentOutOfRangeException.IfValueNotBetween(
-            minute,
-            TemporalHelpers.MinMinute,
-            TemporalHelpers.MaxMinute,
-            nameof(minute));
-
-        Throw.ArgumentOutOfRangeException.IfValueNotBetween(
-            second,
-            TemporalHelpers.MinSecond,
-            TemporalHelpers.MaxSecond,
-            nameof(second));
-
-        Throw.ArgumentOutOfRangeException.IfValueNotBetween(
-            nanosecond,
-            TemporalHelpers.MinNanosecond,
-            TemporalHelpers.MaxNanosecond,
-            nameof(nanosecond));
+        ValidateComponents(year, month, day, hour, minute, second, nanosecond);
 
         zone = zone ?? throw new ArgumentNullException(nameof(zone));
 
@@ -414,10 +374,10 @@ public sealed class ZonedDateTime : TemporalValue,
             UtcSeconds = local.ToEpochSeconds() - _offsetSeconds.Value;
         }
     }
-    
+
     /// <summary>
-    /// Deprecated Constructor for internal use only.
-    /// Can be when <see cref="ZonedDateTimeSerializer"/> is removed.
+    /// Deprecated Constructor for internal use only. Can be removed when <see cref="ZonedDateTimeSerializer"/> is
+    /// removed.
     /// </summary>
     /// <param name="dateTime"></param>
     /// <param name="zone"></param>
@@ -436,6 +396,7 @@ public sealed class ZonedDateTime : TemporalValue,
         Hour = dateTime.Hour;
         Minute = dateTime.Minute;
         Second = dateTime.Second;
+        ValidateComponents(Year, Month, Day, Hour, Minute, Second, Nanosecond);
 
         if (zone is ZoneOffset zo)
         {
@@ -635,6 +596,58 @@ public sealed class ZonedDateTime : TemporalValue,
 
     /// <summary>Gets the nanosecond component of this instance.</summary>
     public int Nanosecond { get; }
+
+    private static void ValidateComponents(
+        int year,
+        int month,
+        int day,
+        int hour,
+        int minute,
+        int second,
+        int nanosecond)
+    {
+        Throw.ArgumentOutOfRangeException.IfValueNotBetween(
+            year,
+            TemporalHelpers.MinYear,
+            TemporalHelpers.MaxYear,
+            nameof(year));
+
+        Throw.ArgumentOutOfRangeException.IfValueNotBetween(
+            month,
+            TemporalHelpers.MinMonth,
+            TemporalHelpers.MaxMonth,
+            nameof(month));
+
+        Throw.ArgumentOutOfRangeException.IfValueNotBetween(
+            day,
+            TemporalHelpers.MinDay,
+            TemporalHelpers.MaxDayOfMonth(year, month),
+            nameof(day));
+
+        Throw.ArgumentOutOfRangeException.IfValueNotBetween(
+            hour,
+            TemporalHelpers.MinHour,
+            TemporalHelpers.MaxHour,
+            nameof(hour));
+
+        Throw.ArgumentOutOfRangeException.IfValueNotBetween(
+            minute,
+            TemporalHelpers.MinMinute,
+            TemporalHelpers.MaxMinute,
+            nameof(minute));
+
+        Throw.ArgumentOutOfRangeException.IfValueNotBetween(
+            second,
+            TemporalHelpers.MinSecond,
+            TemporalHelpers.MaxSecond,
+            nameof(second));
+
+        Throw.ArgumentOutOfRangeException.IfValueNotBetween(
+            nanosecond,
+            TemporalHelpers.MinNanosecond,
+            TemporalHelpers.MaxNanosecond,
+            nameof(nanosecond));
+    }
 
     private void SetAmbiguous(AmbiguityReason reason)
     {
