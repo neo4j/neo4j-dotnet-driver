@@ -406,22 +406,29 @@ public sealed class ZonedDateTime : TemporalValue,
         }
         else
         {
-            if (Year is > 9999 or < 1)
+            try
             {
-                SetAmbiguous(
-                    AmbiguityReason.UnspecifiedDateTimeKind |
-                    AmbiguityReason.ZoneIdLookUpWithLocalTime |
-                    AmbiguityReason.RuleLookupTruncatedToClrRange);
-            }
-            else
-            {
-                SetAmbiguous(AmbiguityReason.UnspecifiedDateTimeKind | AmbiguityReason.ZoneIdLookUpWithLocalTime);
-            }
+                if (Year is > 9999 or < 1)
+                {
+                    SetAmbiguous(
+                        AmbiguityReason.UnspecifiedDateTimeKind |
+                        AmbiguityReason.ZoneIdLookUpWithLocalTime |
+                        AmbiguityReason.RuleLookupTruncatedToClrRange);
+                }
+                else
+                {
+                    SetAmbiguous(AmbiguityReason.UnspecifiedDateTimeKind | AmbiguityReason.ZoneIdLookUpWithLocalTime);
+                }
 
-            var local = new LocalDateTime(Year, Month, Day, Hour, Minute, Second, Nanosecond);
-            var offset = LookupOffsetAt(ClrFriendly(local));
-            _offsetSeconds = (int)offset.TotalSeconds;
-            UtcSeconds = local.ToEpochSeconds() - _offsetSeconds.Value;
+                var local = new LocalDateTime(Year, Month, Day, Hour, Minute, Second, Nanosecond);
+                var offset = LookupOffsetAt(ClrFriendly(local));
+                _offsetSeconds = (int)offset.TotalSeconds;
+                UtcSeconds = local.ToEpochSeconds() - _offsetSeconds.Value;
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                UnknownZoneInfo = true;
+            }
         }
     }
 
