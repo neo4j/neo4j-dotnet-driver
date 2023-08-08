@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Tests
             {
                 new object[] { null },
                 new object[] { (TimeSpan?)TimeSpan.Zero },
-                new object[] { (TimeSpan?)TimeSpan.FromMilliseconds(0.1) },
+                new object[] { (TimeSpan?)TimeSpan.FromMilliseconds(1) },
                 new object[] { (TimeSpan?)TimeSpan.FromMinutes(30) },
                 new object[] { (TimeSpan?)TimeSpan.MaxValue }
             };
@@ -53,7 +53,7 @@ namespace Neo4j.Driver.Tests
             [MemberData(nameof(ValidTimeSpanValues))]
             public void ShouldAllowToSetToNewValue(TimeSpan? input)
             {
-                var builder = TransactionConfig.Builder;
+                var builder = new TransactionConfigBuilder(null, TransactionConfig.Default);
                 builder.WithTimeout(input);
 
                 var config = builder.Build();
@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Tests
             [MemberData(nameof(InvalidTimeSpanValues))]
             public void ShouldThrowExceptionIfAssigningValueLessThanZero(TimeSpan input)
             {
-                var error = Record.Exception(() => TransactionConfig.Builder.WithTimeout(input));
+                var error = Record.Exception(() => new TransactionConfigBuilder(null, TransactionConfig.Default).WithTimeout(input));
 
                 error.Should().BeOfType<ArgumentOutOfRangeException>();
                 error.Message.Should().Contain("not be negative");
@@ -85,8 +85,8 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldAllowToSetToNewValue()
             {
-                var builder = TransactionConfig.Builder;
-                builder.WithMetadata(new Dictionary<string, object> { { "key", "value" } });
+                var builder = new TransactionConfigBuilder(null, TransactionConfig.Default)
+                    .WithMetadata(new Dictionary<string, object> { { "key", "value" } });
 
                 var config = builder.Build();
 
@@ -98,7 +98,8 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldThrowExceptionIfAssigningNull()
             {
-                var error = Record.Exception(() => TransactionConfig.Builder.WithMetadata(null));
+                var error = Record.Exception(
+                    () => new TransactionConfigBuilder(null, TransactionConfig.Default).WithMetadata(null));
 
                 error.Should().BeOfType<ArgumentNullException>();
                 error.Message.Should().Contain("should not be null");

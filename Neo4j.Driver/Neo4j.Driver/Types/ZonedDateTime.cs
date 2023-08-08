@@ -29,103 +29,334 @@ public sealed class ZonedDateTime : TemporalValue,
     IComparable<ZonedDateTime>,
     IHasDateTimeComponents
 {
+    /// <summary>
+    /// Used by the driver to explain the cause of a <see cref="ZonedDateTime"/>'s
+    /// <see cref="ZonedDateTime.Ambiguous"/> being true.
+    /// </summary>
+    [Flags]
+    public enum AmbiguityReason
+    {
+        /// <summary>No ambiguity.</summary>
+        None,
+
+        /// <summary>The lookup of the offset will be completed with a local time which may result an ambiguous value.</summary>
+        ZoneIdLookUpWithLocalTime,
+
+        /// <summary>The datetime kind is unspecified, it will be treated as local time.</summary>
+        UnspecifiedDateTimeKind,
+
+        /// <summary>
+        /// The lookup of the offset will be completed with a value truncated to the range of BCL date/time types meaning
+        /// that any rules that may apply outside of the BCL date/time type range are not applied.
+        /// </summary>
+        RuleLookupTruncatedToClrRange
+    }
+
     /// <summary>Default comparer for <see cref="ZonedDateTime"/> values.</summary>
     public static readonly IComparer<ZonedDateTime> Comparer = new TemporalValueComparer<ZonedDateTime>();
 
-    private readonly object _lazyLock;
+    /// <summary>Used for storing offset in seconds.</summary>
+    private readonly int? _offsetSeconds;
 
-    private int _day;
-    private int _hour;
-    private int _minute;
-    private int _month;
-
-    private int? _offset;
-    private int _second;
-    private long? _utcSeconds;
-
-    private int _year;
-
-    /// <summary>Used to lazily evaluate zones offset.</summary>
-    /// <param name="utcSeconds"></param>
-    /// <param name="nanos"></param>
-    /// <param name="zone"></param>
-    internal ZonedDateTime(long utcSeconds, int nanos, Zone zone)
+    /// <summary>
+    /// Create a new instance of <see cref="ZonedDateTime"/> using delta from unix epoch (1970-1-1 00:00:00.00 UTC). <br/>
+    /// Allows handling values in range for neo4j and outside of the range of BCL date/time types (<see cref="DateTime"/>,
+    /// <see cref="DateTimeOffset"/>).
+    /// <remarks>
+    /// When <paramref name="utcSeconds"/> is outside of BCL date/time types range (-62_135_596_800, 253_402_300_799)
+    /// and <paramref name="zone"/> is a <see cref="ZoneId"/> the <see cref="ZonedDateTime"/> instance will be marked as
+    /// <see cref="Ambiguous"/> as <see cref="TimeZoneInfo"/> does not support BCL date/time type ranges.
+    /// </remarks>
+    /// </summary>
+    /// <param name="utcSeconds">Seconds from unix epoch (1970-1-1 00:00:00.00 UTC).</param>
+    /// <param name="nanos">Nanoseconds of the second.</param>
+    /// <param name="zone">Zone for offsetting utc to local.</param>
+    public ZonedDateTime(long utcSeconds, int nanos, Zone zone)
     {
-        _lazyLock = new object();
-        _utcSeconds = utcSeconds;
+        if (utcSeconds is > TemporalHelpers.MaxUtcForZonedDateTime or < TemporalHelpers.MinUtcForZonedDateTime)
+        {
+            throw new ArgumentOutOfRangeException(nameof(utcSeconds));
+        }
+
+        UtcSeconds = utcSeconds;
         Nanosecond = nanos;
-        Zone = zone;
+        Zone = zone ?? throw new ArgumentNullException(nameof(zone));
+
+        if (zone is ZoneOffset zo)
+        {
+            _offsetSeconds = zo.OffsetSeconds;
+            var local = TemporalHelpers.EpochSecondsAndNanoToDateTime(utcSeconds + zo.OffsetSeconds, Nanosecond);
+            Year = local.Year;
+            Month = local.Month;
+            Day = local.Day;
+            Hour = local.Hour;
+            Minute = local.Minute;
+            Second = local.Second;
+        }
+        else
+        {
+            if (utcSeconds is < TemporalHelpers.DateTimeOffsetMinSeconds
+                or > TemporalHelpers.DateTimeOffsetMaxSeconds)
+            {
+                SetAmbiguous(AmbiguityReason.RuleLookupTruncatedToClrRange);
+            }
+
+            var utc = TemporalHelpers.EpochSecondsAndNanoToDateTime(utcSeconds, Nanosecond);
+            try
+            {
+                var offset = zone.OffsetSecondsAt(ClrFriendly(utc));
+                _offsetSeconds = offset;
+                var local = TemporalHelpers.EpochSecondsAndNanoToDateTime(utcSeconds + offset, Nanosecond);
+                Year = local.Year;
+                Month = local.Month;
+                Day = local.Day;
+                Hour = local.Hour;
+                Minute = local.Minute;
+                Second = local.Second;
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                UnknownZoneInfo = true;
+            }
+        }
     }
 
-    /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from given <see cref="DateTimeOffset"/> value.</summary>
+    /// <summary>
+    /// Create a new instance of <see cref="ZonedDateTime"/> using delta from unix epoch (1970-1-1 00:00:00.00 UTC) in ticks.
+    /// <br/> Allows handling values in range for neo4j and outside of the range of BCL date types (<see cref="DateTime"/>,
+    /// <see cref="DateTimeOffset"/>).
+    /// <remarks>
+    /// When <paramref name="ticks"/> is outside of BCL date ranges (-621_355_968_000_000_000,
+    /// 2_534_023_009_990_000_000) and <paramref name="zone"/> is a <see cref="ZoneId"/> the <see cref="ZonedDateTime"/>
+    /// instance will be marked as <see cref="Ambiguous"/>.
+    /// </remarks>
+    /// </summary>
+    /// <param name="ticks">ticks from unix epoch (1970-1-1 00:00:00.00 UTC).</param>
+    /// <param name="zone">Zone for offsetting utc to local.</param>
+    public ZonedDateTime(long ticks, Zone zone) : this(
+        ticks / TimeSpan.TicksPerSecond,
+        (int)(ticks % TimeSpan.TicksPerSecond * 100),
+        zone)
+    {
+    }
+
+    /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from given the <see cref="DateTimeOffset"/> value.</summary>
     /// <param name="dateTimeOffset"></param>
     public ZonedDateTime(DateTimeOffset dateTimeOffset)
-        : this(dateTimeOffset.DateTime, dateTimeOffset.Offset)
     {
+        UtcSeconds = dateTimeOffset.ToUnixTimeSeconds();
+        Nanosecond = TemporalHelpers.ExtractNanosecondFromTicks(dateTimeOffset.UtcTicks);
+        Zone = Zone.Of((int)dateTimeOffset.Offset.TotalSeconds);
+
+        _offsetSeconds = (int)dateTimeOffset.Offset.TotalSeconds;
+
+        Year = dateTimeOffset.Year;
+        Month = dateTimeOffset.Month;
+        Day = dateTimeOffset.Day;
+        Hour = dateTimeOffset.Hour;
+        Minute = dateTimeOffset.Minute;
+        Second = dateTimeOffset.Second;
     }
 
     /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from given <see cref="DateTime"/> value.</summary>
-    /// <param name="dateTime"></param>
-    /// <param name="offset"></param>
+    /// <param name="dateTime">Date time instance, If <see cref="DateTime.Kind"/> is <see cref="DateTimeKind.Unspecified"/>the instance will set <see cref="Ambiguous"/> as <code>true</code>.</param>
+    /// <param name="offset">TimeSpan to offset datetime by, will be converted into <see cref="ZoneOffset"/>.</param>
+    /// <remarks>
+    /// When <paramref name="dateTime"/> is Utc, this instance's date time components (<see cref="Year"/>...)
+    /// will be offset by <paramref name="offset"/>.
+    /// </remarks>
+    /// <remarks>
+    /// When <paramref name="dateTime"/> is Local, this instance's date time components (<see cref="Year"/>...)
+    /// will be the same as <paramref name="dateTime"/>.
+    /// </remarks>
+    /// <remarks>
+    /// When <paramref name="dateTime"/> is <see cref="DateTimeKind.Unspecified"/>, this instance's date time components
+    /// (<see cref="Year"/>...) will be the same as <paramref name="dateTime"/>
+    /// but <see cref="Ambiguous"/> will be <code>true</code>.
+    /// </remarks>
     public ZonedDateTime(DateTime dateTime, TimeSpan offset)
-        : this(dateTime, (int)offset.TotalSeconds)
     {
+        Zone = Zone.Of((int)offset.TotalSeconds);
+        Nanosecond = TemporalHelpers.ExtractNanosecondFromTicks(dateTime.Ticks);
+        _offsetSeconds = (int)offset.TotalSeconds;
+
+        if (dateTime.Kind == DateTimeKind.Utc)
+        {
+            var dto = new DateTimeOffset(dateTime);
+            UtcSeconds = dto.ToUnixTimeSeconds();
+            var local = dto.AddSeconds(_offsetSeconds.Value);
+            Year = local.Year;
+            Month = local.Month;
+            Day = local.Day;
+            Hour = local.Hour;
+            Minute = local.Minute;
+            Second = local.Second;
+        }
+        else
+        {
+            if (dateTime.Kind == DateTimeKind.Unspecified)
+            {
+                SetAmbiguous(AmbiguityReason.UnspecifiedDateTimeKind);
+            }
+
+            var dto = new DateTimeOffset(
+                new DateTime(
+                    dateTime.AddSeconds(-_offsetSeconds.Value).Ticks,
+                    DateTimeKind.Utc));
+
+            UtcSeconds = dto.ToUnixTimeSeconds();
+            Year = dateTime.Year;
+            Month = dateTime.Month;
+            Day = dateTime.Day;
+            Hour = dateTime.Hour;
+            Minute = dateTime.Minute;
+            Second = dateTime.Second;
+        }
     }
 
     /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from given <see cref="DateTime"/> value.</summary>
-    /// <param name="dateTime"></param>
-    /// <param name="offsetSeconds"></param>
+    /// <param name="dateTime">Date time instance, If <see cref="DateTime.Kind"/> is <see cref="DateTimeKind.Unspecified"/>the instance will set <see cref="Ambiguous"/> as <code>true</code>.</param>
+    /// <param name="offsetSeconds"> Seconds to offset datetime by, will be converted into <see cref="ZoneOffset"/>.</param>
+    /// <remarks>
+    /// When <paramref name="dateTime"/> is Utc, this instance's date time components (<see cref="Year"/>...)
+    /// will be offset by <paramref name="offsetSeconds"/>.
+    /// </remarks>
+    /// <remarks>
+    /// When <paramref name="dateTime"/> is Local, this instance's date time components (<see cref="Year"/>...)
+    /// will be the same as <paramref name="dateTime"/>.
+    /// </remarks>
+    /// <remarks>
+    /// When <paramref name="dateTime"/> is <see cref="DateTimeKind.Unspecified"/>, this instance's date time components
+    /// (<see cref="Year"/>...) will be the same as <paramref name="dateTime"/>
+    /// but <see cref="Ambiguous"/> will be <code>true</code>.
+    /// </remarks>
     public ZonedDateTime(DateTime dateTime, int offsetSeconds)
-        : this(
-            dateTime.Year,
-            dateTime.Month,
-            dateTime.Day,
-            dateTime.Hour,
-            dateTime.Minute,
-            dateTime.Second,
-            TemporalHelpers.ExtractNanosecondFromTicks(dateTime.Ticks),
-            Zone.Of(offsetSeconds))
     {
+        Zone = Zone.Of(offsetSeconds);
+        Nanosecond = TemporalHelpers.ExtractNanosecondFromTicks(dateTime.Ticks);
+        _offsetSeconds = offsetSeconds;
+
+        if (dateTime.Kind == DateTimeKind.Utc)
+        {
+            var dto = new DateTimeOffset(dateTime);
+            UtcSeconds = dto.ToUnixTimeSeconds();
+            var local = dto.AddSeconds(offsetSeconds);
+
+            Year = local.Year;
+            Month = local.Month;
+            Day = local.Day;
+            Hour = local.Hour;
+            Minute = local.Minute;
+            Second = local.Second;
+        }
+        else if (dateTime.Kind == DateTimeKind.Local)
+        {
+            var dto = new DateTimeOffset(new DateTime(dateTime.AddSeconds(-offsetSeconds).Ticks, DateTimeKind.Utc));
+            UtcSeconds = dto.ToUnixTimeSeconds();
+            Year = dateTime.Year;
+            Month = dateTime.Month;
+            Day = dateTime.Day;
+            Hour = dateTime.Hour;
+            Minute = dateTime.Minute;
+            Second = dateTime.Second;
+        }
+        else
+        {
+            SetAmbiguous(AmbiguityReason.UnspecifiedDateTimeKind);
+            var dto = new DateTimeOffset(new DateTime(dateTime.AddSeconds(-offsetSeconds).Ticks, DateTimeKind.Utc));
+            UtcSeconds = dto.ToUnixTimeSeconds();
+            Year = dateTime.Year;
+            Month = dateTime.Month;
+            Day = dateTime.Day;
+            Hour = dateTime.Hour;
+            Minute = dateTime.Minute;
+            Second = dateTime.Second;
+        }
     }
 
     /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from given <see cref="DateTime"/> value.</summary>
-    /// <param name="dateTime"></param>
-    /// <param name="zoneId"></param>
+    /// <param name="dateTime">Date time instance, should be local or utc.</param>
+    /// <param name="zoneId">
+    /// Zone name, if zone name is not known by the operating system and <paramref name="dateTime"/>'s
+    /// <see cref="DateTime.Kind"/> is not <see cref="DateTimeKind.Utc"/>, the driver can not correctly set
+    /// <see cref="UtcSeconds"/> which is required for server versions 5+, 4.4.12+, 4.3.19+.<br/>
+    /// if <paramref name="dateTime"/>'s<see cref="DateTime.Kind"/> is <see cref="DateTimeKind.Utc"/>,
+    /// the <see cref="TimeZoneNotFoundException"/> will be caught, unless one of the local values (<see cref="Year"/>..) is accessed and can be sent to the server.
+    /// </param>
+    /// <exception cref="TimeZoneNotFoundException">if zone name is not known by the operating system and <paramref name="dateTime"/>'s
+    /// <see cref="DateTime.Kind"/> is not <see cref="DateTimeKind.Utc"/>, the driver can not correctly set
+    /// <see cref="UtcSeconds"/> which is required for server versions 5+, 4.4.12+, 4.3.19+.</exception>
     public ZonedDateTime(DateTime dateTime, string zoneId)
-        : this(
-            dateTime.Year,
-            dateTime.Month,
-            dateTime.Day,
-            dateTime.Hour,
-            dateTime.Minute,
-            dateTime.Second,
-            TemporalHelpers.ExtractNanosecondFromTicks(dateTime.Ticks),
-            Zone.Of(zoneId))
     {
+        Zone = zoneId != null ? Zone.Of(zoneId) : throw new ArgumentNullException(nameof(zoneId));
+        Nanosecond = TemporalHelpers.ExtractNanosecondFromTicks(dateTime.Ticks);
+
+        if (dateTime.Kind == DateTimeKind.Utc)
+        {
+            var dto = new DateTimeOffset(dateTime);
+            UtcSeconds = dto.ToUnixTimeSeconds();
+            try
+            {
+                var local = dto.ToOffset(LookupOffsetAt(dto.UtcDateTime));
+                _offsetSeconds = (int)local.Offset.TotalSeconds;
+                Year = local.Year;
+                Month = local.Month;
+                Day = local.Day;
+                Hour = local.Hour;
+                Minute = local.Minute;
+                Second = local.Second;
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                UnknownZoneInfo = true;
+            }
+        }
+        else
+        {
+            SetAmbiguous(
+                dateTime.Kind == DateTimeKind.Unspecified
+                    ? AmbiguityReason.UnspecifiedDateTimeKind | AmbiguityReason.ZoneIdLookUpWithLocalTime
+                    : AmbiguityReason.ZoneIdLookUpWithLocalTime);
+
+            var dto = new DateTimeOffset(dateTime, LookupOffsetAt(dateTime));
+            UtcSeconds = dto.ToUnixTimeSeconds();
+            _offsetSeconds = (int)dto.Offset.TotalSeconds;
+            var local = dateTime;
+            Year = local.Year;
+            Month = local.Month;
+            Day = local.Day;
+            Hour = local.Hour;
+            Minute = local.Minute;
+            Second = local.Second;
+        }
     }
 
-    /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from individual date time component values</summary>
-    /// <param name="year"></param>
-    /// <param name="month"></param>
-    /// <param name="day"></param>
-    /// <param name="hour"></param>
-    /// <param name="minute"></param>
-    /// <param name="second"></param>
-    /// <param name="zone"></param>
+    /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from individual local date time component values.</summary>
+    /// <param name="year">Local year value.</param>
+    /// <param name="month">Local month value.</param>
+    /// <param name="day">Local day value.</param>
+    /// <param name="hour">Local hour value.</param>
+    /// <param name="minute">Local minute value.</param>
+    /// <param name="second">Local second value.</param>
+    /// <param name="zone">Zone of this date time, will be used to calculate <see cref="UtcSeconds"/> from local values.</param>
+    /// <exception cref="TimeZoneNotFoundException">if zone name is not known by the operating system.</exception>
+    [Obsolete("Deprecated, This constructor does not support a kind, so not known if utc or local.")]
     public ZonedDateTime(int year, int month, int day, int hour, int minute, int second, Zone zone)
         : this(year, month, day, hour, minute, second, 0, zone)
     {
     }
 
-    /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from individual date time component values</summary>
-    /// <param name="year"></param>
-    /// <param name="month"></param>
-    /// <param name="day"></param>
-    /// <param name="hour"></param>
-    /// <param name="minute"></param>
-    /// <param name="second"></param>
-    /// <param name="nanosecond"></param>
-    /// <param name="zone"></param>
+    /// <summary>Initializes a new instance of <see cref="ZonedDateTime"/> from individual local date time component values.</summary>
+    /// <param name="year">Local year value.</param>
+    /// <param name="month">Local month value.</param>
+    /// <param name="day">Local day value.</param>
+    /// <param name="hour">Local hour value.</param>
+    /// <param name="minute">Local minute value.</param>
+    /// <param name="second">Local second value.</param>
+    /// <param name="nanosecond">Nanoseconds of the second.</param>
+    /// <param name="zone">Zone of this date time, will be used to calculate <see cref="UtcSeconds"/> from local values.</param>
+    /// <exception cref="TimeZoneNotFoundException">if zone name is not known by the operating system.</exception>
+    [Obsolete("Deprecated, This constructor does not support a kind, so not known if utc or local.")]
     public ZonedDateTime(
         int year,
         int month,
@@ -135,6 +366,298 @@ public sealed class ZonedDateTime : TemporalValue,
         int second,
         int nanosecond,
         Zone zone)
+    {
+        ValidateComponents(year, month, day, hour, minute, second, nanosecond);
+
+        zone = zone ?? throw new ArgumentNullException(nameof(zone));
+
+        SetAmbiguous(AmbiguityReason.UnspecifiedDateTimeKind);
+
+        Zone = zone;
+        Nanosecond = nanosecond;
+
+        Year = year;
+        Month = month;
+        Day = day;
+        Hour = hour;
+        Minute = minute;
+        Second = second;
+
+        if (zone is ZoneOffset zo)
+        {
+            _offsetSeconds = zo.OffsetSeconds;
+            var epoch = new LocalDateTime(year, month, day, hour, minute, second, nanosecond).ToEpochSeconds();
+            UtcSeconds = epoch - _offsetSeconds.Value;
+        }
+        else
+        {
+            if (Year is > 9999 or < 1)
+            {
+                SetAmbiguous(
+                    AmbiguityReason.UnspecifiedDateTimeKind |
+                    AmbiguityReason.ZoneIdLookUpWithLocalTime |
+                    AmbiguityReason.RuleLookupTruncatedToClrRange);
+            }
+            else
+            {
+                SetAmbiguous(AmbiguityReason.UnspecifiedDateTimeKind | AmbiguityReason.ZoneIdLookUpWithLocalTime);
+            }
+
+            var local = new LocalDateTime(year, month, day, hour, minute, second, nanosecond);
+            var offset = LookupOffsetAt(ClrFriendly(local));
+            _offsetSeconds = (int)offset.TotalSeconds;
+            UtcSeconds = local.ToEpochSeconds() - _offsetSeconds.Value;
+        }
+    }
+
+    /// <summary>
+    /// Deprecated Constructor for internal use only.
+    /// </summary>
+    internal ZonedDateTime(IHasDateTimeComponents dateTime, Zone zone)
+    {
+        zone = zone ?? throw new ArgumentNullException(nameof(zone));
+
+        SetAmbiguous(AmbiguityReason.UnspecifiedDateTimeKind);
+
+        Zone = zone;
+        Nanosecond = dateTime.Nanosecond;
+
+        Year = dateTime.Year;
+        Month = dateTime.Month;
+        Day = dateTime.Day;
+        Hour = dateTime.Hour;
+        Minute = dateTime.Minute;
+        Second = dateTime.Second;
+        ValidateComponents(Year, Month, Day, Hour, Minute, Second, Nanosecond);
+
+        if (zone is ZoneOffset zo)
+        {
+            _offsetSeconds = zo.OffsetSeconds;
+            var epoch = new LocalDateTime(Year, Month, Day, Hour, Minute, Second, Nanosecond).ToEpochSeconds();
+            UtcSeconds = epoch - _offsetSeconds.Value;
+        }
+        else
+        {
+            try
+            {
+                if (Year is > 9999 or < 1)
+                {
+                    SetAmbiguous(
+                        AmbiguityReason.UnspecifiedDateTimeKind |
+                        AmbiguityReason.ZoneIdLookUpWithLocalTime |
+                        AmbiguityReason.RuleLookupTruncatedToClrRange);
+                }
+                else
+                {
+                    SetAmbiguous(AmbiguityReason.UnspecifiedDateTimeKind | AmbiguityReason.ZoneIdLookUpWithLocalTime);
+                }
+
+                var local = new LocalDateTime(Year, Month, Day, Hour, Minute, Second, Nanosecond);
+                var offset = LookupOffsetAt(ClrFriendly(local));
+                _offsetSeconds = (int)offset.TotalSeconds;
+                UtcSeconds = local.ToEpochSeconds() - _offsetSeconds.Value;
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                UnknownZoneInfo = true;
+            }
+        }
+    }
+    /// <summary>
+    /// The <see cref="Zone"/> is not recognized by the driver, or operating system.<br/>
+    /// Attempting to call <see cref="ToString"/> or <see cref="LocalDateTime"/> will raise an <see cref="TimeZoneNotFoundException"/>.
+    /// </summary>
+    public bool UnknownZoneInfo { get; set; }
+
+    /// <summary>
+    /// Gets why this instance is has set <see cref="Ambiguous"/> as true.
+    /// </summary>
+    public AmbiguityReason Reason { get; private set; } = AmbiguityReason.None;
+
+    /// <summary>
+    /// Gets if this instance is has a possible ambiguity.<br/>
+    /// If the date specified is near a daylight saving it could have been misinterpreted. <br/>
+    /// The most common cause for this will be because the <see cref="DateTime"/> used to construct this instance did not have a <see cref="DateTime.Kind"/> specified as <see cref="DateTimeKind.Utc"/>.
+    /// In order to reliably look up the offsets at a given time in a timezone we require a monotonic datetime. <br/>
+    /// </summary>
+    public bool Ambiguous { get; private set; }
+
+    /// <summary>
+    /// Gets the number of seconds since the Unix Epoch (00:00:00 UTC, Thursday, 1 January 1970). <br/> Introduced in
+    /// 4.4.1 a fix to a long standing issue of not having a monotonic datetime used on construction or transmission.
+    /// </summary>
+    public long UtcSeconds { get; }
+
+    /// <summary>
+    /// Gets the number of Ticks from the Unix Epoch (00:00:00 UTC, Thursday, 1 January 1970). This will truncate
+    /// <see cref="Nanosecond"/> to closest tick.
+    /// </summary>
+    public long EpochTicks =>
+        UtcSeconds * TimeSpan.TicksPerSecond + TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond);
+
+    /// <summary>The time zone that this instance represents.</summary>
+    public Zone Zone { get; }
+
+    /// <summary>Gets a <see cref="DateTime"/> value that represents the local date and time of this instance.</summary>
+    /// <exception cref="TimeZoneNotFoundException">If <see cref="Zone"/> is not known locally.</exception>
+    /// <exception cref="ValueOverflowException">If the value cannot be represented with DateTime</exception>
+    /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
+    public DateTime LocalDateTime
+    {
+        get
+        {
+            if (UnknownZoneInfo)
+            {
+                throw new TimeZoneNotFoundException();
+            }
+
+            TemporalHelpers.AssertNoTruncation(this, nameof(DateTime));
+            TemporalHelpers.AssertNoOverflow(this, nameof(DateTime));
+
+            return new DateTime(Year, Month, Day, Hour, Minute, Second, DateTimeKind.Local)
+                .AddTicks(TemporalHelpers.ExtractTicksFromNanosecond(TruncatedNanos()));
+        }
+    }
+
+    /// <summary>Gets a <see cref="DateTime"/> the UTC value that represents the date and time of this instance.</summary>
+    /// <exception cref="ValueOverflowException">If the value cannot be represented with DateTime</exception>
+    /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
+    public DateTime UtcDateTime
+    {
+        get
+        {
+            DateTimeOffset dto;
+            try
+            {
+                dto = DateTimeOffset.FromUnixTimeSeconds(UtcSeconds);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                throw new ValueOverflowException(
+                    $"The value of {nameof(UtcSeconds)} is too large or small to be represented by {nameof(DateTime)}");
+            }
+
+            TemporalHelpers.AssertNoTruncation(this, nameof(DateTime));
+
+            dto = dto.AddTicks(TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond));
+
+            return dto.UtcDateTime;
+        }
+    }
+
+    /// <summary>
+    /// Gets the offset from UTC in seconds.<br/>
+    /// if <see cref="Zone"/> is of type <see cref="ZoneOffset"/> this will return <see cref="ZoneOffset.OffsetSeconds"/>.<br/>
+    /// otherwise <see cref="Zone"/> is of type <see cref="ZoneId"/> and this will return the UTC offset at the exact point of time of <see cref="UtcDateTime"/>.
+    /// </summary>
+    /// <exception cref="TimeZoneNotFoundException">If <see cref="Zone"/> is not known locally.</exception>
+    public int OffsetSeconds => _offsetSeconds ?? LookupOffsetFromZone();
+
+    /// <summary>Gets a <see cref="TimeSpan"/> value that represents the offset of this instance.</summary>
+    private TimeSpan Offset => TimeSpan.FromSeconds(OffsetSeconds);
+
+    /// <summary>
+    /// Compares the value of this instance to a specified object which is expected to be a
+    /// <see cref="ZonedDateTime"/> value, and returns an integer that indicates whether this instance is earlier than, the
+    /// same as, or later than the specified <see cref="ZonedDateTime"/> value.
+    /// </summary>
+    /// <param name="obj">The object to compare to the current instance.</param>
+    /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
+    public int CompareTo(object obj)
+    {
+        if (obj is null)
+        {
+            return 1;
+        }
+
+        if (ReferenceEquals(this, obj))
+        {
+            return 0;
+        }
+
+        if (obj is not ZonedDateTime time)
+        {
+            throw new ArgumentException($"Object must be of type {nameof(ZonedDateTime)}");
+        }
+
+        return CompareTo(time);
+    }
+
+    /// <summary>
+    /// Compares the value of this instance to a specified <see cref="ZonedDateTime"/> value and returns an integer
+    /// that indicates whether this instance is earlier than, the same as, or later than the specified DateTime value.
+    /// </summary>
+    /// <param name="other">The object to compare to the current instance.</param>
+    /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
+    public int CompareTo(ZonedDateTime other)
+    {
+        if (ReferenceEquals(this, other))
+        {
+            return 0;
+        }
+
+        if (other is null)
+        {
+            return 1;
+        }
+
+        var epochComparison = UtcSeconds.CompareTo(other.UtcSeconds);
+        return epochComparison != 0 ? epochComparison : Nanosecond.CompareTo(other.Nanosecond);
+    }
+
+    /// <summary>
+    /// Returns a value indicating whether the value of this instance is equal to the value of the specified
+    /// <see cref="ZonedDateTime"/> instance.
+    /// </summary>
+    /// <param name="other">The object to compare to this instance.</param>
+    /// <returns>
+    /// <code>true</code> if the <code>value</code> parameter equals the value of this instance; otherwise,
+    /// <code>false</code>
+    /// </returns>
+    public bool Equals(ZonedDateTime other)
+    {
+        if (other is null)
+        {
+            return false;
+        }
+
+        if (ReferenceEquals(this, other))
+        {
+            return true;
+        }
+
+        return GetHashCode() == other.GetHashCode();
+    }
+
+    /// <summary>Gets the year component of this instance in the Locale of <see cref="Zone"/>.</summary>
+    public int Year { get; }
+
+    /// <summary>Gets the month component of this instance in the Locale of <see cref="Zone"/>.</summary>
+    public int Month { get; }
+
+    /// <summary>Gets the day of month component of this instance in the Locale of <see cref="Zone"/>.</summary>
+    public int Day { get; }
+
+    /// <summary>Gets the hour component of this instance in the Locale of <see cref="Zone"/>.</summary>
+    public int Hour { get; }
+
+    /// <summary>Gets the minute component of this instance in the Locale of <see cref="Zone"/>.</summary>
+    public int Minute { get; }
+
+    /// <summary>Gets the second component of this instance in the Locale of <see cref="Zone"/>.</summary>
+    public int Second { get; }
+
+    /// <summary>Gets the nanosecond component of this instance.</summary>
+    public int Nanosecond { get; }
+
+    private static void ValidateComponents(
+        int year,
+        int month,
+        int day,
+        int hour,
+        int minute,
+        int second,
+        int nanosecond)
     {
         Throw.ArgumentOutOfRangeException.IfValueNotBetween(
             year,
@@ -177,247 +700,56 @@ public sealed class ZonedDateTime : TemporalValue,
             TemporalHelpers.MinNanosecond,
             TemporalHelpers.MaxNanosecond,
             nameof(nanosecond));
-
-        _year = year;
-        _month = month;
-        _day = day;
-        _hour = hour;
-        _minute = minute;
-        _second = second;
-
-        Nanosecond = nanosecond;
-        Zone = zone ?? throw new ArgumentNullException(nameof(zone));
     }
 
-    internal ZonedDateTime(IHasDateTimeComponents dateTime, Zone zone)
-        : this(
-            dateTime.Year,
-            dateTime.Month,
-            dateTime.Day,
-            dateTime.Hour,
-            dateTime.Minute,
-            dateTime.Second,
-            dateTime.Nanosecond,
-            zone)
+    private void SetAmbiguous(AmbiguityReason reason)
     {
+        Ambiguous = true;
+        Reason = reason;
     }
 
-    /// <summary>The time zone that this instance represents.</summary>
-    public Zone Zone { get; }
-
-    /// <summary>Gets a <see cref="DateTime"/> value that represents the date and time of this instance.</summary>
-    /// <exception cref="ValueOverflowException">If the value cannot be represented with DateTime</exception>
-    /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
-    private DateTime DateTime
+    private DateTime ClrFriendly(LocalDateTime local)
     {
-        get
-        {
-            TemporalHelpers.AssertNoTruncation(this, nameof(DateTime));
-            TemporalHelpers.AssertNoOverflow(this, nameof(DateTime));
+        var abs = Math.Abs(local.Year);
+        // we can only offset years that are in the CLR range, so we need to offset the year
+        var year = abs % 4 == 0 && (abs % 100 != 0 || abs % 400 == 0)
+            ? local.Year < 1
+                ? 4 // first leap year in CLR type range
+                : 9996 // last leap year in CLR type range
+            : local.Year < 1
+                ? 2 // first year that can safely be offset in CLR range, non-leap year.
+                : 9998; // last year that can safely be offset in CLR range, non-leap year.
 
-            return new DateTime(Year, Month, Day, Hour, Minute, Second).AddTicks(
-                TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond));
-        }
+        return new DateTime(
+            year,
+            local.Month,
+            local.Day,
+            local.Hour,
+            local.Minute,
+            local.Second).AddTicks(TruncatedNanos());
     }
 
-    /// <summary>
-    /// Returns the offset from UTC of this instance at the time it represents. if year is more than 9999, offset will
-    /// be taken from year 9999.
-    /// </summary>
-    public int OffsetSeconds => _offset ??
-        Zone.OffsetSecondsAt(new DateTime(Year > 9999 ? 9999 : Year, Month, Day, Hour, Minute, Second));
-
-    /// <summary>Gets a <see cref="TimeSpan"/> value that represents the offset of this instance.</summary>
-    private TimeSpan Offset => TimeSpan.FromSeconds(OffsetSeconds);
-
-    /// <summary>
-    /// Compares the value of this instance to a specified object which is expected to be a
-    /// <see cref="ZonedDateTime"/> value, and returns an integer that indicates whether this instance is earlier than, the
-    /// same as, or later than the specified <see cref="ZonedDateTime"/> value.
-    /// </summary>
-    /// <param name="obj">The object to compare to the current instance.</param>
-    /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
-    public int CompareTo(object obj)
+    private int TruncatedNanos()
     {
-        if (obj is null)
-        {
-            return 1;
-        }
-
-        if (ReferenceEquals(this, obj))
-        {
-            return 0;
-        }
-
-        if (!(obj is ZonedDateTime))
-        {
-            throw new ArgumentException($"Object must be of type {nameof(ZonedDateTime)}");
-        }
-
-        return CompareTo((ZonedDateTime)obj);
+        return Nanosecond / 1_000_000 * 1_000_000;
     }
 
-    /// <summary>
-    /// Compares the value of this instance to a specified <see cref="ZonedDateTime"/> value and returns an integer
-    /// that indicates whether this instance is earlier than, the same as, or later than the specified DateTime value.
-    /// </summary>
-    /// <param name="other">The object to compare to the current instance.</param>
-    /// <returns>A signed number indicating the relative values of this instance and the value parameter.</returns>
-    public int CompareTo(ZonedDateTime other)
+    private int LookupOffsetFromZone()
     {
-        if (ReferenceEquals(this, other))
+        if (Zone is ZoneOffset zo)
         {
-            return 0;
+            return zo.OffsetSeconds;
         }
 
-        if (other is null)
-        {
-            return 1;
-        }
+        var utc = DateTimeOffset.FromUnixTimeSeconds(UtcSeconds)
+            .AddTicks(TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond));
 
-        var thisEpochSeconds = this.ToEpochSeconds() - OffsetSeconds;
-        var otherEpochSeconds = other.ToEpochSeconds() - other.OffsetSeconds;
-        var epochComparison = thisEpochSeconds.CompareTo(otherEpochSeconds);
-        if (epochComparison != 0)
-        {
-            return epochComparison;
-        }
-
-        return Nanosecond.CompareTo(other.Nanosecond);
+        return Zone.OffsetSecondsAt(utc.UtcDateTime);
     }
 
-    /// <summary>
-    /// Returns a value indicating whether the value of this instance is equal to the value of the specified
-    /// <see cref="ZonedDateTime"/> instance.
-    /// </summary>
-    /// <param name="other">The object to compare to this instance.</param>
-    /// <returns>
-    /// <code>true</code> if the <code>value</code> parameter equals the value of this instance; otherwise,
-    /// <code>false</code>
-    /// </returns>
-    public bool Equals(ZonedDateTime other)
+    private TimeSpan LookupOffsetAt(DateTime dateTime)
     {
-        if (other is null)
-        {
-            return false;
-        }
-
-        if (ReferenceEquals(this, other))
-        {
-            return true;
-        }
-
-        return Year == other.Year &&
-            Month == other.Month &&
-            Day == other.Day &&
-            Hour == other.Hour &&
-            Second == other.Second &&
-            Nanosecond == other.Nanosecond &&
-            Equals(Zone, other.Zone);
-    }
-
-    /// <summary>Gets the year component of this instance.</summary>
-    public int Year
-    {
-        get
-        {
-            EvaluateUtcValue();
-            return _year;
-        }
-    }
-
-    /// <summary>Gets the month component of this instance.</summary>
-    public int Month
-    {
-        get
-        {
-            EvaluateUtcValue();
-            return _month;
-        }
-    }
-
-    /// <summary>Gets the day of month component of this instance.</summary>
-    public int Day
-    {
-        get
-        {
-            EvaluateUtcValue();
-            return _day;
-        }
-    }
-
-    /// <summary>Gets the hour component of this instance.</summary>
-    public int Hour
-    {
-        get
-        {
-            EvaluateUtcValue();
-            return _hour;
-        }
-    }
-
-    /// <summary>Gets the minute component of this instance.</summary>
-    public int Minute
-    {
-        get
-        {
-            EvaluateUtcValue();
-            return _minute;
-        }
-    }
-
-    /// <summary>Gets the second component of this instance.</summary>
-    public int Second
-    {
-        get
-        {
-            EvaluateUtcValue();
-            return _second;
-        }
-    }
-
-    /// <summary>Gets the nanosecond component of this instance.</summary>
-    public int Nanosecond { get; }
-
-    private void EvaluateUtcValue()
-    {
-        if (!_utcSeconds.HasValue)
-        {
-            return;
-        }
-
-        LocalDateTime local;
-
-        lock (_lazyLock)
-        {
-            if (!_utcSeconds.HasValue)
-            {
-                return;
-            }
-
-            local = TemporalHelpers.EpochSecondsAndNanoToDateTime(_utcSeconds.Value, Nanosecond);
-
-            var time = new DateTime(
-                local.Year > 9999 ? 9999 : local.Year,
-                local.Month,
-                local.Day,
-                local.Hour,
-                local.Minute,
-                local.Second);
-
-            _offset = Zone is ZoneOffset zo ? zo.OffsetSeconds : Zone.OffsetSecondsAt(time);
-
-            local = TemporalHelpers.EpochSecondsAndNanoToDateTime(_utcSeconds.Value + _offset.Value, Nanosecond);
-
-            _utcSeconds = null;
-        }
-
-        _year = local.Year;
-        _month = local.Month;
-        _day = local.Day;
-        _hour = local.Hour;
-        _minute = local.Minute;
-        _second = local.Second;
+        return TimeSpan.FromSeconds(Zone.OffsetSecondsAt(dateTime));
     }
 
     /// <summary>Converts this instance to an equivalent <see cref="DateTimeOffset"/> value</summary>
@@ -426,14 +758,18 @@ public sealed class ZonedDateTime : TemporalValue,
     /// <exception cref="ValueTruncationException">If a truncation occurs during conversion</exception>
     public DateTimeOffset ToDateTimeOffset()
     {
-        // we first get DateTime instance to force Truncation / Overflow checks
-        var dateTime = DateTime;
-        var offset = Offset;
+        if (UnknownZoneInfo)
+        {
+            throw new TimeZoneNotFoundException();
+        }
 
-        TemporalHelpers.AssertNoTruncation(offset, nameof(DateTimeOffset));
-        TemporalHelpers.AssertNoOverflow(offset, nameof(DateTimeOffset));
+        TemporalHelpers.AssertNoTruncation(this, nameof(DateTimeOffset));
+        TemporalHelpers.AssertNoOverflow(this, nameof(DateTimeOffset));
 
-        return new DateTimeOffset(dateTime, offset);
+        var dto = DateTimeOffset.FromUnixTimeSeconds(UtcSeconds)
+            .AddTicks(TemporalHelpers.ExtractTicksFromNanosecond(Nanosecond));
+
+        return dto.ToOffset(Offset);
     }
 
     /// <summary>Returns a value indicating whether this instance is equal to a specified object.</summary>
@@ -444,16 +780,6 @@ public sealed class ZonedDateTime : TemporalValue,
     /// </returns>
     public override bool Equals(object obj)
     {
-        if (obj is null)
-        {
-            return false;
-        }
-
-        if (ReferenceEquals(this, obj))
-        {
-            return true;
-        }
-
         return obj is ZonedDateTime dateTime && Equals(dateTime);
     }
 
@@ -463,13 +789,9 @@ public sealed class ZonedDateTime : TemporalValue,
     {
         unchecked
         {
-            var hashCode = Year;
-            hashCode = (hashCode * 397) ^ Month;
-            hashCode = (hashCode * 397) ^ Day;
-            hashCode = (hashCode * 397) ^ Hour;
-            hashCode = (hashCode * 397) ^ Second;
-            hashCode = (hashCode * 397) ^ Nanosecond;
-            hashCode = (hashCode * 397) ^ (Zone != null ? Zone.GetHashCode() : 0);
+            var hashCode = Nanosecond;
+            hashCode = (hashCode * 397) ^ Zone.GetHashCode();
+            hashCode = (hashCode * 397) ^ UtcSeconds.GetHashCode();
             return hashCode;
         }
     }
@@ -478,13 +800,14 @@ public sealed class ZonedDateTime : TemporalValue,
     /// <returns>String representation of this Point.</returns>
     public override string ToString()
     {
-        if (_utcSeconds.HasValue)
+        if (UnknownZoneInfo)
         {
-            return $"Lazy-ZonedDateTime{{EpochSeconds:{_utcSeconds.Value} Nanos:{Nanosecond} Zone:{Zone}}}";
+            return @$"{{UtcSeconds: {UtcSeconds}, Nanoseconds: {Nanosecond}, Zone: {Zone}}}";
         }
 
-        return
-            $"{TemporalHelpers.ToIsoDateString(Year, Month, Day)}T{TemporalHelpers.ToIsoTimeString(Hour, Minute, Second, Nanosecond)}{Zone}";
+        var isoDate = TemporalHelpers.ToIsoDateString(Year, Month, Day);
+        var isoTime = TemporalHelpers.ToIsoTimeString(Hour, Minute, Second, Nanosecond);
+        return $"{isoDate}T{isoTime}{Zone}";
     }
 
     /// <summary>

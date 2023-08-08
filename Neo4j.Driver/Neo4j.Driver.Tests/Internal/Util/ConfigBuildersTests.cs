@@ -23,30 +23,6 @@ namespace Neo4j.Driver.Internal.Util
 {
     public class ConfigBuildersTests
     {
-        public class BuildTransactionOptions
-        {
-            [Fact]
-            public void ShouldReturnEmptyTxOptionsWhenBuilderIsNull()
-            {
-                var options = ConfigBuilders.BuildTransactionConfig(null);
-                options.Should().Be(TransactionConfig.Default);
-            }
-
-            [Fact]
-            public void ShouldReturnNewTxOptions()
-            {
-                var options1 = ConfigBuilders.BuildTransactionConfig(o => o.WithTimeout(TimeSpan.FromSeconds(5)));
-                var options2 = ConfigBuilders.BuildTransactionConfig(o => o.WithTimeout(TimeSpan.FromSeconds(30)));
-                options1.Timeout.Should().Be(TimeSpan.FromSeconds(5));
-                options2.Timeout.Should().Be(TimeSpan.FromSeconds(30));
-
-                // When I reset to another value
-                options1.Timeout = TimeSpan.FromMinutes(1);
-                options1.Timeout.Should().Be(TimeSpan.FromMinutes(1));
-                options2.Timeout.Should().Be(TimeSpan.FromSeconds(30));
-            }
-        }
-
         public class BuildSessionOptions
         {
             [Fact]

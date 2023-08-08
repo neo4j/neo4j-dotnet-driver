@@ -371,6 +371,10 @@ public class TokenExpiredException : SecurityException
     {
     }
 
+    /// <summary>
+    /// Whether or not the exception is retriable. If the exception is retriable, the driver will try to
+    /// re-run the operation that caused the exception.
+    /// </summary>
     public override bool IsRetriable => Retriable;
 
     internal static bool IsTokenExpiredError(string code)
@@ -587,11 +591,14 @@ public class TransactionClosedException : ClientException
 [DataContract]
 public class UnsupportedFeatureException : ClientException
 {
-    /// <summary></summary>
-    /// <param name="message"></param>
+    /// <inheritdoc />
+    public override bool IsRetriable => false;
+    
+    /// <summary>
+    /// Creates a new <see cref="UnsupportedFeatureException"/> with an error message.
+    /// </summary>
+    /// <param name="message">The error message</param>
     internal UnsupportedFeatureException(string message) : base(message)
     {
     }
-
-    public override bool IsRetriable => false;
 }

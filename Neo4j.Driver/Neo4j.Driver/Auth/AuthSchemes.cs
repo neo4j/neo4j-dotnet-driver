@@ -23,7 +23,7 @@ namespace Neo4j.Driver;
 public static class AuthSchemes
 {
     /// <summary>No authentication specified.</summary>
-    public const string None = "none";
+    internal const string None = "none";
 
     /// <summary>Basic authentication - username and password in plaintext.</summary>
     public const string Basic = "basic";

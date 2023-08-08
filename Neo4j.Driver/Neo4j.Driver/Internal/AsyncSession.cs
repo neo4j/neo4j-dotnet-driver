@@ -194,6 +194,17 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         return result;
     }
 
+    private TransactionConfig BuildTransactionConfig(Action<TransactionConfigBuilder> action)
+    {
+        if (action == null)
+        {
+            return TransactionConfig.Default;
+        }
+        var builder = new TransactionConfigBuilder(_logger, new TransactionConfig());
+        action.Invoke(builder);
+        return builder.Build();
+    }
+    
     public async Task<EagerResult<T>> ExecuteQueryAsync<T>(Query query, QueryConfig config, Func<IResultCursor, CancellationToken, Task<EagerResult<T>>> cursorProcessor, CancellationToken cancellationToken)
     {
         var bookmarks = Array.Empty<string>();
