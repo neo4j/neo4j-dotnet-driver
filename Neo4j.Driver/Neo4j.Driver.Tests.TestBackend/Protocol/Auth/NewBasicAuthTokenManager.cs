@@ -35,20 +35,24 @@ internal abstract class TestAuthTokenManager : IProtocolObject, IAuthTokenManage
         CancellationToken cancellationToken = default);
 }
 
-internal class NewBasicAuthTokenManager : IProtocolObject
+internal class NewNeo4jAuthTokenManager : IProtocolObject
 {
     protected Controller _controller;
-    public Neo4jAuthTokenManager TokenManager;
+    public IAuthTokenManager TokenManager;
+}
+
+internal class NewBasicAuthTokenManager : NewNeo4jAuthTokenManager
+{
     public object data { get; set; }
     
     public override Task Process(Controller controller)
     {
         _controller = controller;
-        TokenManager = new Neo4jAuthTokenManager(FakeTime.Instance, GetTokenAsync, typeof(AuthenticationException));
+        TokenManager = AuthTokenManagers.Basic(FakeTime.Instance, GetTokenAsync);
         return Task.CompletedTask;
     }
 
-    public async Task<AuthTokenAndExpiration> GetTokenAsync()
+    public async Task<IAuthToken> GetTokenAsync()
     {
         var requestId = Guid.NewGuid().ToString();
         await _controller.SendResponse(GetAuthRequest(requestId)).ConfigureAwait(false);
@@ -57,13 +61,8 @@ internal class NewBasicAuthTokenManager : IProtocolObject
 
         if (result.data.requestId == requestId)
         {
-            var token = new AuthToken(result.data.auth.data.auth.data.ToDictionary());
-            var expiresInMs = result.data.auth.data.expiresInMs;
-            var expiry = expiresInMs == 0
-                ? DateTime.MaxValue
-                : FakeTime.Instance.Now().AddMilliseconds(expiresInMs);
-
-            return new AuthTokenAndExpiration(token, expiry);
+            var token = new AuthToken(result.data.auth.data.ToDictionary());
+            return token;
         }
 
         throw new Exception("GetTokenAsync: request IDs did not match");

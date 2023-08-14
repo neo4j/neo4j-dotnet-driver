@@ -16,8 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.Internal;
@@ -25,19 +23,14 @@ using Neo4j.Driver.Internal.Auth;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class NewBearerAuthTokenManager : IProtocolObject
+internal class NewBearerAuthTokenManager : NewNeo4jAuthTokenManager
 {
-    protected Controller _controller;
-    public Neo4jAuthTokenManager TokenManager;
     public object data { get; set; }
     
     public override Task Process(Controller controller)
     {
         _controller = controller;
-        TokenManager = new Neo4jAuthTokenManager(
-            FakeTime.Instance,
-            GetTokenAsync,
-            typeof(AuthenticationException), typeof(TokenExpiredException));
+        TokenManager = AuthTokenManagers.Bearer(FakeTime.Instance, GetTokenAsync);
         return Task.CompletedTask;
     }
 

@@ -351,12 +351,6 @@ internal sealed class SocketConnection : IConnection
 
             // Get a new token
             token = await AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
-            if (token == null || token.Equals(AuthToken))
-            {
-                // the token is not valid for re-auth and will infinitely fail, so we need to destroy the connection.
-                throw new InvalidOperationException(
-                    "Attempted to use a token that is not valid for re-authentication.");
-            }
         }
         else if (SessionConfig?.AuthToken != null)
         {
@@ -447,7 +441,6 @@ internal sealed class SocketConnection : IConnection
     {
         if (error is SecurityException se)
         {
-            AuthorizationStatus = AuthorizationStatus.SecurityError;
             if (!se.Notified)
             {
                 if (await NotifySecurityExceptionAsync(se).ConfigureAwait(false))

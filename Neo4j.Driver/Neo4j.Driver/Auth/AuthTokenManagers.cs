@@ -18,6 +18,7 @@
 using System;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Auth;
+using Neo4j.Driver.Internal.Services;
 
 namespace Neo4j.Driver.Preview.Auth;
 
@@ -51,13 +52,20 @@ public static class AuthTokenManagers
     /// <returns>The <see cref="IAuthTokenManager"/> that will call the provided function when a new token is needed.</returns>
     public static IAuthTokenManager Basic(Func<Task<IAuthToken>> tokenProviderAsync)
     {
+        return Basic(DateTimeProvider.Instance, tokenProviderAsync);
+    }
+
+    internal static IAuthTokenManager Basic(
+        IDateTimeProvider dateTimeProvider,
+        Func<Task<IAuthToken>> tokenProviderAsync)
+    {
         async Task<AuthTokenAndExpiration> TokenProviderAsync()
         {
             var authToken = await tokenProviderAsync().ConfigureAwait(false);
             return new AuthTokenAndExpiration(authToken, DateTime.MaxValue);
         }
 
-        return new Neo4jAuthTokenManager(TokenProviderAsync, typeof(AuthenticationException));
+        return new Neo4jAuthTokenManager(dateTimeProvider, TokenProviderAsync, typeof(AuthenticationException));
     }
 
     /// <summary>
@@ -69,7 +77,15 @@ public static class AuthTokenManagers
     /// <returns>The <see cref="IAuthTokenManager"/> that will call the provided function when a new token is needed.</returns>
     public static IAuthTokenManager Bearer(Func<Task<AuthTokenAndExpiration>> tokenProviderAsync)
     {
+        return Bearer(DateTimeProvider.Instance, tokenProviderAsync);
+    }
+
+    internal static IAuthTokenManager Bearer(
+        IDateTimeProvider dateTimeProvider,
+        Func<Task<AuthTokenAndExpiration>> tokenProviderAsync)
+    {
         return new Neo4jAuthTokenManager(
+            dateTimeProvider,
             tokenProviderAsync,
             typeof(TokenExpiredException),
             typeof(AuthenticationException));

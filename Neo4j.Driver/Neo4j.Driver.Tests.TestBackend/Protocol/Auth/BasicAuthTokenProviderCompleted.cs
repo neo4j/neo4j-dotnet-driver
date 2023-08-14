@@ -26,18 +26,6 @@ internal class BasicAuthTokenProviderCompleted : IProtocolObject
     public class BasicAuthTokenProviderCompletedDto
     {
         public string requestId { get; set; }
-        public AuthTokenAndExpirationDto auth { get; set; }
-
-        public class AuthTokenAndExpirationDto
-        {
-            public string name { get; set; }
-            public AuthTokenAndExpirationDtoData data { get; set; }
-
-            public class AuthTokenAndExpirationDtoData
-            {
-                public AuthorizationToken auth { get; set; }
-                public int expiresInMs { get; set; }
-            }
-        }
+        public AuthorizationToken auth { get; set; }
     }
 }
