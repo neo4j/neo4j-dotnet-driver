@@ -165,7 +165,8 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         Bookmarks bookmarks,
         TransactionConfig config,
         SessionConfig sessionConfig,
-        INotificationsConfig notificationsConfig)
+        INotificationsConfig notificationsConfig,
+        bool awaitBeginResult)
     {
         connection.SessionConfig = sessionConfig;
         ValidateImpersonatedUserForVersion(connection);
@@ -184,7 +185,10 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             notificationsConfig);
 
         await connection.EnqueueAsync(message, NoOpResponseHandler.Instance).ConfigureAwait(false);
-        await connection.SyncAsync().ConfigureAwait(false);
+        if (awaitBeginResult)
+        {
+            await connection.SyncAsync().ConfigureAwait(false);
+        }
     }
 
     public async Task<IResultCursor> RunInExplicitTransactionAsync(

@@ -35,4 +35,7 @@ internal interface IInternalAsyncSession : IAsyncSession
         Query query,
         Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult);
+
+    Task<EagerResult<T>> PipelinedExecuteReadAsync<T>(Func<IAsyncQueryRunner, Task<EagerResult<T>>> func);
+    Task<EagerResult<T>> PipelinedExecuteWriteAsync<T>(Func<IAsyncQueryRunner, Task<EagerResult<T>>> func);
 }

@@ -128,7 +128,8 @@ internal interface IConnectionRunner
         Bookmarks bookmarks,
         TransactionConfig config,
         SessionConfig sessionConfig,
-        INotificationsConfig notificationsConfig);
+        INotificationsConfig notificationsConfig,
+        bool awaitBeginResult);
 
     Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize);
     Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker);

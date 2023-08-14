@@ -410,7 +410,8 @@ internal sealed class SocketConnection : IConnection
         Bookmarks bookmarks,
         TransactionConfig config,
         SessionConfig sessionConfig,
-        INotificationsConfig notificationsConfig)
+        INotificationsConfig notificationsConfig,
+        bool awaitBeginResult)
     {
         return BoltProtocol.BeginTransactionAsync(
             this,
@@ -418,7 +419,8 @@ internal sealed class SocketConnection : IConnection
             bookmarks,
             config,
             sessionConfig,
-            notificationsConfig);
+            notificationsConfig,
+            false);
     }
 
     public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize)

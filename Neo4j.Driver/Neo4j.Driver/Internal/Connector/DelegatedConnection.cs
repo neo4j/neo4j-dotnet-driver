@@ -228,7 +228,8 @@ internal abstract class DelegatedConnection : IConnection
         Bookmarks bookmarks,
         TransactionConfig config,
         SessionConfig sessionConfig,
-        INotificationsConfig notificationsConfig)
+        INotificationsConfig notificationsConfig,
+        bool awaitBeginResult)
     {
         return BoltProtocol.BeginTransactionAsync(
             this,
@@ -236,7 +237,8 @@ internal abstract class DelegatedConnection : IConnection
             bookmarks,
             config,
             sessionConfig,
-            notificationsConfig);
+            notificationsConfig,
+            awaitBeginResult);
     }
 
     public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize)

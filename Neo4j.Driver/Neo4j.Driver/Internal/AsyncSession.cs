@@ -21,7 +21,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
-using static Neo4j.Driver.Internal.Util.ConfigBuilders;
 
 namespace Neo4j.Driver.Internal;
 
@@ -193,6 +192,16 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         return result;
     }
 
+    public Task<EagerResult<T>> PipelinedExecuteReadAsync<T>(Func<IAsyncQueryRunner, Task<EagerResult<T>>> func)
+    {
+        return RunTransactionAsync(AccessMode.Read, func, null, false);
+    }
+
+    public Task<EagerResult<T>> PipelinedExecuteWriteAsync<T>(Func<IAsyncQueryRunner, Task<EagerResult<T>>> func)
+    {
+        return RunTransactionAsync(AccessMode.Write, func, null, false);
+    }
+
     private TransactionConfig BuildTransactionConfig(Action<TransactionConfigBuilder> action)
     {
         if (action == null)
@@ -285,7 +294,8 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     private Task RunTransactionAsync(
         AccessMode mode,
         Func<IAsyncTransaction, Task> work,
-        Action<TransactionConfigBuilder> action)
+        Action<TransactionConfigBuilder> action,
+        bool block = true)
     {
         return RunTransactionAsync(
             mode,
@@ -301,14 +311,15 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     private Task<T> RunTransactionAsync<T>(
         AccessMode mode,
         Func<IAsyncTransaction, Task<T>> work,
-        Action<TransactionConfigBuilder> action)
+        Action<TransactionConfigBuilder> action,
+        bool block = true)
     {
         return TryExecuteAsync(
             _logger,
             () => _retryLogic.RetryAsync(
                 async () =>
                 {
-                    var tx = await BeginTransactionWithoutLoggingAsync(mode, action, true).ConfigureAwait(false);
+                    var tx = await BeginTransactionWithoutLoggingAsync(mode, action, true, block).ConfigureAwait(false);
                     try
                     {
                         var result = await work(tx).ConfigureAwait(false);
@@ -334,7 +345,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     private async Task<IInternalAsyncTransaction> BeginTransactionWithoutLoggingAsync(
         AccessMode mode,
         Action<TransactionConfigBuilder> action,
-        bool disposeUnconsumedSessionResult)
+        bool disposeUnconsumedSessionResult, bool block = true)
     {
         var config = BuildTransactionConfig(action);
         await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
@@ -356,7 +367,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
             SessionConfig,
             _notificationsConfig);
 
-        await tx.BeginTransactionAsync(config).ConfigureAwait(false);
+        await tx.BeginTransactionAsync(config, block).ConfigureAwait(false);
         _transaction = tx;
         return _transaction;
     }
