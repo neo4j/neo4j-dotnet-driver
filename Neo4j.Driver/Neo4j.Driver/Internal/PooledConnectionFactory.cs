@@ -17,7 +17,7 @@
 
 using System;
 using System.Collections.Generic;
-using Neo4j.Driver.Auth;
+using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal;

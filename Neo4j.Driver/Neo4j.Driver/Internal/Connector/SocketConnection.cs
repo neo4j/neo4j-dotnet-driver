@@ -20,7 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Auth;
+using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -186,14 +186,14 @@ internal sealed class SocketConnection : IConnection
         return BoltProtocol.ReAuthAsync(this, newAuthToken);
     }
 
-    public Task NotifyTokenExpiredAsync()
+    public Task<bool> NotifySecurityExceptionAsync(SecurityException exception)
     {
         if (SessionConfig?.AuthToken != null)
         {
-            return Task.CompletedTask;
+            return Task.FromResult(false);
         }
 
-        return AuthTokenManager.OnTokenExpiredAsync(AuthToken);
+        return AuthTokenManager.HandleSecurityExceptionAsync(AuthToken, exception);
     }
 
     public async Task SyncAsync()
@@ -341,7 +341,7 @@ internal sealed class SocketConnection : IConnection
     public async Task ValidateCredsAsync()
     {
         var token = AuthToken;
-        if (AuthorizationStatus == AuthorizationStatus.TokenExpired)
+        if (AuthorizationStatus == AuthorizationStatus.SecurityError)
         {
             if (!this.SupportsReAuth())
             {
@@ -445,28 +445,18 @@ internal sealed class SocketConnection : IConnection
 
     private async Task HandleAuthErrorAsync(Exception error)
     {
-        switch (error)
+        if (error is SecurityException se)
         {
-            case TokenExpiredException te:
+            AuthorizationStatus = AuthorizationStatus.SecurityError;
+            if (!se.Notified)
             {
-                AuthorizationStatus = AuthorizationStatus.TokenExpired;
-                if (te.Notified == false)
+                if (await NotifySecurityExceptionAsync(se).ConfigureAwait(false))
                 {
-                    if (AuthTokenManager is not StaticAuthTokenManager)
-                    {
-                        te.Retriable = true;
-                    }
-
-                    await NotifyTokenExpiredAsync().ConfigureAwait(false);
-                    te.Notified = true;
+                    se.Retriable = true;
                 }
 
-                break;
+                se.Notified = true;
             }
-
-            case AuthorizationException:
-                AuthorizationStatus = AuthorizationStatus.AuthorizationExpired;
-                break;
         }
     }
 

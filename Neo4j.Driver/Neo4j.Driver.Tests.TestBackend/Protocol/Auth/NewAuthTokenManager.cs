@@ -19,7 +19,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Auth;
 
@@ -63,7 +62,10 @@ internal class NewAuthTokenManager : TestAuthTokenManager
             new { authTokenManagerId = uniqueId, id = requestId }).Encode();
     }
 
-    public override async Task OnTokenExpiredAsync(IAuthToken token, CancellationToken cancellationToken = default)
+    public override async Task<bool> HandleSecurityExceptionAsync(
+        IAuthToken token,
+        SecurityException exception,
+        CancellationToken cancellationToken = default)
     {
         var requestId = Guid.NewGuid().ToString();
         await _controller.SendResponse(GetAuthExpiredRequest(requestId, token)).ConfigureAwait(false);
@@ -74,6 +76,8 @@ internal class NewAuthTokenManager : TestAuthTokenManager
         {
             throw new Exception("OnTokenExpiredAsync: request IDs did not match");
         }
+
+        return false;
     }
 
     private string GetAuthExpiredRequest(string requestId, IAuthToken token)

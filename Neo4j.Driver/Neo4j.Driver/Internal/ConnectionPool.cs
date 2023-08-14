@@ -305,7 +305,7 @@ internal sealed class ConnectionPool : IConnectionPool
             {
                 if (connection.AuthToken.Equals(conn.AuthToken))
                 {
-                    conn.AuthorizationStatus = AuthorizationStatus.TokenExpired;
+                    conn.AuthorizationStatus = AuthorizationStatus.SecurityError;
                 }
             }
         }

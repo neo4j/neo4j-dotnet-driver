@@ -19,7 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Auth;
+using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Auth;
 
@@ -28,19 +28,23 @@ namespace Neo4j.Driver.Tests.TestBackend;
 internal abstract class TestAuthTokenManager : IProtocolObject, IAuthTokenManager
 {
     public abstract Task<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default);
-    public abstract Task OnTokenExpiredAsync(IAuthToken token, CancellationToken cancellationToken = default);
+
+    public abstract Task<bool> HandleSecurityExceptionAsync(
+        IAuthToken token,
+        SecurityException exception,
+        CancellationToken cancellationToken = default);
 }
 
 internal class NewExpirationBasedAuthTokenManager : IProtocolObject
 {
     protected Controller _controller;
-    public ExpirationBasedAuthTokenManager tokenManager;
+    public Neo4jAuthTokenManager tokenManager;
     public object data { get; set; }
     
     public override Task Process(Controller controller)
     {
         _controller = controller;
-        tokenManager = new ExpirationBasedAuthTokenManager(FakeTime.Instance, new ExpiringAuthTokenProvider(GetTokenAsync));
+        tokenManager = new Neo4jAuthTokenManager(FakeTime.Instance, GetTokenAsync);
         return Task.CompletedTask;
     }
 
@@ -67,7 +71,7 @@ internal class NewExpirationBasedAuthTokenManager : IProtocolObject
 
     public override string Respond()
     {
-        return new ProtocolResponse("ExpirationBasedAuthTokenManager", uniqueId).Encode();
+        return new ProtocolResponse("Neo4jAuthTokenManager", uniqueId).Encode();
     }
     
     protected string GetAuthRequest(string requestId)

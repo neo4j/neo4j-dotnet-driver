@@ -18,7 +18,7 @@
 using System;
 using Neo4j.Driver.Internal.Services;
 
-namespace Neo4j.Driver.Auth;
+namespace Neo4j.Driver.Preview.Auth;
 
 /// <summary>
 /// Represents an auth token and its expiration.

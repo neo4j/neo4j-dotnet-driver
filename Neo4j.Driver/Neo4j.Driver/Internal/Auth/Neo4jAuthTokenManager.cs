@@ -15,31 +15,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal.Services;
+using Neo4j.Driver.Preview.Auth;
 
 namespace Neo4j.Driver.Internal.Auth;
 
-internal class ExpirationBasedAuthTokenManager : IAuthTokenManager
+internal class Neo4jAuthTokenManager : IAuthTokenManager
 {
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly IExpiringAuthTokenProvider _expiringAuthTokenProvider;
+    private readonly Func<Task<AuthTokenAndExpiration>> _getAuthTokenAndExpirationAsync;
+    private readonly Type[] _handledExceptionTypes;
     private AuthTokenAndExpiration _currentAuthTokenAndExpiration;
     private readonly SemaphoreSlim _sync;
 
-    public ExpirationBasedAuthTokenManager(IExpiringAuthTokenProvider expiringAuthTokenProvider)
-        : this(DateTimeProvider.Instance, expiringAuthTokenProvider)
+    public Neo4jAuthTokenManager(
+        Func<Task<AuthTokenAndExpiration>> getAuthTokenAndExpirationAsync,
+        params Type[] handledExceptionTypes)
+        : this(DateTimeProvider.Instance, getAuthTokenAndExpirationAsync, handledExceptionTypes)
     {
     }
 
-    internal ExpirationBasedAuthTokenManager(
+    internal Neo4jAuthTokenManager(
         IDateTimeProvider dateTimeProvider,
-        IExpiringAuthTokenProvider expiringAuthTokenProvider)
+        Func<Task<AuthTokenAndExpiration>> getAuthTokenAndExpirationAsync,
+        params Type[] handledExceptionTypes)
     {
         _dateTimeProvider = dateTimeProvider;
-        _expiringAuthTokenProvider = expiringAuthTokenProvider;
+        _getAuthTokenAndExpirationAsync = getAuthTokenAndExpirationAsync;
+        _handledExceptionTypes = handledExceptionTypes;
         _sync = new SemaphoreSlim(1);
     }
 
@@ -56,7 +63,7 @@ internal class ExpirationBasedAuthTokenManager : IAuthTokenManager
                 return _currentAuthTokenAndExpiration.Token;
             }
 
-            _currentAuthTokenAndExpiration = await _expiringAuthTokenProvider.GetTokenAsync()!.ConfigureAwait(false);
+            _currentAuthTokenAndExpiration = await _getAuthTokenAndExpirationAsync()!.ConfigureAwait(false);
             return _currentAuthTokenAndExpiration.Token;
         }
         finally
@@ -66,21 +73,32 @@ internal class ExpirationBasedAuthTokenManager : IAuthTokenManager
     }
 
     /// <inheritdoc/>
-    public async Task OnTokenExpiredAsync(IAuthToken token, CancellationToken cancellationToken = default)
+    public async Task<bool> HandleSecurityExceptionAsync(
+        IAuthToken token,
+        SecurityException exception,
+        CancellationToken cancellationToken = default)
     {
-        await _sync.WaitAsync(cancellationToken).ConfigureAwait(false);
+        if (_handledExceptionTypes.Any(t => t.IsInstanceOfType(exception)))
+        {
+            await _sync.WaitAsync(cancellationToken).ConfigureAwait(false);
 
-        try
-        {
-            if (_currentAuthTokenAndExpiration?.Token != null && Equals(token, _currentAuthTokenAndExpiration?.Token))
+            try
             {
-                _currentAuthTokenAndExpiration =
-                    await _expiringAuthTokenProvider.GetTokenAsync()!.ConfigureAwait(false);
+                if (_currentAuthTokenAndExpiration?.Token != null &&
+                    Equals(token, _currentAuthTokenAndExpiration?.Token))
+                {
+                    _currentAuthTokenAndExpiration =
+                        await _getAuthTokenAndExpirationAsync()!.ConfigureAwait(false);
+                }
             }
+            finally
+            {
+                _sync.Release();
+            }
+
+            return true;
         }
-        finally
-        {
-            _sync.Release();
-        }
+
+        return false;
     }
 }
