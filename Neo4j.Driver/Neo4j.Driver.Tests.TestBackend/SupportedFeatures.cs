@@ -68,6 +68,7 @@ internal static class SupportedFeatures
             //"Feature:TLS:1.3",
             //"Optimization:ConnectionReuse",
             "Optimization:EagerTransactionBegin",
+            "Optimization:ExecuteQueryPipelining",
             //"Optimization:ImplicitDefaultArguments",
             //"Optimization:MinimalResets",
             "Optimization:AuthPipelining",
