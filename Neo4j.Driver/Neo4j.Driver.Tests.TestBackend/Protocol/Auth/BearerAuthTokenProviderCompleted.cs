@@ -19,11 +19,11 @@ using System.Diagnostics;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class ExpirationBasedAuthTokenProviderCompleted : IProtocolObject
+internal class BearerAuthTokenProviderCompleted : IProtocolObject
 {
-    public ExpirationBasedAuthTokenProviderCompletedDto data { get; set; }
+    public BearerAuthTokenProviderCompletedDto data { get; set; }
 
-    public class ExpirationBasedAuthTokenProviderCompletedDto
+    public class BearerAuthTokenProviderCompletedDto
     {
         public string requestId { get; set; }
         public AuthTokenAndExpirationDto auth { get; set; }

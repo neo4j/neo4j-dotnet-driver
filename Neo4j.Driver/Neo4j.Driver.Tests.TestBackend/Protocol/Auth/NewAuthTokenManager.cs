@@ -68,8 +68,8 @@ internal class NewAuthTokenManager : TestAuthTokenManager
         CancellationToken cancellationToken = default)
     {
         var requestId = Guid.NewGuid().ToString();
-        await _controller.SendResponse(GetAuthExpiredRequest(requestId, token)).ConfigureAwait(false);
-        var result = await _controller.TryConsumeStreamObjectOfType<AuthTokenManagerOnAuthExpiredCompleted>()
+        await _controller.SendResponse(GetAuthExpiredRequest(requestId, token, exception)).ConfigureAwait(false);
+        var result = await _controller.TryConsumeStreamObjectOfType<AuthTokenManagerHandleSecurityExceptionCompleted>()
             .ConfigureAwait(false);
 
         if (result.data.requestId != requestId)
@@ -77,10 +77,10 @@ internal class NewAuthTokenManager : TestAuthTokenManager
             throw new Exception("OnTokenExpiredAsync: request IDs did not match");
         }
 
-        return false;
+        return result.data.handled;
     }
 
-    private string GetAuthExpiredRequest(string requestId, IAuthToken token)
+    private string GetAuthExpiredRequest(string requestId, IAuthToken token, SecurityException exception)
     {
         if (token is not AuthToken authToken)
         {
@@ -90,11 +90,12 @@ internal class NewAuthTokenManager : TestAuthTokenManager
         var content = authToken.Content;
 
         return new ProtocolResponse(
-            "AuthTokenManagerOnAuthExpiredRequest",
+            "AuthTokenManagerHandleSecurityExceptionRequest",
             new
             {
                 authTokenManagerId = uniqueId,
                 id = requestId,
+                errorCode = exception.Code,
                 auth = new
                 {
                     name = "AuthorizationToken",

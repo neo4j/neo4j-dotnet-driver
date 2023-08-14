@@ -47,9 +47,9 @@ internal class NewDriver : IProtocolObject
         {
             var authDataManager = ObjManager.GetObject(data.authTokenManagerId);
             
-            if (authDataManager is NewExpirationBasedAuthTokenManager ebatm)
+            if (authDataManager is NewBasicAuthTokenManager ebatm)
             {
-                Driver = GraphDatabase.Driver(data.uri, ebatm.tokenManager, DriverConfig);
+                Driver = GraphDatabase.Driver(data.uri, ebatm.TokenManager, DriverConfig);
             }
             else
             {
