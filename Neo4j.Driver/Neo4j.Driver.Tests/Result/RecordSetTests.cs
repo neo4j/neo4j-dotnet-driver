@@ -148,7 +148,9 @@ namespace Neo4j.Driver.Tests
         public static IList<IRecord> CreateRecords(int recordSize, string[] keys)
         {
             return Enumerable.Range(0, recordSize)
-                .Select(i => new Record(keys, keys.Select(k => $"record{i}:{k}").Cast<object>().ToArray()))
+                .Select(i => new Record(keys,
+                    keys.Select((x, j) => new { x, j }).ToDictionary(x => x.x, x => x.j),
+                    keys.Select(k => $"record{i}:{k}").Cast<object>().ToArray()))
                 .Cast<IRecord>()
                 .ToList();
         }
@@ -181,7 +183,9 @@ namespace Neo4j.Driver.Tests
                 var cursor = new ListBasedRecordCursor(keys, () => records);
 
                 // I add a new record after RecordSet is created
-                var newRecord = new Record(keys, new object[] { "record5:key0" });
+                var newRecord = new Record(keys,
+                    keys.Select((x, j) => new { x, j }).ToDictionary(x => x.x, x => x.j),
+                    new object[] { "record5:key0" });
                 records.Add(newRecord);
 
                 var i = 0;

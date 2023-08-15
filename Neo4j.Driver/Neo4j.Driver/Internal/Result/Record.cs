@@ -21,24 +21,38 @@ namespace Neo4j.Driver.Internal.Result;
 
 internal class Record : IRecord
 {
-    public Record(string[] keys, object[] values)
+    private readonly Dictionary<string, int> _fieldIndexes;
+    private readonly object[] _values;
+
+    public Record(string[] keys, Dictionary<string, int> fieldIndexes, object[] values)
     {
-        Throw.ProtocolException.IfNotEqual(keys.Length, values.Length, nameof(keys), nameof(values));
-
-        var valueKeys = new Dictionary<string, object>();
-
-        for (var i = 0; i < keys.Length; i++)
+        if (keys.Length != values.Length)
         {
-            valueKeys.Add(keys[i], values[i]);
+            throw new ProtocolException(
+                $"{nameof(keys)} ({keys.Length.ToString()}) does not equal to {nameof(values)} ({values.Length.ToString()})");
         }
-
-        Values = valueKeys;
+        
+        _fieldIndexes = fieldIndexes;
+        _values = values;
         Keys = keys;
     }
 
-    public object this[int index] => Values[Keys[index]];
-    public object this[string key] => Values[key];
+    public object this[int index] => _values[index];
+    public object this[string key] => _values[_fieldIndexes[key]];
 
-    public IReadOnlyDictionary<string, object> Values { get; }
+    public IReadOnlyDictionary<string, object> Values
+    {
+        get
+        {
+            var valueKeys = new Dictionary<string, object>(_values.Length);
+            for (var i = 0; i < _values.Length; i++)
+            {
+                valueKeys.Add(Keys[i], _values[i]);
+            }
+
+            return valueKeys;
+        }
+    }
+
     public IReadOnlyList<string> Keys { get; }
 }

@@ -409,6 +409,7 @@ namespace Neo4j.Driver.Reactive.Internal
 
                     yield return new Record(
                         fields,
+                        fields.Select((x, j) => new {x, j}).ToDictionary(x => x.x, x => x.j),
                         Enumerable.Range(1, fields.Length).Select(f => $"{i:D3}_{f:D2}").Cast<object>().ToArray());
                 }
             }
@@ -542,6 +543,7 @@ namespace Neo4j.Driver.Reactive.Internal
                     {
                         yield return new Record(
                             keys,
+                            keys.Select((x, j) => new { x, j }).ToDictionary(x => x.x, x => x.j),
                             Enumerable.Range(1, keyCount).Select(f => $"{r:D3}_{f:D2}").Cast<object>().ToArray());
                     }
 

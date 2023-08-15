@@ -253,7 +253,9 @@ namespace Neo4j.Driver.Tests
                 {
                     for (var i = 0; i < count; i++)
                     {
-                        _records.Add(new Record(Keys, new object[] { "Test", 123 }));
+                        _records.Add(new Record(Keys,
+                            Keys.Select((x, j) => new { x, j }).ToDictionary(x => x.x, x => x.j),
+                            new object[] { "Test", 123 }));
                     }
                 }
             }

@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -42,6 +43,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
     private long _queryId;
 
     private volatile int _state;
+    private Dictionary<string, int> _fieldIndexes;
 
     public ResultCursorBuilder(
         SummaryBuilder summaryBuilder,
@@ -139,6 +141,11 @@ internal class ResultCursorBuilder : IResultCursorBuilder
     public void RunCompleted(long queryId, string[] fields, IResponsePipelineError error)
     {
         _queryId = queryId;
+        _fieldIndexes = new Dictionary<string, int>(fields.Length);
+        for(var i = 0; i < fields.Length; i++)
+        {
+            _fieldIndexes.Add(fields[i], i);
+        }
         _fields = fields;
 
         CheckAndUpdateState(State.RunCompleted, State.RunRequested);
@@ -151,7 +158,8 @@ internal class ResultCursorBuilder : IResultCursorBuilder
 
     public void PushRecord(object[] fieldValues)
     {
-        _records.Enqueue(new Record(_fields, fieldValues));
+        
+        _records.Enqueue(new Record(_fields, _fieldIndexes, fieldValues));
         _autoPullHandler.TryDisableAutoPull(_records.Count);
 
         UpdateState(State.RecordsStreaming);
