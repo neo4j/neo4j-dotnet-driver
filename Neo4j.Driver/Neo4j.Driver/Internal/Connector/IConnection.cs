@@ -71,7 +71,7 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
         SessionConfig sessionConfig = null,
         CancellationToken cancellationToken = default);
 
-    Task ReAuthAsync(IAuthToken newAuthToken, CancellationToken cancellationToken = default);
+    Task ReAuthAsync(IAuthToken newAuthToken, bool force, CancellationToken cancellationToken = default);
 
     Task<bool> NotifySecurityExceptionAsync(SecurityException exception);
 

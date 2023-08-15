@@ -113,11 +113,12 @@ internal abstract class DelegatedConnection : IConnection
 
     public async Task ReAuthAsync(
         IAuthToken newAuthToken,
+        bool force,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            await Delegate.ReAuthAsync(newAuthToken, cancellationToken).ConfigureAwait(false);
+            await Delegate.ReAuthAsync(newAuthToken, force, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception e)
         {

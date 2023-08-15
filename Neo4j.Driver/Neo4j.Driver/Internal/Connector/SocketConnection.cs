@@ -172,9 +172,10 @@ internal sealed class SocketConnection : IConnection
 
     public Task ReAuthAsync(
         IAuthToken newAuthToken,
+        bool force,
         CancellationToken cancellationToken = default)
     {
-        if (newAuthToken.Equals(AuthToken))
+        if (!force && newAuthToken.Equals(AuthToken))
         {
             // if the token is the same, we don't need to reauthenticate.
             AuthorizationStatus = AuthorizationStatus.FreshlyAuthenticated;
@@ -374,10 +375,12 @@ internal sealed class SocketConnection : IConnection
             token = await AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
         }
 
-        // The token has changed or the connection needs to re-authenticate but can use the same credentials.
-        if (AuthorizationStatus == AuthorizationStatus.AuthorizationExpired || !token.Equals(AuthToken))
+        var authExpired = AuthorizationStatus == AuthorizationStatus.AuthorizationExpired;
+        if (authExpired || !token.Equals(AuthToken))
         {
-            await ReAuthAsync(token).ConfigureAwait(false);
+            // The token has changed, or the connection needs to re-authenticate but can use the same credentials.
+            // In the latter case, we need to force re-authentication.
+            await ReAuthAsync(token, authExpired).ConfigureAwait(false);
         }
     }
 
