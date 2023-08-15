@@ -398,7 +398,8 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         TransactionConfig.Default,
                         null,
-                        null));
+                        null,
+                        true));
 
                 exception.Should().BeOfType<ArgumentException>();
             }
@@ -420,7 +421,8 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         TransactionConfig.Default,
                         null,
-                        new NotificationsDisabledConfig()));
+                        new NotificationsDisabledConfig(),
+                        true));
 
                 exception.Should().BeOfType<ArgumentOutOfRangeException>();
             }
@@ -441,7 +443,8 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         TransactionConfig.Default,
                         null,
-                        new NotificationsDisabledConfig()));
+                        new NotificationsDisabledConfig(),
+                        true));
 
                 exception.Should().BeNull();
             }
@@ -459,7 +462,8 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         TransactionConfig.Default,
                         null,
-                        null));
+                        null,
+                        true));
 
                 exception.Should().BeOfType<ClientException>();
             }
@@ -478,7 +482,8 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         TransactionConfig.Default,
                         null,
-                        null));
+                        null,
+                        true));
 
                 exception.Should().BeOfType<InvalidOperationException>();
             }
@@ -512,7 +517,8 @@ namespace Neo4j.Driver.Internal.Protocol
                     bookmarks,
                     tc,
                     null,
-                    null);
+                    null,
+                    true);
 
                 msgFactory.Verify(
                     x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),

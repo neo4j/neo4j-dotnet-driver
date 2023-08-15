@@ -842,7 +842,8 @@ namespace Neo4j.Driver.Internal.Protocol
                         Bookmarks.Empty,
                         TransactionConfig.Default,
                         new SessionConfig("Douglas Fir"),
-                        null));
+                        null,
+                        true));
 
                 exception.Should().BeOfType<ArgumentException>();
             }
@@ -865,7 +866,8 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         TransactionConfig.Default,
                         null,
-                        new NotificationsDisabledConfig()));
+                        new NotificationsDisabledConfig(),
+                        true));
 
                 exception.Should().BeOfType<ArgumentOutOfRangeException>();
             }
@@ -886,7 +888,8 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         TransactionConfig.Default,
                         null,
-                        new NotificationsDisabledConfig()));
+                        new NotificationsDisabledConfig(),
+                        true));
 
                 exception.Should().BeNull();
             }
@@ -908,7 +911,8 @@ namespace Neo4j.Driver.Internal.Protocol
                         Bookmarks.Empty,
                         TransactionConfig.Default,
                         new SessionConfig("Douglas Fir"),
-                        null));
+                        null,
+                        true));
 
                 exception.Should().BeNull();
             }
@@ -932,11 +936,12 @@ namespace Neo4j.Driver.Internal.Protocol
                     bookmarks,
                     config,
                     sessionConfig,
-                    null);
+                    null,
+                    true);
 
                 mockV3.Verify(
                     x =>
-                        x.BeginTransactionAsync(mockConn.Object, "db", bookmarks, config, sessionConfig, null),
+                        x.BeginTransactionAsync(mockConn.Object, "db", bookmarks, config, sessionConfig, null, true),
                     Times.Once);
 
                 mockConn.Verify(
@@ -946,7 +951,8 @@ namespace Neo4j.Driver.Internal.Protocol
                             It.IsAny<Bookmarks>(),
                             It.IsAny<TransactionConfig>(),
                             It.IsAny<SessionConfig>(),
-                            It.IsAny<INotificationsConfig>()),
+                            It.IsAny<INotificationsConfig>(),
+                            true),
                     Times.Never);
             }
         }
