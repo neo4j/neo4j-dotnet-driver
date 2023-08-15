@@ -174,6 +174,13 @@ internal sealed class SocketConnection : IConnection
         IAuthToken newAuthToken,
         CancellationToken cancellationToken = default)
     {
+        if (newAuthToken.Equals(AuthToken))
+        {
+            // if the token is the same, we don't need to reauthenticate.
+            AuthorizationStatus = AuthorizationStatus.FreshlyAuthenticated;
+            return Task.CompletedTask;
+        }
+
         if (!this.SupportsReAuth())
         {
             // if we are attempting to reauthenticate on 5.0 or earlier, throw an exception.

@@ -299,19 +299,13 @@ internal sealed class ConnectionPool : IConnectionPool
     {
         if (exception is TokenExpiredException)
         {
-            // if a token exception occured the pool member, all connections in the pool that are using that token
-            // should be closed. This is because the token is now invalid and all connections using it will fail.
-            foreach (var conn in _inUseConnections)
-            {
-                if (connection.AuthToken.Equals(conn.AuthToken))
-                {
-                    conn.AuthorizationStatus = AuthorizationStatus.SecurityError;
-                }
-            }
+            connection.AuthorizationStatus = AuthorizationStatus.SecurityError;
         }
 
         if (exception is AuthorizationException)
         {
+            // if an auth exception occured the pool member, all connections in the pool that are using that token
+            // should be closed. This is because the token is now invalid and all connections using it will fail.
             foreach (var conn in _inUseConnections)
             {
                 if (connection.AuthToken.Equals(conn.AuthToken))
