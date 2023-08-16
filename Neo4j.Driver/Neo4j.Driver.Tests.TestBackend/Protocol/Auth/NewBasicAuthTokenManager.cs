@@ -27,9 +27,9 @@ namespace Neo4j.Driver.Tests.TestBackend;
 
 internal abstract class TestAuthTokenManager : IProtocolObject, IAuthTokenManager
 {
-    public abstract Task<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default);
+    public abstract ValueTask<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default);
 
-    public abstract Task<bool> HandleSecurityExceptionAsync(
+    public abstract ValueTask<bool> HandleSecurityExceptionAsync(
         IAuthToken token,
         SecurityException exception,
         CancellationToken cancellationToken = default);
@@ -52,7 +52,7 @@ internal class NewBasicAuthTokenManager : NewNeo4jAuthTokenManager
         return Task.CompletedTask;
     }
 
-    public async Task<IAuthToken> GetTokenAsync()
+    public async ValueTask<IAuthToken> GetTokenAsync()
     {
         var requestId = Guid.NewGuid().ToString();
         await _controller.SendResponse(GetAuthRequest(requestId)).ConfigureAwait(false);

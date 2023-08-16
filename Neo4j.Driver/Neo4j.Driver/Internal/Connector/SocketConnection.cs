@@ -194,11 +194,11 @@ internal sealed class SocketConnection : IConnection
         return BoltProtocol.ReAuthAsync(this, newAuthToken);
     }
 
-    public Task<bool> NotifySecurityExceptionAsync(SecurityException exception)
+    public ValueTask<bool> NotifySecurityExceptionAsync(SecurityException exception)
     {
         if (SessionConfig?.AuthToken != null)
         {
-            return Task.FromResult(false);
+            return new ValueTask<bool>(false);
         }
 
         return AuthTokenManager.HandleSecurityExceptionAsync(AuthToken, exception);
@@ -346,7 +346,7 @@ internal sealed class SocketConnection : IConnection
 
     public SessionConfig SessionConfig { get; set; }
 
-    public async Task ValidateCredsAsync()
+    public async ValueTask ValidateCredsAsync()
     {
         var token = AuthToken;
         if (AuthorizationStatus == AuthorizationStatus.SecurityError)
@@ -440,14 +440,14 @@ internal sealed class SocketConnection : IConnection
         return BoltProtocol.RollbackTransactionAsync(this);
     }
 
-    private Task HandleAuthErrorAsync(IResponsePipeline responsePipeline)
+    private ValueTask HandleAuthErrorAsync(IResponsePipeline responsePipeline)
     {
         return responsePipeline.IsHealthy(out var error)
-            ? Task.CompletedTask
+            ? new ValueTask()
             : HandleAuthErrorAsync(error);
     }
 
-    private async Task HandleAuthErrorAsync(Exception error)
+    private async ValueTask HandleAuthErrorAsync(Exception error)
     {
         if (error is SecurityException se)
         {

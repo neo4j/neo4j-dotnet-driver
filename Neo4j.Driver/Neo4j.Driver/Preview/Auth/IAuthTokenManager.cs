@@ -29,7 +29,7 @@ public interface IAuthTokenManager
     /// </summary>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    Task<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default);
+    ValueTask<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Handles an error notification thrown by the server if a security error happened.
@@ -42,7 +42,7 @@ public interface IAuthTokenManager
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// A <see cref="Task"/> representing the asynchronous operation.
     /// </returns>
-    Task<bool> HandleSecurityExceptionAsync(
+    ValueTask<bool> HandleSecurityExceptionAsync(
         IAuthToken token,
         SecurityException exception,
         CancellationToken cancellationToken = default);

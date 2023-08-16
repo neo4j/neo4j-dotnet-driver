@@ -34,7 +34,7 @@ internal class NewBearerAuthTokenManager : NewNeo4jAuthTokenManager
         return Task.CompletedTask;
     }
 
-    public async Task<AuthTokenAndExpiration> GetTokenAsync()
+    public async ValueTask<AuthTokenAndExpiration> GetTokenAsync()
     {
         var requestId = Guid.NewGuid().ToString();
         await _controller.SendResponse(GetAuthRequest(requestId)).ConfigureAwait(false);

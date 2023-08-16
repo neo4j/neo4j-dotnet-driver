@@ -50,16 +50,16 @@ public static class AuthTokenManagers
     /// </summary>
     /// <param name="tokenProviderAsync">A function that will be called when a new token is needed.</param>
     /// <returns>The <see cref="IAuthTokenManager"/> that will call the provided function when a new token is needed.</returns>
-    public static IAuthTokenManager Basic(Func<Task<IAuthToken>> tokenProviderAsync)
+    public static IAuthTokenManager Basic(Func<ValueTask<IAuthToken>> tokenProviderAsync)
     {
         return Basic(DateTimeProvider.Instance, tokenProviderAsync);
     }
 
     internal static IAuthTokenManager Basic(
         IDateTimeProvider dateTimeProvider,
-        Func<Task<IAuthToken>> tokenProviderAsync)
+        Func<ValueTask<IAuthToken>> tokenProviderAsync)
     {
-        async Task<AuthTokenAndExpiration> TokenProviderAsync()
+        async ValueTask<AuthTokenAndExpiration> TokenProviderAsync()
         {
             var authToken = await tokenProviderAsync().ConfigureAwait(false);
             return new AuthTokenAndExpiration(authToken, DateTime.MaxValue);
@@ -75,14 +75,14 @@ public static class AuthTokenManagers
     /// </summary>
     /// <param name="tokenProviderAsync">A function that will be called when a new token is needed.</param>
     /// <returns>The <see cref="IAuthTokenManager"/> that will call the provided function when a new token is needed.</returns>
-    public static IAuthTokenManager Bearer(Func<Task<AuthTokenAndExpiration>> tokenProviderAsync)
+    public static IAuthTokenManager Bearer(Func<ValueTask<AuthTokenAndExpiration>> tokenProviderAsync)
     {
         return Bearer(DateTimeProvider.Instance, tokenProviderAsync);
     }
 
     internal static IAuthTokenManager Bearer(
         IDateTimeProvider dateTimeProvider,
-        Func<Task<AuthTokenAndExpiration>> tokenProviderAsync)
+        Func<ValueTask<AuthTokenAndExpiration>> tokenProviderAsync)
     {
         return new Neo4jAuthTokenManager(
             dateTimeProvider,

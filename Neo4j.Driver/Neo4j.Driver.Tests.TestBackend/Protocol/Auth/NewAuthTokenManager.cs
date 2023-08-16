@@ -40,7 +40,7 @@ internal class NewAuthTokenManager : TestAuthTokenManager
         return new ProtocolResponse("AuthTokenManager", uniqueId).Encode();
     }
 
-    public override async Task<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default)
+    public override async ValueTask<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default)
     {
         var requestId = Guid.NewGuid().ToString();
         await _controller.SendResponse(GetAuthRequest(requestId)).ConfigureAwait(false);
@@ -62,7 +62,7 @@ internal class NewAuthTokenManager : TestAuthTokenManager
             new { authTokenManagerId = uniqueId, id = requestId }).Encode();
     }
 
-    public override async Task<bool> HandleSecurityExceptionAsync(
+    public override async ValueTask<bool> HandleSecurityExceptionAsync(
         IAuthToken token,
         SecurityException exception,
         CancellationToken cancellationToken = default)

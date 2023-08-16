@@ -73,7 +73,7 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
 
     Task ReAuthAsync(IAuthToken newAuthToken, bool force, CancellationToken cancellationToken = default);
 
-    Task<bool> NotifySecurityExceptionAsync(SecurityException exception);
+    ValueTask<bool> NotifySecurityExceptionAsync(SecurityException exception);
 
     // send all and receive all
     Task SyncAsync();
@@ -102,7 +102,7 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
     void SetReadTimeoutInSeconds(int seconds);
 
     void SetUseUtcEncodedDateTime();
-    Task ValidateCredsAsync();
+    ValueTask ValidateCredsAsync();
 }
 
 internal interface IConnectionRunner
