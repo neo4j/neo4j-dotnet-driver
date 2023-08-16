@@ -98,7 +98,8 @@ namespace Neo4j.Driver.Tests
                 await session.RunAsync("lalalal");
 
                 mockConn.Verify(
-                    x => x.RunInAutoCommitTransactionAsync(It.IsAny<AutoCommitParams>(), 
+                    x => x.RunInAutoCommitTransactionAsync(
+                        It.IsAny<AutoCommitParams>(),
                         It.IsAny<INotificationsConfig>()),
                     Times.Once);
             }
@@ -158,6 +159,27 @@ namespace Neo4j.Driver.Tests
 
                 var error = await Record.ExceptionAsync(() => session.RunAsync("lalal"));
                 error.Should().BeOfType<TransactionNestingException>();
+            }
+
+            [Fact]
+            public async void ShouldDefaultToBlockingTransactionStart()
+            {
+                var mockProtocol = new Mock<IBoltProtocol>();
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                mockConn
+                    .SetupGet(x => x.BoltProtocol)
+                    .Returns(mockProtocol.Object);
+
+                var session = NewSession(mockConn.Object);
+                var tx = await session.BeginTransactionAsync();
+
+                mockProtocol.Verify(
+                    x =>
+                        x.BeginTransactionAsync(
+                            It.IsAny<IConnection>(),
+                            It.Is<BeginProtocolParams>(y => y.AwaitBeginResult == true)),
+                    Times.Once);
             }
 
             [Fact]
@@ -252,6 +274,38 @@ namespace Neo4j.Driver.Tests
 
                 // Then
                 mockConn.Verify(x => x.CloseAsync(), Times.Once);
+            }
+        }
+
+        public class PipelinedRunTransactionMethod
+        {
+            [Fact]
+            public async void PipelinedShouldBeginWithoutBlocking()
+            {
+                var mockProtocol = new Mock<IBoltProtocol>();
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+
+                mockConn
+                    .SetupGet(x => x.BoltProtocol)
+                    .Returns(mockProtocol.Object);
+
+                var session = new AsyncSession(
+                    new TestConnectionProvider(mockConn.Object),
+                    null,
+                    new AsyncRetryLogic(TimeSpan.Zero, null),
+                    0,
+                    new Driver.SessionConfig(),
+                    false);
+
+                await session.PipelinedExecuteReadAsync(_ => Task.FromResult(null as EagerResult<IRecord[]>));
+
+                mockProtocol.Verify(
+                    x =>
+                        x.BeginTransactionAsync(
+                            It.IsAny<IConnection>(),
+                            It.Is<BeginProtocolParams>(y => y.AwaitBeginResult == false)),
+                    Times.Once);
             }
         }
 
@@ -380,7 +434,6 @@ namespace Neo4j.Driver.Tests
                 new Uri("neo4j://myTest.org"),
                 AuthTokenManagers.Static(AuthTokens.None),
                 Config.Default);
-
 
             public Task<bool> SupportsMultiDbAsync()
             {

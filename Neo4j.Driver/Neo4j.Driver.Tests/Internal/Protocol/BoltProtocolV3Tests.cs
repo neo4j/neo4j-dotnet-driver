@@ -537,6 +537,51 @@ namespace Neo4j.Driver.Internal.Protocol
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
                 mockConn.Verify(x => x.SendAsync(), Times.Never);
             }
+
+            [Fact]
+            public async Task ShouldNotSyncBeginMessageWhenPipelining()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V3_0);
+                mockConn.SetupGet(x => x.Mode).Returns(AccessMode.Write);
+
+                var fakeMessage = new BeginMessage(null, null, null, null, AccessMode.Write, null, null);
+                var msgFactory = new Mock<IBoltProtocolMessageFactory>();
+                msgFactory.Setup(
+                        x => x.NewBeginMessage(
+                            It.IsAny<IConnection>(),
+                            It.IsAny<string>(),
+                            It.IsAny<Bookmarks>(),
+                            It.IsAny<TransactionConfig>(),
+                            It.IsAny<AccessMode>(),
+                            It.IsAny<INotificationsConfig>()))
+                    .Returns(fakeMessage);
+
+                var protocol = new BoltProtocolV3(msgFactory.Object);
+
+                var tc = new TransactionConfig();
+                var bookmarks = new InternalBookmarks();
+                await protocol.BeginTransactionAsync(
+                    mockConn.Object,
+                    new BeginProtocolParams(
+                        null,
+                        bookmarks,
+                        tc,
+                        null,
+                        null,
+                        false));
+
+                msgFactory.Verify(
+                    x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
+                    Times.Once);
+
+                mockConn.Verify(
+                    x => x.EnqueueAsync(fakeMessage, NoOpResponseHandler.Instance),
+                    Times.Once);
+
+                mockConn.Verify(x => x.SyncAsync(), Times.Never);
+                mockConn.Verify(x => x.SendAsync(), Times.Never);
+            }
         }
 
         public class RunInExplicitTransactionAsync

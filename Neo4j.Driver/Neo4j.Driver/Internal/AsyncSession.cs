@@ -295,7 +295,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         AccessMode mode,
         Func<IAsyncTransaction, Task> work,
         Action<TransactionConfigBuilder> action,
-        bool block = true)
+        bool awaitBegin = true)
     {
         return RunTransactionAsync(
             mode,
@@ -305,21 +305,22 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                 var ignored = 1;
                 return ignored;
             },
-            action);
+            action,
+            awaitBegin);
     }
 
     private Task<T> RunTransactionAsync<T>(
         AccessMode mode,
         Func<IAsyncTransaction, Task<T>> work,
         Action<TransactionConfigBuilder> action,
-        bool block = true)
+        bool awaitBegin = true)
     {
         return TryExecuteAsync(
             _logger,
             () => _retryLogic.RetryAsync(
                 async () =>
                 {
-                    var tx = await BeginTransactionWithoutLoggingAsync(mode, action, true, block).ConfigureAwait(false);
+                    var tx = await BeginTransactionWithoutLoggingAsync(mode, action, true, awaitBegin).ConfigureAwait(false);
                     try
                     {
                         var result = await work(tx).ConfigureAwait(false);
@@ -345,7 +346,8 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     private async Task<IInternalAsyncTransaction> BeginTransactionWithoutLoggingAsync(
         AccessMode mode,
         Action<TransactionConfigBuilder> action,
-        bool disposeUnconsumedSessionResult, bool block = true)
+        bool disposeUnconsumedSessionResult,
+        bool awaitBegin = true)
     {
         var config = BuildTransactionConfig(action);
         await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
@@ -367,7 +369,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
             SessionConfig,
             _notificationsConfig);
 
-        await tx.BeginTransactionAsync(config, block).ConfigureAwait(false);
+        await tx.BeginTransactionAsync(config, awaitBegin).ConfigureAwait(false);
         _transaction = tx;
         return _transaction;
     }
