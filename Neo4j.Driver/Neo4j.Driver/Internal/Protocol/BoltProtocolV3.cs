@@ -159,33 +159,26 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         return streamBuilder.CreateCursor();
     }
 
-    public async Task BeginTransactionAsync(
-        IConnection connection,
-        string database,
-        Bookmarks bookmarks,
-        TransactionConfig config,
-        SessionConfig sessionConfig,
-        INotificationsConfig notificationsConfig,
-        bool awaitBeginResult)
+    public async Task BeginTransactionAsync(IConnection connection, BeginProtocolParams beginParams)
     {
-        connection.SessionConfig = sessionConfig;
+        connection.SessionConfig = beginParams.SessionConfig;
         ValidateImpersonatedUserForVersion(connection);
-        ValidateDatabase(connection, database);
-        ValidateNotificationsForVersion(connection, notificationsConfig);
+        ValidateDatabase(connection, beginParams.Database);
+        ValidateNotificationsForVersion(connection, beginParams.NotificationsConfig);
 
         var mode = connection.Mode ??
             throw new InvalidOperationException("Connection should have its Mode property set.");
 
         var message = _protocolMessageFactory.NewBeginMessage(
             connection,
-            database,
-            bookmarks,
-            config,
+            beginParams.Database,
+            beginParams.Bookmarks,
+            beginParams.TxConfig,
             mode,
-            notificationsConfig);
+            beginParams.NotificationsConfig);
 
         await connection.EnqueueAsync(message, NoOpResponseHandler.Instance).ConfigureAwait(false);
-        if (awaitBeginResult)
+        if (beginParams.AwaitBeginResult)
         {
             await connection.SyncAsync().ConfigureAwait(false);
         }

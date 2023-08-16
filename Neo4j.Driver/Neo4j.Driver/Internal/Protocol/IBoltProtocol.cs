@@ -45,14 +45,7 @@ internal interface IBoltProtocol
         AutoCommitParams autoCommitParams,
         INotificationsConfig notificationsConfig);
 
-    Task BeginTransactionAsync(
-        IConnection connection,
-        string database,
-        Bookmarks bookmarks,
-        TransactionConfig config,
-        SessionConfig sessionConfig,
-        INotificationsConfig notificationsConfig,
-        bool awaitBeginResult);
+    Task BeginTransactionAsync(IConnection connection, BeginProtocolParams beginParams);
 
     Task<IResultCursor> RunInExplicitTransactionAsync(
         IConnection connection,
