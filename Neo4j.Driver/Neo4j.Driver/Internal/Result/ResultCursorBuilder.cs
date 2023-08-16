@@ -141,12 +141,16 @@ internal class ResultCursorBuilder : IResultCursorBuilder
     public void RunCompleted(long queryId, string[] fields, IResponsePipelineError error)
     {
         _queryId = queryId;
-        _fieldIndexes = new Dictionary<string, int>(fields.Length);
-        for(var i = 0; i < fields.Length; i++)
+        if (fields != null)
         {
-            _fieldIndexes.Add(fields[i], i);
+            _fieldIndexes = new Dictionary<string, int>(fields.Length);
+            for (var i = 0; i < fields.Length; i++)
+            {
+                _fieldIndexes.Add(fields[i], i);
+            }
+
+            _fields = fields;
         }
-        _fields = fields;
 
         CheckAndUpdateState(State.RunCompleted, State.RunRequested);
     }
