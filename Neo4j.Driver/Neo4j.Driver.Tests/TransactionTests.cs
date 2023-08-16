@@ -43,7 +43,7 @@ namespace Neo4j.Driver.Tests
                     null,
                     bookmarks);
 
-                await tx.BeginTransactionAsync(null);
+                await tx.BeginTransactionAsync(null, true);
                 mockProtocol.Verify(
                     x => x.BeginTransactionAsync(
                         It.IsAny<IConnection>(),
@@ -51,7 +51,8 @@ namespace Neo4j.Driver.Tests
                         bookmarks,
                         It.IsAny<TransactionConfig>(),
                         null,
-                        null),
+                        null,
+                        true),
                     Times.Once);
             }
         }
@@ -65,7 +66,7 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection(protocol);
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
-                await tx.BeginTransactionAsync(TransactionConfig.Default);
+                await tx.BeginTransactionAsync(TransactionConfig.Default, true);
 
                 protocol.Verify(
                     x => x.BeginTransactionAsync(
@@ -74,7 +75,8 @@ namespace Neo4j.Driver.Tests
                         It.IsAny<Bookmarks>(),
                         It.IsAny<TransactionConfig>(),
                         null,
-                        null),
+                        null,
+                        true),
                     Times.Once);
             }
         }
@@ -243,7 +245,7 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection();
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
-                await tx.BeginTransactionAsync(TransactionConfig.Default);
+                await tx.BeginTransactionAsync(TransactionConfig.Default, true);
 
                 tx.IsOpen.Should().BeTrue();
             }
@@ -254,7 +256,7 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection();
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
-                await tx.BeginTransactionAsync(TransactionConfig.Default);
+                await tx.BeginTransactionAsync(TransactionConfig.Default, true);
                 await tx.RunAsync("RETURN 1");
 
                 tx.IsOpen.Should().BeTrue();
@@ -266,7 +268,7 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection();
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
-                await tx.BeginTransactionAsync(TransactionConfig.Default);
+                await tx.BeginTransactionAsync(TransactionConfig.Default, true);
                 await tx.MarkToCloseAsync();
 
                 tx.IsOpen.Should().BeFalse();
@@ -278,7 +280,7 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection();
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
-                await tx.BeginTransactionAsync(TransactionConfig.Default);
+                await tx.BeginTransactionAsync(TransactionConfig.Default, true);
                 await tx.CommitAsync();
 
                 tx.IsOpen.Should().BeFalse();
@@ -290,7 +292,7 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection();
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
-                await tx.BeginTransactionAsync(TransactionConfig.Default);
+                await tx.BeginTransactionAsync(TransactionConfig.Default, true);
                 await tx.RollbackAsync();
 
                 tx.IsOpen.Should().BeFalse();

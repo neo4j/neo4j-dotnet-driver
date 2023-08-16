@@ -209,7 +209,8 @@ namespace Neo4j.Driver.Tests
                                 It.IsAny<Bookmarks>(),
                                 It.IsAny<TransactionConfig>(),
                                 It.IsAny<Driver.SessionConfig>(),
-                                It.IsAny<INotificationsConfig>()))
+                                It.IsAny<INotificationsConfig>(),
+                                true))
                     .Throws(new IOException("Triggered an error when beginTx"));
 
                 var session = NewSession(mockConn.Object);
@@ -238,7 +239,8 @@ namespace Neo4j.Driver.Tests
                                 It.IsAny<Bookmarks>(),
                                 It.IsAny<TransactionConfig>(),
                                 It.IsAny<Driver.SessionConfig>(),
-                                It.IsAny<INotificationsConfig>()))
+                                It.IsAny<INotificationsConfig>(),
+                                true))
                     .Returns(Task.CompletedTask)
                     .Callback(
                         () =>
@@ -278,7 +280,8 @@ namespace Neo4j.Driver.Tests
                                 It.IsAny<Bookmarks>(),
                                 It.IsAny<TransactionConfig>(),
                                 It.IsAny<Driver.SessionConfig>(),
-                                It.IsAny<INotificationsConfig>()))
+                                It.IsAny<INotificationsConfig>(),
+                                true))
                     .Throws(new IOException("Triggered an error when beginTx"));
 
                 var session = NewSession(mockConn.Object);
