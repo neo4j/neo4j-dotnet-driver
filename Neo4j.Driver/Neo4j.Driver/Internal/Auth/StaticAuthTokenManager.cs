@@ -30,16 +30,16 @@ internal class StaticAuthTokenManager : IAuthTokenManager
         _authToken = authToken;
     }
 
-    public Task<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default)
+    public ValueTask<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(_authToken);
+        return new ValueTask<IAuthToken>(_authToken);
     }
 
-    public Task<bool> HandleSecurityExceptionAsync(
+    public ValueTask<bool> HandleSecurityExceptionAsync(
         IAuthToken token,
         SecurityException exception,
         CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(false);
+        return new ValueTask<bool>(false);
     }
 }

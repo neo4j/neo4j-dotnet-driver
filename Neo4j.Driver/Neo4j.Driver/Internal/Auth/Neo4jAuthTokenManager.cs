@@ -27,13 +27,13 @@ namespace Neo4j.Driver.Internal.Auth;
 internal class Neo4jAuthTokenManager : IAuthTokenManager
 {
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly Func<Task<AuthTokenAndExpiration>> _getAuthTokenAndExpirationAsync;
+    private readonly Func<ValueTask<AuthTokenAndExpiration>> _getAuthTokenAndExpirationAsync;
     private readonly Type[] _handledExceptionTypes;
     private AuthTokenAndExpiration _currentAuthTokenAndExpiration;
     private readonly SemaphoreSlim _sync;
 
     public Neo4jAuthTokenManager(
-        Func<Task<AuthTokenAndExpiration>> getAuthTokenAndExpirationAsync,
+        Func<ValueTask<AuthTokenAndExpiration>> getAuthTokenAndExpirationAsync,
         params Type[] handledExceptionTypes)
         : this(DateTimeProvider.Instance, getAuthTokenAndExpirationAsync, handledExceptionTypes)
     {
@@ -41,7 +41,7 @@ internal class Neo4jAuthTokenManager : IAuthTokenManager
 
     internal Neo4jAuthTokenManager(
         IDateTimeProvider dateTimeProvider,
-        Func<Task<AuthTokenAndExpiration>> getAuthTokenAndExpirationAsync,
+        Func<ValueTask<AuthTokenAndExpiration>> getAuthTokenAndExpirationAsync,
         params Type[] handledExceptionTypes)
     {
         _dateTimeProvider = dateTimeProvider;
@@ -51,7 +51,7 @@ internal class Neo4jAuthTokenManager : IAuthTokenManager
     }
 
     /// <inheritdoc/>
-    public async Task<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default)
+    public async ValueTask<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default)
     {
         await _sync.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -73,7 +73,7 @@ internal class Neo4jAuthTokenManager : IAuthTokenManager
     }
 
     /// <inheritdoc/>
-    public async Task<bool> HandleSecurityExceptionAsync(
+    public async ValueTask<bool> HandleSecurityExceptionAsync(
         IAuthToken token,
         SecurityException exception,
         CancellationToken cancellationToken = default)

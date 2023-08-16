@@ -41,7 +41,7 @@ internal abstract class DelegatedConnection : IConnection
 
     public IDictionary<string, string> RoutingContext => Delegate.RoutingContext;
 
-    public Task<bool> NotifySecurityExceptionAsync(SecurityException exception)
+    public ValueTask<bool> NotifySecurityExceptionAsync(SecurityException exception)
     {
         return Delegate.NotifySecurityExceptionAsync(exception);
     }
@@ -189,7 +189,7 @@ internal abstract class DelegatedConnection : IConnection
         set => Delegate.SessionConfig = value;
     }
 
-    public Task ValidateCredsAsync()
+    public ValueTask ValidateCredsAsync()
     {
         return Delegate.ValidateCredsAsync();
     }

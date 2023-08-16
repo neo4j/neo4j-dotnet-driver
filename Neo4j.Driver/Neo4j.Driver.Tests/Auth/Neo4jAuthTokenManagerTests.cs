@@ -34,7 +34,7 @@ namespace Neo4j.Driver.Tests.Auth
         {
             var basicToken = AuthTokens.Basic("uid", "pwd");
             var authData = new AuthTokenAndExpiration(basicToken, new DateTime(2023, 02, 28));
-            var subject = new Neo4jAuthTokenManager(() => Task.FromResult(authData));
+            var subject = new Neo4jAuthTokenManager(() => ValueTask.FromResult(authData));
 
             var returnedToken = await subject.GetTokenAsync();
 
@@ -47,10 +47,10 @@ namespace Neo4j.Driver.Tests.Auth
             var (authData, _) = GetTwoAuthTokens();
 
             int callCount = 0;
-            Task<AuthTokenAndExpiration> TokenProvider()
+            ValueTask<AuthTokenAndExpiration> TokenProvider()
             {
                 callCount++;
-                return Task.FromResult(authData);
+                return ValueTask.FromResult(authData);
             }
 
             var dateTimeProvider = new Mock<IDateTimeProvider>();
@@ -153,10 +153,10 @@ namespace Neo4j.Driver.Tests.Auth
             return (firstAuthData, secondAuthData);
         }
 
-        private Func<Task<AuthTokenAndExpiration>> SequenceTokenProvider(params AuthTokenAndExpiration[] authData)
+        private Func<ValueTask<AuthTokenAndExpiration>> SequenceTokenProvider(params AuthTokenAndExpiration[] authData)
         {
             var index = 0;
-            return () => Task.FromResult(authData[index++] ?? throw new InvalidOperationException());
+            return () => ValueTask.FromResult(authData[index++] ?? throw new InvalidOperationException());
         }
     }
 }
