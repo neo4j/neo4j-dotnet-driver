@@ -205,12 +205,7 @@ namespace Neo4j.Driver.Tests
                         x =>
                             x.BeginTransactionAsync(
                                 It.IsAny<IConnection>(),
-                                It.IsAny<string>(),
-                                It.IsAny<Bookmarks>(),
-                                It.IsAny<TransactionConfig>(),
-                                It.IsAny<Driver.SessionConfig>(),
-                                It.IsAny<INotificationsConfig>(),
-                                true))
+                                It.IsAny<BeginProtocolParams>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
 
                 var session = NewSession(mockConn.Object);
@@ -235,12 +230,7 @@ namespace Neo4j.Driver.Tests
                         x =>
                             x.BeginTransactionAsync(
                                 It.IsAny<IConnection>(),
-                                It.IsAny<string>(),
-                                It.IsAny<Bookmarks>(),
-                                It.IsAny<TransactionConfig>(),
-                                It.IsAny<Driver.SessionConfig>(),
-                                It.IsAny<INotificationsConfig>(),
-                                true))
+                                It.IsAny<BeginProtocolParams>()))
                     .Returns(Task.CompletedTask)
                     .Callback(
                         () =>
@@ -276,12 +266,7 @@ namespace Neo4j.Driver.Tests
                         x =>
                             x.BeginTransactionAsync(
                                 It.IsAny<IConnection>(),
-                                It.IsAny<string>(),
-                                It.IsAny<Bookmarks>(),
-                                It.IsAny<TransactionConfig>(),
-                                It.IsAny<Driver.SessionConfig>(),
-                                It.IsAny<INotificationsConfig>(),
-                                true))
+                                It.IsAny<BeginProtocolParams>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
 
                 var session = NewSession(mockConn.Object);
@@ -298,7 +283,7 @@ namespace Neo4j.Driver.Tests
                 var mockProtocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(mockProtocol);
                 var session = NewSession(mockConn.Object);
-                var _ = await session.BeginTransactionAsync();
+                await session.BeginTransactionAsync();
                 await session.CloseAsync();
 
                 mockProtocol.Verify(x => x.RollbackTransactionAsync(It.IsAny<IConnection>()), Times.Once);
