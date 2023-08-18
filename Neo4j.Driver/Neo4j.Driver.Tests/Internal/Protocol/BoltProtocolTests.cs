@@ -838,11 +838,13 @@ namespace Neo4j.Driver.Internal.Protocol
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocol.Instance.BeginTransactionAsync(
                         mockConn.Object,
+                        new BeginProtocolParams(
                         "db",
                         Bookmarks.Empty,
                         TransactionConfig.Default,
                         new SessionConfig("Douglas Fir"),
-                        null));
+                        null,
+                        true)));
 
                 exception.Should().BeOfType<ArgumentException>();
             }
@@ -861,11 +863,13 @@ namespace Neo4j.Driver.Internal.Protocol
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocol.Instance.BeginTransactionAsync(
                         mockConn.Object,
+                        new BeginProtocolParams(
                         "db",
                         null,
                         TransactionConfig.Default,
                         null,
-                        new NotificationsDisabledConfig()));
+                        new NotificationsDisabledConfig(),
+                        true)));
 
                 exception.Should().BeOfType<ArgumentOutOfRangeException>();
             }
@@ -882,11 +886,13 @@ namespace Neo4j.Driver.Internal.Protocol
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocol.Instance.BeginTransactionAsync(
                         mockConn.Object,
+                        new BeginProtocolParams(
                         "db",
                         null,
                         TransactionConfig.Default,
                         null,
-                        new NotificationsDisabledConfig()));
+                        new NotificationsDisabledConfig(),
+                        true)));
 
                 exception.Should().BeNull();
             }
@@ -904,11 +910,13 @@ namespace Neo4j.Driver.Internal.Protocol
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocol.Instance.BeginTransactionAsync(
                         mockConn.Object,
+                        new BeginProtocolParams(
                         "db",
                         Bookmarks.Empty,
                         TransactionConfig.Default,
                         new SessionConfig("Douglas Fir"),
-                        null));
+                        null,
+                        true)));
 
                 exception.Should().BeNull();
             }
@@ -928,25 +936,21 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 await protocol.BeginTransactionAsync(
                     mockConn.Object,
+                    new BeginProtocolParams(
                     "db",
                     bookmarks,
                     config,
                     sessionConfig,
-                    null);
+                    null,
+                    true));
 
                 mockV3.Verify(
-                    x =>
-                        x.BeginTransactionAsync(mockConn.Object, "db", bookmarks, config, sessionConfig, null),
+                    x => x.BeginTransactionAsync(mockConn.Object, 
+                        new BeginProtocolParams("db", bookmarks, config, sessionConfig, null, true)),
                     Times.Once);
 
                 mockConn.Verify(
-                    x =>
-                        x.BeginTransactionAsync(
-                            It.IsAny<string>(),
-                            It.IsAny<Bookmarks>(),
-                            It.IsAny<TransactionConfig>(),
-                            It.IsAny<SessionConfig>(),
-                            It.IsAny<INotificationsConfig>()),
+                    x => x.BeginTransactionAsync(It.IsAny<BeginProtocolParams>()),
                     Times.Never);
             }
         }

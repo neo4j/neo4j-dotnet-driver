@@ -394,11 +394,13 @@ namespace Neo4j.Driver.Internal.Protocol
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocolV3.Instance.BeginTransactionAsync(
                         mockConn.Object,
+                        new BeginProtocolParams(
                         null,
                         null,
                         TransactionConfig.Default,
                         null,
-                        null));
+                        null,
+                        true)));
 
                 exception.Should().BeOfType<ArgumentException>();
             }
@@ -416,11 +418,13 @@ namespace Neo4j.Driver.Internal.Protocol
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocolV3.Instance.BeginTransactionAsync(
                         mockConn.Object,
+                        new BeginProtocolParams(
                         null,
                         null,
                         TransactionConfig.Default,
                         null,
-                        new NotificationsDisabledConfig()));
+                        new NotificationsDisabledConfig(),
+                        true)));
 
                 exception.Should().BeOfType<ArgumentOutOfRangeException>();
             }
@@ -437,11 +441,13 @@ namespace Neo4j.Driver.Internal.Protocol
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocolV3.Instance.BeginTransactionAsync(
                         mockConn.Object,
+                        new BeginProtocolParams(
                         null,
                         null,
                         TransactionConfig.Default,
                         null,
-                        new NotificationsDisabledConfig()));
+                        new NotificationsDisabledConfig(),
+                        true)));
 
                 exception.Should().BeNull();
             }
@@ -455,11 +461,13 @@ namespace Neo4j.Driver.Internal.Protocol
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocolV3.Instance.BeginTransactionAsync(
                         mockConn.Object,
+                        new BeginProtocolParams(
                         "db",
                         null,
                         TransactionConfig.Default,
                         null,
-                        null));
+                        null,
+                        true)));
 
                 exception.Should().BeOfType<ClientException>();
             }
@@ -474,11 +482,13 @@ namespace Neo4j.Driver.Internal.Protocol
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocolV3.Instance.BeginTransactionAsync(
                         mockConn.Object,
+                        new BeginProtocolParams(
                         null,
                         null,
                         TransactionConfig.Default,
                         null,
-                        null));
+                        null,
+                        true)));
 
                 exception.Should().BeOfType<InvalidOperationException>();
             }
@@ -508,11 +518,13 @@ namespace Neo4j.Driver.Internal.Protocol
                 var bookmarks = new InternalBookmarks();
                 await protocol.BeginTransactionAsync(
                     mockConn.Object,
+                    new BeginProtocolParams(
                     null,
                     bookmarks,
                     tc,
                     null,
-                    null);
+                    null,
+                    true));
 
                 msgFactory.Verify(
                     x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
@@ -523,6 +535,51 @@ namespace Neo4j.Driver.Internal.Protocol
                     Times.Once);
 
                 mockConn.Verify(x => x.SyncAsync(), Times.Once);
+                mockConn.Verify(x => x.SendAsync(), Times.Never);
+            }
+
+            [Fact]
+            public async Task ShouldNotSyncBeginMessageWhenPipelining()
+            {
+                var mockConn = new Mock<IConnection>();
+                mockConn.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V3_0);
+                mockConn.SetupGet(x => x.Mode).Returns(AccessMode.Write);
+
+                var fakeMessage = new BeginMessage(null, null, null, null, AccessMode.Write, null, null);
+                var msgFactory = new Mock<IBoltProtocolMessageFactory>();
+                msgFactory.Setup(
+                        x => x.NewBeginMessage(
+                            It.IsAny<IConnection>(),
+                            It.IsAny<string>(),
+                            It.IsAny<Bookmarks>(),
+                            It.IsAny<TransactionConfig>(),
+                            It.IsAny<AccessMode>(),
+                            It.IsAny<INotificationsConfig>()))
+                    .Returns(fakeMessage);
+
+                var protocol = new BoltProtocolV3(msgFactory.Object);
+
+                var tc = new TransactionConfig();
+                var bookmarks = new InternalBookmarks();
+                await protocol.BeginTransactionAsync(
+                    mockConn.Object,
+                    new BeginProtocolParams(
+                        null,
+                        bookmarks,
+                        tc,
+                        null,
+                        null,
+                        false));
+
+                msgFactory.Verify(
+                    x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
+                    Times.Once);
+
+                mockConn.Verify(
+                    x => x.EnqueueAsync(fakeMessage, NoOpResponseHandler.Instance),
+                    Times.Once);
+
+                mockConn.Verify(x => x.SyncAsync(), Times.Never);
                 mockConn.Verify(x => x.SendAsync(), Times.Never);
             }
         }

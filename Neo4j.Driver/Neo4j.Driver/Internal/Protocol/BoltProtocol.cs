@@ -132,24 +132,12 @@ internal sealed class BoltProtocol : IBoltProtocol
         return streamBuilder.CreateCursor();
     }
 
-    public Task BeginTransactionAsync(
-        IConnection connection,
-        string database,
-        Bookmarks bookmarks,
-        TransactionConfig config,
-        SessionConfig sessionConfig,
-        INotificationsConfig notificationsConfig)
+    public Task BeginTransactionAsync(IConnection connection, BeginProtocolParams beginParams)
     {
-        connection.SessionConfig = sessionConfig;
+        connection.SessionConfig = beginParams.SessionConfig;
         BoltProtocolV3.ValidateImpersonatedUserForVersion(connection);
-        BoltProtocolV3.ValidateNotificationsForVersion(connection, notificationsConfig);
-        return _boltProtocolV3.BeginTransactionAsync(
-            connection,
-            database,
-            bookmarks,
-            config,
-            sessionConfig,
-            notificationsConfig);
+        BoltProtocolV3.ValidateNotificationsForVersion(connection, beginParams.NotificationsConfig);
+        return _boltProtocolV3.BeginTransactionAsync(connection, beginParams);
     }
 
     public async Task<IResultCursor> RunInExplicitTransactionAsync(

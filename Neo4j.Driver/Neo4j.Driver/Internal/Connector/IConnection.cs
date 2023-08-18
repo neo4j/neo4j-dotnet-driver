@@ -123,12 +123,7 @@ internal interface IConnectionRunner
         AutoCommitParams autoCommitParams,
         INotificationsConfig notificationsConfig);
 
-    Task BeginTransactionAsync(
-        string database,
-        Bookmarks bookmarks,
-        TransactionConfig config,
-        SessionConfig sessionConfig,
-        INotificationsConfig notificationsConfig);
+    Task BeginTransactionAsync(BeginProtocolParams beginParams);
 
     Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize);
     Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker);

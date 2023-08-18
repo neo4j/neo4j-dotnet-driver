@@ -98,7 +98,8 @@ namespace Neo4j.Driver.Tests
                 await session.RunAsync("lalalal");
 
                 mockConn.Verify(
-                    x => x.RunInAutoCommitTransactionAsync(It.IsAny<AutoCommitParams>(), 
+                    x => x.RunInAutoCommitTransactionAsync(
+                        It.IsAny<AutoCommitParams>(),
                         It.IsAny<INotificationsConfig>()),
                     Times.Once);
             }
@@ -161,6 +162,27 @@ namespace Neo4j.Driver.Tests
             }
 
             [Fact]
+            public async void ShouldDefaultToBlockingTransactionStart()
+            {
+                var mockProtocol = new Mock<IBoltProtocol>();
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+                mockConn
+                    .SetupGet(x => x.BoltProtocol)
+                    .Returns(mockProtocol.Object);
+
+                var session = NewSession(mockConn.Object);
+                var tx = await session.BeginTransactionAsync();
+
+                mockProtocol.Verify(
+                    x =>
+                        x.BeginTransactionAsync(
+                            It.IsAny<IConnection>(),
+                            It.Is<BeginProtocolParams>(y => y.AwaitBeginResult == true)),
+                    Times.Once);
+            }
+
+            [Fact]
             public async void ShouldBeAbleToUseSessionAgainWhenTransactionIsClosed()
             {
                 var mockConn = MockedConnectionWithSuccessResponse();
@@ -205,11 +227,7 @@ namespace Neo4j.Driver.Tests
                         x =>
                             x.BeginTransactionAsync(
                                 It.IsAny<IConnection>(),
-                                It.IsAny<string>(),
-                                It.IsAny<Bookmarks>(),
-                                It.IsAny<TransactionConfig>(),
-                                It.IsAny<Driver.SessionConfig>(),
-                                It.IsAny<INotificationsConfig>()))
+                                It.IsAny<BeginProtocolParams>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
 
                 var session = NewSession(mockConn.Object);
@@ -234,11 +252,7 @@ namespace Neo4j.Driver.Tests
                         x =>
                             x.BeginTransactionAsync(
                                 It.IsAny<IConnection>(),
-                                It.IsAny<string>(),
-                                It.IsAny<Bookmarks>(),
-                                It.IsAny<TransactionConfig>(),
-                                It.IsAny<Driver.SessionConfig>(),
-                                It.IsAny<INotificationsConfig>()))
+                                It.IsAny<BeginProtocolParams>()))
                     .Returns(Task.CompletedTask)
                     .Callback(
                         () =>
@@ -263,6 +277,38 @@ namespace Neo4j.Driver.Tests
             }
         }
 
+        public class PipelinedRunTransactionMethod
+        {
+            [Fact]
+            public async void PipelinedShouldBeginWithoutBlocking()
+            {
+                var mockProtocol = new Mock<IBoltProtocol>();
+                var mockConn = new Mock<IConnection>();
+                mockConn.Setup(x => x.IsOpen).Returns(true);
+
+                mockConn
+                    .SetupGet(x => x.BoltProtocol)
+                    .Returns(mockProtocol.Object);
+
+                var session = new AsyncSession(
+                    new TestConnectionProvider(mockConn.Object),
+                    null,
+                    new AsyncRetryLogic(TimeSpan.Zero, null),
+                    0,
+                    new Driver.SessionConfig(),
+                    false);
+
+                await session.PipelinedExecuteReadAsync(_ => Task.FromResult(null as EagerResult<IRecord[]>));
+
+                mockProtocol.Verify(
+                    x =>
+                        x.BeginTransactionAsync(
+                            It.IsAny<IConnection>(),
+                            It.Is<BeginProtocolParams>(y => y.AwaitBeginResult == false)),
+                    Times.Once);
+            }
+        }
+
         public class CloseAsyncMethod
         {
             [Fact]
@@ -274,11 +320,7 @@ namespace Neo4j.Driver.Tests
                         x =>
                             x.BeginTransactionAsync(
                                 It.IsAny<IConnection>(),
-                                It.IsAny<string>(),
-                                It.IsAny<Bookmarks>(),
-                                It.IsAny<TransactionConfig>(),
-                                It.IsAny<Driver.SessionConfig>(),
-                                It.IsAny<INotificationsConfig>()))
+                                It.IsAny<BeginProtocolParams>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
 
                 var session = NewSession(mockConn.Object);
@@ -295,7 +337,7 @@ namespace Neo4j.Driver.Tests
                 var mockProtocol = new Mock<IBoltProtocol>();
                 var mockConn = NewMockedConnection(mockProtocol);
                 var session = NewSession(mockConn.Object);
-                var _ = await session.BeginTransactionAsync();
+                await session.BeginTransactionAsync();
                 await session.CloseAsync();
 
                 mockProtocol.Verify(x => x.RollbackTransactionAsync(It.IsAny<IConnection>()), Times.Once);
@@ -392,7 +434,6 @@ namespace Neo4j.Driver.Tests
                 new Uri("neo4j://myTest.org"),
                 AuthTokenManagers.Static(AuthTokens.None),
                 Config.Default);
-
 
             public Task<bool> SupportsMultiDbAsync()
             {

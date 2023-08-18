@@ -405,20 +405,9 @@ internal sealed class SocketConnection : IConnection
         return BoltProtocol.RunInAutoCommitTransactionAsync(this, autoCommitParams, notificationsConfig);
     }
 
-    public Task BeginTransactionAsync(
-        string database,
-        Bookmarks bookmarks,
-        TransactionConfig config,
-        SessionConfig sessionConfig,
-        INotificationsConfig notificationsConfig)
+    public Task BeginTransactionAsync(BeginProtocolParams beginParams)
     {
-        return BoltProtocol.BeginTransactionAsync(
-            this,
-            database,
-            bookmarks,
-            config,
-            sessionConfig,
-            notificationsConfig);
+        return BoltProtocol.BeginTransactionAsync(this, beginParams);
     }
 
     public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize)
