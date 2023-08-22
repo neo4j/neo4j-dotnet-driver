@@ -359,6 +359,10 @@ internal sealed class SocketConnection : IConnection
 
             // Get a new token
             token = await AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
+            if (token is null)
+            {
+                throw new InvalidOperationException("Auth token manager returned a null token.");
+            }
         }
         else if (SessionConfig?.AuthToken != null)
         {
@@ -373,6 +377,10 @@ internal sealed class SocketConnection : IConnection
         else if (AuthorizationStatus == AuthorizationStatus.Pooled)
         {
             token = await AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
+            if (token is null)
+            {
+                throw new InvalidOperationException("Auth token manager returned a null token.");
+            }
         }
 
         var authExpired = AuthorizationStatus == AuthorizationStatus.AuthorizationExpired;
