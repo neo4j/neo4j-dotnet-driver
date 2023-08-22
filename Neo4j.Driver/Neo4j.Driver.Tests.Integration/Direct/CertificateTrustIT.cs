@@ -19,7 +19,7 @@ using System;
 using System.Net;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.Auth;
+using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Auth;

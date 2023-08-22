@@ -17,7 +17,7 @@
 
 using System;
 using Castle.Core.Internal;
-using Neo4j.Driver.Auth;
+using Neo4j.Driver.Preview.Auth;
 
 namespace Neo4j.Driver.IntegrationTests.Internals;
 

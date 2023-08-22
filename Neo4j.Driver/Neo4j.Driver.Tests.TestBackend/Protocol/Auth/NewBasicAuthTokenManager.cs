@@ -19,7 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Auth;
+using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Auth;
 
@@ -27,39 +27,42 @@ namespace Neo4j.Driver.Tests.TestBackend;
 
 internal abstract class TestAuthTokenManager : IProtocolObject, IAuthTokenManager
 {
-    public abstract Task<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default);
-    public abstract Task OnTokenExpiredAsync(IAuthToken token, CancellationToken cancellationToken = default);
+    public abstract ValueTask<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default);
+
+    public abstract ValueTask<bool> HandleSecurityExceptionAsync(
+        IAuthToken token,
+        SecurityException exception,
+        CancellationToken cancellationToken = default);
 }
 
-internal class NewExpirationBasedAuthTokenManager : IProtocolObject
+internal class NewNeo4jAuthTokenManager : IProtocolObject
 {
     protected Controller _controller;
-    public ExpirationBasedAuthTokenManager tokenManager;
+    public IAuthTokenManager TokenManager;
+}
+
+internal class NewBasicAuthTokenManager : NewNeo4jAuthTokenManager
+{
     public object data { get; set; }
     
     public override Task Process(Controller controller)
     {
         _controller = controller;
-        tokenManager = new ExpirationBasedAuthTokenManager(FakeTime.Instance, new ExpiringAuthTokenProvider(GetTokenAsync));
+        TokenManager = AuthTokenManagers.Basic(FakeTime.Instance, GetTokenAsync);
         return Task.CompletedTask;
     }
 
-    public async Task<AuthTokenAndExpiration> GetTokenAsync()
+    public async ValueTask<IAuthToken> GetTokenAsync()
     {
         var requestId = Guid.NewGuid().ToString();
         await _controller.SendResponse(GetAuthRequest(requestId)).ConfigureAwait(false);
-        var result = await _controller.TryConsumeStreamObjectOfType<ExpirationBasedAuthTokenProviderCompleted>()
+        var result = await _controller.TryConsumeStreamObjectOfType<BasicAuthTokenProviderCompleted>()
             .ConfigureAwait(false);
 
         if (result.data.requestId == requestId)
         {
-            var token = new AuthToken(result.data.auth.data.auth.data.ToDictionary());
-            var expiresInMs = result.data.auth.data.expiresInMs;
-            var expiry = expiresInMs == 0
-                ? DateTime.MaxValue
-                : FakeTime.Instance.Now().AddMilliseconds(expiresInMs);
-
-            return new AuthTokenAndExpiration(token, expiry);
+            var token = new AuthToken(result.data.auth.data.ToDictionary());
+            return token;
         }
 
         throw new Exception("GetTokenAsync: request IDs did not match");
@@ -67,13 +70,13 @@ internal class NewExpirationBasedAuthTokenManager : IProtocolObject
 
     public override string Respond()
     {
-        return new ProtocolResponse("ExpirationBasedAuthTokenManager", uniqueId).Encode();
+        return new ProtocolResponse("BasicAuthTokenManager", uniqueId).Encode();
     }
     
     protected string GetAuthRequest(string requestId)
     {
         return new ProtocolResponse(
-            "ExpirationBasedAuthTokenProviderRequest",
-            new { expirationBasedAuthTokenManagerId = uniqueId, id = requestId }).Encode();
+            "BasicAuthTokenProviderRequest",
+            new { basicAuthTokenManagerId = uniqueId, id = requestId }).Encode();
     }
 }

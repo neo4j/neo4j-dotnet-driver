@@ -19,8 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Neo4j.Driver.Auth;
-using Neo4j.Driver.Internal.Auth;
+using Neo4j.Driver.Preview.Auth;
 using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
@@ -48,9 +47,9 @@ internal class NewDriver : IProtocolObject
         {
             var authDataManager = ObjManager.GetObject(data.authTokenManagerId);
             
-            if (authDataManager is NewExpirationBasedAuthTokenManager ebatm)
+            if (authDataManager is NewNeo4jAuthTokenManager atm)
             {
-                Driver = GraphDatabase.Driver(data.uri, ebatm.tokenManager, DriverConfig);
+                Driver = GraphDatabase.Driver(data.uri, atm.TokenManager, DriverConfig);
             }
             else
             {

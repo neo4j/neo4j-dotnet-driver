@@ -19,7 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Auth;
+using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Util;
@@ -41,9 +41,9 @@ internal abstract class DelegatedConnection : IConnection
 
     public IDictionary<string, string> RoutingContext => Delegate.RoutingContext;
 
-    public Task NotifyTokenExpiredAsync()
+    public ValueTask<bool> NotifySecurityExceptionAsync(SecurityException exception)
     {
-        return Delegate.NotifyTokenExpiredAsync();
+        return Delegate.NotifySecurityExceptionAsync(exception);
     }
 
     public async Task SyncAsync()
@@ -113,11 +113,12 @@ internal abstract class DelegatedConnection : IConnection
 
     public async Task ReAuthAsync(
         IAuthToken newAuthToken,
+        bool force,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            await Delegate.ReAuthAsync(newAuthToken, cancellationToken).ConfigureAwait(false);
+            await Delegate.ReAuthAsync(newAuthToken, force, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -188,7 +189,7 @@ internal abstract class DelegatedConnection : IConnection
         set => Delegate.SessionConfig = value;
     }
 
-    public Task ValidateCredsAsync()
+    public ValueTask ValidateCredsAsync()
     {
         return Delegate.ValidateCredsAsync();
     }

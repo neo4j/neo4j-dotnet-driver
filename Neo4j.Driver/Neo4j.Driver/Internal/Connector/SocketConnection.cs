@@ -20,7 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Auth;
+using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -172,8 +172,16 @@ internal sealed class SocketConnection : IConnection
 
     public Task ReAuthAsync(
         IAuthToken newAuthToken,
+        bool force,
         CancellationToken cancellationToken = default)
     {
+        if (!force && newAuthToken.Equals(AuthToken))
+        {
+            // if the token is the same, we don't need to reauthenticate.
+            AuthorizationStatus = AuthorizationStatus.FreshlyAuthenticated;
+            return Task.CompletedTask;
+        }
+
         if (!this.SupportsReAuth())
         {
             // if we are attempting to reauthenticate on 5.0 or earlier, throw an exception.
@@ -186,14 +194,14 @@ internal sealed class SocketConnection : IConnection
         return BoltProtocol.ReAuthAsync(this, newAuthToken);
     }
 
-    public Task NotifyTokenExpiredAsync()
+    public ValueTask<bool> NotifySecurityExceptionAsync(SecurityException exception)
     {
         if (SessionConfig?.AuthToken != null)
         {
-            return Task.CompletedTask;
+            return new ValueTask<bool>(false);
         }
 
-        return AuthTokenManager.OnTokenExpiredAsync(AuthToken);
+        return AuthTokenManager.HandleSecurityExceptionAsync(AuthToken, exception);
     }
 
     public async Task SyncAsync()
@@ -338,10 +346,10 @@ internal sealed class SocketConnection : IConnection
 
     public SessionConfig SessionConfig { get; set; }
 
-    public async Task ValidateCredsAsync()
+    public async ValueTask ValidateCredsAsync()
     {
         var token = AuthToken;
-        if (AuthorizationStatus == AuthorizationStatus.TokenExpired)
+        if (AuthorizationStatus == AuthorizationStatus.SecurityError)
         {
             if (!this.SupportsReAuth())
             {
@@ -351,11 +359,9 @@ internal sealed class SocketConnection : IConnection
 
             // Get a new token
             token = await AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
-            if (token == null || token.Equals(AuthToken))
+            if (token is null)
             {
-                // the token is not valid for re-auth and will infinitely fail, so we need to destroy the connection.
-                throw new InvalidOperationException(
-                    "Attempted to use a token that is not valid for re-authentication.");
+                throw new InvalidOperationException("Auth token manager returned a null token.");
             }
         }
         else if (SessionConfig?.AuthToken != null)
@@ -371,12 +377,18 @@ internal sealed class SocketConnection : IConnection
         else if (AuthorizationStatus == AuthorizationStatus.Pooled)
         {
             token = await AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
+            if (token is null)
+            {
+                throw new InvalidOperationException("Auth token manager returned a null token.");
+            }
         }
 
-        // The token has changed or the connection needs to re-authenticate but can use the same credentials.
-        if (AuthorizationStatus == AuthorizationStatus.AuthorizationExpired || !token.Equals(AuthToken))
+        var authExpired = AuthorizationStatus == AuthorizationStatus.AuthorizationExpired;
+        if (authExpired || !token.Equals(AuthToken))
         {
-            await ReAuthAsync(token).ConfigureAwait(false);
+            // The token has changed, or the connection needs to re-authenticate but can use the same credentials.
+            // In the latter case, we need to force re-authentication.
+            await ReAuthAsync(token, authExpired).ConfigureAwait(false);
         }
     }
 
@@ -425,37 +437,26 @@ internal sealed class SocketConnection : IConnection
         return BoltProtocol.RollbackTransactionAsync(this);
     }
 
-    private Task HandleAuthErrorAsync(IResponsePipeline responsePipeline)
+    private ValueTask HandleAuthErrorAsync(IResponsePipeline responsePipeline)
     {
         return responsePipeline.IsHealthy(out var error)
-            ? Task.CompletedTask
+            ? new ValueTask()
             : HandleAuthErrorAsync(error);
     }
 
-    private async Task HandleAuthErrorAsync(Exception error)
+    private async ValueTask HandleAuthErrorAsync(Exception error)
     {
-        switch (error)
+        if (error is SecurityException se)
         {
-            case TokenExpiredException te:
+            if (!se.Notified)
             {
-                AuthorizationStatus = AuthorizationStatus.TokenExpired;
-                if (te.Notified == false)
+                if (await NotifySecurityExceptionAsync(se).ConfigureAwait(false))
                 {
-                    if (AuthTokenManager is not StaticAuthTokenManager)
-                    {
-                        te.Retriable = true;
-                    }
-
-                    await NotifyTokenExpiredAsync().ConfigureAwait(false);
-                    te.Notified = true;
+                    se.Retriable = true;
                 }
 
-                break;
+                se.Notified = true;
             }
-
-            case AuthorizationException:
-                AuthorizationStatus = AuthorizationStatus.AuthorizationExpired;
-                break;
         }
     }
 

@@ -15,14 +15,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Diagnostics;
+
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class AuthTokenManagerOnAuthExpiredCompleted : IProtocolObject
+internal class BearerAuthTokenProviderCompleted : IProtocolObject
 {
-    public AuthTokenManagerOnExpiredCompletedDto data { get; set; }
+    public BearerAuthTokenProviderCompletedDto data { get; set; }
 
-    public class AuthTokenManagerOnExpiredCompletedDto
+    public class BearerAuthTokenProviderCompletedDto
     {
         public string requestId { get; set; }
+        public AuthTokenAndExpirationDto auth { get; set; }
+
+        public class AuthTokenAndExpirationDto
+        {
+            public string name { get; set; }
+            public AuthTokenAndExpirationDtoData data { get; set; }
+
+            public class AuthTokenAndExpirationDtoData
+            {
+                public AuthorizationToken auth { get; set; }
+                public int expiresInMs { get; set; }
+            }
+        }
     }
 }

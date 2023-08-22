@@ -18,7 +18,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Auth;
+using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Util;
@@ -43,7 +43,7 @@ internal enum AuthorizationStatus : byte
     /// The connection's token has expired, it should reauthenticate with a new token. Drivers that do not support
     /// token expiration should treat this as a fatal error.
     /// </summary>
-    TokenExpired = 3,
+    SecurityError = 3,
 
     /// <summary>
     /// The connections authorization has expired, it should reauthenticate. the current token is valid, but can be
@@ -71,9 +71,9 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
         SessionConfig sessionConfig = null,
         CancellationToken cancellationToken = default);
 
-    Task ReAuthAsync(IAuthToken newAuthToken, CancellationToken cancellationToken = default);
+    Task ReAuthAsync(IAuthToken newAuthToken, bool force, CancellationToken cancellationToken = default);
 
-    Task NotifyTokenExpiredAsync();
+    ValueTask<bool> NotifySecurityExceptionAsync(SecurityException exception);
 
     // send all and receive all
     Task SyncAsync();
@@ -102,7 +102,7 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
     void SetReadTimeoutInSeconds(int seconds);
 
     void SetUseUtcEncodedDateTime();
-    Task ValidateCredsAsync();
+    ValueTask ValidateCredsAsync();
 }
 
 internal interface IConnectionRunner

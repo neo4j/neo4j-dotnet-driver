@@ -17,7 +17,7 @@
 
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Auth;
+using Neo4j.Driver.Preview.Auth;
 
 namespace Neo4j.Driver.Internal.Auth;
 
@@ -30,13 +30,16 @@ internal class StaticAuthTokenManager : IAuthTokenManager
         _authToken = authToken;
     }
 
-    public Task<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default)
+    public ValueTask<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(_authToken);
+        return new ValueTask<IAuthToken>(_authToken);
     }
 
-    public Task OnTokenExpiredAsync(IAuthToken token, CancellationToken cancellationToken = default)
+    public ValueTask<bool> HandleSecurityExceptionAsync(
+        IAuthToken token,
+        SecurityException exception,
+        CancellationToken cancellationToken = default)
     {
-        return Task.CompletedTask;
+        return new ValueTask<bool>(false);
     }
 }

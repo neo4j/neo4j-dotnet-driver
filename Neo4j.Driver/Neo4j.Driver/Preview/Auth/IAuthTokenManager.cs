@@ -18,7 +18,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Auth;
+namespace Neo4j.Driver.Preview.Auth;
 
 /// <summary>Common interface for components that can provide auth tokens.</summary>
 public interface IAuthTokenManager
@@ -29,13 +29,21 @@ public interface IAuthTokenManager
     /// </summary>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    Task<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default);
+    ValueTask<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>Notifies the provider that the supplied token is expired.</summary>
+    /// <summary>
+    /// Handles an error notification thrown by the server if a security error happened.
+    /// <p/>
+    /// This will be called when driver throws a <see cref="SecurityException"/>.
+    /// </summary>
     /// <returns>
-    /// <param name="token">The token that has expired.</param>
+    /// <param name="token">The token.</param>
+    /// <param name="exception">The security exception thrown by the server.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// A <see cref="Task"/> representing the asynchronous operation.
     /// </returns>
-    Task OnTokenExpiredAsync(IAuthToken token, CancellationToken cancellationToken = default);
+    ValueTask<bool> HandleSecurityExceptionAsync(
+        IAuthToken token,
+        SecurityException exception,
+        CancellationToken cancellationToken = default);
 }

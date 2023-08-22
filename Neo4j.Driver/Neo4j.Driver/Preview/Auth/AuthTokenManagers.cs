@@ -18,8 +18,9 @@
 using System;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Auth;
+using Neo4j.Driver.Internal.Services;
 
-namespace Neo4j.Driver.Auth;
+namespace Neo4j.Driver.Preview.Auth;
 
 /// <summary>
 /// This class provides common implementations of <see cref="IAuthTokenManager"/> without needing to create a new
@@ -45,28 +46,48 @@ public static class AuthTokenManagers
 
     /// <summary>
     /// An implementation of <see cref="IAuthTokenManager"/> that will call the provided async function whenever a new
-    /// token is required. It will handle caching of the token and will only call the function when a new token is needed or
-    /// the existing cached token has expired.
+    /// token is required. It will handle caching of the token and will only call the function when a new token is needed.
     /// </summary>
-    /// <param name="tokenProviderAsync">An function that will be called when a new token is needed.</param>
+    /// <param name="tokenProviderAsync">A function that will be called when a new token is needed.</param>
     /// <returns>The <see cref="IAuthTokenManager"/> that will call the provided function when a new token is needed.</returns>
-    public static IAuthTokenManager ExpirationBased(Func<Task<AuthTokenAndExpiration>> tokenProviderAsync)
+    public static IAuthTokenManager Basic(Func<ValueTask<IAuthToken>> tokenProviderAsync)
     {
-        return new ExpirationBasedAuthTokenManager(new ExpiringAuthTokenProvider(tokenProviderAsync));
+        return Basic(DateTimeProvider.Instance, tokenProviderAsync);
+    }
+
+    internal static IAuthTokenManager Basic(
+        IDateTimeProvider dateTimeProvider,
+        Func<ValueTask<IAuthToken>> tokenProviderAsync)
+    {
+        async ValueTask<AuthTokenAndExpiration> TokenProviderAsync()
+        {
+            var authToken = await tokenProviderAsync().ConfigureAwait(false);
+            return new AuthTokenAndExpiration(authToken, DateTime.MaxValue);
+        }
+
+        return new Neo4jAuthTokenManager(dateTimeProvider, TokenProviderAsync, typeof(AuthenticationException));
     }
 
     /// <summary>
-    /// An implementation of <see cref="IAuthTokenManager"/> that will call the provided token provider whenever a new
-    /// token is required. It will handle caching of the token and will only call the function when a new token is needed or
+    /// An implementation of <see cref="IAuthTokenManager"/> that will call the provided async function whenever
+    /// a token is needed. It will cache the token and will only call the function when a new token is needed or
     /// the existing cached token has expired.
     /// </summary>
-    /// <param name="expiringAuthTokenProvider">
-    /// An <see cref="IExpiringAuthTokenProvider"/> that will be called when a new
-    /// token is needed.
-    /// </param>
-    /// <returns>The <see cref="IAuthTokenManager"/> that will call the provided function when a new token is needed. </returns>
-    public static IAuthTokenManager ExpirationBased(IExpiringAuthTokenProvider expiringAuthTokenProvider)
+    /// <param name="tokenProviderAsync">A function that will be called when a new token is needed.</param>
+    /// <returns>The <see cref="IAuthTokenManager"/> that will call the provided function when a new token is needed.</returns>
+    public static IAuthTokenManager Bearer(Func<ValueTask<AuthTokenAndExpiration>> tokenProviderAsync)
     {
-        return new ExpirationBasedAuthTokenManager(expiringAuthTokenProvider);
+        return Bearer(DateTimeProvider.Instance, tokenProviderAsync);
+    }
+
+    internal static IAuthTokenManager Bearer(
+        IDateTimeProvider dateTimeProvider,
+        Func<ValueTask<AuthTokenAndExpiration>> tokenProviderAsync)
+    {
+        return new Neo4jAuthTokenManager(
+            dateTimeProvider,
+            tokenProviderAsync,
+            typeof(TokenExpiredException),
+            typeof(AuthenticationException));
     }
 }
