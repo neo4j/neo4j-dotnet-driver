@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
@@ -306,7 +307,7 @@ internal sealed class ConnectionPool : IConnectionPool
         {
             // if an auth exception occured the pool member, all connections in the pool that are using that token
             // should be closed. This is because the token is now invalid and all connections using it will fail.
-            foreach (var conn in _inUseConnections)
+            foreach (var conn in _inUseConnections.Concat(_idleConnections))
             {
                 if (connection.AuthToken.Equals(conn.AuthToken))
                 {
