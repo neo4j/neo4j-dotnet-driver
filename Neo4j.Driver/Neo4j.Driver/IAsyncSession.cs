@@ -83,7 +83,7 @@ public interface IAsyncSession : IAsyncQueryRunner
     /// <see cref="TransactionConfig"/>
     /// </param>
     /// <returns>A task of a result as returned by the given unit of work.</returns>
-    [Obsolete("Deprecated, Use ExecuteReadAsync. Will be removed in 6.0.")]
+    [Obsolete("Deprecated, Use ExecuteAndGetResultAsync. Will be removed in 6.0.")]
     Task<T> ReadTransactionAsync<T>(
         Func<IAsyncTransaction, Task<T>> work,
         Action<TransactionConfigBuilder> action = null);
@@ -99,7 +99,7 @@ public interface IAsyncSession : IAsyncQueryRunner
     /// <see cref="TransactionConfig"/>
     /// </param>
     /// <returns>A task representing the completion of the transactional read operation enclosing the given unit of work.</returns>
-    [Obsolete("Deprecated, Use ExecuteReadAsync. Will be removed in 6.0.")]
+    [Obsolete("Deprecated, Use ExecuteAndGetResultAsync. Will be removed in 6.0.")]
     Task ReadTransactionAsync(Func<IAsyncTransaction, Task> work, Action<TransactionConfigBuilder> action = null);
 
     /// <summary>
