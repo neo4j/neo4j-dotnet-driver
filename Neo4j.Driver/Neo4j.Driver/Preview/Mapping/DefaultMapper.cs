@@ -21,49 +21,39 @@ using System.Reflection;
 
 namespace Neo4j.Driver.Preview.Mapping;
 
-internal class DefaultMapper<T> : IRecordMapper<T> where T : new()
+internal static class DefaultMapper
 {
-    private static Func<IRecord, T> _mapFunc;
+    private static readonly Dictionary<Type, IRecordMapper> Mappers = new();
 
-    private static Func<IRecord, T> Initialise()
+    public static IRecordMapper<T> Get<T>() where T : new()
     {
-        var type = typeof(T);
-        var propSetters = new Dictionary<string, Action<T, object>>();
-        var propTypes = new Dictionary<string, Type>();
-
-        foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        if (Mappers.TryGetValue(typeof(T), out var mapper))
         {
-            var propInfo = prop;
-            propSetters[prop.Name.ToLower()] = (obj, value) => propInfo.SetValue(obj, value);
-            propTypes[prop.Name.ToLower()] = prop.PropertyType;
+            return (IRecordMapper<T>)mapper;
         }
 
-        T Map(IRecord record)
+        var mappingBuilder = new MappingBuilder<T>();
+        var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        foreach (var property in properties)
         {
-            var obj = new T();
-            var node = record[0].As<INode>();
-            foreach (var (key, value) in node.Properties)
+            var setter = property.GetSetMethod();
+            if (setter is null)
             {
-                if (propSetters.TryGetValue(key, out var setter))
-                {
-                    setter(obj, Convert.ChangeType(value, propTypes[key]));
-                }
+                continue;
             }
 
-            return obj;
+            string path = property.Name.ToLower();
+            var mappingPathAttribute = property.GetCustomAttribute<MappingPathAttribute>();
+            if (mappingPathAttribute is not null)
+            {
+                path = mappingPathAttribute.Path.ToLower();
+            }
+
+            mappingBuilder.Map(setter, path);
         }
 
-        return Map;
-    }
-
-    /// <inheritdoc />
-    public T Map(IRecord record)
-    {
-        if (_mapFunc == null)
-        {
-            _mapFunc = Initialise();
-        }
-
-        return _mapFunc(record);
+        mapper = mappingBuilder.Build();
+        Mappers[typeof(T)] = mapper;
+        return (IRecordMapper<T>)mapper;
     }
 }

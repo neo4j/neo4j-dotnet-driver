@@ -73,16 +73,15 @@ public class RecordMappers : IMappingRegistry
         return genericInterface is not null;
     }
 
-    public static bool TryGetMapper<T>(out IRecordMapper<T> mapper)
+    public static IRecordMapper<T> GetMapper<T>() where T : new()
     {
-        if (Instance._mappers.TryGetValue(typeof(T), out var m))
+        var type = typeof(T);
+        if (Instance._mappers.TryGetValue(type, out var m))
         {
-            mapper = (IRecordMapper<T>)m;
-            return true;
+            return (IRecordMapper<T>)m;
         }
 
-        mapper = null;
-        return false;
+        return DefaultMapper.Get<T>();
     }
 
     public static void RegisterProvider<T>() where T : IMappingProvider, new()

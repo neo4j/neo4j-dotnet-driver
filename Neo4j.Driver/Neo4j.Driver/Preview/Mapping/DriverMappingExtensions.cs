@@ -30,10 +30,7 @@ public static class DriverMappingExtensions
         var records = await recordsTask.ConfigureAwait(false);
 
         IRecordMapper<T> mapper;
-        if(!RecordMappers.TryGetMapper(out mapper))
-        {
-            mapper = new DefaultMapper<T>();
-        }
+        mapper = RecordMappers.GetMapper<T>();
 
         return records.Result.Select(r => mapper.Map(r)).ToList();
     }

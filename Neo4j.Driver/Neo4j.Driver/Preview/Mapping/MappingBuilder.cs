@@ -16,7 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -24,133 +23,23 @@ namespace Neo4j.Driver.Preview.Mapping;
 
 internal class MappingBuilder<TObject> : IMappingBuilder<TObject> where TObject : new()
 {
-    private class BuiltMapper : IRecordMapper<TObject>
-    {
-        public List<Action<TObject, IRecord>> Mappings { get; } = new();
-        private HashSet<string> _usedKeys = new();
-
-        private MethodInfo _asGenericMethod = typeof(ValueExtensions).GetMethod(
-            nameof(ValueExtensions.As),
-            new[]
-            {
-                typeof(object)
-            });
-
-        private bool _recordMapBuilt;
-        private Dictionary<string, Func<IRecord, object>> _recordMap;
-
-        public TObject Map(IRecord record)
-        {
-            var obj = new TObject();
-            foreach (var mapping in Mappings)
-            {
-                mapping(obj, record);
-            }
-
-            return obj;
-        }
-
-        public void AddMapping<TProperty>(
-            Expression<Func<TObject, TProperty>> destination,
-            string sourceKey,
-            Func<object, TProperty> converter = null)
-        {
-            var setter = GetPropertySetter(destination);
-
-            // create the .As<TProperty> method we're going to use
-            var asMethod = _asGenericMethod.MakeGenericMethod(typeof(TProperty));
-
-            void DoMapping(TObject obj, IRecord record)
-            {
-                if (!_recordMapBuilt)
-                {
-                    BuildRecordMap(record);
-                }
-
-                var value = _recordMap[sourceKey](record);
-                if (value == null)
-                {
-                    return;
-                }
-
-                value = converter != null ? converter(value) : asMethod.Invoke(null, new[] { value });
-
-                setter.Invoke(obj, new[] { value });
-            }
-
-            Mappings.Add(DoMapping);
-            _usedKeys.Add(sourceKey.ToLower()); // keep a list of used keys to avoid unnecessary work later
-        }
-
-        private void BuildRecordMap(IRecord example)
-        {
-            _recordMap = new();
-
-            foreach (var field in example.Values)
-            {
-                var key = field.Key.ToLower();
-                if (_usedKeys.Contains(key))
-                {
-                    // first simply add the name of the field as a possible mapping
-                    _recordMap.Add(key, r => r[field.Key]);
-                }
-
-                IReadOnlyDictionary<string, object> innerDict = null;
-                Func<IRecord, IReadOnlyDictionary<string, object>> getDict = null;
-
-                // nodes and dictionaries can use the same logic, we just need to get the properties
-                // from the node and then they're both dictionaries
-                if (field.Value is INode node)
-                {
-                    innerDict = node.Properties;
-                    getDict = r => r[field.Key].As<INode>().Properties;
-                }
-                else if (field.Value is IReadOnlyDictionary<string, object> dict)
-                {
-                    innerDict = dict;
-                    getDict = r => r[field.Key].As<IReadOnlyDictionary<string, object>>();
-                }
-                else
-                {
-                    continue;
-                }
-
-                // if it's a node or dictionary, we need to add all the keys in the node/dictionary as possible mappings
-                // with the format "field.key", as well as just "key" if it's not already used
-                foreach (var dictKey in innerDict.Keys)
-                {
-                    string path = $"{field.Key}.{dictKey}".ToLower();
-
-                    object Accessor(IRecord r) =>
-                        getDict(r).TryGetValue(dictKey, out var value)
-                            ? value
-                            : null;
-
-                    if (_usedKeys.Contains(path))
-                    {
-                        _recordMap.Add(path, Accessor);
-                    }
-
-                    if (_usedKeys.Contains(dictKey.ToLower()) && !_recordMap.ContainsKey(dictKey))
-                    {
-                        _recordMap.Add(dictKey.ToLower(), Accessor);
-                    }
-                }
-            }
-
-            _recordMapBuilt = true;
-        }
-    }
-
-    private readonly BuiltMapper _builtMapper = new();
+    private readonly BuiltMapper<TObject> _builtMapper = new();
 
     public IMappingBuilder<TObject> Map<TProperty>(
         Expression<Func<TObject, TProperty>> destination,
         string sourceKey,
         Func<object, TProperty> converter = null)
     {
-        _builtMapper.AddMapping(destination, sourceKey, converter);
+        var propertySetter = GetPropertySetter(destination);
+        _builtMapper.AddMappingBySetter(propertySetter, sourceKey, converter is null ? null : o => converter.Invoke(o));
         return this;
+    }
+
+    internal void Map(
+        MethodInfo propertySetter,
+        string sourceKey)
+    {
+        _builtMapper.AddMappingBySetter(propertySetter, sourceKey);
     }
 
     internal IRecordMapper<TObject> Build()
