@@ -27,13 +27,14 @@ internal static class DefaultMapper
 
     public static IRecordMapper<T> Get<T>() where T : new()
     {
-        if (Mappers.TryGetValue(typeof(T), out var mapper))
+        var type = typeof(T);
+        if (Mappers.TryGetValue(type, out var mapper))
         {
             return (IRecordMapper<T>)mapper;
         }
 
         var mappingBuilder = new MappingBuilder<T>();
-        var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
         foreach (var property in properties)
         {
             var setter = property.GetSetMethod();
@@ -42,18 +43,18 @@ internal static class DefaultMapper
                 continue;
             }
 
-            string path = property.Name.ToLower();
+            string path = property.Name;
             var mappingPathAttribute = property.GetCustomAttribute<MappingPathAttribute>();
             if (mappingPathAttribute is not null)
             {
-                path = mappingPathAttribute.Path.ToLower();
+                path = mappingPathAttribute.Path;
             }
 
-            mappingBuilder.Map(setter, path);
+            mappingBuilder.Map(setter, path.ToLower());
         }
 
         mapper = mappingBuilder.Build();
-        Mappers[typeof(T)] = mapper;
+        Mappers[type] = mapper;
         return (IRecordMapper<T>)mapper;
     }
 }

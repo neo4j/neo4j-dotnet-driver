@@ -27,9 +27,9 @@ public interface IMappingRegistry
     IMappingRegistry RegisterMapping<T>(Action<IMappingBuilder<T>> mappingBuilder) where T : new();
 }
 
-public class RecordMappers : IMappingRegistry
+public class RecordObjectMapping : IMappingRegistry
 {
-    private static readonly RecordMappers Instance = new();
+    private static readonly RecordObjectMapping Instance = new();
 
     private readonly Dictionary<Type, IRecordMapper> _mappers = new();
 
@@ -73,15 +73,27 @@ public class RecordMappers : IMappingRegistry
         return genericInterface is not null;
     }
 
-    public static IRecordMapper<T> GetMapper<T>() where T : new()
+    internal static IRecordMapper<T> GetMapper<T>() where T : new()
     {
         var type = typeof(T);
+        return (IRecordMapper<T>)GetMapperForType(type);
+    }
+
+    internal static IRecordMapper GetMapperForType(Type type)
+    {
         if (Instance._mappers.TryGetValue(type, out var m))
         {
-            return (IRecordMapper<T>)m;
+            return m;
         }
 
-        return DefaultMapper.Get<T>();
+        var getMethod = typeof(DefaultMapper).GetMethod(nameof(DefaultMapper.Get));
+        var genericMethod = getMethod!.MakeGenericMethod(type);
+        return (IRecordMapper)genericMethod.Invoke(null, null);
+    }
+
+    public static T Map<T>(IRecord record) where T : new()
+    {
+        return GetMapper<T>().Map(record);
     }
 
     public static void RegisterProvider<T>() where T : IMappingProvider, new()

@@ -22,7 +22,7 @@ namespace Neo4j.Driver.Preview.Mapping;
 
 public interface IRecordMapper
 {
-
+    internal object MapInternal(IRecord record);
 }
 
 public interface IRecordMapper<out T> : IRecordMapper

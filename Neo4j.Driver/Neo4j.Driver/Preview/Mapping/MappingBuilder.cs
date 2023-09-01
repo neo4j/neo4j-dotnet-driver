@@ -35,6 +35,16 @@ internal class MappingBuilder<TObject> : IMappingBuilder<TObject> where TObject 
         return this;
     }
 
+    /// <inheritdoc />
+    public IMappingBuilder<TObject> Map<TProperty>(
+        Expression<Func<TObject, TProperty>> destination,
+        Func<IRecord, object> valueGetter)
+    {
+        var propertySetter = GetPropertySetter(destination);
+        _builtMapper.AddMapping(propertySetter, valueGetter);
+        return this;
+    }
+
     internal void Map(
         MethodInfo propertySetter,
         string sourceKey)

@@ -3,28 +3,49 @@ using Neo4j.Driver.Preview.Mapping;
 
 var driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.Basic("neo4j", "password"));
 
-RecordMappers.RegisterProvider<MyMappingProvider>();
+//RecordObjectMapping.RegisterProvider<MyMappingProvider>();
 
 var moviesAndPeople = await driver
-    .ExecutableQuery("MATCH (m:Movie)<-[]-(p:Person) RETURN m AS movie, p AS person")
+    .ExecutableQuery("MATCH (m:Movie)<-[r:%]-(p:Person) RETURN m AS movie, p AS person, type(r) as relationship")
     .ExecuteAsync()
     .AsObjectsAsync<MovieAndPerson>();
 
 foreach (var record in moviesAndPeople)
 {
-    Console.WriteLine($"{record.Movie.Title} ({record.Movie.ReleaseYear}): {record.Person.Name}");
+    Console.WriteLine($"{record.Person.Name} {record.Relationship} {record.Movie.Title}");
+    //Console.WriteLine($"{record.PersonName} {record.Relationship} {record.Title} ({record.ReleaseYear}) aged {record.AgeInMovie}");
 }
 
 Console.ReadLine();
 
 // ==========
 
-public class Movie
+public class SimpleMoviePersonRecord
 {
     public string Title { get; set; } = "";
 
-    [MappingPath("released")]
+    [MappingPath("movie.released")]
     public int ReleaseYear { get; set; }
+
+    [MappingPath("person.name")]
+    public string PersonName { get; set; } = "";
+
+    public string Relationship { get; set; } = "";
+
+    public int AgeInMovie { get; set; }
+}
+
+public class MovieAndPerson
+{
+    public Person Person { get; set; }
+    public Movie Movie { get; set; }
+    public string Relationship { get; set; }
+}
+
+public class Movie
+{
+    public string Title { get; set; } = "";
+    public int Released { get; set; }
     public string Tagline { get; set; } = "";
 }
 
@@ -32,12 +53,6 @@ public class Person
 {
     public string Name { get; set; } = "";
     public int Born { get; set; }
-}
-
-public class MovieAndPerson
-{
-    public Movie Movie { get; set; }
-    public Person Person { get; set; }
 }
 
 public class MyMappingProvider : IMappingProvider
@@ -50,7 +65,7 @@ public class MyMappingProvider : IMappingProvider
                 {
                     builder
                         .Map(m => m.Title, "title")
-                        .Map(m => m.ReleaseYear, "released")
+                        .Map(m => m.Released, "released")
                         .Map(m => m.Tagline, "tagline");
                 })
             .RegisterMapping<Person>(
@@ -65,7 +80,32 @@ public class MyMappingProvider : IMappingProvider
                 {
                     builder
                         .Map(m => m.Movie, "movie")
+                        .Map(m => m.Relationship, "relationship")
                         .Map(m => m.Person, "person");
                 });
     }
+
+//     public void CreateMappers(IMappingRegistry registry)
+//     {
+//         registry.RegisterMapping<SimpleMoviePersonRecord>(
+//             builder =>
+//             {
+//                 builder
+//                     .Map(x => x.Title, r => r.GetNode("movie").GetValue<string>("title"))
+//                     .Map(x => x.ReleaseYear, r => r.GetNode("movie").GetValue<int>("released"))
+//                     .Map(x => x.PersonName, r => r.GetNode("person").GetValue<string>("name"))
+//                     .Map(x => x.Relationship, r => r.GetValue<string>("relationship"))
+//                     .Map(x => x.AgeInMovie, r =>
+//                     {
+//                         var released = r.GetNode("movie").GetValue<int>("released");
+//                         var person = r.GetNode("person");
+//                         if (person.Properties.TryGetValue("born", out var born))
+//                         {
+//                             return released - born.As<int>();
+//                         }
+//
+//                         return -1;
+//                     });
+//             });
+//     }
 }

@@ -26,4 +26,8 @@ public interface IMappingBuilder<TObject>
         Expression<Func<TObject, TProperty>> destination,
         string sourceKey,
         Func<object, TProperty> converter = null);
+
+    IMappingBuilder<TObject> Map<TProperty>(
+        Expression<Func<TObject, TProperty>> destination,
+        Func<IRecord, object> valueGetter);
 }
