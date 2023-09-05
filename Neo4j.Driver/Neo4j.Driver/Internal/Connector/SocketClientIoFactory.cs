@@ -57,7 +57,7 @@ internal sealed class SocketClientIoFactory : IConnectionIoFactory
     {
         // return new MessageReader(new ChunkReader(client.ReaderStream), settings, logger);
         // TODO: Decide?
-        return new PipelinedMessageReader(client, logger);
+        return new PipelinedMessageReader(client.ReaderStream, logger);
     }
 
     public (IChunkWriter, IMessageWriter) Writers(ITcpSocketClient client, BufferSettings settings, ILogger logger)

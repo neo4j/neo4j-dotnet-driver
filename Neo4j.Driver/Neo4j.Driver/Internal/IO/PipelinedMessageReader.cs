@@ -24,7 +24,6 @@ using System.IO;
 using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 
@@ -40,10 +39,10 @@ internal sealed class PipelinedMessageReader : IMessageReader
 
     private const int MaxChunkSize = 65_535;
 
-    public PipelinedMessageReader(Stream inputStream, int timeoutInMs, ILogger logger)
+    public PipelinedMessageReader(Stream inputStream, ILogger logger)
     {
         _logger = logger;
-        _timeoutInMs = timeoutInMs;
+        _timeoutInMs = inputStream.ReadTimeout;
         _stream = inputStream;
         _source = new CancellationTokenSource();
         _headerMemory = new Memory<byte>(new byte[2]);
