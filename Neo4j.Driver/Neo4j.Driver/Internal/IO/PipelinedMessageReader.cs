@@ -32,17 +32,21 @@ namespace Neo4j.Driver.Internal.IO;
 
 internal sealed class PipelinedMessageReader : IMessageReader
 {
-    private readonly Stream _clientReaderStream;
+    private readonly ILogger _logger;
+    private readonly Stream _stream;
     private int _timeoutInMs;
     private CancellationTokenSource _source;
+    private readonly Memory<byte> _headerMemory;
 
     private const int MaxChunkSize = 65_535;
 
-    public PipelinedMessageReader(ITcpSocketClient socketClient, ILogger logger)
+    public PipelinedMessageReader(Stream inputStream, int timeoutInMs, ILogger logger)
     {
-        _timeoutInMs = socketClient.ReaderStream.ReadTimeout;
-        _clientReaderStream = socketClient.ReaderStream;
+        _logger = logger;
+        _timeoutInMs = timeoutInMs;
+        _stream = inputStream;
         _source = new CancellationTokenSource();
+        _headerMemory = new Memory<byte>(new byte[2]);
     }
     
     ~PipelinedMessageReader()
@@ -50,42 +54,48 @@ internal sealed class PipelinedMessageReader : IMessageReader
         _source.Dispose();
     }
 
-    public async Task ReadAsync(IResponsePipeline pipeline, PackStreamReader reader)
+    public async ValueTask ReadAsync(IResponsePipeline pipeline, PackStreamReader reader)
     {
-        var pipeReader = PipeReader.Create(_clientReaderStream, 
+        var pipeReader = PipeReader.Create(_stream, 
             new StreamPipeReaderOptions(leaveOpen: true, bufferSize: MaxChunkSize + 4));
+        
         try
         {
             while (!pipeline.HasNoPendingMessages)
             {
-                // Read Message
                 var message = await ReadNextMessage(reader, pipeReader).ConfigureAwait(false);
                 if (message == null)
                 {
+                    // Noop message,
                     continue;
                 }
-
+                
+                // TODO: Optimize messages and dispatching to avoid allocations.
+                // Dispatch the message to the pipeline, which will handle it.
                 message.Dispatch(pipeline);
 
-                // If the message is a failure message, we should stop reading.
+                // If the message is a failure message the connection requires reset and subsequent messages can be
+                // ignored.
                 if (message is FailureMessage)
                 {
                     break;
                 }
             }
 
-            await pipeReader.CompleteAsync();
+            await pipeReader.CompleteAsync().ConfigureAwait(false);
         }
         catch (OperationCanceledException canceledException)
         {
-            await pipeReader.CompleteAsync(canceledException);
-            _clientReaderStream.Close();
+            // A timeout has occurred, close the connection.
+            await pipeReader.CompleteAsync(canceledException).ConfigureAwait(false);
+            _stream.Close();
             throw new ConnectionReadTimeoutException("Failed to read message from server within the specified timeout.",
                 canceledException);
         }
         catch (Exception ex)
         {
-            await pipeReader.CompleteAsync(ex);
+            await pipeReader.CompleteAsync(ex).ConfigureAwait(false);
+            // If the exception is a protocol exception, the connection requires reset and subsequent messages can be
             throw;
         }
     }
@@ -115,7 +125,6 @@ internal sealed class PipelinedMessageReader : IMessageReader
     private async ValueTask<IResponseMessage?> ReadNextMessage(PackStreamReader reader, PipeReader pipeReader)
     {
         ResetCancellation();
-        var headerMemory = new Memory<byte>(reader._buffers.LongBuffer).Slice(0, 2);
         // Read Bolt protocol chunk header
         var readResult = await pipeReader.ReadAtLeastAsync(2, _source.Token).ConfigureAwait(false);
         if (readResult is { IsCompleted: true, Buffer.Length: < 2 })
@@ -124,8 +133,8 @@ internal sealed class PipelinedMessageReader : IMessageReader
         }
     
         var lengthSlice = readResult.Buffer.Slice(0, 2);
-        lengthSlice.CopyTo(headerMemory.Span);
-        var size = BinaryPrimitives.ReadUInt16BigEndian(headerMemory.Span);
+        lengthSlice.CopyTo(_headerMemory.Span);
+        var size = BinaryPrimitives.ReadUInt16BigEndian(_headerMemory.Span);
         
         // if the size is 0, it means the message was a noop message.
         if (size == 0)
@@ -135,18 +144,18 @@ internal sealed class PipelinedMessageReader : IMessageReader
             return null;
         }
 
-        // Read chunk data storing the lengths of each chunk in a list so we can construct multi chunk messages.
-        // Because we don't know the length of the message we can't allocate a single buffer to read the entire message
-        // ahead of the reads.
+        // Read chunks storing the lengths of each chunk.
+        // Because the length of the message is unknown until the end of writing allocating a single buffer to read the entire
+        // message is not possible.
         var sizes = new List<ushort>(2);
-        // The Total size of the message is the sum of all the chunk sizes for quickly calculating the minimum read size.
+        // The total size of the message is the sum of all the chunks that make up the message ignoring markers & headers.
         var totalSize = 0;
         do
         {
             sizes.Add(size);
             totalSize += size;
-            // the minimumRead is the length of all previous chunk headers & data, plus the next chunk header.
-            // if there is no next chunk it will read the end of the message marker.
+            // The minimumRead is the length of all previous chunk headers & data, plus the next chunk header.
+            // If there is no next chunk it will read the end of the message marker.
             // Given a hypothetical message with 2 chunks, 6 bytes across the two chunks the total data is 12 bytes.
             // e.g. 0x00, 0x04 0x04, 0x03, 0x02, 0x01, 0x00, 0x02, 0x03, 0x04, 0x00, 0x00
             // 0x00, 0x04, <- First chunk header
@@ -156,7 +165,7 @@ internal sealed class PipelinedMessageReader : IMessageReader
             // 0x00, 0x00  <- end of message marker
             var minimumRead = totalSize + 2 * (sizes.Count + 1);
 
-            // if we have all the data needed for this chunk we can skip the read as it was already read to the buffer.
+            // If the buffer is less than the minimum read size, read more data from the stream.
             if (readResult.Buffer.Length < minimumRead)
             {
                 readResult = await pipeReader.ReadAtLeastAsync(minimumRead, _source.Token).ConfigureAwait(false);
@@ -167,17 +176,20 @@ internal sealed class PipelinedMessageReader : IMessageReader
                 }
             }
 
-            // Read the chunk header,
-            // if the next chunk header is 0x00, 0x00 then it means that we have read the last chunk of the message.
+            // Read the chunk header, If the next chunk header is 0x00, 0x00 that marks the end of the message.
             var endOfChunk = readResult.Buffer.Slice(minimumRead - 2, 2);
-            endOfChunk.CopyTo(headerMemory.Span);
-            size = BinaryPrimitives.ReadUInt16BigEndian(headerMemory.Span);
+            endOfChunk.CopyTo(_headerMemory.Span);
+            size = BinaryPrimitives.ReadUInt16BigEndian(_headerMemory.Span);
         } while (size != 0);
 
         // If there is only one chunk and it is a single segment, we can just read it directly
-        if (sizes.Count == 1 && readResult.Buffer.Slice(2, totalSize).IsSingleSegment)
+        if (sizes.Count == 1)
         {
-            return RawParse(reader, pipeReader, readResult, totalSize);
+            var chunkBuffer = readResult.Buffer.Slice(2, totalSize + 2);
+            if (chunkBuffer.IsSingleSegment)
+            {
+                return RawParse(reader, pipeReader, totalSize, chunkBuffer);
+            }
         }
 
         // Otherwise we need to copy the data into a single buffer to parse it.
@@ -187,16 +199,17 @@ internal sealed class PipelinedMessageReader : IMessageReader
     private static IResponseMessage RawParse(
         PackStreamReader reader,
         PipeReader pipeReader,
-        ReadResult readResult,
-        int size)
+        int size,
+        ReadOnlySequence<byte> buffer)
     {
         var packStreamReader = new SpanPackStreamReader(
             reader._format,
-            readResult.Buffer.Slice(2, size).First.Span);
+            buffer.First.Span.Slice(2, size));
 
+        var message = packStreamReader.ReadMessage();
         // Advance to end of message by create a buffer slice from the end of the chunk.
-        pipeReader.AdvanceTo(readResult.Buffer.Slice(size + 4).Start);
-        return packStreamReader.ReadMessage();
+        pipeReader.AdvanceTo(buffer.End);
+        return message;
     }
     
     private static IResponseMessage CondenseChunksAndParse(
@@ -208,29 +221,24 @@ internal sealed class PipelinedMessageReader : IMessageReader
     {
         // Borrow memory from shared pool..
         using var memory = MemoryPool<byte>.Shared.Rent(totalSize);
-        // Copy all chunks into memory
-        CopyToMemory(sizes, readResult, memory, pipeReader);
-        // convert memory to array
-        var bytes = memory.Memory.Span.Slice(0, totalSize);
-        // Create a new stream from the array and parse it
-        var packStreamReader = new SpanPackStreamReader(
-            reader._format,
-            bytes);
-        
+        var span = memory.Memory.Span.Slice(0, totalSize);
+        // Copy all chunks into span removing chunk headers.
+        CopyToMemory(sizes, readResult, span, pipeReader);
+        // allocate SpanReader over the span and parse the message.
+        var packStreamReader = new SpanPackStreamReader(reader._format, span);
         return packStreamReader.ReadMessage();
     }
 
-    private static void CopyToMemory(List<ushort> sizes, ReadResult readResult, IMemoryOwner<byte> memory, PipeReader pipeReader)
+    private static void CopyToMemory(List<ushort> sizes, ReadResult readResult, Span<byte> span, PipeReader pipeReader)
     {
         var memoryPosition = 0;
         var streamStart = 2;
-
         foreach (var chunkSize in sizes)
         {
             var chunk = readResult.Buffer.Slice(streamStart, chunkSize);
-            chunk.CopyTo(memory.Memory.Span.Slice(memoryPosition, chunkSize));
+            chunk.CopyTo(span.Slice(memoryPosition, chunkSize));
             memoryPosition += chunkSize;
-            streamStart = streamStart + chunkSize + 2;
+            streamStart += chunkSize + 2;
         }
         // Advance to end of message by create a buffer slice from the end of the chunk.
         pipeReader.AdvanceTo(readResult.Buffer.Slice(streamStart).Start);

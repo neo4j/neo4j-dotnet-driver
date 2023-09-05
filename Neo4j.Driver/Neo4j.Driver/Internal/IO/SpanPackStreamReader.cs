@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal.IO;
 internal ref struct SpanPackStreamReader
 {
     private readonly MessageFormat _format;
-    private ReadOnlySpan<byte> _reader;
+    private readonly ReadOnlySpan<byte> _reader;
     private int _idx = 0;
     private readonly CancellationToken _cancellationToken;
 

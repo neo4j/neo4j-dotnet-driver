@@ -37,7 +37,7 @@ internal sealed class MessageReader : IMessageReader
         _logger = logger;
     }
 
-    public async Task ReadAsync(IResponsePipeline pipeline, PackStreamReader reader)
+    public async ValueTask ReadAsync(IResponsePipeline pipeline, PackStreamReader reader)
     {
         var messageCount = await _chunkReader.ReadMessageChunksToBufferStreamAsync(reader.Stream).ConfigureAwait(false);
         ConsumeMessages(pipeline, messageCount, reader);
