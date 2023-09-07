@@ -203,7 +203,7 @@ internal sealed class PipelinedMessageReader : IMessageReader
     {
         var packStreamReader = new SpanPackStreamReader(
             reader._format,
-            buffer.First.Span.Slice(2, size));
+            buffer.First.Span.Slice(0, size));
 
         var message = packStreamReader.ReadMessage();
         // Advance to end of message by create a buffer slice from the end of the chunk.
