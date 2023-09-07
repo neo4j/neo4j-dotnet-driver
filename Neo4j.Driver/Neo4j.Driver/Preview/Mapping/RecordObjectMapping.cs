@@ -18,7 +18,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 
 namespace Neo4j.Driver.Preview.Mapping;
 
@@ -42,14 +41,6 @@ public class RecordObjectMapping : IMappingRegistry
         }
     }
 
-    public static void Register<T>(T recordMapper) where T : IRecordMapper, new()
-    {
-        lock (_lockObject)
-        {
-            Register(new T());
-        }
-    }
-
     public static void Register(IRecordMapper mapper)
     {
         lock (_lockObject)
@@ -61,19 +52,6 @@ public class RecordObjectMapping : IMappingRegistry
 
             var destinationType = genericInterface.GetGenericArguments()[0];
             Instance._mappers[destinationType] = mapper;
-        }
-    }
-
-    public static void RegisterAllFromAssembly(Assembly assembly = null)
-    {
-        assembly ??= Assembly.GetCallingAssembly();
-
-        foreach (var type in assembly.GetTypes())
-        {
-            if (IsValidMapper(type, out var _))
-            {
-                Register((IRecordMapper)Activator.CreateInstance(type));
-            }
         }
     }
 

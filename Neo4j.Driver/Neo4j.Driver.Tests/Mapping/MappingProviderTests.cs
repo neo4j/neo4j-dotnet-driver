@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using FluentAssertions;
 using Neo4j.Driver.Preview.Mapping;
 using Xunit;
@@ -124,6 +125,19 @@ namespace Neo4j.Driver.Tests.Mapping
 
             obj.Name.Should().Be("Bob");
             obj.Age.Should().Be(23);
+        }
+
+        private class InvalidMapper : IRecordMapper
+        {
+            public object MapInternal(IRecord record) => null;
+        }
+
+        [Fact]
+        public void ShouldThrowOnInvalidMapper()
+        {
+            var act = () => RecordObjectMapping.Register(new InvalidMapper());
+
+            act.Should().Throw<ArgumentException>();
         }
     }
 }

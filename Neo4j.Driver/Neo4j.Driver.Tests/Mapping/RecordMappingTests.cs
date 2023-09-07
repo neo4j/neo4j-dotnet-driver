@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Tests.Mapping
         [Fact]
         public void ShouldMapPrimitives()
         {
-            var record = new Record(new[] { "Name", "Born" }, new object[] { "Bob", 1977 });
+            var record = new Record(new[] { "name", "born" }, new object[] { "Bob", 1977 });
             var person = record.AsObject<TestPerson>();
             person.Name.Should().Be("Bob");
             person.Born.Should().Be(1977);
@@ -46,15 +46,34 @@ namespace Neo4j.Driver.Tests.Mapping
         [Fact]
         public void ShouldMapList()
         {
-            var record = new Record(new[] { "Hobbies" }, new object[] { new List<string> { "Coding", "Swimming" } });
+            var record = new Record(new[] { "hobbies" }, new object[] { new List<string> { "Coding", "Swimming" } });
             var person = record.AsObject<TestPerson>();
             person.Hobbies.Should().BeEquivalentTo("Coding", "Swimming");
+        }
+
+        private class PersonInDict
+        {
+            [MappingPath("person.name")]
+            public string Name { get; set; } = "";
+
+            [MappingPath("person.born")]
+            public int Born { get; set; }
+        }
+
+        [Fact]
+        public void ShouldMapFromInsideDictionaries()
+        {
+            var dict = new Dictionary<string, object> { { "name", "Dani" }, { "born", 1977 } };
+            var record = new Record(new[] { "Person" }, new object[] { dict });
+            var person = record.AsObject<PersonInDict>();
+            person.Name.Should().Be("Dani");
+            person.Born.Should().Be(1977);
         }
 
         [Fact]
         public void ShouldLeaveDefaultsIfFieldAbsent()
         {
-            var record = new Record(new[] { "Born" }, new object[] { 1977 });
+            var record = new Record(new[] { "born" }, new object[] { 1977 });
             var person = record.AsObject<TestPerson>();
             person.Name.Should().Be("A. Test Name");
             person.Born.Should().Be(1977);
@@ -96,26 +115,35 @@ namespace Neo4j.Driver.Tests.Mapping
                 new[] { "name", "born" },
                 new Dictionary<string, object> { { "name", "Ron Grazer" }, { "born", 1956 } });
 
-            var movie1 = new Node(0, new[] { "title", "released", "tagline" }, new Dictionary<string, object>
-            {
-                { "title", "Forrest Gump" },
-                { "released", 1994 },
-                { "tagline", "Life is like a box of chocolates..." }
-            });
+            var movie1 = new Node(
+                0,
+                new[] { "title", "released", "tagline" },
+                new Dictionary<string, object>
+                {
+                    { "title", "Forrest Gump" },
+                    { "released", 1994 },
+                    { "tagline", "Life is like a box of chocolates..." }
+                });
 
-            var movie2 = new Node(0, new[] { "title", "released", "tagline" }, new Dictionary<string, object>
-            {
-                { "title", "Cast Away" },
-                { "released", 2000 },
-                { "tagline", "At the edge of the world, his journey begins." }
-            });
+            var movie2 = new Node(
+                0,
+                new[] { "title", "released", "tagline" },
+                new Dictionary<string, object>
+                {
+                    { "title", "Cast Away" },
+                    { "released", 2000 },
+                    { "tagline", "At the edge of the world, his journey begins." }
+                });
 
-            var movie3 = new Node(0, new[] { "title", "released", "tagline" }, new Dictionary<string, object>
-            {
-                { "title", "The Green Mile" },
-                { "released", 1999 },
-                { "tagline", null }
-            });
+            var movie3 = new Node(
+                0,
+                new[] { "title", "released", "tagline" },
+                new Dictionary<string, object>
+                {
+                    { "title", "The Green Mile" },
+                    { "released", 1999 },
+                    { "tagline", null }
+                });
 
             var movieNodes = new List<INode> { movie1, movie2, movie3 };
 
@@ -135,7 +163,7 @@ namespace Neo4j.Driver.Tests.Mapping
                 { "tagline", "Just when you thought it was safe to go to sleep" }
             };
 
-            var moviesDict = new List<IReadOnlyDictionary<string, object>> { movie4, movie5};
+            var moviesDict = new List<IReadOnlyDictionary<string, object>> { movie4, movie5 };
 
             var record = new Record(
                 new[] { "person", "movies", "titles", "moviesDict" },
@@ -148,37 +176,79 @@ namespace Neo4j.Driver.Tests.Mapping
 
             mappedObject.MovieTitleIdeas.Should().BeEquivalentTo("A Band Apart", "Amazing Squad", "Ten Men Named Ben");
 
-            mappedObject.HistoricalMovies.Should().BeEquivalentTo(
-                new Movie { Title = "Forrest Gump", Released = 1994, Tagline = "Life is like a box of chocolates..." },
-                new Movie { Title = "Cast Away", Released = 2000, Tagline = "At the edge of the world, his journey begins." },
-                new Movie { Title = "The Green Mile", Released = 1999, Tagline = null });
+            mappedObject.HistoricalMovies.Should()
+                .BeEquivalentTo(
+                    new Movie
+                    {
+                        Title = "Forrest Gump", Released = 1994, Tagline = "Life is like a box of chocolates..."
+                    },
+                    new Movie
+                    {
+                        Title = "Cast Away", Released = 2000, Tagline = "At the edge of the world, his journey begins."
+                    },
+                    new Movie { Title = "The Green Mile", Released = 1999, Tagline = null });
 
-            mappedObject.OtherMovies.Should().BeEquivalentTo(
-                new Movie { Title = "The Blind Venetian", Released = 2023, Tagline = "Read between the lines" },
-                new Movie { Title = "When The Night Ends", Released = 2022, Tagline = "Just when you thought it was safe to go to sleep" });
+            mappedObject.OtherMovies.Should()
+                .BeEquivalentTo(
+                    new Movie { Title = "The Blind Venetian", Released = 2023, Tagline = "Read between the lines" },
+                    new Movie
+                    {
+                        Title = "When The Night Ends", Released = 2022,
+                        Tagline = "Just when you thought it was safe to go to sleep"
+                    });
         }
 
         [Fact]
         public void ShouldMapAllRecords()
         {
-            async Task<EagerResult<IReadOnlyList<IRecord>>> GetRecordsAsync()
+            Task<EagerResult<IReadOnlyList<IRecord>>> GetRecordsAsync()
             {
-                var record1 = new Record(new[] { "Name", }, new object[] { "Bob", });
-                var record2 = new Record(new[] { "Name", "Born" }, new object[] { "Alice", 1988 });
-                var record3 = new Record(new[] { "Name", "Born" }, new object[] { "Eve", 1999 });
+                var record1 = new Record(new[] { "name", }, new object[] { "Bob", });
+                var record2 = new Record(new[] { "name", "born" }, new object[] { "Alice", 1988 });
+                var record3 = new Record(new[] { "name", "born" }, new object[] { "Eve", 1999 });
 
                 var result = new EagerResult<IReadOnlyList<IRecord>>(
                     new List<IRecord> { record1, record2, record3 },
                     null,
-                    new[] { "Name", "Born" });
+                    new[] { "name", "born" });
 
-                return await Task.FromResult(result);
+                return Task.FromResult(result);
             }
 
-            GetRecordsAsync().AsObjectsAsync<TestPerson>().Result.Should().BeEquivalentTo(
-                new TestPerson { Name = "Bob" },
-                new TestPerson { Name = "Alice", Born = 1988 },
-                new TestPerson { Name = "Eve", Born = 1999 });
+            GetRecordsAsync()
+                .AsObjectsAsync<TestPerson>()
+                .Result.Should()
+                .BeEquivalentTo(
+                    new TestPerson { Name = "Bob" },
+                    new TestPerson { Name = "Alice", Born = 1988 },
+                    new TestPerson { Name = "Eve", Born = 1999 });
+        }
+
+        [Fact]
+        public void ShouldMapAllRecordsFromCursor()
+        {
+            async IAsyncEnumerable<IRecord> GetRecordsAsync()
+            {
+                var record1 = new Record(new[] { "name", }, new object[] { "Bob", });
+                var record2 = new Record(new[] { "name", "born" }, new object[] { "Alice", 1988 });
+                var record3 = new Record(new[] { "name", "born" }, new object[] { "Eve", 1999 });
+
+                var result = new List<IRecord> { record1, record2, record3 };
+
+                foreach (var record in result)
+                {
+                    await Task.Yield();
+                    yield return record;
+                }
+            }
+
+            GetRecordsAsync()
+                .ToObjectListAsync<TestPerson>()
+                .Result.Should()
+                .BeEquivalentTo(
+                    new TestPerson { Name = "Bob" },
+                    new TestPerson { Name = "Alice", Born = 1988 },
+                    new TestPerson { Name = "Eve", Born = 1999 });
         }
 
         private class CarAndPainting
@@ -198,26 +268,35 @@ namespace Neo4j.Driver.Tests.Mapping
             [MappingPath("car.make")]
             public string Make { get; set; } = "";
 
-            [MappingPath("car.model")]
+            [MappingPath("model")]
             public string Model { get; set; } = "";
+
+            [MappingPath("car.madeup")]
+            public string MadeUp { get; set; } = "unset";
         }
 
         [Fact]
         public void ShouldMapSubNodesWithAbsolutePaths()
         {
-            var carNode = new Node(0, new[] { "make", "model" }, new Dictionary<string, object>
-            {
-                { "make", "Tesla" },
-                { "model", "Model 3" }
-            });
+            var carNode = new Node(
+                0,
+                new[] { "make", "model" },
+                new Dictionary<string, object>
+                {
+                    { "make", "Tesla" },
+                    { "model", "Model 3" }
+                });
 
-            var paintingNode = new Node(0, new[] { "artist", "title" }, new Dictionary<string, object>
-            {
-                { "artist", "Leonardo da Vinci" },
-                { "title", "Mona Lisa" }
-            });
+            var paintingNode = new Node(
+                0,
+                new[] { "artist", "title" },
+                new Dictionary<string, object>
+                {
+                    { "artist", "Leonardo da Vinci" },
+                    { "title", "Mona Lisa" }
+                });
 
-            var carAndPaintingRecord = new Record(new[] { "car", "painting" },  new object[] { carNode, paintingNode });
+            var carAndPaintingRecord = new Record(new[] { "car", "painting" }, new object[] { carNode, paintingNode });
 
             var mappedObject = carAndPaintingRecord.AsObject<CarAndPainting>();
 
@@ -225,6 +304,22 @@ namespace Neo4j.Driver.Tests.Mapping
             mappedObject.Car.Model.Should().Be("Model 3");
             mappedObject.Painting.Artist.Should().Be("Leonardo da Vinci");
             mappedObject.Painting.Title.Should().Be("Mona Lisa");
+            mappedObject.Car.MadeUp.Should().Be("unset");
+        }
+
+        private class PersonWithoutBornSetter
+        {
+            public string Name { get; set; } = "";
+            public int? Born { get; } = 1999;
+        }
+
+        [Fact]
+        public void DefaultMapperShouldIgnorePropertiesWithoutSetter()
+        {
+            var record = new Record(new[] { "name", "born" }, new object[] { "Bob", 1977 });
+            var person = record.AsObject<PersonWithoutBornSetter>();
+            person.Name.Should().Be("Bob");
+            person.Born.Should().Be(1999);
         }
     }
 }

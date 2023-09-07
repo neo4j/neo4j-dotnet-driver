@@ -21,7 +21,7 @@ namespace Neo4j.Driver.Preview.Mapping;
 
 public class MappingPathAttribute : Attribute
 {
-    public string Path { get; set; }
+    public string Path { get; }
     public MappingPathAttribute(string path)
     {
         Path = path;
