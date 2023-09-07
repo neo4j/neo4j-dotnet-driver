@@ -45,6 +45,19 @@ internal class MappingBuilder<TObject> : IMappingBuilder<TObject> where TObject 
         return this;
     }
 
+    public IMappingBuilder<TObject> MapWholeObject(Func<IRecord, TObject> mappingFunction)
+    {
+        _builtMapper.AddWholeObjectMapping(mappingFunction);
+        return this;
+    }
+
+    /// <inheritdoc />
+    public IMappingBuilder<TObject> UseDefaultMapping()
+    {
+        _builtMapper.AddWholeObjectMapping(r => DefaultMapper.Get<TObject>().Map(r));
+        return this;
+    }
+
     internal void Map(
         MethodInfo propertySetter,
         string sourceKey)

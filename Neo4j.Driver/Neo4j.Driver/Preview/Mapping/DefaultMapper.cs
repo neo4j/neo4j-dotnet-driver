@@ -40,10 +40,13 @@ internal static class DefaultMapper
             var setter = property.GetSetMethod();
             if (setter is null)
             {
+                // ignore properties without setter
                 continue;
             }
 
             string path = property.Name;
+
+            // check if there is a MappingPathAttribute; if there is, use that path instead
             var mappingPathAttribute = property.GetCustomAttribute<MappingPathAttribute>();
             if (mappingPathAttribute is not null)
             {

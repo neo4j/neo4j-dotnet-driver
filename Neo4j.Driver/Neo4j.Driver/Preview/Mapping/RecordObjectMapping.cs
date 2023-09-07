@@ -29,24 +29,39 @@ public interface IMappingRegistry
 
 public class RecordObjectMapping : IMappingRegistry
 {
-    private static readonly RecordObjectMapping Instance = new();
+    private static object _lockObject = new();
+    private static RecordObjectMapping Instance = new();
 
     private readonly Dictionary<Type, IRecordMapper> _mappers = new();
 
+    internal static void Reset()
+    {
+        lock (_lockObject)
+        {
+            Instance = new RecordObjectMapping();
+        }
+    }
+
     public static void Register<T>(T recordMapper) where T : IRecordMapper, new()
     {
-        Register<T>(new T());
+        lock (_lockObject)
+        {
+            Register(new T());
+        }
     }
 
     public static void Register(IRecordMapper mapper)
     {
-        if (!IsValidMapper(mapper.GetType(), out var genericInterface))
+        lock (_lockObject)
         {
-            throw new ArgumentException("Mapper type must implement IRecordMapper<>");
-        }
+            if (!IsValidMapper(mapper.GetType(), out var genericInterface))
+            {
+                throw new ArgumentException("Mapper type must implement IRecordMapper<>");
+            }
 
-        var destinationType = genericInterface.GetGenericArguments()[0];
-        Instance._mappers[destinationType] = mapper;
+            var destinationType = genericInterface.GetGenericArguments()[0];
+            Instance._mappers[destinationType] = mapper;
+        }
     }
 
     public static void RegisterAllFromAssembly(Assembly assembly = null)
@@ -55,7 +70,7 @@ public class RecordObjectMapping : IMappingRegistry
 
         foreach (var type in assembly.GetTypes())
         {
-            if (IsValidMapper(type, out _))
+            if (IsValidMapper(type, out var _))
             {
                 Register((IRecordMapper)Activator.CreateInstance(type));
             }
@@ -66,40 +81,53 @@ public class RecordObjectMapping : IMappingRegistry
     {
         genericInterface = type
             .GetInterfaces()
-            .FirstOrDefault(i =>
-                i.IsGenericType &&
-                i.GetGenericTypeDefinition() == typeof(IRecordMapper<>));
+            .FirstOrDefault(
+                i =>
+                    i.IsGenericType &&
+                    i.GetGenericTypeDefinition() == typeof(IRecordMapper<>));
 
         return genericInterface is not null;
     }
 
     internal static IRecordMapper<T> GetMapper<T>() where T : new()
     {
-        var type = typeof(T);
-        return (IRecordMapper<T>)GetMapperForType(type);
+        lock (_lockObject)
+        {
+            return (IRecordMapper<T>)GetMapperForType(typeof(T));
+        }
     }
 
     internal static IRecordMapper GetMapperForType(Type type)
     {
-        if (Instance._mappers.TryGetValue(type, out var m))
+        lock (_lockObject)
         {
-            return m;
-        }
+            if (Instance._mappers.TryGetValue(type, out var m))
+            {
+                return m;
+            }
 
-        var getMethod = typeof(DefaultMapper).GetMethod(nameof(DefaultMapper.Get));
-        var genericMethod = getMethod!.MakeGenericMethod(type);
-        return (IRecordMapper)genericMethod.Invoke(null, null);
+            // no mapper registered for this type, so use the default mapper
+            var getMethod = typeof(DefaultMapper).GetMethod(nameof(DefaultMapper.Get));
+            var genericMethod = getMethod!.MakeGenericMethod(type);
+            return (IRecordMapper)genericMethod.Invoke(null, null);
+        }
     }
 
     public static T Map<T>(IRecord record) where T : new()
     {
-        return GetMapper<T>().Map(record);
+        lock (_lockObject)
+        {
+            return GetMapper<T>().Map(record);
+        }
     }
 
     public static void RegisterProvider<T>() where T : IMappingProvider, new()
     {
-        var provider = new T();
-        provider.CreateMappers(Instance);
+        lock (_lockObject)
+        {
+            var provider = new T();
+            provider.CreateMappers(Instance);
+        }
     }
 
     IMappingRegistry IMappingRegistry.RegisterMapping<T>(Action<IMappingBuilder<T>> mappingBuilder)

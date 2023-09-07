@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -23,10 +24,11 @@ namespace Neo4j.Driver.Preview.Mapping;
 
 internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new()
 {
+    private Func<IRecord, TObject> _wholeObjectMapping;
     private readonly List<Action<TObject, IRecord>> _recordMappings = new();
-    private HashSet<string> _usedPaths = new();
+    private readonly HashSet<string> _usedPaths = new();
 
-    private MethodInfo _asGenericMethod =
+    private readonly MethodInfo _asGenericMethod =
         typeof(ValueExtensions).GetMethod(nameof(ValueExtensions.As), new[] { typeof(object) });
 
     private bool _recordMapBuilt;
@@ -34,7 +36,12 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
 
     public TObject Map(IRecord record)
     {
-        var obj = new TObject();
+        // if there's a whole-object mapping, use it, otherwise create a new object
+        var obj = _wholeObjectMapping is not null
+            ? _wholeObjectMapping(record)
+            : new TObject();
+
+        // if there are individual mappings for the properties, apply them
         foreach (var mapping in _recordMappings)
         {
             mapping(obj, record);
@@ -43,33 +50,78 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
         return obj;
     }
 
+    public void AddWholeObjectMapping(Func<IRecord, TObject> mappingFunction)
+    {
+        _wholeObjectMapping = mappingFunction;
+    }
+
     public void AddMappingBySetter(
         MethodInfo propertySetter,
         string sourcePath,
         Func<object, object> converter = null)
     {
         // create the .As<TProperty> method we're going to use
-        var asMethod = _asGenericMethod.MakeGenericMethod(propertySetter.GetParameters()[0].ParameterType);
+        var propertyType = propertySetter.GetParameters()[0].ParameterType;
+        var asMethod = _asGenericMethod.MakeGenericMethod(propertyType);
         _usedPaths.Add(sourcePath.ToLower()); // keep a list of used keys to avoid unnecessary work later
+        AddMapping(propertySetter, GetValue);
 
-        object GetValue(IRecord r)
+        object GetValue(IRecord record)
         {
-            var value = _recordMap[sourcePath.ToLower()](r);
+            if (!_recordMap.ContainsKey(sourcePath.ToLower()))
+            {
+                // shape of the record may have changed since the map was built
+                BuildRecordMap(record);
+            }
+
+            var value = _recordMap[sourcePath.ToLower()](record);
 
             return value switch
             {
-                // if the value is null, just return null
                 null => null,
 
                 // don't convert nodes, just pass them through to be handled specially
                 INode node => node,
 
+                // if it's a list, map the individual items in the list
+                IList list => CreateMappedList(list, propertyType, record),
+
                 // otherwise, convert the value to the type of the property
                 _ => converter != null ? converter(value) : asMethod.Invoke(null, new[] { value })
             };
         }
+    }
 
-        AddMapping(propertySetter, GetValue);
+    private IList CreateMappedList(IList list, Type desiredListType, IRecord record)
+    {
+        var newList = (IList)Activator.CreateInstance(desiredListType);
+        var desiredItemType = desiredListType.GetGenericArguments()[0];
+        var asMethod = _asGenericMethod.MakeGenericMethod(desiredItemType);
+        foreach (var item in list)
+        {
+            // nodes and dictionaries can use the same logic, we can make them both into dictionaries
+            var dict = item switch
+            {
+                INode node => node.Properties,
+                IReadOnlyDictionary<string, object> dictionary => dictionary,
+                _ => null
+            };
+
+            if (dict is not null)
+            {
+                // if the item is a node or dictionary, we need to make it into a record and then map that
+                newList.Add(
+                    RecordObjectMapping.GetMapperForType(desiredItemType)
+                        .MapInternal(new DictAsRecord(dict, record)));
+            }
+            else
+            {
+                // otherwise, just convert the item to the type of the list
+                newList.Add(asMethod.Invoke(null, new[] { item }));
+            }
+        }
+
+        return newList;
     }
 
     public void AddMapping(
@@ -90,26 +142,45 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
             {
                 value = valueGetter(record);
             }
-            catch (Exception ex)
+            catch (KeyNotFoundException)
             {
                 // this may happen if they tried to get the value from the record in a nested node
-                throw new Neo4jException($"Error getting value for {propertySetter.Name}", ex);
+                if (record is DictAsRecord nar)
+                {
+                    try
+                    {
+                        // we'll look in the record the node came from
+                        value = valueGetter(nar.Record);
+                    }
+                    catch (KeyNotFoundException ex)
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+                    // the record didn't have a key with that name, so just leave the property as the default value
+                    return;
+                }
             }
 
             switch (value)
             {
-                // if null is returned, leave the property as the default value, the record may not have the given field
+                // if null is returned, leave the property as the default value: the record may not have the given field
                 case null: return;
 
                 // if the value is a node, make it into a fake record and map that (indirectly recursive)
                 case INode node:
                     var destType = propertySetter.GetParameters()[0].ParameterType;
-                    var newNodeDest = RecordObjectMapping.GetMapperForType(destType).MapInternal(node.AsRecord());
+                    var newNodeDest = RecordObjectMapping.GetMapperForType(destType)
+                        .MapInternal(new DictAsRecord(node.Properties, record));
+
                     propertySetter.Invoke(obj, new[] { newNodeDest });
                     return;
 
                 // otherwise, just set the property to the value
-                default: propertySetter.Invoke(obj, new object[] { value });
+                default:
+                    propertySetter.Invoke(obj, new object[] { value });
                     return;
             }
         }
@@ -136,7 +207,11 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
             if (field.Value is INode node)
             {
                 innerDict = node.Properties;
-                getDict = r => r[field.Key].As<INode>().Properties;
+                getDict = r => r switch
+                {
+                    DictAsRecord dar => dar.Record[field.Key].As<INode>().Properties,
+                    _ => r[field.Key].As<INode>().Properties
+                };
             }
             else if (field.Value is IReadOnlyDictionary<string, object> dict)
             {

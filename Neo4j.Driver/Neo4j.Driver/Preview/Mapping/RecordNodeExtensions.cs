@@ -17,7 +17,25 @@
 
 namespace Neo4j.Driver.Preview.Mapping;
 
-public interface IMappingProvider
+public static class RecordNodeExtensions
 {
-    void CreateMappers(IMappingRegistry registry);
+    public static T AsObject<T>(this IRecord record) where T : new()
+    {
+        return RecordObjectMapping.Map<T>(record);
+    }
+
+    public static T GetValue<T>(this IRecord record, string key)
+    {
+        return record[key].As<T>();
+    }
+
+    public static INode GetNode(this IRecord record, string key)
+    {
+        return record.GetValue<INode>(key);
+    }
+
+    public static T GetValue<T>(this INode node, string key)
+    {
+        return node[key].As<T>();
+    }
 }

@@ -30,4 +30,8 @@ public interface IMappingBuilder<TObject>
     IMappingBuilder<TObject> Map<TProperty>(
         Expression<Func<TObject, TProperty>> destination,
         Func<IRecord, object> valueGetter);
+
+    IMappingBuilder<TObject> MapWholeObject(Func<IRecord, TObject> mappingFunction);
+
+    IMappingBuilder<TObject> UseDefaultMapping();
 }
