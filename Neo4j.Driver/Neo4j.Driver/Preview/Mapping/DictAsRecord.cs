@@ -33,7 +33,7 @@ internal class DictAsRecord : IRecord
     }
 
     public IRecord Record => _record;
-    public object this[int index] => throw new NotImplementedException("DictAsRecord does not support index access");
+    public object this[int index] => _dict.TryGetValue(_dict.Keys.ElementAt(index), out var obj) ? obj : null;
     public object this[string key] => _dict.TryGetValue(key, out var obj) ? obj : null;
     public IReadOnlyDictionary<string, object> Values => _dict;
     public IReadOnlyList<string> Keys => _dict.Keys.ToList();
