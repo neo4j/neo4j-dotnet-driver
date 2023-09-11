@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Preview.Mapping;
 using Xunit;
+using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests.Mapping
 {
@@ -27,19 +28,22 @@ namespace Neo4j.Driver.Tests.Mapping
         [Fact]
         public void ShouldReturnCorrectValues()
         {
+            var originalRecord = new Record(new[] {"name", "age"}, new object[] {"Bob", 42});
             var dict = new Dictionary<string, object>
             {
                 {"key1", "value1"},
                 {"key2", "value2"}
             };
-            var record = new DictAsRecord(dict, null);
 
-            record.Keys.Should().BeEquivalentTo(dict.Keys);
-            record.Values.Should().BeEquivalentTo(dict);
-            record[0].Should().Be(dict["key1"]);
-            record[1].Should().Be(dict["key2"]);
-            record["key1"].Should().Be(dict["key1"]);
-            record["key2"].Should().Be(dict["key2"]);
+            var subject = new DictAsRecord(dict, originalRecord);
+
+            subject.Record.Should().BeSameAs(originalRecord);
+            subject.Keys.Should().BeEquivalentTo(dict.Keys);
+            subject.Values.Should().BeEquivalentTo(dict);
+            subject[0].Should().Be("value1");
+            subject[1].Should().Be("value2");
+            subject["key1"].Should().Be("value1");
+            subject["key2"].Should().Be("value2");
         }
     }
 }
