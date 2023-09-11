@@ -44,6 +44,12 @@ internal static class DefaultMapper
                 continue;
             }
 
+            // check if there is a DoNotMapAttribute; if there is, ignore this property
+            if (property.GetCustomAttribute<DoNotMapAttribute>() is not null)
+            {
+                continue;
+            }
+
             string path = property.Name;
 
             // check if there is a MappingPathAttribute; if there is, use that path instead

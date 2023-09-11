@@ -321,5 +321,22 @@ namespace Neo4j.Driver.Tests.Mapping
             person.Name.Should().Be("Bob");
             person.Born.Should().Be(1999);
         }
+
+        private class TestPersonWithoutBornMapped
+        {
+            public string Name { get; set; } = "A. Test Name";
+
+            [DoNotMap]
+            public int? Born { get; set; } = 9999;
+        }
+
+        [Fact]
+        public void ShouldIgnorePropertiesWithDoNotMapAttribute()
+        {
+            var record = new Record(new[] { "name", "born" }, new object[] { "Bob", 1977 });
+            var person = record.AsObject<TestPersonWithoutBornMapped>();
+            person.Name.Should().Be("Bob");
+            person.Born.Should().Be(9999);
+        }
     }
 }
