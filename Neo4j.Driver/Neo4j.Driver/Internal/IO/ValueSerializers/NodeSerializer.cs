@@ -47,4 +47,26 @@ internal sealed class NodeSerializer : ReadOnlySerializer
 
         return new Node(urn, labels, props);
     }
+
+    public override (object, int) DeserializeSpan(SpanPackStreamReader reader)
+    {
+        var urn = reader.ReadLong();
+
+        var numLabels = reader.ReadListHeader();
+        var labels = new List<string>(numLabels);
+        for (var i = 0; i < numLabels; i++)
+        {
+            labels.Add(reader.ReadString());
+        }
+
+        var numProps = reader.ReadMapHeader();
+        var props = new Dictionary<string, object>(numProps);
+        for (var i = 0; i < numProps; i++)
+        {
+            var key = reader.ReadString();
+            props.Add(key, reader.Read());
+        }
+
+        return (new Node(urn, labels, props), reader.Index);
+    }
 }

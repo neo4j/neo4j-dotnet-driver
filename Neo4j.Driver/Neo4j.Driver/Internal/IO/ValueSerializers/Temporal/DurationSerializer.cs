@@ -53,7 +53,7 @@ internal sealed class DurationSerializer : IPackStreamSerializer
         writer.WriteInt(duration.Nanos);
     }
 
-    public object DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    public (object, int) DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
     {
         PackStream.EnsureStructSize("Duration", StructSize, size);
 
@@ -62,6 +62,6 @@ internal sealed class DurationSerializer : IPackStreamSerializer
         var seconds = reader.ReadLong();
         var nanos = reader.ReadInteger();
 
-        return new Duration(months, days, seconds, nanos);
+        return (new Duration(months, days, seconds, nanos), reader.Index);
     }
 }

@@ -22,7 +22,7 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Types;
 
-internal class Relationship : IRelationship
+internal sealed class Relationship : IRelationship
 {
     public Relationship(
         long id,

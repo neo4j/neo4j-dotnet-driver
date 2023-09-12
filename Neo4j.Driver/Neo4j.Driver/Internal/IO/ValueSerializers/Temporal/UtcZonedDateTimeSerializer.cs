@@ -20,7 +20,7 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 
-internal class UtcZonedDateTimeSerializer : IPackStreamSerializer
+internal sealed class UtcZonedDateTimeSerializer : IPackStreamSerializer
 {
     public const byte StructTypeWithOffset = (byte)'I'; //49
     public const byte StructTypeWithId = (byte)'i'; // 69
@@ -76,7 +76,7 @@ internal class UtcZonedDateTimeSerializer : IPackStreamSerializer
         }
     }
 
-    public object DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    public (object, int) DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
     {
         PackStream.EnsureStructSize($"ZonedDateTime[{(char)signature}]", StructSize, size);
 
@@ -91,6 +91,6 @@ internal class UtcZonedDateTimeSerializer : IPackStreamSerializer
                 $"Unsupported struct signature {signature} passed to {nameof(UtcZonedDateTimeSerializer)}.")
         };
 
-        return new ZonedDateTime(time, nanosOfSecond, zone);
+        return (new ZonedDateTime(time, nanosOfSecond, zone), reader.Index);
     }
 }

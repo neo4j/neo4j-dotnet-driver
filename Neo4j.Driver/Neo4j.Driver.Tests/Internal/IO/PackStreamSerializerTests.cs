@@ -58,6 +58,13 @@ namespace Neo4j.Driver.Internal.IO
                 stream => new PackStreamReader(format, stream, new ByteBuffers()));
         }
 
+        internal SpanPackStreamReader CreateSpanReader(byte[] bytes)
+        {
+            var data = new Span<byte>(bytes);
+            var messageFormat = new MessageFormat(new[] { SerializerUnderTest }.Concat(SerializersNeeded));
+            return new SpanPackStreamReader(messageFormat, data);
+        }
+
         internal PackStreamWriterMachine CreateWriterMachine(BoltProtocolVersion version)
         {
             var format = new MessageFormat(version);

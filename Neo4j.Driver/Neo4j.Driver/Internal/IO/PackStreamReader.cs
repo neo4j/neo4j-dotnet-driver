@@ -88,6 +88,7 @@ internal sealed class PackStreamReader : IPackStreamReader
         var size = (int)ReadMapHeader();
         if (size == 0)
         {
+           
             return new Dictionary<string, object>(0);
         }
 

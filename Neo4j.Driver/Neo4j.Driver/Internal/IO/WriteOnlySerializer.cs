@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Neo4j.Driver.Internal.IO;
 
@@ -38,7 +37,7 @@ internal abstract class WriteOnlySerializer : IPackStreamSerializer
         Serialize(writer, value);
     }
 
-    public object DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    public (object, int) DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
     {
         throw new NotImplementedException();
     }

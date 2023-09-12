@@ -66,5 +66,28 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             value.Should().BeOfType<LocalDateTime>().Which.Second.Should().Be(59);
             value.Should().BeOfType<LocalDateTime>().Which.Nanosecond.Should().Be(128000987);
         }
+
+        [Fact]
+        public void ShouldDeserializeSpanDateTime()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            writer.WriteStructHeader(LocalDateTimeSerializer.StructSize, LocalDateTimeSerializer.StructType);
+            writer.Write(282659759);
+            writer.Write(128000987);
+
+            var reader = CreateSpanReader(writerMachine.GetOutput());
+            var value = reader.Read();
+
+            value.Should().NotBeNull();
+            value.Should().BeOfType<LocalDateTime>().Which.Year.Should().Be(1978);
+            value.Should().BeOfType<LocalDateTime>().Which.Month.Should().Be(12);
+            value.Should().BeOfType<LocalDateTime>().Which.Day.Should().Be(16);
+            value.Should().BeOfType<LocalDateTime>().Which.Hour.Should().Be(12);
+            value.Should().BeOfType<LocalDateTime>().Which.Minute.Should().Be(35);
+            value.Should().BeOfType<LocalDateTime>().Which.Second.Should().Be(59);
+            value.Should().BeOfType<LocalDateTime>().Which.Nanosecond.Should().Be(128000987);
+        }
     }
 }

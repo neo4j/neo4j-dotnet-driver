@@ -21,7 +21,7 @@ using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers;
 
-internal class PathSerializer : ReadOnlySerializer
+internal sealed class PathSerializer : ReadOnlySerializer
 {
     public const byte Path = (byte)'P';
     internal static readonly PathSerializer Instance = new();
@@ -87,5 +87,67 @@ internal class PathSerializer : ReadOnlySerializer
         }
 
         return new Path(segments.ToList(), nodes.ToList(), rels.ToList());
+    }
+    
+    public override (object, int) DeserializeSpan(SpanPackStreamReader reader)
+    {
+        // List of unique nodes
+        var uniqNodes = new Node[reader.ReadListHeader()];
+        for (var i = 0; i < uniqNodes.Length; i++)
+        {
+            if (reader.Read() is not Node node)
+            {
+                throw new ProtocolException("Expecting receivedNode to be true, however the value is false");
+            }
+            uniqNodes[i] = node;
+        }
+
+        // List of unique relationships, without start/end information
+        var uniqRels = new Relationship[reader.ReadListHeader()];
+        for (var i = 0; i < uniqRels.Length; i++)
+        {
+            if (reader.Read() is not Relationship uniqRel)
+            {
+                throw new ProtocolException("Expecting receivedUnboundRelationship to be true, however the value is false");
+            }
+            uniqRels[i] = uniqRel;
+        }
+
+        // Path sequence
+        var length = reader.ReadListHeader();
+
+        // Knowing the sequence length, we can create the arrays that will represent the nodes, rels and segments in their "path order"
+        var segments = new ISegment[length / 2];
+        var nodes = new INode[segments.Length + 1];
+        var rels = new IRelationship[segments.Length];
+
+        var prevNode = uniqNodes[0];
+        nodes[0] = prevNode;
+        for (var i = 0; i < segments.Length; i++)
+        {
+            var relIdx = (int)reader.ReadLong();
+            var nextNode =
+                uniqNodes[(int)reader.ReadLong()]; // Start node is always 0, and isn't encoded in the sequence
+
+            // Negative rel index means this rel was traversed "inversed" from its direction
+            Relationship rel;
+            if (relIdx < 0)
+            {
+                rel = uniqRels[-relIdx - 1]; // -1 because rel idx are 1-indexed
+                rel.SetStartAndEnd(nextNode, prevNode);
+            }
+            else
+            {
+                rel = uniqRels[relIdx - 1];
+                rel.SetStartAndEnd(prevNode, nextNode);
+            }
+
+            nodes[i + 1] = nextNode;
+            rels[i] = rel;
+            segments[i] = new Segment(prevNode, rel, nextNode);
+            prevNode = nextNode;
+        }
+
+        return (new Path(segments.ToList(), nodes.ToList(), rels.ToList()), reader.Index);
     }
 }

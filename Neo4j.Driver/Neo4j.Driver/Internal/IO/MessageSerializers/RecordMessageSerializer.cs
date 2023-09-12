@@ -43,6 +43,12 @@ internal sealed class RecordMessageSerializer : ReadOnlySerializer, IPackStreamM
 
     public IResponseMessage DeserializeMessage(BoltProtocolVersion formatVersion, SpanPackStreamReader packStreamReader)
     {
-        return new RecordMessage(packStreamReader.ReadList().ToArray());
+        var fieldCount = packStreamReader.ReadListHeader();
+        var fields = new object[fieldCount];
+        for (var i = 0; i < fieldCount; i++)
+        {
+            fields[i] = packStreamReader.Read();
+        }
+        return new RecordMessage(fields);
     }
 }

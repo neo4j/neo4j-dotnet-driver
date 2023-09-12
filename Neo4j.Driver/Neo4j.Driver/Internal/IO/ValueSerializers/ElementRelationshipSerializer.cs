@@ -41,4 +41,20 @@ internal sealed class ElementRelationshipSerializer : ReadOnlySerializer
 
         return new Relationship(relId, urn, relStartId, relEndId, startUrn, endUrn, relType, props);
     }
+
+    public override (object, int) DeserializeSpan(SpanPackStreamReader reader)
+    {
+        var relId = reader.ReadLong();
+        var relStartId = reader.ReadLong();
+        var relEndId = reader.ReadLong();
+
+        var relType = reader.ReadString();
+        var props = reader.ReadMap();
+
+        var urn = reader.ReadString();
+        var startUrn = reader.ReadString();
+        var endUrn = reader.ReadString();
+
+        return (new Relationship(relId, urn, relStartId, relEndId, startUrn, endUrn, relType, props), reader.Index);
+    }
 }

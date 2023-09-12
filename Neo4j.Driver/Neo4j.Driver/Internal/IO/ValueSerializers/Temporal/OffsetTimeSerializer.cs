@@ -49,13 +49,13 @@ internal sealed class OffsetTimeSerializer : IPackStreamSerializer
         writer.WriteInt(time.OffsetSeconds);
     }
 
-    public object DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    public (object, int) DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
     {
         PackStream.EnsureStructSize("Time", StructSize, size);
 
         var nanosOfDay = reader.ReadLong();
         var offsetSeconds = reader.ReadInteger();
 
-        return new OffsetTime(TemporalHelpers.NanoOfDayToTime(nanosOfDay), offsetSeconds);
+        return (new OffsetTime(TemporalHelpers.NanoOfDayToTime(nanosOfDay), offsetSeconds), reader.Index);
     }
 }

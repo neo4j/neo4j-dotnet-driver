@@ -18,7 +18,7 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using Neo4j.Driver.Internal.Messaging;
@@ -29,7 +29,7 @@ internal ref struct SpanPackStreamReader
 {
     private readonly MessageFormat _format;
     private readonly ReadOnlySpan<byte> _reader;
-    private int _idx = 0;
+    public int Index = 0;
     private readonly CancellationToken _cancellationToken;
 
     public SpanPackStreamReader(
@@ -173,7 +173,7 @@ internal ref struct SpanPackStreamReader
 
     public IResponseMessage ReadMessage()
     {
-        var _ = ReadStructHeader();
+        ReadStructHeader();
         var signature = NextByte();
 
         if (_format.MessageReaders.TryGetValue(signature, out var handler))
@@ -220,7 +220,9 @@ internal ref struct SpanPackStreamReader
 
         if (_format.ReaderStructHandlers.TryGetValue(signature, out var handler))
         {
-            return handler.DeserializeSpan(_format.Version, this, signature, size);
+            var (o, idx) = handler.DeserializeSpan(_format.Version, this, signature, size);
+            Index = idx;
+            return o;
         }
 
         throw new ProtocolException("Unknown structure type: " + signature);
@@ -256,32 +258,19 @@ internal ref struct SpanPackStreamReader
     public int ReadInteger()
     {
         var marker = NextByte();
-        if (marker is var _ && (sbyte)marker >= PackStream.Minus2ToThe4)
+        if ((sbyte)marker >= PackStream.Minus2ToThe4)
         {
             return (sbyte)marker;
         }
 
-        if (marker == PackStream.Int8)
+        return marker switch
         {
-            return (sbyte)NextByte();
-        }
-
-        if (marker == PackStream.Int16)
-        {
-            return NextShort();
-        }
-
-        if (marker == PackStream.Int32)
-        {
-            return NextInt();
-        }
-
-        if (marker == PackStream.Int64)
-        {
-            throw new OverflowException($"Unexpectedly large Integer value unpacked.");
-        }
-
-        throw new ProtocolException($"Expected an integer, but got: 0x{marker:X2}");
+            PackStream.Int8 => NextSByte(),
+            PackStream.Int16 => NextShort(),
+            PackStream.Int32 => NextInt(),
+            PackStream.Int64 => throw new OverflowException($"Unexpectedly large Integer value unpacked."),
+            _ => throw new ProtocolException($"Expected an integer, but got: 0x{marker:X2}")
+        };
     }
 
     public long ReadLong()
@@ -292,27 +281,14 @@ internal ref struct SpanPackStreamReader
             return (sbyte)marker;
         }
 
-        if (marker == PackStream.Int8)
+        return marker switch
         {
-            return (sbyte)NextByte();
-        }
-
-        if (marker == PackStream.Int16)
-        {
-            return NextShort();
-        }
-
-        if (marker == PackStream.Int32)
-        {
-            return NextInt();
-        }
-
-        if (marker == PackStream.Int64)
-        {
-            return NextLong();
-        }
-
-        throw new ProtocolException($"Expected an integer, but got: 0x{marker:X2}");
+            PackStream.Int8 => NextSByte(),
+            PackStream.Int16 => NextShort(),
+            PackStream.Int32 => NextInt(),
+            PackStream.Int64 => NextLong(),
+            _ => throw new ProtocolException($"Expected an integer, but got: 0x{marker:X2}")
+        };
     }
 
     public double ReadDouble()
@@ -358,10 +334,10 @@ internal ref struct SpanPackStreamReader
             return Array.Empty<byte>();
         }
 
-        var slice = _reader.Slice(_idx, length);
+        var slice = _reader.Slice(Index, length);
         var data = new byte[length];
         slice.CopyTo(new Span<byte>(data));
-        _idx += length;
+        Index += length;
         return data;
     }
 
@@ -387,7 +363,7 @@ internal ref struct SpanPackStreamReader
         {
             length = ReadUint32AsInt32();
         }
-        else if (markerByte is var _ && (markerByte & 0xF0) == PackStream.TinyString)
+        else if ((markerByte & 0xF0) == PackStream.TinyString)
         {
             length = markerByte & 0x0F;
         }
@@ -401,8 +377,8 @@ internal ref struct SpanPackStreamReader
 
     private string ReadString(int length)
     {
-        var slice = _reader.Slice(_idx, length);
-        _idx += length;
+        var slice = _reader.Slice(Index, length);
+        Index += length;
 #if NET6_0_OR_GREATER
         return Encoding.UTF8.GetString(slice);
 #else
@@ -413,132 +389,118 @@ internal ref struct SpanPackStreamReader
     public int ReadMapHeader()
     {
         var marker = NextByte();
-        if ((marker & 0xF0) == PackStream.TinyMap)
+        if ((byte)(marker & 0xF0) == PackStream.TinyMap)
         {
             return marker & 0x0F;
         }
 
-        if (marker == PackStream.Map8)
+        return marker switch
         {
-            return ReadUint8AsInt32();
-        }
-
-        if (marker == PackStream.Map16)
-        {
-            return ReadUint16AsInt32();
-        }
-
-        if (marker == PackStream.Map32)
-        {
-            return ReadUint32AsInt32();
-        }
-
-        throw new ProtocolException($"Expected a map, but got: 0x{marker:X2}");
+            PackStream.Map8 => ReadUint8AsInt32(),
+            PackStream.Map16 => ReadUint16AsInt32(),
+            PackStream.Map32 => ReadUint32AsInt32(),
+            _ => throw new ProtocolException($"Expected a map, but got: 0x{marker:X2}")
+        };
     }
 
     public int ReadListHeader()
     {
         var marker = NextByte();
-        if ((marker & 0xF0) == PackStream.TinyList)
+        if ((byte)(marker & 0xF0) == PackStream.TinyList)
         {
             return marker & 0x0F;
         }
 
-        if (marker == PackStream.List8)
+        return marker switch
         {
-            return ReadUint8AsInt32();
-        }
-
-        if (marker == PackStream.List16)
-        {
-            return ReadUint16AsInt32();
-        }
-
-        if (marker == PackStream.List32)
-        {
-            return ReadUint32AsInt32();
-        }
-
-        throw new ProtocolException($"Expected a list, but got: 0x{marker:X2}");
+            PackStream.List8 => ReadUint8AsInt32(),
+            PackStream.List16 => ReadUint16AsInt32(),
+            PackStream.List32 => ReadUint32AsInt32(),
+            _ => throw new ProtocolException($"Expected a list, but got: 0x{marker:X2}")
+        };
     }
 
     public int ReadStructHeader()
     {
         var marker = NextByte();
-        if ((marker & 0xF0) == PackStream.TinyStruct)
+        if ((byte)(marker & 0xF0) == PackStream.TinyStruct)
         {
             return marker & 0x0F;
         }
 
-        if (marker == PackStream.Struct8)
+        return marker switch
         {
-            return ReadUint8AsInt32();
-        }
-
-        if (marker == PackStream.Struct16)
-        {
-            return ReadUint16AsInt32();
-        }
-
-        throw new ProtocolException($"Expected a struct, but got: 0x{marker:X2}");
+            PackStream.Struct8 => ReadUint8AsInt32(),
+            PackStream.Struct16 => ReadUint16AsInt32(),
+            _ => throw new ProtocolException($"Expected a struct, but got: 0x{marker:X2}")
+        };
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int ReadUint8AsInt32()
     {
         return NextByte() & 0xFF;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int ReadUint16AsInt32()
     {
         return NextShort() & 0xFFFF;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int ReadUint32AsInt32()
     {
         return (int)(NextInt() & 0xFFFFFFFFL);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public byte NextByte()
     {
-        var b = _reader[_idx];
-        _idx++;
-        return b;
+        return _reader[Index++];
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal sbyte NextSByte()
+    {
+        return (sbyte)_reader[Index++];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public short NextShort()
     {
-        var slice = _reader.Slice(_idx, 2);
-        _idx += 2;
+        var slice = _reader.Slice(Index, 2);
+        Index += 2;
         return BinaryPrimitives.ReadInt16BigEndian(slice);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int NextInt()
     {
-        var slice = _reader.Slice(_idx, 4);
-        _idx += 4;
+        var slice = _reader.Slice(Index, 4);
+        Index += 4;
         return BinaryPrimitives.ReadInt32BigEndian(slice);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public long NextLong()
     {
-        var slice = _reader.Slice(_idx, 8);
-        _idx += 8;
+        var slice = _reader.Slice(Index, 8);
+        Index += 8;
         return BinaryPrimitives.ReadInt64BigEndian(slice);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public double NextDouble()
     {
-        var slice = _reader.Slice(_idx, 8);
-        _idx += 8;
-        #if NET6_0_OR_GREATER
-        return BinaryPrimitives.ReadDoubleBigEndian(slice);
-#else
+        var slice = _reader.Slice(Index, 8);
+        Index += 8;
         return BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64BigEndian(slice));
-#endif
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public byte PeekByte()
     {
-        return _reader[_idx];
+        return _reader[Index];
     }
 }

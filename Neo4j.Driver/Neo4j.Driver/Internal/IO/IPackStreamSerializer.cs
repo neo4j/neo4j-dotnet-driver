@@ -16,7 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.IO;
@@ -29,5 +28,5 @@ internal interface IPackStreamSerializer
 
     object Deserialize(BoltProtocolVersion version, PackStreamReader reader, byte signature, long size);
     void Serialize(BoltProtocolVersion version, PackStreamWriter writer, object value);
-    object DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size);
+    (object, int) DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size);
 }

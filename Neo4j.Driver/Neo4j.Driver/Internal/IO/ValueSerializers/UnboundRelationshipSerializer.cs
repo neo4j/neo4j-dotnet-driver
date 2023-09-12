@@ -34,4 +34,13 @@ internal sealed class UnboundRelationshipSerializer : ReadOnlySerializer
 
         return new Relationship(urn, -1, -1, relType, props);
     }
+
+    public override (object, int) DeserializeSpan(SpanPackStreamReader reader)
+    {
+        var urn = reader.ReadLong();
+        var relType = reader.ReadString();
+        var props = reader.ReadMap();
+
+        return (new Relationship(urn, -1, -1, relType, props), reader.Index);
+    }
 }

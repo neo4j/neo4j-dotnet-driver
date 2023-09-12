@@ -95,7 +95,7 @@ internal sealed class PointSerializer : IPackStreamSerializer
         }
     }
 
-    public object DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    public (object, int) DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
     {
         switch (signature)
         {
@@ -106,7 +106,7 @@ internal sealed class PointSerializer : IPackStreamSerializer
                 var x = reader.ReadDouble();
                 var y = reader.ReadDouble();
 
-                return new Point(srId, x, y);
+                return (new Point(srId, x, y), reader.Index);
             }
 
             case Point3DStructType:
@@ -117,7 +117,7 @@ internal sealed class PointSerializer : IPackStreamSerializer
                 var y = reader.ReadDouble();
                 var z = reader.ReadDouble();
 
-                return new Point(srId, x, y, z);
+                return (new Point(srId, x, y, z), reader.Index);
             }
 
             default:
