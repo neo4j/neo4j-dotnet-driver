@@ -46,10 +46,6 @@ namespace Neo4j.Driver.Internal.MessageHandling
                     .Contain(
                         new IPackStreamSerializer[]
                         {
-                            FailureMessageSerializer.Instance,
-                            IgnoredMessageSerializer.Instance,
-                            RecordMessageSerializer.Instance,
-                            SuccessMessageSerializer.Instance,
                             PointSerializer.Instance,
                             LocalDateSerializer.Instance,
                             LocalTimeSerializer.Instance,
