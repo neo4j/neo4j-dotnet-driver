@@ -21,11 +21,24 @@ using System.Linq;
 
 namespace Neo4j.Driver.Preview.Mapping;
 
+/// <summary>
+/// Contains methods for registering a mapping with the global mapping configuration.
+/// </summary>
 public interface IMappingRegistry
 {
+    /// <summary>
+    /// Registers a mapping for the given type.
+    /// </summary>
+    /// <param name="mappingBuilder">This method will be called, passing a parameter that contains
+    /// a fluent API for defining the mapping.</param>
+    /// <typeparam name="T">The type to be mapped.</typeparam>
+    /// <returns>This instance for method chaining.</returns>
     IMappingRegistry RegisterMapping<T>(Action<IMappingBuilder<T>> mappingBuilder) where T : new();
 }
 
+/// <summary>
+/// Controls global record mapping configuration.
+/// </summary>
 public class RecordObjectMapping : IMappingRegistry
 {
     private static object _lockObject = new();
@@ -41,13 +54,20 @@ public class RecordObjectMapping : IMappingRegistry
         }
     }
 
+    /// <summary>
+    /// Registers a single record mapper. This will replace any existing mapper for the same type.
+    /// </summary>
+    /// <param name="mapper">The mapper. This must implement <see cref="IRecordMapper{T}"/> for the type
+    /// to be mapped.</param>
+    /// <exception cref="ArgumentException">The provided <paramref name="mapper"/> does not implement
+    /// IRecordMapper{T}.</exception>
     public static void Register(IRecordMapper mapper)
     {
         lock (_lockObject)
         {
             if (!IsValidMapper(mapper.GetType(), out var genericInterface))
             {
-                throw new ArgumentException("Mapper type must implement IRecordMapper<>");
+                throw new ArgumentException("Mapper type must implement IRecordMapper<T>");
             }
 
             var destinationType = genericInterface.GetGenericArguments()[0];
@@ -91,6 +111,12 @@ public class RecordObjectMapping : IMappingRegistry
         }
     }
 
+    /// <summary>
+    /// Maps a record to an object of the given type according to the global mapping configuration.
+    /// </summary>
+    /// <param name="record">The record to be mapped.</param>
+    /// <typeparam name="T">The type of object to be mapped.</typeparam>
+    /// <returns>The mapped object.</returns>
     public static T Map<T>(IRecord record) where T : new()
     {
         lock (_lockObject)
@@ -99,6 +125,11 @@ public class RecordObjectMapping : IMappingRegistry
         }
     }
 
+    /// <summary>
+    /// Registers a mapping provider. This will call <see cref="IMappingProvider.CreateMappers"/> on the
+    /// provider, allowing it to register any mappers it wishes.
+    /// </summary>
+    /// <typeparam name="T">The type of the mapping provider.</typeparam>
     public static void RegisterProvider<T>() where T : IMappingProvider, new()
     {
         lock (_lockObject)

@@ -19,6 +19,12 @@ using System;
 
 namespace Neo4j.Driver.Preview.Mapping;
 
+/// <summary>
+/// Instructs the default mapper to use a different field than the property name when mapping a value to the
+/// marked property. This attribute does not affect custom-defined mappers. A path may consist of the name of the
+/// field to be mapped, or a dot-separated path to a nested field.
+/// </summary>
+[AttributeUsage(AttributeTargets.Property)]
 public class MappingPathAttribute : Attribute
 {
     public string Path { get; }

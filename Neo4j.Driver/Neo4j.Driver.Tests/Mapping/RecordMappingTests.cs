@@ -310,7 +310,7 @@ namespace Neo4j.Driver.Tests.Mapping
         private class PersonWithoutBornSetter
         {
             public string Name { get; set; } = "";
-            public int? Born { get; } = 1999;
+            public int? Born { get; } = 1999; // no setter
         }
 
         [Fact]

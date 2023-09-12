@@ -21,8 +21,19 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Preview.Mapping;
 
+/// <summary>
+/// Contains extensions for using the global mapping system with the driver's <see cref="ExecutableQuery{TIn,TOut}"/>
+/// methods/
+/// </summary>
 public static class MappingExtensions
 {
+    /// <summary>
+    /// Add this method to an &lt;see cref="ExecutableQuery{TIn,TOut}"/&gt; method chain to map the results to objects
+    /// as part of the query execution.
+    /// </summary>
+    /// <param name="recordsTask">The task that will return the records.</param>
+    /// <typeparam name="T">The type to map to.</typeparam>
+    /// <returns>A task that will return the mapped objects.</returns>
     public static async Task<IReadOnlyList<T>> AsObjectsAsync<T>(
         this Task<EagerResult<IReadOnlyList<IRecord>>> recordsTask)
         where T : new()

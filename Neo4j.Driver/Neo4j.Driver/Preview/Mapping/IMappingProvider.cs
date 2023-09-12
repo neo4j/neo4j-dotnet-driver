@@ -17,7 +17,14 @@
 
 namespace Neo4j.Driver.Preview.Mapping;
 
+/// <summary>
+/// Interface to be implemented by a class that provides mappers to the mapping system.
+/// </summary>
 public interface IMappingProvider
 {
+    /// <summary>
+    /// This method is called on mapping providers to allow them to register their mappers with the mapping system.
+    /// </summary>
+    /// <param name="registry">The registry in which mappers should be registered.</param>
     void CreateMappers(IMappingRegistry registry);
 }

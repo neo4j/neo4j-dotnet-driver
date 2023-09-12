@@ -17,23 +17,52 @@
 
 namespace Neo4j.Driver.Preview.Mapping;
 
+/// <summary>
+/// Contains extensions for accessing values simply from records and nodes.
+/// </summary>
 public static class RecordNodeExtensions
 {
+    /// <summary>
+    /// Converts the record to an object of the given type according to the global mapping configuration.
+    /// </summary>
+    /// <param name="record">The record to convert.</param>
+    /// <typeparam name="T">The type to map to.</typeparam>
+    /// <returns>The mapped object.</returns>
     public static T AsObject<T>(this IRecord record) where T : new()
     {
         return RecordObjectMapping.Map<T>(record);
     }
 
+    /// <summary>
+    /// Gets the value of the given key from the record, converting it to the given type.
+    /// </summary>
+    /// <param name="record">The record to get the value from.</param>
+    /// <param name="key">The key of the value.</param>
+    /// <typeparam name="T">The type to convert to.</typeparam>
+    /// <returns>The converted value.</returns>
     public static T GetValue<T>(this IRecord record, string key)
     {
         return record[key].As<T>();
     }
 
+    /// <summary>
+    /// Gets the <see cref="INode"/> identified by the given key from the record.
+    /// </summary>
+    /// <param name="record">The record to get the node from.</param>
+    /// <param name="key">The key of the node.</param>
+    /// <returns>The node.</returns>
     public static INode GetNode(this IRecord record, string key)
     {
         return record.GetValue<INode>(key);
     }
 
+    /// <summary>
+    /// Gets the value of the given key from the node, converting it to the given type.
+    /// </summary>
+    /// <param name="node">The node to get the value from.</param>
+    /// <param name="key">The key of the value.</param>
+    /// <typeparam name="T">The type to convert to.</typeparam>
+    /// <returns>The converted value.</returns>
     public static T GetValue<T>(this INode node, string key)
     {
         return node[key].As<T>();

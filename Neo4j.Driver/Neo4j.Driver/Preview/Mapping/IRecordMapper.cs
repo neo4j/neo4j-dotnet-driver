@@ -17,11 +17,18 @@
 
 namespace Neo4j.Driver.Preview.Mapping;
 
+/// <summary>
+/// Do not implement this interface directly. Instead, implement <see cref="IRecordMapper{T}"/>.
+/// </summary>
 public interface IRecordMapper
 {
     internal object MapInternal(IRecord record);
 }
 
+/// <summary>
+/// Interface to be implemented by a class that maps records to objects of type <typeparamref name="T"/>.
+/// </summary>
+/// <typeparam name="T">The type of object to which records will be mapped.</typeparam>
 public interface IRecordMapper<out T> : IRecordMapper
 {
     T Map(IRecord record);

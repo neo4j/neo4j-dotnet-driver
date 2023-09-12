@@ -20,9 +20,21 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Preview.Mapping;
 
+/// <summary>
+/// Contains extension methods for <see cref="IAsyncEnumerable{T}"/>.
+/// </summary>
 public static class IAsyncEnumerableExtensions
 {
-    public static async Task<IEnumerable<T>> ToObjectListAsync<T>(this IAsyncEnumerable<IRecord> asyncEnumerable)
+    /// <summary>
+    /// Materialises the <see cref="IAsyncEnumerable{T}"/> into a list of objects of type
+    /// <typeparam name="T">T</typeparam>, by mapping each record in the enumerable to an object.
+    /// If no custom mapper is defined for type <typeparamref name="T"/>, the default
+    /// mapper will be used.
+    /// </summary>
+    /// <param name="asyncEnumerable">The asynchronous source of records.</param>
+    /// <typeparam name="T">The type of object to map to.</typeparam>
+    /// <returns>The list of mapped objects.</returns>
+    public static async Task<IReadOnlyList<T>> ToObjectListAsync<T>(this IAsyncEnumerable<IRecord> asyncEnumerable)
         where T : new()
     {
         var list = new List<T>();
