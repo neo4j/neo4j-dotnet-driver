@@ -46,6 +46,10 @@ public class RecordObjectMapping : IMappingRegistry
 
     private readonly Dictionary<Type, IRecordMapper> _mappers = new();
 
+    private RecordObjectMapping()
+    {
+    }
+
     internal static void Reset()
     {
         lock (_lockObject)

@@ -28,9 +28,10 @@ namespace Neo4j.Driver.Preview.Mapping;
 public static class MappingExtensions
 {
     /// <summary>
-    /// Add this method to an &lt;see cref="ExecutableQuery{TIn,TOut}"/&gt; method chain to map the results to objects
+    /// Add this method to an <see cref="ExecutableQuery{TIn,TOut}"/> method chain to map the results to objects
     /// as part of the query execution.
     /// </summary>
+    /// <seealso cref="RecordObjectMapping.Map{T}"/>
     /// <param name="recordsTask">The task that will return the records.</param>
     /// <typeparam name="T">The type to map to.</typeparam>
     /// <returns>A task that will return the mapped objects.</returns>
@@ -39,10 +40,7 @@ public static class MappingExtensions
         where T : new()
     {
         var records = await recordsTask.ConfigureAwait(false);
-
-        IRecordMapper<T> mapper;
-        mapper = RecordObjectMapping.GetMapper<T>();
-
-        return records.Result.Select(r => mapper.Map(r)).ToList();
+        var mapper = RecordObjectMapping.GetMapper<T>();
+        return records.Result.Select(mapper.Map).ToList();
     }
 }

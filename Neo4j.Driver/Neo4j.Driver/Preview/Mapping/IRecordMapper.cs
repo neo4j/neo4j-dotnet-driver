@@ -31,5 +31,10 @@ public interface IRecordMapper
 /// <typeparam name="T">The type of object to which records will be mapped.</typeparam>
 public interface IRecordMapper<out T> : IRecordMapper
 {
+    /// <summary>
+    /// Maps the given record to an object of type <typeparamref name="T"/>.
+    /// </summary>
+    /// <param name="record">The record to map.</param>
+    /// <returns>The mapped object.</returns>
     T Map(IRecord record);
 }

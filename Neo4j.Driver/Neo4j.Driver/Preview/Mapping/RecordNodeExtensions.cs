@@ -25,6 +25,7 @@ public static class RecordNodeExtensions
     /// <summary>
     /// Converts the record to an object of the given type according to the global mapping configuration.
     /// </summary>
+    /// <seealso cref="RecordObjectMapping.Map{T}"/>
     /// <param name="record">The record to convert.</param>
     /// <typeparam name="T">The type to map to.</typeparam>
     /// <returns>The mapped object.</returns>

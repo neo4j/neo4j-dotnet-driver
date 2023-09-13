@@ -27,7 +27,22 @@ namespace Neo4j.Driver.Preview.Mapping;
 [AttributeUsage(AttributeTargets.Property)]
 public class MappingPathAttribute : Attribute
 {
+    /// <summary>
+    /// Identifier for the value in the field in the record. If the path is a dot-separated path, then the
+    /// first part of the path is the identifier for the node (or dictionary) field in the record, and the
+    /// last part is the identifier within that node or dictionary.
+    /// </summary>
     public string Path { get; }
+
+    /// <summary>
+    /// Instructs the default mapper to use a different field than the property name when mapping a value to the
+    /// marked property.
+    /// </summary>
+    /// <param name="path">
+    /// Identifier for the value in the field in the record. If the path is a dot-separated path, then the
+    /// first part of the path is the key for the node (or dictionary) field in the record, and the
+    /// last part is the key within that node or dictionary.
+    /// </param>
     public MappingPathAttribute(string path)
     {
         Path = path;

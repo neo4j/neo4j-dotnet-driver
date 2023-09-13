@@ -23,14 +23,15 @@ namespace Neo4j.Driver.Preview.Mapping;
 /// <summary>
 /// Contains extension methods for <see cref="IAsyncEnumerable{T}"/>.
 /// </summary>
-public static class IAsyncEnumerableExtensions
+public static class AsyncEnumerableExtensions
 {
     /// <summary>
     /// Materialises the <see cref="IAsyncEnumerable{T}"/> into a list of objects of type
-    /// <typeparam name="T">T</typeparam>, by mapping each record in the enumerable to an object.
+    /// <typeparamref name="T"/>, by mapping each record in the enumerable to an object.
     /// If no custom mapper is defined for type <typeparamref name="T"/>, the default
     /// mapper will be used.
     /// </summary>
+    /// <seealso cref="RecordObjectMapping.Map{T}"/>
     /// <param name="asyncEnumerable">The asynchronous source of records.</param>
     /// <typeparam name="T">The type of object to map to.</typeparam>
     /// <returns>The list of mapped objects.</returns>
