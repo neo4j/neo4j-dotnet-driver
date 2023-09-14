@@ -35,7 +35,7 @@ public static class AsyncEnumerableExtensions
     /// <param name="asyncEnumerable">The asynchronous source of records.</param>
     /// <typeparam name="T">The type of object to map to.</typeparam>
     /// <returns>The list of mapped objects.</returns>
-    public static async Task<IReadOnlyList<T>> ToObjectListAsync<T>(this IAsyncEnumerable<IRecord> asyncEnumerable)
+    public static async Task<IReadOnlyList<T>> ToObjectListAsync<T>(this IResultCursor asyncEnumerable)
         where T : new()
     {
         var list = new List<T>();
