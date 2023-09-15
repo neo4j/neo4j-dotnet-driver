@@ -95,7 +95,7 @@ public sealed class SessionConfig
     /// <remarks>
     /// The default access mode set is overriden when transaction functions (i.e.
     /// <see
-    ///     cref="IAsyncSession.ExecuteAndGetResultAsync{T}(System.Func{Neo4j.Driver.IAsyncQueryRunner,System.Threading.Tasks.Task{T}}, System.Action{TransactionConfigBuilder})"/>
+    ///     cref="IAsyncSession.ExecuteReadAsync{T}(System.Func{Neo4j.Driver.IAsyncQueryRunner,System.Threading.Tasks.Task{T}}, System.Action{TransactionConfigBuilder})"/>
     /// and
     /// <see
     ///     cref="IAsyncSession.ExecuteWriteAsync{T}(System.Func{Neo4j.Driver.IAsyncQueryRunner,System.Threading.Tasks.Task{T}}, System.Action{TransactionConfigBuilder})"/>
