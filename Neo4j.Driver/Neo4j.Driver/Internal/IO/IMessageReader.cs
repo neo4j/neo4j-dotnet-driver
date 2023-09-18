@@ -23,6 +23,7 @@ namespace Neo4j.Driver.Internal.IO;
 internal interface IMessageReader
 {
     ValueTask ReadAsync(IResponsePipeline pipeline, MessageFormat format);
+    // Deprecated. Leaving here temporarily, if we need to swap back to the old reader.
     ValueTask ReadAsync(IResponsePipeline pipeline, PackStreamReader reader);
     void SetReadTimeoutInMs(int ms);
 }
