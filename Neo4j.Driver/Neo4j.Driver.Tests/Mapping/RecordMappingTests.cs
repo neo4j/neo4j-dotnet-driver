@@ -243,7 +243,7 @@ namespace Neo4j.Driver.Tests.Mapping
             }
 
             GetRecordsAsync()
-                .ToObjectListAsync<TestPerson>()
+                .ToListAsync<TestPerson>()
                 .Result.Should()
                 .BeEquivalentTo(
                     new TestPerson { Name = "Bob" },
