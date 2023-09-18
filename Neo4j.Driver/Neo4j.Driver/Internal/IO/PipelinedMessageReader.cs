@@ -39,10 +39,10 @@ internal sealed class PipelinedMessageReader : IMessageReader
 
     private const int MaxChunkSize = 65_535;
 
-    public PipelinedMessageReader(Stream inputStream, ILogger logger)
+    public PipelinedMessageReader(Stream inputStream, int i, ILogger logger)
     {
         _logger = logger;
-        _timeoutInMs = inputStream.ReadTimeout;
+        _timeoutInMs = i;
         _stream = inputStream;
         _source = new CancellationTokenSource();
         _headerMemory = new Memory<byte>(new byte[2]);
@@ -53,22 +53,22 @@ internal sealed class PipelinedMessageReader : IMessageReader
         _source.Dispose();
     }
 
-    public async ValueTask ReadAsync(IResponsePipeline pipeline, PackStreamReader reader)
+    public async ValueTask ReadAsync(IResponsePipeline pipeline, MessageFormat format)
     {
         var pipeReader = PipeReader.Create(_stream, 
             new StreamPipeReaderOptions(leaveOpen: true, bufferSize: MaxChunkSize + 4));
-        
+
         try
         {
             while (!pipeline.HasNoPendingMessages)
             {
-                var message = await ReadNextMessage(reader, pipeReader).ConfigureAwait(false);
+                var message = await ReadNextMessage(format, pipeReader).ConfigureAwait(false);
                 if (message == null)
                 {
                     // Noop message,
                     continue;
                 }
-                
+
                 // TODO: Optimize messages and dispatching to avoid allocations.
                 // Dispatch the message to the pipeline, which will handle it.
                 message.Dispatch(pipeline);
@@ -82,6 +82,14 @@ internal sealed class PipelinedMessageReader : IMessageReader
             }
 
             await pipeReader.CompleteAsync().ConfigureAwait(false);
+        }
+        catch (IOException io)
+        {
+            await pipeReader.CompleteAsync(io).ConfigureAwait(false);
+            _stream.Close();
+            // If the exception is an IO exception, the connection requires reset and subsequent messages can be
+            // ignored.
+            throw;
         }
         catch (OperationCanceledException canceledException)
         {
@@ -97,6 +105,11 @@ internal sealed class PipelinedMessageReader : IMessageReader
             // If the exception is a protocol exception, the connection requires reset and subsequent messages can be
             throw;
         }
+    }
+
+    public ValueTask ReadAsync(IResponsePipeline pipeline, PackStreamReader reader)
+    {
+        throw new NotImplementedException();
     }
 
     private void ResetCancellation()
@@ -121,7 +134,7 @@ internal sealed class PipelinedMessageReader : IMessageReader
         _source.CancelAfter(_timeoutInMs);
     }
 
-    private async ValueTask<IResponseMessage?> ReadNextMessage(PackStreamReader reader, PipeReader pipeReader)
+    private async ValueTask<IResponseMessage?> ReadNextMessage(MessageFormat format, PipeReader pipeReader)
     {
         ResetCancellation();
         // Read Bolt protocol chunk header
@@ -167,6 +180,7 @@ internal sealed class PipelinedMessageReader : IMessageReader
             // If the buffer is less than the minimum read size, read more data from the stream.
             if (readResult.Buffer.Length < minimumRead)
             {
+                ResetCancellation();
                 readResult = await pipeReader.ReadAtLeastAsync(minimumRead, _source.Token).ConfigureAwait(false);
                 if (readResult.IsCompleted && readResult.Buffer.Length < minimumRead)
                 {
@@ -187,22 +201,22 @@ internal sealed class PipelinedMessageReader : IMessageReader
             var chunkBuffer = readResult.Buffer.Slice(2, totalSize + 2);
             if (chunkBuffer.IsSingleSegment)
             {
-                return RawParse(reader, pipeReader, totalSize, chunkBuffer);
+                return RawParse(format, pipeReader, totalSize, chunkBuffer);
             }
         }
 
         // Otherwise we need to copy the data into a single buffer to parse it.
-        return CondenseChunksAndParse(reader, pipeReader, totalSize, sizes, readResult);
+        return CondenseChunksAndParse(format, pipeReader, totalSize, sizes, readResult);
     }
 
     private static IResponseMessage RawParse(
-        PackStreamReader reader,
+        MessageFormat format,
         PipeReader pipeReader,
         int size,
         ReadOnlySequence<byte> buffer)
     {
         var packStreamReader = new SpanPackStreamReader(
-            reader._format,
+            format,
             buffer.First.Span.Slice(0, size));
 
         var message = packStreamReader.ReadMessage();
@@ -212,7 +226,7 @@ internal sealed class PipelinedMessageReader : IMessageReader
     }
     
     private static IResponseMessage CondenseChunksAndParse(
-        PackStreamReader reader,
+        MessageFormat format,
         PipeReader pipeReader,
         int totalSize,
         List<ushort> sizes,
@@ -224,7 +238,7 @@ internal sealed class PipelinedMessageReader : IMessageReader
         // Copy all chunks into span removing chunk headers.
         CopyToMemory(sizes, readResult, span, pipeReader);
         // allocate SpanReader over the span and parse the message.
-        var packStreamReader = new SpanPackStreamReader(reader._format, span);
+        var packStreamReader = new SpanPackStreamReader(format, span);
         return packStreamReader.ReadMessage();
     }
 

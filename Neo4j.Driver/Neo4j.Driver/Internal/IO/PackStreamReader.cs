@@ -25,6 +25,9 @@ namespace Neo4j.Driver.Internal.IO;
 
 internal interface IPackStreamReader
 {
+    ByteBuffers Buffers { get; }
+    MessageFormat Format { get; }
+    
     object Read();
     IResponseMessage ReadMessage();
     Dictionary<string, object> ReadMap();
@@ -51,16 +54,16 @@ internal interface IPackStreamReader
 
 internal sealed class PackStreamReader : IPackStreamReader
 {
-    public readonly ByteBuffers _buffers;
-    public readonly MessageFormat _format;
+    public ByteBuffers Buffers { get; }
+    public MessageFormat Format { get; }
 
     public MemoryStream Stream;
 
     internal PackStreamReader(MessageFormat format, MemoryStream stream, ByteBuffers buffers)
     {
-        _format = format;
+        Format = format;
         Stream = stream;
-        _buffers = buffers;
+        Buffers = buffers;
     }
 
     public object Read()
@@ -75,9 +78,9 @@ internal sealed class PackStreamReader : IPackStreamReader
         var size = ReadStructHeader();
         var signature = ReadStructSignature();
 
-        if (_format.ReaderStructHandlers.TryGetValue(signature, out var handler))
+        if (Format.ReaderStructHandlers.TryGetValue(signature, out var handler))
         {
-            return (IResponseMessage)handler.Deserialize(_format.Version, this, signature, size);
+            return (IResponseMessage)handler.Deserialize(Format.Version, this, signature, size);
         }
 
         throw new ProtocolException("Unknown structure type: " + signature);
@@ -158,9 +161,9 @@ internal sealed class PackStreamReader : IPackStreamReader
         var size = ReadStructHeader();
         var signature = ReadStructSignature();
 
-        if (_format.ReaderStructHandlers.TryGetValue(signature, out var handler))
+        if (Format.ReaderStructHandlers.TryGetValue(signature, out var handler))
         {
-            return handler.Deserialize(_format.Version, this, signature, size);
+            return handler.Deserialize(Format.Version, this, signature, size);
         }
 
         throw new ProtocolException("Unknown structure type: " + signature);
@@ -515,43 +518,43 @@ internal sealed class PackStreamReader : IPackStreamReader
 
     internal sbyte NextSByte()
     {
-        Stream.Read(_buffers.ByteArray);
-        return (sbyte)_buffers.ByteArray[0];
+        Stream.Read(Buffers.ByteArray);
+        return (sbyte)Buffers.ByteArray[0];
     }
 
     public byte NextByte()
     {
-        Stream.Read(_buffers.ByteArray);
+        Stream.Read(Buffers.ByteArray);
 
-        return _buffers.ByteArray[0];
+        return Buffers.ByteArray[0];
     }
 
     public short NextShort()
     {
-        Stream.Read(_buffers.ShortBuffer);
+        Stream.Read(Buffers.ShortBuffer);
 
-        return PackStreamBitConverter.ToInt16(_buffers.ShortBuffer);
+        return PackStreamBitConverter.ToInt16(Buffers.ShortBuffer);
     }
 
     public int NextInt()
     {
-        Stream.Read(_buffers.IntBuffer);
+        Stream.Read(Buffers.IntBuffer);
 
-        return PackStreamBitConverter.ToInt32(_buffers.IntBuffer);
+        return PackStreamBitConverter.ToInt32(Buffers.IntBuffer);
     }
 
     public long NextLong()
     {
-        Stream.Read(_buffers.LongBuffer);
+        Stream.Read(Buffers.LongBuffer);
 
-        return PackStreamBitConverter.ToInt64(_buffers.LongBuffer);
+        return PackStreamBitConverter.ToInt64(Buffers.LongBuffer);
     }
 
     public double NextDouble()
     {
-        Stream.Read(_buffers.LongBuffer);
+        Stream.Read(Buffers.LongBuffer);
 
-        return PackStreamBitConverter.ToDouble(_buffers.LongBuffer);
+        return PackStreamBitConverter.ToDouble(Buffers.LongBuffer);
     }
 
     public byte PeekByte()

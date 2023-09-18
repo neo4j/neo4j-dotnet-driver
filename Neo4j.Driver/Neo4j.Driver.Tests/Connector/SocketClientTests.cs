@@ -251,7 +251,7 @@ namespace Neo4j.Driver.Tests
                 await client.ReceiveOneAsync(pipeline.Object);
 
                 // Then
-                readerMock.Verify(x => x.ReadAsync(pipeline.Object, It.IsAny<PackStreamReader>()), Times.Once);
+                readerMock.Verify(x => x.ReadAsync(pipeline.Object, It.IsAny<MessageFormat>()), Times.Once);
             }
 
             [Fact]
@@ -262,7 +262,7 @@ namespace Neo4j.Driver.Tests
 
                 var readerMock = new Mock<IMessageReader>();
                 readerMock
-                    .Setup(x => x.ReadAsync(mockPipeline.Object, It.IsAny<PackStreamReader>()))
+                    .Setup(x => x.ReadAsync(mockPipeline.Object, It.IsAny<MessageFormat>()))
                     .Throws<IOException>();
 
                 var (connMock, factory) = CreateMockIoFactory(
@@ -277,7 +277,7 @@ namespace Neo4j.Driver.Tests
 
                 // Then
                 exception.Should().BeOfType<IOException>();
-                readerMock.Verify(x => x.ReadAsync(mockPipeline.Object, It.IsAny<PackStreamReader>()), Times.Once);
+                readerMock.Verify(x => x.ReadAsync(mockPipeline.Object, It.IsAny<MessageFormat>()), Times.Once);
                 connMock.Verify(x => x.Dispose(), Times.Once);
             }
 
@@ -288,7 +288,7 @@ namespace Neo4j.Driver.Tests
                 var mockPipeline = new Mock<IResponsePipeline>();
 
                 var readerMock = new Mock<IMessageReader>();
-                readerMock.Setup(x => x.ReadAsync(mockPipeline.Object, It.IsAny<PackStreamReader>()))
+                readerMock.Setup(x => x.ReadAsync(mockPipeline.Object, It.IsAny<MessageFormat>()))
                     .Throws(new ProtocolException("test"));
 
                 var (connMock, factory) = CreateMockIoFactory(
@@ -303,7 +303,7 @@ namespace Neo4j.Driver.Tests
 
                 // Then
                 exception.Should().BeOfType<ProtocolException>();
-                readerMock.Verify(x => x.ReadAsync(mockPipeline.Object, It.IsAny<PackStreamReader>()), Times.Once);
+                readerMock.Verify(x => x.ReadAsync(mockPipeline.Object, It.IsAny<MessageFormat>()), Times.Once);
                 connMock.Verify(x => x.Dispose(), Times.Once);
             }
 
@@ -321,7 +321,7 @@ namespace Neo4j.Driver.Tests
                 var client = NewClient(factory);
                 await client.ConnectAsync(null);
 
-                readerMock.Setup(x => x.ReadAsync(pipeline.Object, It.IsAny<PackStreamReader>()))
+                readerMock.Setup(x => x.ReadAsync(pipeline.Object, It.IsAny<MessageFormat>()))
                     .ThrowsAsync(new DatabaseException());
 
                 // When
@@ -329,7 +329,7 @@ namespace Neo4j.Driver.Tests
 
                 // Then
                 exception.Should().BeOfType<DatabaseException>();
-                readerMock.Verify(x => x.ReadAsync(pipeline.Object, It.IsAny<PackStreamReader>()), Times.Once);
+                readerMock.Verify(x => x.ReadAsync(pipeline.Object, It.IsAny<MessageFormat>()), Times.Once);
                 connMock.Verify(x => x.Dispose(), Times.Once);
             }
         }

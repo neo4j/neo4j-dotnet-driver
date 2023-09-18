@@ -30,14 +30,11 @@ internal ref struct SpanPackStreamReader
     private readonly MessageFormat _format;
     private readonly ReadOnlySpan<byte> _reader;
     public int Index = 0;
-    private readonly CancellationToken _cancellationToken;
 
     public SpanPackStreamReader(
         MessageFormat format,
-        ReadOnlySpan<byte> reader,
-        CancellationToken cancellationToken = default)
+        ReadOnlySpan<byte> reader)
     {
-        _cancellationToken = cancellationToken;
         _reader = reader;
         _format = format;
     }

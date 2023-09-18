@@ -35,8 +35,6 @@ internal sealed class SocketClient : ISocketClient
 
     private readonly ILogger _logger;
     private readonly IPackStreamFactory _packstreamFactory;
-    private readonly MemoryStream _readBufferStream;
-    private readonly ByteBuffers _readerBuffers = new();
     private readonly ITcpSocketClient _tcpSocketClient;
     private readonly Uri _uri;
     private IChunkWriter _chunkWriter;
@@ -65,7 +63,6 @@ internal sealed class SocketClient : ISocketClient
         _connectionIoFactory = connectionIoFactory ?? SocketClientIoFactory.Default;
         _handshaker = boltHandshaker ?? BoltHandshaker.Default;
 
-        _readBufferStream = new MemoryStream(_bufferSettings.MaxReadBufferSize);
         _tcpSocketClient = _connectionIoFactory.TcpSocketClient(socketSettings, _logger);
     }
 
@@ -125,8 +122,7 @@ internal sealed class SocketClient : ISocketClient
     {
         try
         {
-            var reader = _packstreamFactory.BuildReader(_format, _readBufferStream, _readerBuffers);
-            await _messageReader.ReadAsync(responsePipeline, reader).ConfigureAwait(false);
+            await _messageReader.ReadAsync(responsePipeline, _format).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -168,7 +164,6 @@ internal sealed class SocketClient : ISocketClient
     {
         if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
         {
-            _readBufferStream.Dispose();
             _tcpSocketClient.Dispose();
         }
 

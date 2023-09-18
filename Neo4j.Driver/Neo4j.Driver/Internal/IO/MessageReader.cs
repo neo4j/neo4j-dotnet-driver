@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
@@ -35,6 +36,11 @@ internal sealed class MessageReader : IMessageReader
         _defaultBufferSize = bufferSettings.DefaultReadBufferSize;
         _maxBufferSize = bufferSettings.MaxReadBufferSize;
         _logger = logger;
+    }
+
+    public ValueTask ReadAsync(IResponsePipeline pipeline, MessageFormat format)
+    {
+        throw new NotImplementedException();
     }
 
     public async ValueTask ReadAsync(IResponsePipeline pipeline, PackStreamReader reader)
