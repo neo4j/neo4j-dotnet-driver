@@ -80,7 +80,7 @@ namespace Neo4j.Driver.Tests
 
             var mockIoFactory = new Mock<IConnectionIoFactory>();
             mockIoFactory
-                .Setup(x => x.TcpSocketClient(It.IsAny<SocketSettings>(), It.IsAny<ILogger>()))
+                .Setup(x => x.TcpSocketClient(It.IsAny<ConnectionSettings>(), It.IsAny<ILogger>()))
                 .Returns(connMock.Object);
 
             configureFactory?.Invoke(mockIoFactory);

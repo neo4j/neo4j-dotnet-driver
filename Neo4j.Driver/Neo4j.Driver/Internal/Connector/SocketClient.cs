@@ -28,17 +28,17 @@ namespace Neo4j.Driver.Internal.Connector;
 
 internal sealed class SocketClient : ISocketClient
 {
+    public ConnectionSettings Settings { get; }
     private const string MessagePattern = "C: {0}";
-    private readonly BufferSettings _bufferSettings;
     private readonly IConnectionIoFactory _connectionIoFactory;
     private readonly IBoltHandshaker _handshaker;
 
+    private readonly Uri _uri;
     private readonly ILogger _logger;
     private readonly IPackStreamFactory _packstreamFactory;
     private readonly MemoryStream _readBufferStream;
     private readonly ByteBuffers _readerBuffers = new();
     private readonly ITcpSocketClient _tcpSocketClient;
-    private readonly Uri _uri;
     private IChunkWriter _chunkWriter;
 
     private int _closedMarker = -1;
@@ -49,24 +49,23 @@ internal sealed class SocketClient : ISocketClient
 
     public SocketClient(
         Uri uri,
-        SocketSettings socketSettings,
-        BufferSettings bufferSettings,
+        ConnectionSettings settings,
         ILogger logger,
         IConnectionIoFactory connectionIoFactory,
         IPackStreamFactory packstreamFactory = null,
         IBoltHandshaker boltHandshaker = null)
     {
+        Settings = settings;
         Version = BoltProtocolVersion.Unknown;
         _uri = uri;
-        _bufferSettings = bufferSettings;
         _logger = logger;
 
         _packstreamFactory = packstreamFactory ?? PackStreamFactory.Default;
         _connectionIoFactory = connectionIoFactory ?? SocketClientIoFactory.Default;
         _handshaker = boltHandshaker ?? BoltHandshaker.Default;
 
-        _readBufferStream = new MemoryStream(_bufferSettings.MaxReadBufferSize);
-        _tcpSocketClient = _connectionIoFactory.TcpSocketClient(socketSettings, _logger);
+        _readBufferStream = new MemoryStream(settings.DriverConfig.MaxReadBufferSize);
+        _tcpSocketClient = _connectionIoFactory.TcpSocketClient(settings, _logger);
     }
 
     public bool IsOpen => _closedMarker == 0;
@@ -84,8 +83,8 @@ internal sealed class SocketClient : ISocketClient
             .ConfigureAwait(false);
 
         _format = _connectionIoFactory.Format(Version);
-        _messageReader = _connectionIoFactory.Readers(_tcpSocketClient, _bufferSettings, _logger);
-        (_chunkWriter, _messageWriter) = _connectionIoFactory.Writers(_tcpSocketClient, _bufferSettings, _logger);
+        _messageReader = _connectionIoFactory.Readers(_tcpSocketClient, Settings, _logger);
+        (_chunkWriter, _messageWriter) = _connectionIoFactory.Writers(_tcpSocketClient, Settings, _logger);
 
         SetOpened();
     }

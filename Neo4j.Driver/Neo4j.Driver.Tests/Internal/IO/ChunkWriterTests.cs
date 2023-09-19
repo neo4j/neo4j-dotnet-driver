@@ -21,6 +21,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
 
@@ -29,8 +30,8 @@ namespace Neo4j.Driver.Internal.IO
     public class ChunkWriterTests
     {
         private readonly Mock<ILogger> _logger = new();
-        private readonly BufferSettings _settings = new(Config.Default);
-
+        private readonly ConnectionSettings _settings = new(new Uri("s://l"), new StaticAuthTokenManager(AuthTokens.None), Config.Default, null);
+        
         [Fact]
         public void ShouldThrowWhenConstructedUsingUnreadableStream()
         {
@@ -39,7 +40,7 @@ namespace Neo4j.Driver.Internal.IO
 
             var ex = Record.Exception(
                 () =>
-                    new ChunkWriter(mockStream.Object, _settings, _logger.Object));
+                    new ChunkWriter(mockStream.Object ,_settings, _logger.Object));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ArgumentOutOfRangeException>();

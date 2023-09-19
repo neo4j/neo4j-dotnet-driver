@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Internal;
 internal sealed class ConnectionPool : IConnectionPool
 {
     private const int SpinningWaitInterval = 500;
-    private readonly TimeSpan _connectionAcquisitionTimeout;
+    private TimeSpan ConnectionAcquisitionTimeout => ConnectionSettings.PoolSettings.ConnectionAcquisitionTimeout;
     private readonly IPooledConnectionFactory _connectionFactory;
 
     private readonly IConnectionValidator _connectionValidator;
@@ -48,10 +48,9 @@ internal sealed class ConnectionPool : IConnectionPool
     private readonly ConcurrentHashSet<IPooledConnection> _inUseConnections = new();
 
     private readonly ILogger _logger;
-    private readonly int _maxIdlePoolSize;
+    private int MaxIdlePoolSize => ConnectionSettings.PoolSettings.MaxIdleConnectionPoolSize;
 
-    private readonly int _maxPoolSize;
-    private readonly INotificationsConfig _notificationsConfig;
+    private int MaxPoolSize => ConnectionSettings.PoolSettings.MaxConnectionPoolSize;
 
     private readonly IConnectionPoolListener _poolMetricsListener;
 
@@ -66,31 +65,23 @@ internal sealed class ConnectionPool : IConnectionPool
     public ConnectionPool(
         Uri uri,
         IPooledConnectionFactory connectionFactory,
-        ConnectionPoolSettings connectionPoolSettings,
         ILogger logger,
         ConnectionSettings connectionSettings,
-        IDictionary<string, string> routingContext,
-        INotificationsConfig notificationsConfig = null)
+        IDictionary<string, string> routingContext)
     {
         _uri = uri;
         _id = $"pool-{_uri.Host}:{_uri.Port}";
         _logger = new PrefixLogger(logger, $"[{_id}]");
-        _maxPoolSize = connectionPoolSettings.MaxConnectionPoolSize;
-        _maxIdlePoolSize = connectionPoolSettings.MaxIdleConnectionPoolSize;
-        _connectionAcquisitionTimeout = connectionPoolSettings.ConnectionAcquisitionTimeout;
 
         _connectionFactory = connectionFactory;
         ConnectionSettings = connectionSettings;
+        _connectionValidator = new ConnectionValidator(
+            connectionSettings.PoolSettings.ConnectionIdleTimeout,
+            connectionSettings.PoolSettings.MaxConnectionLifetime);
 
-        var connIdleTimeout = connectionPoolSettings.ConnectionIdleTimeout;
-        var maxConnectionLifetime = connectionPoolSettings.MaxConnectionLifetime;
-        _connectionValidator = new ConnectionValidator(connIdleTimeout, maxConnectionLifetime);
-
-        var metrics = connectionPoolSettings.Metrics;
-        _poolMetricsListener = metrics?.PutPoolMetrics($"{_id}-{GetHashCode()}", this);
+        _poolMetricsListener = connectionSettings.PoolSettings.Metrics?.PutPoolMetrics($"{_id}-{GetHashCode()}", this);
 
         RoutingContext = routingContext;
-        _notificationsConfig = notificationsConfig;
     }
 
     // Used in test only
@@ -98,19 +89,15 @@ internal sealed class ConnectionPool : IConnectionPool
         IPooledConnectionFactory connectionFactory,
         BlockingCollection<IPooledConnection> idleConnections = null,
         ConcurrentHashSet<IPooledConnection> inUseConnections = null,
-        ConnectionPoolSettings poolSettings = null,
         ConnectionSettings connectionSettings = null,
         IConnectionValidator validator = null,
-        ILogger logger = null,
-        INotificationsConfig notificationsConfig = null)
+        ILogger logger = null)
         : this(
             new Uri("bolt://localhost:7687"),
             connectionFactory,
-            poolSettings ?? new ConnectionPoolSettings(Config.Default),
             logger,
             connectionSettings,
-            null,
-            notificationsConfig)
+            null)
     {
         _idleConnections = idleConnections ?? new BlockingCollection<IPooledConnection>();
         _inUseConnections = inUseConnections ?? new ConcurrentHashSet<IPooledConnection>();
@@ -150,7 +137,7 @@ internal sealed class ConnectionPool : IConnectionPool
             {
                 var connection = await TryExecuteAsync(
                         _logger,
-                        () => AcquireOrTimeoutAsync(database, sessionConfig, mode, _connectionAcquisitionTimeout),
+                        () => AcquireOrTimeoutAsync(database, sessionConfig, mode, ConnectionAcquisitionTimeout),
                         "Failed to acquire a connection from connection pool asynchronously.")
                     .ConfigureAwait(false);
 
@@ -345,7 +332,7 @@ internal sealed class ConnectionPool : IConnectionPool
             }
 
             await conn
-                .InitAsync(_notificationsConfig, sessionConfig, cancellationToken)
+                .InitAsync(sessionConfig, cancellationToken)
                 .ConfigureAwait(false);
 
             _poolMetricsListener?.ConnectionCreated();
@@ -376,10 +363,8 @@ internal sealed class ConnectionPool : IConnectionPool
         return _connectionFactory.Create(
             _uri,
             this,
-            ConnectionSettings.SocketSettings,
+            ConnectionSettings,
             token,
-            ConnectionSettings.AuthTokenManager,
-            ConnectionSettings.UserAgent,
             RoutingContext);
     }
 
@@ -410,20 +395,20 @@ internal sealed class ConnectionPool : IConnectionPool
     /// <returns>true if pool size is successfully increased, otherwise false.</returns>
     private bool TryIncrementPoolSize()
     {
-        if (_maxPoolSize == Config.Infinite)
+        if (MaxPoolSize == Config.Infinite)
         {
             Interlocked.Increment(ref _poolSize);
             return true;
         }
 
-        if (PoolSize >= _maxPoolSize)
+        if (PoolSize >= MaxPoolSize)
         {
             return false;
         }
 
         lock (_poolSizeSync)
         {
-            if (PoolSize >= _maxPoolSize)
+            if (PoolSize >= MaxPoolSize)
             {
                 return false;
             }
@@ -458,7 +443,7 @@ internal sealed class ConnectionPool : IConnectionPool
             if (cts.Token.IsCancellationRequested)
             {
                 throw new ClientException(
-                    $"Failed to obtain a connection from pool within {_connectionAcquisitionTimeout}");
+                    $"Failed to obtain a connection from pool within {ConnectionAcquisitionTimeout}");
             }
 
             throw new ClientException("Failed to obtain a connection from pool");
@@ -569,12 +554,12 @@ internal sealed class ConnectionPool : IConnectionPool
 
     private bool IsConnectionPoolFull()
     {
-        return _maxPoolSize != Config.Infinite && PoolSize >= _maxPoolSize;
+        return MaxPoolSize != Config.Infinite && PoolSize >= MaxPoolSize;
     }
 
     private bool IsIdlePoolFull()
     {
-        return _maxIdlePoolSize != Config.Infinite && _idleConnections.Count >= _maxIdlePoolSize;
+        return MaxIdlePoolSize != Config.Infinite && _idleConnections.Count >= MaxIdlePoolSize;
     }
 
     public Task CloseAsync()

@@ -25,27 +25,21 @@ internal interface IConnectionPoolFactory
     IConnectionPool Create(Uri uri);
 }
 
-internal class ConnectionPoolFactory : IConnectionPoolFactory
+internal sealed class ConnectionPoolFactory : IConnectionPoolFactory
 {
     private readonly IPooledConnectionFactory _connectionFactory;
     private readonly ConnectionSettings _connectionSettings;
     private readonly ILogger _logger;
-    private readonly INotificationsConfig _notificationsConfig;
-    private readonly ConnectionPoolSettings _poolSettings;
     private readonly IDictionary<string, string> _routingContext;
 
     public ConnectionPoolFactory(
         IPooledConnectionFactory connectionFactory,
-        ConnectionPoolSettings poolSettings,
         IDictionary<string, string> routingContext,
         ConnectionSettings connectionSettings,
-        ILogger logger,
-        INotificationsConfig notificationsConfig)
+        ILogger logger)
     {
         _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
-        _poolSettings = poolSettings ?? throw new ArgumentNullException(nameof(poolSettings));
         _logger = logger;
-        _notificationsConfig = notificationsConfig;
         _routingContext = routingContext;
         _connectionSettings = connectionSettings;
     }
@@ -55,10 +49,8 @@ internal class ConnectionPoolFactory : IConnectionPoolFactory
         return new ConnectionPool(
             uri,
             _connectionFactory,
-            _poolSettings,
             _logger,
             _connectionSettings,
-            _routingContext,
-            _notificationsConfig);
+            _routingContext);
     }
 }

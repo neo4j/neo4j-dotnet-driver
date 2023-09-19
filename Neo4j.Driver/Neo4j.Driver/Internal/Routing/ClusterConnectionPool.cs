@@ -38,19 +38,15 @@ internal class ClusterConnectionPool : IClusterConnectionPool
         IEnumerable<Uri> initUris,
         IPooledConnectionFactory connectionFactory,
         RoutingSettings routingSetting,
-        ConnectionPoolSettings poolSettings,
         ConnectionSettings connectionSettings,
-        ILogger logger,
-        INotificationsConfig notificationsConfig
+        ILogger logger
     ) : this(
         initUris,
         new ConnectionPoolFactory(
             connectionFactory,
-            poolSettings,
             routingSetting.RoutingContext,
             connectionSettings,
-            logger,
-            notificationsConfig),
+            logger),
         logger)
     {
     }

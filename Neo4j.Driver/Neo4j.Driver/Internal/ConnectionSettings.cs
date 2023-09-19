@@ -16,74 +16,42 @@
 // limitations under the License.
 
 using System;
-using System.Reflection;
 using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Metrics;
 
 namespace Neo4j.Driver.Internal;
 
 internal class ConnectionSettings
 {
     internal ConnectionSettings(
-        Uri uri,
+        Uri rootUri,
         IAuthTokenManager authTokenManager,
         Config config,
-        IHostResolver hostResolver = null)
+        IInternalMetrics metrics)
     {
         AuthTokenManager = authTokenManager;
-        UserAgent = config.UserAgent;
-        var resolver = hostResolver switch
-        {
-            //TODO: Consider moving to a factory.
-            null when RuntimeHelper.IsDotNetCore => new SystemNetCoreHostResolver(new SystemHostResolver()),
-            null when !RuntimeHelper.IsDotNetCore => new DefaultHostResolver(
-                new SystemHostResolver(),
-                config.Ipv6Enabled),
-            // test code can provide resolver.
-            _ => hostResolver
-        };
-
-        var encryptionManager = EncryptionManager.Create(
-            uri,
+        DriverConfig = config;
+        EncryptionManager = EncryptionManager.Create(
+            rootUri,
             config.NullableEncryptionLevel,
             config.TrustManager,
             config.Logger);
-
-        SocketSettings = new SocketSettings(
-            resolver,
-            encryptionManager)
-        {
-            ConnectionTimeout = config.ConnectionTimeout,
-            SocketKeepAliveEnabled = config.SocketKeepAlive,
-            Ipv6Enabled = config.Ipv6Enabled
-        };
+        HostResolver = RuntimeHelper.IsDotNetCore
+            ? new SystemNetCoreHostResolver(new SystemHostResolver())
+            : new DefaultHostResolver(
+                new SystemHostResolver(),
+                config.Ipv6Enabled);
+        PoolSettings = new ConnectionPoolSettings(config, metrics);
     }
 
-    internal static string DefaultUserAgent
-    {
-        get
-        {
-            var version = Assembly.GetExecutingAssembly().GetName().Version;
-            return $"neo4j-dotnet/{version!.Major}.{version.Minor}";
-        }
-    }
-
+    public Config DriverConfig { get; }
+    public ConnectionPoolSettings PoolSettings { get; }
     public IAuthTokenManager AuthTokenManager { get; }
-    public string UserAgent { get; }
-    public SocketSettings SocketSettings { get; }
-}
-
-internal class SocketSettings
-{
-    public SocketSettings(IHostResolver hostResolver, EncryptionManager encryptionManager)
-    {
-        HostResolver = hostResolver ?? throw new ArgumentNullException(nameof(hostResolver));
-        EncryptionManager = encryptionManager ?? throw new ArgumentNullException(nameof(encryptionManager));
-    }
-
+    public string UserAgent => DriverConfig.UserAgent;
+    public EncryptionManager EncryptionManager { get; set; }
     public IHostResolver HostResolver { get; }
-    public EncryptionManager EncryptionManager { get; }
-    public TimeSpan ConnectionTimeout { get; init; }
-    public bool SocketKeepAliveEnabled { get; init; }
-    public bool Ipv6Enabled { get; init; }
+    public TimeSpan ConnectionTimeout => DriverConfig.ConnectionTimeout;
+    public bool SocketKeepAliveEnabled => DriverConfig.SocketKeepAlive;
+    public bool Ipv6Enabled => DriverConfig.Ipv6Enabled;
 }

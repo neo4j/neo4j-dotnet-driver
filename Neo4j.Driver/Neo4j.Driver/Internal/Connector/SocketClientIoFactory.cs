@@ -21,15 +21,15 @@ namespace Neo4j.Driver.Internal.Connector;
 
 internal interface IConnectionIoFactory
 {
-    ITcpSocketClient TcpSocketClient(SocketSettings socketSettings, ILogger logger);
+    ITcpSocketClient TcpSocketClient(ConnectionSettings socketSettings, ILogger logger);
     MessageFormat Format(BoltProtocolVersion version);
 
     IMessageReader Readers(
         ITcpSocketClient client,
-        BufferSettings settings,
+        ConnectionSettings settings,
         ILogger logger);
 
-    (IChunkWriter, IMessageWriter) Writers(ITcpSocketClient client, BufferSettings settings, ILogger logger);
+    (IChunkWriter, IMessageWriter) Writers(ITcpSocketClient client, ConnectionSettings settings, ILogger logger);
 }
 
 internal sealed class SocketClientIoFactory : IConnectionIoFactory
@@ -40,9 +40,9 @@ internal sealed class SocketClientIoFactory : IConnectionIoFactory
     {
     }
 
-    public ITcpSocketClient TcpSocketClient(SocketSettings socketSettings, ILogger logger)
+    public ITcpSocketClient TcpSocketClient(ConnectionSettings connectionSettings, ILogger logger)
     {
-        return new TcpSocketClient(socketSettings, logger);
+        return new TcpSocketClient(connectionSettings, logger);
     }
 
     public MessageFormat Format(BoltProtocolVersion version)
@@ -52,13 +52,13 @@ internal sealed class SocketClientIoFactory : IConnectionIoFactory
 
     public IMessageReader Readers(
         ITcpSocketClient client,
-        BufferSettings settings,
+        ConnectionSettings settings,
         ILogger logger)
     {
         return new MessageReader(new ChunkReader(client.ReaderStream), settings, logger);
     }
 
-    public (IChunkWriter, IMessageWriter) Writers(ITcpSocketClient client, BufferSettings settings, ILogger logger)
+    public (IChunkWriter, IMessageWriter) Writers(ITcpSocketClient client, ConnectionSettings settings, ILogger logger)
     {
         var chunkWriter = new ChunkWriter(client.WriterStream, settings, logger);
         var messageWriter = new MessageWriter(chunkWriter);

@@ -205,10 +205,11 @@ public static class GraphDatabase
         authTokenManager = authTokenManager ?? throw new ArgumentNullException(nameof(authTokenManager));
 
         var config = ConfigBuilders.BuildConfig(action);
+        BufferSettings.Validate(config);
+        var metrics = config.MetricsEnabled ? new DefaultMetrics() : null;
 
-        var connectionSettings = new ConnectionSettings(uri, authTokenManager, config);
-        var bufferSettings = new BufferSettings(config);
-        var connectionFactory = new PooledConnectionFactory(bufferSettings, config.Logger);
+        var connectionSettings = new ConnectionSettings(uri, authTokenManager, config, metrics: metrics);
+        var connectionFactory = new PooledConnectionFactory(config.Logger);
 
         return CreateDriver(uri, config, connectionFactory, connectionSettings);
     }
@@ -225,9 +226,6 @@ public static class GraphDatabase
         var routingContext = uri.ParseRoutingContext(DefaultBoltPort);
         var routingSettings = new RoutingSettings(parsedUri, routingContext, config);
 
-        var metrics = config.MetricsEnabled ? new DefaultMetrics() : null;
-        var connectionPoolSettings = new ConnectionPoolSettings(config, metrics);
-
         var retryLogic = new AsyncRetryLogic(config.MaxTransactionRetryTime, logger);
 
         EnsureNoRoutingContextOnBolt(uri, routingContext);
@@ -236,26 +234,22 @@ public static class GraphDatabase
             ? new LoadBalancer(
                 connectionFactory,
                 routingSettings,
-                connectionPoolSettings,
                 connectionSettings,
-                logger,
-                config.NotificationsConfig)
+                logger)
             : new ConnectionPool(
                 parsedUri,
                 connectionFactory,
-                connectionPoolSettings,
                 logger,
                 connectionSettings,
-                null,
-                config.NotificationsConfig);
+                null);
 
         return new Internal.Driver(
             parsedUri,
-            connectionSettings.SocketSettings.EncryptionManager.UseTls,
+            connectionSettings.EncryptionManager.UseTls,
             connectionProvider,
             retryLogic,
             logger,
-            metrics,
+            connectionSettings.PoolSettings.Metrics,
             config);
     }
 

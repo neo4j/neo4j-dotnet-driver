@@ -67,7 +67,6 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
     void Configure(string database, AccessMode? mode);
 
     Task InitAsync(
-        INotificationsConfig notificationsConfig,
         SessionConfig sessionConfig = null,
         CancellationToken cancellationToken = default);
 

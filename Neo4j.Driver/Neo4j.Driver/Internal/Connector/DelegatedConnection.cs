@@ -97,13 +97,12 @@ internal abstract class DelegatedConnection : IConnection
     }
 
     public async Task InitAsync(
-        INotificationsConfig notificationsConfig,
         SessionConfig sessionConfig = null,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            await Delegate.InitAsync(notificationsConfig, sessionConfig, cancellationToken).ConfigureAwait(false);
+            await Delegate.InitAsync(sessionConfig, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception e)
         {

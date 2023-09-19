@@ -48,7 +48,7 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
     private long _startPos = -1;
 
     //TODO: ArrayPool avoid creating a new array for each chunk writer
-    public ChunkWriter(Stream downStream, BufferSettings settings, ILogger logger)
+    public ChunkWriter(Stream downStream, ConnectionSettings settings, ILogger logger)
     {
         _downStream = downStream ?? throw new ArgumentNullException(nameof(downStream));
 
@@ -61,9 +61,9 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
 
         _chunkSize = Constants.MaxChunkSize;
         _logger = logger;
-        _defaultBufferSize = settings.DefaultWriteBufferSize;
-        _maxBufferSize = settings.MaxWriteBufferSize;
-        _chunkStream = new MemoryStream(settings.DefaultWriteBufferSize);
+        _defaultBufferSize = settings.DriverConfig.DefaultWriteBufferSize;
+        _maxBufferSize = settings.DriverConfig.MaxWriteBufferSize;
+        _chunkStream = new MemoryStream(settings.DriverConfig.DefaultWriteBufferSize);
     }
 
     public Stream Stream => this;

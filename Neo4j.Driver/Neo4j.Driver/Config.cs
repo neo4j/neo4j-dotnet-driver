@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Reflection;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Logging;
@@ -44,6 +45,14 @@ namespace Neo4j.Driver;
 /// </remarks>
 public class Config
 {
+    static Config()
+    {
+        var version = Assembly.GetExecutingAssembly().GetName().Version;
+        DefaultUserAgent = $"neo4j-dotnet/{version.Major.ToString()}.{version.Minor.ToString()}";
+    }
+
+    private static string DefaultUserAgent { get; }
+
     /// <summary>This const defines the value of infinite in terms of configuration properties.</summary>
     public const int Infinite = -1;
 
@@ -181,7 +190,7 @@ public class Config
     /// Used to get and set the User Agent string. If not used the default will be "neo4j-dotnet/x.y" where x is the
     /// major version and y is the minor version.
     /// </summary>
-    public string UserAgent { get; set; } = ConnectionSettings.DefaultUserAgent;
+    public string UserAgent { get; set; } = DefaultUserAgent;
 
     /// <summary>
     /// The configuration for setting which notifications the server should send to the client.<br/> This

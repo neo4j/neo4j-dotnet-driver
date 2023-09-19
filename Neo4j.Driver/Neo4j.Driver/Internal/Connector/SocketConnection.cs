@@ -43,32 +43,29 @@ internal sealed class SocketConnection : IConnection
     private readonly IResponsePipeline _responsePipeline;
     private readonly SemaphoreSlim _sendLock = new(1, 1);
     private readonly ServerInfo _serverInfo;
-    private readonly string _userAgent;
+    private string UserAgent => Settings.UserAgent;
 
     private string _id;
 
     internal SocketConnection(
         Uri uri,
-        SocketSettings socketSettings,
+        ConnectionSettings settings,
         IAuthToken authToken,
-        string userAgent,
-        BufferSettings bufferSettings,
         IDictionary<string, string> routingContext,
-        IAuthTokenManager authTokenManager,
         ILogger logger = null)
     {
         _idPrefix = $"conn-{uri.Host}:{uri.Port}-";
         _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
         _logger = new PrefixLogger(logger, FormatPrefix(_id));
 
-        _client = new SocketClient(uri, socketSettings, bufferSettings, _logger, null);
+        _client = new SocketClient(uri, settings, _logger, null);
+        Settings = settings;
         AuthToken = authToken;
-        _userAgent = userAgent;
         _serverInfo = new ServerInfo(uri);
 
         _responsePipeline = new ResponsePipeline(_logger);
         RoutingContext = routingContext;
-        AuthTokenManager = authTokenManager;
+        AuthTokenManager = settings.AuthTokenManager;
         _protocolFactory = BoltProtocolFactory.Default;
     }
 
@@ -76,7 +73,6 @@ internal sealed class SocketConnection : IConnection
     internal SocketConnection(
         ISocketClient socketClient,
         IAuthToken authToken,
-        string userAgent,
         ILogger logger,
         ServerInfo server,
         IResponsePipeline responsePipeline = null,
@@ -85,7 +81,6 @@ internal sealed class SocketConnection : IConnection
     {
         _client = socketClient ?? throw new ArgumentNullException(nameof(socketClient));
         AuthToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
-        _userAgent = userAgent ?? throw new ArgumentNullException(nameof(userAgent));
         _serverInfo = server ?? throw new ArgumentNullException(nameof(server));
         AuthTokenManager = authTokenManager;
         RoutingContext = null;
@@ -123,7 +118,6 @@ internal sealed class SocketConnection : IConnection
     }
 
     public async Task InitAsync(
-        INotificationsConfig notificationsConfig,
         SessionConfig sessionConfig = null,
         CancellationToken cancellationToken = default)
     {
@@ -149,7 +143,7 @@ internal sealed class SocketConnection : IConnection
 
         try
         {
-            await BoltProtocol.AuthenticateAsync(this, _userAgent, authToken, notificationsConfig)
+            await BoltProtocol.AuthenticateAsync(this, UserAgent, authToken, Settings.DriverConfig.NotificationsConfig)
                 .ConfigureAwait(false);
         }
         catch (Exception ex)
@@ -262,6 +256,7 @@ internal sealed class SocketConnection : IConnection
     public IServerInfo Server => _serverInfo;
 
     public bool UtcEncodedDateTime { get; private set; }
+    public ConnectionSettings Settings { get; }
     public IAuthToken AuthToken { get; private set; }
 
     public void UpdateId(string newConnId)
