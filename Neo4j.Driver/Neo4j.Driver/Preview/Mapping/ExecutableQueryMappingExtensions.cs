@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Preview.Mapping;
 /// Contains extensions for using the global mapping system with the driver's <see cref="ExecutableQuery{TIn,TOut}"/>
 /// methods.
 /// </summary>
-public static class MappingExtensions
+public static class ExecutableQueryMappingExtensions
 {
     /// <summary>
     /// Add this method to an <see cref="ExecutableQuery{TIn,TOut}"/> method chain to map the results to objects

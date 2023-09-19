@@ -68,4 +68,100 @@ public static class RecordNodeExtensions
     {
         return node[key].As<T>();
     }
+
+    /// <summary>
+    /// Gets the value of the given key from the node, converting it to a string.
+    /// </summary>
+    /// <param name="record">The record to get the value from.</param>
+    /// <param name="key">The key of the value.</param>
+    /// <returns>The converted value.</returns>
+    public static string GetString(this IRecord record, string key) => record.GetValue<string>(key);
+
+    /// <summary>
+    /// Gets the value of the given key from the node, converting it to an int.
+    /// </summary>
+    /// <param name="record">The record to get the value from.</param>
+    /// <param name="key">The key of the value.</param>
+    /// <returns>The converted value.</returns>
+    public static int GetInt(this IRecord record, string key) => record.GetValue<int>(key);
+
+    /// <summary>
+    /// Gets the value of the given key from the node, converting it to a long.
+    /// </summary>
+    /// <param name="record">The record to get the value from.</param>
+    /// <param name="key">The key of the value.</param>
+    /// <returns>The converted value.</returns>
+    public static long GetLong(this IRecord record, string key) => record.GetValue<long>(key);
+
+    /// <summary>
+    /// Gets the value of the given key from the node, converting it to a double.
+    /// </summary>
+    /// <param name="record">The record to get the value from.</param>
+    /// <param name="key">The key of the value.</param>
+    /// <returns>The converted value.</returns>
+    public static double GetDouble(this IRecord record, string key) => record.GetValue<double>(key);
+
+    /// <summary>
+    /// Gets the value of the given key from the node, converting it to a float.
+    /// </summary>
+    /// <param name="record">The record to get the value from.</param>
+    /// <param name="key">The key of the value.</param>
+    /// <returns>The converted value.</returns>
+    public static float GetFloat(this IRecord record, string key) => record.GetValue<float>(key);
+
+    /// <summary>
+    /// Gets the value of the given key from the node, converting it to a bool.
+    /// </summary>
+    /// <param name="record">The record to get the value from.</param>
+    /// <param name="key">The key of the value.</param>
+    /// <returns>The converted value.</returns>
+    public static bool GetBool(this IRecord record, string key) => record.GetValue<bool>(key);
+
+    /// <summary>
+    /// Gets the value of the given key from the node, converting it to a string.
+    /// </summary>
+    /// <param name="node">The node to get the value from.</param>
+    /// <param name="key">The key of the value.</param>
+    /// <returns>The converted value.</returns>
+    public static string GetString(this INode node, string key) => node.GetValue<string>(key);
+
+    /// <summary>
+    /// Gets the value of the given key from the node, converting it to an int.
+    /// </summary>
+    /// <param name="node">The node to get the value from.</param>
+    /// <param name="key">The key of the value.</param>
+    /// <returns>The converted value.</returns>
+    public static int GetInt(this INode node, string key) => node.GetValue<int>(key);
+
+    /// <summary>
+    /// Gets the value of the given key from the node, converting it to a long.
+    /// </summary>
+    /// <param name="node">The node to get the value from.</param>
+    /// <param name="key">The key of the value.</param>
+    /// <returns>The converted value.</returns>
+    public static long GetLong(this INode node, string key) => node.GetValue<long>(key);
+
+    /// <summary>
+    /// Gets the value of the given key from the node, converting it to a double.
+    /// </summary>
+    /// <param name="node">The node to get the value from.</param>
+    /// <param name="key">The key of the value.</param>
+    /// <returns>The converted value.</returns>
+    public static double GetDouble(this INode node, string key) => node.GetValue<double>(key);
+
+    /// <summary>
+    /// Gets the value of the given key from the node, converting it to a float.
+    /// </summary>
+    /// <param name="node">The node to get the value from.</param>
+    /// <param name="key">The key of the value.</param>
+    /// <returns>The converted value.</returns>
+    public static float GetFloat(this INode node, string key) => node.GetValue<float>(key);
+
+    /// <summary>
+    /// Gets the value of the given key from the node, converting it to a bool.
+    /// </summary>
+    /// <param name="node">The node to get the value from.</param>
+    /// <param name="key">The key of the value.</param>
+    /// <returns>The converted value.</returns>
+    public static bool GetBool(this INode node, string key) => node.GetValue<bool>(key);
 }
