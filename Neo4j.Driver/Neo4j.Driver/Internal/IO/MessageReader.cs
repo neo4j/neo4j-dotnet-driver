@@ -16,7 +16,9 @@
 // limitations under the License.
 
 using System;
+using System.IO;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 
@@ -29,6 +31,9 @@ internal sealed class MessageReader : IMessageReader
     private readonly ILogger _logger;
     private readonly int _maxBufferSize;
     private int _shrinkCounter;
+    readonly ByteBuffers _readerBuffers;
+
+    public MemoryStream BufferStream { get; }
 
     public MessageReader(IChunkReader chunkReader, BufferSettings bufferSettings, ILogger logger)
     {
@@ -36,17 +41,15 @@ internal sealed class MessageReader : IMessageReader
         _defaultBufferSize = bufferSettings.DefaultReadBufferSize;
         _maxBufferSize = bufferSettings.MaxReadBufferSize;
         _logger = logger;
+        BufferStream = new MemoryStream(bufferSettings.MaxReadBufferSize);
+        _readerBuffers = new ByteBuffers();
     }
 
-    public ValueTask ReadAsync(IResponsePipeline pipeline, MessageFormat format)
+    public async ValueTask ReadAsync(IResponsePipeline pipeline, MessageFormat format)
     {
-        throw new NotImplementedException();
-    }
-
-    public async ValueTask ReadAsync(IResponsePipeline pipeline, PackStreamReader reader)
-    {
-        var messageCount = await _chunkReader.ReadMessageChunksToBufferStreamAsync(reader.Stream).ConfigureAwait(false);
-        ConsumeMessages(pipeline, messageCount, reader);
+        var messageCount = await _chunkReader.ReadMessageChunksToBufferStreamAsync(BufferStream).ConfigureAwait(false);
+        var psr = new PackStreamReader(format, BufferStream, _readerBuffers);
+        ConsumeMessages(pipeline, messageCount, psr);
     }
 
     public void SetReadTimeoutInMs(int ms)

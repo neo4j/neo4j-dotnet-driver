@@ -57,8 +57,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 }.AsSpan());
 
             memoryStream.Position = 0L;
-            var logger = new Mock<ILogger>();
-            var pipereader = new PipelinedMessageReader(memoryStream, -1, logger.Object);
+            var pipereader = new PipelinedMessageReader(memoryStream, -1);
             var pipeline = MockPipeline();
 
             await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0));
@@ -69,7 +68,6 @@ namespace Neo4j.Driver.Internal.MessageHandling
         [Fact]
         public async Task ShouldReadMutlichunkMessage()
         {
-            var logger = new Mock<ILogger>();
             using var memoryStream = new MemoryStream(new byte[64]);
 
             memoryStream.Write(
@@ -83,7 +81,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 }.AsSpan());
 
             memoryStream.Position = 0L;
-            var pipereader = new PipelinedMessageReader(memoryStream, -1, logger.Object);
+            var pipereader = new PipelinedMessageReader(memoryStream, -1);
             var pipeline = MockPipeline();
             await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0));
 
@@ -107,8 +105,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 }.AsSpan());
 
             memoryStream.Position = 0L;
-            var logger = new Mock<ILogger>();
-            var pipereader = new PipelinedMessageReader(memoryStream, -1, logger.Object);
+            var pipereader = new PipelinedMessageReader(memoryStream, -1);
             var pipeline = MockPipeline();
             await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0));
 
@@ -140,8 +137,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                 }.AsSpan());
 
             memoryStream.Position = 0L;
-            var logger = new Mock<ILogger>();
-            var pipereader = new PipelinedMessageReader(memoryStream, -1, logger.Object);
+            var pipereader = new PipelinedMessageReader(memoryStream, -1);
             var pipeline = MockPipeline();
             await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0));
 
@@ -178,8 +174,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             Encoding.UTF8.GetBytes("message").CopyTo(message.AsSpan().Slice(2 + 14));
             
             var memoryStream = new MemoryStream(message);
-            var logger = new Mock<ILogger>();
-            var pipereader = new PipelinedMessageReader(memoryStream, -1, logger.Object);
+            var pipereader = new PipelinedMessageReader(memoryStream, -1);
             var pipeline = MockPipeline();
             await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0));
             pipeline.Verify(x => x.OnFailure("a", "b"), Times.Once);
@@ -190,10 +185,9 @@ namespace Neo4j.Driver.Internal.MessageHandling
         [Fact]
         public async Task ShouldReadLargeMessages()
         {
-            var logger = new Mock<ILogger>();
             var data = GenerateLargeMessage();
             var memoryStream = new MemoryStream(data);
-            var pipereader = new PipelinedMessageReader(memoryStream, -1, logger.Object);
+            var pipereader = new PipelinedMessageReader(memoryStream, -1);
 
             var pipeline = MockPipeline();
             await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0));

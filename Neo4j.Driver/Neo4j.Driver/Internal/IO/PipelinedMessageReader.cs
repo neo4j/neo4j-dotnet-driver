@@ -39,10 +39,9 @@ internal sealed class PipelinedMessageReader : IMessageReader
 
     private const int MaxChunkSize = 65_535;
 
-    public PipelinedMessageReader(Stream inputStream, int i, ILogger logger)
+    public PipelinedMessageReader(Stream inputStream, int timeout)
     {
-        _logger = logger;
-        _timeoutInMs = i;
+        _timeoutInMs = timeout;
         _stream = inputStream;
         _source = new CancellationTokenSource();
         _headerMemory = new Memory<byte>(new byte[2]);

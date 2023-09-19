@@ -24,7 +24,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Xunit;
 
@@ -42,7 +41,6 @@ namespace Neo4j.Driver.Internal.MessageHandling
         public async Task ShouldReadSimpleMessage()
         {
             var pipeline = MockPipeline();
-            var logger = new Mock<ILogger>();
             using var cts = new CancellationTokenSource(5000);
             
             await Task.WhenAll(
@@ -84,7 +82,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                     try
                     {
                         await client.ConnectAsync(IPAddress.Loopback, Port, cts.Token);
-                        var pipereader = new PipelinedMessageReader(client.GetStream(), -1, logger.Object);
+                        var pipereader = new PipelinedMessageReader(client.GetStream(), -1);
                         await pipereader.ReadAsync(
                             pipeline.Object,
                             new MessageFormat(BoltProtocolVersion.V5_0));
@@ -104,7 +102,6 @@ namespace Neo4j.Driver.Internal.MessageHandling
         public async Task ShouldTimeoutWaitingForSize()
         {
             var pipeline = MockPipeline();
-            var logger = new Mock<ILogger>();
             using var cts = new CancellationTokenSource(5000);
             
             await Task.WhenAll(
@@ -144,7 +141,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                     try
                     {
                         await client.ConnectAsync(IPAddress.Loopback, Port, cts.Token);
-                        var pipereader = new PipelinedMessageReader(client.GetStream(), -1, logger.Object);
+                        var pipereader = new PipelinedMessageReader(client.GetStream(), -1);
                         pipereader.SetReadTimeoutInMs(250);
                         var exc = await Record.ExceptionAsync(
                             async () =>
@@ -171,7 +168,6 @@ namespace Neo4j.Driver.Internal.MessageHandling
         public async Task ShouldReadSimpleMessageWithDelays()
         {
             var pipeline = MockPipeline();
-            var logger = new Mock<ILogger>();
             using var cts = new CancellationTokenSource(5000);
             
             await Task.WhenAll(
@@ -228,7 +224,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                     try
                     {
                         await client.ConnectAsync(IPAddress.Loopback, Port, cts.Token);
-                        var pipereader = new PipelinedMessageReader(client.GetStream(), -1, logger.Object);
+                        var pipereader = new PipelinedMessageReader(client.GetStream(), -1);
                         pipereader.SetReadTimeoutInMs(1000);
                         await pipereader.ReadAsync(
                             pipeline.Object,
@@ -249,7 +245,6 @@ namespace Neo4j.Driver.Internal.MessageHandling
         public async Task ShouldTimeoutWaitingAfterSize()
         {
             var pipeline = MockPipeline();
-            var logger = new Mock<ILogger>();
             using var cts = new CancellationTokenSource(5000);
             
             await Task.WhenAll(
@@ -290,7 +285,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                     try
                     {
                         await client.ConnectAsync(IPAddress.Loopback, Port, cts.Token);
-                        var pipereader = new PipelinedMessageReader(client.GetStream(), -1, logger.Object);
+                        var pipereader = new PipelinedMessageReader(client.GetStream(), -1);
                         pipereader.SetReadTimeoutInMs(2000);
                         var exc = await Record.ExceptionAsync(
                             async () =>
@@ -317,7 +312,6 @@ namespace Neo4j.Driver.Internal.MessageHandling
         public async Task ShouldTimeoutWaitingForData()
         {
             var pipeline = MockPipeline();
-            var logger = new Mock<ILogger>();
             using var cts = new CancellationTokenSource(5000);
             
             await Task.WhenAll(
@@ -366,7 +360,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                     try
                     {
                         await client.ConnectAsync(IPAddress.Loopback, Port, cts.Token);
-                        var pipereader = new PipelinedMessageReader(client.GetStream(), -1, logger.Object);
+                        var pipereader = new PipelinedMessageReader(client.GetStream(), -1);
                         pipereader.SetReadTimeoutInMs(2000);
                         var exc = await Record.ExceptionAsync(
                             async () =>
