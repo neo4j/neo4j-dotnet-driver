@@ -80,8 +80,8 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
             {
                 null => null,
 
-                // don't convert nodes, just pass them through to be handled specially
-                INode node => node,
+                // don't convert entities, just pass them through to be handled specially
+                IEntity entity => entity,
 
                 // if it's a list, map the individual items in the list
                 IList list => CreateMappedList(list, propertyType, record),
@@ -99,17 +99,17 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
         var asMethod = _asGenericMethod.MakeGenericMethod(desiredItemType);
         foreach (var item in list)
         {
-            // nodes and dictionaries can use the same logic, we can make them both into dictionaries
+            // entities and dictionaries can use the same logic, we can make them both into dictionaries
             var dict = item switch
             {
-                INode node => node.Properties,
+                IEntity entity => entity.Properties,
                 IReadOnlyDictionary<string, object> dictionary => dictionary,
                 _ => null
             };
 
             if (dict is not null)
             {
-                // if the item is a node or dictionary, we need to make it into a record and then map that
+                // if the item is an entity or dictionary, we need to make it into a record and then map that
                 newList.Add(
                     RecordObjectMapping.GetMapperForType(desiredItemType)
                         .MapInternal(new DictAsRecord(dict, record)));
@@ -144,12 +144,12 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
             }
             catch (KeyNotFoundException)
             {
-                // this may happen if they tried to get the value from the record in a nested node
+                // this may happen if they tried to get the value from the record in a nested entity
                 if (record is DictAsRecord nar)
                 {
                     try
                     {
-                        // we'll look in the record the node came from
+                        // we'll look in the record the entity came from
                         value = valueGetter(nar.Record);
                     }
                     catch (KeyNotFoundException ex)
@@ -169,13 +169,14 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
                 // if null is returned, leave the property as the default value: the record may not have the given field
                 case null: return;
 
-                // if the value is a node, make it into a fake record and map that (indirectly recursive)
-                case INode node:
+                // if the value is an entity, make it into a fake record and map that (indirectly recursive)
+                case IEntity entity:
                     var destType = propertySetter.GetParameters()[0].ParameterType;
-                    var newNodeDest = RecordObjectMapping.GetMapperForType(destType)
-                        .MapInternal(new DictAsRecord(node.Properties, record));
+                    var newEntityDest = RecordObjectMapping
+                        .GetMapperForType(destType)
+                        .MapInternal(new DictAsRecord(entity.Properties, record));
 
-                    propertySetter.Invoke(obj, new[] { newNodeDest });
+                    propertySetter.Invoke(obj, new[] { newEntityDest });
                     return;
 
                 // otherwise, just set the property to the value
@@ -200,45 +201,50 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
                 _recordMap[key] = r => r[field.Key];
             }
 
-            // nodes and dictionaries can use the same logic, we just need to get the properties
-            // from the node and then they're both dictionaries
+            // entities and dictionaries can use the same logic, we just need to get the properties
+            // from the entity and then they're both dictionaries
             IReadOnlyDictionary<string, object> innerDict = null;
             Func<IRecord, IReadOnlyDictionary<string, object>> getDict = null;
-            if (field.Value is INode node)
+            switch (field.Value)
             {
-                innerDict = node.Properties;
-                getDict = r => r switch
-                {
-                    DictAsRecord dar => dar.Record[field.Key].As<INode>().Properties,
-                    _ => r[field.Key].As<INode>().Properties
-                };
-            }
-            else if (field.Value is IReadOnlyDictionary<string, object> dict)
-            {
-                innerDict = dict;
-                getDict = r => r[field.Key].As<IReadOnlyDictionary<string, object>>();
-            }
-
-            if (innerDict is not null)
-            {
-                // if it's a node or dictionary, we need to add all the keys in the node/dictionary as possible mappings
-                // with the format "field.key", as well as just "key" if it's not already used
-                foreach (var dictKey in innerDict.Keys)
-                {
-                    var path = $"{field.Key}.{dictKey}".ToLower();
-
-                    object Accessor(IRecord r) => getDict(r).TryGetValue(dictKey, out var value) ? value : null;
-
-                    if (_usedPaths.Contains(path))
+                case IEntity entity:
+                    innerDict = entity.Properties;
+                    getDict = r => r switch
                     {
-                        _recordMap.Add(path, Accessor);
-                    }
+                        DictAsRecord dar => dar.Record[field.Key].As<IEntity>().Properties,
+                        _ => r[field.Key].As<IEntity>().Properties
+                    };
 
-                    var dictKeyPath = dictKey.ToLower();
-                    if (_usedPaths.Contains(dictKeyPath) && !_recordMap.ContainsKey(dictKeyPath))
-                    {
-                        _recordMap.Add(dictKeyPath, Accessor);
-                    }
+                    break;
+
+                case IReadOnlyDictionary<string, object> dict:
+                    innerDict = dict;
+                    getDict = r => r[field.Key].As<IReadOnlyDictionary<string, object>>();
+                    break;
+            }
+
+            if (innerDict is null)
+            {
+                continue;
+            }
+
+            // if it's an entity or dictionary, we need to add all the keys in the entity/dictionary as possible mappings
+            // with the format "field.key", as well as just "key" if it's not already used
+            foreach (var dictKey in innerDict.Keys)
+            {
+                var path = $"{field.Key}.{dictKey}".ToLower();
+
+                object Accessor(IRecord r) => getDict(r).TryGetValue(dictKey, out var value) ? value : null;
+
+                if (_usedPaths.Contains(path))
+                {
+                    _recordMap.Add(path, Accessor);
+                }
+
+                var dictKeyPath = dictKey.ToLower();
+                if (_usedPaths.Contains(dictKeyPath) && !_recordMap.ContainsKey(dictKeyPath))
+                {
+                    _recordMap.Add(dictKeyPath, Accessor);
                 }
             }
         }

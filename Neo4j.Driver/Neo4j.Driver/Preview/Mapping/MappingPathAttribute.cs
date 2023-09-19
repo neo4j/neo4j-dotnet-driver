@@ -29,8 +29,8 @@ public class MappingPathAttribute : Attribute
 {
     /// <summary>
     /// Identifier for the value in the field in the record. If the path is a dot-separated path, then the
-    /// first part of the path is the identifier for the node (or dictionary) field in the record, and the
-    /// last part is the identifier within that node or dictionary.
+    /// first part of the path is the identifier for the entity (or dictionary) field in the record, and the
+    /// last part is the identifier within that entity or dictionary.
     /// </summary>
     public string Path { get; }
 
@@ -40,8 +40,8 @@ public class MappingPathAttribute : Attribute
     /// </summary>
     /// <param name="path">
     /// Identifier for the value in the field in the record. If the path is a dot-separated path, then the
-    /// first part of the path is the key for the node (or dictionary) field in the record, and the
-    /// last part is the key within that node or dictionary.
+    /// first part of the path is the key for the entity (or dictionary) field in the record, and the
+    /// last part is the key within that entity or dictionary.
     /// </param>
     public MappingPathAttribute(string path)
     {

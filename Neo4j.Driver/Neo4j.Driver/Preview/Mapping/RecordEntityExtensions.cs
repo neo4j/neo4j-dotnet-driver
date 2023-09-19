@@ -18,9 +18,9 @@
 namespace Neo4j.Driver.Preview.Mapping;
 
 /// <summary>
-/// Contains extensions for accessing values simply from records and nodes.
+/// Contains extensions for accessing values simply from records and entities.
 /// </summary>
-public static class RecordNodeExtensions
+public static class RecordEntityExtensions
 {
     /// <summary>
     /// Converts the record to an object of the given type according to the global mapping configuration.
@@ -49,7 +49,7 @@ public static class RecordNodeExtensions
     /// <summary>
     /// Gets the <see cref="IEntity"/> identified by the given key from the record.
     /// </summary>
-    /// <param name="record">The record to get the node from.</param>
+    /// <param name="record">The record to get the entity from.</param>
     /// <param name="key">The key of the entity.</param>
     /// <returns>The entity.</returns>
     public static IEntity GetEntity(this IRecord record, string key)
@@ -58,9 +58,9 @@ public static class RecordNodeExtensions
     }
 
     /// <summary>
-    /// Gets the value of the given key from the node, converting it to the given type.
+    /// Gets the value of the given key from the entity, converting it to the given type.
     /// </summary>
-    /// <param name="node">The node to get the value from.</param>
+    /// <param name="entity">The entity to get the value from.</param>
     /// <param name="key">The key of the value.</param>
     /// <typeparam name="T">The type to convert to.</typeparam>
     /// <returns>The converted value.</returns>
@@ -70,7 +70,7 @@ public static class RecordNodeExtensions
     }
 
     /// <summary>
-    /// Gets the value of the given key from the node, converting it to a string.
+    /// Gets the value of the given key from the entity, converting it to a string.
     /// </summary>
     /// <param name="record">The record to get the value from.</param>
     /// <param name="key">The key of the value.</param>
@@ -78,7 +78,7 @@ public static class RecordNodeExtensions
     public static string GetString(this IRecord record, string key) => record.GetValue<string>(key);
 
     /// <summary>
-    /// Gets the value of the given key from the node, converting it to an int.
+    /// Gets the value of the given key from the entity, converting it to an int.
     /// </summary>
     /// <param name="record">The record to get the value from.</param>
     /// <param name="key">The key of the value.</param>
@@ -86,7 +86,7 @@ public static class RecordNodeExtensions
     public static int GetInt(this IRecord record, string key) => record.GetValue<int>(key);
 
     /// <summary>
-    /// Gets the value of the given key from the node, converting it to a long.
+    /// Gets the value of the given key from the entity, converting it to a long.
     /// </summary>
     /// <param name="record">The record to get the value from.</param>
     /// <param name="key">The key of the value.</param>
@@ -94,7 +94,7 @@ public static class RecordNodeExtensions
     public static long GetLong(this IRecord record, string key) => record.GetValue<long>(key);
 
     /// <summary>
-    /// Gets the value of the given key from the node, converting it to a double.
+    /// Gets the value of the given key from the entity, converting it to a double.
     /// </summary>
     /// <param name="record">The record to get the value from.</param>
     /// <param name="key">The key of the value.</param>
@@ -102,7 +102,7 @@ public static class RecordNodeExtensions
     public static double GetDouble(this IRecord record, string key) => record.GetValue<double>(key);
 
     /// <summary>
-    /// Gets the value of the given key from the node, converting it to a float.
+    /// Gets the value of the given key from the entity, converting it to a float.
     /// </summary>
     /// <param name="record">The record to get the value from.</param>
     /// <param name="key">The key of the value.</param>
@@ -110,7 +110,7 @@ public static class RecordNodeExtensions
     public static float GetFloat(this IRecord record, string key) => record.GetValue<float>(key);
 
     /// <summary>
-    /// Gets the value of the given key from the node, converting it to a bool.
+    /// Gets the value of the given key from the entity, converting it to a bool.
     /// </summary>
     /// <param name="record">The record to get the value from.</param>
     /// <param name="key">The key of the value.</param>
@@ -118,49 +118,49 @@ public static class RecordNodeExtensions
     public static bool GetBool(this IRecord record, string key) => record.GetValue<bool>(key);
 
     /// <summary>
-    /// Gets the value of the given key from the node, converting it to a string.
+    /// Gets the value of the given key from the entity, converting it to a string.
     /// </summary>
-    /// <param name="node">The node to get the value from.</param>
+    /// <param name="entity">The entity to get the value from.</param>
     /// <param name="key">The key of the value.</param>
     /// <returns>The converted value.</returns>
     public static string GetString(this IEntity entity, string key) => entity.GetValue<string>(key);
 
     /// <summary>
-    /// Gets the value of the given key from the node, converting it to an int.
+    /// Gets the value of the given key from the entity, converting it to an int.
     /// </summary>
-    /// <param name="node">The node to get the value from.</param>
+    /// <param name="entity">The entity to get the value from.</param>
     /// <param name="key">The key of the value.</param>
     /// <returns>The converted value.</returns>
     public static int GetInt(this IEntity entity, string key) => entity.GetValue<int>(key);
 
     /// <summary>
-    /// Gets the value of the given key from the node, converting it to a long.
+    /// Gets the value of the given key from the entity, converting it to a long.
     /// </summary>
-    /// <param name="node">The node to get the value from.</param>
+    /// <param name="entity">The entity to get the value from.</param>
     /// <param name="key">The key of the value.</param>
     /// <returns>The converted value.</returns>
     public static long GetLong(this IEntity entity, string key) => entity.GetValue<long>(key);
 
     /// <summary>
-    /// Gets the value of the given key from the node, converting it to a double.
+    /// Gets the value of the given key from the entity, converting it to a double.
     /// </summary>
-    /// <param name="node">The node to get the value from.</param>
+    /// <param name="entity">The entity to get the value from.</param>
     /// <param name="key">The key of the value.</param>
     /// <returns>The converted value.</returns>
     public static double GetDouble(this IEntity entity, string key) => entity.GetValue<double>(key);
 
     /// <summary>
-    /// Gets the value of the given key from the node, converting it to a float.
+    /// Gets the value of the given key from the entity, converting it to a float.
     /// </summary>
-    /// <param name="node">The node to get the value from.</param>
+    /// <param name="entity">The entity to get the value from.</param>
     /// <param name="key">The key of the value.</param>
     /// <returns>The converted value.</returns>
     public static float GetFloat(this IEntity entity, string key) => entity.GetValue<float>(key);
 
     /// <summary>
-    /// Gets the value of the given key from the node, converting it to a bool.
+    /// Gets the value of the given key from the entity, converting it to a bool.
     /// </summary>
-    /// <param name="node">The node to get the value from.</param>
+    /// <param name="entity">The entity to get the value from.</param>
     /// <param name="key">The key of the value.</param>
     /// <returns>The converted value.</returns>
     public static bool GetBool(this IEntity entity, string key) => entity.GetValue<bool>(key);
