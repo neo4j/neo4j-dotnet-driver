@@ -47,14 +47,14 @@ public static class RecordNodeExtensions
     }
 
     /// <summary>
-    /// Gets the <see cref="INode"/> identified by the given key from the record.
+    /// Gets the <see cref="IEntity"/> identified by the given key from the record.
     /// </summary>
     /// <param name="record">The record to get the node from.</param>
-    /// <param name="key">The key of the node.</param>
-    /// <returns>The node.</returns>
-    public static INode GetNode(this IRecord record, string key)
+    /// <param name="key">The key of the entity.</param>
+    /// <returns>The entity.</returns>
+    public static IEntity GetEntity(this IRecord record, string key)
     {
-        return record.GetValue<INode>(key);
+        return record.GetValue<IEntity>(key);
     }
 
     /// <summary>
@@ -64,9 +64,9 @@ public static class RecordNodeExtensions
     /// <param name="key">The key of the value.</param>
     /// <typeparam name="T">The type to convert to.</typeparam>
     /// <returns>The converted value.</returns>
-    public static T GetValue<T>(this INode node, string key)
+    public static T GetValue<T>(this IEntity entity, string key)
     {
-        return node[key].As<T>();
+        return entity[key].As<T>();
     }
 
     /// <summary>
@@ -123,7 +123,7 @@ public static class RecordNodeExtensions
     /// <param name="node">The node to get the value from.</param>
     /// <param name="key">The key of the value.</param>
     /// <returns>The converted value.</returns>
-    public static string GetString(this INode node, string key) => node.GetValue<string>(key);
+    public static string GetString(this IEntity entity, string key) => entity.GetValue<string>(key);
 
     /// <summary>
     /// Gets the value of the given key from the node, converting it to an int.
@@ -131,7 +131,7 @@ public static class RecordNodeExtensions
     /// <param name="node">The node to get the value from.</param>
     /// <param name="key">The key of the value.</param>
     /// <returns>The converted value.</returns>
-    public static int GetInt(this INode node, string key) => node.GetValue<int>(key);
+    public static int GetInt(this IEntity entity, string key) => entity.GetValue<int>(key);
 
     /// <summary>
     /// Gets the value of the given key from the node, converting it to a long.
@@ -139,7 +139,7 @@ public static class RecordNodeExtensions
     /// <param name="node">The node to get the value from.</param>
     /// <param name="key">The key of the value.</param>
     /// <returns>The converted value.</returns>
-    public static long GetLong(this INode node, string key) => node.GetValue<long>(key);
+    public static long GetLong(this IEntity entity, string key) => entity.GetValue<long>(key);
 
     /// <summary>
     /// Gets the value of the given key from the node, converting it to a double.
@@ -147,7 +147,7 @@ public static class RecordNodeExtensions
     /// <param name="node">The node to get the value from.</param>
     /// <param name="key">The key of the value.</param>
     /// <returns>The converted value.</returns>
-    public static double GetDouble(this INode node, string key) => node.GetValue<double>(key);
+    public static double GetDouble(this IEntity entity, string key) => entity.GetValue<double>(key);
 
     /// <summary>
     /// Gets the value of the given key from the node, converting it to a float.
@@ -155,7 +155,7 @@ public static class RecordNodeExtensions
     /// <param name="node">The node to get the value from.</param>
     /// <param name="key">The key of the value.</param>
     /// <returns>The converted value.</returns>
-    public static float GetFloat(this INode node, string key) => node.GetValue<float>(key);
+    public static float GetFloat(this IEntity entity, string key) => entity.GetValue<float>(key);
 
     /// <summary>
     /// Gets the value of the given key from the node, converting it to a bool.
@@ -163,5 +163,5 @@ public static class RecordNodeExtensions
     /// <param name="node">The node to get the value from.</param>
     /// <param name="key">The key of the value.</param>
     /// <returns>The converted value.</returns>
-    public static bool GetBool(this INode node, string key) => node.GetValue<bool>(key);
+    public static bool GetBool(this IEntity entity, string key) => entity.GetValue<bool>(key);
 }
