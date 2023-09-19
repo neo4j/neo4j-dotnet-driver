@@ -338,5 +338,40 @@ namespace Neo4j.Driver.Tests.Mapping
             person.Name.Should().Be("Bob");
             person.Born.Should().Be(9999);
         }
+
+        private class Book
+        {
+            public string Title { get; set; }
+        }
+
+        private class Author
+        {
+            public string Name { get; set; }
+            public List<Book> Books { get; set; }
+        }
+
+        [Fact]
+        public void ShouldMapEntitiesWithListsOfNodes()
+        {
+            var bookNodeList = new List<Node>
+            {
+                new Node(0, new[] { "title" }, new Dictionary<string, object> { { "title", "The Green Man" } }),
+                new Node(0, new[] { "title" }, new Dictionary<string, object> { { "title", "The Thin End" } })
+            };
+
+            var authorNode = new Node(
+                0,
+                new[] { "name", "books" },
+                new Dictionary<string, object> { { "name", "Kate Grenville" }, { "books", bookNodeList } });
+
+            var record = new Record(new[] { "author" }, new object[] { authorNode });
+
+            var mappedObject = record.AsObject<Author>();
+
+            mappedObject.Name.Should().Be("Kate Grenville");
+            mappedObject.Books.Should().HaveCount(2);
+            mappedObject.Books[0].Title.Should().Be("The Green Man");
+            mappedObject.Books[1].Title.Should().Be("The Thin End");
+        }
     }
 }
