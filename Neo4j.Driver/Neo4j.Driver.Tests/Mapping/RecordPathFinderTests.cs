@@ -33,7 +33,7 @@ namespace Neo4j.Driver.Tests.Mapping
             var record = new Record(new[] { "a" }, new object[] { "b" });
             var finder = new RecordPathFinder();
 
-            var found = finder.TryGetPath(record, "a", out var value);
+            var found = finder.TryGetValueByPath(record, "a", out var value);
 
             found.Should().BeTrue();
             value.Should().Be("b");
@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Tests.Mapping
             var record = new Record(new[] { "a" }, new object[] { "b" });
             var finder = new RecordPathFinder();
 
-            var found = finder.TryGetPath(record, "c", out var value);
+            var found = finder.TryGetValueByPath(record, "c", out var value);
 
             found.Should().BeFalse();
         }
@@ -57,7 +57,7 @@ namespace Neo4j.Driver.Tests.Mapping
             var record = new Record(new[] { "person" }, new object[] { node });
             var finder = new RecordPathFinder();
 
-            var found = finder.TryGetPath(record, "name", out var value);
+            var found = finder.TryGetValueByPath(record, "name", out var value);
 
             found.Should().BeTrue();
             value.Should().Be("Bob");
@@ -70,7 +70,7 @@ namespace Neo4j.Driver.Tests.Mapping
             var record = new Record(new[] { "person" }, new object[] { node });
             var finder = new RecordPathFinder();
 
-            var found = finder.TryGetPath(record, "person.name", out var value);
+            var found = finder.TryGetValueByPath(record, "person.name", out var value);
 
             found.Should().BeTrue();
             value.Should().Be("Bob");
@@ -83,7 +83,7 @@ namespace Neo4j.Driver.Tests.Mapping
             var record = new Record(new[] { "person" }, new object[] { dictionary });
             var finder = new RecordPathFinder();
 
-            var found = finder.TryGetPath(record, "person.name", out var value);
+            var found = finder.TryGetValueByPath(record, "person.name", out var value);
 
             found.Should().BeTrue();
             value.Should().Be("Bob");

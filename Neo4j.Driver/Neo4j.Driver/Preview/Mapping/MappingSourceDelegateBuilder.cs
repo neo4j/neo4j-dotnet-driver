@@ -35,7 +35,7 @@ namespace Neo4j.Driver.Preview.Mapping
         {
             bool TryGetValue(IRecord record, out object value)
             {
-                if (!_pathFinder.TryGetPath(record, mappingSource.Path, out var foundValue))
+                if (!_pathFinder.TryGetValueByPath(record, mappingSource.Path, out var foundValue))
                 {
                     value = null;
                     return false;

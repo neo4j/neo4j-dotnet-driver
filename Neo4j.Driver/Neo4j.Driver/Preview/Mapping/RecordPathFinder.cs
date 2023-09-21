@@ -22,7 +22,7 @@ namespace Neo4j.Driver.Preview.Mapping;
 
 internal interface IRecordPathFinder
 {
-    bool TryGetPath(IRecord record, string path, out object value);
+    bool TryGetValueByPath(IRecord record, string path, out object value);
 }
 
 internal class RecordPathFinder : IRecordPathFinder
@@ -33,7 +33,7 @@ internal class RecordPathFinder : IRecordPathFinder
     }
 
     /// <inheritdoc />
-    public bool TryGetPath(IRecord record, string path, out object value)
+    public bool TryGetValueByPath(IRecord record, string path, out object value)
     {
         value = null;
 
