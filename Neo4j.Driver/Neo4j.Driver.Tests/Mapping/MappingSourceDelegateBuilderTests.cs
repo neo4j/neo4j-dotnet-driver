@@ -24,18 +24,19 @@ using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests.Mapping
 {
-    public class MappingSourceGetterTests
+    public class MappingSourceDelegateBuilderTests
     {
         [Fact]
         public void ShouldGetSimplePaths()
         {
             var record = new Record(new[] { "a" }, new object[] { "b" });
-            var getter = new MappingSourceGetter();
+            var getter = new MappingSourceDelegateBuilder();
             var mappingSource = new MappingSource("a", EntityMappingSource.Property);
 
             var mappingDelegate = getter.GetMappingDelegate(mappingSource);
             var found = mappingDelegate(record, out var value);
 
+            found.Should().BeTrue();
             value.Should().Be("b");
         }
 
@@ -44,12 +45,13 @@ namespace Neo4j.Driver.Tests.Mapping
         {
             var node = new Node(1, new[] { "Actor", "Director" }, new Dictionary<string, object>());
             var record = new Record(new[] { "a" }, new object[] { node });
-            var getter = new MappingSourceGetter();
+            var getter = new MappingSourceDelegateBuilder();
             var mappingSource = new MappingSource("a", EntityMappingSource.NodeLabel);
 
             var mappingDelegate = getter.GetMappingDelegate(mappingSource);
             var found = mappingDelegate(record, out var value);
 
+            found.Should().BeTrue();
             value.Should().BeEquivalentTo(new[] { "Actor", "Director" });
         }
 
@@ -58,12 +60,13 @@ namespace Neo4j.Driver.Tests.Mapping
         {
             var rel = new Relationship(1, 2, 3, "ACTED_IN", new Dictionary<string, object>());
             var record = new Record(new[] { "a" }, new object[] { rel });
-            var getter = new MappingSourceGetter();
+            var getter = new MappingSourceDelegateBuilder();
             var mappingSource = new MappingSource("a", EntityMappingSource.RelationshipType);
 
             var mappingDelegate = getter.GetMappingDelegate(mappingSource);
             var found = mappingDelegate(record, out var value);
 
+            found.Should().BeTrue();
             value.Should().Be("ACTED_IN");
         }
     }

@@ -21,12 +21,12 @@ namespace Neo4j.Driver.Preview.Mapping
         IRecord record,
         out object value);
 
-    internal interface IMappingSourceGetter
+    internal interface IMappingSourceDelegateBuilder
     {
         TryGetMapSourceDelegate GetMappingDelegate(MappingSource mappingSource);
     }
 
-    internal class MappingSourceGetter : IMappingSourceGetter
+    internal class MappingSourceDelegateBuilder : IMappingSourceDelegateBuilder
     {
         private IRecordPathFinder _pathFinder = new RecordPathFinder();
 

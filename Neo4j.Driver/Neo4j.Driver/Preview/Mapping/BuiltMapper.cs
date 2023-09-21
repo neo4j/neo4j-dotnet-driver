@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Preview.Mapping;
 
 internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new()
 {
-    private readonly IMappingSourceGetter _mappingSourceGetter = new MappingSourceGetter();
+    private readonly IMappingSourceDelegateBuilder _mappingSourceDelegateBuilder = new MappingSourceDelegateBuilder();
 
     private Func<IRecord, TObject> _wholeObjectMapping;
     private readonly List<Action<TObject, IRecord>> _recordMappings = new();
@@ -62,7 +62,7 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
         // create the .As<TProperty> method we're going to use
         var propertyType = propertySetter.GetParameters()[0].ParameterType;
         var asMethod = _asGenericMethod.MakeGenericMethod(propertyType);
-        var getter = _mappingSourceGetter.GetMappingDelegate(mappingSource);
+        var getter = _mappingSourceDelegateBuilder.GetMappingDelegate(mappingSource);
         AddMapping(propertySetter, GetValue);
 
         object GetValue(IRecord record)
