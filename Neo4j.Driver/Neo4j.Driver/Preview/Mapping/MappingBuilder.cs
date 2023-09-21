@@ -27,7 +27,7 @@ internal class MappingBuilder<TObject> : IMappingBuilder<TObject> where TObject 
 
     internal void Map(
         MethodInfo propertySetter,
-        InternalMappingSource mappingSource)
+        MappingSource mappingSource)
     {
         _builtMapper.AddMappingBySetter(propertySetter, mappingSource);
     }
@@ -41,7 +41,7 @@ internal class MappingBuilder<TObject> : IMappingBuilder<TObject> where TObject 
         var propertySetter = GetPropertySetter(destination);
         _builtMapper.AddMappingBySetter(
             propertySetter,
-            new InternalMappingSource(path, entityMappingSource),
+            new MappingSource(path, entityMappingSource),
             converter is null ? null : o => converter.Invoke(o));
 
         return this;

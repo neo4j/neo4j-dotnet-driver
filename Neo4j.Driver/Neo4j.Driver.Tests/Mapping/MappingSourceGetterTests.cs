@@ -31,7 +31,7 @@ namespace Neo4j.Driver.Tests.Mapping
         {
             var record = new Record(new[] { "a" }, new object[] { "b" });
             var getter = new MappingSourceGetter();
-            var mappingSource = new InternalMappingSource("a", EntityMappingSource.Property);
+            var mappingSource = new MappingSource("a", EntityMappingSource.Property);
 
             var mappingDelegate = getter.GetMappingDelegate(mappingSource);
             var found = mappingDelegate(record, out var value);
@@ -45,7 +45,7 @@ namespace Neo4j.Driver.Tests.Mapping
             var node = new Node(1, new[] { "Actor", "Director" }, new Dictionary<string, object>());
             var record = new Record(new[] { "a" }, new object[] { node });
             var getter = new MappingSourceGetter();
-            var mappingSource = new InternalMappingSource("a", EntityMappingSource.NodeLabel);
+            var mappingSource = new MappingSource("a", EntityMappingSource.NodeLabel);
 
             var mappingDelegate = getter.GetMappingDelegate(mappingSource);
             var found = mappingDelegate(record, out var value);
@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Tests.Mapping
             var rel = new Relationship(1, 2, 3, "ACTED_IN", new Dictionary<string, object>());
             var record = new Record(new[] { "a" }, new object[] { rel });
             var getter = new MappingSourceGetter();
-            var mappingSource = new InternalMappingSource("a", EntityMappingSource.RelationshipType);
+            var mappingSource = new MappingSource("a", EntityMappingSource.RelationshipType);
 
             var mappingDelegate = getter.GetMappingDelegate(mappingSource);
             var found = mappingDelegate(record, out var value);

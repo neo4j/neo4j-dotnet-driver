@@ -43,7 +43,7 @@ public enum EntityMappingSource
     NodeLabel
 }
 
-internal record InternalMappingSource(string Path, EntityMappingSource EntityMappingSource);
+internal record MappingSource(string Path, EntityMappingSource EntityMappingSource);
 
 /// <summary>
 /// Instructs the default mapper to use a different field than the property name when mapping a value to the
@@ -53,7 +53,7 @@ internal record InternalMappingSource(string Path, EntityMappingSource EntityMap
 [AttributeUsage(AttributeTargets.Property)]
 public class MappingSourceAttribute : Attribute
 {
-    internal InternalMappingSource InternalMappingSource { get; }
+    internal MappingSource MappingSource { get; }
 
     /// <summary>
     /// Instructs the default mapper to use a different field than the property name when mapping a value to the
@@ -66,11 +66,11 @@ public class MappingSourceAttribute : Attribute
     /// </param>
     public MappingSourceAttribute(string path)
     {
-        InternalMappingSource = new InternalMappingSource(path, EntityMappingSource.Property);
+        MappingSource = new MappingSource(path, EntityMappingSource.Property);
     }
 
     public MappingSourceAttribute(string key, EntityMappingSource entityMappingSource)
     {
-        InternalMappingSource = new InternalMappingSource(key, entityMappingSource);
+        MappingSource = new MappingSource(key, entityMappingSource);
     }
 }
