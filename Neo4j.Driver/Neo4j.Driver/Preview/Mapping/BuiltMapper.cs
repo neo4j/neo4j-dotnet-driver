@@ -18,21 +18,21 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace Neo4j.Driver.Preview.Mapping;
 
 internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new()
 {
+    private IRecordPathFinder _pathFinder = new RecordPathFinder();
+    private IMappingSourceGetter _mappingSourceGetter = new MappingSourceGetter();
+
     private Func<IRecord, TObject> _wholeObjectMapping;
     private readonly List<Action<TObject, IRecord>> _recordMappings = new();
-    private readonly HashSet<string> _usedPaths = new();
 
     private readonly MethodInfo _asGenericMethod =
         typeof(ValueExtensions).GetMethod(nameof(ValueExtensions.As), new[] { typeof(object) });
-
-    private bool _recordMapBuilt;
-    private Dictionary<string, Func<IRecord, object>> _recordMap;
 
     public TObject Map(IRecord record)
     {
@@ -57,37 +57,37 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
 
     public void AddMappingBySetter(
         MethodInfo propertySetter,
-        string sourcePath,
+        InternalMappingSource mappingSource,
         Func<object, object> converter = null)
     {
         // create the .As<TProperty> method we're going to use
         var propertyType = propertySetter.GetParameters()[0].ParameterType;
         var asMethod = _asGenericMethod.MakeGenericMethod(propertyType);
-        _usedPaths.Add(sourcePath.ToLower()); // keep a list of used keys to avoid unnecessary work later
+        var getter = _mappingSourceGetter.GetMappingDelegate(mappingSource);
         AddMapping(propertySetter, GetValue);
 
         object GetValue(IRecord record)
         {
-            if (!_recordMap.ContainsKey(sourcePath.ToLower()))
-            {
-                // shape of the record may have changed since the map was built
-                BuildRecordMap(record);
-            }
-
-            var value = _recordMap[sourcePath.ToLower()](record);
+            var found = getter(record, out var value);
 
             return value switch
             {
                 null => null,
 
+                // prioritise a custom converter if there is one
+                _ when converter is not null => converter(value),
+
                 // don't convert entities, just pass them through to be handled specially
                 IEntity entity => entity,
+
+                // special case: if they want to map a list to a string, convert to comma-separated
+                IList list when propertyType == typeof(string) => string.Join(",", list.Cast<object>()),
 
                 // if it's a list, map the individual items in the list
                 IList list => CreateMappedList(list, propertyType, record),
 
                 // otherwise, convert the value to the type of the property
-                _ => converter != null ? converter(value) : asMethod.Invoke(null, new[] { value })
+                _ => asMethod.Invoke(null, new[] { value })
             };
         }
     }
@@ -129,39 +129,15 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
         Func<IRecord, object> valueGetter)
     {
         _recordMappings.Add(MapFromRecord);
+        return;
 
         void MapFromRecord(TObject obj, IRecord record)
         {
-            if (!_recordMapBuilt)
+            var value = valueGetter(record);
+            if (value is null && record is DictAsRecord { Record: var parentRecord })
             {
-                BuildRecordMap(record);
-            }
-
-            object value;
-            try
-            {
-                value = valueGetter(record);
-            }
-            catch (KeyNotFoundException)
-            {
-                // this may happen if they tried to get the value from the record in a nested entity
-                if (record is DictAsRecord nar)
-                {
-                    try
-                    {
-                        // we'll look in the record the entity came from
-                        value = valueGetter(nar.Record);
-                    }
-                    catch (KeyNotFoundException ex)
-                    {
-                        return;
-                    }
-                }
-                else
-                {
-                    // the record didn't have a key with that name, so just leave the property as the default value
-                    return;
-                }
+                // try the path relative to the parent record
+                value = valueGetter(parentRecord);
             }
 
             switch (value)
@@ -185,71 +161,6 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
                     return;
             }
         }
-    }
-
-    private void BuildRecordMap(IRecord example)
-    {
-        _recordMap = new Dictionary<string, Func<IRecord, object>>();
-
-        foreach (var field in example.Values)
-        {
-            // root-level field names take precedence over nested field names, so we set them last
-            var key = field.Key.ToLower();
-            if (_usedPaths.Contains(key))
-            {
-                // add the name of the field as a possible mapping
-                _recordMap[key] = r => r[field.Key];
-            }
-
-            // entities and dictionaries can use the same logic, we just need to get the properties
-            // from the entity and then they're both dictionaries
-            IReadOnlyDictionary<string, object> innerDict = null;
-            Func<IRecord, IReadOnlyDictionary<string, object>> getDict = null;
-            switch (field.Value)
-            {
-                case IEntity entity:
-                    innerDict = entity.Properties;
-                    getDict = r => r switch
-                    {
-                        DictAsRecord dar => dar.Record[field.Key].As<IEntity>().Properties,
-                        _ => r[field.Key].As<IEntity>().Properties
-                    };
-
-                    break;
-
-                case IReadOnlyDictionary<string, object> dict:
-                    innerDict = dict;
-                    getDict = r => r[field.Key].As<IReadOnlyDictionary<string, object>>();
-                    break;
-            }
-
-            if (innerDict is null)
-            {
-                continue;
-            }
-
-            // if it's an entity or dictionary, we need to add all the keys in the entity/dictionary as possible mappings
-            // with the format "field.key", as well as just "key" if it's not already used
-            foreach (var dictKey in innerDict.Keys)
-            {
-                var path = $"{field.Key}.{dictKey}".ToLower();
-
-                object Accessor(IRecord r) => getDict(r).TryGetValue(dictKey, out var value) ? value : null;
-
-                if (_usedPaths.Contains(path))
-                {
-                    _recordMap.Add(path, Accessor);
-                }
-
-                var dictKeyPath = dictKey.ToLower();
-                if (_usedPaths.Contains(dictKeyPath) && !_recordMap.ContainsKey(dictKeyPath))
-                {
-                    _recordMap.Add(dictKeyPath, Accessor);
-                }
-            }
-        }
-
-        _recordMapBuilt = true;
     }
 
     object IRecordMapper.MapInternal(IRecord record)

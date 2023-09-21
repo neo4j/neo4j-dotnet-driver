@@ -52,14 +52,16 @@ internal static class DefaultMapper
 
             string path = property.Name;
 
-            // check if there is a MappingPathAttribute; if there is, use that path instead
-            var mappingPathAttribute = property.GetCustomAttribute<MappingPathAttribute>();
-            if (mappingPathAttribute is not null)
+            var mappingSource = new InternalMappingSource(path, EntityMappingSource.Property);
+
+            // check if there is a MappingSourceAttribute; if there is, use that path instead
+            var mappingSourceAttribute = property.GetCustomAttribute<MappingSourceAttribute>();
+            if (mappingSourceAttribute is not null)
             {
-                path = mappingPathAttribute.Path;
+                mappingSource = mappingSourceAttribute.InternalMappingSource;
             }
 
-            mappingBuilder.Map(setter, path.ToLower());
+            mappingBuilder.Map(setter, mappingSource);
         }
 
         mapper = mappingBuilder.Build();

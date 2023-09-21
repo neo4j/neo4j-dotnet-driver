@@ -71,7 +71,7 @@ namespace Neo4j.Driver.Tests.Mapping
         [Fact]
         public void ShouldGetTypedValueFromRecord_entity()
         {
-            var node = new Node(1, new[] { "key" }, new Dictionary<string, object> { { "key", "value" } });
+            var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", "value" } });
             var record = new Record(new[] { "key" }, new object[] { node });
             record.GetEntity("key").Should().Be(node);
         }
@@ -79,42 +79,42 @@ namespace Neo4j.Driver.Tests.Mapping
         [Fact]
         public void ShouldGetValueFromEntity_string()
         {
-            var node = new Node(1, new[] { "key" }, new Dictionary<string, object> { { "key", "value" } });
+            var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", "value" } });
             node.GetString("key").Should().Be("value");
         }
 
         [Fact]
         public void ShouldGetValueFromEntity_int()
         {
-            var node = new Node(1, new[] { "key" }, new Dictionary<string, object> { { "key", 1L } });
+            var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", 1L } });
             node.GetInt("key").Should().Be(1);
         }
 
         [Fact]
         public void ShouldGetValueFromEntity_long()
         {
-            var node = new Node(1, new[] { "key" }, new Dictionary<string, object> { { "key", 1L } });
+            var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", 1L } });
             node.GetLong("key").Should().Be(1L);
         }
 
         [Fact]
         public void ShouldGetValueFromEntity_double()
         {
-            var node = new Node(1, new[] { "key" }, new Dictionary<string, object> { { "key", 1.0 } });
+            var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", 1.0 } });
             node.GetDouble("key").Should().Be(1.0);
         }
 
         [Fact]
         public void ShouldGetValueFromEntity_float()
         {
-            var node = new Node(1, new[] { "key" }, new Dictionary<string, object> { { "key", 1.0 } });
+            var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", 1.0 } });
             node.GetFloat("key").Should().Be(1.0f);
         }
 
         [Fact]
         public void ShouldGetValueFromEntity_bool()
         {
-            var node = new Node(1, new[] { "key" }, new Dictionary<string, object> { { "key", true } });
+            var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", true } });
             node.GetBool("key").Should().Be(true);
         }
 
@@ -122,7 +122,7 @@ namespace Neo4j.Driver.Tests.Mapping
         public void ShouldGetValueFromEntity_Dictionary()
         {
             var dictionary = new Dictionary<string, object> { { "key", "value" } };
-            var node = new Node(1, new[] { "field" }, new Dictionary<string, object> { { "field", dictionary } });
+            var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "field", dictionary } });
             node.GetValue<Dictionary<string, object>>("field").Should().BeEquivalentTo(dictionary);
         }
     }

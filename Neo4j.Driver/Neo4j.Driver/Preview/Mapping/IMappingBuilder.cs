@@ -37,7 +37,9 @@ public interface IMappingBuilder<TObject>
     /// Defines a mapping from a field in the record to a property on the object.
     /// </summary>
     /// <param name="destination">The property to map to.</param>
-    /// <param name="sourceKey">The key of the field in the record.</param>
+    /// <param name="path">The key of the field in the record.</param>
+    /// <param name="entityMappingSource">A value indicating the type of value to be mapped from the specified field.
+    /// </param>
     /// <param name="converter">An optional converter function to convert the value from the field value
     /// to the type of the property.</param>
     /// <typeparam name="TProperty">The type of the property being mapped. This type will be inferred from the
@@ -45,7 +47,8 @@ public interface IMappingBuilder<TObject>
     /// <returns>This instance for method chaining.</returns>
     IMappingBuilder<TObject> Map<TProperty>(
         Expression<Func<TObject, TProperty>> destination,
-        string sourceKey,
+        string path,
+        EntityMappingSource entityMappingSource = EntityMappingSource.Property,
         Func<object, TProperty> converter = null);
 
     /// <summary>

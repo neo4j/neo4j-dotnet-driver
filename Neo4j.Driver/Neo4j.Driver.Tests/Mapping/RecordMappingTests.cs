@@ -53,10 +53,10 @@ namespace Neo4j.Driver.Tests.Mapping
 
         private class PersonInDict
         {
-            [MappingPath("person.name")]
+            [MappingSource("person.name")]
             public string Name { get; set; } = "";
 
-            [MappingPath("person.born")]
+            [MappingSource("person.born")]
             public int Born { get; set; }
         }
 
@@ -94,16 +94,16 @@ namespace Neo4j.Driver.Tests.Mapping
 
         private class ProducingCareer
         {
-            [MappingPath("person")]
+            [MappingSource("person")]
             public Person Producer { get; set; } = null!;
 
-            [MappingPath("titles")]
+            [MappingSource("titles")]
             public List<string> MovieTitleIdeas { get; set; } = null!;
 
-            [MappingPath("movies")]
+            [MappingSource("movies")]
             public List<Movie> HistoricalMovies { get; set; } = null!;
 
-            [MappingPath("moviesDict")]
+            [MappingSource("moviesDict")]
             public List<Movie> OtherMovies { get; set; } = null!;
         }
 
@@ -112,12 +112,12 @@ namespace Neo4j.Driver.Tests.Mapping
         {
             var person = new Node(
                 0,
-                new[] { "name", "born" },
+                new[] { "Person" },
                 new Dictionary<string, object> { { "name", "Ron Grazer" }, { "born", 1956 } });
 
             var movie1 = new Node(
                 0,
-                new[] { "title", "released", "tagline" },
+                new[] { "Movie" },
                 new Dictionary<string, object>
                 {
                     { "title", "Forrest Gump" },
@@ -127,7 +127,7 @@ namespace Neo4j.Driver.Tests.Mapping
 
             var movie2 = new Node(
                 0,
-                new[] { "title", "released", "tagline" },
+                new[] { "Movie" },
                 new Dictionary<string, object>
                 {
                     { "title", "Cast Away" },
@@ -137,7 +137,7 @@ namespace Neo4j.Driver.Tests.Mapping
 
             var movie3 = new Node(
                 0,
-                new[] { "title", "released", "tagline" },
+                new[] { "Movie" },
                 new Dictionary<string, object>
                 {
                     { "title", "The Green Mile" },
@@ -265,13 +265,13 @@ namespace Neo4j.Driver.Tests.Mapping
 
         private class Car
         {
-            [MappingPath("car.make")]
+            [MappingSource("car.make")]
             public string Make { get; set; } = "";
 
-            [MappingPath("model")]
+            [MappingSource("model")]
             public string Model { get; set; } = "";
 
-            [MappingPath("car.madeup")]
+            [MappingSource("car.madeup")]
             public string MadeUp { get; set; } = "unset";
         }
 
@@ -280,7 +280,7 @@ namespace Neo4j.Driver.Tests.Mapping
         {
             var carNode = new Node(
                 0,
-                new[] { "make", "model" },
+                new[] { "Car" },
                 new Dictionary<string, object>
                 {
                     { "make", "Tesla" },
@@ -289,7 +289,7 @@ namespace Neo4j.Driver.Tests.Mapping
 
             var paintingNode = new Node(
                 0,
-                new[] { "artist", "title" },
+                new[] { "Painting" },
                 new Dictionary<string, object>
                 {
                     { "artist", "Leonardo da Vinci" },
@@ -355,13 +355,13 @@ namespace Neo4j.Driver.Tests.Mapping
         {
             var bookNodeList = new List<Node>
             {
-                new Node(0, new[] { "title" }, new Dictionary<string, object> { { "title", "The Green Man" } }),
-                new Node(0, new[] { "title" }, new Dictionary<string, object> { { "title", "The Thin End" } })
+                new Node(0, new[] { "Book" }, new Dictionary<string, object> { { "title", "The Green Man" } }),
+                new Node(0, new[] { "Book" }, new Dictionary<string, object> { { "title", "The Thin End" } })
             };
 
             var authorNode = new Node(
                 0,
-                new[] { "name", "books" },
+                new[] { "Author" },
                 new Dictionary<string, object> { { "name", "Kate Grenville" }, { "books", bookNodeList } });
 
             var record = new Record(new[] { "author" }, new object[] { authorNode });

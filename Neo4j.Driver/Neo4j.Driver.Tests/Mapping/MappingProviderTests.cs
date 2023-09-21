@@ -57,7 +57,7 @@ namespace Neo4j.Driver.Tests.Mapping
                     .RegisterMapping<TestObject>(
                         b => b
                             .UseDefaultMapping()
-                            .Map(x => x.Text, "stringValue", x => x.As<string>().ToUpper() + "!"))
+                            .Map(x => x.Text, "stringValue", converter: x => x.As<string>().ToUpper() + "!"))
                     .RegisterMapping<SecondTestObject>(
                         b => b
                             .MapWholeObject(

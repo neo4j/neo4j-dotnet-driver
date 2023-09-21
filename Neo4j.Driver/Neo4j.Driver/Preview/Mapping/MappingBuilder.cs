@@ -25,13 +25,25 @@ internal class MappingBuilder<TObject> : IMappingBuilder<TObject> where TObject 
 {
     private readonly BuiltMapper<TObject> _builtMapper = new();
 
+    internal void Map(
+        MethodInfo propertySetter,
+        InternalMappingSource mappingSource)
+    {
+        _builtMapper.AddMappingBySetter(propertySetter, mappingSource);
+    }
+
     public IMappingBuilder<TObject> Map<TProperty>(
         Expression<Func<TObject, TProperty>> destination,
-        string sourceKey,
+        string path,
+        EntityMappingSource entityMappingSource = EntityMappingSource.Property,
         Func<object, TProperty> converter = null)
     {
         var propertySetter = GetPropertySetter(destination);
-        _builtMapper.AddMappingBySetter(propertySetter, sourceKey, converter is null ? null : o => converter.Invoke(o));
+        _builtMapper.AddMappingBySetter(
+            propertySetter,
+            new InternalMappingSource(path, entityMappingSource),
+            converter is null ? null : o => converter.Invoke(o));
+
         return this;
     }
 
@@ -56,13 +68,6 @@ internal class MappingBuilder<TObject> : IMappingBuilder<TObject> where TObject 
     {
         _builtMapper.AddWholeObjectMapping(r => DefaultMapper.Get<TObject>().Map(r));
         return this;
-    }
-
-    internal void Map(
-        MethodInfo propertySetter,
-        string sourceKey)
-    {
-        _builtMapper.AddMappingBySetter(propertySetter, sourceKey);
     }
 
     internal IRecordMapper<TObject> Build()
