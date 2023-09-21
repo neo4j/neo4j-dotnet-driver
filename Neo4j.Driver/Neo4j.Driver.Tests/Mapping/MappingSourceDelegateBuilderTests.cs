@@ -41,6 +41,19 @@ namespace Neo4j.Driver.Tests.Mapping
         }
 
         [Fact]
+        public void ShouldReturnFalseWhenPathNotFound()
+        {
+            var record = new Record(new[] { "a" }, new object[] { "b" });
+            var getter = new MappingSourceDelegateBuilder();
+            var mappingSource = new MappingSource("c", EntityMappingSource.Property);
+
+            var mappingDelegate = getter.GetMappingDelegate(mappingSource);
+            var found = mappingDelegate(record, out var value);
+
+            found.Should().BeFalse();
+        }
+
+        [Fact]
         public void ShouldGetNodeLabels()
         {
             var node = new Node(1, new[] { "Actor", "Director" }, new Dictionary<string, object>());

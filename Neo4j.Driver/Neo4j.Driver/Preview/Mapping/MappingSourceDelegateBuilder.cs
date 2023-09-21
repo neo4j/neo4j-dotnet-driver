@@ -17,13 +17,13 @@
 
 namespace Neo4j.Driver.Preview.Mapping
 {
-    internal delegate bool TryGetMapSourceDelegate(
+    internal delegate bool TryGetMapSourceValueDelegate(
         IRecord record,
         out object value);
 
     internal interface IMappingSourceDelegateBuilder
     {
-        TryGetMapSourceDelegate GetMappingDelegate(MappingSource mappingSource);
+        TryGetMapSourceValueDelegate GetMappingDelegate(MappingSource mappingSource);
     }
 
     internal class MappingSourceDelegateBuilder : IMappingSourceDelegateBuilder
@@ -31,7 +31,7 @@ namespace Neo4j.Driver.Preview.Mapping
         private IRecordPathFinder _pathFinder = new RecordPathFinder();
 
         /// <inheritdoc />
-        public TryGetMapSourceDelegate GetMappingDelegate(MappingSource mappingSource)
+        public TryGetMapSourceValueDelegate GetMappingDelegate(MappingSource mappingSource)
         {
             bool TryGetValue(IRecord record, out object value)
             {
