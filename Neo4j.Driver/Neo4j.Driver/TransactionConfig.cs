@@ -50,14 +50,16 @@ public sealed class TransactionConfig
     }
 
     /// <summary>
-    /// Transaction timeout. Transactions that execute longer than the configured timeout will be terminated by the
-    /// database. This functionality allows to limit query/transaction execution time. Specified timeout overrides the default
-    /// timeout configured in the database using <code>dbms.transaction.timeout</code> setting. Leave this field unmodified to
-    /// use default timeout configured on database. Setting a zero timeout will result in no timeout.
+    /// Transaction timeout. Transactions that execute longer than the configured timeout will be terminated
+    /// by the database. This functionality allows to limit query/transaction execution time. The Specified timeout overrides the
+    /// default timeout configured in the database using the <code>db.transaction.timeout</code> setting 
+    /// (<code>dbms.transaction.timeout</code> before Neo4j 5.0). Values higher than <code>db.transaction.timeout</code> will be
+    /// ignored and will fall back to the default for server versions 4.2 to including 5.2. Leave this field unmodified or set it
+    /// to <code>null</code> to use the default timeout configured on the server. A timeout of zero will make the transaction
+    /// execute indefinitely.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">
-    /// If the value given to transaction timeout in milliseconds is less than
-    /// zero
+    /// If the value given to transaction timeout in milliseconds is less than zero.
     /// </exception>
     public TimeSpan? Timeout
     {
@@ -114,9 +116,12 @@ public sealed class TransactionConfigBuilder
 
     /// <summary>
     /// Sets the transaction timeout. Transactions that execute longer than the configured timeout will be terminated
-    /// by the database. This functionality allows to limit query/transaction execution time. Specified timeout overrides the
-    /// default timeout configured in the database using <code>dbms.transaction.timeout</code> setting. Leave this field
-    /// unmodified to use default timeout configured on database. Setting a zero timeout will result in no timeout.
+    /// by the database. This functionality allows to limit query/transaction execution time. The Specified timeout overrides the
+    /// default timeout configured in the database using the <code>db.transaction.timeout</code> setting 
+    /// (<code>dbms.transaction.timeout</code> before Neo4j 5.0). Values higher than <code>db.transaction.timeout</code> will be
+    /// ignored and will fall back to default for server versions 4.2 to including 5.2. Leave this field unmodified or set it to
+    /// <code>null</code> to use the default timeout configured on the server. A timeout of zero will make the transaction execute
+    /// indefinitely.
     /// <para/>
     /// If the timeout is not an exact number of milliseconds, it will be rounded up to the next millisecond.
     /// </summary>
