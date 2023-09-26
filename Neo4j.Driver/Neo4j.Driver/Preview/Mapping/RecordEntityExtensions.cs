@@ -41,9 +41,9 @@ public static class RecordEntityExtensions
     /// <param name="key">The key of the value.</param>
     /// <typeparam name="T">The type to convert to.</typeparam>
     /// <returns>The converted value.</returns>
-    public static T GetValue<T>(this IRecord record, string key)
+    public static T? GetValue<T>(this IRecord record, string key)
     {
-        return record[key].As<T>();
+        return record.Values.TryGetValue(key, out var value) ? value.As<T>() : default;
     }
 
     /// <summary>
@@ -64,9 +64,9 @@ public static class RecordEntityExtensions
     /// <param name="key">The key of the value.</param>
     /// <typeparam name="T">The type to convert to.</typeparam>
     /// <returns>The converted value.</returns>
-    public static T GetValue<T>(this IEntity entity, string key)
+    public static T? GetValue<T>(this IEntity entity, string key)
     {
-        return entity[key].As<T>();
+        return entity.Properties.TryGetValue(key, out var value) ? value.As<T>() : default;
     }
 
     /// <summary>

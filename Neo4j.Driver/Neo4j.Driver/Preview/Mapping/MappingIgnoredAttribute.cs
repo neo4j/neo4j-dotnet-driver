@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Preview.Mapping;
 /// This attribute does not affect custom-defined mappers.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property)]
-public class DoNotMapAttribute : Attribute
+public class MappingIgnoredAttribute : Attribute
 {
     
 }

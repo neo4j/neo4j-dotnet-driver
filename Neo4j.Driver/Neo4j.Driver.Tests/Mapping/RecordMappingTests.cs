@@ -326,7 +326,7 @@ namespace Neo4j.Driver.Tests.Mapping
         {
             public string Name { get; set; } = "A. Test Name";
 
-            [DoNotMap]
+            [MappingIgnored]
             public int? Born { get; set; } = 9999;
         }
 

@@ -44,8 +44,8 @@ internal static class DefaultMapper
                 continue;
             }
 
-            // check if there is a DoNotMapAttribute; if there is, ignore this property
-            if (property.GetCustomAttribute<DoNotMapAttribute>() is not null)
+            // check if there is a MappingIgnoredAttribute; if there is, ignore this property
+            if (property.GetCustomAttribute<MappingIgnoredAttribute>() is not null)
             {
                 continue;
             }

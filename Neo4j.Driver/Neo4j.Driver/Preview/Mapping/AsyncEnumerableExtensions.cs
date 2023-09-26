@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Preview.Mapping;
@@ -33,13 +34,16 @@ public static class AsyncEnumerableExtensions
     /// </summary>
     /// <seealso cref="RecordObjectMapping.Map{T}"/>
     /// <param name="asyncEnumerable">The asynchronous source of records.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <typeparam name="T">The type of object to map to.</typeparam>
     /// <returns>The list of mapped objects.</returns>
-    public static async Task<IReadOnlyList<T>> ToListAsync<T>(this IAsyncEnumerable<IRecord> asyncEnumerable)
+    public static async ValueTask<IReadOnlyList<T>> ToListAsync<T>(
+        this IAsyncEnumerable<IRecord> asyncEnumerable,
+        CancellationToken cancellationToken = default)
         where T : new()
     {
         var list = new List<T>();
-        await foreach (var item in asyncEnumerable.ConfigureAwait(false))
+        await foreach (var item in asyncEnumerable.ConfigureAwait(false).WithCancellation(cancellationToken))
         {
             list.Add(item.AsObject<T>());
         }

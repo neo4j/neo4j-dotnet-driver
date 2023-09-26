@@ -97,9 +97,6 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
         var desiredItemType = desiredListType.GetGenericArguments()[0];
         var asMethod = _asGenericMethod.MakeGenericMethod(desiredItemType);
 
-        var typedInterface = typeof(IRecordMapper<>).MakeGenericType(desiredItemType);
-        var mapMethod = typedInterface.GetMethod(nameof(IRecordMapper<object>.Map));
-
         foreach (var item in list)
         {
             // entities and dictionaries can use the same logic, we can make them both into dictionaries
@@ -114,11 +111,7 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
             {
                 // if the item is an entity or dictionary, we need to make it into a record and then map that
                 var subRecord = new DictAsRecord(dict, record);
-                // var newItem = mapMethod.Invoke(
-                //     RecordObjectMapping.GetMapperForType(desiredItemType),
-                //     new[] { subRecord });
                 var newItem = RecordObjectMapping.Map(subRecord, desiredItemType);
-
                 newList!.Add(newItem);
             }
             else
