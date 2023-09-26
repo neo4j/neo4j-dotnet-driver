@@ -126,18 +126,5 @@ namespace Neo4j.Driver.Tests.Mapping
             obj.Name.Should().Be("Bob");
             obj.Age.Should().Be(23);
         }
-
-        private class InvalidMapper : IRecordMapper
-        {
-            public object MapInternal(IRecord record) => null;
-        }
-
-        [Fact]
-        public void ShouldThrowOnInvalidMapper()
-        {
-            var act = () => RecordObjectMapping.Register(new InvalidMapper());
-
-            act.Should().Throw<ArgumentException>();
-        }
     }
 }

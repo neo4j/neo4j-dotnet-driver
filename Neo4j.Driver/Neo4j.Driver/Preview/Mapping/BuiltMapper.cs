@@ -113,10 +113,11 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
             if (dict is not null)
             {
                 // if the item is an entity or dictionary, we need to make it into a record and then map that
-                object subRecord = new DictAsRecord(dict, record);
-                var newItem = mapMethod.Invoke(
-                    RecordObjectMapping.GetMapperForType(desiredItemType),
-                    new[] { subRecord });
+                var subRecord = new DictAsRecord(dict, record);
+                // var newItem = mapMethod.Invoke(
+                //     RecordObjectMapping.GetMapperForType(desiredItemType),
+                //     new[] { subRecord });
+                var newItem = RecordObjectMapping.Map(subRecord, desiredItemType);
 
                 newList!.Add(newItem);
             }
@@ -154,9 +155,7 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
                 // if the value is an entity, make it into a fake record and map that (indirectly recursive)
                 case IEntity entity:
                     var destType = propertySetter.GetParameters()[0].ParameterType;
-                    var newEntityDest = RecordObjectMapping
-                        .GetMapperForType(destType)
-                        .MapInternal(new DictAsRecord(entity.Properties, record));
+                    var newEntityDest = RecordObjectMapping.Map(new DictAsRecord(entity.Properties, record), destType);
 
                     propertySetter.Invoke(obj, new[] { newEntityDest });
                     return;
@@ -167,10 +166,5 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
                     return;
             }
         }
-    }
-
-    object IRecordMapper.MapInternal(IRecord record)
-    {
-        return Map(record);
     }
 }

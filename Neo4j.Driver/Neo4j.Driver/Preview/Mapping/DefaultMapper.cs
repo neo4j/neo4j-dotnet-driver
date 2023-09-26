@@ -23,7 +23,7 @@ namespace Neo4j.Driver.Preview.Mapping;
 
 internal static class DefaultMapper
 {
-    private static readonly Dictionary<Type, IRecordMapper> Mappers = new();
+    private static readonly Dictionary<Type, object> Mappers = new();
 
     public static IRecordMapper<T> Get<T>() where T : new()
     {
