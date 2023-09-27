@@ -51,8 +51,8 @@ public sealed class TransactionConfig
 
     /// <summary>
     /// Transaction timeout. Transactions that execute longer than the configured timeout will be terminated
-    /// by the database. This functionality allows to limit query/transaction execution time. The Specified timeout overrides the
-    /// default timeout configured in the database using the <code>db.transaction.timeout</code> setting 
+    /// by the database. This functionality allows the driver to limit query/transaction execution time. The Specified timeout
+    /// overrides the default timeout configured in the database using the <code>db.transaction.timeout</code> setting 
     /// (<code>dbms.transaction.timeout</code> before Neo4j 5.0). Values higher than <code>db.transaction.timeout</code> will be
     /// ignored and will fall back to the default for server versions 4.2 to including 5.2. Leave this field unmodified or set it
     /// to <code>null</code> to use the default timeout configured on the server. A timeout of zero will make the transaction
@@ -116,12 +116,12 @@ public sealed class TransactionConfigBuilder
 
     /// <summary>
     /// Sets the transaction timeout. Transactions that execute longer than the configured timeout will be terminated
-    /// by the database. This functionality allows to limit query/transaction execution time. The Specified timeout overrides the
-    /// default timeout configured in the database using the <code>db.transaction.timeout</code> setting 
+    /// by the database. This functionality allows the driver to limit query/transaction execution time. The Specified timeout
+    /// overrides the default timeout configured in the database using the <code>db.transaction.timeout</code> setting 
     /// (<code>dbms.transaction.timeout</code> before Neo4j 5.0). Values higher than <code>db.transaction.timeout</code> will be
-    /// ignored and will fall back to default for server versions 4.2 to including 5.2. Leave this field unmodified or set it to
-    /// <code>null</code> to use the default timeout configured on the server. A timeout of zero will make the transaction execute
-    /// indefinitely.
+    /// ignored and will fall back to default for server versions between 4.2 and 5.2 (inclusive). Leave this field unmodified or
+    /// set it to <code>null</code> to use the default timeout configured on the server. A timeout of zero will make the transaction
+    /// execute indefinitely.
     /// <para/>
     /// If the timeout is not an exact number of milliseconds, it will be rounded up to the next millisecond.
     /// </summary>
