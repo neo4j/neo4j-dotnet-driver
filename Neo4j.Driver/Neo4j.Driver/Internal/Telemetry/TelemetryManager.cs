@@ -26,8 +26,6 @@ internal class TelemetryManager
 {
     private readonly IActivityProvider _activityProvider;
 
-    private ApiActivity _apiActivity;
-
     private class ApiActivity : IDisposable
     {
         public Activity Activity { get; }
@@ -60,9 +58,12 @@ internal class TelemetryManager
             {
                 if (IsOutermostApiActivity(activity))
                 {
-                    // tell the telemetry collector that we have started an api activity
-                    string apiType = activity.Tags.FirstOrDefault(x => x.Key == "queryApiType").Value ?? "unknown";
-                    telemetryCollector.CollectApiUsage(apiType);
+                    lock (telemetryCollector)
+                    {
+                        // tell the telemetry collector that we have started an api activity
+                        string apiType = activity.Tags.FirstOrDefault(x => x.Key == "queryApiType").Value ?? "unknown";
+                        telemetryCollector.CollectApiUsage(apiType);
+                    }
                 }
             },
         };
@@ -72,8 +73,7 @@ internal class TelemetryManager
 
     public IDisposable StartApiActivity(QueryApiType queryApiType)
     {
-        _apiActivity = new ApiActivity(queryApiType, _activityProvider);
-        return _apiActivity;
+        return new ApiActivity(queryApiType, _activityProvider);
     }
 
     private static bool IsOutermostApiActivity(Activity activity)
