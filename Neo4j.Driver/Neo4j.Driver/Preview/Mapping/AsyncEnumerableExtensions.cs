@@ -27,7 +27,7 @@ namespace Neo4j.Driver.Preview.Mapping;
 public static class AsyncEnumerableExtensions
 {
     /// <summary>
-    /// Materialises the <see cref="IAsyncEnumerable{T}"/> into a list of objects of type
+    /// Materializes the <see cref="IAsyncEnumerable{T}"/> into a list of objects of type
     /// <typeparamref name="T"/>, by mapping each record in the enumerable to an object.
     /// If no custom mapper is defined for type <typeparamref name="T"/>, the default
     /// mapper will be used.
