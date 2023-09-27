@@ -54,6 +54,9 @@ internal sealed class MessageFormat
     public const byte MsgLogon = 0x6A;
     public const byte MsgLogoff = 0x6B;
 
+    // v5.4+
+    public const byte MsgTelemetry = 0x54;
+
     private readonly Dictionary<byte, IPackStreamSerializer> _readerStructHandlers = new();
     private readonly Dictionary<Type, IPackStreamSerializer> _writerStructHandlers = new();
 

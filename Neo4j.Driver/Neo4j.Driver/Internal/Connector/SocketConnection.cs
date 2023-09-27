@@ -26,6 +26,7 @@ using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.Internal.Telemetry;
 using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.Connector;
@@ -43,6 +44,7 @@ internal sealed class SocketConnection : IConnection
     private readonly IResponsePipeline _responsePipeline;
     private readonly SemaphoreSlim _sendLock = new(1, 1);
     private readonly ServerInfo _serverInfo;
+    private readonly ITelemetryCollector _telemetryCollector;
     private readonly string _userAgent;
 
     private string _id;
@@ -70,6 +72,7 @@ internal sealed class SocketConnection : IConnection
         RoutingContext = routingContext;
         AuthTokenManager = authTokenManager;
         _protocolFactory = BoltProtocolFactory.Default;
+        _telemetryCollector = TelemetryCollector.Default;
     }
 
     // for test only
@@ -81,7 +84,8 @@ internal sealed class SocketConnection : IConnection
         ServerInfo server,
         IResponsePipeline responsePipeline = null,
         IAuthTokenManager authTokenManager = null,
-        IBoltProtocolFactory protocolFactory = null)
+        IBoltProtocolFactory protocolFactory = null,
+        ITelemetryCollector telemetryCollector = null)
     {
         _client = socketClient ?? throw new ArgumentNullException(nameof(socketClient));
         AuthToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
@@ -94,6 +98,7 @@ internal sealed class SocketConnection : IConnection
         _logger = new PrefixLogger(logger, FormatPrefix(_id));
         _responsePipeline = responsePipeline ?? new ResponsePipeline(logger);
         _protocolFactory = protocolFactory ?? BoltProtocolFactory.Default;
+        _telemetryCollector = telemetryCollector ?? TelemetryCollector.Default;
     }
 
     internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
@@ -219,8 +224,11 @@ internal sealed class SocketConnection : IConnection
         }
 
         await _sendLock.WaitAsync().ConfigureAwait(false);
+
         try
         {
+            CollectTelemetry();
+
             // send
             await _client.SendAsync(_messages).ConfigureAwait(false);
 
@@ -229,6 +237,30 @@ internal sealed class SocketConnection : IConnection
         finally
         {
             _sendLock.Release();
+        }
+    }
+
+    private void CollectTelemetry()
+    {
+        if (Version < BoltProtocolVersion.V5_4)
+        {
+            // telemetry not supported before 5.4
+            return;
+        }
+
+        lock (_telemetryCollector)
+        {
+            // add a telemetry message if we have enough now
+            if (_messages.Any(m => m is RunWithMetadataMessage) && _telemetryCollector.BatchSizeReached)
+            {
+                // create a message and clear the collector because the metrics aren't additive
+                var msg = _telemetryCollector.CreateMessage();
+                _telemetryCollector.Clear();
+
+                // pipeline the message along with the rest of the messages
+                _messages.Enqueue(msg);
+                _responsePipeline.Enqueue(NoOpResponseHandler.Instance);
+            }
         }
     }
 
