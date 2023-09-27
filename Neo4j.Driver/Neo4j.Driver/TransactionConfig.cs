@@ -116,7 +116,7 @@ public sealed class TransactionConfigBuilder
 
     /// <summary>
     /// Sets the transaction timeout. Transactions that execute longer than the configured timeout will be terminated
-    /// by the database. This functionality allows the driver to limit query/transaction execution time. The Specified timeout
+    /// by the database. This functionality allows user code to limit query/transaction execution time. The Specified timeout
     /// overrides the default timeout configured in the database using the <code>db.transaction.timeout</code> setting 
     /// (<code>dbms.transaction.timeout</code> before Neo4j 5.0). Values higher than <code>db.transaction.timeout</code> will be
     /// ignored and will fall back to default for server versions between 4.2 and 5.2 (inclusive). Leave this field unmodified or
