@@ -127,16 +127,11 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         return BeginTransactionAsync(action, true);
     }
 
-    public async Task<IAsyncTransaction> BeginTransactionAsync(
+    public Task<IAsyncTransaction> BeginTransactionAsync(
         Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult)
     {
-        var tx = await TryExecuteAsync(
-                _logger,
-                () => BeginTransactionWithoutLoggingAsync(_defaultMode, action, disposeUnconsumedSessionResult))
-            .ConfigureAwait(false);
-
-        return tx;
+        return BeginTransactionAsync(_defaultMode, action, disposeUnconsumedSessionResult);
     }
 
     public async Task<IAsyncTransaction> BeginTransactionAsync(
@@ -144,6 +139,8 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult)
     {
+        using var _ = Driver.TelemetryManager.StartApiActivity(QueryApiType.UnmanagedTransaction);
+
         var tx = await TryExecuteAsync(
                 _logger,
                 () => BeginTransactionWithoutLoggingAsync(mode, action, disposeUnconsumedSessionResult))
