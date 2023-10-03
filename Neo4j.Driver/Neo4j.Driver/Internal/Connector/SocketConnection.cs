@@ -251,7 +251,7 @@ internal sealed class SocketConnection : IConnection
         lock (_telemetryCollector)
         {
             // add a telemetry message if we have enough now
-            if (_messages.Any(m => m is RunWithMetadataMessage) && _telemetryCollector.BatchSizeReached)
+            if (_telemetryCollector.BatchSizeReached)
             {
                 // create a message and clear the collector because the metrics aren't additive
                 var msg = _telemetryCollector.CreateMessage();
