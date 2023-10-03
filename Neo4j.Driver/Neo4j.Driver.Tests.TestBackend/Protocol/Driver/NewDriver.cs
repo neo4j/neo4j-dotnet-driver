@@ -157,6 +157,11 @@ internal class NewDriver : IProtocolObject
             }
         }
 
+        if(data.telemetryDisabled.HasValue && data.telemetryDisabled.Value)
+        {
+            configBuilder.WithTelemetryDisabled();
+        }
+
         var logger = new SimpleLogger();
         configBuilder.WithLogger(logger);
     }
@@ -181,6 +186,7 @@ internal class NewDriver : IProtocolObject
         public int connectionTimeoutMs { get; set; } = -1;
         public int? maxConnectionPoolSize { get; set; }
         public int? connectionAcquisitionTimeoutMs { get; set; }
+        public bool? telemetryDisabled { get; set; }
 
         public string[] trustedCertificates
         {

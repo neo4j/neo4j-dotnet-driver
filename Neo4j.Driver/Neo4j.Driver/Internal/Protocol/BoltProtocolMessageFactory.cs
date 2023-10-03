@@ -21,6 +21,7 @@ using System.Linq;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Telemetry;
 
 namespace Neo4j.Driver.Internal;
 
@@ -86,11 +87,9 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
         return new RunWithMetadataMessage(connection.Version, query, notificationsConfig: notificationsConfig);
     }
 
-    public TelemetryMessage NewTelemetryMessage(IReadOnlyDictionary<string, int> apiUsage)
+    public TelemetryMessage NewTelemetryMessage(QueryApiType apiUsage)
     {
-        // make a copy of the data so that it represents the data at the time of creation
-        var newData = apiUsage.ToDictionary(x => x.Key, x => x.Value);
-        return new TelemetryMessage(newData);
+        return new TelemetryMessage(apiUsage);
     }
 
     public PullMessage NewPullMessage(long fetchSize)

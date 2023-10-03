@@ -198,4 +198,11 @@ public class Config
     /// <seealso cref="INotification"/>
     /// <seealso cref="IResultSummary.Notifications"/>
     public INotificationsConfig NotificationsConfig { get; internal set; }
+
+    /// <summary>
+    /// Specifies whether the driver will send telemetry data to Neo4j. This data is used to improve the driver and
+    /// for diagnostics. If set to true, the driver will not collect or send any telemetry. If set to false, the driver
+    /// will collect and send telemetry data. The default value is false.
+    /// </summary>
+    public bool TelemetryDisabled { get; set; }
 }

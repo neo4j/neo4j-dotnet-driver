@@ -21,18 +21,8 @@ namespace Neo4j.Driver.Internal.Telemetry;
 
 internal enum QueryApiType
 {
-    [Description("?")]
-    Unknown,
-
-    [Description("fn")]
-    TransactionFunction,
-
-    [Description("tx")]
-    UnmanagedTransaction,
-
-    [Description("run")]
-    AutoCommit,
-
-    [Description("exe")]
-    DriverLevel
+    TransactionFunction = 0,
+    UnmanagedTransaction = 1,
+    AutoCommit = 2,
+    DriverLevel = 3
 }

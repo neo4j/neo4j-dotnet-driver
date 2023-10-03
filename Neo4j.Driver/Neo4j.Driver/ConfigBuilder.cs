@@ -386,4 +386,10 @@ public sealed class ConfigBuilder
         _config.NotificationsConfig = new NotificationsDisabledConfig();
         return this;
     }
+
+    public ConfigBuilder WithTelemetryDisabled()
+    {
+        _config.TelemetryDisabled = true;
+        return this;
+    }
 }
