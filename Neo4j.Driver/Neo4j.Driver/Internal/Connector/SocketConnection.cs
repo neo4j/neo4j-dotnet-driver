@@ -226,8 +226,6 @@ internal sealed class SocketConnection : IConnection
 
         try
         {
-            CollectTelemetry();
-
             // send
             await _client.SendAsync(_messages).ConfigureAwait(false);
 
@@ -236,30 +234,6 @@ internal sealed class SocketConnection : IConnection
         finally
         {
             _sendLock.Release();
-        }
-    }
-
-    private void CollectTelemetry()
-    {
-        if (Version is null || Version < BoltProtocolVersion.V5_4)
-        {
-            // telemetry not supported before 5.4
-            return;
-        }
-
-        lock (_telemetryCollector)
-        {
-            // add a telemetry message if we have enough now
-            if (_messages.Any(m => m is RunWithMetadataMessage) && _telemetryCollector.BatchSizeReached)
-            {
-                // create a message and clear the collector because the metrics aren't additive
-                var msg = _telemetryCollector.CreateMessage();
-                _telemetryCollector.Clear();
-
-                // pipeline the message along with the rest of the messages
-                _messages.Enqueue(msg);
-                _responsePipeline.Enqueue(NoOpResponseHandler.Instance);
-            }
         }
     }
 

@@ -33,7 +33,7 @@ internal class TelemetryManager
         public ApiActivity(QueryApiType queryApiType, IActivityProvider activityProvider)
         {
             Activity = activityProvider.CreateActivity($"api:{queryApiType.ToString()}", ActivityKind.Internal);
-            Activity.SetTag("queryApiType", queryApiType.GetDescription());
+            Activity.SetTag("queryApiType", queryApiType.ToString());
             Activity.Start();
         }
 

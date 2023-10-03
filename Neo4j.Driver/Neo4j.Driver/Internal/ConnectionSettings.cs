@@ -30,7 +30,6 @@ internal class ConnectionSettings
         Config config,
         IHostResolver hostResolver = null)
     {
-        DriverConfig = config;
         AuthTokenManager = authTokenManager;
         UserAgent = config.UserAgent;
         var resolver = hostResolver switch
@@ -72,7 +71,6 @@ internal class ConnectionSettings
     public IAuthTokenManager AuthTokenManager { get; }
     public string UserAgent { get; }
     public SocketSettings SocketSettings { get; }
-    public Config DriverConfig { get; }
 }
 
 internal class SocketSettings
