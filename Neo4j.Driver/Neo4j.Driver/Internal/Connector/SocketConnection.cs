@@ -242,7 +242,7 @@ internal sealed class SocketConnection : IConnection
 
     private void CollectTelemetry()
     {
-        if (Version < BoltProtocolVersion.V5_4)
+        if (Version is null || Version < BoltProtocolVersion.V5_4)
         {
             // telemetry not supported before 5.4
             return;
