@@ -28,7 +28,20 @@ namespace Neo4j.Driver.Internal;
 
 internal sealed class Driver : IInternalDriver
 {
-    public static readonly TelemetryManager TelemetryManager = new();
+    private static readonly AsyncLocal<TelemetryManager> AsyncLocalTelemetryManager = new();
+
+    public static TelemetryManager TelemetryManager
+    {
+        get
+        {
+            if (AsyncLocalTelemetryManager.Value == null)
+            {
+                AsyncLocalTelemetryManager.Value = new TelemetryManager();
+            }
+
+            return AsyncLocalTelemetryManager.Value;
+        }
+    }
 
     private readonly DefaultBookmarkManager _bookmarkManager;
 
