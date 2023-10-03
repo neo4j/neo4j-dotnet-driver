@@ -38,6 +38,13 @@ internal sealed class Driver : IInternalDriver
     private readonly IAsyncRetryLogic _retryLogic;
     private int _closedMarker;
 
+    private static AsyncLocal<bool> _telemetryDisabled = new();
+    public static bool TelemetryDisabled
+    {
+        get => _telemetryDisabled.Value;
+        set => _telemetryDisabled.Value = value;
+    }
+
     internal Driver(
         Uri uri,
         bool encrypted,
@@ -55,6 +62,7 @@ internal sealed class Driver : IInternalDriver
         _metrics = metrics;
         Config = config;
         _bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig());
+        TelemetryDisabled = config?.TelemetryDisabled ?? false;
     }
 
     public Uri Uri { get; }

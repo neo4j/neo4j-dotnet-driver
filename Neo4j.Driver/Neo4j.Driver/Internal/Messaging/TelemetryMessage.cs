@@ -19,27 +19,23 @@ using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
+using Neo4j.Driver.Internal.Telemetry;
 
 namespace Neo4j.Driver.Internal.Messaging;
 
 internal class TelemetryMessage : IRequestMessage
 {
-    private const string ApiKey = "api";
-    private IReadOnlyDictionary<string, int> _api;
+    public QueryApiType Api { get; }
 
-    public TelemetryMessage(IReadOnlyDictionary<string, int> api)
+    public TelemetryMessage(QueryApiType apiType)
     {
-        _api = api;
+        Api = apiType;
     }
 
-    public IDictionary<string, object> Metrics => new Dictionary<string, object> { { ApiKey, _api } };
-
-    /// <inheritdoc />
     public IPackStreamSerializer Serializer => TelemetryMessageSerializer.Instance;
 
     public override string ToString()
     {
-        var apiStr = _api.Select(x => $"{x.Key}={x.Value}").ToList();
-        return $"TELEMETRY api=<{string.Join(", ", apiStr)}>";
+        return $"TELEMETRY {(int)Api} ({Api})";
     }
 }

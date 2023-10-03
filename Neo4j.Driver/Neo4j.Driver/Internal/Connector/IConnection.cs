@@ -103,6 +103,7 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
 
     void SetUseUtcEncodedDateTime();
     ValueTask ValidateCredsAsync();
+    bool TelemetryEnabled { get; set; }
 }
 
 internal interface IConnectionRunner

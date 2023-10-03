@@ -194,6 +194,13 @@ internal abstract class DelegatedConnection : IConnection
         return Delegate.ValidateCredsAsync();
     }
 
+    /// <inheritdoc />
+    public bool TelemetryEnabled
+    {
+        get => Delegate.TelemetryEnabled;
+        set => Delegate.TelemetryEnabled = value;
+    }
+
     public Task LoginAsync(string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
     {
         return BoltProtocol.AuthenticateAsync(this, userAgent, authToken, notificationsConfig);

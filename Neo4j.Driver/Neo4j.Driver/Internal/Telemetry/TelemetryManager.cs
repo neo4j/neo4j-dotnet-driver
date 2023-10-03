@@ -62,7 +62,11 @@ internal class TelemetryManager
                     {
                         // tell the telemetry collector that we have started an api activity
                         string apiType = activity.Tags.FirstOrDefault(x => x.Key == "queryApiType").Value ?? "unknown";
-                        telemetryCollector.CollectApiUsage(apiType);
+
+                        if (Enum.TryParse(apiType, out QueryApiType queryApiType))
+                        {
+                            telemetryCollector.SetQueryApiType(queryApiType);
+                        }
                     }
                 }
             },

@@ -38,6 +38,6 @@ internal class TelemetryMessageSerializer : WriteOnlySerializer
         }
 
         writer.WriteStructHeader(1, MessageFormat.MsgTelemetry);
-        writer.WriteDictionary(telemetryMessage.Metrics);
+        writer.WriteInt((int)telemetryMessage.Api);
     }
 }

@@ -24,37 +24,36 @@ namespace Neo4j.Driver.Internal.Telemetry;
 
 internal interface ITelemetryCollector
 {
-    void CollectApiUsage(string apiType);
-    bool BatchSizeReached { get; }
-    TelemetryMessage CreateMessage();
+    void SetQueryApiType(QueryApiType apiType);
+    bool TryCreateMessage(out TelemetryMessage message);
     void Clear();
 }
 
 internal class TelemetryCollector : ITelemetryCollector
 {
-    private const int BatchSize = 20;
-
     public static readonly TelemetryCollector Default = new();
-    private readonly Counter<string> _apiUsage = new();
+    private QueryApiType? _currentApiType;
 
-    /// <inheritdoc />
-    public void CollectApiUsage(string apiType)
+    public void SetQueryApiType(QueryApiType apiType)
     {
-        _apiUsage.Increment(apiType);
+        _currentApiType = apiType;
     }
 
-    /// <inheritdoc />
-    public bool BatchSizeReached => _apiUsage.CounterValues.Values.Sum() >= BatchSize;
-
-    /// <inheritdoc />
-    public TelemetryMessage CreateMessage()
+    public bool TryCreateMessage(out TelemetryMessage message)
     {
-        return BoltProtocolMessageFactory.Instance.NewTelemetryMessage(_apiUsage.CounterValues);
+        if (_currentApiType is not null)
+        {
+            message = BoltProtocolMessageFactory.Instance.NewTelemetryMessage(_currentApiType.Value);
+            return true;
+        }
+
+        message = null;
+        return false;
     }
 
     /// <inheritdoc />
     public void Clear()
     {
-        _apiUsage.Clear();
+        _currentApiType = null;
     }
 }
