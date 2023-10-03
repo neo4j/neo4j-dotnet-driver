@@ -30,7 +30,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void DefaultConfigShouldGiveCorrectValueBack()
             {
-                var config = Config.Default;
+                var config = new Config();
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeNull();
                 config.Logger.Should().BeOfType<NullLogger>();
@@ -57,7 +57,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldDefaultToNoEncryptionAndNoTrust()
             {
-                var config = Config.Default;
+                var config = new Config();
                 config.NullableEncryptionLevel.Should().BeNull();
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeNull();
@@ -151,7 +151,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ChangingNewConfigShouldNotAffectOtherConfig()
             {
-                var config = Config.Default;
+                var config = new Config();
                 var config1 = Config.Builder.WithMaxIdleConnectionPoolSize(3).Build();
                 var config2 = Config.Builder.WithLogger(null).Build();
 

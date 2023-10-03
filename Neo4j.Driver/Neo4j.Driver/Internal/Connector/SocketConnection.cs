@@ -51,12 +51,11 @@ internal sealed class SocketConnection : IConnection
         Uri uri,
         ConnectionSettings settings,
         IAuthToken authToken,
-        IDictionary<string, string> routingContext,
-        ILogger logger = null)
+        IDictionary<string, string> routingContext)
     {
         _idPrefix = $"conn-{uri.Host}:{uri.Port}-";
         _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
-        _logger = new PrefixLogger(logger, FormatPrefix(_id));
+        _logger = new PrefixLogger(settings.DriverConfig.Logger, FormatPrefix(_id));
 
         _client = new SocketClient(uri, settings, _logger, null);
         Settings = settings;
@@ -77,7 +76,8 @@ internal sealed class SocketConnection : IConnection
         ServerInfo server,
         IResponsePipeline responsePipeline = null,
         IAuthTokenManager authTokenManager = null,
-        IBoltProtocolFactory protocolFactory = null)
+        IBoltProtocolFactory protocolFactory = null, 
+        ConnectionSettings settings = null)
     {
         _client = socketClient ?? throw new ArgumentNullException(nameof(socketClient));
         AuthToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
@@ -89,6 +89,7 @@ internal sealed class SocketConnection : IConnection
         _logger = new PrefixLogger(logger, FormatPrefix(_id));
         _responsePipeline = responsePipeline ?? new ResponsePipeline(logger);
         _protocolFactory = protocolFactory ?? BoltProtocolFactory.Default;
+        Settings = settings;
     }
 
     internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();

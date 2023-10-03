@@ -206,10 +206,9 @@ public static class GraphDatabase
 
         var config = ConfigBuilders.BuildConfig(action);
         BufferSettings.Validate(config);
-        var metrics = config.MetricsEnabled ? new DefaultMetrics() : null;
 
-        var connectionSettings = new ConnectionSettings(uri, authTokenManager, config, metrics: metrics);
-        var connectionFactory = new PooledConnectionFactory(config.Logger);
+        var connectionSettings = new ConnectionSettings(uri, authTokenManager, config);
+        var connectionFactory = new PooledConnectionFactory(connectionSettings);
 
         return CreateDriver(uri, config, connectionFactory, connectionSettings);
     }

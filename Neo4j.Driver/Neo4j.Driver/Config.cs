@@ -51,16 +51,13 @@ public class Config
         DefaultUserAgent = $"neo4j-dotnet/{version.Major.ToString()}.{version.Minor.ToString()}";
     }
 
-    private static string DefaultUserAgent { get; }
+    internal static string DefaultUserAgent { get; }
 
     /// <summary>This const defines the value of infinite in terms of configuration properties.</summary>
     public const int Infinite = -1;
 
     /// <summary>This const defines the value of infinite interval in terms of configuration properties.</summary>
     public static readonly TimeSpan InfiniteInterval = TimeSpan.FromMilliseconds(-1);
-
-    /// <summary>Returns the default configuration for the <see cref="IDriver"/>.</summary>
-    internal static readonly Config Default = new();
 
     private long _fetchSize = Constants.DefaultFetchSize;
 

@@ -363,7 +363,6 @@ internal sealed class ConnectionPool : IConnectionPool
         return _connectionFactory.Create(
             _uri,
             this,
-            ConnectionSettings,
             token,
             RoutingContext);
     }

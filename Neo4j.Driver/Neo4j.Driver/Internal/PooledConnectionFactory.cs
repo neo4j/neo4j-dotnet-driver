@@ -26,34 +26,31 @@ internal interface IPooledConnectionFactory
     IPooledConnection Create(
         Uri uri,
         IConnectionReleaseManager releaseManager,
-        ConnectionSettings connectionSettings,
         IAuthToken authToken,
         IDictionary<string, string> routingContext);
 }
 
 internal class PooledConnectionFactory : IPooledConnectionFactory
 {
-    private readonly ILogger _logger;
+    private readonly ConnectionSettings _connectionSettings;
 
-    public PooledConnectionFactory( ILogger logger)
+    public PooledConnectionFactory(ConnectionSettings connectionSettings)
     {
-        _logger = logger;
+        _connectionSettings = connectionSettings;
     }
 
     public IPooledConnection Create(
         Uri uri,
         IConnectionReleaseManager releaseManager,
-        ConnectionSettings connectionSettings,
         IAuthToken authToken,
         IDictionary<string, string> routingContext)
     {
         return new PooledConnection(
             new SocketConnection(
                 uri,
-                connectionSettings,
+                _connectionSettings,
                 authToken,
-                routingContext,
-                _logger),
+                routingContext),
             releaseManager ?? throw new ArgumentNullException(nameof(releaseManager)));
     }
 }

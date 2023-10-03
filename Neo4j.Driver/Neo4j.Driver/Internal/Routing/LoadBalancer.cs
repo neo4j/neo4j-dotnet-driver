@@ -66,7 +66,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         IClusterConnectionPool clusterConnPool,
         IRoutingTableManager routingTableManager)
     {
-        var config = Config.Default;
+        var config = new Config();
         _logger = config.Logger;
 
         _clusterConnectionPool = clusterConnPool;

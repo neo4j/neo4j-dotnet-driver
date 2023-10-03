@@ -397,7 +397,7 @@ namespace Neo4j.Driver.Tests
                     null,
                     null,
                     null,
-                    Config.Default);
+                    new Config());
 
                 return driver;
             }
@@ -433,7 +433,7 @@ namespace Neo4j.Driver.Tests
             public ConnectionSettings ConnectionSettings => new(
                 new Uri("neo4j://myTest.org"),
                 AuthTokenManagers.Static(AuthTokens.None),
-                Config.Default);
+                new Config());
 
             public Task<bool> SupportsMultiDbAsync()
             {

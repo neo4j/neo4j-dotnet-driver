@@ -22,6 +22,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Auth;
+using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
 
@@ -30,7 +31,7 @@ namespace Neo4j.Driver.Internal.IO
     public class ChunkWriterTests
     {
         private readonly Mock<ILogger> _logger = new();
-        private readonly ConnectionSettings _settings = new(new Uri("s://l"), new StaticAuthTokenManager(AuthTokens.None), Config.Default, null);
+        private readonly ConnectionSettings _settings = new(new Uri("bolt://localhost:7687"), AuthTokenManagers.None, new Config());
         
         [Fact]
         public void ShouldThrowWhenConstructedUsingUnreadableStream()
@@ -197,7 +198,16 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var settings = new BufferSettings(defaultBufferSize, maxBufferSize, defaultBufferSize, maxBufferSize);
+            var settings = new ConnectionSettings(
+                new Uri("bolt://localhost:7687"),
+                new StaticAuthTokenManager(AuthTokens.None),
+                new Config
+                {
+                    DefaultReadBufferSize = defaultBufferSize,
+                    DefaultWriteBufferSize = defaultBufferSize,
+                    MaxReadBufferSize = maxBufferSize,
+                    MaxWriteBufferSize = maxBufferSize
+                });
             var writer = new ChunkWriter(stream, settings, logger.Object);
 
             writer.OpenChunk();
@@ -223,9 +233,19 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
+            var settings = new ConnectionSettings(
+                new Uri("bolt://localhost:7687"),
+                new StaticAuthTokenManager(AuthTokens.None),
+                new Config
+                {
+                    DefaultReadBufferSize = defaultBufferSize,
+                    DefaultWriteBufferSize = defaultBufferSize,
+                    MaxReadBufferSize = maxBufferSize,
+                    MaxWriteBufferSize = maxBufferSize
+                });
             var writer = new ChunkWriter(
                 stream,
-                new BufferSettings(defaultBufferSize, maxBufferSize, defaultBufferSize, maxBufferSize),
+                settings,
                 logger.Object);
 
             writer.OpenChunk();
@@ -252,7 +272,17 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var settings = new BufferSettings(defaultBufferSize, maxBufferSize, defaultBufferSize, maxBufferSize);
+            var settings = new ConnectionSettings(
+                new Uri("bolt://localhost:7687"),
+                new StaticAuthTokenManager(AuthTokens.None),
+                new Config
+                {
+                    DefaultReadBufferSize = defaultBufferSize,
+                    DefaultWriteBufferSize = defaultBufferSize,
+                    MaxReadBufferSize = maxBufferSize,
+                    MaxWriteBufferSize = maxBufferSize
+                });
+
             var writer = new ChunkWriter(stream, settings, logger.Object);
 
             writer.OpenChunk();
@@ -276,7 +306,16 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var settings = new BufferSettings(defaultBufferSize, maxBufferSize, defaultBufferSize, maxBufferSize);
+            var settings = new ConnectionSettings(
+                new Uri("bolt://localhost:7687"),
+                new StaticAuthTokenManager(AuthTokens.None),
+                new Config
+                {
+                    DefaultReadBufferSize = defaultBufferSize,
+                    DefaultWriteBufferSize = defaultBufferSize,
+                    MaxReadBufferSize = maxBufferSize,
+                    MaxWriteBufferSize = maxBufferSize
+                });
 
             var writer = new ChunkWriter(stream, settings, logger.Object);
 
@@ -295,8 +334,16 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = new byte[1536];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var settings = new BufferSettings(512, 1024, 512, 1024);
-
+            var settings = new ConnectionSettings(
+                new Uri("bolt://localhost:7687"),
+                new StaticAuthTokenManager(AuthTokens.None),
+                new Config
+                {
+                    DefaultReadBufferSize = 512,
+                    DefaultWriteBufferSize = 512,
+                    MaxReadBufferSize = 1024,
+                    MaxWriteBufferSize = 1024
+                });
             var writer = new ChunkWriter(stream, settings, logger.Object);
 
             writer.OpenChunk();
@@ -320,8 +367,16 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = new byte[1536];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var settings = new BufferSettings(512, 1024, 512, 1024);
-
+            var settings = new ConnectionSettings(
+                new Uri("bolt://localhost:7687"),
+                new StaticAuthTokenManager(AuthTokens.None),
+                new Config
+                {
+                    DefaultReadBufferSize = 512,
+                    DefaultWriteBufferSize = 512,
+                    MaxReadBufferSize = 1024,
+                    MaxWriteBufferSize = 1024
+                });
             var writer = new ChunkWriter(stream, settings, logger.Object);
 
             writer.OpenChunk();

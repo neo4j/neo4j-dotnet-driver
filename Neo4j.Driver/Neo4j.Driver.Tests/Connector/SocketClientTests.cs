@@ -27,6 +27,7 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Preview.Auth;
 using Xunit;
 
 namespace Neo4j.Driver.Tests
@@ -35,11 +36,6 @@ namespace Neo4j.Driver.Tests
     {
         private static readonly BoltProtocolVersion Version = BoltProtocolVersion.V3_0;
         private static Uri FakeUri => new("bolt://foo.bar:7878");
-        private static BufferSettings DefaultBuffers => new(Config.Default);
-
-        private static SocketSettings SocketSetting => new(
-            Mock.Of<IHostResolver>(),
-            new EncryptionManager(false, TrustManager.CreateInsecure()));
 
         private static SocketClient NewClient(
             Mock<IConnectionIoFactory> factory = null,
@@ -63,13 +59,14 @@ namespace Neo4j.Driver.Tests
 
             return new SocketClient(
                 FakeUri,
-                SocketSetting,
-                DefaultBuffers,
+                FakeSettings,
                 Mock.Of<ILogger>(),
                 factory.Object,
                 mockPackstreamFactory.Object,
                 boltHandshaker.Object);
         }
+
+        internal static ConnectionSettings FakeSettings => new(FakeUri, AuthTokenManagers.None, new Config());
 
         private static (Mock<ITcpSocketClient>, Mock<IConnectionIoFactory>) CreateMockIoFactory(
             Action<Mock<ITcpSocketClient>> configureMock,
@@ -82,7 +79,7 @@ namespace Neo4j.Driver.Tests
             mockIoFactory
                 .Setup(x => x.TcpSocketClient(It.IsAny<ConnectionSettings>(), It.IsAny<ILogger>()))
                 .Returns(connMock.Object);
-
+            
             configureFactory?.Invoke(mockIoFactory);
 
             return (connMock, mockIoFactory);
@@ -99,18 +96,18 @@ namespace Neo4j.Driver.Tests
             var cw = writer ??
                 new ChunkWriter(
                     new MemoryStream(),
-                    DefaultBuffers,
+                    FakeSettings,
                     Mock.Of<ILogger>());
 
             var mr = messageReader ?? Mock.Of<IMessageReader>();
             var mw = messageWriter ?? Mock.Of<IMessageWriter>();
 
             factory
-                .Setup(x => x.Readers(It.IsAny<ITcpSocketClient>(), It.IsAny<BufferSettings>(), It.IsAny<ILogger>()))
+                .Setup(x => x.Readers(It.IsAny<ITcpSocketClient>(), It.IsAny<ConnectionSettings>(), It.IsAny<ILogger>()))
                 .Returns(mr);
 
             factory
-                .Setup(x => x.Writers(It.IsAny<ITcpSocketClient>(), It.IsAny<BufferSettings>(), It.IsAny<ILogger>()))
+                .Setup(x => x.Writers(It.IsAny<ITcpSocketClient>(), It.IsAny<ConnectionSettings>(), It.IsAny<ILogger>()))
                 .Returns((cw, mw));
 
             factory.Setup(x => x.Format(Version)).Returns(fmt);

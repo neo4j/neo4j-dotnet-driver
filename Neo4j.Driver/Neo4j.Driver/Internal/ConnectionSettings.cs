@@ -22,13 +22,12 @@ using Neo4j.Driver.Internal.Metrics;
 
 namespace Neo4j.Driver.Internal;
 
-internal class ConnectionSettings
+internal sealed class ConnectionSettings
 {
     internal ConnectionSettings(
         Uri rootUri,
         IAuthTokenManager authTokenManager,
-        Config config,
-        IInternalMetrics metrics)
+        Config config)
     {
         AuthTokenManager = authTokenManager;
         DriverConfig = config;
@@ -42,7 +41,15 @@ internal class ConnectionSettings
             : new DefaultHostResolver(
                 new SystemHostResolver(),
                 config.Ipv6Enabled);
+
+        var metrics = config.MetricsEnabled ? new DefaultMetrics() : null;
         PoolSettings = new ConnectionPoolSettings(config, metrics);
+    }
+    
+    public void WithTestResolver(IHostResolver resolver)
+    {
+        // in testing allow the host resolver to be overridden
+        HostResolver = resolver;
     }
 
     public Config DriverConfig { get; }
@@ -50,7 +57,7 @@ internal class ConnectionSettings
     public IAuthTokenManager AuthTokenManager { get; }
     public string UserAgent => DriverConfig.UserAgent;
     public EncryptionManager EncryptionManager { get; set; }
-    public IHostResolver HostResolver { get; }
+    public IHostResolver HostResolver { get; private set; }
     public TimeSpan ConnectionTimeout => DriverConfig.ConnectionTimeout;
     public bool SocketKeepAliveEnabled => DriverConfig.SocketKeepAlive;
     public bool Ipv6Enabled => DriverConfig.Ipv6Enabled;

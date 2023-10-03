@@ -114,7 +114,7 @@ namespace Neo4j.Driver.Tests.Routing
             auth ??= AuthTokens.None;
             return new HelloMessage(
                 BoltProtocolVersion.V3_0,
-                ConnectionSettings.DefaultUserAgent,
+                Config.DefaultUserAgent,
                 auth.AsDictionary(),
                 null);
         }
@@ -153,7 +153,7 @@ namespace Neo4j.Driver.Tests.Routing
             auth ??= AuthTokens.None;
             return new HelloMessage(
                 BoltProtocolVersion.V4_1,
-                ConnectionSettings.DefaultUserAgent,
+                Config.DefaultUserAgent,
                 auth.AsDictionary(),
                 null);
         }

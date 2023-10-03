@@ -34,12 +34,7 @@ internal interface IMetricsListener
 
 internal class DefaultMetrics : IInternalMetrics
 {
-    private readonly ConcurrentDictionary<string, IInternalConnectionPoolMetrics> _poolMetrics;
-
-    public DefaultMetrics()
-    {
-        _poolMetrics = new ConcurrentDictionary<string, IInternalConnectionPoolMetrics>();
-    }
+    private readonly ConcurrentDictionary<string, IInternalConnectionPoolMetrics> _poolMetrics = new();
 
     public IDictionary<string, IConnectionPoolMetrics> ConnectionPoolMetrics =>
         new ReadOnlyDictionary<string, IConnectionPoolMetrics>(
