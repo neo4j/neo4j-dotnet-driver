@@ -817,6 +817,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 mockConn.Verify(x => x.SendAsync(), Times.Once);
                 mockConn.VerifyGet(x => x.Version);
                 mockConn.VerifyGet(x => x.Server);
+                mockConn.VerifyGet(x => x.TelemetryEnabled);
 
                 mockConn.VerifyNoOtherCalls();
             }
