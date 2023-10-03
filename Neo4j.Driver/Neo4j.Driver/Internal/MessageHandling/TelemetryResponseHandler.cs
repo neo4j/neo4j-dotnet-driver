@@ -32,10 +32,7 @@ internal class TelemetryResponseHandler : IResponseHandler
     /// <inheritdoc />
     public void OnSuccess(IDictionary<string, object> metadata)
     {
-        lock (_telemetryCollector)
-        {
-            _telemetryCollector.Clear();
-        }
+        _telemetryCollector.Clear();
     }
 
     /// <inheritdoc />

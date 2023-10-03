@@ -33,27 +33,36 @@ internal class TelemetryCollector : ITelemetryCollector
 {
     public static readonly TelemetryCollector Default = new();
     private QueryApiType? _currentApiType;
+    private readonly object _lockObject = new();
 
     public void SetQueryApiType(QueryApiType apiType)
     {
-        _currentApiType = apiType;
+        lock (_lockObject)
+        {
+            _currentApiType = apiType;
+        }
     }
 
     public bool TryCreateMessage(out TelemetryMessage message)
     {
-        if (_currentApiType is not null)
+        lock (_lockObject)
         {
-            message = BoltProtocolMessageFactory.Instance.NewTelemetryMessage(_currentApiType.Value);
-            return true;
-        }
+            if (_currentApiType is not null)
+            {
+                message = BoltProtocolMessageFactory.Instance.NewTelemetryMessage(_currentApiType.Value);
+                return true;
+            }
 
-        message = null;
-        return false;
+            message = null;
+            return false;
+        }
     }
 
-    /// <inheritdoc />
     public void Clear()
     {
-        _currentApiType = null;
+        lock (_lockObject)
+        {
+            _currentApiType = null;
+        }
     }
 }

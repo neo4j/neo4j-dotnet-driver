@@ -56,18 +56,17 @@ internal class TelemetryManager
             Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
             ActivityStarted = activity =>
             {
-                if (IsOutermostApiActivity(activity))
+                if (!IsOutermostApiActivity(activity))
                 {
-                    lock (telemetryCollector)
-                    {
-                        // tell the telemetry collector that we have started an api activity
-                        string apiType = activity.Tags.FirstOrDefault(x => x.Key == "queryApiType").Value ?? "unknown";
+                    return;
+                }
 
-                        if (Enum.TryParse(apiType, out QueryApiType queryApiType))
-                        {
-                            telemetryCollector.SetQueryApiType(queryApiType);
-                        }
-                    }
+                // tell the telemetry collector that we have started an api activity
+                var apiType = activity.Tags.FirstOrDefault(x => x.Key == "queryApiType").Value ?? "unknown";
+
+                if (Enum.TryParse(apiType, out QueryApiType queryApiType))
+                {
+                    telemetryCollector.SetQueryApiType(queryApiType);
                 }
             },
         };
