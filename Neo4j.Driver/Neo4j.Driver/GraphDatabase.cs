@@ -16,20 +16,15 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Routing;
-using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver;
 
 /// <summary>Creates <see cref="IDriver"/> instances, optionally letting you configure them.</summary>
 public static class GraphDatabase
 {
-    internal const int DefaultBoltPort = 7687;
-
     /// <summary>
     /// Gets a new <see cref="IBookmarkManagerFactory"/>, which can construct a new default
     /// <see cref="IBookmarkManager"/> instance.<br/> The <see cref="IBookmarkManager"/> instance should be passed to
@@ -220,21 +215,20 @@ public static class GraphDatabase
         IPooledConnectionFactory connectionFactory,
         DriverContext context)
     {
-        var parsedUri = Neo4jUri.ParseBoltUri(context.RootUri, DefaultBoltPort);
-        var routingContext = Neo4jUri.ParseRoutingContext(context.RootUri, DefaultBoltPort);
-        var routingSettings = new RoutingSettings(parsedUri, routingContext, context.Config);
-        var retryLogic = new AsyncRetryLogic(context.Config.MaxTransactionRetryTime, context.Config.Logger);
-
+        var parsedUri = Neo4jUri.ParseBoltUri(context.RootUri, Neo4jUri.DefaultBoltPort);
         IConnectionProvider connectionProvider = Neo4jUri.IsRoutingUri(parsedUri)
             ? new LoadBalancer(
+                parsedUri,
                 connectionFactory,
-                routingSettings,
                 context)
             : new ConnectionPool(
                 parsedUri,
                 connectionFactory,
                 context,
                 null);
+
+        var retryLogic = new AsyncRetryLogic(context.Config.MaxTransactionRetryTime, context.Config.Logger);
+
 
         return new Internal.Driver(
             parsedUri,

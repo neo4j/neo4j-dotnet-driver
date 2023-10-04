@@ -33,24 +33,24 @@ internal class RoutingTableManager : IRoutingTableManager
     private readonly IClusterConnectionPoolManager _poolManager;
 
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _routingTableLocks = new();
-
+    
     private readonly TimeSpan _routingTablePurgeDelay;
-
     private readonly ConcurrentDictionary<string, IRoutingTable> _routingTables = new();
 
     public RoutingTableManager(
         RoutingSettings routingSettings,
         IClusterConnectionPoolManager poolManager,
-        ILogger logger) :
-        this(
-            routingSettings.InitialServerAddressProvider,
-            new ClusterDiscovery(),
-            poolManager,
-            logger,
-            routingSettings.RoutingTablePurgeDelay)
+        ILogger logger)
     {
+        _initialServerAddressProvider = routingSettings.InitialServerAddressProvider;
+        _discovery = new ClusterDiscovery();
+        _poolManager = poolManager;
+        _logger = logger;
+        // Default value.
+        _routingTablePurgeDelay = TimeSpan.FromSeconds(30);
     }
-
+    
+    //Test Method
     public RoutingTableManager(
         IInitialServerAddressProvider initialServerAddressProvider,
         IDiscovery discovery,

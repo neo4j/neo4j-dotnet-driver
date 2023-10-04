@@ -38,25 +38,26 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
     private int _closedMarker;
 
     public LoadBalancer(
+        Uri parsedUri,
         IPooledConnectionFactory connectionFactory,
-        RoutingSettings routingSettings,
         DriverContext driverContext)
     {
-        RoutingSetting = routingSettings;
-        RoutingContext = RoutingSetting.RoutingContext;
-
         DriverContext = driverContext;
+        
         _logger = driverContext.Logger;
-
+        
+        RoutingSetting = new RoutingSettings(parsedUri, driverContext);
+        
+        RoutingContext = RoutingSetting.RoutingContext;
         _clusterConnectionPool = new ClusterConnectionPool(
             Enumerable.Empty<Uri>(),
             connectionFactory,
             RoutingSetting,
             DriverContext);
 
-        _routingTableManager = new RoutingTableManager(routingSettings, this, _logger);
+        _routingTableManager = new RoutingTableManager(RoutingSetting, this, _logger);
         _loadBalancingStrategy = CreateLoadBalancingStrategy(_clusterConnectionPool, _logger);
-        _initialServerAddressProvider = routingSettings.InitialServerAddressProvider;
+        _initialServerAddressProvider = RoutingSetting.InitialServerAddressProvider;
     }
     
     /// <summary>

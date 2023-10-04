@@ -52,15 +52,15 @@ internal class ClusterDiscovery : IDiscovery
             switch (role)
             {
                 case "READ":
-                    readers = addresses.Select(BoltRoutingUri).ToArray();
+                    readers = addresses.Select(Neo4jUri.BoltRoutingUri).ToArray();
                     break;
 
                 case "WRITE":
-                    writers = addresses.Select(BoltRoutingUri).ToArray();
+                    writers = addresses.Select(Neo4jUri.BoltRoutingUri).ToArray();
                     break;
 
                 case "ROUTE":
-                    routers = addresses.Select(BoltRoutingUri).ToArray();
+                    routers = addresses.Select(Neo4jUri.BoltRoutingUri).ToArray();
                     break;
 
                 default:
@@ -82,18 +82,5 @@ internal class ClusterDiscovery : IDiscovery
     private static bool IsInvalidDiscoveryResult(Uri[] readers, Uri[] routers)
     {
         return readers?.Length == 0 || routers.Length == 0;
-    }
-
-    public static Uri BoltRoutingUri(string address)
-    {
-        var builder = new UriBuilder("neo4j://" + address);
-
-        // If scheme is not registered and no port is specified, then the port is assigned as -1
-        if (builder.Port == -1)
-        {
-            builder.Port = GraphDatabase.DefaultBoltPort;
-        }
-
-        return builder.Uri;
     }
 }

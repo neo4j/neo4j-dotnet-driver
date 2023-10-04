@@ -44,17 +44,18 @@ namespace Neo4j.Driver.Tests.Routing
                 var uri = new Uri("bolt://123:456");
                 var uris = new HashSet<Uri> { uri };
                 var connFactory = new Mock<IPooledConnectionFactory>().Object;
-                var routingSetting = new RoutingSettings(uri, new Dictionary<string, string>(), new Config());
-                var connectionSettings = new DriverContext(
+                var driverContext = new DriverContext(
                     uri,
                     AuthTokenManagers.None,
                     new Config());
+
+                var routingSetting = new RoutingSettings(uri, driverContext);
 
                 var pool = new ClusterConnectionPool(
                     uris,
                     connFactory,
                     routingSetting,
-                    connectionSettings);
+                    driverContext);
 
                 pool.ToString().Should().Contain("bolt://123:456/");
 

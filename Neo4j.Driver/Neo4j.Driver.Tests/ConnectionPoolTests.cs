@@ -403,7 +403,7 @@ namespace Neo4j.Driver.Tests
                 var conns = new BlockingCollection<IPooledConnection>();
                 conns.Add(mock.Object);
                 var enableIdleTooLongTest = TimeSpan.FromMilliseconds(100);
-                var connectionSettings = new DriverContext(
+                var context = new DriverContext(
                     new Uri("bolt://localhost:7687"),
                     AuthTokenManagers.None,
                     new Config
@@ -416,7 +416,7 @@ namespace Neo4j.Driver.Tests
                 var pool = new ConnectionPool(
                     ReusableConnectionFactory,
                     conns,
-                    driverContext: connectionSettings);
+                    driverContext: context);
 
                 pool.NumberOfIdleConnections.Should().Be(1);
                 pool.NumberOfInUseConnections.Should().Be(0);
@@ -449,7 +449,7 @@ namespace Neo4j.Driver.Tests
                 var enableIdleTooLongTest = TimeSpan.FromMilliseconds(100);
 
                 var mockAuthMgr = new Mock<IAuthTokenManager>();
-                var connectionSettings = new DriverContext(
+                var context = new DriverContext(
                     new Uri("bolt://localhost:7687"),
                     mockAuthMgr.Object,
                     new Config
@@ -461,7 +461,7 @@ namespace Neo4j.Driver.Tests
                 var pool = new ConnectionPool(
                     ReusableConnectionFactory,
                     conns,
-                    driverContext: connectionSettings);
+                    driverContext: context);
 
                 await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
 
@@ -989,7 +989,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnZeroAfterCreation()
             {
                 var uri = new Uri("bolt://localhost:7687");
-                var connectionSettings = new DriverContext(
+                var context = new DriverContext(
                     uri,
                     AuthTokenManagers.None,
                     new Config
@@ -1003,7 +1003,7 @@ namespace Neo4j.Driver.Tests
 
                 var connFactory = new MockedConnectionFactory();
 
-                var pool = new ConnectionPool(connFactory, null, null, connectionSettings);
+                var pool = new ConnectionPool(connFactory, null, null, context);
 
                 pool.NumberOfInUseConnections.Should().Be(0);
             }

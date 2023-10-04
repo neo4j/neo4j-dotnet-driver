@@ -20,56 +20,14 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal;
 
-internal class RoutingSettings
+internal sealed class RoutingSettings
 {
-    private static readonly TimeSpan DefaultRoutingTablePurgeDelay = TimeSpan.FromSeconds(30);
-
-    public RoutingSettings(Uri initServerUri, IDictionary<string, string> routingContext, Config config)
+    public RoutingSettings(Uri initServerUri, DriverContext context)
     {
-        if (config == null)
-        {
-            throw new ArgumentNullException(nameof(config));
-        }
-
-        InitialServerAddressProvider = new InitialServerAddressProvider(
-            initServerUri ?? throw new ArgumentNullException(nameof(initServerUri)),
-            config.Resolver);
-
-        RoutingContext = routingContext ?? throw new ArgumentNullException(nameof(routingContext));
-        RoutingTablePurgeDelay = DefaultRoutingTablePurgeDelay;
+        InitialServerAddressProvider = new InitialServerAddressProvider(initServerUri, context.Config.Resolver);
+        RoutingContext = Neo4jUri.ParseRoutingContext(initServerUri, Neo4jUri.DefaultBoltPort);
     }
 
     public IDictionary<string, string> RoutingContext { get; }
     public IInitialServerAddressProvider InitialServerAddressProvider { get; }
-    public TimeSpan RoutingTablePurgeDelay { get; }
-}
-
-internal interface IInitialServerAddressProvider
-{
-    ISet<Uri> Get();
-}
-
-internal class InitialServerAddressProvider : IInitialServerAddressProvider
-{
-    private readonly Uri _initAddress;
-    private readonly IServerAddressResolver _resolver;
-
-    public InitialServerAddressProvider(Uri initialServerAddress, IServerAddressResolver resolver)
-    {
-        _initAddress = initialServerAddress;
-        _resolver = resolver;
-    }
-
-    public ISet<Uri> Get()
-    {
-        var set = new HashSet<Uri>();
-        var addresses = _resolver.Resolve(ServerAddress.From(_initAddress));
-        foreach (var address in addresses)
-        {
-            // for now we convert this ServerAddress back to Uri
-            set.Add(new UriBuilder("neo4j://", address.Host, address.Port).Uri);
-        }
-
-        return set;
-    }
 }

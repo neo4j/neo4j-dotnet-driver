@@ -22,6 +22,8 @@ namespace Neo4j.Driver.Internal;
 
 internal static class Neo4jUri
 {
+    public const int DefaultBoltPort = 7687;
+    
     public static bool IsSimpleUriScheme(Uri uri)
     {
         var scheme = uri.Scheme.ToLower();
@@ -145,5 +147,15 @@ internal static class Neo4jUri
         {
             throw new ArgumentException($"Routing context are not supported with scheme 'bolt'. Given URI: '{uri}'");
         }
+    }
+
+    public static Uri BoltRoutingUri(string address)
+    {
+        var builder = new UriBuilder("neo4j://" + address);
+        if (builder.Port == -1)
+        {
+            builder.Port = DefaultBoltPort;
+        }
+        return builder.Uri;
     }
 }

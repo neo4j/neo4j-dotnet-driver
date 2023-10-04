@@ -25,7 +25,7 @@ using Xunit;
 
 namespace Neo4j.Driver.Tests
 {
-    public class NetworkExtensionsTests
+    public class Neo4jUriTests
     {
         public class ParseRoutingContextMethod
         {
@@ -240,6 +240,37 @@ namespace Neo4j.Driver.Tests
                 var ex = Record.Exception(() => Neo4jUri.ParseUriSchemeToEncryptionManager(raw, NullLogger.Instance));
                 ex.Should().BeOfType<NotSupportedException>();
             }
+        }
+    }
+
+    public class BoltRoutingUriMethod
+    {
+        [Theory]
+        [InlineData("localhost", "localhost", Neo4jUri.DefaultBoltPort)]
+        [InlineData("localhost:9193", "localhost", 9193)]
+        [InlineData("neo4j.com", "neo4j.com", Neo4jUri.DefaultBoltPort)]
+        [InlineData("royal-server.com.uk", "royal-server.com.uk", Neo4jUri.DefaultBoltPort)]
+        [InlineData("royal-server.com.uk:4546", "royal-server.com.uk", 4546)]
+        // IPv4
+        [InlineData("127.0.0.1", "127.0.0.1", Neo4jUri.DefaultBoltPort)]
+        [InlineData("8.8.8.8:8080", "8.8.8.8", 8080)]
+        [InlineData("0.0.0.0", "0.0.0.0", Neo4jUri.DefaultBoltPort)]
+        [InlineData("192.0.2.235:4329", "192.0.2.235", 4329)]
+        [InlineData("172.31.255.255:255", "172.31.255.255", 255)]
+        // IPv6
+        [InlineData("[1afc:0:a33:85a3::ff2f]", "[1afc:0:a33:85a3::ff2f]", Neo4jUri.DefaultBoltPort)]
+        [InlineData("[::1]:1515", "[::1]", 1515)]
+        [InlineData("[ff0a::101]:8989", "[ff0a::101]", 8989)]
+        // IPv6 with zone id
+        [InlineData("[1afc:0:a33:85a3::ff2f%eth1]", "[1afc:0:a33:85a3::ff2f]", Neo4jUri.DefaultBoltPort)]
+        [InlineData("[::1%eth0]:3030", "[::1]", 3030)]
+        [InlineData("[ff0a::101%8]:4040", "[ff0a::101]", 4040)]
+        public void ShouldHaveLocalhost(string input, string host, int port)
+        {
+            var uri = Neo4jUri.BoltRoutingUri(input);
+            uri.Scheme.Should().Be("neo4j");
+            uri.Host.Should().Be(host);
+            uri.Port.Should().Be(port);
         }
     }
 }
