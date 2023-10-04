@@ -54,7 +54,7 @@ internal sealed class SocketConnection : IConnection
     {
         _idPrefix = $"conn-{uri.Host}:{uri.Port}-";
         _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
-        _logger = new PrefixLogger(settings.DriverConfig.Logger, FormatPrefix(_id));
+        _logger = new PrefixLogger(settings.Config.Logger, FormatPrefix(_id));
 
         _client = new SocketClient(uri, settings, _logger, null);
         Settings = settings;
@@ -143,7 +143,7 @@ internal sealed class SocketConnection : IConnection
 
         try
         {
-            await BoltProtocol.AuthenticateAsync(this, Settings.DriverConfig.UserAgent, authToken, Settings.DriverConfig.NotificationsConfig)
+            await BoltProtocol.AuthenticateAsync(this, Settings.Config.UserAgent, authToken, Settings.Config.NotificationsConfig)
                 .ConfigureAwait(false);
         }
         catch (Exception ex)

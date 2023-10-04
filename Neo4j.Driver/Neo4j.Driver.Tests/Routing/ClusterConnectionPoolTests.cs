@@ -55,8 +55,7 @@ namespace Neo4j.Driver.Tests.Routing
                     uris,
                     connFactory,
                     routingSetting,
-                    connectionSettings,
-                    null);
+                    connectionSettings);
 
                 pool.ToString().Should().Contain("bolt://123:456/");
 

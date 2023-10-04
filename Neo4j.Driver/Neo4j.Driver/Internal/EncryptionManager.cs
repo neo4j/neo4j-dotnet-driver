@@ -55,7 +55,7 @@ internal class EncryptionManager
 
     private static void AssertSimpleUriScheme(Uri uri, EncryptionLevel? encryptionLevel, TrustManager trustManager)
     {
-        if (!uri.IsSimpleUriScheme())
+        if (!NetworkExtensions.IsSimpleUriScheme(uri))
         {
             throw new ArgumentException(
                 "The encryption and trust settings cannot both be set via uri scheme and driver configuration. " +

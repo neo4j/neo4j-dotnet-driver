@@ -22,7 +22,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
-using static Neo4j.Driver.Internal.Throw.ObjectDisposedException;
 using static Neo4j.Driver.Internal.Util.ConnectionContext;
 
 namespace Neo4j.Driver.Internal.Routing;
@@ -40,28 +39,30 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
     public LoadBalancer(
         IPooledConnectionFactory connectionFactory,
         RoutingSettings routingSettings,
-        DriverContext driverContext,
-        ILogger logger)
+        DriverContext driverContext)
     {
         RoutingSetting = routingSettings;
         RoutingContext = RoutingSetting.RoutingContext;
 
         DriverContext = driverContext;
-        _logger = logger;
+        _logger = driverContext.Config.Logger;
 
         _clusterConnectionPool = new ClusterConnectionPool(
             Enumerable.Empty<Uri>(),
             connectionFactory,
             RoutingSetting,
-            DriverContext,
-            logger);
+            DriverContext);
 
-        _routingTableManager = new RoutingTableManager(routingSettings, this, logger);
+        _routingTableManager = new RoutingTableManager(routingSettings, this, _logger);
         _loadBalancingStrategy = CreateLoadBalancingStrategy(_clusterConnectionPool, _logger);
         _initialServerAddressProvider = routingSettings.InitialServerAddressProvider;
     }
-
-    // for test only
+    
+    /// <summary>
+    /// TEST ONLY.
+    /// </summary>
+    /// <param name="clusterConnPool"></param>
+    /// <param name="routingTableManager"></param>
     internal LoadBalancer(
         IClusterConnectionPool clusterConnPool,
         IRoutingTableManager routingTableManager)
@@ -104,7 +105,9 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
     {
         if (IsClosed)
         {
-            throw GetDriverDisposedException(nameof(LoadBalancer));
+            throw new ObjectDisposedException(
+                nameof(LoadBalancer),
+                "Failed to acquire a new connection as the driver has already been disposed.");
         }
 
         var conn = await AcquireConnectionAsync(mode, database, sessionConfig, bookmarks, forceAuth)
@@ -112,7 +115,9 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
 
         if (IsClosed)
         {
-            throw GetDriverDisposedException(nameof(LoadBalancer));
+            throw new ObjectDisposedException(
+                nameof(LoadBalancer),
+                "Failed to acquire a new connection as the driver has already been disposed.");
         }
 
         return conn;

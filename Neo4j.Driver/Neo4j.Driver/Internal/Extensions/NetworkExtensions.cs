@@ -22,7 +22,7 @@ namespace Neo4j.Driver.Internal;
 
 internal static class NetworkExtensions
 {
-    public static bool IsSimpleUriScheme(this Uri uri)
+    public static bool IsSimpleUriScheme(Uri uri)
     {
         var scheme = uri.Scheme.ToLower();
         switch (scheme)
@@ -86,7 +86,7 @@ internal static class NetworkExtensions
         }
     }
 
-    public static Uri ParseBoltUri(this Uri uri, int defaultPort)
+    public static Uri ParseBoltUri(Uri uri, int defaultPort)
     {
         var port = defaultPort;
         if (uri.Port != -1)
@@ -98,7 +98,7 @@ internal static class NetworkExtensions
         return builder.Uri;
     }
 
-    public static IDictionary<string, string> ParseRoutingContext(this Uri uri, int defaultPort)
+    public static IDictionary<string, string> ParseRoutingContext(Uri uri, int defaultPort)
     {
         if (!uri.IsRoutingUri())
         {
@@ -139,13 +139,11 @@ internal static class NetworkExtensions
         return context;
     }
 
-    public static bool IsTimeoutDetectionEnabled(this TimeSpan timeout)
+    internal static void EnsureNoRoutingContextOnBolt(Uri uri)
     {
-        return timeout.TotalMilliseconds >= 0;
-    }
-
-    public static bool IsTimeoutDetectionDisabled(this TimeSpan timeout)
-    {
-        return timeout.TotalMilliseconds < 0;
+        if (!uri.IsRoutingUri() && !string.IsNullOrEmpty(uri.Query))
+        {
+            throw new ArgumentException($"Routing context are not supported with scheme 'bolt'. Given URI: '{uri}'");
+        }
     }
 }

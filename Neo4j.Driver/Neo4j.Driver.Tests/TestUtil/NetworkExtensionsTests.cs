@@ -35,8 +35,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldParseEmptyRoutingContext(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost/?");
-                var routingContext = raw.ParseRoutingContext(DefaultBoltPort);
-
+                var routingContext = NetworkExtensions.ParseRoutingContext(raw, DefaultBoltPort);
                 routingContext.Should().BeEmpty();
             }
 
@@ -45,7 +44,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldParseDefaultEntryRoutingContext(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost/?");
-                var routingContext = raw.ParseRoutingContext(DefaultBoltPort);
+                var routingContext = NetworkExtensions.ParseRoutingContext(raw, DefaultBoltPort);
 
                 routingContext.Should().HaveCount(1);
                 routingContext["address"].Should().Be("localhost:7687");
@@ -56,7 +55,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldParseMultipleRoutingContext(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost:7687/cat?name=molly&age=1&color=white");
-                var routingContext = raw.ParseRoutingContext(DefaultBoltPort);
+                var routingContext = NetworkExtensions.ParseRoutingContext(raw, DefaultBoltPort);
 
                 routingContext["name"].Should().Be("molly");
                 routingContext["age"].Should().Be("1");
@@ -69,7 +68,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldParseSingleRoutingContext(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost:7687/cat?name=molly");
-                var routingContext = raw.ParseRoutingContext(DefaultBoltPort);
+                var routingContext = NetworkExtensions.ParseRoutingContext(raw, DefaultBoltPort);
 
                 routingContext["name"].Should().Be("molly");
             }
@@ -79,7 +78,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldErrorIfMissingValue(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost:7687/cat?name=");
-                var exception = Record.Exception(() => raw.ParseRoutingContext(DefaultBoltPort));
+                var exception = Record.Exception(() => NetworkExtensions.ParseRoutingContext(raw, DefaultBoltPort));
                 exception.Should().BeOfType<ArgumentException>();
                 exception.Message.Should().Contain("Invalid parameters: 'name=' in URI");
             }
@@ -89,7 +88,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldErrorIfDuplicateKey(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost:7687/cat?name=molly&name=mostly_white");
-                var exception = Record.Exception(() => raw.ParseRoutingContext(DefaultBoltPort));
+                var exception = Record.Exception(() => NetworkExtensions.ParseRoutingContext(raw, DefaultBoltPort));
                 exception.Should().BeOfType<ArgumentException>();
                 exception.Message.Should().Contain("Duplicated query parameters with key 'name'");
             }
@@ -103,7 +102,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldContainAddressContext(string scheme, string address, string expectedAddress)
             {
                 var raw = new Uri($"{scheme}://{address}");
-                var routingContext = raw.ParseRoutingContext(DefaultBoltPort);
+                var routingContext = NetworkExtensions.ParseRoutingContext(raw, DefaultBoltPort);
 
                 routingContext["address"].Should().Be(expectedAddress);
             }
@@ -117,7 +116,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldBeSimpleUri(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost/?");
-                var isSimple = raw.IsSimpleUriScheme();
+                var isSimple = NetworkExtensions.IsSimpleUriScheme(raw);
 
                 isSimple.Should().BeTrue();
             }
@@ -130,7 +129,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldNotBeSimpleUri(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost/?");
-                var isSimple = raw.IsSimpleUriScheme();
+                var isSimple = NetworkExtensions.IsSimpleUriScheme(raw);
 
                 isSimple.Should().BeFalse();
             }
@@ -143,7 +142,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldErrorForUnknownBoltUri(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost/?");
-                var ex = Record.Exception(() => raw.IsSimpleUriScheme());
+                var ex = Record.Exception(() => NetworkExtensions.IsSimpleUriScheme(raw));
                 ex.Should().BeOfType<NotSupportedException>();
             }
         }

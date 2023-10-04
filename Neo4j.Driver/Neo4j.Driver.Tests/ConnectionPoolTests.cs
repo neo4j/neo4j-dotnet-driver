@@ -64,10 +64,7 @@ namespace Neo4j.Driver.Tests
             DriverContext driverContext = null,
             bool isConnectionValid = true)
         {
-            driverContext ??= new DriverContext(
-                new Uri("bolt://localhost:7687"),
-                AuthTokenManagers.None,
-                new Config());
+            driverContext ??= DriverContextHelper.FakeContext;
 
             return new ConnectionPool(
                 new MockedConnectionFactory(),
@@ -86,10 +83,7 @@ namespace Neo4j.Driver.Tests
                 idleConnections,
                 inUseConnections,
                 validator: new ConnectionValidator(Config.InfiniteInterval, Config.InfiniteInterval),
-                driverContext: new DriverContext(
-                    new Uri("bolt://localhost:7687"),
-                    AuthTokenManagers.None,
-                    new Config()));
+                driverContext: DriverContextHelper.FakeContext);
         }
 
         public class AcquireMethod
@@ -110,10 +104,7 @@ namespace Neo4j.Driver.Tests
                 var connectionPool = new ConnectionPool(
                     connFactory,
                     validator: new TestConnectionValidator(),
-                    driverContext: new DriverContext(
-                        new Uri("bolt://localhost:7687"),
-                        AuthTokenManagers.None,
-                        new Config()));
+                    driverContext: DriverContextHelper.FakeContext);
 
                 // When
                 await connectionPool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
@@ -127,15 +118,11 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task ShouldBlockWhenMaxPoolSizeReached()
             {
-                const int delayTime = 2000; //Dealy time in milliseconds.
+                const int delayTime = 2000; // Delay time in milliseconds.
                 var pool = NewConnectionPool(
-                    driverContext: new DriverContext(
-                        new Uri("bolt://localhost:7687"),
-                        AuthTokenManagers.None,
-                        new Config
-                        {
-                            MaxConnectionPoolSize = 2, ConnectionAcquisitionTimeout = TimeSpan.FromMinutes(2)
-                        }));
+                    driverContext: DriverContextHelper.With(
+                        config: x =>
+                            x.WithMaxConnectionPoolSize(2).WithConnectionAcquisitionTimeout(TimeSpan.FromMinutes(2))));
 
                 var conn1 = await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
                 var conn2 = await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
@@ -165,14 +152,10 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldThrowClientExceptionWhenFailedToAcquireWithinTimeout()
             {
                 var pool = NewConnectionPool(
-                    driverContext: new DriverContext(
-                        new Uri("bolt://localhost:7687"),
-                        AuthTokenManagers.None,
-                        new Config
-                        {
-                            MaxConnectionPoolSize = 2,
-                            ConnectionAcquisitionTimeout = TimeSpan.FromMilliseconds(250)
-                        }));
+                    driverContext: DriverContextHelper.With(
+                        config: x =>
+                            x.WithMaxConnectionPoolSize(2)
+                                .WithConnectionAcquisitionTimeout(TimeSpan.FromMilliseconds(250))));
 
                 await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
                 await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
@@ -192,10 +175,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldNotExceedIdleLimit()
             {
                 var pool = NewConnectionPool(
-                    driverContext: new DriverContext(
-                        new Uri("bolt://localhost:7687"),
-                        AuthTokenManagers.None,
-                        new Config { MaxIdleConnectionPoolSize = 2 }));
+                    driverContext: DriverContextHelper.With(config: x => x.WithMaxIdleConnectionPoolSize(2)));
 
                 var conns = new List<IConnection>();
                 for (var i = 0; i < 4; i++)
@@ -217,10 +197,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldAcquireFromPoolIfAvailable()
             {
                 var pool = NewConnectionPool(
-                    driverContext: new DriverContext(
-                        new Uri("bolt://localhost:7687"),
-                        AuthTokenManagers.None,
-                        new Config { MaxIdleConnectionPoolSize = 2 }));
+                    driverContext: DriverContextHelper.With(config: x => x.WithMaxIdleConnectionPoolSize(2)));
 
                 for (var i = 0; i < 4; i++)
                 {
@@ -239,11 +216,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task ShouldCreateNewWhenQueueIsEmpty()
             {
-                var pool = NewConnectionPool(
-                    driverContext: new DriverContext(
-                        new Uri("bolt://localhost:7687"),
-                        AuthTokenManagers.None,
-                        new Config()));
+                var pool = NewConnectionPool();
 
                 await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
                 pool.NumberOfIdleConnections.Should().Be(0);
@@ -264,10 +237,7 @@ namespace Neo4j.Driver.Tests
                 var connFactory = new MockedConnectionFactory(connMock.Object);
                 var pool = new ConnectionPool(
                     connFactory,
-                    driverContext: new DriverContext(
-                        new Uri("bolt://localhost:7687"),
-                        AuthTokenManagers.None,
-                        new Config()));
+                    driverContext: DriverContextHelper.FakeContext);
 
                 var exc = await Record.ExceptionAsync(
                     () => pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty));
@@ -607,7 +577,7 @@ namespace Neo4j.Driver.Tests
 
                 var pool = NewConnectionPool(driverContext: settings);
 
-                for (var i = 0; i < settings.DriverConfig.MaxConnectionPoolSize; i++)
+                for (var i = 0; i < settings.Config.MaxConnectionPoolSize; i++)
                 {
                     await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
                 }
@@ -699,8 +669,11 @@ namespace Neo4j.Driver.Tests
 
                 var inUseConns = new ConcurrentHashSet<IPooledConnection>();
                 inUseConns.TryAdd(mock.Object);
-                var pool = new ConnectionPool(null, null, inUseConns,
-                    driverContext: new DriverContext(
+                var pool = new ConnectionPool(
+                    null,
+                    null,
+                    inUseConns,
+                    new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config()));
@@ -724,8 +697,11 @@ namespace Neo4j.Driver.Tests
 
                 var inUseConns = new ConcurrentHashSet<IPooledConnection>();
                 inUseConns.TryAdd(mock.Object);
-                var pool = new ConnectionPool(null, null, inUseConns,
-                    driverContext: new DriverContext(
+                var pool = new ConnectionPool(
+                    null,
+                    null,
+                    inUseConns,
+                    new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config()));
@@ -775,8 +751,10 @@ namespace Neo4j.Driver.Tests
                     availableConns.Add(pooledConnMock.Object);
                 }
 
-                var pool = NewConnectionPool(availableConns, inUseConns,
-                    driverContext: new DriverContext(
+                var pool = NewConnectionPool(
+                    availableConns,
+                    inUseConns,
+                    new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         config));
@@ -844,10 +822,14 @@ namespace Neo4j.Driver.Tests
                 var inUseConns = new ConcurrentHashSet<IPooledConnection>();
                 inUseConns.TryAdd(mock.Object);
                 // default pool setting have timer disabled
-                var pool = new ConnectionPool(null, null, inUseConns, driverContext: new DriverContext(
-                    new Uri("bolt://localhost:7687"),
-                    AuthTokenManagers.None,
-                    new Config()));
+                var pool = new ConnectionPool(
+                    null,
+                    null,
+                    inUseConns,
+                    new DriverContext(
+                        new Uri("bolt://localhost:7687"),
+                        AuthTokenManagers.None,
+                        new Config()));
 
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
@@ -869,7 +851,9 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var inUseConns = new ConcurrentHashSet<IPooledConnection>();
-                var pool = new ConnectionPool(new MockedConnectionFactory(), inUseConnections: inUseConns,
+                var pool = new ConnectionPool(
+                    new MockedConnectionFactory(),
+                    inUseConnections: inUseConns,
                     driverContext: new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
@@ -945,9 +929,11 @@ namespace Neo4j.Driver.Tests
                     new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
-                        new Config()),
-                    new TestConnectionValidator(),
-                    mockLogger.Object);
+                        new Config
+                        {
+                            Logger = mockLogger.Object
+                        }),
+                    new TestConnectionValidator());
 
                 await pool.CloseAsync();
 

@@ -121,7 +121,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
     internal async Task ConnectSocketAsync(IPAddress address, int port, CancellationToken cancellationToken = default)
     {
         InitClient();
-        var timeoutValue = DriverContext.DriverConfig.ConnectionTimeout;
+        var timeoutValue = DriverContext.Config.ConnectionTimeout;
         using var timeout = new CancellationTokenSource(timeoutValue);
         using var source = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token, cancellationToken);
 
@@ -172,7 +172,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
         }
         catch (Exception e)
         {
-            var timeoutValue = DriverContext.DriverConfig.ConnectionTimeout;
+            var timeoutValue = DriverContext.Config.ConnectionTimeout;
             _logger?.Error(
                 e,
                 $"Failed to close connect to the server {address}:{port}" +
@@ -184,7 +184,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
 
     private void InitClient()
     {
-        var ipv6 = DriverContext.DriverConfig.Ipv6Enabled;
+        var ipv6 = DriverContext.Config.Ipv6Enabled;
         var addressFamily = ipv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
 
         _client = new Socket(addressFamily, SocketType.Stream, ProtocolType.Tcp)
@@ -197,7 +197,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
             _client.DualMode = true;
         }
 
-        _client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, DriverContext.DriverConfig.SocketKeepAlive);
+        _client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, DriverContext.Config.SocketKeepAlive);
     }
 
     private SslStream CreateSecureStream(Uri uri)

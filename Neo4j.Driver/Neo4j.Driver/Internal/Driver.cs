@@ -37,20 +37,17 @@ internal sealed class Driver : IInternalDriver
 
     internal Driver(
         Uri uri,
-        bool encrypted,
         IConnectionProvider connectionProvider,
         IAsyncRetryLogic retryLogic,
-        ILogger logger = null,
-        IMetrics metrics = null,
-        Config config = null)
+        DriverContext driverContext)
     {
         Uri = uri;
-        Encrypted = encrypted;
-        _logger = logger;
+        Encrypted = driverContext.EncryptionManager.UseTls;
+        _logger = driverContext.Config.Logger;
         _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
         _retryLogic = retryLogic;
-        _metrics = metrics;
-        Config = config;
+        _metrics = driverContext.Metrics;
+        Config = driverContext.Config;
         _bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig());
     }
 

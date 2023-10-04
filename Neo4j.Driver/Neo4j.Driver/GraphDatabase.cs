@@ -204,60 +204,42 @@ public static class GraphDatabase
         uri = uri ?? throw new ArgumentNullException(nameof(uri));
         authTokenManager = authTokenManager ?? throw new ArgumentNullException(nameof(authTokenManager));
 
+        NetworkExtensions.EnsureNoRoutingContextOnBolt(uri);
+
         var builder = Config.Builder;
         action?.Invoke(builder);
         var config = builder.Build();
         
-        var connectionSettings = new DriverContext(uri, authTokenManager, config);
-        var connectionFactory = new PooledConnectionFactory(connectionSettings);
+        var context = new DriverContext(uri, authTokenManager, config);
+        var connectionFactory = new PooledConnectionFactory(context);
 
-        return CreateDriver(uri, config, connectionFactory, connectionSettings);
+        return CreateDriver(connectionFactory, context);
     }
 
     internal static IDriver CreateDriver(
-        Uri uri,
-        Config config,
         IPooledConnectionFactory connectionFactory,
-        DriverContext driverContext)
+        DriverContext context)
     {
-        var logger = config.Logger;
-
-        var parsedUri = uri.ParseBoltUri(DefaultBoltPort);
-        var routingContext = uri.ParseRoutingContext(DefaultBoltPort);
-        var routingSettings = new RoutingSettings(parsedUri, routingContext, config);
-
-        var retryLogic = new AsyncRetryLogic(config.MaxTransactionRetryTime, logger);
-
-        EnsureNoRoutingContextOnBolt(uri, routingContext);
+        var parsedUri = NetworkExtensions.ParseBoltUri(context.RootUri, DefaultBoltPort);
+        var routingContext = NetworkExtensions.ParseRoutingContext(context.RootUri, DefaultBoltPort);
+        var routingSettings = new RoutingSettings(parsedUri, routingContext, context.Config);
+        var retryLogic = new AsyncRetryLogic(context.Config.MaxTransactionRetryTime, context.Config.Logger);
 
         IConnectionProvider connectionProvider = parsedUri.IsRoutingUri()
             ? new LoadBalancer(
                 connectionFactory,
                 routingSettings,
-                driverContext,
-                logger)
+                context)
             : new ConnectionPool(
                 parsedUri,
                 connectionFactory,
-                logger,
-                driverContext,
+                context,
                 null);
 
         return new Internal.Driver(
             parsedUri,
-            driverContext.EncryptionManager.UseTls,
             connectionProvider,
             retryLogic,
-            logger,
-            driverContext.Metrics,
-            config);
-    }
-
-    private static void EnsureNoRoutingContextOnBolt(Uri uri, IDictionary<string, string> routingContext)
-    {
-        if (!uri.IsRoutingUri() && !string.IsNullOrEmpty(uri.Query))
-        {
-            throw new ArgumentException($"Routing context are not supported with scheme 'bolt'. Given URI: '{uri}'");
-        }
+            context);
     }
 }

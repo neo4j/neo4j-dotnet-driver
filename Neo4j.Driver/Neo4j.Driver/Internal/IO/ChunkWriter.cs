@@ -61,9 +61,9 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
 
         _chunkSize = Constants.MaxChunkSize;
         _logger = logger;
-        _defaultBufferSize = settings.DriverConfig.DefaultWriteBufferSize;
-        _maxBufferSize = settings.DriverConfig.MaxWriteBufferSize;
-        _chunkStream = new MemoryStream(settings.DriverConfig.DefaultWriteBufferSize);
+        _defaultBufferSize = settings.Config.DefaultWriteBufferSize;
+        _maxBufferSize = settings.Config.MaxWriteBufferSize;
+        _chunkStream = new MemoryStream(settings.Config.DefaultWriteBufferSize);
     }
 
     public Stream Stream => this;

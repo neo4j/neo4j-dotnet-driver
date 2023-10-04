@@ -392,12 +392,9 @@ namespace Neo4j.Driver.Tests
             {
                 var driver = new Internal.Driver(
                     new Uri("neo4j://myTest.org"),
-                    false,
                     new TestConnectionProvider(Mock.Of<IConnection>()),
                     null,
-                    null,
-                    null,
-                    new Config());
+                    DriverContextHelper.FakeContext);
 
                 return driver;
             }

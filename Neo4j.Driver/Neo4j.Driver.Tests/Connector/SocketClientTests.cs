@@ -59,14 +59,12 @@ namespace Neo4j.Driver.Tests
 
             return new SocketClient(
                 FakeUri,
-                FakeSettings,
+                DriverContextHelper.With(FakeUri),
                 Mock.Of<ILogger>(),
                 factory.Object,
                 mockPackstreamFactory.Object,
                 boltHandshaker.Object);
         }
-
-        internal static DriverContext FakeSettings => new(FakeUri, AuthTokenManagers.None, new Config());
 
         private static (Mock<ITcpSocketClient>, Mock<IConnectionIoFactory>) CreateMockIoFactory(
             Action<Mock<ITcpSocketClient>> configureMock,
@@ -96,7 +94,7 @@ namespace Neo4j.Driver.Tests
             var cw = writer ??
                 new ChunkWriter(
                     new MemoryStream(),
-                    FakeSettings,
+                    DriverContextHelper.FakeContext,
                     Mock.Of<ILogger>());
 
             var mr = messageReader ?? Mock.Of<IMessageReader>();

@@ -32,8 +32,8 @@ internal sealed class MessageReader : IMessageReader
     public MessageReader(IChunkReader chunkReader, DriverContext driverContext, ILogger logger)
     {
         _chunkReader = chunkReader;
-        _defaultBufferSize = driverContext.DriverConfig.DefaultReadBufferSize;
-        _maxBufferSize = driverContext.DriverConfig.MaxReadBufferSize;
+        _defaultBufferSize = driverContext.Config.DefaultReadBufferSize;
+        _maxBufferSize = driverContext.Config.MaxReadBufferSize;
         _logger = logger;
     }
 

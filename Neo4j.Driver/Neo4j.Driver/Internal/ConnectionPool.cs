@@ -29,7 +29,6 @@ using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;
 using static Neo4j.Driver.Internal.ConnectionPoolStatus;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
-using static Neo4j.Driver.Internal.Throw.ObjectDisposedException;
 using static Neo4j.Driver.Internal.Util.ConnectionContext;
 
 namespace Neo4j.Driver.Internal;
@@ -47,9 +46,9 @@ internal sealed class ConnectionPool : IConnectionPool
     private readonly ConcurrentHashSet<IPooledConnection> _inUseConnections = new();
 
     private readonly ILogger _logger;
-    private int MaxIdlePoolSize => DriverContext.DriverConfig.MaxIdleConnectionPoolSize;
-    private TimeSpan ConnectionAcquisitionTimeout => DriverContext.DriverConfig.ConnectionAcquisitionTimeout;
-    private int MaxPoolSize => DriverContext.DriverConfig.MaxConnectionPoolSize;
+    private int MaxIdlePoolSize => DriverContext.Config.MaxIdleConnectionPoolSize;
+    private TimeSpan ConnectionAcquisitionTimeout => DriverContext.Config.ConnectionAcquisitionTimeout;
+    private int MaxPoolSize => DriverContext.Config.MaxConnectionPoolSize;
 
     private readonly IConnectionPoolListener _poolMetricsListener;
 
@@ -64,19 +63,18 @@ internal sealed class ConnectionPool : IConnectionPool
     public ConnectionPool(
         Uri uri,
         IPooledConnectionFactory connectionFactory,
-        ILogger logger,
         DriverContext driverContext,
         IDictionary<string, string> routingContext)
     {
         _uri = uri;
         _id = $"pool-{_uri.Host}:{_uri.Port}";
-        _logger = new PrefixLogger(logger, $"[{_id}]");
+        _logger = new PrefixLogger(driverContext.Config.Logger, $"[{_id}]");
 
         _connectionFactory = connectionFactory;
         DriverContext = driverContext;
         _connectionValidator = new ConnectionValidator(
-            driverContext.DriverConfig.ConnectionIdleTimeout,
-            driverContext.DriverConfig.MaxConnectionLifetime);
+            driverContext.Config.ConnectionIdleTimeout,
+            driverContext.Config.MaxConnectionLifetime);
 
         _poolMetricsListener = driverContext.Metrics?.PutPoolMetrics($"{_id}-{GetHashCode()}", this);
 
@@ -89,12 +87,10 @@ internal sealed class ConnectionPool : IConnectionPool
         BlockingCollection<IPooledConnection> idleConnections = null,
         ConcurrentHashSet<IPooledConnection> inUseConnections = null,
         DriverContext driverContext = null,
-        IConnectionValidator validator = null,
-        ILogger logger = null)
+        IConnectionValidator validator = null)
         : this(
             new Uri("bolt://localhost:7687"),
             connectionFactory,
-            logger,
             driverContext,
             null)
     {
@@ -458,7 +454,9 @@ internal sealed class ConnectionPool : IConnectionPool
         {
             if (IsClosed)
             {
-                throw GetDriverDisposedException(nameof(ConnectionPool));
+                throw new ObjectDisposedException(
+                    nameof(ConnectionPool),
+                    "Failed to acquire a new connection as the driver has already been disposed.");
             }
 
             if (IsInactive)
@@ -498,7 +496,9 @@ internal sealed class ConnectionPool : IConnectionPool
             await DestroyConnectionAsync(connection).ConfigureAwait(false);
         }
 
-        throw GetDriverDisposedException(nameof(ConnectionPool));
+        throw new ObjectDisposedException(
+            nameof(ConnectionPool),
+            "Failed to acquire a new connection as the driver has already been disposed.");
     }
 
     private Task<IPooledConnection> GetPooledOrNewConnectionAsync(

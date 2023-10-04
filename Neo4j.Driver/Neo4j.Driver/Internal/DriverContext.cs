@@ -30,8 +30,9 @@ internal sealed class DriverContext
         Config config,
         IHostResolver customHostResolver = null)
     {
+        RootUri = rootUri;
         AuthTokenManager = authTokenManager;
-        DriverConfig = config;
+        Config = config;
         EncryptionManager = EncryptionManager.Create(
             rootUri,
             config.NullableEncryptionLevel,
@@ -47,8 +48,13 @@ internal sealed class DriverContext
 
         Metrics = config.MetricsEnabled ? new DefaultMetrics() : null;
     }
-
-    public Config DriverConfig { get; }
+    
+    /// <summary>
+    /// The root uri configured on the driver.
+    /// This is not a uri for a connection.
+    /// </summary>
+    public Uri RootUri { get; }
+    public Config Config { get; }
     public IAuthTokenManager AuthTokenManager { get; }
     public EncryptionManager EncryptionManager { get; }
     public IHostResolver HostResolver { get; }
