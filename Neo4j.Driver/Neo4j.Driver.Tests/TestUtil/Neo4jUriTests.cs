@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Tests
             {
                 var raw = new Uri($"{scheme}://localhost/?");
                 var routingContext = Neo4jUri.ParseRoutingContext(raw, DefaultBoltPort);
-                routingContext.Should().BeEmpty();
+                routingContext.Should().BeNull();
             }
 
             [Theory]
