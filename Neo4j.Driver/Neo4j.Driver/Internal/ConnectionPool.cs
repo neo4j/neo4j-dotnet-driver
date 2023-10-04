@@ -75,7 +75,7 @@ internal sealed class ConnectionPool : IConnectionPool
         _connectionValidator = new ConnectionValidator(
             driverContext.Config.ConnectionIdleTimeout,
             driverContext.Config.MaxConnectionLifetime);
-
+        
         _poolMetricsListener = driverContext.Metrics?.PutPoolMetrics($"{_id}-{GetHashCode()}", this);
 
         RoutingContext = routingContext;

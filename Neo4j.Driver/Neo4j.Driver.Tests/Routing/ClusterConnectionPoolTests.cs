@@ -44,7 +44,6 @@ namespace Neo4j.Driver.Tests.Routing
                 var uri = new Uri("bolt://123:456");
                 var uris = new HashSet<Uri> { uri };
                 var connFactory = new Mock<IPooledConnectionFactory>().Object;
-                var poolSettings = new ConnectionPoolSettings(new Config());
                 var routingSetting = new RoutingSettings(uri, new Dictionary<string, string>(), new Config());
                 var connectionSettings = new DriverContext(
                     uri,
