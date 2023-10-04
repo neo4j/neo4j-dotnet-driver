@@ -208,7 +208,7 @@ public static class GraphDatabase
         action?.Invoke(builder);
         var config = builder.Build();
         
-        var connectionSettings = new ConnectionSettings(uri, authTokenManager, config);
+        var connectionSettings = new DriverContext(uri, authTokenManager, config);
         var connectionFactory = new PooledConnectionFactory(connectionSettings);
 
         return CreateDriver(uri, config, connectionFactory, connectionSettings);
@@ -218,7 +218,7 @@ public static class GraphDatabase
         Uri uri,
         Config config,
         IPooledConnectionFactory connectionFactory,
-        ConnectionSettings connectionSettings)
+        DriverContext driverContext)
     {
         var logger = config.Logger;
 
@@ -234,22 +234,22 @@ public static class GraphDatabase
             ? new LoadBalancer(
                 connectionFactory,
                 routingSettings,
-                connectionSettings,
+                driverContext,
                 logger)
             : new ConnectionPool(
                 parsedUri,
                 connectionFactory,
                 logger,
-                connectionSettings,
+                driverContext,
                 null);
 
         return new Internal.Driver(
             parsedUri,
-            connectionSettings.EncryptionManager.UseTls,
+            driverContext.EncryptionManager.UseTls,
             connectionProvider,
             retryLogic,
             logger,
-            connectionSettings.Metrics,
+            driverContext.Metrics,
             config);
     }
 

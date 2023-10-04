@@ -430,7 +430,7 @@ namespace Neo4j.Driver.Tests
                 throw new NotSupportedException();
             }
 
-            public ConnectionSettings ConnectionSettings => new(
+            public DriverContext DriverContext => new(
                 new Uri("neo4j://myTest.org"),
                 AuthTokenManagers.Static(AuthTokens.None),
                 new Config());

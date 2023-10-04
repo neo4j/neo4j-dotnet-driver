@@ -38,14 +38,14 @@ internal class ClusterConnectionPool : IClusterConnectionPool
         IEnumerable<Uri> initUris,
         IPooledConnectionFactory connectionFactory,
         RoutingSettings routingSetting,
-        ConnectionSettings connectionSettings,
+        DriverContext driverContext,
         ILogger logger
     ) : this(
         initUris,
         new ConnectionPoolFactory(
             connectionFactory,
             routingSetting.RoutingContext,
-            connectionSettings,
+            driverContext,
             logger),
         logger)
     {

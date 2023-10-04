@@ -29,11 +29,11 @@ internal sealed class MessageReader : IMessageReader
     private readonly int _maxBufferSize;
     private int _shrinkCounter;
 
-    public MessageReader(IChunkReader chunkReader, ConnectionSettings connectionSettings, ILogger logger)
+    public MessageReader(IChunkReader chunkReader, DriverContext driverContext, ILogger logger)
     {
         _chunkReader = chunkReader;
-        _defaultBufferSize = connectionSettings.DriverConfig.DefaultReadBufferSize;
-        _maxBufferSize = connectionSettings.DriverConfig.MaxReadBufferSize;
+        _defaultBufferSize = driverContext.DriverConfig.DefaultReadBufferSize;
+        _maxBufferSize = driverContext.DriverConfig.MaxReadBufferSize;
         _logger = logger;
     }
 

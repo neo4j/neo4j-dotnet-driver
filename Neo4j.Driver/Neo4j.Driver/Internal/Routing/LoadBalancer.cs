@@ -40,20 +40,20 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
     public LoadBalancer(
         IPooledConnectionFactory connectionFactory,
         RoutingSettings routingSettings,
-        ConnectionSettings connectionSettings,
+        DriverContext driverContext,
         ILogger logger)
     {
         RoutingSetting = routingSettings;
         RoutingContext = RoutingSetting.RoutingContext;
 
-        ConnectionSettings = connectionSettings;
+        DriverContext = driverContext;
         _logger = logger;
 
         _clusterConnectionPool = new ClusterConnectionPool(
             Enumerable.Empty<Uri>(),
             connectionFactory,
             RoutingSetting,
-            ConnectionSettings,
+            DriverContext,
             logger);
 
         _routingTableManager = new RoutingTableManager(routingSettings, this, logger);
@@ -142,7 +142,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             "ensure the database is running and that there is a working network connection to it.");
     }
 
-    public ConnectionSettings ConnectionSettings { get; }
+    public DriverContext DriverContext { get; }
 
     public Task<bool> SupportsMultiDbAsync()
     {

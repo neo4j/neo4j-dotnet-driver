@@ -22,9 +22,9 @@ using Neo4j.Driver.Preview.Auth;
 
 namespace Neo4j.Driver.Internal;
 
-internal sealed class ConnectionSettings
+internal sealed class DriverContext
 {
-    internal ConnectionSettings(
+    internal DriverContext(
         Uri rootUri,
         IAuthTokenManager authTokenManager,
         Config config,

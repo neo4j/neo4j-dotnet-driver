@@ -47,9 +47,9 @@ internal sealed class ConnectionPool : IConnectionPool
     private readonly ConcurrentHashSet<IPooledConnection> _inUseConnections = new();
 
     private readonly ILogger _logger;
-    private int MaxIdlePoolSize => ConnectionSettings.DriverConfig.MaxIdleConnectionPoolSize;
-    private TimeSpan ConnectionAcquisitionTimeout => ConnectionSettings.DriverConfig.ConnectionAcquisitionTimeout;
-    private int MaxPoolSize => ConnectionSettings.DriverConfig.MaxConnectionPoolSize;
+    private int MaxIdlePoolSize => DriverContext.DriverConfig.MaxIdleConnectionPoolSize;
+    private TimeSpan ConnectionAcquisitionTimeout => DriverContext.DriverConfig.ConnectionAcquisitionTimeout;
+    private int MaxPoolSize => DriverContext.DriverConfig.MaxConnectionPoolSize;
 
     private readonly IConnectionPoolListener _poolMetricsListener;
 
@@ -65,7 +65,7 @@ internal sealed class ConnectionPool : IConnectionPool
         Uri uri,
         IPooledConnectionFactory connectionFactory,
         ILogger logger,
-        ConnectionSettings connectionSettings,
+        DriverContext driverContext,
         IDictionary<string, string> routingContext)
     {
         _uri = uri;
@@ -73,12 +73,12 @@ internal sealed class ConnectionPool : IConnectionPool
         _logger = new PrefixLogger(logger, $"[{_id}]");
 
         _connectionFactory = connectionFactory;
-        ConnectionSettings = connectionSettings;
+        DriverContext = driverContext;
         _connectionValidator = new ConnectionValidator(
-            connectionSettings.DriverConfig.ConnectionIdleTimeout,
-            connectionSettings.DriverConfig.MaxConnectionLifetime);
+            driverContext.DriverConfig.ConnectionIdleTimeout,
+            driverContext.DriverConfig.MaxConnectionLifetime);
 
-        _poolMetricsListener = connectionSettings.Metrics?.PutPoolMetrics($"{_id}-{GetHashCode()}", this);
+        _poolMetricsListener = driverContext.Metrics?.PutPoolMetrics($"{_id}-{GetHashCode()}", this);
 
         RoutingContext = routingContext;
     }
@@ -88,14 +88,14 @@ internal sealed class ConnectionPool : IConnectionPool
         IPooledConnectionFactory connectionFactory,
         BlockingCollection<IPooledConnection> idleConnections = null,
         ConcurrentHashSet<IPooledConnection> inUseConnections = null,
-        ConnectionSettings connectionSettings = null,
+        DriverContext driverContext = null,
         IConnectionValidator validator = null,
         ILogger logger = null)
         : this(
             new Uri("bolt://localhost:7687"),
             connectionFactory,
             logger,
-            connectionSettings,
+            driverContext,
             null)
     {
         _idleConnections = idleConnections ?? new BlockingCollection<IPooledConnection>();
@@ -244,7 +244,7 @@ internal sealed class ConnectionPool : IConnectionPool
         return connection.Server;
     }
 
-    public ConnectionSettings ConnectionSettings { get; }
+    public DriverContext DriverContext { get; }
 
     public Task<bool> SupportsMultiDbAsync()
     {
@@ -357,7 +357,7 @@ internal sealed class ConnectionPool : IConnectionPool
         _poolMetricsListener?.ConnectionCreating();
 
         var token = sessionConfig?.AuthToken ??
-            await ConnectionSettings.AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
+            await DriverContext.AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
 
         return _connectionFactory.Create(
             _uri,

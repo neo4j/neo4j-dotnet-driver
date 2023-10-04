@@ -46,7 +46,7 @@ namespace Neo4j.Driver.Tests.Routing
                 var connFactory = new Mock<IPooledConnectionFactory>().Object;
                 var poolSettings = new ConnectionPoolSettings(new Config());
                 var routingSetting = new RoutingSettings(uri, new Dictionary<string, string>(), new Config());
-                var connectionSettings = new ConnectionSettings(
+                var connectionSettings = new DriverContext(
                     uri,
                     AuthTokenManagers.None,
                     new Config());

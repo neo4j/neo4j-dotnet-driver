@@ -31,7 +31,7 @@ namespace Neo4j.Driver.Internal.IO
     public class ChunkWriterTests
     {
         private readonly Mock<ILogger> _logger = new();
-        private readonly ConnectionSettings _settings = new(new Uri("bolt://localhost:7687"), AuthTokenManagers.None, new Config());
+        private readonly DriverContext _settings = new(new Uri("bolt://localhost:7687"), AuthTokenManagers.None, new Config());
         
         [Fact]
         public void ShouldThrowWhenConstructedUsingUnreadableStream()
@@ -198,7 +198,7 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var settings = new ConnectionSettings(
+            var settings = new DriverContext(
                 new Uri("bolt://localhost:7687"),
                 new StaticAuthTokenManager(AuthTokens.None),
                 new Config
@@ -233,7 +233,7 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var settings = new ConnectionSettings(
+            var settings = new DriverContext(
                 new Uri("bolt://localhost:7687"),
                 new StaticAuthTokenManager(AuthTokens.None),
                 new Config
@@ -272,7 +272,7 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var settings = new ConnectionSettings(
+            var settings = new DriverContext(
                 new Uri("bolt://localhost:7687"),
                 new StaticAuthTokenManager(AuthTokens.None),
                 new Config
@@ -306,7 +306,7 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = new byte[messageSize];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var settings = new ConnectionSettings(
+            var settings = new DriverContext(
                 new Uri("bolt://localhost:7687"),
                 new StaticAuthTokenManager(AuthTokens.None),
                 new Config
@@ -334,7 +334,7 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = new byte[1536];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var settings = new ConnectionSettings(
+            var settings = new DriverContext(
                 new Uri("bolt://localhost:7687"),
                 new StaticAuthTokenManager(AuthTokens.None),
                 new Config
@@ -367,7 +367,7 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = new byte[1536];
             var stream = new MemoryStream();
             var logger = new Mock<ILogger>();
-            var settings = new ConnectionSettings(
+            var settings = new DriverContext(
                 new Uri("bolt://localhost:7687"),
                 new StaticAuthTokenManager(AuthTokens.None),
                 new Config

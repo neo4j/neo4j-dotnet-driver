@@ -48,7 +48,7 @@ namespace Neo4j.Driver.Tests
             ServerInfo server = null,
             ILogger logger = null,
             IBoltProtocolFactory boltProtocolFactory = null,
-            ConnectionSettings settings = null)
+            DriverContext settings = null)
         {
             socketClient ??= SocketClient;
             server ??= Server;
@@ -77,7 +77,7 @@ namespace Neo4j.Driver.Tests
                 bpFactory.Setup(x => x.ForVersion(BoltProtocolVersion.V3_0)).Returns(protocolMock.Object);
 
                 var conn = NewSocketConnection(mockClient.Object, boltProtocolFactory: bpFactory.Object,
-                    settings: new ConnectionSettings(new Uri("bolt://localhost:7687"), AuthTokenManagers.None, new Config()));
+                    settings: new DriverContext(new Uri("bolt://localhost:7687"), AuthTokenManagers.None, new Config()));
 
                 // When
                 await conn.InitAsync(null);

@@ -32,11 +32,11 @@ internal interface IPooledConnectionFactory
 
 internal class PooledConnectionFactory : IPooledConnectionFactory
 {
-    private readonly ConnectionSettings _connectionSettings;
+    private readonly DriverContext _driverContext;
 
-    public PooledConnectionFactory(ConnectionSettings connectionSettings)
+    public PooledConnectionFactory(DriverContext driverContext)
     {
-        _connectionSettings = connectionSettings;
+        _driverContext = driverContext;
     }
 
     public IPooledConnection Create(
@@ -48,7 +48,7 @@ internal class PooledConnectionFactory : IPooledConnectionFactory
         return new PooledConnection(
             new SocketConnection(
                 uri,
-                _connectionSettings,
+                _driverContext,
                 authToken,
                 routingContext),
             releaseManager ?? throw new ArgumentNullException(nameof(releaseManager)));

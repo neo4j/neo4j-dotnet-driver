@@ -28,20 +28,20 @@ internal interface IConnectionPoolFactory
 internal sealed class ConnectionPoolFactory : IConnectionPoolFactory
 {
     private readonly IPooledConnectionFactory _connectionFactory;
-    private readonly ConnectionSettings _connectionSettings;
+    private readonly DriverContext _driverContext;
     private readonly ILogger _logger;
     private readonly IDictionary<string, string> _routingContext;
 
     public ConnectionPoolFactory(
         IPooledConnectionFactory connectionFactory,
         IDictionary<string, string> routingContext,
-        ConnectionSettings connectionSettings,
+        DriverContext driverContext,
         ILogger logger)
     {
         _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
         _logger = logger;
         _routingContext = routingContext;
-        _connectionSettings = connectionSettings;
+        _driverContext = driverContext;
     }
 
     public IConnectionPool Create(Uri uri)
@@ -50,7 +50,7 @@ internal sealed class ConnectionPoolFactory : IConnectionPoolFactory
             uri,
             _connectionFactory,
             _logger,
-            _connectionSettings,
+            _driverContext,
             _routingContext);
     }
 }

@@ -48,7 +48,7 @@ internal sealed class SocketConnection : IConnection
 
     internal SocketConnection(
         Uri uri,
-        ConnectionSettings settings,
+        DriverContext settings,
         IAuthToken authToken,
         IDictionary<string, string> routingContext)
     {
@@ -76,7 +76,7 @@ internal sealed class SocketConnection : IConnection
         IResponsePipeline responsePipeline = null,
         IAuthTokenManager authTokenManager = null,
         IBoltProtocolFactory protocolFactory = null, 
-        ConnectionSettings settings = null)
+        DriverContext settings = null)
     {
         _client = socketClient ?? throw new ArgumentNullException(nameof(socketClient));
         AuthToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
@@ -256,7 +256,7 @@ internal sealed class SocketConnection : IConnection
     public IServerInfo Server => _serverInfo;
 
     public bool UtcEncodedDateTime { get; private set; }
-    public ConnectionSettings Settings { get; }
+    public DriverContext Settings { get; }
     public IAuthToken AuthToken { get; private set; }
 
     public void UpdateId(string newConnId)

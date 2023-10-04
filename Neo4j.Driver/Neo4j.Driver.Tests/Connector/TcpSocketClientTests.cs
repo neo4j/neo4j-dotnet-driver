@@ -37,7 +37,7 @@ namespace Neo4j.Driver.Tests.Connector
             public async Task ShouldThrowExceptionIfConnectionTimedOut()
             {
                 var client = new TcpSocketClient(
-                    new ConnectionSettings(
+                    new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         new StaticAuthTokenManager(AuthTokens.None),
                         new Config { ConnectionTimeout = TimeSpan.FromSeconds(1) }));
@@ -65,7 +65,7 @@ namespace Neo4j.Driver.Tests.Connector
             public async Task ShouldBeAbleToConnectAgainIfFirstFailed()
             {
                 var client = new TcpSocketClient(
-                    new ConnectionSettings(
+                    new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         new StaticAuthTokenManager(AuthTokens.None),
                         new Config { ConnectionTimeout = TimeSpan.FromSeconds(10) }));
@@ -97,7 +97,7 @@ namespace Neo4j.Driver.Tests.Connector
             public async Task ShouldThrowExceptionIfConnectionTimedOut()
             {
                 var client = new TcpSocketClient(
-                    new ConnectionSettings(
+                    new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config { ConnectionTimeout = TimeSpan.FromSeconds(1) }));

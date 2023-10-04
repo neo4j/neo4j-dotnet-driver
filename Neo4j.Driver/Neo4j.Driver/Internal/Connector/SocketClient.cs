@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal.Connector;
 
 internal sealed class SocketClient : ISocketClient
 {
-    public ConnectionSettings Settings { get; }
+    public DriverContext Settings { get; }
     private const string MessagePattern = "C: {0}";
     private readonly IConnectionIoFactory _connectionIoFactory;
     private readonly IBoltHandshaker _handshaker;
@@ -49,7 +49,7 @@ internal sealed class SocketClient : ISocketClient
 
     public SocketClient(
         Uri uri,
-        ConnectionSettings settings,
+        DriverContext settings,
         ILogger logger,
         IConnectionIoFactory connectionIoFactory,
         IPackStreamFactory packstreamFactory = null,

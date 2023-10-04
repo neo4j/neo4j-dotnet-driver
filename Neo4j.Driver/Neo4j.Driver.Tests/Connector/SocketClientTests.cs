@@ -66,7 +66,7 @@ namespace Neo4j.Driver.Tests
                 boltHandshaker.Object);
         }
 
-        internal static ConnectionSettings FakeSettings => new(FakeUri, AuthTokenManagers.None, new Config());
+        internal static DriverContext FakeSettings => new(FakeUri, AuthTokenManagers.None, new Config());
 
         private static (Mock<ITcpSocketClient>, Mock<IConnectionIoFactory>) CreateMockIoFactory(
             Action<Mock<ITcpSocketClient>> configureMock,
@@ -77,7 +77,7 @@ namespace Neo4j.Driver.Tests
 
             var mockIoFactory = new Mock<IConnectionIoFactory>();
             mockIoFactory
-                .Setup(x => x.TcpSocketClient(It.IsAny<ConnectionSettings>(), It.IsAny<ILogger>()))
+                .Setup(x => x.TcpSocketClient(It.IsAny<DriverContext>(), It.IsAny<ILogger>()))
                 .Returns(connMock.Object);
             
             configureFactory?.Invoke(mockIoFactory);
@@ -103,11 +103,11 @@ namespace Neo4j.Driver.Tests
             var mw = messageWriter ?? Mock.Of<IMessageWriter>();
 
             factory
-                .Setup(x => x.Readers(It.IsAny<ITcpSocketClient>(), It.IsAny<ConnectionSettings>(), It.IsAny<ILogger>()))
+                .Setup(x => x.Readers(It.IsAny<ITcpSocketClient>(), It.IsAny<DriverContext>(), It.IsAny<ILogger>()))
                 .Returns(mr);
 
             factory
-                .Setup(x => x.Writers(It.IsAny<ITcpSocketClient>(), It.IsAny<ConnectionSettings>(), It.IsAny<ILogger>()))
+                .Setup(x => x.Writers(It.IsAny<ITcpSocketClient>(), It.IsAny<DriverContext>(), It.IsAny<ILogger>()))
                 .Returns((cw, mw));
 
             factory.Setup(x => x.Format(Version)).Returns(fmt);

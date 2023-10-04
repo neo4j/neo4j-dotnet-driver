@@ -61,10 +61,10 @@ namespace Neo4j.Driver.Tests
         private static ConnectionPool NewConnectionPool(
             BlockingCollection<IPooledConnection> idleConnections = null,
             ConcurrentHashSet<IPooledConnection> inUseConnections = null,
-            ConnectionSettings connectionSettings = null,
+            DriverContext driverContext = null,
             bool isConnectionValid = true)
         {
-            connectionSettings ??= new ConnectionSettings(
+            driverContext ??= new DriverContext(
                 new Uri("bolt://localhost:7687"),
                 AuthTokenManagers.None,
                 new Config());
@@ -73,7 +73,7 @@ namespace Neo4j.Driver.Tests
                 new MockedConnectionFactory(),
                 idleConnections,
                 inUseConnections,
-                connectionSettings,
+                driverContext,
                 new TestConnectionValidator(isConnectionValid));
         }
 
@@ -86,7 +86,7 @@ namespace Neo4j.Driver.Tests
                 idleConnections,
                 inUseConnections,
                 validator: new ConnectionValidator(Config.InfiniteInterval, Config.InfiniteInterval),
-                connectionSettings: new ConnectionSettings(
+                driverContext: new DriverContext(
                     new Uri("bolt://localhost:7687"),
                     AuthTokenManagers.None,
                     new Config()));
@@ -110,7 +110,7 @@ namespace Neo4j.Driver.Tests
                 var connectionPool = new ConnectionPool(
                     connFactory,
                     validator: new TestConnectionValidator(),
-                    connectionSettings: new ConnectionSettings(
+                    driverContext: new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config()));
@@ -129,7 +129,7 @@ namespace Neo4j.Driver.Tests
             {
                 const int delayTime = 2000; //Dealy time in milliseconds.
                 var pool = NewConnectionPool(
-                    connectionSettings: new ConnectionSettings(
+                    driverContext: new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config
@@ -165,7 +165,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldThrowClientExceptionWhenFailedToAcquireWithinTimeout()
             {
                 var pool = NewConnectionPool(
-                    connectionSettings: new ConnectionSettings(
+                    driverContext: new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config
@@ -192,7 +192,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldNotExceedIdleLimit()
             {
                 var pool = NewConnectionPool(
-                    connectionSettings: new ConnectionSettings(
+                    driverContext: new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config { MaxIdleConnectionPoolSize = 2 }));
@@ -217,7 +217,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldAcquireFromPoolIfAvailable()
             {
                 var pool = NewConnectionPool(
-                    connectionSettings: new ConnectionSettings(
+                    driverContext: new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config { MaxIdleConnectionPoolSize = 2 }));
@@ -240,7 +240,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldCreateNewWhenQueueIsEmpty()
             {
                 var pool = NewConnectionPool(
-                    connectionSettings: new ConnectionSettings(
+                    driverContext: new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config()));
@@ -264,7 +264,7 @@ namespace Neo4j.Driver.Tests
                 var connFactory = new MockedConnectionFactory(connMock.Object);
                 var pool = new ConnectionPool(
                     connFactory,
-                    connectionSettings: new ConnectionSettings(
+                    driverContext: new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config()));
@@ -290,7 +290,7 @@ namespace Neo4j.Driver.Tests
                 var pool = new ConnectionPool(
                     ReusableConnectionFactory,
                     conns,
-                    connectionSettings: new ConnectionSettings(
+                    driverContext: new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config()));
@@ -322,7 +322,7 @@ namespace Neo4j.Driver.Tests
                 var pool = new ConnectionPool(
                     new MockedConnectionFactory(),
                     conns,
-                    connectionSettings: new ConnectionSettings(
+                    driverContext: new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config()));
@@ -354,8 +354,8 @@ namespace Neo4j.Driver.Tests
                 var pool = new ConnectionPool(
                     new MockedConnectionFactory(),
                     conns,
-                    connectionSettings:
-                    new ConnectionSettings(
+                    driverContext:
+                    new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config()));
@@ -392,7 +392,7 @@ namespace Neo4j.Driver.Tests
                 var pool = new ConnectionPool(
                     ReusableConnectionFactory,
                     conns,
-                    connectionSettings: new ConnectionSettings(
+                    driverContext: new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config
@@ -433,7 +433,7 @@ namespace Neo4j.Driver.Tests
                 var conns = new BlockingCollection<IPooledConnection>();
                 conns.Add(mock.Object);
                 var enableIdleTooLongTest = TimeSpan.FromMilliseconds(100);
-                var connectionSettings = new ConnectionSettings(
+                var connectionSettings = new DriverContext(
                     new Uri("bolt://localhost:7687"),
                     AuthTokenManagers.None,
                     new Config
@@ -446,7 +446,7 @@ namespace Neo4j.Driver.Tests
                 var pool = new ConnectionPool(
                     ReusableConnectionFactory,
                     conns,
-                    connectionSettings: connectionSettings);
+                    driverContext: connectionSettings);
 
                 pool.NumberOfIdleConnections.Should().Be(1);
                 pool.NumberOfInUseConnections.Should().Be(0);
@@ -479,7 +479,7 @@ namespace Neo4j.Driver.Tests
                 var enableIdleTooLongTest = TimeSpan.FromMilliseconds(100);
 
                 var mockAuthMgr = new Mock<IAuthTokenManager>();
-                var connectionSettings = new ConnectionSettings(
+                var connectionSettings = new DriverContext(
                     new Uri("bolt://localhost:7687"),
                     mockAuthMgr.Object,
                     new Config
@@ -491,7 +491,7 @@ namespace Neo4j.Driver.Tests
                 var pool = new ConnectionPool(
                     ReusableConnectionFactory,
                     conns,
-                    connectionSettings: connectionSettings);
+                    driverContext: connectionSettings);
 
                 await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
 
@@ -595,7 +595,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async void ShouldTimeoutAfterAcquireAsyncTimeoutIfPoolIsFull()
             {
-                var settings = new ConnectionSettings(
+                var settings = new DriverContext(
                     new Uri("bolt://localhost:7687"),
                     AuthTokenManagers.None,
                     new Config
@@ -605,7 +605,7 @@ namespace Neo4j.Driver.Tests
                         MaxIdleConnectionPoolSize = 0
                     });
 
-                var pool = NewConnectionPool(connectionSettings: settings);
+                var pool = NewConnectionPool(driverContext: settings);
 
                 for (var i = 0; i < settings.DriverConfig.MaxConnectionPoolSize; i++)
                 {
@@ -631,7 +631,7 @@ namespace Neo4j.Driver.Tests
             {
                 var pool = NewConnectionPool(
                     isConnectionValid: false,
-                    connectionSettings: new ConnectionSettings(
+                    driverContext: new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config { ConnectionAcquisitionTimeout = TimeSpan.FromSeconds(5) }));
@@ -658,7 +658,7 @@ namespace Neo4j.Driver.Tests
 
                 var pool = NewConnectionPool(
                     idleConnections,
-                    connectionSettings: new ConnectionSettings(
+                    driverContext: new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config()));
@@ -700,7 +700,7 @@ namespace Neo4j.Driver.Tests
                 var inUseConns = new ConcurrentHashSet<IPooledConnection>();
                 inUseConns.TryAdd(mock.Object);
                 var pool = new ConnectionPool(null, null, inUseConns,
-                    connectionSettings: new ConnectionSettings(
+                    driverContext: new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config()));
@@ -725,7 +725,7 @@ namespace Neo4j.Driver.Tests
                 var inUseConns = new ConcurrentHashSet<IPooledConnection>();
                 inUseConns.TryAdd(mock.Object);
                 var pool = new ConnectionPool(null, null, inUseConns,
-                    connectionSettings: new ConnectionSettings(
+                    driverContext: new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config()));
@@ -776,7 +776,7 @@ namespace Neo4j.Driver.Tests
                 }
 
                 var pool = NewConnectionPool(availableConns, inUseConns,
-                    connectionSettings: new ConnectionSettings(
+                    driverContext: new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         config));
@@ -809,7 +809,7 @@ namespace Neo4j.Driver.Tests
                     null,
                     null,
                     inUseConns,
-                    new ConnectionSettings(
+                    new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config
@@ -844,7 +844,7 @@ namespace Neo4j.Driver.Tests
                 var inUseConns = new ConcurrentHashSet<IPooledConnection>();
                 inUseConns.TryAdd(mock.Object);
                 // default pool setting have timer disabled
-                var pool = new ConnectionPool(null, null, inUseConns, connectionSettings: new ConnectionSettings(
+                var pool = new ConnectionPool(null, null, inUseConns, driverContext: new DriverContext(
                     new Uri("bolt://localhost:7687"),
                     AuthTokenManagers.None,
                     new Config()));
@@ -870,7 +870,7 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var inUseConns = new ConcurrentHashSet<IPooledConnection>();
                 var pool = new ConnectionPool(new MockedConnectionFactory(), inUseConnections: inUseConns,
-                    connectionSettings: new ConnectionSettings(
+                    driverContext: new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config()));
@@ -942,7 +942,7 @@ namespace Neo4j.Driver.Tests
                     null,
                     availableConns,
                     inUseConns,
-                    new ConnectionSettings(
+                    new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config()),
@@ -1003,7 +1003,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldReturnZeroAfterCreation()
             {
                 var uri = new Uri("bolt://localhost:7687");
-                var connectionSettings = new ConnectionSettings(
+                var connectionSettings = new DriverContext(
                     uri,
                     AuthTokenManagers.None,
                     new Config
@@ -1083,7 +1083,7 @@ namespace Neo4j.Driver.Tests
 
                 var pool = new ConnectionPool(
                     connFactory,
-                    connectionSettings: new ConnectionSettings(
+                    driverContext: new DriverContext(
                         new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config

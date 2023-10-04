@@ -48,7 +48,7 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
     private long _startPos = -1;
 
     //TODO: ArrayPool avoid creating a new array for each chunk writer
-    public ChunkWriter(Stream downStream, ConnectionSettings settings, ILogger logger)
+    public ChunkWriter(Stream downStream, DriverContext settings, ILogger logger)
     {
         _downStream = downStream ?? throw new ArgumentNullException(nameof(downStream));
 
