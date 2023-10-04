@@ -29,6 +29,7 @@ internal sealed class Driver : IInternalDriver
     private readonly DefaultBookmarkManager _bookmarkManager;
     private readonly IConnectionProvider _connectionProvider;
     private readonly IAsyncRetryLogic _retryLogic;
+
     private int _closedMarker;
 
     internal Driver(
@@ -40,17 +41,16 @@ internal sealed class Driver : IInternalDriver
         Uri = uri;
         Context = driverContext;
         _retryLogic = retryLogic;
-        Config = driverContext.Config;
         _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
         _bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig());
     }
 
-    private bool IsClosed => _closedMarker > 0;
-
-    internal DriverContext Context { get; }
     public Uri Uri { get; }
+    internal DriverContext Context { get; }
+
+    private bool IsClosed => _closedMarker > 0;
     public bool Encrypted => Context.EncryptionManager.UseTls;
-    public Config Config { get; }
+    public Config Config => Context.Config;
 
     public IAsyncSession AsyncSession()
     {
