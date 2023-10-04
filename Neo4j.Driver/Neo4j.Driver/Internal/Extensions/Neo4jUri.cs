@@ -104,7 +104,7 @@ internal static class Neo4jUri
     {
         if (!IsRoutingUri(uri))
         {
-            return new Dictionary<string, string>();
+            return null;
         }
 
         var query = uri.Query;
