@@ -1728,8 +1728,7 @@ namespace Neo4j.Driver.Tests
             public IPooledConnection Create(
                 Uri uri,
                 IConnectionReleaseManager releaseManager,
-                IAuthToken authToken,
-                IDictionary<string, string> routingContext)
+                IAuthToken authToken)
             {
                 var conn = new PooledConnection(_connection, releaseManager);
                 conn.AuthorizationStatus = AuthorizationStatus.FreshlyAuthenticated;

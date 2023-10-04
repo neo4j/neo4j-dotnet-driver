@@ -130,7 +130,7 @@ namespace Neo4j.Driver.Tests
                 var client = NewClient(io, null, mockHandshaker);
 
                 var ex = await Record.ExceptionAsync(
-                    () => client.ConnectAsync(new Dictionary<string, string>(), CancellationToken.None));
+                    () => client.ConnectAsync(CancellationToken.None));
 
                 mockHandshaker.Verify(
                     x => x.DoHandshakeAsync(
@@ -165,7 +165,7 @@ namespace Neo4j.Driver.Tests
 
                 var client = NewClient(factory);
 
-                await client.ConnectAsync(new Dictionary<string, string>());
+                await client.ConnectAsync();
 
                 // Then
                 connMock.Verify(x => x.ConnectAsync(FakeUri, CancellationToken.None), Times.Once);
@@ -190,7 +190,7 @@ namespace Neo4j.Driver.Tests
                 var messages = new IRequestMessage[] { m1, m2 };
 
                 var client = NewClient(factory, new Mock<IPackStreamFactory>());
-                await client.ConnectAsync(null);
+                await client.ConnectAsync();
 
                 // When
                 await client.SendAsync(messages);
@@ -209,7 +209,7 @@ namespace Neo4j.Driver.Tests
 
                 // Given
                 var client = NewClient(factory);
-                await client.ConnectAsync(null);
+                await client.ConnectAsync();
 
                 // When
                 var exception = await Record.ExceptionAsync(() => client.SendAsync(null));
@@ -240,7 +240,7 @@ namespace Neo4j.Driver.Tests
                     .Returns(new PackStreamReader(null, null, null));
 
                 var client = NewClient(factory, psFactory);
-                await client.ConnectAsync(null);
+                await client.ConnectAsync();
 
                 // When
                 await client.ReceiveOneAsync(pipeline.Object);
@@ -265,7 +265,7 @@ namespace Neo4j.Driver.Tests
                     x => SetupFactory(x, messageReader: readerMock.Object));
 
                 var client = NewClient(factory);
-                await client.ConnectAsync(null);
+                await client.ConnectAsync();
 
                 // When
                 var exception = await Record.ExceptionAsync(() => client.ReceiveOneAsync(mockPipeline.Object));
@@ -291,7 +291,7 @@ namespace Neo4j.Driver.Tests
                     x => SetupFactory(x, messageReader: readerMock.Object));
 
                 var client = NewClient(factory);
-                await client.ConnectAsync(null);
+                await client.ConnectAsync();
 
                 // When
                 var exception = await Record.ExceptionAsync(() => client.ReceiveOneAsync(mockPipeline.Object));
@@ -314,7 +314,7 @@ namespace Neo4j.Driver.Tests
                     x => SetupFactory(x, messageReader: readerMock.Object));
 
                 var client = NewClient(factory);
-                await client.ConnectAsync(null);
+                await client.ConnectAsync();
 
                 readerMock.Setup(x => x.ReadAsync(pipeline.Object, It.IsAny<PackStreamReader>()))
                     .ThrowsAsync(new DatabaseException());
@@ -337,7 +337,7 @@ namespace Neo4j.Driver.Tests
                 var (connMock, factory) = CreateMockIoFactory(null, null);
 
                 var client = NewClient(factory);
-                await client.ConnectAsync(null);
+                await client.ConnectAsync();
 
                 // When
                 await client.DisposeAsync();

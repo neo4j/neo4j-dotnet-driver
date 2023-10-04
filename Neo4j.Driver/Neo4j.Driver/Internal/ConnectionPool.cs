@@ -63,8 +63,7 @@ internal sealed class ConnectionPool : IConnectionPool
     public ConnectionPool(
         Uri uri,
         IPooledConnectionFactory connectionFactory,
-        DriverContext driverContext,
-        IDictionary<string, string> routingContext)
+        DriverContext driverContext)
     {
         _uri = uri;
         _id = $"pool-{_uri.Host}:{_uri.Port}";
@@ -77,8 +76,6 @@ internal sealed class ConnectionPool : IConnectionPool
             driverContext.Config.MaxConnectionLifetime);
         
         _poolMetricsListener = driverContext.Metrics?.PutPoolMetrics($"{_id}-{GetHashCode()}", this);
-
-        RoutingContext = routingContext;
     }
 
     // Used in test only
@@ -91,8 +88,7 @@ internal sealed class ConnectionPool : IConnectionPool
         : this(
             new Uri("bolt://localhost:7687"),
             connectionFactory,
-            driverContext,
-            null)
+            driverContext)
     {
         _idleConnections = idleConnections ?? new BlockingCollection<IPooledConnection>();
         _inUseConnections = inUseConnections ?? new ConcurrentHashSet<IPooledConnection>();
@@ -108,8 +104,6 @@ internal sealed class ConnectionPool : IConnectionPool
     internal int PoolSize => Interlocked.CompareExchange(ref _poolSize, -1, -1);
     public int NumberOfInUseConnections => _inUseConnections.Count;
     public int NumberOfIdleConnections => _idleConnections.Count;
-
-    public IDictionary<string, string> RoutingContext { get; set; }
 
     public ConnectionPoolStatus Status
     {
@@ -358,8 +352,7 @@ internal sealed class ConnectionPool : IConnectionPool
         return _connectionFactory.Create(
             _uri,
             this,
-            token,
-            RoutingContext);
+            token);
     }
 
     private async Task DestroyConnectionAsync(IPooledConnection conn)

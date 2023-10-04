@@ -48,8 +48,7 @@ internal sealed class SocketConnection : IConnection
     internal SocketConnection(
         Uri uri,
         DriverContext context,
-        IAuthToken authToken,
-        IDictionary<string, string> routingContext)
+        IAuthToken authToken)
     {
         _idPrefix = $"conn-{uri.Host}:{uri.Port}-";
         _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
@@ -63,7 +62,6 @@ internal sealed class SocketConnection : IConnection
         _serverInfo = new ServerInfo(uri);
 
         _responsePipeline = new ResponsePipeline(_logger);
-        RoutingContext = routingContext;
         AuthTokenManager = context.AuthTokenManager;
         _protocolFactory = BoltProtocolFactory.Default;
     }
@@ -83,8 +81,6 @@ internal sealed class SocketConnection : IConnection
         AuthToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
         _serverInfo = server ?? throw new ArgumentNullException(nameof(server));
         AuthTokenManager = authTokenManager;
-        RoutingContext = null;
-
         _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
         _logger = new PrefixLogger(logger, FormatPrefix(_id));
         _responsePipeline = responsePipeline ?? new ResponsePipeline(logger);
@@ -94,12 +90,11 @@ internal sealed class SocketConnection : IConnection
 
     internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
 
-    public IDictionary<string, string> RoutingContext { get; set; }
-
     public AccessMode? Mode { get; private set; }
 
     public string Database { get; private set; }
 
+    public IDictionary<string, string> RoutingContext => Context.RoutingContext;
     public BoltProtocolVersion Version => _client.Version;
 
     /// <summary>Internal Set used for tests.</summary>
@@ -126,7 +121,7 @@ internal sealed class SocketConnection : IConnection
 
         try
         {
-            await _client.ConnectAsync(RoutingContext, cancellationToken).ConfigureAwait(false);
+            await _client.ConnectAsync(cancellationToken).ConfigureAwait(false);
             BoltProtocol = _protocolFactory.ForVersion(Version);
         }
         finally

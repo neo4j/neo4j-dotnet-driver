@@ -411,7 +411,7 @@ namespace Neo4j.Driver.Tests
 
             private IConnection Connection { get; }
             private AccessMode Mode { get; set; }
-            public IDictionary<string, string> RoutingContext { get; set; }
+            public IDictionary<string, string> RoutingContext { get; }
 
             public Task<IConnection> AcquireAsync(
                 AccessMode mode,

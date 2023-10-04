@@ -52,7 +52,6 @@ namespace Neo4j.Driver.Tests.Routing
                 var pool = new ClusterConnectionPool(
                     uris,
                     connFactory,
-                    new Dictionary<string, string>(),
                     driverContext);
 
                 pool.ToString().Should().Contain("bolt://123:456/");

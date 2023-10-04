@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Preview.Auth;
@@ -31,6 +32,7 @@ internal sealed class DriverContext
         IHostResolver customHostResolver = null)
     {
         InitialUri = initialUri;
+        RoutingContext = Neo4jUri.ParseRoutingContext(initialUri, Neo4jUri.DefaultBoltPort);
         AuthTokenManager = authTokenManager;
         Config = config;
         EncryptionManager = EncryptionManager.Create(
@@ -66,4 +68,6 @@ internal sealed class DriverContext
     public EncryptionManager EncryptionManager { get; }
     public IHostResolver HostResolver { get; }
     public IInternalMetrics Metrics { get; }
+    public IDictionary<string, string> RoutingContext { get; }
+
 }

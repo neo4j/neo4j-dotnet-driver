@@ -71,7 +71,7 @@ namespace Neo4j.Driver.Tests.Routing
             }
 
             ClientMock = clientMock ?? new Mock<ISocketClient>();
-            ClientMock.Setup(x => x.ConnectAsync(null, CancellationToken.None))
+            ClientMock.Setup(x => x.ConnectAsync(CancellationToken.None))
                 .Returns(Task.FromResult(new Mock<IBoltProtocol>().Object));
 
             ClientMock.Setup(x => x.SendAsync(It.IsAny<IEnumerable<IRequestMessage>>()))

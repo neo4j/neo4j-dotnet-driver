@@ -29,15 +29,12 @@ internal sealed class ConnectionPoolFactory : IConnectionPoolFactory
 {
     private readonly IPooledConnectionFactory _connectionFactory;
     private readonly DriverContext _driverContext;
-    private readonly IDictionary<string, string> _routingContext;
 
     public ConnectionPoolFactory(
         IPooledConnectionFactory connectionFactory,
-        IDictionary<string, string> routingContext,
         DriverContext driverContext)
     {
         _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
-        _routingContext = routingContext;
         _driverContext = driverContext;
     }
 
@@ -46,7 +43,6 @@ internal sealed class ConnectionPoolFactory : IConnectionPoolFactory
         return new ConnectionPool(
             uri,
             _connectionFactory,
-            _driverContext,
-            _routingContext);
+            _driverContext);
     }
 }

@@ -43,12 +43,10 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         DriverContext driverContext)
     {
         DriverContext = driverContext;
-        RoutingContext = Neo4jUri.ParseRoutingContext(driverContext.InitialUri, Neo4jUri.DefaultBoltPort);
 
         _clusterConnectionPool = new ClusterConnectionPool(
             Enumerable.Empty<Uri>(),
             connectionFactory,
-            RoutingContext,
             DriverContext);
 
         _logger = driverContext.Logger;
@@ -92,8 +90,6 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
     {
         return CreateClusterConnectionAsync(uri, AccessMode.Write, null, sessionConfig, Bookmarks.Empty);
     }
-
-    public IDictionary<string, string> RoutingContext { get; set; }
 
     public async Task<IConnection> AcquireAsync(
         AccessMode mode,

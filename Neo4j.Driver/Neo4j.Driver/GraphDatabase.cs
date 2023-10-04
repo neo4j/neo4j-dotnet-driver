@@ -224,8 +224,7 @@ public static class GraphDatabase
             : new ConnectionPool(
                 parsedUri,
                 connectionFactory,
-                context,
-                null);
+                context);
 
         var retryLogic = new AsyncRetryLogic(context.Config.MaxTransactionRetryTime, context.Config.Logger);
         return new Internal.Driver(

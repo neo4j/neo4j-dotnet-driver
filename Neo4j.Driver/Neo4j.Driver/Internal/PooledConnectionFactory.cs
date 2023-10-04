@@ -26,8 +26,7 @@ internal interface IPooledConnectionFactory
     IPooledConnection Create(
         Uri uri,
         IConnectionReleaseManager releaseManager,
-        IAuthToken authToken,
-        IDictionary<string, string> routingContext);
+        IAuthToken authToken);
 }
 
 internal class PooledConnectionFactory : IPooledConnectionFactory
@@ -42,15 +41,13 @@ internal class PooledConnectionFactory : IPooledConnectionFactory
     public IPooledConnection Create(
         Uri uri,
         IConnectionReleaseManager releaseManager,
-        IAuthToken authToken,
-        IDictionary<string, string> routingContext)
+        IAuthToken authToken)
     {
         return new PooledConnection(
             new SocketConnection(
                 uri,
                 _driverContext,
-                authToken,
-                routingContext),
+                authToken),
             releaseManager ?? throw new ArgumentNullException(nameof(releaseManager)));
     }
 }

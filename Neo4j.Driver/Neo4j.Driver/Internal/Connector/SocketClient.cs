@@ -71,7 +71,6 @@ internal sealed class SocketClient : ISocketClient
     public bool IsOpen => _closedMarker == 0;
 
     public async Task ConnectAsync(
-        IDictionary<string, string> routingContext,
         CancellationToken cancellationToken = default)
     {
         await _tcpSocketClient.ConnectAsync(_uri, cancellationToken).ConfigureAwait(false);

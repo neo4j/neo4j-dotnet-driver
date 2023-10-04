@@ -829,33 +829,6 @@ public abstract class StressTest: IDisposable
         }
     }
 
-    private class MonitoredPooledConnectionFactory : IPooledConnectionFactory
-    {
-        private readonly IPooledConnectionFactory _delegate;
-        public readonly ConcurrentQueue<IPooledConnection> Connections = new();
-
-        public MonitoredPooledConnectionFactory(IPooledConnectionFactory factory)
-        {
-            _delegate = factory;
-        }
-
-        public IPooledConnection Create(
-            Uri uri,
-            IConnectionReleaseManager releaseManager,
-            IAuthToken authToken,
-            IDictionary<string, string> routingContext)
-        {
-            var pooledConnection = _delegate.Create(
-                uri,
-                releaseManager,
-                authToken,
-                routingContext);
-
-            Connections.Enqueue(pooledConnection);
-            return pooledConnection;
-        }
-    }
-
 #endregion
 
 #region Test and Verifications
