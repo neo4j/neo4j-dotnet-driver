@@ -159,6 +159,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
 #else
         using var _ = ctr;
         await _client.ConnectAsync(new IPEndPoint(address, port))
+            .Timeout(DriverContext.Config.ConnectionTimeout, cancellationToken)
             .ConfigureAwait(false);
 #endif
     }
