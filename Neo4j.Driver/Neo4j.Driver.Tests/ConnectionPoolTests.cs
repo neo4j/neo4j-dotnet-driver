@@ -810,7 +810,7 @@ namespace Neo4j.Driver.Tests
                     null,
                     inUseConns,
                     new ConnectionSettings(
-                        new Uri("127.0.0.1:7687"),
+                        new Uri("bolt://localhost:7687"),
                         AuthTokenManagers.None,
                         new Config
                         {
@@ -844,7 +844,10 @@ namespace Neo4j.Driver.Tests
                 var inUseConns = new ConcurrentHashSet<IPooledConnection>();
                 inUseConns.TryAdd(mock.Object);
                 // default pool setting have timer disabled
-                var pool = new ConnectionPool(null, null, inUseConns);
+                var pool = new ConnectionPool(null, null, inUseConns, connectionSettings: new ConnectionSettings(
+                    new Uri("bolt://localhost:7687"),
+                    AuthTokenManagers.None,
+                    new Config()));
 
                 pool.NumberOfIdleConnections.Should().Be(0);
                 pool.NumberOfInUseConnections.Should().Be(1);
