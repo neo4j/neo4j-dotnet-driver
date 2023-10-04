@@ -37,7 +37,6 @@ namespace Neo4j.Driver.Internal;
 internal sealed class ConnectionPool : IConnectionPool
 {
     private const int SpinningWaitInterval = 500;
-    private TimeSpan ConnectionAcquisitionTimeout => ConnectionSettings.PoolSettings.ConnectionAcquisitionTimeout;
     private readonly IPooledConnectionFactory _connectionFactory;
 
     private readonly IConnectionValidator _connectionValidator;
@@ -48,9 +47,9 @@ internal sealed class ConnectionPool : IConnectionPool
     private readonly ConcurrentHashSet<IPooledConnection> _inUseConnections = new();
 
     private readonly ILogger _logger;
-    private int MaxIdlePoolSize => ConnectionSettings.PoolSettings.MaxIdleConnectionPoolSize;
-
-    private int MaxPoolSize => ConnectionSettings.PoolSettings.MaxConnectionPoolSize;
+    private int MaxIdlePoolSize => ConnectionSettings.DriverConfig.MaxIdleConnectionPoolSize;
+    private TimeSpan ConnectionAcquisitionTimeout => ConnectionSettings.DriverConfig.ConnectionAcquisitionTimeout;
+    private int MaxPoolSize => ConnectionSettings.DriverConfig.MaxConnectionPoolSize;
 
     private readonly IConnectionPoolListener _poolMetricsListener;
 
@@ -76,10 +75,10 @@ internal sealed class ConnectionPool : IConnectionPool
         _connectionFactory = connectionFactory;
         ConnectionSettings = connectionSettings;
         _connectionValidator = new ConnectionValidator(
-            connectionSettings.PoolSettings.ConnectionIdleTimeout,
-            connectionSettings.PoolSettings.MaxConnectionLifetime);
+            connectionSettings.DriverConfig.ConnectionIdleTimeout,
+            connectionSettings.DriverConfig.MaxConnectionLifetime);
 
-        _poolMetricsListener = connectionSettings.PoolSettings.Metrics?.PutPoolMetrics($"{_id}-{GetHashCode()}", this);
+        _poolMetricsListener = connectionSettings.Metrics?.PutPoolMetrics($"{_id}-{GetHashCode()}", this);
 
         RoutingContext = routingContext;
     }

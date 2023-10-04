@@ -69,17 +69,6 @@ internal static class Throw
 
     public static class ArgumentOutOfRangeException
     {
-        public static void IfValueLessThan(long value, long limit, string parameterName)
-        {
-            if (value < limit)
-            {
-                throw new System.ArgumentOutOfRangeException(
-                    parameterName,
-                    value,
-                    $"Value given ({value}) cannot be less than {limit}.");
-            }
-        }
-
         public static void IfFalse(bool value, string nameofValue)
         {
             if (!value)

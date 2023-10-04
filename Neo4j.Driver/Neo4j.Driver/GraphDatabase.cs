@@ -204,9 +204,10 @@ public static class GraphDatabase
         uri = uri ?? throw new ArgumentNullException(nameof(uri));
         authTokenManager = authTokenManager ?? throw new ArgumentNullException(nameof(authTokenManager));
 
-        var config = ConfigBuilders.BuildConfig(action);
-        BufferSettings.Validate(config);
-
+        var builder = Config.Builder;
+        action?.Invoke(builder);
+        var config = builder.Build();
+        
         var connectionSettings = new ConnectionSettings(uri, authTokenManager, config);
         var connectionFactory = new PooledConnectionFactory(connectionSettings);
 
@@ -248,7 +249,7 @@ public static class GraphDatabase
             connectionProvider,
             retryLogic,
             logger,
-            connectionSettings.PoolSettings.Metrics,
+            connectionSettings.Metrics,
             config);
     }
 

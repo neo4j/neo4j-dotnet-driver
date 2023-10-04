@@ -172,8 +172,8 @@ public sealed class CertificateTrustIT : IClassFixture<CertificateTrustIT.Certif
         var connectionSettings = new ConnectionSettings(
             overridenUri,
             AuthTokenManagers.Static(Server.AuthToken),
-            config);
-        connectionSettings.WithTestResolver(resolver);
+            config,
+            resolver);
         
         var connectionFactory = new PooledConnectionFactory(connectionSettings);
 

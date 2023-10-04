@@ -59,8 +59,6 @@ public class Config
     /// <summary>This const defines the value of infinite interval in terms of configuration properties.</summary>
     public static readonly TimeSpan InfiniteInterval = TimeSpan.FromMilliseconds(-1);
 
-    private long _fetchSize = Constants.DefaultFetchSize;
-
     private int _maxIdleConnPoolSize = Infinite;
 
     /// <summary>Create an instance of <see cref="ConfigBuilder"/> to build a <see cref="Config"/>.</summary>
@@ -177,17 +175,13 @@ public class Config
     /// in batches. This fetch size defines how many records to pull in each batch. Use <see cref="Infinite"/> to disable
     /// batching and always pull all records in one batch instead.
     /// </summary>
-    public long FetchSize
-    {
-        get => _fetchSize;
-        internal set => _fetchSize = FetchSizeUtil.AssertValidFetchSize(value);
-    }
+    public long FetchSize { get; internal set; } = Constants.DefaultFetchSize;
 
     /// <summary>
     /// Used to get and set the User Agent string. If not used the default will be "neo4j-dotnet/x.y" where x is the
     /// major version and y is the minor version.
     /// </summary>
-    public string UserAgent { get; set; } = DefaultUserAgent;
+    public string UserAgent { get; internal set; } = DefaultUserAgent;
 
     /// <summary>
     /// The configuration for setting which notifications the server should send to the client.<br/> This

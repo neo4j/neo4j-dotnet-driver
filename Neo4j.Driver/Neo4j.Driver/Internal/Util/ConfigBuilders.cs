@@ -37,11 +37,4 @@ internal static class ConfigBuilders
 
         return config;
     }
-
-    public static Config BuildConfig(Action<ConfigBuilder> action)
-    {
-        var builder = Config.Builder;
-        action?.Invoke(builder);
-        return builder.Build();
-    }
 }

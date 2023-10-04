@@ -199,11 +199,18 @@ public sealed class ConfigBuilder
     }
 
     /// <summary>Specify the default read buffer size which the driver allocates for its internal buffers.</summary>
-    /// <param name="defaultReadBufferSize">the buffer size</param>
+    /// <param name="defaultBufferSize">the buffer size</param>
     /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
-    public ConfigBuilder WithDefaultReadBufferSize(int defaultReadBufferSize)
+    public ConfigBuilder WithDefaultReadBufferSize(int defaultBufferSize)
     {
-        _config.DefaultReadBufferSize = defaultReadBufferSize;
+        if (defaultBufferSize < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(defaultBufferSize),
+                defaultBufferSize,
+                "must be >= 0");
+        }
+        _config.DefaultReadBufferSize = defaultBufferSize;
         return this;
     }
 
@@ -216,6 +223,13 @@ public sealed class ConfigBuilder
     /// </remarks>
     public ConfigBuilder WithMaxReadBufferSize(int maxReadBufferSize)
     {
+        if (maxReadBufferSize < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(maxReadBufferSize),
+                maxReadBufferSize,
+                "must be >= 0");
+        }
         _config.MaxReadBufferSize = maxReadBufferSize;
         return this;
     }
@@ -225,6 +239,13 @@ public sealed class ConfigBuilder
     /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithDefaultWriteBufferSize(int defaultWriteBufferSize)
     {
+        if (defaultWriteBufferSize < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(defaultWriteBufferSize),
+                defaultWriteBufferSize,
+                "must be >= 0");
+        }
         _config.DefaultWriteBufferSize = defaultWriteBufferSize;
         return this;
     }
@@ -238,6 +259,13 @@ public sealed class ConfigBuilder
     /// </remarks>
     public ConfigBuilder WithMaxWriteBufferSize(int maxWriteBufferSize)
     {
+        if (maxWriteBufferSize < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(maxWriteBufferSize),
+                maxWriteBufferSize,
+                "must be >= 0");
+        }
         _config.MaxWriteBufferSize = maxWriteBufferSize;
         return this;
     }
@@ -251,6 +279,12 @@ public sealed class ConfigBuilder
     /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithFetchSize(long size)
     {
+        if (size <= 0 && size != Config.Infinite)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(size),
+                $"The record fetch size may not be 0 or negative. Illegal record fetch size: {size}.");
+        }
         _config.FetchSize = size;
         return this;
     }

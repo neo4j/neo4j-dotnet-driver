@@ -16,9 +16,9 @@
 // limitations under the License.
 
 using System;
-using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Metrics;
+using Neo4j.Driver.Preview.Auth;
 
 namespace Neo4j.Driver.Internal;
 
@@ -27,7 +27,8 @@ internal sealed class ConnectionSettings
     internal ConnectionSettings(
         Uri rootUri,
         IAuthTokenManager authTokenManager,
-        Config config)
+        Config config,
+        IHostResolver customHostResolver = null)
     {
         AuthTokenManager = authTokenManager;
         DriverConfig = config;
@@ -36,29 +37,20 @@ internal sealed class ConnectionSettings
             config.NullableEncryptionLevel,
             config.TrustManager,
             config.Logger);
-        HostResolver = RuntimeHelper.IsDotNetCore
-            ? new SystemNetCoreHostResolver(new SystemHostResolver())
-            : new DefaultHostResolver(
-                new SystemHostResolver(),
-                config.Ipv6Enabled);
 
-        var metrics = config.MetricsEnabled ? new DefaultMetrics() : null;
-        PoolSettings = new ConnectionPoolSettings(config, metrics);
-    }
-    
-    public void WithTestResolver(IHostResolver resolver)
-    {
-        // in testing allow the host resolver to be overridden
-        HostResolver = resolver;
+        HostResolver = customHostResolver ??
+            (RuntimeHelper.IsDotNetCore
+                ? new SystemNetCoreHostResolver(new SystemHostResolver())
+                : new DefaultHostResolver(
+                    new SystemHostResolver(),
+                    config.Ipv6Enabled));
+
+        Metrics = config.MetricsEnabled ? new DefaultMetrics() : null;
     }
 
     public Config DriverConfig { get; }
-    public ConnectionPoolSettings PoolSettings { get; }
     public IAuthTokenManager AuthTokenManager { get; }
-    public string UserAgent => DriverConfig.UserAgent;
-    public EncryptionManager EncryptionManager { get; set; }
-    public IHostResolver HostResolver { get; private set; }
-    public TimeSpan ConnectionTimeout => DriverConfig.ConnectionTimeout;
-    public bool SocketKeepAliveEnabled => DriverConfig.SocketKeepAlive;
-    public bool Ipv6Enabled => DriverConfig.Ipv6Enabled;
+    public EncryptionManager EncryptionManager { get; }
+    public IHostResolver HostResolver { get; }
+    public IInternalMetrics Metrics { get; }
 }

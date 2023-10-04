@@ -36,8 +36,6 @@ internal sealed class TcpSocketClient : ITcpSocketClient
     private ConnectionSettings ConnectionSettings { get; }
     private readonly ILogger _logger;
 
-    private IHostResolver Resolver => ConnectionSettings.HostResolver;
-    private bool SocketKeepAliveEnabled => ConnectionSettings.SocketKeepAliveEnabled;
     private Socket _client;
 
     public TcpSocketClient(ConnectionSettings connectionSettings, ILogger logger = null)
@@ -94,7 +92,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
     private async Task ConnectSocketAsync(Uri uri, CancellationToken cancellationToken = default)
     {
         var innerErrors = new List<Exception>();
-        var addresses = await Resolver.ResolveAsync(uri.Host).ConfigureAwait(false);
+        var addresses = await ConnectionSettings.HostResolver.ResolveAsync(uri.Host).ConfigureAwait(false);
 
         foreach (var address in addresses)
         {
@@ -123,7 +121,8 @@ internal sealed class TcpSocketClient : ITcpSocketClient
     internal async Task ConnectSocketAsync(IPAddress address, int port, CancellationToken cancellationToken = default)
     {
         InitClient();
-        using var timeout = new CancellationTokenSource(ConnectionSettings.ConnectionTimeout);
+        var timeoutValue = ConnectionSettings.DriverConfig.ConnectionTimeout;
+        using var timeout = new CancellationTokenSource(timeoutValue);
         using var source = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token, cancellationToken);
 
         try
@@ -142,7 +141,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
             }
 
             throw new OperationCanceledException(
-                $"Failed to connect to server {address}:{port} within {ConnectionSettings.ConnectionTimeout.TotalMilliseconds}ms.");
+                $"Failed to connect to server {address}:{port} within {timeoutValue.TotalMilliseconds}ms.");
         }
         catch
         {
@@ -173,10 +172,11 @@ internal sealed class TcpSocketClient : ITcpSocketClient
         }
         catch (Exception e)
         {
+            var timeoutValue = ConnectionSettings.DriverConfig.ConnectionTimeout;
             _logger?.Error(
                 e,
                 $"Failed to close connect to the server {address}:{port}" +
-                $" after connection timed out {ConnectionSettings.ConnectionTimeout.TotalMilliseconds}ms.");
+                $" after connection timed out {timeoutValue.TotalMilliseconds}ms.");
         }
 
         return Task.CompletedTask;
@@ -184,19 +184,20 @@ internal sealed class TcpSocketClient : ITcpSocketClient
 
     private void InitClient()
     {
-        var addressFamily = ConnectionSettings.Ipv6Enabled ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
+        var ipv6 = ConnectionSettings.DriverConfig.Ipv6Enabled;
+        var addressFamily = ipv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
 
         _client = new Socket(addressFamily, SocketType.Stream, ProtocolType.Tcp)
         {
             NoDelay = true
         };
 
-        if (ConnectionSettings.Ipv6Enabled)
+        if (ipv6)
         {
             _client.DualMode = true;
         }
 
-        _client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, SocketKeepAliveEnabled);
+        _client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, ConnectionSettings.DriverConfig.SocketKeepAlive);
     }
 
     private SslStream CreateSecureStream(Uri uri)

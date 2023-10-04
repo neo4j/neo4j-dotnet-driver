@@ -43,7 +43,6 @@ internal sealed class SocketConnection : IConnection
     private readonly IResponsePipeline _responsePipeline;
     private readonly SemaphoreSlim _sendLock = new(1, 1);
     private readonly ServerInfo _serverInfo;
-    private string UserAgent => Settings.UserAgent;
 
     private string _id;
 
@@ -144,7 +143,7 @@ internal sealed class SocketConnection : IConnection
 
         try
         {
-            await BoltProtocol.AuthenticateAsync(this, UserAgent, authToken, Settings.DriverConfig.NotificationsConfig)
+            await BoltProtocol.AuthenticateAsync(this, Settings.DriverConfig.UserAgent, authToken, Settings.DriverConfig.NotificationsConfig)
                 .ConfigureAwait(false);
         }
         catch (Exception ex)
