@@ -52,7 +52,7 @@ internal class ChainTrustManager : TrustManager
         {
             if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch))
             {
-                Logger?.Error(
+                Logger.Error(
                     null,
                     $"{GetType().Name}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
 
@@ -68,7 +68,7 @@ internal class ChainTrustManager : TrustManager
             result = BuildChain(certificate, chain.ChainPolicy.ExtraStore, out var newChain);
             if (!result)
             {
-                Logger?.Error(
+                Logger.Error(
                     null,
                     $"{GetType().Name}: Certificate '{certificate.Subject}' failed validation. Reason: {CertHelper.ChainStatusToText(newChain.ChainStatus)}");
             }

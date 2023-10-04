@@ -158,7 +158,7 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
         _chunkStream.SetLength(0);
         if (_chunkStream.Capacity > _maxBufferSize)
         {
-            _logger?.Info(
+            _logger.Info(
                 $@"Shrinking write buffers to the default write buffer size {
                     _defaultBufferSize
                 } since its size reached {
@@ -177,7 +177,7 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
 
     private void LogStream(MemoryStream stream)
     {
-        if (_logger != null && _logger.IsTraceEnabled())
+        if (_logger.IsTraceEnabled())
         {
             var buffer = stream.ToArray();
             _logger.Trace("C: {0}", buffer.ToHexString(0, buffer.Length));

@@ -29,7 +29,6 @@ internal sealed class ConnectionPoolFactory : IConnectionPoolFactory
 {
     private readonly IPooledConnectionFactory _connectionFactory;
     private readonly DriverContext _driverContext;
-    private readonly ILogger _logger;
     private readonly IDictionary<string, string> _routingContext;
 
     public ConnectionPoolFactory(

@@ -26,6 +26,7 @@ using Moq;
 using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Routing;
@@ -39,7 +40,7 @@ namespace Neo4j.Driver.Tests
         {
             return new AsyncSession(
                 new TestConnectionProvider(connection),
-                logger,
+                logger ?? NullLogger.Instance,
                 null,
                 0,
                 new Driver.SessionConfig(),

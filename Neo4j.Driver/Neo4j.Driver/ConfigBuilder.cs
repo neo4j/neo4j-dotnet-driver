@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver;
@@ -72,7 +73,7 @@ public sealed class ConfigBuilder
     /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithLogger(ILogger logger)
     {
-        _config.Logger = logger;
+        _config.Logger = logger ?? NullLogger.Instance;
         return this;
     }
 

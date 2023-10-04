@@ -55,6 +55,10 @@ internal sealed class DriverContext
     /// </summary>
     public Uri RootUri { get; }
     public Config Config { get; }
+    /// <summary>
+    /// Shortcut to Config.Logger.
+    /// </summary>
+    public ILogger Logger => Config.Logger;
     public IAuthTokenManager AuthTokenManager { get; }
     public EncryptionManager EncryptionManager { get; }
     public IHostResolver HostResolver { get; }

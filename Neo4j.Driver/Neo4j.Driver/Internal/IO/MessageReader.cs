@@ -71,7 +71,7 @@ internal sealed class MessageReader : IMessageReader
             return;
         }
 
-        _logger?.Info(
+        _logger.Info(
             $@"Shrinking read buffers to the default read buffer size {
                 _defaultBufferSize
             } since its size reached {

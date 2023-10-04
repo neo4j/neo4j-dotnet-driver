@@ -75,7 +75,7 @@ internal class AsyncRetryLogic : IAsyncRetryLogic
                 if (shouldRetry)
                 {
                     delay = TimeSpan.FromMilliseconds(ComputeDelayWithJitter(delayMs));
-                    _logger?.Warn(e, $"Transaction failed and will be retried in {delay} ms.");
+                    _logger.Warn(e, $"Transaction failed and will be retried in {delay} ms.");
                     await Task.Delay(delay).ConfigureAwait(false); // blocking for this delay
                     delayMs *= _multiplier;
                 }

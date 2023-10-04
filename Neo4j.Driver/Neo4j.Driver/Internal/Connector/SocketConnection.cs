@@ -21,7 +21,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Preview.Auth;
-using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
@@ -35,7 +34,7 @@ internal sealed class SocketConnection : IConnection
     private readonly ISocketClient _client;
     private readonly string _idPrefix;
 
-    private readonly PrefixLogger _logger;
+    private readonly ILogger _logger;
 
     private readonly Queue<IRequestMessage> _messages = new();
     private readonly IBoltProtocolFactory _protocolFactory;
@@ -48,22 +47,24 @@ internal sealed class SocketConnection : IConnection
 
     internal SocketConnection(
         Uri uri,
-        DriverContext settings,
+        DriverContext context,
         IAuthToken authToken,
         IDictionary<string, string> routingContext)
     {
         _idPrefix = $"conn-{uri.Host}:{uri.Port}-";
         _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
-        _logger = new PrefixLogger(settings.Config.Logger, FormatPrefix(_id));
+        _logger = context.Logger != NullLogger.Instance
+            ? new PrefixLogger(context.Logger, FormatPrefix(_id))
+            : context.Logger;
 
-        _client = new SocketClient(uri, settings, _logger, null);
-        Settings = settings;
+        _client = new SocketClient(uri, context, _logger, null);
+        Context = context;
         AuthToken = authToken;
         _serverInfo = new ServerInfo(uri);
 
         _responsePipeline = new ResponsePipeline(_logger);
         RoutingContext = routingContext;
-        AuthTokenManager = settings.AuthTokenManager;
+        AuthTokenManager = context.AuthTokenManager;
         _protocolFactory = BoltProtocolFactory.Default;
     }
 
@@ -76,7 +77,7 @@ internal sealed class SocketConnection : IConnection
         IResponsePipeline responsePipeline = null,
         IAuthTokenManager authTokenManager = null,
         IBoltProtocolFactory protocolFactory = null, 
-        DriverContext settings = null)
+        DriverContext context = null)
     {
         _client = socketClient ?? throw new ArgumentNullException(nameof(socketClient));
         AuthToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
@@ -88,7 +89,7 @@ internal sealed class SocketConnection : IConnection
         _logger = new PrefixLogger(logger, FormatPrefix(_id));
         _responsePipeline = responsePipeline ?? new ResponsePipeline(logger);
         _protocolFactory = protocolFactory ?? BoltProtocolFactory.Default;
-        Settings = settings;
+        Context = context;
     }
 
     internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
@@ -143,7 +144,7 @@ internal sealed class SocketConnection : IConnection
 
         try
         {
-            await BoltProtocol.AuthenticateAsync(this, Settings.Config.UserAgent, authToken, Settings.Config.NotificationsConfig)
+            await BoltProtocol.AuthenticateAsync(this, Context.Config.UserAgent, authToken, Context.Config.NotificationsConfig)
                 .ConfigureAwait(false);
         }
         catch (Exception ex)
@@ -256,7 +257,7 @@ internal sealed class SocketConnection : IConnection
     public IServerInfo Server => _serverInfo;
 
     public bool UtcEncodedDateTime { get; private set; }
-    public DriverContext Settings { get; }
+    public DriverContext Context { get; }
     public IAuthToken AuthToken { get; private set; }
 
     public void UpdateId(string newConnId)
@@ -267,7 +268,11 @@ internal sealed class SocketConnection : IConnection
             newConnId);
 
         _id = newConnId;
-        _logger.Prefix = FormatPrefix(_id);
+        
+        if (_logger is PrefixLogger logger)
+        {
+            logger.Prefix = FormatPrefix(_id);
+        }
     }
 
     public void UpdateVersion(ServerVersion newVersion)

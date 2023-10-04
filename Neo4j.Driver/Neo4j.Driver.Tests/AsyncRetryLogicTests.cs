@@ -23,6 +23,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.TestUtil;
 using Xunit;
 
@@ -47,7 +48,7 @@ namespace Neo4j.Driver.Tests
         [MemberData(nameof(TransientErrors))]
         public async Task ShouldRetryOnTransientErrors(Exception error)
         {
-            var retryLogic = new AsyncRetryLogic(TimeSpan.FromSeconds(5), null);
+            var retryLogic = new AsyncRetryLogic(TimeSpan.FromSeconds(5), NullLogger.Instance);
             var work = CreateFailingWork(5, error);
 
             var result = await retryLogic.RetryAsync(() => work.Work(null));
@@ -59,7 +60,7 @@ namespace Neo4j.Driver.Tests
         [Fact]
         public async Task ShouldNotRetryOnSuccess()
         {
-            var retryLogic = new AsyncRetryLogic(TimeSpan.FromSeconds(5), null);
+            var retryLogic = new AsyncRetryLogic(TimeSpan.FromSeconds(5), NullLogger.Instance);
             var work = CreateFailingWork(5);
 
             var result = await retryLogic.RetryAsync(() => work.Work(null));

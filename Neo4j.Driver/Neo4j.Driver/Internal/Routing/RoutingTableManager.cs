@@ -192,7 +192,7 @@ internal class RoutingTableManager : IRoutingTableManager
 
         PurgeAged();
 
-        _logger?.Info("Routing table is updated => {0}", newRoutingTable);
+        _logger.Info("Routing table is updated => {0}", newRoutingTable);
     }
 
     private void PurgeAged()
@@ -226,7 +226,7 @@ internal class RoutingTableManager : IRoutingTableManager
             throw new ArgumentNullException(nameof(database));
         }
 
-        _logger?.Debug("Updating routing table for database '{0}'.", database);
+        _logger.Debug("Updating routing table for database '{0}'.", database);
 
         var existingTable = RoutingTableFor(database);
         if (existingTable == null)
@@ -324,7 +324,7 @@ internal class RoutingTableManager : IRoutingTableManager
                             return newRoutingTable;
                         }
 
-                        _logger?.Debug(
+                        _logger.Debug(
                             "Skipping stale routing table received from server '{0}' for database '{1}'",
                             router,
                             database);
@@ -345,16 +345,16 @@ internal class RoutingTableManager : IRoutingTableManager
                     var code = ne.Code;
                     if (failfast)
                     {
-                        _logger?.Error(ex, logMsg, router, database, code);
+                        _logger.Error(ex, logMsg, router, database, code);
                     }
                     else
                     {
-                        _logger?.Warn(ex, logMsg, router, database, code);
+                        _logger.Warn(ex, logMsg, router, database, code);
                     }
                 }
                 else
                 {
-                    _logger?.Warn(ex, logMsg, router, database);
+                    _logger.Warn(ex, logMsg, router, database);
                 }
 
                 if (failfast)

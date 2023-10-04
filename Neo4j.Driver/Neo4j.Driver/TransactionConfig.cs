@@ -149,10 +149,8 @@ public sealed class TransactionConfigBuilder
         }
 
         var result = TimeSpan.FromMilliseconds(Math.Ceiling(timeout.Value.TotalMilliseconds));
-        _logger?.Info(
-            "Transaction timeout {timeout} contains sub-millisecond precision and will be rounded up to {result}.",
-            timeout,
-            result);
+        _logger.Info(
+            $"Transaction timeout {timeout} contains sub-millisecond precision and will be rounded up to {result}.");
 
         return result;
     }

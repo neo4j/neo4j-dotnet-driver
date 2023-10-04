@@ -19,7 +19,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;
 
@@ -28,10 +27,7 @@ namespace Neo4j.Driver.Internal;
 internal sealed class Driver : IInternalDriver
 {
     private readonly DefaultBookmarkManager _bookmarkManager;
-
     private readonly IConnectionProvider _connectionProvider;
-    private readonly ILogger _logger;
-    private readonly IMetrics _metrics;
     private readonly IAsyncRetryLogic _retryLogic;
     private int _closedMarker;
 
@@ -42,20 +38,18 @@ internal sealed class Driver : IInternalDriver
         DriverContext driverContext)
     {
         Uri = uri;
-        Encrypted = driverContext.EncryptionManager.UseTls;
-        _logger = driverContext.Config.Logger;
-        _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
+        Context = driverContext;
         _retryLogic = retryLogic;
-        _metrics = driverContext.Metrics;
         Config = driverContext.Config;
+        _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
         _bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig());
     }
 
-    public Uri Uri { get; }
-
     private bool IsClosed => _closedMarker > 0;
-    public bool Encrypted { get; }
 
+    internal DriverContext Context { get; }
+    public Uri Uri { get; }
+    public bool Encrypted => Context.EncryptionManager.UseTls;
     public Config Config { get; }
 
     public IAsyncSession AsyncSession()
@@ -79,7 +73,7 @@ internal sealed class Driver : IInternalDriver
 
         var session = new AsyncSession(
             _connectionProvider,
-            _logger,
+            Config.Logger,
             _retryLogic,
             Config.FetchSize,
             sessionConfig,
@@ -224,17 +218,6 @@ internal sealed class Driver : IInternalDriver
         throw new ObjectDisposedException(
             nameof(Driver),
             "Cannot open a new session on a driver that is already disposed.");
-    }
-
-    internal IMetrics GetMetrics()
-    {
-        if (_metrics == null)
-        {
-            throw new InvalidOperationException(
-                "Cannot access driver metrics if it is not enabled when creating this driver.");
-        }
-
-        return _metrics;
     }
 
     private async Task<EagerResult<T>> ExecuteQueryAsyncInternal<T>(

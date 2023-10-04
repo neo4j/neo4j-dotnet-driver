@@ -137,7 +137,7 @@ public sealed class DriverIT : DirectDriverTestBase
         }
 
         // Then
-        var metrics = ((Internal.Driver)driver).GetMetrics();
+        var metrics = ((Internal.Driver)driver).Context.Metrics;
         var m = metrics.ConnectionPoolMetrics.Single().Value;
         Output.WriteLine(m.ToString());
         m.Created.Should().Be(sessionCount);

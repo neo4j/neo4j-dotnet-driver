@@ -22,6 +22,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Logging;
 using static Neo4j.Driver.Internal.Util.ConnectionContext;
 
 namespace Neo4j.Driver.Internal.Routing;
@@ -45,7 +46,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         RoutingContext = RoutingSetting.RoutingContext;
 
         DriverContext = driverContext;
-        _logger = driverContext.Config.Logger;
+        _logger = driverContext.Logger;
 
         _clusterConnectionPool = new ClusterConnectionPool(
             Enumerable.Empty<Uri>(),
@@ -67,9 +68,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         IClusterConnectionPool clusterConnPool,
         IRoutingTableManager routingTableManager)
     {
-        var config = new Config();
-        _logger = config.Logger;
-
+        _logger = NullLogger.Instance;
         _clusterConnectionPool = clusterConnPool;
         _routingTableManager = routingTableManager;
         _loadBalancingStrategy = CreateLoadBalancingStrategy(clusterConnPool, _logger);
@@ -177,7 +176,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
 
     public Task OnConnectionErrorAsync(Uri uri, string database, Exception e)
     {
-        _logger?.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
+        _logger.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
         _routingTableManager.ForgetServer(uri, database);
         return _clusterConnectionPool.DeactivateAsync(uri);
     }

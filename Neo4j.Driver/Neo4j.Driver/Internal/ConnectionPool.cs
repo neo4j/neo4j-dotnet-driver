@@ -68,7 +68,7 @@ internal sealed class ConnectionPool : IConnectionPool
     {
         _uri = uri;
         _id = $"pool-{_uri.Host}:{_uri.Port}";
-        _logger = new PrefixLogger(driverContext.Config.Logger, $"[{_id}]");
+        _logger = new PrefixLogger(driverContext.Logger, $"[{_id}]");
 
         _connectionFactory = connectionFactory;
         DriverContext = driverContext;
@@ -575,7 +575,7 @@ internal sealed class ConnectionPool : IConnectionPool
         var allCloseTasks = new List<Task>();
         while (_idleConnections.TryTake(out var connection))
         {
-            _logger?.Debug($"Disposing Available Connection {connection}");
+            _logger.Debug($"Disposing Available Connection {connection}");
             allCloseTasks.Add(DestroyConnectionAsync(connection));
         }
 
@@ -608,7 +608,7 @@ internal sealed class ConnectionPool : IConnectionPool
 
         foreach (var inUseConnection in _inUseConnections)
         {
-            _logger?.Info($"Disposing In Use Connection {inUseConnection}");
+            _logger.Info($"Disposing In Use Connection {inUseConnection}");
 
             if (_inUseConnections.TryRemove(inUseConnection))
             {

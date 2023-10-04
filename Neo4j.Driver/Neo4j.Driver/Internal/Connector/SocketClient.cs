@@ -28,7 +28,7 @@ namespace Neo4j.Driver.Internal.Connector;
 
 internal sealed class SocketClient : ISocketClient
 {
-    public DriverContext Settings { get; }
+    public DriverContext Context { get; }
     private const string MessagePattern = "C: {0}";
     private readonly IConnectionIoFactory _connectionIoFactory;
     private readonly IBoltHandshaker _handshaker;
@@ -49,13 +49,13 @@ internal sealed class SocketClient : ISocketClient
 
     public SocketClient(
         Uri uri,
-        DriverContext settings,
+        DriverContext context,
         ILogger logger,
         IConnectionIoFactory connectionIoFactory,
         IPackStreamFactory packstreamFactory = null,
         IBoltHandshaker boltHandshaker = null)
     {
-        Settings = settings;
+        Context = context;
         Version = BoltProtocolVersion.Unknown;
         _uri = uri;
         _logger = logger;
@@ -64,8 +64,8 @@ internal sealed class SocketClient : ISocketClient
         _connectionIoFactory = connectionIoFactory ?? SocketClientIoFactory.Default;
         _handshaker = boltHandshaker ?? BoltHandshaker.Default;
 
-        _readBufferStream = new MemoryStream(settings.Config.MaxReadBufferSize);
-        _tcpSocketClient = _connectionIoFactory.TcpSocketClient(settings, _logger);
+        _readBufferStream = new MemoryStream(context.Config.MaxReadBufferSize);
+        _tcpSocketClient = _connectionIoFactory.TcpSocketClient(context, _logger);
     }
 
     public bool IsOpen => _closedMarker == 0;
@@ -76,15 +76,15 @@ internal sealed class SocketClient : ISocketClient
     {
         await _tcpSocketClient.ConnectAsync(_uri, cancellationToken).ConfigureAwait(false);
 
-        _logger?.Debug($"~~ [CONNECT] {_uri}");
+        _logger.Debug($"~~ [CONNECT] {_uri}");
 
         Version = await _handshaker
             .DoHandshakeAsync(_tcpSocketClient, _logger, cancellationToken)
             .ConfigureAwait(false);
 
         _format = _connectionIoFactory.Format(Version);
-        _messageReader = _connectionIoFactory.Readers(_tcpSocketClient, Settings, _logger);
-        (_chunkWriter, _messageWriter) = _connectionIoFactory.Writers(_tcpSocketClient, Settings, _logger);
+        _messageReader = _connectionIoFactory.Readers(_tcpSocketClient, Context, _logger);
+        (_chunkWriter, _messageWriter) = _connectionIoFactory.Writers(_tcpSocketClient, Context, _logger);
 
         SetOpened();
     }
@@ -99,14 +99,14 @@ internal sealed class SocketClient : ISocketClient
             {
                 var writer = _packstreamFactory.BuildWriter(_format, _chunkWriter);
                 _messageWriter.Write(message, writer);
-                _logger?.Debug(MessagePattern, message);
+                _logger.Debug(MessagePattern, message);
             }
 
             await _chunkWriter.SendAsync().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            _logger?.Warn(ex, $"Unable to send message to server {_uri}, connection will be terminated.");
+            _logger.Warn(ex, $"Unable to send message to server {_uri}, connection will be terminated.");
             await DisposeAsync().ConfigureAwait(false);
             throw;
         }
@@ -129,7 +129,7 @@ internal sealed class SocketClient : ISocketClient
         }
         catch (Exception ex)
         {
-            _logger?.Error(ex, $"Unable to read message from server {_uri}, connection will be terminated.");
+            _logger.Error(ex, $"Unable to read message from server {_uri}, connection will be terminated.");
             await DisposeAsync().ConfigureAwait(false);
             throw;
         }
@@ -141,7 +141,7 @@ internal sealed class SocketClient : ISocketClient
         }
         catch (ProtocolException exc)
         {
-            _logger?.Warn(
+            _logger.Warn(
                 exc,
                 "A bolt protocol error has occurred with server {0}, connection will be terminated.",
                 _uri.ToString());

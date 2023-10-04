@@ -23,6 +23,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Routing;
 using Xunit;
 
@@ -63,7 +64,7 @@ namespace Neo4j.Driver.Tests.Routing
                 addressProvider,
                 discovery,
                 poolManager,
-                logger,
+                logger ?? NullLogger.Instance,
                 TimeSpan.Zero,
                 routingTable);
         }
