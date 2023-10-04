@@ -199,18 +199,18 @@ public sealed class ConfigBuilder
     }
 
     /// <summary>Specify the default read buffer size which the driver allocates for its internal buffers.</summary>
-    /// <param name="defaultBufferSize">the buffer size</param>
+    /// <param name="defaultReadBufferSize">the buffer size</param>
     /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
-    public ConfigBuilder WithDefaultReadBufferSize(int defaultBufferSize)
+    public ConfigBuilder WithDefaultReadBufferSize(int defaultReadBufferSize)
     {
-        if (defaultBufferSize < 0)
+        if (defaultReadBufferSize < 0)
         {
             throw new ArgumentOutOfRangeException(
-                nameof(defaultBufferSize),
-                defaultBufferSize,
+                nameof(defaultReadBufferSize),
+                defaultReadBufferSize,
                 "must be >= 0");
         }
-        _config.DefaultReadBufferSize = defaultBufferSize;
+        _config.DefaultReadBufferSize = defaultReadBufferSize;
         return this;
     }
 
