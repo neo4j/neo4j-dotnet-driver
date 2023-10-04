@@ -565,7 +565,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async void ShouldTimeoutAfterAcquireAsyncTimeoutIfPoolIsFull()
             {
-                var settings = new DriverContext(
+                var context = new DriverContext(
                     new Uri("bolt://localhost:7687"),
                     AuthTokenManagers.None,
                     new Config
@@ -575,9 +575,9 @@ namespace Neo4j.Driver.Tests
                         MaxIdleConnectionPoolSize = 0
                     });
 
-                var pool = NewConnectionPool(driverContext: settings);
+                var pool = NewConnectionPool(driverContext: context);
 
-                for (var i = 0; i < settings.Config.MaxConnectionPoolSize; i++)
+                for (var i = 0; i < context.Config.MaxConnectionPoolSize; i++)
                 {
                     await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
                 }

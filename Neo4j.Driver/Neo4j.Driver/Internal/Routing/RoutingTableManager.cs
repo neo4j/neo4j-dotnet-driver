@@ -38,11 +38,11 @@ internal class RoutingTableManager : IRoutingTableManager
     private readonly ConcurrentDictionary<string, IRoutingTable> _routingTables = new();
 
     public RoutingTableManager(
-        RoutingSettings routingSettings,
+        IInitialServerAddressProvider initialServerAddressProvider,
         IClusterConnectionPoolManager poolManager,
         ILogger logger)
     {
-        _initialServerAddressProvider = routingSettings.InitialServerAddressProvider;
+        _initialServerAddressProvider = initialServerAddressProvider;
         _discovery = new ClusterDiscovery();
         _poolManager = poolManager;
         _logger = logger;

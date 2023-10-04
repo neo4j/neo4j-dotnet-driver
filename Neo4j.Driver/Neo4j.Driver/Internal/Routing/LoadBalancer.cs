@@ -43,21 +43,20 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         DriverContext driverContext)
     {
         DriverContext = driverContext;
-        
-        _logger = driverContext.Logger;
-        
-        RoutingSetting = new RoutingSettings(parsedUri, driverContext);
-        
-        RoutingContext = RoutingSetting.RoutingContext;
+        RoutingContext = Neo4jUri.ParseRoutingContext(driverContext.InitialUri, Neo4jUri.DefaultBoltPort);
+
         _clusterConnectionPool = new ClusterConnectionPool(
             Enumerable.Empty<Uri>(),
             connectionFactory,
-            RoutingSetting,
+            RoutingContext,
             DriverContext);
 
-        _routingTableManager = new RoutingTableManager(RoutingSetting, this, _logger);
-        _loadBalancingStrategy = CreateLoadBalancingStrategy(_clusterConnectionPool, _logger);
-        _initialServerAddressProvider = RoutingSetting.InitialServerAddressProvider;
+        _logger = driverContext.Logger;
+        _initialServerAddressProvider = new InitialServerAddressProvider(parsedUri, driverContext.Config.Resolver);
+        _routingTableManager = new RoutingTableManager(_initialServerAddressProvider, this, _logger);
+        _loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy(
+            _clusterConnectionPool,
+            _logger);
     }
     
     /// <summary>
@@ -72,10 +71,10 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         _logger = NullLogger.Instance;
         _clusterConnectionPool = clusterConnPool;
         _routingTableManager = routingTableManager;
-        _loadBalancingStrategy = CreateLoadBalancingStrategy(clusterConnPool, _logger);
+        _loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy(
+            clusterConnPool,
+            _logger);
     }
-
-    public RoutingSettings RoutingSetting { get; set; }
 
     private bool IsClosed => _closedMarker > 0;
 
@@ -322,10 +321,5 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             .AppendFormat("closed={0}", IsClosed)
             .Append("}")
             .ToString();
-    }
-
-    private static ILoadBalancingStrategy CreateLoadBalancingStrategy(IClusterConnectionPool pool, ILogger logger)
-    {
-        return new LeastConnectedLoadBalancingStrategy(pool, logger);
     }
 }

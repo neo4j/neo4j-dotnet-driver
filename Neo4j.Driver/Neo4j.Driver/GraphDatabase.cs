@@ -215,7 +215,7 @@ public static class GraphDatabase
         IPooledConnectionFactory connectionFactory,
         DriverContext context)
     {
-        var parsedUri = Neo4jUri.ParseBoltUri(context.RootUri, Neo4jUri.DefaultBoltPort);
+        var parsedUri = Neo4jUri.ParseBoltUri(context.InitialUri, Neo4jUri.DefaultBoltPort);
         IConnectionProvider connectionProvider = Neo4jUri.IsRoutingUri(parsedUri)
             ? new LoadBalancer(
                 parsedUri,
@@ -228,8 +228,6 @@ public static class GraphDatabase
                 null);
 
         var retryLogic = new AsyncRetryLogic(context.Config.MaxTransactionRetryTime, context.Config.Logger);
-
-
         return new Internal.Driver(
             parsedUri,
             connectionProvider,

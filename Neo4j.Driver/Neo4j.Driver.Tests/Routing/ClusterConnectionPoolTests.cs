@@ -49,12 +49,10 @@ namespace Neo4j.Driver.Tests.Routing
                     AuthTokenManagers.None,
                     new Config());
 
-                var routingSetting = new RoutingSettings(uri, driverContext);
-
                 var pool = new ClusterConnectionPool(
                     uris,
                     connFactory,
-                    routingSetting,
+                    new Dictionary<string, string>(),
                     driverContext);
 
                 pool.ToString().Should().Contain("bolt://123:456/");

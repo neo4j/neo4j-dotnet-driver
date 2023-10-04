@@ -38,7 +38,7 @@ namespace Neo4j.Driver.Tests
             var cb = new ConfigBuilder(new Config());
             config?.Invoke(cb);
             return new DriverContext(
-                uri ?? FakeContext.RootUri,
+                uri ?? FakeContext.InitialUri,
                 authTokenManagers ?? FakeContext.AuthTokenManager,
                 cb.Build());
         }

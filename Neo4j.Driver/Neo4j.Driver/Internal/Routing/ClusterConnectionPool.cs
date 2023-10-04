@@ -36,13 +36,13 @@ internal class ClusterConnectionPool : IClusterConnectionPool
     public ClusterConnectionPool(
         IEnumerable<Uri> initUris,
         IPooledConnectionFactory connectionFactory,
-        RoutingSettings routingSetting,
+        IDictionary<string, string> routingContext,
         DriverContext driverContext
     ) : this(
         initUris,
         new ConnectionPoolFactory(
             connectionFactory,
-            routingSetting.RoutingContext,
+            routingContext,
             driverContext))
     {
     }

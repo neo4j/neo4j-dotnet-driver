@@ -25,20 +25,21 @@ namespace Neo4j.Driver.Internal;
 internal sealed class DriverContext
 {
     internal DriverContext(
-        Uri rootUri,
+        Uri initialUri,
         IAuthTokenManager authTokenManager,
         Config config,
         IHostResolver customHostResolver = null)
     {
-        RootUri = rootUri;
+        InitialUri = initialUri;
         AuthTokenManager = authTokenManager;
         Config = config;
         EncryptionManager = EncryptionManager.Create(
-            rootUri,
+            initialUri,
             config.NullableEncryptionLevel,
             config.TrustManager,
             config.Logger);
         DriverBookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig());
+        
         HostResolver = customHostResolver ??
             (RuntimeHelper.IsDotNetCore
                 ? new SystemNetCoreHostResolver(new SystemHostResolver())
@@ -55,7 +56,7 @@ internal sealed class DriverContext
     /// The root uri configured on the driver.
     /// This is not a uri for a connection.
     /// </summary>
-    public Uri RootUri { get; }
+    public Uri InitialUri { get; }
     public Config Config { get; }
     /// <summary>
     /// Shortcut to Config.Logger.

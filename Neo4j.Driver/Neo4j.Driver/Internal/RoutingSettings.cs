@@ -24,8 +24,7 @@ internal sealed class RoutingSettings
 {
     public RoutingSettings(Uri initServerUri, DriverContext context)
     {
-        InitialServerAddressProvider = new InitialServerAddressProvider(initServerUri, context.Config.Resolver);
-        RoutingContext = Neo4jUri.ParseRoutingContext(initServerUri, Neo4jUri.DefaultBoltPort);
+
     }
 
     public IDictionary<string, string> RoutingContext { get; }
