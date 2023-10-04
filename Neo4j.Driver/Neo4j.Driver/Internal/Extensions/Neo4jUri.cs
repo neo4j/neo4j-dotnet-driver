@@ -20,7 +20,7 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal;
 
-internal static class NetworkExtensions
+internal static class Neo4jUri
 {
     public static bool IsSimpleUriScheme(Uri uri)
     {
@@ -42,7 +42,7 @@ internal static class NetworkExtensions
         }
     }
 
-    public static bool IsRoutingUri(this Uri uri)
+    public static bool IsRoutingUri(Uri uri)
     {
         var scheme = uri.Scheme.ToLower();
         switch (scheme)
@@ -62,7 +62,7 @@ internal static class NetworkExtensions
         }
     }
 
-    public static EncryptionManager ParseUriSchemeToEncryptionManager(this Uri uri, ILogger logger)
+    public static EncryptionManager ParseUriSchemeToEncryptionManager(Uri uri, ILogger logger)
     {
         var scheme = uri.Scheme.ToLower();
         switch (scheme)
@@ -100,7 +100,7 @@ internal static class NetworkExtensions
 
     public static IDictionary<string, string> ParseRoutingContext(Uri uri, int defaultPort)
     {
-        if (!uri.IsRoutingUri())
+        if (!IsRoutingUri(uri))
         {
             return new Dictionary<string, string>();
         }
@@ -141,7 +141,7 @@ internal static class NetworkExtensions
 
     internal static void EnsureNoRoutingContextOnBolt(Uri uri)
     {
-        if (!uri.IsRoutingUri() && !string.IsNullOrEmpty(uri.Query))
+        if (!IsRoutingUri(uri) && !string.IsNullOrEmpty(uri.Query))
         {
             throw new ArgumentException($"Routing context are not supported with scheme 'bolt'. Given URI: '{uri}'");
         }

@@ -50,12 +50,12 @@ internal class EncryptionManager
     private static EncryptionManager CreateFromUriScheme(Uri uri, ILogger logger)
     {
         // let the uri scheme to decide
-        return uri.ParseUriSchemeToEncryptionManager(logger);
+        return Neo4jUri.ParseUriSchemeToEncryptionManager(uri, logger);
     }
 
     private static void AssertSimpleUriScheme(Uri uri, EncryptionLevel? encryptionLevel, TrustManager trustManager)
     {
-        if (!NetworkExtensions.IsSimpleUriScheme(uri))
+        if (!Neo4jUri.IsSimpleUriScheme(uri))
         {
             throw new ArgumentException(
                 "The encryption and trust settings cannot both be set via uri scheme and driver configuration. " +

@@ -20,6 +20,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector.Trust;
+using Neo4j.Driver.Internal.Logging;
 using Xunit;
 
 namespace Neo4j.Driver.Tests
@@ -35,7 +36,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldParseEmptyRoutingContext(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost/?");
-                var routingContext = NetworkExtensions.ParseRoutingContext(raw, DefaultBoltPort);
+                var routingContext = Neo4jUri.ParseRoutingContext(raw, DefaultBoltPort);
                 routingContext.Should().BeEmpty();
             }
 
@@ -44,7 +45,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldParseDefaultEntryRoutingContext(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost/?");
-                var routingContext = NetworkExtensions.ParseRoutingContext(raw, DefaultBoltPort);
+                var routingContext = Neo4jUri.ParseRoutingContext(raw, DefaultBoltPort);
 
                 routingContext.Should().HaveCount(1);
                 routingContext["address"].Should().Be("localhost:7687");
@@ -55,7 +56,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldParseMultipleRoutingContext(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost:7687/cat?name=molly&age=1&color=white");
-                var routingContext = NetworkExtensions.ParseRoutingContext(raw, DefaultBoltPort);
+                var routingContext = Neo4jUri.ParseRoutingContext(raw, DefaultBoltPort);
 
                 routingContext["name"].Should().Be("molly");
                 routingContext["age"].Should().Be("1");
@@ -68,7 +69,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldParseSingleRoutingContext(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost:7687/cat?name=molly");
-                var routingContext = NetworkExtensions.ParseRoutingContext(raw, DefaultBoltPort);
+                var routingContext = Neo4jUri.ParseRoutingContext(raw, DefaultBoltPort);
 
                 routingContext["name"].Should().Be("molly");
             }
@@ -78,7 +79,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldErrorIfMissingValue(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost:7687/cat?name=");
-                var exception = Record.Exception(() => NetworkExtensions.ParseRoutingContext(raw, DefaultBoltPort));
+                var exception = Record.Exception(() => Neo4jUri.ParseRoutingContext(raw, DefaultBoltPort));
                 exception.Should().BeOfType<ArgumentException>();
                 exception.Message.Should().Contain("Invalid parameters: 'name=' in URI");
             }
@@ -88,7 +89,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldErrorIfDuplicateKey(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost:7687/cat?name=molly&name=mostly_white");
-                var exception = Record.Exception(() => NetworkExtensions.ParseRoutingContext(raw, DefaultBoltPort));
+                var exception = Record.Exception(() => Neo4jUri.ParseRoutingContext(raw, DefaultBoltPort));
                 exception.Should().BeOfType<ArgumentException>();
                 exception.Message.Should().Contain("Duplicated query parameters with key 'name'");
             }
@@ -102,7 +103,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldContainAddressContext(string scheme, string address, string expectedAddress)
             {
                 var raw = new Uri($"{scheme}://{address}");
-                var routingContext = NetworkExtensions.ParseRoutingContext(raw, DefaultBoltPort);
+                var routingContext = Neo4jUri.ParseRoutingContext(raw, DefaultBoltPort);
 
                 routingContext["address"].Should().Be(expectedAddress);
             }
@@ -116,7 +117,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldBeSimpleUri(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost/?");
-                var isSimple = NetworkExtensions.IsSimpleUriScheme(raw);
+                var isSimple = Neo4jUri.IsSimpleUriScheme(raw);
 
                 isSimple.Should().BeTrue();
             }
@@ -129,7 +130,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldNotBeSimpleUri(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost/?");
-                var isSimple = NetworkExtensions.IsSimpleUriScheme(raw);
+                var isSimple = Neo4jUri.IsSimpleUriScheme(raw);
 
                 isSimple.Should().BeFalse();
             }
@@ -142,7 +143,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldErrorForUnknownBoltUri(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost/?");
-                var ex = Record.Exception(() => NetworkExtensions.IsSimpleUriScheme(raw));
+                var ex = Record.Exception(() => Neo4jUri.IsSimpleUriScheme(raw));
                 ex.Should().BeOfType<NotSupportedException>();
             }
         }
@@ -156,7 +157,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldBeRoutingUri(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost/?");
-                var isRoutingUri = raw.IsRoutingUri();
+                var isRoutingUri = Neo4jUri.IsRoutingUri(raw);
 
                 isRoutingUri.Should().BeTrue();
             }
@@ -168,7 +169,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldNotBeRoutingUri(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost/?");
-                var isRoutingUri = raw.IsRoutingUri();
+                var isRoutingUri = Neo4jUri.IsRoutingUri(raw);
 
                 isRoutingUri.Should().BeFalse();
             }
@@ -181,7 +182,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldErrorForUnknownBoltUri(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost/?");
-                var ex = Record.Exception(() => raw.IsRoutingUri());
+                var ex = Record.Exception(() => Neo4jUri.IsRoutingUri(raw));
                 ex.Should().BeOfType<NotSupportedException>();
             }
         }
@@ -194,7 +195,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldBeNoEncryptionNoTrust(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost/?");
-                var manager = raw.ParseUriSchemeToEncryptionManager(null);
+                var manager = Neo4jUri.ParseUriSchemeToEncryptionManager(raw, NullLogger.Instance);
 
                 manager.UseTls.Should().BeFalse();
                 manager.TrustManager.Should().BeNull();
@@ -207,7 +208,7 @@ namespace Neo4j.Driver.Tests
             {
                 var raw = new Uri($"{scheme}://localhost/?");
                 var log = new Mock<ILogger>().Object;
-                var manager = raw.ParseUriSchemeToEncryptionManager(log);
+                var manager = Neo4jUri.ParseUriSchemeToEncryptionManager(raw, log);
 
                 manager.UseTls.Should().BeTrue();
                 manager.TrustManager.Should().BeOfType<ChainTrustManager>();
@@ -221,7 +222,7 @@ namespace Neo4j.Driver.Tests
             {
                 var raw = new Uri($"{scheme}://localhost/?");
                 var log = new Mock<ILogger>().Object;
-                var manager = raw.ParseUriSchemeToEncryptionManager(log);
+                var manager = Neo4jUri.ParseUriSchemeToEncryptionManager(raw, log);
 
                 manager.UseTls.Should().BeTrue();
                 manager.TrustManager.Should().BeOfType<InsecureTrustManager>();
@@ -236,7 +237,7 @@ namespace Neo4j.Driver.Tests
             public void ShouldErrorForUnknownBoltUri(string scheme)
             {
                 var raw = new Uri($"{scheme}://localhost/?");
-                var ex = Record.Exception(() => raw.ParseUriSchemeToEncryptionManager(null));
+                var ex = Record.Exception(() => Neo4jUri.ParseUriSchemeToEncryptionManager(raw, NullLogger.Instance));
                 ex.Should().BeOfType<NotSupportedException>();
             }
         }

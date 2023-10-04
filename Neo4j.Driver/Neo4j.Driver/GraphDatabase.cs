@@ -204,7 +204,7 @@ public static class GraphDatabase
         uri = uri ?? throw new ArgumentNullException(nameof(uri));
         authTokenManager = authTokenManager ?? throw new ArgumentNullException(nameof(authTokenManager));
 
-        NetworkExtensions.EnsureNoRoutingContextOnBolt(uri);
+        Neo4jUri.EnsureNoRoutingContextOnBolt(uri);
 
         var builder = Config.Builder;
         action?.Invoke(builder);
@@ -220,12 +220,12 @@ public static class GraphDatabase
         IPooledConnectionFactory connectionFactory,
         DriverContext context)
     {
-        var parsedUri = NetworkExtensions.ParseBoltUri(context.RootUri, DefaultBoltPort);
-        var routingContext = NetworkExtensions.ParseRoutingContext(context.RootUri, DefaultBoltPort);
+        var parsedUri = Neo4jUri.ParseBoltUri(context.RootUri, DefaultBoltPort);
+        var routingContext = Neo4jUri.ParseRoutingContext(context.RootUri, DefaultBoltPort);
         var routingSettings = new RoutingSettings(parsedUri, routingContext, context.Config);
         var retryLogic = new AsyncRetryLogic(context.Config.MaxTransactionRetryTime, context.Config.Logger);
 
-        IConnectionProvider connectionProvider = parsedUri.IsRoutingUri()
+        IConnectionProvider connectionProvider = Neo4jUri.IsRoutingUri(parsedUri)
             ? new LoadBalancer(
                 connectionFactory,
                 routingSettings,
