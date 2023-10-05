@@ -23,4 +23,4 @@ internal sealed record BeginProtocolParams(
     TransactionConfig TxConfig,
     SessionConfig SessionConfig,
     INotificationsConfig NotificationsConfig,
-    bool AwaitBeginResult);
+    TransactionMeta TransactionMeta);

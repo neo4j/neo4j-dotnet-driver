@@ -22,7 +22,6 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver.Internal.Telemetry;
 
 namespace Neo4j.Driver.Internal;
 
@@ -32,18 +31,15 @@ internal sealed class BoltProtocol : IBoltProtocol
     private readonly IBoltProtocol _boltProtocolV3;
     private readonly IBoltProtocolHandlerFactory _protocolHandlerFactory;
     private readonly IBoltProtocolMessageFactory _protocolMessageFactory;
-    private readonly ITelemetryCollector _telemetryCollector;
 
     internal BoltProtocol(
         IBoltProtocol boltProtocolV3 = null,
         IBoltProtocolMessageFactory protocolMessageFactory = null,
-        IBoltProtocolHandlerFactory protocolHandlerFactory = null,
-        ITelemetryCollector telemetryCollector = null)
+        IBoltProtocolHandlerFactory protocolHandlerFactory = null)
     {
         _protocolMessageFactory = protocolMessageFactory ?? BoltProtocolMessageFactory.Instance;
         _protocolHandlerFactory = protocolHandlerFactory ?? BoltProtocolHandlerFactory.Instance;
         _boltProtocolV3 = boltProtocolV3 ?? BoltProtocolV3.Instance;
-        _telemetryCollector = telemetryCollector ?? TelemetryCollector.Default;
     }
 
     public Task AuthenticateAsync(
@@ -118,7 +114,7 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         var runHandler = _protocolHandlerFactory.NewRunResponseHandler(streamBuilder, summaryBuilder);
 
-        await AddTelemetryAsync(connection).ConfigureAwait(false);
+        await AddTelemetryAsync(connection, autoCommitParams.TransactionMeta).ConfigureAwait(false);
         await connection.EnqueueAsync(runMessage, runHandler).ConfigureAwait(false);
 
         if (!autoCommitParams.Reactive)
@@ -141,7 +137,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         connection.SessionConfig = beginParams.SessionConfig;
         BoltProtocolV3.ValidateImpersonatedUserForVersion(connection);
         BoltProtocolV3.ValidateNotificationsForVersion(connection, beginParams.NotificationsConfig);
-        await AddTelemetryAsync(connection).ConfigureAwait(false);
+        await AddTelemetryAsync(connection, beginParams.TransactionMeta).ConfigureAwait(false);
         await _boltProtocolV3.BeginTransactionAsync(connection, beginParams).ConfigureAwait(false);
     }
 
@@ -179,18 +175,16 @@ internal sealed class BoltProtocol : IBoltProtocol
         return streamBuilder.CreateCursor();
     }
 
-    private async Task AddTelemetryAsync(IConnection connection)
+    private async Task AddTelemetryAsync(IConnection connection, TransactionMeta meta)
     {
-        if (Driver.TelemetryDisabled || !connection.TelemetryEnabled)
+        if (!(meta?.TelemetryEnabled ?? false) || !connection.TelemetryEnabled)
         {
             return;
         }
 
-        if (_telemetryCollector.TryCreateMessage(out var message))
-        {
-            var handler = new TelemetryResponseHandler(_telemetryCollector);
-            await connection.EnqueueAsync(message, handler).ConfigureAwait(false);
-        }
+        var message = _protocolMessageFactory.NewTelemetryMessage(connection, meta);
+        var handler = _protocolHandlerFactory.NewTelemetryResponseHandler(meta);
+        await connection.EnqueueAsync(message, handler).ConfigureAwait(false);
     }
 
     public Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker)

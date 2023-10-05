@@ -16,23 +16,22 @@
 // limitations under the License.
 
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.Telemetry;
 
 namespace Neo4j.Driver.Internal.MessageHandling;
 
-internal class TelemetryResponseHandler : IResponseHandler
+internal sealed class TelemetryResponseHandler : IResponseHandler
 {
-    private ITelemetryCollector _telemetryCollector;
+    private readonly TransactionMeta _meta;
 
-    public TelemetryResponseHandler(ITelemetryCollector telemetryCollector)
+    public TelemetryResponseHandler(TransactionMeta meta)
     {
-        _telemetryCollector = telemetryCollector;
+        _meta = meta;
     }
 
     /// <inheritdoc />
     public void OnSuccess(IDictionary<string, object> metadata)
     {
-        _telemetryCollector.Clear();
+        _meta.SetAcked();
     }
 
     /// <inheritdoc />

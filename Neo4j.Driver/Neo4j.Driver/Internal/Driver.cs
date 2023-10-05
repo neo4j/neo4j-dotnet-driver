@@ -28,21 +28,6 @@ namespace Neo4j.Driver.Internal;
 
 internal sealed class Driver : IInternalDriver
 {
-    private static readonly AsyncLocal<TelemetryManager> AsyncLocalTelemetryManager = new();
-
-    public static TelemetryManager TelemetryManager
-    {
-        get
-        {
-            if (AsyncLocalTelemetryManager.Value == null)
-            {
-                AsyncLocalTelemetryManager.Value = new TelemetryManager();
-            }
-
-            return AsyncLocalTelemetryManager.Value;
-        }
-    }
-
     private readonly DefaultBookmarkManager _bookmarkManager;
 
     private readonly IConnectionProvider _connectionProvider;
@@ -51,12 +36,6 @@ internal sealed class Driver : IInternalDriver
     private readonly IAsyncRetryLogic _retryLogic;
     private int _closedMarker;
 
-    private static AsyncLocal<bool> _telemetryDisabled = new();
-    public static bool TelemetryDisabled
-    {
-        get => _telemetryDisabled.Value;
-        set => _telemetryDisabled.Value = value;
-    }
 
     internal Driver(
         Uri uri,
@@ -75,7 +54,6 @@ internal sealed class Driver : IInternalDriver
         _metrics = metrics;
         Config = config;
         _bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig());
-        TelemetryDisabled = config?.TelemetryDisabled ?? false;
     }
 
     public Uri Uri { get; }
@@ -110,7 +88,8 @@ internal sealed class Driver : IInternalDriver
             _retryLogic,
             Config.FetchSize,
             sessionConfig,
-            reactive);
+            reactive,
+            !Config.TelemetryDisabled);
 
         if (IsClosed)
         {
@@ -272,8 +251,7 @@ internal sealed class Driver : IInternalDriver
     {
         query = query ?? throw new ArgumentNullException(nameof(query));
         config ??= new QueryConfig();
-        using var _ = TelemetryManager.StartApiActivity(QueryApiType.DriverLevel);
-
+        
         var session = Session(x => ApplyConfig(config, x), false);
         await using (session.ConfigureAwait(false))
         {

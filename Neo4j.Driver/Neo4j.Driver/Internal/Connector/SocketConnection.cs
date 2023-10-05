@@ -43,7 +43,6 @@ internal sealed class SocketConnection : IConnection
     private readonly IResponsePipeline _responsePipeline;
     private readonly SemaphoreSlim _sendLock = new(1, 1);
     private readonly ServerInfo _serverInfo;
-    private readonly ITelemetryCollector _telemetryCollector;
     private readonly string _userAgent;
 
     private string _id;
@@ -71,7 +70,6 @@ internal sealed class SocketConnection : IConnection
         RoutingContext = routingContext;
         AuthTokenManager = authTokenManager;
         _protocolFactory = BoltProtocolFactory.Default;
-        _telemetryCollector = TelemetryCollector.Default;
     }
 
     // for test only
@@ -83,8 +81,7 @@ internal sealed class SocketConnection : IConnection
         ServerInfo server,
         IResponsePipeline responsePipeline = null,
         IAuthTokenManager authTokenManager = null,
-        IBoltProtocolFactory protocolFactory = null,
-        ITelemetryCollector telemetryCollector = null)
+        IBoltProtocolFactory protocolFactory = null)
     {
         _client = socketClient ?? throw new ArgumentNullException(nameof(socketClient));
         AuthToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
@@ -97,7 +94,6 @@ internal sealed class SocketConnection : IConnection
         _logger = new PrefixLogger(logger, FormatPrefix(_id));
         _responsePipeline = responsePipeline ?? new ResponsePipeline(logger);
         _protocolFactory = protocolFactory ?? BoltProtocolFactory.Default;
-        _telemetryCollector = telemetryCollector ?? TelemetryCollector.Default;
     }
 
     internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();

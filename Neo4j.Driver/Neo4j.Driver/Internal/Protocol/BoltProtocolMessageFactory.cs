@@ -16,8 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
@@ -57,6 +55,8 @@ internal interface IBoltProtocolMessageFactory
         TransactionConfig config,
         AccessMode mode,
         INotificationsConfig notificationsConfig);
+
+    TelemetryMessage NewTelemetryMessage(IConnection connection, TransactionMeta meta);
 }
 
 internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
@@ -169,5 +169,10 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
             mode,
             connection.SessionConfig,
             notificationsConfig);
+    }
+
+    public TelemetryMessage NewTelemetryMessage(IConnection connection, TransactionMeta meta)
+    {
+        return new TelemetryMessage(meta.ApiType);
     }
 }

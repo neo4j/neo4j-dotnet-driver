@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Telemetry;
 
 namespace Neo4j.Driver.Internal;
 
@@ -31,4 +32,5 @@ internal sealed record AutoCommitParams
 
     public SessionConfig SessionConfig { get; init; }
     public long FetchSize { get; init; } = Neo4j.Driver.Config.Infinite;
+    public TransactionMeta TransactionMeta { get; set; }
 }
