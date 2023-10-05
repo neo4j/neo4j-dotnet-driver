@@ -1,0 +1,68 @@
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "src": "../Neo4j.Driver/",
+          "files": [
+            "Neo4j.Driver/Neo4j.Driver.csproj"
+          ]
+        }
+      ],
+      "dest": "api",
+      "filter": "filterConfig.yaml",
+      "includePrivateMembers": false,
+      "disableGitFeatures": true,
+      "disableDefaultFilter": false,
+      "noRestore": false,
+      "namespaceLayout": "flattened", 
+      "memberLayout": "separatePages ",
+      "EnumSortOrder": "declaringOrder",
+      "allowCompilationErrors": false,
+      "outputFormat": "markdown"
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "files": [
+          "api/**.yml",
+          "api/index.md"
+        ]
+      },
+      {
+        "files": [
+          "articles/**.md",
+          "articles/**/toc.yml",
+          "toc.yml",
+          "*.md"
+        ]
+      }
+    ],
+    "resource": [
+      {
+        "files": [
+          "images/**"
+        ]
+      }
+    ],
+    "output": "_site",
+    "globalMetadata": {
+      "_appName": "Neo4j .NET API Reference",
+      "_appTitle": "Neo4j .NET API Reference",
+      "_disableContribution" : true,
+      "_appFooter" : "Copyright (c) 2002-2023 Neo4j",
+      "_disableNavbar": true,
+      "_appLogoPath": "images/neo4j-logo.png",
+      "_appFaviconPath": "images/neo4j-logo.png"
+    },
+    "template": [
+      "default",
+      "modern",
+      "neo4j-template"
+    ],
+    "postProcessors": [],
+    "keepFileLink": false,
+    "disableGitFeatures": false
+  }
+}
