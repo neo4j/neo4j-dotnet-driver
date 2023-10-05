@@ -73,7 +73,13 @@ internal class EncryptionManager
         {
             return new EncryptionManager(true, CreateSecureTrustManager(logger));
         }
-
+        
+        if (trustManager.Logger == null)
+        {
+            // likely to be true, as this is passed in by a user and logger is internal so we should set it.
+            trustManager.Logger = logger;
+        }
+        
         return new EncryptionManager(encrypted, trustManager);
     }
 
