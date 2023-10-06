@@ -21,6 +21,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
+
 namespace Neo4j.Driver.Internal;
 
 internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, IBookmarksTracker

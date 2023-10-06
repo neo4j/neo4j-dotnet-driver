@@ -54,7 +54,6 @@
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="5.0.0" />
-        <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="7.0.2" />
         <PackageReference Include="System.ValueTuple" Version="4.5.0" />
     </ItemGroup>
 </Project>

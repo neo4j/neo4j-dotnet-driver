@@ -25,7 +25,6 @@ using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver.Internal.Telemetry;
 using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal.Connector;
@@ -219,7 +218,6 @@ internal sealed class SocketConnection : IConnection
         }
 
         await _sendLock.WaitAsync().ConfigureAwait(false);
-
         try
         {
             // send
@@ -264,7 +262,6 @@ internal sealed class SocketConnection : IConnection
 
     public bool UtcEncodedDateTime { get; private set; }
     public IAuthToken AuthToken { get; private set; }
-
     public bool TelemetryEnabled { get; set; }
 
     public void UpdateId(string newConnId)

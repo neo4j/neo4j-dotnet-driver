@@ -21,7 +21,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Routing;
-using Neo4j.Driver.Internal.Telemetry;
 using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal;
@@ -35,7 +34,6 @@ internal sealed class Driver : IInternalDriver
     private readonly IMetrics _metrics;
     private readonly IAsyncRetryLogic _retryLogic;
     private int _closedMarker;
-
 
     internal Driver(
         Uri uri,
@@ -251,7 +249,7 @@ internal sealed class Driver : IInternalDriver
     {
         query = query ?? throw new ArgumentNullException(nameof(query));
         config ??= new QueryConfig();
-        
+
         var session = Session(x => ApplyConfig(config, x), false);
         await using (session.ConfigureAwait(false))
         {

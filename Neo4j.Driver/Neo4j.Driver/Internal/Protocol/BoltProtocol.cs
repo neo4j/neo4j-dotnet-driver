@@ -175,16 +175,16 @@ internal sealed class BoltProtocol : IBoltProtocol
         return streamBuilder.CreateCursor();
     }
 
-    private async Task AddTelemetryAsync(IConnection connection, TransactionInfo info)
+    private Task AddTelemetryAsync(IConnection connection, TransactionInfo info)
     {
         if (!(info?.TelemetryEnabled ?? false) || !connection.TelemetryEnabled)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         var message = _protocolMessageFactory.NewTelemetryMessage(connection, info);
         var handler = _protocolHandlerFactory.NewTelemetryResponseHandler(info);
-        await connection.EnqueueAsync(message, handler).ConfigureAwait(false);
+        return connection.EnqueueAsync(message, handler);
     }
 
     public Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker)
