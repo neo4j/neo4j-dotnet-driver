@@ -231,9 +231,9 @@ internal abstract class DelegatedConnection : IConnection
         return BoltProtocol.RunInAutoCommitTransactionAsync(this, autoCommitParams, notificationsConfig);
     }
 
-    public Task BeginTransactionAsync(BeginProtocolParams beginProtocolParams)
+    public Task BeginTransactionAsync(BeginTransactionParams beginTransactionParams)
     {
-        return BoltProtocol.BeginTransactionAsync(this, beginProtocolParams);
+        return BoltProtocol.BeginTransactionAsync(this, beginTransactionParams);
     }
 
     public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize)

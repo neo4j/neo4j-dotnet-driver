@@ -179,7 +179,7 @@ namespace Neo4j.Driver.Tests
                     x =>
                         x.BeginTransactionAsync(
                             It.IsAny<IConnection>(),
-                            It.Is<BeginProtocolParams>(y => y.TransactionInfo.AwaitBegin == true)),
+                            It.Is<BeginTransactionParams>(y => y.TransactionInfo.AwaitBegin == true)),
                     Times.Once);
             }
 
@@ -228,7 +228,7 @@ namespace Neo4j.Driver.Tests
                         x =>
                             x.BeginTransactionAsync(
                                 It.IsAny<IConnection>(),
-                                It.IsAny<BeginProtocolParams>()))
+                                It.IsAny<BeginTransactionParams>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
 
                 var session = NewSession(mockConn.Object);
@@ -253,7 +253,7 @@ namespace Neo4j.Driver.Tests
                         x =>
                             x.BeginTransactionAsync(
                                 It.IsAny<IConnection>(),
-                                It.IsAny<BeginProtocolParams>()))
+                                It.IsAny<BeginTransactionParams>()))
                     .Returns(Task.CompletedTask)
                     .Callback(
                         () =>
@@ -306,7 +306,7 @@ namespace Neo4j.Driver.Tests
                     x =>
                         x.BeginTransactionAsync(
                             It.IsAny<IConnection>(),
-                            It.Is<BeginProtocolParams>(y => y.TransactionInfo.AwaitBegin == false)),
+                            It.Is<BeginTransactionParams>(y => y.TransactionInfo.AwaitBegin == false)),
                     Times.Once);
             }
         }
@@ -322,7 +322,7 @@ namespace Neo4j.Driver.Tests
                         x =>
                             x.BeginTransactionAsync(
                                 It.IsAny<IConnection>(),
-                                It.IsAny<BeginProtocolParams>()))
+                                It.IsAny<BeginTransactionParams>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
 
                 var session = NewSession(mockConn.Object);

@@ -395,7 +395,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocolV3.Instance.BeginTransactionAsync(
                         mockConn.Object,
-                        new BeginProtocolParams(
+                        new BeginTransactionParams(
                         null,
                         null,
                         TransactionConfig.Default,
@@ -419,7 +419,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocolV3.Instance.BeginTransactionAsync(
                         mockConn.Object,
-                        new BeginProtocolParams(
+                        new BeginTransactionParams(
                         null,
                         null,
                         TransactionConfig.Default,
@@ -442,7 +442,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocolV3.Instance.BeginTransactionAsync(
                         mockConn.Object,
-                        new BeginProtocolParams(
+                        new BeginTransactionParams(
                         null,
                         null,
                         TransactionConfig.Default,
@@ -462,7 +462,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocolV3.Instance.BeginTransactionAsync(
                         mockConn.Object,
-                        new BeginProtocolParams(
+                        new BeginTransactionParams(
                         "db",
                         null,
                         TransactionConfig.Default,
@@ -483,7 +483,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocolV3.Instance.BeginTransactionAsync(
                         mockConn.Object,
-                        new BeginProtocolParams(
+                        new BeginTransactionParams(
                         null,
                         null,
                         TransactionConfig.Default,
@@ -519,7 +519,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var bookmarks = new InternalBookmarks();
                 await protocol.BeginTransactionAsync(
                     mockConn.Object,
-                    new BeginProtocolParams(
+                    new BeginTransactionParams(
                     null,
                     bookmarks,
                     tc,
@@ -564,7 +564,7 @@ namespace Neo4j.Driver.Internal.Protocol
                 var bookmarks = new InternalBookmarks();
                 await protocol.BeginTransactionAsync(
                     mockConn.Object,
-                    new BeginProtocolParams(
+                    new BeginTransactionParams(
                         null,
                         bookmarks,
                         tc,

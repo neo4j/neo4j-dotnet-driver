@@ -20,7 +20,7 @@ using Neo4j.Driver.Internal.Telemetry;
 
 namespace Neo4j.Driver.Internal;
 
-internal sealed record BeginProtocolParams(
+internal sealed record BeginTransactionParams(
     string Database,
     Bookmarks Bookmarks,
     TransactionConfig TxConfig,

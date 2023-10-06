@@ -16,7 +16,6 @@
 // limitations under the License.
 
 using Neo4j.Driver.Internal.MessageHandling;
-using Neo4j.Driver.Internal.Telemetry;
 
 namespace Neo4j.Driver.Internal;
 

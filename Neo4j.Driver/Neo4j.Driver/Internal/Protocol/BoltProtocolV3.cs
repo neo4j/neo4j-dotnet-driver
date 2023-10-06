@@ -160,7 +160,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         return streamBuilder.CreateCursor();
     }
 
-    public async Task BeginTransactionAsync(IConnection connection, BeginProtocolParams beginParams)
+    public async Task BeginTransactionAsync(IConnection connection, BeginTransactionParams beginParams)
     {
         connection.SessionConfig = beginParams.SessionConfig;
         ValidateImpersonatedUserForVersion(connection);

@@ -124,7 +124,7 @@ internal interface IConnectionRunner
         AutoCommitParams autoCommitParams,
         INotificationsConfig notificationsConfig);
 
-    Task BeginTransactionAsync(BeginProtocolParams beginParams);
+    Task BeginTransactionAsync(BeginTransactionParams beginParams);
 
     Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize);
     Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker);

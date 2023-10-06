@@ -124,7 +124,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         TransactionConfig = config;
         
         return _connection.BeginTransactionAsync(
-            new BeginProtocolParams(
+            new BeginTransactionParams(
                 Database,
                 _bookmarks,
                 TransactionConfig,

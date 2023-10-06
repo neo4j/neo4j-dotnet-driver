@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Tests
                 mockProtocol.Verify(
                     x => x.BeginTransactionAsync(
                         It.IsAny<IConnection>(),
-                        It.IsAny<BeginProtocolParams>()),
+                        It.IsAny<BeginTransactionParams>()),
                     Times.Once);
             }
         }
@@ -69,7 +69,7 @@ namespace Neo4j.Driver.Tests
                 protocol.Verify(
                     x => x.BeginTransactionAsync(
                         It.IsAny<IConnection>(),
-                        It.IsAny<BeginProtocolParams>()),
+                        It.IsAny<BeginTransactionParams>()),
                     Times.Once);
             }
         }

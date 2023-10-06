@@ -420,7 +420,7 @@ internal sealed class SocketConnection : IConnection
         return BoltProtocol.RunInAutoCommitTransactionAsync(this, autoCommitParams, notificationsConfig);
     }
 
-    public Task BeginTransactionAsync(BeginProtocolParams beginParams)
+    public Task BeginTransactionAsync(BeginTransactionParams beginParams)
     {
         return BoltProtocol.BeginTransactionAsync(this, beginParams);
     }
