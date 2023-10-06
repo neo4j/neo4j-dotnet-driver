@@ -401,7 +401,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         TransactionConfig.Default,
                         null,
                         null,
-                        new TransactionMeta(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
 
                 exception.Should().BeOfType<ArgumentException>();
             }
@@ -425,7 +425,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         TransactionConfig.Default,
                         null,
                         new NotificationsDisabledConfig(),
-                        new TransactionMeta(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
 
                 exception.Should().BeOfType<ArgumentOutOfRangeException>();
             }
@@ -448,7 +448,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         TransactionConfig.Default,
                         null,
                         new NotificationsDisabledConfig(),
-                        new TransactionMeta(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
 
                 exception.Should().BeNull();
             }
@@ -468,7 +468,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         TransactionConfig.Default,
                         null,
                         null,
-                        new TransactionMeta(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
 
                 exception.Should().BeOfType<ClientException>();
             }
@@ -489,7 +489,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         TransactionConfig.Default,
                         null,
                         null,
-                        new TransactionMeta(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
 
                 exception.Should().BeOfType<InvalidOperationException>();
             }
@@ -525,7 +525,7 @@ namespace Neo4j.Driver.Internal.Protocol
                     tc,
                     null,
                     null,
-                    new TransactionMeta(QueryApiType.UnmanagedTransaction, false, true)));
+                    new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)));
 
                 msgFactory.Verify(
                     x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
@@ -570,7 +570,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         tc,
                         null,
                         null,
-                        new TransactionMeta(QueryApiType.UnmanagedTransaction, false, false)));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, false)));
 
                 msgFactory.Verify(
                     x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),

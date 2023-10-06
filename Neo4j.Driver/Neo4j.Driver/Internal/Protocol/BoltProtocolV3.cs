@@ -179,7 +179,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             beginParams.NotificationsConfig);
 
         await connection.EnqueueAsync(message, NoOpResponseHandler.Instance).ConfigureAwait(false);
-        if (beginParams.TransactionMeta.AwaitBegin)
+        if (beginParams.TransactionInfo.AwaitBegin)
         {
             await connection.SyncAsync().ConfigureAwait(false);
         }

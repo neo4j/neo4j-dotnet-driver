@@ -20,9 +20,9 @@ using Neo4j.Driver.Internal.Telemetry;
 
 namespace Neo4j.Driver.Internal;
 
-internal sealed record TransactionMeta
+internal sealed record TransactionInfo
 {
-    public TransactionMeta(QueryApiType apiType, bool metricsEnabled, bool awaitBegin)
+    public TransactionInfo(QueryApiType apiType, bool metricsEnabled, bool awaitBegin)
     {
         ApiType = apiType;
         AwaitBegin = awaitBegin;

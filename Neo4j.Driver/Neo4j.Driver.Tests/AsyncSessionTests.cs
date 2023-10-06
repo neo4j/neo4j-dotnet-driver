@@ -179,7 +179,7 @@ namespace Neo4j.Driver.Tests
                     x =>
                         x.BeginTransactionAsync(
                             It.IsAny<IConnection>(),
-                            It.Is<BeginProtocolParams>(y => y.TransactionMeta.AwaitBegin == true)),
+                            It.Is<BeginProtocolParams>(y => y.TransactionInfo.AwaitBegin == true)),
                     Times.Once);
             }
 
@@ -306,7 +306,7 @@ namespace Neo4j.Driver.Tests
                     x =>
                         x.BeginTransactionAsync(
                             It.IsAny<IConnection>(),
-                            It.Is<BeginProtocolParams>(y => y.TransactionMeta.AwaitBegin == false)),
+                            It.Is<BeginProtocolParams>(y => y.TransactionInfo.AwaitBegin == false)),
                     Times.Once);
             }
         }

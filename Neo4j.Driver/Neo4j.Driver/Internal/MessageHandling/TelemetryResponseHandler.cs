@@ -21,17 +21,17 @@ namespace Neo4j.Driver.Internal.MessageHandling;
 
 internal sealed class TelemetryResponseHandler : IResponseHandler
 {
-    private readonly TransactionMeta _meta;
+    private readonly TransactionInfo _info;
 
-    public TelemetryResponseHandler(TransactionMeta meta)
+    public TelemetryResponseHandler(TransactionInfo info)
     {
-        _meta = meta;
+        _info = info;
     }
 
     /// <inheritdoc />
     public void OnSuccess(IDictionary<string, object> metadata)
     {
-        _meta.SetAcked();
+        _info.SetAcked();
     }
 
     /// <inheritdoc />

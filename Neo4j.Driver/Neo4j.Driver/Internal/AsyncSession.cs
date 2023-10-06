@@ -146,7 +146,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         var tx = await TryExecuteAsync(
                 _logger,
                 () => BeginTransactionWithoutLoggingAsync(mode, action, disposeUnconsumedSessionResult,
-                    new TransactionMeta(QueryApiType.UnmanagedTransaction, TelemetryEnabled, true)))
+                    new TransactionInfo(QueryApiType.UnmanagedTransaction, TelemetryEnabled, true)))
             .ConfigureAwait(false);
 
         return tx;
@@ -184,7 +184,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                             FetchSize = _fetchSize,
                             BookmarksTracker = this,
                             ResultResourceHandler = this,
-                            TransactionMeta = new TransactionMeta(
+                            TransactionInfo = new TransactionInfo(
                                 QueryApiType.AutoCommit,
                                 TelemetryEnabled,
                                 false)
@@ -203,13 +203,13 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
             AccessMode.Read,
             func,
             null,
-            new TransactionMeta(QueryApiType.DriverLevel, TelemetryEnabled, false));
+            new TransactionInfo(QueryApiType.DriverLevel, TelemetryEnabled, false));
     }
 
     public Task<EagerResult<T>> PipelinedExecuteWriteAsync<T>(Func<IAsyncQueryRunner, Task<EagerResult<T>>> func)
     {
         return RunTransactionAsync(AccessMode.Write, func, null,
-            new TransactionMeta(QueryApiType.DriverLevel, TelemetryEnabled, false));
+            new TransactionInfo(QueryApiType.DriverLevel, TelemetryEnabled, false));
     }
 
     private TransactionConfig BuildTransactionConfig(Action<TransactionConfigBuilder> action)
@@ -305,7 +305,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         AccessMode mode,
         Func<IAsyncTransaction, Task> work,
         Action<TransactionConfigBuilder> action,
-        TransactionMeta transactionMeta = null)
+        TransactionInfo transactionInfo = null)
     {
         return RunTransactionAsync(
             mode,
@@ -316,23 +316,23 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                 return ignored;
             },
             action,
-            transactionMeta);
+            transactionInfo);
     }
 
     private Task<T> RunTransactionAsync<T>(
         AccessMode mode,
         Func<IAsyncTransaction, Task<T>> work,
         Action<TransactionConfigBuilder> action,
-        TransactionMeta transactionMeta = null)
+        TransactionInfo transactionInfo = null)
     {
-        transactionMeta ??= new TransactionMeta (QueryApiType.TransactionFunction, TelemetryEnabled, true);
+        transactionInfo ??= new TransactionInfo (QueryApiType.TransactionFunction, TelemetryEnabled, true);
         
         return TryExecuteAsync(
             _logger,
             () => _retryLogic.RetryAsync(
                 async () =>
                 {
-                    var tx = await BeginTransactionWithoutLoggingAsync(mode, action, true, transactionMeta).ConfigureAwait(false);
+                    var tx = await BeginTransactionWithoutLoggingAsync(mode, action, true, transactionInfo).ConfigureAwait(false);
                     try
                     {
                         var result = await work(tx).ConfigureAwait(false);
@@ -359,7 +359,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         AccessMode mode,
         Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult,
-        TransactionMeta transactionMeta)
+        TransactionInfo transactionInfo)
     {
         var config = BuildTransactionConfig(action);
         await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
@@ -381,7 +381,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
             SessionConfig,
             _notificationsConfig);
 
-        await tx.BeginTransactionAsync(config, transactionMeta).ConfigureAwait(false);
+        await tx.BeginTransactionAsync(config, transactionInfo).ConfigureAwait(false);
         _transaction = tx;
         return _transaction;
     }

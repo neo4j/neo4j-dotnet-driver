@@ -743,7 +743,7 @@ namespace Neo4j.Driver.Internal.Protocol
                     FetchSize = 10,
                     BookmarksTracker = mockBt.Object,
                     ResultResourceHandler = mockRrh.Object,
-                    TransactionMeta = new TransactionMeta(QueryApiType.AutoCommit, true, false)
+                    TransactionInfo = new TransactionInfo(QueryApiType.AutoCommit, true, false)
                 };
 
                 var mockConn = new Mock<IConnection>();
@@ -847,7 +847,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         TransactionConfig.Default,
                         new SessionConfig("Douglas Fir"),
                         null,
-                        new TransactionMeta(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
 
                 exception.Should().BeOfType<ArgumentException>();
             }
@@ -872,7 +872,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         TransactionConfig.Default,
                         null,
                         new NotificationsDisabledConfig(),
-                        new TransactionMeta(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
 
                 exception.Should().BeOfType<ArgumentOutOfRangeException>();
             }
@@ -895,7 +895,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         TransactionConfig.Default,
                         null,
                         new NotificationsDisabledConfig(),
-                        new TransactionMeta(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
 
                 exception.Should().BeNull();
             }
@@ -919,7 +919,7 @@ namespace Neo4j.Driver.Internal.Protocol
                         TransactionConfig.Default,
                         new SessionConfig("Douglas Fir"),
                         null,
-                        new TransactionMeta(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
 
                 exception.Should().BeNull();
             }
@@ -945,12 +945,12 @@ namespace Neo4j.Driver.Internal.Protocol
                     config,
                     sessionConfig,
                     null,
-                    new TransactionMeta(QueryApiType.UnmanagedTransaction, false, true)));
+                    new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)));
 
                 mockV3.Verify(
                     x => x.BeginTransactionAsync(mockConn.Object, 
                         new BeginProtocolParams("db", bookmarks, config, sessionConfig, null,
-                            new TransactionMeta(QueryApiType.UnmanagedTransaction, false, true))),
+                            new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))),
                     Times.Once);
 
                 mockConn.Verify(

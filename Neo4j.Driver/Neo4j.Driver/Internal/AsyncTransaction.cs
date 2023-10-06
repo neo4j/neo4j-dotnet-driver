@@ -119,7 +119,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
     public TransactionConfig TransactionConfig { get; private set; }
 
-    public Task BeginTransactionAsync(TransactionConfig config, TransactionMeta transactionMeta)
+    public Task BeginTransactionAsync(TransactionConfig config, TransactionInfo transactionInfo)
     {
         TransactionConfig = config;
         
@@ -130,7 +130,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
                 TransactionConfig,
                 _sessionConfig,
                 _notificationsConfig,
-                transactionMeta));
+                transactionInfo));
     }
 
     public async Task MarkToCloseAsync()

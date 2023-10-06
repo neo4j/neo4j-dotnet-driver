@@ -114,7 +114,7 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         var runHandler = _protocolHandlerFactory.NewRunResponseHandler(streamBuilder, summaryBuilder);
 
-        await AddTelemetryAsync(connection, autoCommitParams.TransactionMeta).ConfigureAwait(false);
+        await AddTelemetryAsync(connection, autoCommitParams.TransactionInfo).ConfigureAwait(false);
         await connection.EnqueueAsync(runMessage, runHandler).ConfigureAwait(false);
 
         if (!autoCommitParams.Reactive)
@@ -137,7 +137,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         connection.SessionConfig = beginParams.SessionConfig;
         BoltProtocolV3.ValidateImpersonatedUserForVersion(connection);
         BoltProtocolV3.ValidateNotificationsForVersion(connection, beginParams.NotificationsConfig);
-        await AddTelemetryAsync(connection, beginParams.TransactionMeta).ConfigureAwait(false);
+        await AddTelemetryAsync(connection, beginParams.TransactionInfo).ConfigureAwait(false);
         await _boltProtocolV3.BeginTransactionAsync(connection, beginParams).ConfigureAwait(false);
     }
 
@@ -175,15 +175,15 @@ internal sealed class BoltProtocol : IBoltProtocol
         return streamBuilder.CreateCursor();
     }
 
-    private async Task AddTelemetryAsync(IConnection connection, TransactionMeta meta)
+    private async Task AddTelemetryAsync(IConnection connection, TransactionInfo info)
     {
-        if (!(meta?.TelemetryEnabled ?? false) || !connection.TelemetryEnabled)
+        if (!(info?.TelemetryEnabled ?? false) || !connection.TelemetryEnabled)
         {
             return;
         }
 
-        var message = _protocolMessageFactory.NewTelemetryMessage(connection, meta);
-        var handler = _protocolHandlerFactory.NewTelemetryResponseHandler(meta);
+        var message = _protocolMessageFactory.NewTelemetryMessage(connection, info);
+        var handler = _protocolHandlerFactory.NewTelemetryResponseHandler(info);
         await connection.EnqueueAsync(message, handler).ConfigureAwait(false);
     }
 

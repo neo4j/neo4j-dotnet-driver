@@ -56,7 +56,7 @@ internal interface IBoltProtocolMessageFactory
         AccessMode mode,
         INotificationsConfig notificationsConfig);
 
-    TelemetryMessage NewTelemetryMessage(IConnection connection, TransactionMeta meta);
+    TelemetryMessage NewTelemetryMessage(IConnection connection, TransactionInfo info);
 }
 
 internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
@@ -171,8 +171,8 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
             notificationsConfig);
     }
 
-    public TelemetryMessage NewTelemetryMessage(IConnection connection, TransactionMeta meta)
+    public TelemetryMessage NewTelemetryMessage(IConnection connection, TransactionInfo info)
     {
-        return new TelemetryMessage(meta.ApiType);
+        return new TelemetryMessage(info.ApiType);
     }
 }

@@ -57,7 +57,7 @@ internal interface IBoltProtocolHandlerFactory
         SummaryBuilder summaryBuilder,
         IBookmarksTracker bookmarksTracker);
     
-    TelemetryResponseHandler NewTelemetryResponseHandler(TransactionMeta meta);
+    TelemetryResponseHandler NewTelemetryResponseHandler(TransactionInfo info);
 }
 
 internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
@@ -127,8 +127,8 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
         return new PullAllResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
     }
 
-    public TelemetryResponseHandler NewTelemetryResponseHandler(TransactionMeta meta)
+    public TelemetryResponseHandler NewTelemetryResponseHandler(TransactionInfo info)
     {
-        return new TelemetryResponseHandler(meta);
+        return new TelemetryResponseHandler(info);
     }
 }
