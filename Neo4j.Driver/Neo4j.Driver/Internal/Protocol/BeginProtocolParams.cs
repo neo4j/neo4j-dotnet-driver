@@ -15,6 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Threading;
+using Neo4j.Driver.Internal.Telemetry;
+
 namespace Neo4j.Driver.Internal;
 
 internal sealed record BeginProtocolParams(
@@ -24,3 +27,36 @@ internal sealed record BeginProtocolParams(
     SessionConfig SessionConfig,
     INotificationsConfig NotificationsConfig,
     TransactionInfo TransactionInfo);
+
+internal sealed record TransactionInfo
+{
+    public TransactionInfo(QueryApiType apiType, bool metricsEnabled, bool awaitBegin)
+    {
+        ApiType = apiType;
+        AwaitBegin = awaitBegin;
+        _enabled = metricsEnabled;
+    }
+
+    // This is used to ensure that the transaction meta is only sent once.
+    private long _interlocked;
+
+    /// <summary>
+    /// Holds if the driver enables the sending of metrics to Neo4j.
+    /// </summary>
+    private readonly bool _enabled;
+
+    public QueryApiType ApiType { get; }
+    public bool AwaitBegin { get; }
+
+    /// <summary>
+    /// Returns true if driver enabled and hasn't been acked yet.
+    /// </summary>
+    public bool TelemetryEnabled => _enabled && !Acked;
+
+    public bool Acked => Interlocked.Read(ref _interlocked) > 0;
+
+    public void SetAcked()
+    {
+        Interlocked.Increment(ref _interlocked);
+    }
+}
