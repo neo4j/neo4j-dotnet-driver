@@ -200,9 +200,19 @@ public class Config
     public INotificationsConfig NotificationsConfig { get; internal set; }
 
     /// <summary>
-    /// Specifies whether the driver will send telemetry data to Neo4j. This data is used to improve the driver and
-    /// for diagnostics. If set to true, the driver will not collect or send any telemetry. If set to false, the driver
-    /// will collect and send telemetry data. The default value is false.
+    /// The configuration for whether the driver attempts to send telemetry data.<br/>
+    /// The telemetry collected covers high level usage of the driver and does not include any queries or
+    /// parameters.<br/>
+    /// Current collected metrics:
+    /// <list type="bullet">
+    ///     <item>Which method was used to start a transaction.</item>
+    /// </list>
+    /// Telemetry metrics are sent via Bolt to the uri provided when creating the driver instance or servers that make up
+    /// the cluster members and Neo4j makes no attempt to collect these usage metrics from outside of AuraDB
+    /// (Neo4j's cloud offering).<br/>
+    /// Users can configure Neo4j server's collection collection behavior of client drivers telemetry data and log the
+    /// telemetry data for diagnostics purposes.<br/>
+    /// By default the driver allows the collection of this telemetry. 
     /// </summary>
     public bool TelemetryDisabled { get; set; }
 }
