@@ -5,7 +5,7 @@
         {
           "src": "../Neo4j.Driver/",
           "files": [
-            "Neo4j.Driver/Neo4j.Driver.csproj"
+            "Neo4j.Driver/bin/Release/net6.0/Neo4j.Driver.dll"
           ]
         }
       ],
@@ -48,8 +48,8 @@
     ],
     "output": "_site",
     "globalMetadata": {
-      "_appName": "Neo4j .NET API Reference",
-      "_appTitle": "Neo4j .NET API Reference",
+      "_appName": "[app name not set]",
+      "_appTitle": "",
       "_disableContribution" : true,
       "_appFooter" : "Copyright (c) 2002-2023 Neo4j",
       "_disableNavbar": true,
