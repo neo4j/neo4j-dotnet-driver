@@ -56,6 +56,8 @@ internal interface IBoltProtocolHandlerFactory
         IResultCursorBuilder streamBuilder,
         SummaryBuilder summaryBuilder,
         IBookmarksTracker bookmarksTracker);
+    
+    TelemetryResponseHandler NewTelemetryResponseHandler(TransactionInfo info);
 }
 
 internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
@@ -123,5 +125,10 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
         IBookmarksTracker bookmarksTracker)
     {
         return new PullAllResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
+    }
+
+    public TelemetryResponseHandler NewTelemetryResponseHandler(TransactionInfo info)
+    {
+        return new TelemetryResponseHandler(info);
     }
 }

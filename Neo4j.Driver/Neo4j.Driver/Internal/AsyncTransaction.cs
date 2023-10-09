@@ -120,18 +120,18 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
     public TransactionConfig TransactionConfig { get; private set; }
 
-    public Task BeginTransactionAsync(TransactionConfig config, bool awaitBeginResult)
+    public Task BeginTransactionAsync(TransactionConfig config, TransactionInfo transactionInfo)
     {
         TransactionConfig = config;
         
         return _connection.BeginTransactionAsync(
-            new BeginProtocolParams(
+            new BeginTransactionParams(
                 Database,
                 _bookmarks,
                 TransactionConfig,
                 _sessionConfig,
                 _notificationsConfig,
-                awaitBeginResult));
+                transactionInfo));
     }
 
     public async Task MarkToCloseAsync()
@@ -358,4 +358,3 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         }
     }
 }
-

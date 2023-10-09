@@ -114,7 +114,7 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         var runHandler = _protocolHandlerFactory.NewRunResponseHandler(streamBuilder, summaryBuilder);
 
-        // await connection.ReAuthAsync(autoCommitParams.SessionConfig?.AuthToken, false);
+        await AddTelemetryAsync(connection, autoCommitParams.TransactionInfo).ConfigureAwait(false);
         await connection.EnqueueAsync(runMessage, runHandler).ConfigureAwait(false);
 
         if (!autoCommitParams.Reactive)
@@ -132,12 +132,13 @@ internal sealed class BoltProtocol : IBoltProtocol
         return streamBuilder.CreateCursor();
     }
 
-    public Task BeginTransactionAsync(IConnection connection, BeginProtocolParams beginParams)
+    public async Task BeginTransactionAsync(IConnection connection, BeginTransactionParams beginParams)
     {
         connection.SessionConfig = beginParams.SessionConfig;
         BoltProtocolV3.ValidateImpersonatedUserForVersion(connection);
         BoltProtocolV3.ValidateNotificationsForVersion(connection, beginParams.NotificationsConfig);
-        return _boltProtocolV3.BeginTransactionAsync(connection, beginParams);
+        await AddTelemetryAsync(connection, beginParams.TransactionInfo).ConfigureAwait(false);
+        await _boltProtocolV3.BeginTransactionAsync(connection, beginParams).ConfigureAwait(false);
     }
 
     public async Task<IResultCursor> RunInExplicitTransactionAsync(
@@ -172,6 +173,18 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         await connection.SendAsync().ConfigureAwait(false);
         return streamBuilder.CreateCursor();
+    }
+
+    private Task AddTelemetryAsync(IConnection connection, TransactionInfo info)
+    {
+        if (!(info?.TelemetryEnabled ?? false) || !connection.TelemetryEnabled)
+        {
+            return Task.CompletedTask;
+        }
+
+        var message = _protocolMessageFactory.NewTelemetryMessage(connection, info);
+        var handler = _protocolHandlerFactory.NewTelemetryResponseHandler(info);
+        return connection.EnqueueAsync(message, handler);
     }
 
     public Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker)

@@ -45,7 +45,7 @@ internal interface IBoltProtocol
         AutoCommitParams autoCommitParams,
         INotificationsConfig notificationsConfig);
 
-    Task BeginTransactionAsync(IConnection connection, BeginProtocolParams beginParams);
+    Task BeginTransactionAsync(IConnection connection, BeginTransactionParams beginParams);
 
     Task<IResultCursor> RunInExplicitTransactionAsync(
         IConnection connection,

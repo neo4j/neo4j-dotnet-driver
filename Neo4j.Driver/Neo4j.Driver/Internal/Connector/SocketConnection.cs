@@ -21,7 +21,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Preview.Auth;
-using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
@@ -263,6 +262,7 @@ internal sealed class SocketConnection : IConnection
 
     public bool UtcEncodedDateTime { get; private set; }
     public IAuthToken AuthToken { get; private set; }
+    public bool TelemetryEnabled { get; set; }
 
     public void UpdateId(string newConnId)
     {
@@ -417,7 +417,7 @@ internal sealed class SocketConnection : IConnection
         return BoltProtocol.RunInAutoCommitTransactionAsync(this, autoCommitParams, notificationsConfig);
     }
 
-    public Task BeginTransactionAsync(BeginProtocolParams beginParams)
+    public Task BeginTransactionAsync(BeginTransactionParams beginParams)
     {
         return BoltProtocol.BeginTransactionAsync(this, beginParams);
     }

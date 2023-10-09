@@ -194,6 +194,13 @@ internal abstract class DelegatedConnection : IConnection
         return Delegate.ValidateCredsAsync();
     }
 
+    /// <inheritdoc />
+    public bool TelemetryEnabled
+    {
+        get => Delegate.TelemetryEnabled;
+        set => Delegate.TelemetryEnabled = value;
+    }
+
     public Task LoginAsync(string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
     {
         return BoltProtocol.AuthenticateAsync(this, userAgent, authToken, notificationsConfig);
@@ -224,9 +231,9 @@ internal abstract class DelegatedConnection : IConnection
         return BoltProtocol.RunInAutoCommitTransactionAsync(this, autoCommitParams, notificationsConfig);
     }
 
-    public Task BeginTransactionAsync(BeginProtocolParams beginProtocolParams)
+    public Task BeginTransactionAsync(BeginTransactionParams beginTransactionParams)
     {
-        return BoltProtocol.BeginTransactionAsync(this, beginProtocolParams);
+        return BoltProtocol.BeginTransactionAsync(this, beginTransactionParams);
     }
 
     public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize)

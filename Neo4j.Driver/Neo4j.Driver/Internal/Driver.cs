@@ -86,7 +86,8 @@ internal sealed class Driver : IInternalDriver
             _retryLogic,
             Config.FetchSize,
             sessionConfig,
-            reactive);
+            reactive,
+            !Config.TelemetryDisabled);
 
         if (IsClosed)
         {
