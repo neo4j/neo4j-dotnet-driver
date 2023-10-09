@@ -31,6 +31,8 @@ internal class ConsumableResultCursor : IInternalResultCursor, IAsyncEnumerator<
         _cursor = cursor;
     }
 
+    public IInternalAsyncTransaction Transaction => _cursor.Transaction;
+
     public ValueTask<bool> MoveNextAsync()
     {
         return new ValueTask<bool>(FetchAsync());
@@ -74,6 +76,7 @@ internal class ConsumableResultCursor : IInternalResultCursor, IAsyncEnumerator<
     }
 
     public bool IsOpen => !_isConsumed;
+
 
     public void Cancel()
     {

@@ -15,9 +15,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+
 namespace Neo4j.Driver.Internal;
 
 internal interface IInternalAsyncTransaction : IAsyncTransaction
 {
+    bool IsErrored(out Exception ex);
     bool IsOpen { get; }
 }

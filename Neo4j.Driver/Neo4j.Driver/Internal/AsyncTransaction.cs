@@ -80,11 +80,35 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         _bookmarks = bookmarks;
     }
 
+    /// <summary>
+    /// Sets the error for the transaction if it is not already set.
+    /// This avoids the exception changing if multiple errors occur.
+    /// </summary>
+    /// <param name="ex">The first exception to occur in the transaction.</param>
+    internal void SetErrorIfNull(Exception ex)
+    {
+        TransactionError ??= ex;
+    }
+    
+    internal Exception TransactionError { get; set; }
+
+    public bool IsErrored(out Exception ex)
+    {
+        if (TransactionError != null)
+        {
+            ex = TransactionError;
+            return true;
+        }
+
+        ex = null;
+        return false;
+    }
+
     public bool IsOpen => _state == Active;
 
     public override Task<IResultCursor> RunAsync(Query query)
     {
-        var result = _state.RunAsync(query, _connection, _logger, _reactive, _fetchSize, out var nextState);
+        var result = _state.RunAsync(query, _connection, _logger, _reactive, _fetchSize, this,  out var nextState);
         _state = nextState;
         _results.Add(result);
         return result;
@@ -200,6 +224,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
         internal override async Task OnErrorAsync(Exception error)
         {
+            _transaction.SetErrorIfNull(error);
             await _transaction.MarkToCloseAsync().ConfigureAwait(false);
             throw error;
         }
@@ -213,6 +238,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             ILogger logger,
             bool reactive,
             long fetchSize,
+            IInternalAsyncTransaction transaction,
             out IState nextState);
 
         Task CommitAsync(
@@ -234,10 +260,11 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             ILogger logger,
             bool reactive,
             long fetchSize,
+            IInternalAsyncTransaction transaction,
             out IState nextState)
         {
             nextState = Active;
-            return connection.RunInExplicitTransactionAsync(query, reactive, fetchSize);
+            return connection.RunInExplicitTransactionAsync(query, reactive, fetchSize, transaction);
         }
 
         public Task CommitAsync(
@@ -267,6 +294,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             ILogger logger,
             bool reactive,
             long fetchSize,
+            IInternalAsyncTransaction transaction,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -300,6 +328,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             ILogger logger,
             bool reactive,
             long fetchSize,
+            IInternalAsyncTransaction transaction,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -333,6 +362,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             ILogger logger,
             bool reactive,
             long fetchSize,
+            IInternalAsyncTransaction transaction,
             out IState nextState)
         {
             throw new TransactionClosedException(

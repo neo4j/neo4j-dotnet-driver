@@ -31,11 +31,15 @@ internal class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
     private Task<string[]> _keys;
     private IRecord _peeked;
     private Task<IResultSummary> _summary;
+    public IInternalAsyncTransaction Transaction { get; }
 
-    public ResultCursor(IResultStream resultStream)
+    public ResultCursor(IResultStream resultStream, IInternalAsyncTransaction transaction)
     {
+        Transaction = transaction;
         _resultStream = resultStream ?? throw new ArgumentNullException(nameof(resultStream));
     }
+
+    public bool IsOpen => _summary == null;
 
     ValueTask<bool> IAsyncEnumerator<IRecord>.MoveNextAsync()
     {
@@ -136,8 +140,6 @@ internal class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
             return _current;
         }
     }
-
-    public bool IsOpen => _summary == null;
 
     public void Cancel()
     {

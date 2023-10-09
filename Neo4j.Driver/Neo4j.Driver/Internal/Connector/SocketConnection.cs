@@ -422,9 +422,10 @@ internal sealed class SocketConnection : IConnection
         return BoltProtocol.BeginTransactionAsync(this, beginParams);
     }
 
-    public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize)
+    public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize,
+        IInternalAsyncTransaction transaction)
     {
-        return BoltProtocol.RunInExplicitTransactionAsync(this, query, reactive, fetchSize);
+        return BoltProtocol.RunInExplicitTransactionAsync(this, query, reactive, fetchSize, transaction);
     }
 
     public Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker)

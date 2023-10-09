@@ -126,7 +126,8 @@ internal interface IConnectionRunner
 
     Task BeginTransactionAsync(BeginTransactionParams beginParams);
 
-    Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize);
+    Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize,
+        IInternalAsyncTransaction transaction);
     Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker);
     Task RollbackTransactionAsync();
 }

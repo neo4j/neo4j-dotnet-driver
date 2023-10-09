@@ -19,5 +19,6 @@ namespace Neo4j.Driver.Internal;
 
 internal interface IInternalResultCursor : IResultCursor
 {
+    IInternalAsyncTransaction Transaction { get; }
     void Cancel();
 }
