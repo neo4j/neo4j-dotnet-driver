@@ -18,8 +18,7 @@
       "namespaceLayout": "flattened", 
       "memberLayout": "separatePages ",
       "EnumSortOrder": "declaringOrder",
-      "allowCompilationErrors": false,
-      "outputFormat": "markdown"
+      "allowCompilationErrors": false
     }
   ],
   "build": {
