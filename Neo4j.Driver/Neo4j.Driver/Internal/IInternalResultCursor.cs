@@ -15,10 +15,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.Internal.MessageHandling;
+
 namespace Neo4j.Driver.Internal;
 
 internal interface IInternalResultCursor : IResultCursor
 {
+    ResponsePipelineError PendingError { get; }
     IInternalAsyncTransaction Transaction { get; }
     void Cancel();
 }

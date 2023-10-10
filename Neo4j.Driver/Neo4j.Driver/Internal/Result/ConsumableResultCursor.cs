@@ -18,6 +18,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.MessageHandling;
 
 namespace Neo4j.Driver.Internal.Result;
 
@@ -31,6 +32,7 @@ internal class ConsumableResultCursor : IInternalResultCursor, IAsyncEnumerator<
         _cursor = cursor;
     }
 
+    public ResponsePipelineError PendingError => _cursor.PendingError;
     public IInternalAsyncTransaction Transaction => _cursor.Transaction;
 
     public ValueTask<bool> MoveNextAsync()
@@ -50,19 +52,31 @@ internal class ConsumableResultCursor : IInternalResultCursor, IAsyncEnumerator<
 
     public Task<IResultSummary> ConsumeAsync()
     {
+        AssertTransactionValid();
         _isConsumed = true;
         return _cursor.ConsumeAsync();
+    }
+
+    private void AssertTransactionValid()
+    {
+        PendingError?.EnsureThrown();
+        if (Transaction.IsErrored(out var error))
+        {
+            throw new TransactionTerminatedException(error);
+        }
     }
 
     public Task<IRecord> PeekAsync()
     {
         AssertNotConsumed();
+        AssertTransactionValid();
         return _cursor.PeekAsync();
     }
 
     public Task<bool> FetchAsync()
     {
         AssertNotConsumed();
+        AssertTransactionValid();
         return _cursor.FetchAsync();
     }
 
@@ -90,6 +104,7 @@ internal class ConsumableResultCursor : IInternalResultCursor, IAsyncEnumerator<
 
     private void AssertNotConsumed()
     {
+        
         if (_isConsumed)
         {
             throw ErrorExtensions.NewResultConsumedException();

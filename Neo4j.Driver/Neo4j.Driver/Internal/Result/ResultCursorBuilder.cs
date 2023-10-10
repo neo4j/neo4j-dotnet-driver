@@ -40,6 +40,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
     private string[] _fields;
 
     private IResponsePipelineError _pendingError;
+    public ResponsePipelineError PendingError => _pendingError as ResponsePipelineError;
     private long _queryId;
 
     private volatile int _state;
@@ -118,8 +119,6 @@ internal class ResultCursorBuilder : IResultCursorBuilder
             return record;
         }
 
-        _pendingError?.EnsureThrown();
-
         return null;
     }
 
@@ -135,7 +134,6 @@ internal class ResultCursorBuilder : IResultCursorBuilder
             await _advanceFunction().ConfigureAwait(false);
         }
 
-        _pendingError?.EnsureThrown();
         return _summaryBuilder.Build();
     }
 

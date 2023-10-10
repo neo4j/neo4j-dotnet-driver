@@ -71,7 +71,8 @@ internal static class ExceptionManager
         { typeof(TypeException), "TypeError" },
         { typeof(ForbiddenException), "ForbiddenError" },
         { typeof(UnknownSecurityException), "OtherSecurityException" },
-        { typeof(ReauthException), "UnsupportedFeatureException"}
+        { typeof(ReauthException), "UnsupportedFeatureException"},
+        { typeof(TransactionTerminatedException), "TransactionTerminatedError" }
     };
 
     internal static ProtocolResponse GenerateExceptionResponse(Exception ex)

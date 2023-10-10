@@ -69,6 +69,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
     }
 
     private string Database { get; set; }
+    internal Exception TransactionError { get; set; }
 
     public void UpdateBookmarks(Bookmarks bookmarks, IDatabaseInfo dbInfo = null)
     {
@@ -89,8 +90,6 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
     {
         TransactionError ??= ex;
     }
-    
-    internal Exception TransactionError { get; set; }
 
     public bool IsErrored(out Exception ex)
     {
@@ -108,6 +107,11 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
     public override Task<IResultCursor> RunAsync(Query query)
     {
+        if (TransactionError != null)
+        {
+            throw new TransactionTerminatedException(TransactionError);
+        }
+        
         var result = _state.RunAsync(query, _connection, _logger, _reactive, _fetchSize, this,  out var nextState);
         _state = nextState;
         _results.Add(result);
@@ -132,7 +136,10 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
     {
         try
         {
-            await DiscardUnconsumed().ConfigureAwait(false);
+            if (TransactionError == null)
+            {
+                await DiscardUnconsumed().ConfigureAwait(false);
+            }
             await _state.RollbackAsync(_connection, this, out var nextState).ConfigureAwait(false);
             _state = nextState;
         }
