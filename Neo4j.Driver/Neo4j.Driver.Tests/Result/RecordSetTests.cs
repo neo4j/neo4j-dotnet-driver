@@ -22,6 +22,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.MessageHandling;
 using Xunit;
 using Record = Neo4j.Driver.Internal.Result.Record;
 
@@ -111,6 +112,9 @@ namespace Neo4j.Driver.Tests
         public IRecord Current { get; private set; }
 
         public bool IsOpen => true;
+
+        public ResponsePipelineError PendingError => null;
+        public IInternalAsyncTransaction Transaction => FakeTransaction.Instance;
 
         public void Cancel()
         {

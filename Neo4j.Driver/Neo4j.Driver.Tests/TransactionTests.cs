@@ -88,7 +88,7 @@ namespace Neo4j.Driver.Tests
 
                 mockProtocol.Verify(
                     x =>
-                        x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), query, false, It.IsAny<long>()));
+                        x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), query, false, It.IsAny<long>(), It.IsAny<IInternalAsyncTransaction>()));
             }
 
             [Fact]
@@ -112,7 +112,8 @@ namespace Neo4j.Driver.Tests
 
                 mockProtocol.Setup(
                         x =>
-                            x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), query, false, It.IsAny<long>()))
+                            x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), query, false, It.IsAny<long>(),
+                                It.IsAny<IInternalAsyncTransaction>()))
                     .Throws<Neo4jException>();
 
                 var error = await ExceptionAsync(() => tx.RunAsync(query));
