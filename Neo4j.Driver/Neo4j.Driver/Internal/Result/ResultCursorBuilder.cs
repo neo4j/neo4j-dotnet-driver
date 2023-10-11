@@ -175,7 +175,8 @@ internal class ResultCursorBuilder : IResultCursorBuilder
 
     private void AssertTransactionValid()
     {
-        if (_transaction.IsErrored(out var error))
+        _pendingError?.EnsureThrown();
+        if (_transaction.IsErrored(out var error) )
         {
             throw new TransactionTerminatedException(error);
         }

@@ -259,9 +259,7 @@ public sealed class TransactionIT : AbstractRxIT
             .AssertEqual(
                 OnError<IRecord>(
                     0,
-                    Matches<Exception>(
-                        exc =>
-                            exc.Message.Should().Contain("Cannot run query in this transaction"))));
+                    Matches<Exception>(x => x.Should().BeOfType<TransactionTerminatedException>())));
 
         VerifyCanRollback(txc);
     }

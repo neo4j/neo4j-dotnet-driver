@@ -111,7 +111,6 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         {
             throw new TransactionTerminatedException(TransactionError);
         }
-        
         var result = _state.RunAsync(query, _connection, _logger, _reactive, _fetchSize, this,  out var nextState);
         _state = nextState;
         _results.Add(result);
@@ -140,10 +139,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
     {
         try
         {
-            if (TransactionError == null)
-            {
-                await DiscardUnconsumed().ConfigureAwait(false);
-            }
+            await DiscardUnconsumed().ConfigureAwait(false);
             await _state.RollbackAsync(_connection, this, out var nextState).ConfigureAwait(false);
             _state = nextState;
         }
@@ -249,17 +245,17 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             ILogger logger,
             bool reactive,
             long fetchSize,
-            IInternalAsyncTransaction transaction,
+            AsyncTransaction transaction,
             out IState nextState);
 
         Task CommitAsync(
             IConnection connection,
-            IBookmarksTracker tracker,
+            AsyncTransaction transaction,
             out IState nextState);
 
         Task RollbackAsync(
             IConnection connection,
-            IBookmarksTracker tracker,
+            AsyncTransaction transaction,
             out IState nextState);
     }
 
@@ -271,7 +267,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             ILogger logger,
             bool reactive,
             long fetchSize,
-            IInternalAsyncTransaction transaction,
+            AsyncTransaction transaction,
             out IState nextState)
         {
             nextState = Active;
@@ -280,16 +276,16 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
         public Task CommitAsync(
             IConnection connection,
-            IBookmarksTracker tracker,
+            AsyncTransaction transaction,
             out IState nextState)
         {
             nextState = Committed;
-            return connection.CommitTransactionAsync(tracker);
+            return connection.CommitTransactionAsync(transaction);
         }
 
         public Task RollbackAsync(
             IConnection connection,
-            IBookmarksTracker tracker,
+            AsyncTransaction transaction,
             out IState nextState)
         {
             nextState = RolledBack;
@@ -305,7 +301,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             ILogger logger,
             bool reactive,
             long fetchSize,
-            IInternalAsyncTransaction transaction,
+            AsyncTransaction transaction,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -314,7 +310,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
         public Task CommitAsync(
             IConnection connection,
-            IBookmarksTracker tracker,
+            AsyncTransaction tracker,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -323,7 +319,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
         public Task RollbackAsync(
             IConnection connection,
-            IBookmarksTracker tracker,
+            AsyncTransaction tracker,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -339,7 +335,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             ILogger logger,
             bool reactive,
             long fetchSize,
-            IInternalAsyncTransaction transaction,
+            AsyncTransaction transaction,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -348,7 +344,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
         public Task CommitAsync(
             IConnection connection,
-            IBookmarksTracker tracker,
+            AsyncTransaction tracker,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -357,7 +353,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
         public Task RollbackAsync(
             IConnection connection,
-            IBookmarksTracker tracker,
+            AsyncTransaction tracker,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -373,25 +369,23 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             ILogger logger,
             bool reactive,
             long fetchSize,
-            IInternalAsyncTransaction transaction,
+            AsyncTransaction transaction,
             out IState nextState)
         {
-            throw new TransactionClosedException(
-                "Cannot run query in this transaction, because it has been rolled back either because of an error or explicit termination.");
+            throw new TransactionTerminatedException(transaction.TransactionError);
         }
 
         public Task CommitAsync(
             IConnection connection,
-            IBookmarksTracker tracker,
+            AsyncTransaction transaction,
             out IState nextState)
         {
-            throw new TransactionClosedException(
-                "Cannot commit this transaction, because it has been rolled back either because of an error or explicit termination.");
+            throw new TransactionTerminatedException(transaction.TransactionError);
         }
 
         public Task RollbackAsync(
             IConnection connection,
-            IBookmarksTracker tracker,
+            AsyncTransaction tracker,
             out IState nextState)
         {
             nextState = Failed;
