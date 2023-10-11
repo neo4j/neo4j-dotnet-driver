@@ -24,6 +24,7 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Result;
 using Xunit;
+using Record = Xunit.Record;
 
 namespace Neo4j.Driver.Tests
 {
@@ -450,6 +451,53 @@ namespace Neo4j.Driver.Tests
                 list.Should().BeEmpty();
                 moreCallCount.Should().Be(1);
                 cancelCallCount.Should().Be(1);
+            }
+
+            [Fact]
+            public async Task ShouldThrowIfTranasactionTerminatedOnFetch()
+            {
+                var expected = new ClientException("Neo.Broken.Db","it's broken!") as Exception;
+                var mockTx = new Mock<IInternalAsyncTransaction>();
+                mockTx.Setup(x => x.IsErrored(out expected)).Returns(true).Verifiable();
+                
+                var builder =
+                    new ResultCursorBuilder(
+                        CreateSummaryBuilder(),
+                        () => Task.CompletedTask,
+                        MoreFunction(),
+                        CancelFunction(),
+                        null,
+                        1000,
+                        true,
+                        mockTx.Object);
+                var cursor = builder.CreateCursor();
+                var exception = await Record.ExceptionAsync(() => cursor.FetchAsync());
+
+                exception.Should().BeOfType<TransactionTerminatedException>();
+            }
+
+            [Fact]
+            public async Task ShouldThrowIfTranasactionTerminatedOnConsume()
+            {
+                var expected = new ClientException("Neo.Broken.Db", "it's broken!") as Exception;
+                var mockTx = new Mock<IInternalAsyncTransaction>();
+                mockTx.Setup(x => x.IsErrored(out expected)).Returns(true).Verifiable();
+
+                var builder =
+                    new ResultCursorBuilder(
+                        CreateSummaryBuilder(),
+                        () => Task.CompletedTask,
+                        MoreFunction(),
+                        CancelFunction(),
+                        null,
+                        1000,
+                        true,
+                        mockTx.Object);
+
+                var cursor = builder.CreateCursor();
+                var exception = await Record.ExceptionAsync(() => cursor.ConsumeAsync());
+
+                exception.Should().BeOfType<TransactionTerminatedException>();
             }
 
             private Func<IResultStreamBuilder, long, long, Task> MoreFunction()
