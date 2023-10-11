@@ -19,7 +19,8 @@ namespace Neo4j.Driver;
 
 /// <summary>
 /// Used In conjunction with <see cref="Severity"/> to filter which <see cref="INotification"/>s will be sent in
-/// <see cref="IResultSummary.Notifications"/>.<br/><br/> Can be used in <see cref="ConfigBuilder.WithNotifications"/> and
+/// <see cref="IResultSummary.Notifications"/>.<br/><br/>
+/// Can be used in <see cref="ConfigBuilder.WithNotifications"/> and
 /// <see cref="SessionConfigBuilder.WithNotifications"/>.
 /// </summary>
 public enum Category
@@ -28,7 +29,9 @@ public enum Category
     /// <remarks>Returned as <see cref="NotificationCategory.Hint"/></remarks>
     Hint,
 
-    /// <summary>Receive notifications when a query or command mentions entities that are unknown to the system.</summary>
+    /// <summary>
+    /// Receive notifications when a query or command mentions entities that are unknown to the system.
+    /// </summary>
     /// <remarks>Returned as <see cref="NotificationCategory.Unrecognized"/></remarks>
     Unrecognized,
 
@@ -43,11 +46,14 @@ public enum Category
     /// <remarks>Returned as <see cref="NotificationCategory.Performance"/></remarks>
     Performance,
 
-    /// <summary>Receive notifications when a query/command use deprecated features that should be replaced</summary>
+    /// <summary>Receive notifications when a query/command use deprecated features that should be replaced.</summary>
     /// <remarks>Returned as <see cref="NotificationCategory.Deprecation"/></remarks>
     Deprecation,
 
-    /// <summary>Receive notifications when the result of the query or command indicates a potential security issue.</summary>
+    /// <summary>
+    /// Receive notifications when the result of the query or command indicates a
+    /// potential security issue.
+    /// </summary>
     /// <remarks>Returned as <see cref="NotificationCategory.Security"/></remarks>
     Security,
 
