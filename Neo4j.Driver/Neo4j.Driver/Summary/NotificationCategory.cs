@@ -44,6 +44,13 @@ public enum NotificationCategory
     /// <summary>The query/command use deprecated features that should be replaced.</summary>
     Deprecation,
 
+    /// <summary>The result of the query or command indicates a potential security issue.</summary>
+    Security,
+
+    /// <summary>Topology notifications provide additional information related to managing databases
+    /// and servers.</summary>
+    Topology,
+
     /// <summary>Notification not covered by other categories.</summary>
     Generic
 }
