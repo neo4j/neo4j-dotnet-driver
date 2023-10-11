@@ -119,6 +119,8 @@ internal class ResultCursorBuilder : IResultCursorBuilder
             return record;
         }
 
+        _pendingError?.EnsureThrown();
+
         return null;
     }
 
@@ -134,6 +136,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
             await _advanceFunction().ConfigureAwait(false);
         }
 
+        _pendingError?.EnsureThrown();
         return _summaryBuilder.Build();
     }
 
