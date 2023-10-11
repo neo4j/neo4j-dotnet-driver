@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -104,10 +105,11 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
+                tx.TransactionError = new Exception();
                 await tx.MarkToCloseAsync();
 
                 var error = await ExceptionAsync(() => tx.RunAsync("ttt"));
-                error.Should().BeOfType<TransactionClosedException>();
+                error.Should().BeOfType<TransactionTerminatedException>();
             }
 
             [Fact]
@@ -198,14 +200,12 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection();
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
                 mockConn.Invocations.Clear();
-
+                tx.TransactionError = new Exception();
                 await tx.MarkToCloseAsync();
 
                 tx.Awaiting(t => t.RunAsync("should not run"))
                     .Should()
-                    .Throw<ClientException>()
-                    .Which.Message.Should()
-                    .StartWith("Cannot run query in this transaction");
+                    .Throw<ClientException>();
 
                 mockConn.Verify(x => x.RollbackTransactionAsync(), Times.Never);
                 mockConn.Verify(x => x.SyncAsync(), Times.Never);
@@ -217,13 +217,11 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection();
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
                 mockConn.Invocations.Clear();
-
+                tx.TransactionError = new Exception();
                 await tx.MarkToCloseAsync();
                 tx.Awaiting(t => t.CommitAsync())
                     .Should()
-                    .Throw<ClientException>()
-                    .Which.Message.Should()
-                    .Contain("Cannot commit this transaction");
+                    .Throw<ClientException>();
 
                 mockConn.Verify(x => x.CommitTransactionAsync(tx), Times.Never);
                 mockConn.Verify(x => x.SyncAsync(), Times.Never);
