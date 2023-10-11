@@ -91,7 +91,6 @@ internal class ConsumableResultCursor : IInternalResultCursor, IAsyncEnumerator<
 
     public bool IsOpen => !_isConsumed;
 
-
     public void Cancel()
     {
         _cursor.Cancel();
@@ -104,7 +103,6 @@ internal class ConsumableResultCursor : IInternalResultCursor, IAsyncEnumerator<
 
     private void AssertNotConsumed()
     {
-        
         if (_isConsumed)
         {
             throw ErrorExtensions.NewResultConsumedException();
