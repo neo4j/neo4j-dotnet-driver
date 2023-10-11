@@ -15,8 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#region
-
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -31,8 +29,6 @@ using Neo4j.Driver.Internal.Telemetry;
 using Neo4j.Driver.Internal.Types;
 using Xunit;
 using Record = Xunit.Record;
-
-#endregion
 
 namespace Neo4j.Driver.Internal.Protocol
 {
