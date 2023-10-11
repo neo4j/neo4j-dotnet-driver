@@ -47,6 +47,14 @@ public enum Category
     /// <remarks>Returned as <see cref="NotificationCategory.Deprecation"/></remarks>
     Deprecation,
 
+    /// <summary>Receive notifications when the result of the query or command indicates a potential security issue.</summary>
+    /// <remarks>Returned as <see cref="NotificationCategory.Security"/></remarks>
+    Security,
+
+    /// <summary>Receive notifications related to managing databases and servers.</summary>
+    /// <remarks>Returned as <see cref="NotificationCategory.Topology"/></remarks>
+    Topology,
+
     /// <summary>Receive notifications not covered by other categories.</summary>
     /// <remarks>Returned as <see cref="NotificationCategory.Generic"/></remarks>
     Generic
