@@ -593,6 +593,8 @@ public class TransactionClosedException : ClientException
 [DataContract]
 public sealed class TransactionTerminatedException : ClientException
 {
+    public override bool IsRetriable => (InnerException as Neo4jException)?.IsRetriable ?? false;
+
     internal TransactionTerminatedException(Exception inner) :
         base((inner as Neo4jException)?.Code, inner.Message, inner)
     {
