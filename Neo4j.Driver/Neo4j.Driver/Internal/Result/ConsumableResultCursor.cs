@@ -52,31 +52,20 @@ internal class ConsumableResultCursor : IInternalResultCursor, IAsyncEnumerator<
 
     public Task<IResultSummary> ConsumeAsync()
     {
-        AssertTransactionValid();
         _isConsumed = true;
         return _cursor.ConsumeAsync();
     }
 
-    private void AssertTransactionValid()
-    {
-        PendingError?.EnsureThrown();
-        if (Transaction.IsErrored(out var error))
-        {
-            throw new TransactionTerminatedException(error);
-        }
-    }
 
     public Task<IRecord> PeekAsync()
     {
         AssertNotConsumed();
-        AssertTransactionValid();
         return _cursor.PeekAsync();
     }
 
     public Task<bool> FetchAsync()
     {
         AssertNotConsumed();
-        AssertTransactionValid();
         return _cursor.FetchAsync();
     }
 

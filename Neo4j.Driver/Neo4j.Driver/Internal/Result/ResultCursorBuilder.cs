@@ -173,10 +173,20 @@ internal class ResultCursorBuilder : IResultCursorBuilder
         }
     }
 
+    private void AssertTransactionValid()
+    {
+        if (_transaction.IsErrored(out var error))
+        {
+            throw new TransactionTerminatedException(error);
+        }
+    }
+    
     private Func<Task> WrapAdvanceFunc(Func<Task> advanceFunc)
     {
         return async () =>
         {
+            AssertTransactionValid();
+            
             if (CheckAndUpdateState(State.RecordsRequested, State.RunCompleted))
             {
                 if (_cancellationSource.IsCancellationRequested)

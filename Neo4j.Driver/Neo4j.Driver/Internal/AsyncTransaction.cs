@@ -120,6 +120,10 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
     public async Task CommitAsync()
     {
+        if (TransactionError != null)
+        {
+            throw new TransactionTerminatedException(TransactionError);
+        }
         try
         {
             await DiscardUnconsumed().ConfigureAwait(false);
