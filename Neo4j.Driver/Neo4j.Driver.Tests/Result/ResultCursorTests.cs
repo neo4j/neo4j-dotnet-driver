@@ -52,7 +52,7 @@ namespace Neo4j.Driver.Tests
                 stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(new[] { "test" }));
 
                 var result =
-                    new ResultCursor(stream.Object, new Mock<IInternalAsyncTransaction>().Object);
+                    new ResultCursor(stream.Object);
 
                 var keys = await result.KeysAsync();
 
@@ -91,7 +91,7 @@ namespace Neo4j.Driver.Tests
                 stream.Setup(x => x.NextRecordAsync()).Returns(() => NextRecordFromEnum(recordYielderEnum));
                 stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(TestRecordYielder.Keys.ToArray()));
 
-                var cursor = new ResultCursor(stream.Object, new Mock<IInternalAsyncTransaction>().Object);
+                var cursor = new ResultCursor(stream.Object);
                 var records = new List<IRecord>();
                 while (await cursor.FetchAsync())
                 {
@@ -112,7 +112,7 @@ namespace Neo4j.Driver.Tests
                 stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(TestRecordYielder.Keys.ToArray()));
 
                 var count = 0;
-                var cursor = new ResultCursor(stream.Object, new Mock<IInternalAsyncTransaction>().Object);
+                var cursor = new ResultCursor(stream.Object);
                 var t = Task.Factory.StartNew(
                     async () =>
                     {
@@ -145,7 +145,7 @@ namespace Neo4j.Driver.Tests
                 stream.Setup(x => x.NextRecordAsync()).Returns(() => NextRecordFromEnum(recordYielderEnum));
                 stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(TestRecordYielder.Keys.ToArray()));
 
-                var result = new ResultCursor(stream.Object, new Mock<IInternalAsyncTransaction>().Object);
+                var result = new ResultCursor(stream.Object);
                 var records = new List<IRecord>();
                 var count = 5;
                 while (count > 0 && await result.FetchAsync())
@@ -467,7 +467,7 @@ namespace Neo4j.Driver.Tests
                 stream.Setup(x => x.ConsumeAsync()).Returns(getSummaryFunc);
                 stream.Setup(x => x.Cancel()).Callback(() => cancellationTokenSource?.Cancel());
 
-                return new ResultCursor(stream.Object, new Mock<IInternalAsyncTransaction>().Object);
+                return new ResultCursor(stream.Object);
             }
         }
     }

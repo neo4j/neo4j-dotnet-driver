@@ -19,7 +19,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.MessageHandling;
 
 namespace Neo4j.Driver.Internal.Result;
 
@@ -32,12 +31,9 @@ internal class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
     private Task<string[]> _keys;
     private IRecord _peeked;
     private Task<IResultSummary> _summary;
-    public ResponsePipelineError PendingError => _resultStream.PendingError;
-    public IInternalAsyncTransaction Transaction { get; }
 
-    public ResultCursor(IResultStream resultStream, IInternalAsyncTransaction transaction)
+    public ResultCursor(IResultStream resultStream)
     {
-        Transaction = transaction;
         _resultStream = resultStream ?? throw new ArgumentNullException(nameof(resultStream));
     }
 

@@ -113,9 +113,6 @@ namespace Neo4j.Driver.Tests
 
         public bool IsOpen => true;
 
-        public ResponsePipelineError PendingError => null;
-        public IInternalAsyncTransaction Transaction => FakeTransaction.Instance;
-
         public void Cancel()
         {
         }

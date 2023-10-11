@@ -70,48 +70,6 @@ namespace Neo4j.Driver.Tests
         }
 
         [Fact]
-        public async void ShouldThrowOriginalErrorFirstThenThrowTransactionTerminatedErrorsOnConsume()
-        {
-            var expected = new ClientException("Broken", "no, it's really broken.") as Exception;
-            var mockTx = new Mock<IInternalAsyncTransaction>();
-            mockTx.Setup(x => x.IsErrored(out expected)).Returns(true).Verifiable();
-            var mockStream = new Mock<IResultStream>();
-            mockStream.SetupGet(x => x.PendingError).Returns(new ResponsePipelineError(new ClientException("boop")));
-            var result = new ConsumableResultCursor(new ResultCursor(mockStream.Object, mockTx.Object));
-            
-            var originalError = await Record.ExceptionAsync(() => result.ConsumeAsync());
-
-            originalError.Should().NotBeNull();
-            originalError.Should().BeOfType<ClientException>();
-
-            var txError = await Record.ExceptionAsync(() => result.ConsumeAsync());
-            txError.Should().BeOfType<TransactionTerminatedException>();
-            var ifIgnored = await Record.ExceptionAsync(() => result.ConsumeAsync());
-            ifIgnored.Should().BeOfType<TransactionTerminatedException>();
-        }
-
-        [Fact]
-        public async void ShouldThrowOriginalErrorFirstThenThrowTransactionTerminatedErrorsOnFetch()
-        {
-            var expected = new ClientException("Broken", "no, it's really broken.") as Exception;
-            var mockTx = new Mock<IInternalAsyncTransaction>();
-            mockTx.Setup(x => x.IsErrored(out expected)).Returns(true).Verifiable();
-            var mockStream = new Mock<IResultStream>();
-            mockStream.SetupGet(x => x.PendingError).Returns(new ResponsePipelineError(new ClientException("boop")));
-            var result = new ConsumableResultCursor(new ResultCursor(mockStream.Object, mockTx.Object));
-
-            var originalError = await Record.ExceptionAsync(() => result.FetchAsync());
-
-            originalError.Should().NotBeNull();
-            originalError.Should().BeOfType<ClientException>();
-
-            var txError = await Record.ExceptionAsync(() => result.FetchAsync());
-            txError.Should().BeOfType<TransactionTerminatedException>();
-            var ifIgnored = await Record.ExceptionAsync(() => result.FetchAsync());
-            ifIgnored.Should().BeOfType<TransactionTerminatedException>();
-        }
-        
-        [Fact]
         public async void ShouldAllowKeysAndConsumeAfterConsume()
         {
             var result = ResultCursorCreator.CreateResultCursor(1, 3);

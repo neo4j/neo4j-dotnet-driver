@@ -163,7 +163,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
 
     public IInternalResultCursor CreateCursor()
     {
-        return new ConsumableResultCursor(new ResultCursor(this, _transaction));
+        return new ConsumableResultCursor(new ResultCursor(this));
     }
 
     private void ClearRecords()

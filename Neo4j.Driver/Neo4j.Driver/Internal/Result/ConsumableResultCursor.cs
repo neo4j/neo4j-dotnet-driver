@@ -18,7 +18,6 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.MessageHandling;
 
 namespace Neo4j.Driver.Internal.Result;
 
@@ -31,9 +30,6 @@ internal class ConsumableResultCursor : IInternalResultCursor, IAsyncEnumerator<
     {
         _cursor = cursor;
     }
-
-    public ResponsePipelineError PendingError => _cursor.PendingError;
-    public IInternalAsyncTransaction Transaction => _cursor.Transaction;
 
     public ValueTask<bool> MoveNextAsync()
     {
