@@ -106,7 +106,7 @@ internal sealed class BoltProtocol : IBoltProtocol
             autoCommitParams.ResultResourceHandler,
             autoCommitParams.FetchSize,
             autoCommitParams.Reactive,
-            FakeTransaction.Instance);
+            NullTransaction.Instance);
 
         var runMessage = _protocolMessageFactory.NewRunWithMetadataMessage(
             connection,

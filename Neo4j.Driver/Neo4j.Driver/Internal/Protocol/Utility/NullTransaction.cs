@@ -25,11 +25,11 @@ namespace Neo4j.Driver.Internal;
 /// Supports cursors on auto commit functions so we don't need to null check and check error.
 /// this will always return false for the transaction has errored because the transaction doen't exist.
 /// </summary>
-internal sealed class FakeTransaction : IInternalAsyncTransaction
+internal sealed class NullTransaction : IInternalAsyncTransaction
 {
-    internal static IInternalAsyncTransaction Instance = new FakeTransaction();
+    internal static IInternalAsyncTransaction Instance = new NullTransaction();
 
-    private FakeTransaction()
+    private NullTransaction()
     {
     }
     

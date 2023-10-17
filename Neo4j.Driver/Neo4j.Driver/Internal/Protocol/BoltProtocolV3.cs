@@ -141,7 +141,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             autoCommitParams.ResultResourceHandler,
             Config.Infinite, // Bolt V3 uses pull all so fetchSize is ignored.
             false,
-            FakeTransaction.Instance);
+            NullTransaction.Instance);
 
         var runHandler = _protocolHandlerFactory.NewRunResponseHandlerV3(streamBuilder, summaryBuilder);
         var pullAllHandler = _protocolHandlerFactory.NewPullAllResponseHandler(
