@@ -149,7 +149,7 @@ namespace Neo4j.Driver.Internal.Protocol
         public class GetRoutingTableAsyncTests
         {
             [Fact]
-            public async Task ShouldThrowAnExceptionWhneNullConnection()
+            public async Task ShouldThrowAnExceptionWhenNullConnection()
             {
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocol.Instance.GetRoutingTableAsync(null, null, new SessionConfig("douglas fir"), null));
