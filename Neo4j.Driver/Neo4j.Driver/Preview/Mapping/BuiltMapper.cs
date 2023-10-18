@@ -56,18 +56,18 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
 
     public void AddMappingBySetter(
         MethodInfo propertySetter,
-        MappingSource mappingSource,
+        EntityMappingInfo entityMappingInfo,
         Func<object, object> converter = null)
     {
         // create the .As<TProperty> method we're going to use
         var propertyType = propertySetter.GetParameters()[0].ParameterType;
         var asMethod = _asGenericMethod.MakeGenericMethod(propertyType);
-        var getter = _mappingSourceDelegateBuilder.GetMappingDelegate(mappingSource);
+        var getter = _mappingSourceDelegateBuilder.GetMappingDelegate(entityMappingInfo);
         AddMapping(propertySetter, GetValue);
 
         object GetValue(IRecord record)
         {
-            var found = getter(record, out var value);
+            getter(record, out var value);
 
             return value switch
             {
@@ -80,10 +80,10 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
                 IEntity entity => entity,
 
                 // special case: if they want to map a list to a string, convert to comma-separated
-                IList list when propertyType == typeof(string) => string.Join(",", list.Cast<object>()),
+                ICollection list when propertyType == typeof(string) => string.Join(",", list.Cast<object>()),
 
                 // if it's a list, map the individual items in the list
-                IList list => CreateMappedList(list, propertyType, record),
+                ICollection list => CreateMappedList(list, propertyType, record),
 
                 // otherwise, convert the value to the type of the property
                 _ => asMethod.Invoke(null, new[] { value })
@@ -91,7 +91,7 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
         }
     }
 
-    private IList CreateMappedList(IList list, Type desiredListType, IRecord record)
+    private IList CreateMappedList(IEnumerable list, Type desiredListType, IRecord record)
     {
         var newList = (IList)Activator.CreateInstance(desiredListType);
         var desiredItemType = desiredListType.GetGenericArguments()[0];
@@ -148,14 +148,14 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
                 // if the value is an entity, make it into a fake record and map that (indirectly recursive)
                 case IEntity entity:
                     var destType = propertySetter.GetParameters()[0].ParameterType;
-                    var newEntityDest = RecordObjectMapping.Map(new DictAsRecord(entity.Properties, record), destType);
-
+                    var dictAsRecord = new DictAsRecord(entity.Properties, record);
+                    var newEntityDest = RecordObjectMapping.Map(dictAsRecord, destType);
                     propertySetter.Invoke(obj, new[] { newEntityDest });
                     return;
 
                 // otherwise, just set the property to the value
                 default:
-                    propertySetter.Invoke(obj, new object[] { value });
+                    propertySetter.Invoke(obj, new[] { value });
                     return;
             }
         }

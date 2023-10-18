@@ -225,7 +225,7 @@ namespace Neo4j.Driver.Tests.Mapping
         }
 
         [Fact]
-        public void ShouldMapAllRecordsFromCursor()
+        public async Task ShouldMapAllRecordsFromCursor()
         {
             async IAsyncEnumerable<IRecord> GetRecordsAsync()
             {
@@ -242,9 +242,39 @@ namespace Neo4j.Driver.Tests.Mapping
                 }
             }
 
-            GetRecordsAsync()
-                .ToListAsync<TestPerson>()
-                .Result.Should()
+            var result = await GetRecordsAsync().ToListAsync<TestPerson>();
+            result.Should()
+                .BeEquivalentTo(
+                    new TestPerson { Name = "Bob" },
+                    new TestPerson { Name = "Alice", Born = 1988 },
+                    new TestPerson { Name = "Eve", Born = 1999 });
+        }
+
+        [Fact]
+        public async Task ShouldMapRecordsAsyncEnumerable()
+        {
+            async IAsyncEnumerable<IRecord> GetRecordsAsync()
+            {
+                var record1 = new Record(new[] { "name", }, new object[] { "Bob", });
+                var record2 = new Record(new[] { "name", "born" }, new object[] { "Alice", 1988 });
+                var record3 = new Record(new[] { "name", "born" }, new object[] { "Eve", 1999 });
+
+                var result = new List<IRecord> { record1, record2, record3 };
+
+                foreach (var record in result)
+                {
+                    await Task.Yield();
+                    yield return record;
+                }
+            }
+
+            var people = new List<TestPerson>();
+            await foreach (var person in GetRecordsAsync().AsObjectsAsync<TestPerson>())
+            {
+                people.Add(person);
+            }
+
+            people.Should()
                 .BeEquivalentTo(
                     new TestPerson { Name = "Bob" },
                     new TestPerson { Name = "Alice", Born = 1988 },

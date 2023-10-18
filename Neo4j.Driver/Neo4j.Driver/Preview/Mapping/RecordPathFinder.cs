@@ -41,31 +41,36 @@ internal class RecordPathFinder : IRecordPathFinder
         {
             if (PathCompare(path, field))
             {
+                // we can return the value directly if the field name matches the path
                 value = record[field];
                 return true;
             }
 
-            IReadOnlyDictionary<string, object> properties = null;
-            if(record[field] is IEntity entity)
+            // if the field contains an entity or dictionary we can drill down and
+            // check if the path matches any of the properties
+            var properties = record[field] switch
             {
-                properties = entity.Properties;
-            }
-            else if(record[field] is IReadOnlyDictionary<string, object> dict)
+                IEntity entity => entity.Properties,
+                IReadOnlyDictionary<string, object> dict => dict,
+                _ => null
+            };
+
+            if (properties is null)
             {
-                properties = dict;
+                // if the field is not an entity or dictionary we can't drill down further
+                continue;
             }
 
-            if (properties is not null)
+            foreach (var property in properties)
             {
-                foreach (var property in properties)
+                // if there is a property that matches the path in the dictionary, or if the path
+                // matches the field name + property name, we can return the value
+                if (
+                    PathCompare(path, property.Key) ||
+                    PathCompare(path, $"{field}.{property.Key}"))
                 {
-                    if (
-                        PathCompare(path, property.Key) ||
-                        PathCompare(path, $"{field}.{property.Key}"))
-                    {
-                        value = property.Value;
-                        return true;
-                    }
+                    value = property.Value;
+                    return true;
                 }
             }
         }

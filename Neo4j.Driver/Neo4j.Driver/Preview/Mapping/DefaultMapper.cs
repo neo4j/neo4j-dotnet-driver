@@ -37,29 +37,18 @@ internal static class DefaultMapper
         var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
         foreach (var property in properties)
         {
+            // ignore properties without setter or with MappingIgnoredAttribute
             var setter = property.GetSetMethod();
-            if (setter is null)
-            {
-                // ignore properties without setter
-                continue;
-            }
-
-            // check if there is a MappingIgnoredAttribute; if there is, ignore this property
-            if (property.GetCustomAttribute<MappingIgnoredAttribute>() is not null)
+            if (setter is null || property.GetCustomAttribute<MappingIgnoredAttribute>() is not null)
             {
                 continue;
             }
 
-            string path = property.Name;
-
-            var mappingSource = new MappingSource(path, EntityMappingSource.Property);
-
-            // check if there is a MappingSourceAttribute; if there is, use that path instead
-            var mappingSourceAttribute = property.GetCustomAttribute<MappingSourceAttribute>();
-            if (mappingSourceAttribute is not null)
-            {
-                mappingSource = mappingSourceAttribute.MappingSource;
-            }
+            var mappingSource =
+                // check if there is a MappingSourceAttribute: if there is, use the specified mapping source;
+                // if not, look for a property on the entity with the same name as the property on the object
+                property.GetCustomAttribute<MappingSourceAttribute>()?.EntityMappingInfo ??
+                    new EntityMappingInfo(property.Name, EntityMappingSource.Property);
 
             mappingBuilder.Map(setter, mappingSource);
         }
