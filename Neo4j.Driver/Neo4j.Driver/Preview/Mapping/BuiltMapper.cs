@@ -67,10 +67,11 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
 
         object GetValue(IRecord record)
         {
-            getter(record, out var value);
+            var found = getter(record, out var value);
 
             return value switch
             {
+                _ when !found => null,
                 null => null,
 
                 // prioritise a custom converter if there is one
