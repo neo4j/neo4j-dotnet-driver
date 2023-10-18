@@ -104,7 +104,11 @@ public class RecordObjectMapping : IMappingRegistry
     /// <typeparam name="T">The type of the mapping provider.</typeparam>
     public static void RegisterProvider<T>() where T : IMappingProvider, new()
     {
-        var provider = new T();
+        RegisterProvider(new T());
+    }
+
+    public static void RegisterProvider(IMappingProvider provider)
+    {
         provider.CreateMappers(Instance);
     }
 
@@ -130,6 +134,12 @@ public class RecordObjectMapping : IMappingRegistry
         return mapMethod;
     }
 
+    /// <summary>
+    /// Maps a record to an object of the given type according to the global mapping configuration.
+    /// </summary>
+    /// <param name="record">The record to be mapped.</param>
+    /// <param name="type">The type of object to be mapped.</param>
+    /// <returns>The mapped object.</returns>
     public static object Map(IRecord record, Type type)
     {
         var mapMethod = Instance.GetMapMethodForType(type);

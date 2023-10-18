@@ -15,55 +15,51 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Preview.Mapping
+namespace Neo4j.Driver.Preview.Mapping;
+
+internal delegate bool MappingValueDelegate(IRecord record, out object value);
+
+internal interface IMappingSourceDelegateBuilder
 {
-    internal delegate bool TryGetMapSourceValueDelegate(
-        IRecord record,
-        out object value);
+    MappingValueDelegate GetMappingDelegate(EntityMappingInfo entityMappingInfo);
+}
 
-    internal interface IMappingSourceDelegateBuilder
+internal class MappingSourceDelegateBuilder : IMappingSourceDelegateBuilder
+{
+    private IRecordPathFinder _pathFinder = new RecordPathFinder();
+
+    public MappingValueDelegate GetMappingDelegate(EntityMappingInfo entityMappingInfo)
     {
-        TryGetMapSourceValueDelegate GetMappingDelegate(MappingSource mappingSource);
-    }
+        return TryGetValue;
 
-    internal class MappingSourceDelegateBuilder : IMappingSourceDelegateBuilder
-    {
-        private IRecordPathFinder _pathFinder = new RecordPathFinder();
-
-        /// <inheritdoc />
-        public TryGetMapSourceValueDelegate GetMappingDelegate(MappingSource mappingSource)
+        bool TryGetValue(IRecord record, out object value)
         {
-            bool TryGetValue(IRecord record, out object value)
+            if (!_pathFinder.TryGetValueByPath(record, entityMappingInfo.Path, out var foundValue))
             {
-                if (!_pathFinder.TryGetValueByPath(record, mappingSource.Path, out var foundValue))
-                {
-                    value = null;
-                    return false;
-                }
-
-                switch (mappingSource)
-                {
-                    case { EntityMappingSource: EntityMappingSource.NodeLabel }
-                        when foundValue is INode node:
-                    {
-                        value = node.Labels;
-                        return true;
-                    }
-
-                    case { EntityMappingSource: EntityMappingSource.RelationshipType }
-                        when foundValue is IRelationship relationship:
-                    {
-                        value = relationship.Type;
-                        return true;
-                    }
-
-                    default:
-                        value = foundValue;
-                        return true;
-                }
+                value = null;
+                return false;
             }
 
-            return TryGetValue;
+            switch (entityMappingInfo)
+            {
+                case { EntityMappingSource: EntityMappingSource.NodeLabel }
+                    when foundValue is INode node:
+                {
+                    value = node.Labels;
+                    return true;
+                }
+
+                case { EntityMappingSource: EntityMappingSource.RelationshipType }
+                    when foundValue is IRelationship relationship:
+                {
+                    value = relationship.Type;
+                    return true;
+                }
+
+                default:
+                    value = foundValue;
+                    return true;
+            }
         }
     }
 }

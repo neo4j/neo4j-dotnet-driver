@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -49,5 +50,25 @@ public static class AsyncEnumerableExtensions
         }
 
         return list;
+    }
+
+    /// <summary>
+    /// Converts the <see cref="IAsyncEnumerable{IRecord}"/> to an <see cref="IAsyncEnumerable{T}"/> of objects of type
+    /// <typeparamref name="T"/>, by mapping each record in the enumerable to an object. If no custom mapper is defined
+    /// for type <typeparamref name="T"/>, the default mapper will be used.
+    /// </summary>
+    /// <param name="asyncEnumerable">The asynchronous source of records.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <typeparam name="T">The type of object to map to.</typeparam>
+    /// <returns>An IAsyncEnumerable of the mapped objects.</returns>
+    public static async IAsyncEnumerable<T> AsObjectsAsync<T>(
+        this IAsyncEnumerable<IRecord> asyncEnumerable,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        where T : new()
+    {
+        await foreach (var item in asyncEnumerable.ConfigureAwait(false).WithCancellation(cancellationToken))
+        {
+            yield return item.AsObject<T>();
+        }
     }
 }

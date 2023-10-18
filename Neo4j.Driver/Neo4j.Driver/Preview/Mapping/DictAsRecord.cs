@@ -24,15 +24,15 @@ namespace Neo4j.Driver.Preview.Mapping;
 internal class DictAsRecord : IRecord
 {
     private readonly IReadOnlyDictionary<string, object> _dict;
-    private readonly IRecord _record;
 
     public DictAsRecord(IReadOnlyDictionary<string, object> dict, IRecord record)
     {
         _dict = dict;
-        _record = record;
+        Record = record;
     }
 
-    public IRecord Record => _record;
+    public IRecord Record { get; }
+
     public object this[int index] => _dict.TryGetValue(_dict.Keys.ElementAt(index), out var obj) ? obj : null;
     public object this[string key] => _dict.TryGetValue(key, out var obj) ? obj : null;
     public IReadOnlyDictionary<string, object> Values => _dict;
