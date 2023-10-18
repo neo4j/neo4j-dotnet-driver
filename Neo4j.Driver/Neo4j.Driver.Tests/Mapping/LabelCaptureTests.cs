@@ -112,7 +112,7 @@ namespace Neo4j.Driver.Tests.Mapping
             var mapped = record.AsObject<TestMappedClass>();
 
             mapped.Label.Should().Be("ALPHA|BRAVO|CHARLIE");
-            mapped.Labels.Should().BeEquivalentTo(new[] { "Alphx", "Brxvo", "Chxrlie" });
+            mapped.Labels.Should().BeEquivalentTo("Alphx", "Brxvo", "Chxrlie");
         }
 
         [Fact]

@@ -21,19 +21,19 @@ using System.Reflection;
 
 namespace Neo4j.Driver.Preview.Mapping;
 
-internal class MappingBuilder<TObject> : IMappingBuilder<TObject> where TObject : new()
+internal class MappingBuilder<T> : IMappingBuilder<T> where T : new()
 {
-    private readonly BuiltMapper<TObject> _builtMapper = new();
+    private readonly BuiltMapper<T> _builtMapper = new();
 
     internal void Map(
         MethodInfo propertySetter,
-        MappingSource mappingSource)
+        EntityMappingInfo entityMappingInfo)
     {
-        _builtMapper.AddMappingBySetter(propertySetter, mappingSource);
+        _builtMapper.AddMappingBySetter(propertySetter, entityMappingInfo);
     }
 
-    public IMappingBuilder<TObject> Map<TProperty>(
-        Expression<Func<TObject, TProperty>> destination,
+    public IMappingBuilder<T> Map<TProperty>(
+        Expression<Func<T, TProperty>> destination,
         string path,
         EntityMappingSource entityMappingSource = EntityMappingSource.Property,
         Func<object, TProperty> converter = null)
@@ -41,15 +41,15 @@ internal class MappingBuilder<TObject> : IMappingBuilder<TObject> where TObject 
         var propertySetter = GetPropertySetter(destination);
         _builtMapper.AddMappingBySetter(
             propertySetter,
-            new MappingSource(path, entityMappingSource),
+            new EntityMappingInfo(path, entityMappingSource),
             converter is null ? null : o => converter.Invoke(o));
 
         return this;
     }
 
     /// <inheritdoc />
-    public IMappingBuilder<TObject> Map<TProperty>(
-        Expression<Func<TObject, TProperty>> destination,
+    public IMappingBuilder<T> Map<TProperty>(
+        Expression<Func<T, TProperty>> destination,
         Func<IRecord, object> valueGetter)
     {
         var propertySetter = GetPropertySetter(destination);
@@ -57,25 +57,25 @@ internal class MappingBuilder<TObject> : IMappingBuilder<TObject> where TObject 
         return this;
     }
 
-    public IMappingBuilder<TObject> MapWholeObject(Func<IRecord, TObject> mappingFunction)
+    public IMappingBuilder<T> MapWholeObject(Func<IRecord, T> mappingFunction)
     {
         _builtMapper.AddWholeObjectMapping(mappingFunction);
         return this;
     }
 
     /// <inheritdoc />
-    public IMappingBuilder<TObject> UseDefaultMapping()
+    public IMappingBuilder<T> UseDefaultMapping()
     {
-        _builtMapper.AddWholeObjectMapping(r => DefaultMapper.Get<TObject>().Map(r));
+        _builtMapper.AddWholeObjectMapping(r => DefaultMapper.Get<T>().Map(r));
         return this;
     }
 
-    internal IRecordMapper<TObject> Build()
+    internal IRecordMapper<T> Build()
     {
         return _builtMapper;
     }
 
-    private static MethodInfo GetPropertySetter<TProperty>(Expression<Func<TObject, TProperty>> destination)
+    private static MethodInfo GetPropertySetter<TProperty>(Expression<Func<T, TProperty>> destination)
     {
         var body = destination.Body.ToString();
         if (destination.Body is not MemberExpression member)
