@@ -171,7 +171,8 @@ namespace Neo4j.Driver.Internal.Protocol
                             It.IsAny<IBookmarksTracker>(),
                             It.IsAny<IResultResourceHandler>(),
                             It.IsAny<long>(),
-                            It.IsAny<bool>()))
+                            It.IsAny<bool>(),
+                            It.IsAny<IInternalAsyncTransaction>()))
                     .Returns(resultCursorBuilderMock.Object);
 
                 var protocol = new BoltProtocolV3(msgFactory.Object, handlerFactory.Object);
@@ -348,7 +349,8 @@ namespace Neo4j.Driver.Internal.Protocol
                             It.IsAny<IBookmarksTracker>(),
                             It.IsAny<IResultResourceHandler>(),
                             It.IsAny<long>(),
-                            It.IsAny<bool>()))
+                            It.IsAny<bool>(),
+                            It.IsAny<IInternalAsyncTransaction>()))
                     .Returns(resultCursorBuilderMock.Object);
 
                 var protocol = new BoltProtocolV3(msgFactory.Object, handlerFactory.Object);
@@ -363,7 +365,8 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         mockRrh.Object,
                         Config.Infinite,
-                        false),
+                        false,
+                        It.IsAny<IInternalAsyncTransaction>()),
                     Times.Once);
 
                 mockConn.Verify(
@@ -626,11 +629,13 @@ namespace Neo4j.Driver.Internal.Protocol
                             It.IsAny<IBookmarksTracker>(),
                             It.IsAny<IResultResourceHandler>(),
                             It.IsAny<long>(),
-                            It.IsAny<bool>()))
+                            It.IsAny<bool>(),
+                            It.IsAny<IInternalAsyncTransaction>()))
                     .Returns(resultCursorBuilderMock.Object);
 
                 var protocol = new BoltProtocolV3(msgFactory.Object, handlerFactory.Object);
-                await protocol.RunInExplicitTransactionAsync(mockConn.Object, query, false);
+                var mockTransaction = new Mock<IInternalAsyncTransaction>();
+                await protocol.RunInExplicitTransactionAsync(mockConn.Object, query, false, 0L, mockTransaction.Object);
 
                 handlerFactory.Verify(
                     x => x.NewResultCursorBuilder(
@@ -641,7 +646,8 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         null,
                         Config.Infinite,
-                        false),
+                        false,
+                        It.IsAny<IInternalAsyncTransaction>()),
                     Times.Once);
 
                 mockConn.Verify(

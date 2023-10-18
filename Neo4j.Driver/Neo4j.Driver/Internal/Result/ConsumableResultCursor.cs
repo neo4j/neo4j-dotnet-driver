@@ -52,6 +52,7 @@ internal class ConsumableResultCursor : IInternalResultCursor, IAsyncEnumerator<
         return _cursor.ConsumeAsync();
     }
 
+
     public Task<IRecord> PeekAsync()
     {
         AssertNotConsumed();

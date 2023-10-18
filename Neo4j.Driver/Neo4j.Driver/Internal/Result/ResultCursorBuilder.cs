@@ -35,10 +35,12 @@ internal class ResultCursorBuilder : IResultCursorBuilder
 
     private readonly ConcurrentQueue<IRecord> _records;
     private readonly IResultResourceHandler _resourceHandler;
+    private readonly IInternalAsyncTransaction _transaction;
     private readonly SummaryBuilder _summaryBuilder;
     private string[] _fields;
 
     private IResponsePipelineError _pendingError;
+    public ResponsePipelineError PendingError => _pendingError as ResponsePipelineError;
     private long _queryId;
 
     private volatile int _state;
@@ -49,8 +51,9 @@ internal class ResultCursorBuilder : IResultCursorBuilder
         Func<IResultStreamBuilder, long, long, Task> moreFunction,
         Func<IResultStreamBuilder, long, Task> cancelFunction,
         IResultResourceHandler resourceHandler,
-        long fetchSize = Config.Infinite,
-        bool reactive = false)
+        long fetchSize,
+        bool reactive,
+        IInternalAsyncTransaction transaction)
     {
         _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
         _advanceFunction =
@@ -60,6 +63,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
         _cancelFunction = cancelFunction ?? ((s, id) => Task.CompletedTask);
         _cancellationSource = new CancellationTokenSource();
         _resourceHandler = resourceHandler;
+        _transaction = transaction;
 
         _records = new ConcurrentQueue<IRecord>();
 
@@ -169,10 +173,21 @@ internal class ResultCursorBuilder : IResultCursorBuilder
         }
     }
 
+    private void AssertTransactionValid()
+    {
+        _pendingError?.EnsureThrown();
+        if (_transaction.IsErrored(out var error) )
+        {
+            throw new TransactionTerminatedException(error);
+        }
+    }
+    
     private Func<Task> WrapAdvanceFunc(Func<Task> advanceFunc)
     {
         return async () =>
         {
+            AssertTransactionValid();
+            
             if (CheckAndUpdateState(State.RecordsRequested, State.RunCompleted))
             {
                 if (_cancellationSource.IsCancellationRequested)

@@ -86,7 +86,7 @@ internal sealed class BoltProtocol : IBoltProtocol
             ? GetRoutingTableWithRouteMessageAsync(connection, database, sessionConfig?.ImpersonatedUser, bookmarks)
             : GetRoutingTableWithQueryAsync(connection, database, bookmarks);
     }
-
+    
     public async Task<IResultCursor> RunInAutoCommitTransactionAsync(
         IConnection connection,
         AutoCommitParams autoCommitParams,
@@ -105,7 +105,8 @@ internal sealed class BoltProtocol : IBoltProtocol
             autoCommitParams.BookmarksTracker,
             autoCommitParams.ResultResourceHandler,
             autoCommitParams.FetchSize,
-            autoCommitParams.Reactive);
+            autoCommitParams.Reactive,
+            NullTransaction.Instance);
 
         var runMessage = _protocolMessageFactory.NewRunWithMetadataMessage(
             connection,
@@ -145,7 +146,8 @@ internal sealed class BoltProtocol : IBoltProtocol
         IConnection connection,
         Query query,
         bool reactive,
-        long fetchSize = Config.Infinite)
+        long fetchSize,
+        IInternalAsyncTransaction transaction)
     {
         var summaryBuilder = new SummaryBuilder(query, connection.Server);
 
@@ -157,7 +159,8 @@ internal sealed class BoltProtocol : IBoltProtocol
             null,
             null,
             fetchSize,
-            reactive);
+            reactive,
+            transaction);
 
         var runMessage = _protocolMessageFactory.NewRunWithMetadataMessage(connection, query, null);
         var runHandler = _protocolHandlerFactory.NewRunResponseHandler(streamBuilder, summaryBuilder);

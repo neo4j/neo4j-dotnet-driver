@@ -47,7 +47,8 @@ namespace Neo4j.Driver.Internal.Protocol
                             null,
                             null,
                             -1,
-                            true);
+                            true,
+                            It.IsAny<IInternalAsyncTransaction>());
                     });
 
                 ex.Should().BeNull();

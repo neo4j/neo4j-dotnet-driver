@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -44,8 +45,10 @@ namespace Neo4j.Driver.Tests
                     null,
                     bookmarks);
 
-                await tx.BeginTransactionAsync(null,
+                await tx.BeginTransactionAsync(
+                    null,
                     new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true));
+
                 mockProtocol.Verify(
                     x => x.BeginTransactionAsync(
                         It.IsAny<IConnection>(),
@@ -63,7 +66,8 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection(protocol);
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
-                await tx.BeginTransactionAsync(TransactionConfig.Default,
+                await tx.BeginTransactionAsync(
+                    TransactionConfig.Default,
                     new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true));
 
                 protocol.Verify(
@@ -88,7 +92,12 @@ namespace Neo4j.Driver.Tests
 
                 mockProtocol.Verify(
                     x =>
-                        x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), query, false, It.IsAny<long>()));
+                        x.RunInExplicitTransactionAsync(
+                            It.IsAny<IConnection>(),
+                            query,
+                            false,
+                            It.IsAny<long>(),
+                            It.IsAny<IInternalAsyncTransaction>()));
             }
 
             [Fact]
@@ -96,10 +105,11 @@ namespace Neo4j.Driver.Tests
             {
                 var mockConn = new Mock<IConnection>();
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
+                tx.TransactionError = new Exception();
                 await tx.MarkToCloseAsync();
 
                 var error = await ExceptionAsync(() => tx.RunAsync("ttt"));
-                error.Should().BeOfType<TransactionClosedException>();
+                error.Should().BeOfType<TransactionTerminatedException>();
             }
 
             [Fact]
@@ -112,7 +122,12 @@ namespace Neo4j.Driver.Tests
 
                 mockProtocol.Setup(
                         x =>
-                            x.RunInExplicitTransactionAsync(It.IsAny<IConnection>(), query, false, It.IsAny<long>()))
+                            x.RunInExplicitTransactionAsync(
+                                It.IsAny<IConnection>(),
+                                query,
+                                false,
+                                It.IsAny<long>(),
+                                It.IsAny<IInternalAsyncTransaction>()))
                     .Throws<Neo4jException>();
 
                 var error = await ExceptionAsync(() => tx.RunAsync(query));
@@ -185,14 +200,12 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection();
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
                 mockConn.Invocations.Clear();
-
+                tx.TransactionError = new Exception();
                 await tx.MarkToCloseAsync();
 
                 tx.Awaiting(t => t.RunAsync("should not run"))
                     .Should()
-                    .Throw<ClientException>()
-                    .Which.Message.Should()
-                    .StartWith("Cannot run query in this transaction");
+                    .Throw<ClientException>();
 
                 mockConn.Verify(x => x.RollbackTransactionAsync(), Times.Never);
                 mockConn.Verify(x => x.SyncAsync(), Times.Never);
@@ -204,13 +217,11 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection();
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
                 mockConn.Invocations.Clear();
-
+                tx.TransactionError = new Exception();
                 await tx.MarkToCloseAsync();
                 tx.Awaiting(t => t.CommitAsync())
                     .Should()
-                    .Throw<ClientException>()
-                    .Which.Message.Should()
-                    .Contain("Cannot commit this transaction");
+                    .Throw<ClientException>();
 
                 mockConn.Verify(x => x.CommitTransactionAsync(tx), Times.Never);
                 mockConn.Verify(x => x.SyncAsync(), Times.Never);
@@ -238,7 +249,8 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection();
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
-                await tx.BeginTransactionAsync(TransactionConfig.Default,
+                await tx.BeginTransactionAsync(
+                    TransactionConfig.Default,
                     new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true));
 
                 tx.IsOpen.Should().BeTrue();
@@ -250,8 +262,10 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection();
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
-                await tx.BeginTransactionAsync(TransactionConfig.Default,
+                await tx.BeginTransactionAsync(
+                    TransactionConfig.Default,
                     new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true));
+
                 await tx.RunAsync("RETURN 1");
 
                 tx.IsOpen.Should().BeTrue();
@@ -263,8 +277,10 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection();
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
-                await tx.BeginTransactionAsync(TransactionConfig.Default,
+                await tx.BeginTransactionAsync(
+                    TransactionConfig.Default,
                     new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true));
+
                 await tx.MarkToCloseAsync();
 
                 tx.IsOpen.Should().BeFalse();
@@ -276,8 +292,10 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection();
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
-                await tx.BeginTransactionAsync(TransactionConfig.Default,
+                await tx.BeginTransactionAsync(
+                    TransactionConfig.Default,
                     new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true));
+
                 await tx.CommitAsync();
 
                 tx.IsOpen.Should().BeFalse();
@@ -289,8 +307,10 @@ namespace Neo4j.Driver.Tests
                 var mockConn = NewMockedConnection();
                 var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>());
 
-                await tx.BeginTransactionAsync(TransactionConfig.Default,
+                await tx.BeginTransactionAsync(
+                    TransactionConfig.Default,
                     new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true));
+
                 await tx.RollbackAsync();
 
                 tx.IsOpen.Should().BeFalse();

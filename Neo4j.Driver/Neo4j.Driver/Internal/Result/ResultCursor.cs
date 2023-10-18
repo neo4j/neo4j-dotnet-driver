@@ -37,6 +37,8 @@ internal class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
         _resultStream = resultStream ?? throw new ArgumentNullException(nameof(resultStream));
     }
 
+    public bool IsOpen => _summary == null;
+
     ValueTask<bool> IAsyncEnumerator<IRecord>.MoveNextAsync()
     {
         return new ValueTask<bool>(FetchAsync());
@@ -136,8 +138,6 @@ internal class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
             return _current;
         }
     }
-
-    public bool IsOpen => _summary == null;
 
     public void Cancel()
     {
