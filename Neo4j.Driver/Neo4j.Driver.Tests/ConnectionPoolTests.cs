@@ -64,7 +64,7 @@ namespace Neo4j.Driver.Tests
             DriverContext driverContext = null,
             bool isConnectionValid = true)
         {
-            driverContext ??= DriverContextHelper.FakeContext;
+            driverContext ??= TestDriverContext.MockContext;
 
             return new ConnectionPool(
                 new MockedConnectionFactory(),
@@ -83,7 +83,7 @@ namespace Neo4j.Driver.Tests
                 idleConnections,
                 inUseConnections,
                 validator: new ConnectionValidator(Config.InfiniteInterval, Config.InfiniteInterval),
-                driverContext: DriverContextHelper.FakeContext);
+                driverContext: TestDriverContext.MockContext);
         }
 
         public class AcquireMethod
@@ -104,7 +104,7 @@ namespace Neo4j.Driver.Tests
                 var connectionPool = new ConnectionPool(
                     connFactory,
                     validator: new TestConnectionValidator(),
-                    driverContext: DriverContextHelper.FakeContext);
+                    driverContext: TestDriverContext.MockContext);
 
                 // When
                 await connectionPool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
@@ -120,7 +120,7 @@ namespace Neo4j.Driver.Tests
             {
                 const int delayTime = 2000; // Delay time in milliseconds.
                 var pool = NewConnectionPool(
-                    driverContext: DriverContextHelper.With(
+                    driverContext: TestDriverContext.With(
                         config: x =>
                             x.WithMaxConnectionPoolSize(2).WithConnectionAcquisitionTimeout(TimeSpan.FromMinutes(2))));
 
@@ -152,7 +152,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldThrowClientExceptionWhenFailedToAcquireWithinTimeout()
             {
                 var pool = NewConnectionPool(
-                    driverContext: DriverContextHelper.With(
+                    driverContext: TestDriverContext.With(
                         config: x =>
                             x.WithMaxConnectionPoolSize(2)
                                 .WithConnectionAcquisitionTimeout(TimeSpan.FromMilliseconds(250))));
@@ -175,7 +175,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldNotExceedIdleLimit()
             {
                 var pool = NewConnectionPool(
-                    driverContext: DriverContextHelper.With(config: x => x.WithMaxIdleConnectionPoolSize(2)));
+                    driverContext: TestDriverContext.With(config: x => x.WithMaxIdleConnectionPoolSize(2)));
 
                 var conns = new List<IConnection>();
                 for (var i = 0; i < 4; i++)
@@ -197,7 +197,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldAcquireFromPoolIfAvailable()
             {
                 var pool = NewConnectionPool(
-                    driverContext: DriverContextHelper.With(config: x => x.WithMaxIdleConnectionPoolSize(2)));
+                    driverContext: TestDriverContext.With(config: x => x.WithMaxIdleConnectionPoolSize(2)));
 
                 for (var i = 0; i < 4; i++)
                 {
@@ -237,7 +237,7 @@ namespace Neo4j.Driver.Tests
                 var connFactory = new MockedConnectionFactory(connMock.Object);
                 var pool = new ConnectionPool(
                     connFactory,
-                    driverContext: DriverContextHelper.FakeContext);
+                    driverContext: TestDriverContext.MockContext);
 
                 var exc = await Record.ExceptionAsync(
                     () => pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty));

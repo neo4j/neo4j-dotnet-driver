@@ -21,14 +21,14 @@ using Neo4j.Driver.Preview.Auth;
 
 namespace Neo4j.Driver.Tests
 {
-    internal static class DriverContextHelper
+    internal static class TestDriverContext
     {
-        static DriverContextHelper()
+        static TestDriverContext()
         {
-            FakeContext = new DriverContext(new Uri("bolt://localhost:7687"), AuthTokenManagers.None, new Config());
+            MockContext = new DriverContext(new Uri("bolt://localhost:7687"), AuthTokenManagers.None, new Config());
         }
 
-        public static DriverContext FakeContext { get; }
+        public static DriverContext MockContext { get; }
 
         public static DriverContext With(
             Uri uri = null,
@@ -38,8 +38,8 @@ namespace Neo4j.Driver.Tests
             var cb = new ConfigBuilder(new Config());
             config?.Invoke(cb);
             return new DriverContext(
-                uri ?? FakeContext.InitialUri,
-                authTokenManagers ?? FakeContext.AuthTokenManager,
+                uri ?? MockContext.InitialUri,
+                authTokenManagers ?? MockContext.AuthTokenManager,
                 cb.Build());
         }
     }

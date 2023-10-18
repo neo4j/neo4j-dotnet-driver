@@ -34,7 +34,7 @@ namespace Neo4j.Driver.Internal.IO
         private readonly Mock<ILogger> _logger = new();
         private static DriverContext TestContext(int defaultRead, int defaultWrite, int maxRead, int maxWrite)
         {
-            return DriverContextHelper.With(
+            return TestDriverContext.With(
                 config: x =>
                     x.WithDefaultReadBufferSize(defaultRead)
                         .WithDefaultWriteBufferSize(defaultWrite)
@@ -50,7 +50,7 @@ namespace Neo4j.Driver.Internal.IO
 
             var ex = Record.Exception(
                 () =>
-                    new ChunkWriter(mockStream.Object, DriverContextHelper.FakeContext, _logger.Object));
+                    new ChunkWriter(mockStream.Object, TestDriverContext.MockContext, _logger.Object));
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<ArgumentOutOfRangeException>();
@@ -61,7 +61,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             var buffer = new byte[1024];
             var stream = new MemoryStream();
-            var writer = new ChunkWriter(stream, DriverContextHelper.FakeContext, _logger.Object);
+            var writer = new ChunkWriter(stream, TestDriverContext.MockContext, _logger.Object);
 
             // Write data
             writer.OpenChunk();
@@ -80,7 +80,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             var buffer = new byte[1024];
             var stream = new MemoryStream();
-            var writer = new ChunkWriter(stream, DriverContextHelper.FakeContext, _logger.Object);
+            var writer = new ChunkWriter(stream, TestDriverContext.MockContext, _logger.Object);
 
             // Write data
             writer.OpenChunk();
@@ -104,7 +104,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             var buffer = Enumerable.Range(0, chunkSize).Select(i => i % byte.MaxValue).Select(i => (byte)i).ToArray();
             var stream = new MemoryStream();
-            var writer = new ChunkWriter(stream, DriverContextHelper.FakeContext, _logger.Object);
+            var writer = new ChunkWriter(stream, TestDriverContext.MockContext, _logger.Object);
 
             // Write data
             writer.OpenChunk();
@@ -134,7 +134,7 @@ namespace Neo4j.Driver.Internal.IO
         {
             var buffer = Enumerable.Range(0, chunkSize).Select(i => i % byte.MaxValue).Select(i => (byte)i).ToArray();
             var stream = new MemoryStream();
-            var writer = new ChunkWriter(stream, DriverContextHelper.FakeContext, _logger.Object);
+            var writer = new ChunkWriter(stream, TestDriverContext.MockContext, _logger.Object);
 
             // Write data
             writer.OpenChunk();
@@ -160,7 +160,7 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = Enumerable.Range(0, 10).Select(i => (byte)i).ToArray();
             var stream = new MemoryStream();
             var logger = LoggingHelper.GetTraceEnabledLogger();
-            var writer = new ChunkWriter(stream, DriverContextHelper.FakeContext, logger.Object);
+            var writer = new ChunkWriter(stream, TestDriverContext.MockContext, logger.Object);
 
             // Write data
             writer.OpenChunk();
@@ -180,7 +180,7 @@ namespace Neo4j.Driver.Internal.IO
             var buffer = Enumerable.Range(0, 10).Select(i => (byte)i).ToArray();
             var stream = new MemoryStream();
             var logger = LoggingHelper.GetTraceEnabledLogger();
-            var writer = new ChunkWriter(stream, DriverContextHelper.FakeContext, logger.Object);
+            var writer = new ChunkWriter(stream, TestDriverContext.MockContext, logger.Object);
 
             // Write data
             writer.OpenChunk();

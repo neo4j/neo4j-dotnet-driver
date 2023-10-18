@@ -59,7 +59,7 @@ namespace Neo4j.Driver.Tests
 
             return new SocketClient(
                 FakeUri,
-                DriverContextHelper.With(FakeUri),
+                TestDriverContext.With(FakeUri),
                 Mock.Of<ILogger>(),
                 factory.Object,
                 mockPackstreamFactory.Object,
@@ -94,7 +94,7 @@ namespace Neo4j.Driver.Tests
             var cw = writer ??
                 new ChunkWriter(
                     new MemoryStream(),
-                    DriverContextHelper.FakeContext,
+                    TestDriverContext.MockContext,
                     Mock.Of<ILogger>());
 
             var mr = messageReader ?? Mock.Of<IMessageReader>();
