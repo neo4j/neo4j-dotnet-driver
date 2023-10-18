@@ -267,5 +267,8 @@ testkit/CustomCAs/customRoot.crt
 
 testkit/CustomCAs/customRoot2.crt
 
+# vscode
+.vscode/
+
 # generated docs
 Docs/

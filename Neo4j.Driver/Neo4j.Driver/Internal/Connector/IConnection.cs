@@ -102,6 +102,7 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
 
     void SetUseUtcEncodedDateTime();
     ValueTask ValidateCredsAsync();
+    bool TelemetryEnabled { get; set; }
 }
 
 internal interface IConnectionRunner
@@ -122,9 +123,10 @@ internal interface IConnectionRunner
         AutoCommitParams autoCommitParams,
         INotificationsConfig notificationsConfig);
 
-    Task BeginTransactionAsync(BeginProtocolParams beginParams);
+    Task BeginTransactionAsync(BeginTransactionParams beginParams);
 
-    Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize);
+    Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize,
+        IInternalAsyncTransaction transaction);
     Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker);
     Task RollbackTransactionAsync();
 }

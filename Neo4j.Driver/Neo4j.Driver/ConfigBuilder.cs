@@ -421,4 +421,25 @@ public sealed class ConfigBuilder
         _config.NotificationsConfig = new NotificationsDisabledConfig();
         return this;
     }
+
+    /// <summary>
+    /// Disables the driver sending any telemetry data.<br/>
+    /// The telemetry collected covers high level usage of the driver and does not include any queries or
+    /// parameters.<br/>
+    /// Current collected metrics:
+    /// <list type="bullet">
+    ///     <item>Which method was used to start a transaction.</item>
+    /// </list>
+    /// Telemetry metrics are sent via Bolt to the uri provided when creating a driver instance or servers that make up
+    /// the cluster members and Neo4j makes no attempt to collect these usage metrics from outside of AuraDB
+    /// (Neo4j's cloud offering).<br/>
+    /// Users can configure Neo4j server's collection collection behavior of client drivers telemetry data and log the
+    /// telemetry data for diagnostics purposes.<br/>
+    /// By default the driver allows the collection of this telemetry.
+    /// </summary>
+    public ConfigBuilder WithTelemetryDisabled()
+    {
+        _config.TelemetryDisabled = true;
+        return this;
+    }
 }

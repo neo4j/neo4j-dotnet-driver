@@ -254,6 +254,7 @@ internal sealed class SocketConnection : IConnection
     public bool UtcEncodedDateTime { get; private set; }
     public DriverContext Context { get; }
     public IAuthToken AuthToken { get; private set; }
+    public bool TelemetryEnabled { get; set; }
 
     public void UpdateId(string newConnId)
     {
@@ -412,14 +413,15 @@ internal sealed class SocketConnection : IConnection
         return BoltProtocol.RunInAutoCommitTransactionAsync(this, autoCommitParams, notificationsConfig);
     }
 
-    public Task BeginTransactionAsync(BeginProtocolParams beginParams)
+    public Task BeginTransactionAsync(BeginTransactionParams beginParams)
     {
         return BoltProtocol.BeginTransactionAsync(this, beginParams);
     }
 
-    public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize)
+    public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize,
+        IInternalAsyncTransaction transaction)
     {
-        return BoltProtocol.RunInExplicitTransactionAsync(this, query, reactive, fetchSize);
+        return BoltProtocol.RunInExplicitTransactionAsync(this, query, reactive, fetchSize, transaction);
     }
 
     public Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker)

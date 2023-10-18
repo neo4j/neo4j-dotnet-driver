@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,12 +15,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
+namespace Neo4j.Driver.Internal.Telemetry;
 
-namespace Neo4j.Driver.Internal;
-
-internal interface IInternalAsyncTransaction : IAsyncTransaction
+internal enum QueryApiType
 {
-    bool IsErrored(out Exception ex);
-    bool IsOpen { get; }
+    TransactionFunction = 0,
+    UnmanagedTransaction = 1,
+    AutoCommit = 2,
+    DriverLevel = 3
 }

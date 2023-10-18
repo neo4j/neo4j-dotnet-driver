@@ -69,6 +69,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
     }
 
     private string Database { get; set; }
+    internal Exception TransactionError { get; set; }
 
     public void UpdateBookmarks(Bookmarks bookmarks, IDatabaseInfo dbInfo = null)
     {
@@ -80,11 +81,37 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         _bookmarks = bookmarks;
     }
 
+    /// <summary>
+    /// Sets the error for the transaction if it is not already set.
+    /// This avoids the exception changing if multiple errors occur.
+    /// </summary>
+    /// <param name="ex">The first exception to occur in the transaction.</param>
+    internal void SetErrorIfNull(Exception ex)
+    {
+        TransactionError ??= ex;
+    }
+
+    public bool IsErrored(out Exception ex)
+    {
+        if (TransactionError != null)
+        {
+            ex = TransactionError;
+            return true;
+        }
+
+        ex = null;
+        return false;
+    }
+
     public bool IsOpen => _state == Active;
 
     public override Task<IResultCursor> RunAsync(Query query)
     {
-        var result = _state.RunAsync(query, _connection, _logger, _reactive, _fetchSize, out var nextState);
+        if (TransactionError != null)
+        {
+            throw new TransactionTerminatedException(TransactionError);
+        }
+        var result = _state.RunAsync(query, _connection, _logger, _reactive, _fetchSize, this,  out var nextState);
         _state = nextState;
         _results.Add(result);
         return result;
@@ -92,6 +119,10 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
     public async Task CommitAsync()
     {
+        if (TransactionError != null)
+        {
+            throw new TransactionTerminatedException(TransactionError);
+        }
         try
         {
             await DiscardUnconsumed().ConfigureAwait(false);
@@ -120,18 +151,18 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
     public TransactionConfig TransactionConfig { get; private set; }
 
-    public Task BeginTransactionAsync(TransactionConfig config, bool awaitBeginResult)
+    public Task BeginTransactionAsync(TransactionConfig config, TransactionInfo transactionInfo)
     {
         TransactionConfig = config;
         
         return _connection.BeginTransactionAsync(
-            new BeginProtocolParams(
+            new BeginTransactionParams(
                 Database,
                 _bookmarks,
                 TransactionConfig,
                 _sessionConfig,
                 _notificationsConfig,
-                awaitBeginResult));
+                transactionInfo));
     }
 
     public async Task MarkToCloseAsync()
@@ -200,6 +231,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
         internal override async Task OnErrorAsync(Exception error)
         {
+            _transaction.SetErrorIfNull(error);
             await _transaction.MarkToCloseAsync().ConfigureAwait(false);
             throw error;
         }
@@ -213,16 +245,17 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             ILogger logger,
             bool reactive,
             long fetchSize,
+            AsyncTransaction transaction,
             out IState nextState);
 
         Task CommitAsync(
             IConnection connection,
-            IBookmarksTracker tracker,
+            AsyncTransaction transaction,
             out IState nextState);
 
         Task RollbackAsync(
             IConnection connection,
-            IBookmarksTracker tracker,
+            AsyncTransaction transaction,
             out IState nextState);
     }
 
@@ -234,24 +267,25 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             ILogger logger,
             bool reactive,
             long fetchSize,
+            AsyncTransaction transaction,
             out IState nextState)
         {
             nextState = Active;
-            return connection.RunInExplicitTransactionAsync(query, reactive, fetchSize);
+            return connection.RunInExplicitTransactionAsync(query, reactive, fetchSize, transaction);
         }
 
         public Task CommitAsync(
             IConnection connection,
-            IBookmarksTracker tracker,
+            AsyncTransaction transaction,
             out IState nextState)
         {
             nextState = Committed;
-            return connection.CommitTransactionAsync(tracker);
+            return connection.CommitTransactionAsync(transaction);
         }
 
         public Task RollbackAsync(
             IConnection connection,
-            IBookmarksTracker tracker,
+            AsyncTransaction transaction,
             out IState nextState)
         {
             nextState = RolledBack;
@@ -267,6 +301,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             ILogger logger,
             bool reactive,
             long fetchSize,
+            AsyncTransaction transaction,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -275,7 +310,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
         public Task CommitAsync(
             IConnection connection,
-            IBookmarksTracker tracker,
+            AsyncTransaction tracker,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -284,7 +319,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
         public Task RollbackAsync(
             IConnection connection,
-            IBookmarksTracker tracker,
+            AsyncTransaction tracker,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -300,6 +335,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             ILogger logger,
             bool reactive,
             long fetchSize,
+            AsyncTransaction transaction,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -308,7 +344,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
         public Task CommitAsync(
             IConnection connection,
-            IBookmarksTracker tracker,
+            AsyncTransaction tracker,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -317,7 +353,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
 
         public Task RollbackAsync(
             IConnection connection,
-            IBookmarksTracker tracker,
+            AsyncTransaction tracker,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -333,24 +369,23 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             ILogger logger,
             bool reactive,
             long fetchSize,
+            AsyncTransaction transaction,
             out IState nextState)
         {
-            throw new TransactionClosedException(
-                "Cannot run query in this transaction, because it has been rolled back either because of an error or explicit termination.");
+            throw new TransactionTerminatedException(transaction.TransactionError);
         }
 
         public Task CommitAsync(
             IConnection connection,
-            IBookmarksTracker tracker,
+            AsyncTransaction transaction,
             out IState nextState)
         {
-            throw new TransactionClosedException(
-                "Cannot commit this transaction, because it has been rolled back either because of an error or explicit termination.");
+            throw new TransactionTerminatedException(transaction.TransactionError);
         }
 
         public Task RollbackAsync(
             IConnection connection,
-            IBookmarksTracker tracker,
+            AsyncTransaction tracker,
             out IState nextState)
         {
             nextState = Failed;
@@ -358,4 +393,3 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         }
     }
 }
-

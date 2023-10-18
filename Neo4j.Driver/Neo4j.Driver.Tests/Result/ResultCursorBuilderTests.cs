@@ -24,6 +24,7 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Result;
 using Xunit;
+using Record = Xunit.Record;
 
 namespace Neo4j.Driver.Tests
 {
@@ -33,7 +34,9 @@ namespace Neo4j.Driver.Tests
         public void ShouldStartInRunRequestedStateRx()
         {
             var builder =
-                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null, reactive: true);
+                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null,
+                    1000, true,
+                    new Mock<IInternalAsyncTransaction>().Object);
 
             builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunRequested);
         }
@@ -42,7 +45,9 @@ namespace Neo4j.Driver.Tests
         public void ShouldStartInRunAndRecordsRequestedState()
         {
             var builder =
-                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null);
+                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null,
+                    1000, false,
+                    new Mock<IInternalAsyncTransaction>().Object);
 
             builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunAndRecordsRequested);
         }
@@ -51,7 +56,8 @@ namespace Neo4j.Driver.Tests
         public void ShouldTransitionToRunCompletedWhenRunCompletedRx()
         {
             var builder =
-                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null, reactive: true);
+                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null, 1000, true,
+                    new Mock<IInternalAsyncTransaction>().Object);
 
             builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunRequested);
 
@@ -63,7 +69,10 @@ namespace Neo4j.Driver.Tests
         public void ShouldNotTransitionToRunCompletedWhenRunCompleted()
         {
             var builder =
-                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null);
+                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null,
+                    1000,
+                    false,
+                    new Mock<IInternalAsyncTransaction>().Object);
 
             builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunAndRecordsRequested);
 
@@ -75,7 +84,10 @@ namespace Neo4j.Driver.Tests
         public void ShouldTransitionToRecordsStreamingStreamingWhenRecordIsPushedRx()
         {
             var builder =
-                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null, reactive: true);
+                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null,
+                    1000,
+                    true,
+                    new Mock<IInternalAsyncTransaction>().Object);
 
             builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunRequested);
 
@@ -90,7 +102,10 @@ namespace Neo4j.Driver.Tests
         public void ShouldTransitionToRecordsStreamingStreamingWhenRecordIsPushed()
         {
             var builder =
-                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null);
+                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null,
+                    1000,
+                    false,
+                    new Mock<IInternalAsyncTransaction>().Object);
 
             builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunAndRecordsRequested);
 
@@ -105,7 +120,10 @@ namespace Neo4j.Driver.Tests
         public void ShouldTransitionToRunCompletedWhenPullCompletedWithHasMore()
         {
             var builder =
-                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null)
+                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null,
+                    1000,
+                    false,
+                    new Mock<IInternalAsyncTransaction>().Object)
                 {
                     CurrentState = ResultCursorBuilder.State.RecordsStreaming
                 };
@@ -118,7 +136,10 @@ namespace Neo4j.Driver.Tests
         public void ShouldTransitionToCompletedWhenPullCompleted()
         {
             var builder =
-                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null)
+                new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null,
+                    1000,
+                    false,
+                    new Mock<IInternalAsyncTransaction>().Object)
                 {
                     CurrentState = ResultCursorBuilder.State.RecordsStreaming
                 };
@@ -138,7 +159,10 @@ namespace Neo4j.Driver.Tests
                     CreateTaskQueue(actions),
                     null,
                     null,
-                    resourceHandler.Object);
+                    resourceHandler.Object,
+                    1000,
+                    false,
+                    new Mock<IInternalAsyncTransaction>().Object);
 
             actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
             actions.Enqueue(() => builder.PushRecord(new object[] { 1 }));
@@ -177,7 +201,9 @@ namespace Neo4j.Driver.Tests
                     CreateMoreTaskQueue(actions),
                     null,
                     resourceHandler.Object,
-                    2);
+                    2,
+                    false,
+                    new Mock<IInternalAsyncTransaction>().Object);
 
             var counter = 0;
             builder.RunCompleted(0, new[] { "a" }, null);
@@ -274,7 +300,9 @@ namespace Neo4j.Driver.Tests
                         MoreFunction(),
                         CancelFunction(),
                         null,
-                        reactive: true);
+                        1000,
+                        true,
+                        new Mock<IInternalAsyncTransaction>().Object);
 
                 actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
                 actions.Enqueue(() => builder.PushRecord(new object[] { 1 }));
@@ -300,7 +328,9 @@ namespace Neo4j.Driver.Tests
                         MoreFunction(),
                         CancelFunction(),
                         null,
-                        reactive: true);
+                        1000,
+                        true,
+                        new Mock<IInternalAsyncTransaction>().Object);
 
                 actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
                 actions.Enqueue(() => builder.PushRecord(new object[] { 1 }));
@@ -327,7 +357,9 @@ namespace Neo4j.Driver.Tests
                         MoreFunction(),
                         CancelFunction(),
                         null,
-                        reactive: true);
+                        1000,
+                        true,
+                        new Mock<IInternalAsyncTransaction>().Object);
 
                 actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
                 actions.Enqueue(() => builder.PushRecord(new object[] { 1 }));
@@ -355,7 +387,9 @@ namespace Neo4j.Driver.Tests
                         MoreFunction(),
                         CancelFunction(),
                         null,
-                        reactive: true);
+                        1000,
+                        true,
+                        new Mock<IInternalAsyncTransaction>().Object);
 
                 actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
                 actions.Enqueue(() => builder.PullCompleted(false, null));
@@ -385,7 +419,9 @@ namespace Neo4j.Driver.Tests
                         MoreFunction(),
                         CancelFunction(),
                         null,
-                        reactive: true);
+                        1000,
+                        true,
+                        new Mock<IInternalAsyncTransaction>().Object);
 
                 actions.Enqueue(() => builder.RunCompleted(0, new[] { "a" }, null));
                 actions.Enqueue(() => builder.PushRecord(new object[] { 1 }));
@@ -415,6 +451,53 @@ namespace Neo4j.Driver.Tests
                 list.Should().BeEmpty();
                 moreCallCount.Should().Be(1);
                 cancelCallCount.Should().Be(1);
+            }
+
+            [Fact]
+            public async Task ShouldThrowIfTranasactionTerminatedOnFetch()
+            {
+                var expected = new ClientException("Neo.Broken.Db","it's broken!") as Exception;
+                var mockTx = new Mock<IInternalAsyncTransaction>();
+                mockTx.Setup(x => x.IsErrored(out expected)).Returns(true).Verifiable();
+                
+                var builder =
+                    new ResultCursorBuilder(
+                        CreateSummaryBuilder(),
+                        () => Task.CompletedTask,
+                        MoreFunction(),
+                        CancelFunction(),
+                        null,
+                        1000,
+                        true,
+                        mockTx.Object);
+                var cursor = builder.CreateCursor();
+                var exception = await Record.ExceptionAsync(() => cursor.FetchAsync());
+
+                exception.Should().BeOfType<TransactionTerminatedException>();
+            }
+
+            [Fact]
+            public async Task ShouldThrowIfTranasactionTerminatedOnConsume()
+            {
+                var expected = new ClientException("Neo.Broken.Db", "it's broken!") as Exception;
+                var mockTx = new Mock<IInternalAsyncTransaction>();
+                mockTx.Setup(x => x.IsErrored(out expected)).Returns(true).Verifiable();
+
+                var builder =
+                    new ResultCursorBuilder(
+                        CreateSummaryBuilder(),
+                        () => Task.CompletedTask,
+                        MoreFunction(),
+                        CancelFunction(),
+                        null,
+                        1000,
+                        true,
+                        mockTx.Object);
+
+                var cursor = builder.CreateCursor();
+                var exception = await Record.ExceptionAsync(() => cursor.ConsumeAsync());
+
+                exception.Should().BeOfType<TransactionTerminatedException>();
             }
 
             private Func<IResultStreamBuilder, long, long, Task> MoreFunction()
