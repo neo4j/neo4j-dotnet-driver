@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Reflection;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Logging;
@@ -44,16 +45,19 @@ namespace Neo4j.Driver;
 /// </remarks>
 public class Config
 {
+    static Config()
+    {
+        var version = Assembly.GetExecutingAssembly().GetName().Version;
+        DefaultUserAgent = $"neo4j-dotnet/{version.Major.ToString()}.{version.Minor.ToString()}";
+    }
+
+    internal static string DefaultUserAgent { get; }
+
     /// <summary>This const defines the value of infinite in terms of configuration properties.</summary>
     public const int Infinite = -1;
 
     /// <summary>This const defines the value of infinite interval in terms of configuration properties.</summary>
     public static readonly TimeSpan InfiniteInterval = TimeSpan.FromMilliseconds(-1);
-
-    /// <summary>Returns the default configuration for the <see cref="IDriver"/>.</summary>
-    internal static readonly Config Default = new();
-
-    private long _fetchSize = Constants.DefaultFetchSize;
 
     private int _maxIdleConnPoolSize = Infinite;
 
@@ -171,17 +175,13 @@ public class Config
     /// in batches. This fetch size defines how many records to pull in each batch. Use <see cref="Infinite"/> to disable
     /// batching and always pull all records in one batch instead.
     /// </summary>
-    public long FetchSize
-    {
-        get => _fetchSize;
-        internal set => _fetchSize = FetchSizeUtil.AssertValidFetchSize(value);
-    }
+    public long FetchSize { get; internal set; } = Constants.DefaultFetchSize;
 
     /// <summary>
     /// Used to get and set the User Agent string. If not used the default will be "neo4j-dotnet/x.y" where x is the
     /// major version and y is the minor version.
     /// </summary>
-    public string UserAgent { get; set; } = ConnectionSettings.DefaultUserAgent;
+    public string UserAgent { get; internal set; } = DefaultUserAgent;
 
     /// <summary>
     /// The configuration for setting which notifications the server should send to the client.<br/> This

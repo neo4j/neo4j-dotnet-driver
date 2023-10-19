@@ -22,7 +22,9 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Preview.Auth;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Connector
@@ -35,10 +37,10 @@ namespace Neo4j.Driver.Tests.Connector
             public async Task ShouldThrowExceptionIfConnectionTimedOut()
             {
                 var client = new TcpSocketClient(
-                    new SocketSettings(new SystemHostResolver(), new EncryptionManager(false, null))
-                    {
-                        ConnectionTimeout = TimeSpan.FromSeconds(1)
-                    });
+                    new DriverContext(
+                        new Uri("bolt://localhost:7687"),
+                        new StaticAuthTokenManager(AuthTokens.None),
+                        new Config { ConnectionTimeout = TimeSpan.FromSeconds(1) }));
 
                 // use non-routable IP address to mimic a connect timeout
                 // https://stackoverflow.com/questions/100841/artificially-create-a-connection-timeout-error
@@ -62,12 +64,11 @@ namespace Neo4j.Driver.Tests.Connector
             [Fact]
             public async Task ShouldBeAbleToConnectAgainIfFirstFailed()
             {
-                var socketSettings = new SocketSettings(new SystemHostResolver(), new EncryptionManager(false, null))
-                {
-                    ConnectionTimeout = TimeSpan.FromSeconds(10)
-                };
-
-                var client = new TcpSocketClient(socketSettings);
+                var client = new TcpSocketClient(
+                    new DriverContext(
+                        new Uri("bolt://localhost:7687"),
+                        new StaticAuthTokenManager(AuthTokens.None),
+                        new Config { ConnectionTimeout = TimeSpan.FromSeconds(10) }));
 
                 // We fail to connect the first time as there is no server to connect to
                 // ReSharper disable once PossibleNullReferenceException
@@ -96,12 +97,10 @@ namespace Neo4j.Driver.Tests.Connector
             public async Task ShouldThrowExceptionIfConnectionTimedOut()
             {
                 var client = new TcpSocketClient(
-                    new SocketSettings(
-                        new SystemHostResolver(),
-                        new EncryptionManager(false, null))
-                    {
-                        ConnectionTimeout = TimeSpan.FromSeconds(1)
-                    });
+                    new DriverContext(
+                        new Uri("bolt://localhost:7687"),
+                        AuthTokenManagers.None,
+                        new Config { ConnectionTimeout = TimeSpan.FromSeconds(1) }));
 
                 // ReSharper disable once PossibleNullReferenceException
                 // use non-routable IP address to mimic a connect timeout

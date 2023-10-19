@@ -29,7 +29,6 @@ using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;
 using static Neo4j.Driver.Internal.ConnectionPoolStatus;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
-using static Neo4j.Driver.Internal.Throw.ObjectDisposedException;
 using static Neo4j.Driver.Internal.Util.ConnectionContext;
 
 namespace Neo4j.Driver.Internal;
@@ -37,7 +36,6 @@ namespace Neo4j.Driver.Internal;
 internal sealed class ConnectionPool : IConnectionPool
 {
     private const int SpinningWaitInterval = 500;
-    private readonly TimeSpan _connectionAcquisitionTimeout;
     private readonly IPooledConnectionFactory _connectionFactory;
 
     private readonly IConnectionValidator _connectionValidator;
@@ -48,10 +46,9 @@ internal sealed class ConnectionPool : IConnectionPool
     private readonly ConcurrentHashSet<IPooledConnection> _inUseConnections = new();
 
     private readonly ILogger _logger;
-    private readonly int _maxIdlePoolSize;
-
-    private readonly int _maxPoolSize;
-    private readonly INotificationsConfig _notificationsConfig;
+    private int MaxIdlePoolSize => DriverContext.Config.MaxIdleConnectionPoolSize;
+    private TimeSpan ConnectionAcquisitionTimeout => DriverContext.Config.ConnectionAcquisitionTimeout;
+    private int MaxPoolSize => DriverContext.Config.MaxConnectionPoolSize;
 
     private readonly IConnectionPoolListener _poolMetricsListener;
 
@@ -66,31 +63,19 @@ internal sealed class ConnectionPool : IConnectionPool
     public ConnectionPool(
         Uri uri,
         IPooledConnectionFactory connectionFactory,
-        ConnectionPoolSettings connectionPoolSettings,
-        ILogger logger,
-        ConnectionSettings connectionSettings,
-        IDictionary<string, string> routingContext,
-        INotificationsConfig notificationsConfig = null)
+        DriverContext driverContext)
     {
         _uri = uri;
         _id = $"pool-{_uri.Host}:{_uri.Port}";
-        _logger = new PrefixLogger(logger, $"[{_id}]");
-        _maxPoolSize = connectionPoolSettings.MaxConnectionPoolSize;
-        _maxIdlePoolSize = connectionPoolSettings.MaxIdleConnectionPoolSize;
-        _connectionAcquisitionTimeout = connectionPoolSettings.ConnectionAcquisitionTimeout;
+        _logger = new PrefixLogger(driverContext.Logger, $"[{_id}]");
 
         _connectionFactory = connectionFactory;
-        ConnectionSettings = connectionSettings;
-
-        var connIdleTimeout = connectionPoolSettings.ConnectionIdleTimeout;
-        var maxConnectionLifetime = connectionPoolSettings.MaxConnectionLifetime;
-        _connectionValidator = new ConnectionValidator(connIdleTimeout, maxConnectionLifetime);
-
-        var metrics = connectionPoolSettings.Metrics;
-        _poolMetricsListener = metrics?.PutPoolMetrics($"{_id}-{GetHashCode()}", this);
-
-        RoutingContext = routingContext;
-        _notificationsConfig = notificationsConfig;
+        DriverContext = driverContext;
+        _connectionValidator = new ConnectionValidator(
+            driverContext.Config.ConnectionIdleTimeout,
+            driverContext.Config.MaxConnectionLifetime);
+        
+        _poolMetricsListener = driverContext.Metrics?.PutPoolMetrics($"{_id}-{GetHashCode()}", this);
     }
 
     // Used in test only
@@ -98,19 +83,12 @@ internal sealed class ConnectionPool : IConnectionPool
         IPooledConnectionFactory connectionFactory,
         BlockingCollection<IPooledConnection> idleConnections = null,
         ConcurrentHashSet<IPooledConnection> inUseConnections = null,
-        ConnectionPoolSettings poolSettings = null,
-        ConnectionSettings connectionSettings = null,
-        IConnectionValidator validator = null,
-        ILogger logger = null,
-        INotificationsConfig notificationsConfig = null)
+        DriverContext driverContext = null,
+        IConnectionValidator validator = null)
         : this(
             new Uri("bolt://localhost:7687"),
             connectionFactory,
-            poolSettings ?? new ConnectionPoolSettings(Config.Default),
-            logger,
-            connectionSettings,
-            null,
-            notificationsConfig)
+            driverContext)
     {
         _idleConnections = idleConnections ?? new BlockingCollection<IPooledConnection>();
         _inUseConnections = inUseConnections ?? new ConcurrentHashSet<IPooledConnection>();
@@ -126,8 +104,6 @@ internal sealed class ConnectionPool : IConnectionPool
     internal int PoolSize => Interlocked.CompareExchange(ref _poolSize, -1, -1);
     public int NumberOfInUseConnections => _inUseConnections.Count;
     public int NumberOfIdleConnections => _idleConnections.Count;
-
-    public IDictionary<string, string> RoutingContext { get; set; }
 
     public ConnectionPoolStatus Status
     {
@@ -150,7 +126,7 @@ internal sealed class ConnectionPool : IConnectionPool
             {
                 var connection = await TryExecuteAsync(
                         _logger,
-                        () => AcquireOrTimeoutAsync(database, sessionConfig, mode, _connectionAcquisitionTimeout),
+                        () => AcquireOrTimeoutAsync(database, sessionConfig, mode, ConnectionAcquisitionTimeout),
                         "Failed to acquire a connection from connection pool asynchronously.")
                     .ConfigureAwait(false);
 
@@ -258,7 +234,7 @@ internal sealed class ConnectionPool : IConnectionPool
         return connection.Server;
     }
 
-    public ConnectionSettings ConnectionSettings { get; }
+    public DriverContext DriverContext { get; }
 
     public Task<bool> SupportsMultiDbAsync()
     {
@@ -345,7 +321,7 @@ internal sealed class ConnectionPool : IConnectionPool
             }
 
             await conn
-                .InitAsync(_notificationsConfig, sessionConfig, cancellationToken)
+                .InitAsync(sessionConfig, cancellationToken)
                 .ConfigureAwait(false);
 
             _poolMetricsListener?.ConnectionCreated();
@@ -371,16 +347,12 @@ internal sealed class ConnectionPool : IConnectionPool
         _poolMetricsListener?.ConnectionCreating();
 
         var token = sessionConfig?.AuthToken ??
-            await ConnectionSettings.AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
+            await DriverContext.AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
 
         return _connectionFactory.Create(
             _uri,
             this,
-            ConnectionSettings.SocketSettings,
-            token,
-            ConnectionSettings.AuthTokenManager,
-            ConnectionSettings.UserAgent,
-            RoutingContext);
+            token);
     }
 
     private async Task DestroyConnectionAsync(IPooledConnection conn)
@@ -410,20 +382,20 @@ internal sealed class ConnectionPool : IConnectionPool
     /// <returns>true if pool size is successfully increased, otherwise false.</returns>
     private bool TryIncrementPoolSize()
     {
-        if (_maxPoolSize == Config.Infinite)
+        if (MaxPoolSize == Config.Infinite)
         {
             Interlocked.Increment(ref _poolSize);
             return true;
         }
 
-        if (PoolSize >= _maxPoolSize)
+        if (PoolSize >= MaxPoolSize)
         {
             return false;
         }
 
         lock (_poolSizeSync)
         {
-            if (PoolSize >= _maxPoolSize)
+            if (PoolSize >= MaxPoolSize)
             {
                 return false;
             }
@@ -458,7 +430,7 @@ internal sealed class ConnectionPool : IConnectionPool
             if (cts.Token.IsCancellationRequested)
             {
                 throw new ClientException(
-                    $"Failed to obtain a connection from pool within {_connectionAcquisitionTimeout}");
+                    $"Failed to obtain a connection from pool within {ConnectionAcquisitionTimeout}");
             }
 
             throw new ClientException("Failed to obtain a connection from pool");
@@ -475,7 +447,9 @@ internal sealed class ConnectionPool : IConnectionPool
         {
             if (IsClosed)
             {
-                throw GetDriverDisposedException(nameof(ConnectionPool));
+                throw new ObjectDisposedException(
+                    nameof(ConnectionPool),
+                    "Failed to acquire a new connection as the driver has already been disposed.");
             }
 
             if (IsInactive)
@@ -515,7 +489,9 @@ internal sealed class ConnectionPool : IConnectionPool
             await DestroyConnectionAsync(connection).ConfigureAwait(false);
         }
 
-        throw GetDriverDisposedException(nameof(ConnectionPool));
+        throw new ObjectDisposedException(
+            nameof(ConnectionPool),
+            "Failed to acquire a new connection as the driver has already been disposed.");
     }
 
     private Task<IPooledConnection> GetPooledOrNewConnectionAsync(
@@ -569,12 +545,12 @@ internal sealed class ConnectionPool : IConnectionPool
 
     private bool IsConnectionPoolFull()
     {
-        return _maxPoolSize != Config.Infinite && PoolSize >= _maxPoolSize;
+        return MaxPoolSize != Config.Infinite && PoolSize >= MaxPoolSize;
     }
 
     private bool IsIdlePoolFull()
     {
-        return _maxIdlePoolSize != Config.Infinite && _idleConnections.Count >= _maxIdlePoolSize;
+        return MaxIdlePoolSize != Config.Infinite && _idleConnections.Count >= MaxIdlePoolSize;
     }
 
     public Task CloseAsync()
@@ -592,7 +568,7 @@ internal sealed class ConnectionPool : IConnectionPool
         var allCloseTasks = new List<Task>();
         while (_idleConnections.TryTake(out var connection))
         {
-            _logger?.Debug($"Disposing Available Connection {connection}");
+            _logger.Debug($"Disposing Available Connection {connection}");
             allCloseTasks.Add(DestroyConnectionAsync(connection));
         }
 
@@ -625,7 +601,7 @@ internal sealed class ConnectionPool : IConnectionPool
 
         foreach (var inUseConnection in _inUseConnections)
         {
-            _logger?.Info($"Disposing In Use Connection {inUseConnection}");
+            _logger.Info($"Disposing In Use Connection {inUseConnection}");
 
             if (_inUseConnections.TryRemove(inUseConnection))
             {

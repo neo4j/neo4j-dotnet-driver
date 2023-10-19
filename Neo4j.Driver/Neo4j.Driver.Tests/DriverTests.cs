@@ -143,7 +143,7 @@ namespace Neo4j.Driver.Tests
             mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
                 .Returns(Task.FromResult(new Mock<IServerInfo>().Object));
 
-            var driver = new Internal.Driver(new Uri("bolt://localhost"), false, mock.Object, null);
+            var driver = new Internal.Driver(new Uri("bolt://localhost"), mock.Object, null, TestDriverContext.MockContext);
             await driver.VerifyConnectivityAsync();
 
             mock.Verify(x => x.VerifyConnectivityAndGetInfoAsync(), Times.Once);
@@ -156,7 +156,10 @@ namespace Neo4j.Driver.Tests
             mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
                 .Returns(Task.FromResult(new Mock<IServerInfo>().Object));
 
-            var driver = (IDriver)new Internal.Driver(new Uri("bolt://localhost"), false, mock.Object, null);
+            var driver = (IDriver)new Internal.Driver(new Uri("bolt://localhost"),
+                mock.Object,
+                null,
+                TestDriverContext.MockContext);
             var connects = await driver.TryVerifyConnectivityAsync();
             
             connects.Should().BeTrue();
@@ -169,7 +172,10 @@ namespace Neo4j.Driver.Tests
             mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
                 .ThrowsAsync(new Exception("broken"));
 
-            var driver = (IDriver)new Internal.Driver(new Uri("bolt://localhost"), false, mock.Object, null);
+            var driver = (IDriver)new Internal.Driver(new Uri("bolt://localhost"),
+                mock.Object,
+                null,
+                TestDriverContext.MockContext);
             var connects = await driver.TryVerifyConnectivityAsync();
 
             connects.Should().BeFalse();
@@ -183,7 +189,10 @@ namespace Neo4j.Driver.Tests
             mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
                 .Returns(Task.FromResult(mockServerInfo));
 
-            var driver = new Internal.Driver(new Uri("bolt://localhost"), false, mock.Object, null);
+            var driver = new Internal.Driver(new Uri("bolt://localhost"),
+                mock.Object,
+                null,
+                TestDriverContext.MockContext);
 
             var info = await driver.GetServerInfoAsync();
 
@@ -196,7 +205,10 @@ namespace Neo4j.Driver.Tests
         {
             var mock = new Mock<IConnectionProvider>();
             mock.Setup(x => x.SupportsMultiDbAsync()).Returns(Task.FromResult(true));
-            var driver = new Internal.Driver(new Uri("bolt://localhost"), false, mock.Object, null);
+            var driver = new Internal.Driver(new Uri("bolt://localhost"),
+                mock.Object,
+                null,
+                TestDriverContext.MockContext);
             await driver.SupportsMultiDbAsync();
 
             mock.Verify(x => x.SupportsMultiDbAsync(), Times.Once);

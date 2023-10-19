@@ -20,9 +20,11 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal;
 
-internal static class NetworkExtensions
+internal static class Neo4jUri
 {
-    public static bool IsSimpleUriScheme(this Uri uri)
+    public const int DefaultBoltPort = 7687;
+    
+    public static bool IsSimpleUriScheme(Uri uri)
     {
         var scheme = uri.Scheme.ToLower();
         switch (scheme)
@@ -42,7 +44,7 @@ internal static class NetworkExtensions
         }
     }
 
-    public static bool IsRoutingUri(this Uri uri)
+    public static bool IsRoutingUri(Uri uri)
     {
         var scheme = uri.Scheme.ToLower();
         switch (scheme)
@@ -62,7 +64,7 @@ internal static class NetworkExtensions
         }
     }
 
-    public static EncryptionManager ParseUriSchemeToEncryptionManager(this Uri uri, ILogger logger)
+    public static EncryptionManager ParseUriSchemeToEncryptionManager(Uri uri, ILogger logger)
     {
         var scheme = uri.Scheme.ToLower();
         switch (scheme)
@@ -86,7 +88,7 @@ internal static class NetworkExtensions
         }
     }
 
-    public static Uri ParseBoltUri(this Uri uri, int defaultPort)
+    public static Uri ParseBoltUri(Uri uri, int defaultPort)
     {
         var port = defaultPort;
         if (uri.Port != -1)
@@ -98,11 +100,11 @@ internal static class NetworkExtensions
         return builder.Uri;
     }
 
-    public static IDictionary<string, string> ParseRoutingContext(this Uri uri, int defaultPort)
+    public static IDictionary<string, string> ParseRoutingContext(Uri uri, int defaultPort)
     {
-        if (!uri.IsRoutingUri())
+        if (!IsRoutingUri(uri))
         {
-            return new Dictionary<string, string>();
+            return null;
         }
 
         var query = uri.Query;
@@ -139,13 +141,21 @@ internal static class NetworkExtensions
         return context;
     }
 
-    public static bool IsTimeoutDetectionEnabled(this TimeSpan timeout)
+    internal static void EnsureNoRoutingContextOnBolt(Uri uri)
     {
-        return timeout.TotalMilliseconds >= 0;
+        if (!IsRoutingUri(uri) && !string.IsNullOrEmpty(uri.Query))
+        {
+            throw new ArgumentException($"Routing context are not supported with scheme 'bolt'. Given URI: '{uri}'");
+        }
     }
 
-    public static bool IsTimeoutDetectionDisabled(this TimeSpan timeout)
+    public static Uri BoltRoutingUri(string address)
     {
-        return timeout.TotalMilliseconds < 0;
+        var builder = new UriBuilder("neo4j://" + address);
+        if (builder.Port == -1)
+        {
+            builder.Port = DefaultBoltPort;
+        }
+        return builder.Uri;
     }
 }

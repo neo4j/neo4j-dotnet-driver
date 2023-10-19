@@ -49,7 +49,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
     public AsyncTransaction(
         IConnection connection,
         ITransactionResourceHandler resourceHandler,
-        ILogger logger = null,
+        ILogger logger,
         string database = null,
         Bookmarks bookmark = null,
         bool reactive = false,

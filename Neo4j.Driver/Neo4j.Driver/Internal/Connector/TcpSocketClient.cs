@@ -15,8 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if NET6_0_OR_GREATER
-#else
+#if !NET6_0_OR_GREATER
 using Neo4j.Driver.Internal.Extensions;
 #endif
 using System;
@@ -34,34 +33,18 @@ namespace Neo4j.Driver.Internal.Connector;
 
 internal sealed class TcpSocketClient : ITcpSocketClient
 {
-    private readonly TimeSpan _connectionTimeout;
-    private readonly EncryptionManager _encryptionManager;
-    private readonly bool _ipv6Enabled;
+    private DriverContext DriverContext { get; }
     private readonly ILogger _logger;
 
-    private readonly IHostResolver _resolver;
-    private readonly bool _socketKeepAliveEnabled;
     private Socket _client;
 
-    public TcpSocketClient(SocketSettings socketSettings, ILogger logger = null)
+    public TcpSocketClient(DriverContext driverContext, ILogger logger = null)
     {
-        if (socketSettings == null)
-        {
-            throw new ArgumentNullException(nameof(socketSettings));
-        }
-
-        _resolver = socketSettings.HostResolver;
-        _encryptionManager = socketSettings.EncryptionManager;
-
-        _ipv6Enabled = socketSettings.Ipv6Enabled;
-        _connectionTimeout = socketSettings.ConnectionTimeout;
-        _socketKeepAliveEnabled = socketSettings.SocketKeepAliveEnabled;
-
+        DriverContext = driverContext;
         _logger = logger;
     }
 
     public Stream ReaderStream { get; private set; }
-
     public Stream WriterStream => ReaderStream;
 
     public async Task ConnectAsync(Uri uri, CancellationToken cancellationToken = default)
@@ -69,7 +52,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
         await ConnectSocketAsync(uri, cancellationToken).ConfigureAwait(false);
 
         ReaderStream = new NetworkStream(_client);
-        if (_encryptionManager.UseTls)
+        if (DriverContext.EncryptionManager.UseTls)
         {
             try
             {
@@ -109,7 +92,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
     private async Task ConnectSocketAsync(Uri uri, CancellationToken cancellationToken = default)
     {
         var innerErrors = new List<Exception>();
-        var addresses = await _resolver.ResolveAsync(uri.Host).ConfigureAwait(false);
+        var addresses = await DriverContext.HostResolver.ResolveAsync(uri.Host).ConfigureAwait(false);
 
         foreach (var address in addresses)
         {
@@ -138,7 +121,8 @@ internal sealed class TcpSocketClient : ITcpSocketClient
     internal async Task ConnectSocketAsync(IPAddress address, int port, CancellationToken cancellationToken = default)
     {
         InitClient();
-        using var timeout = new CancellationTokenSource(_connectionTimeout);
+        var timeoutValue = DriverContext.Config.ConnectionTimeout;
+        using var timeout = new CancellationTokenSource(timeoutValue);
         using var source = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token, cancellationToken);
 
         try
@@ -157,7 +141,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
             }
 
             throw new OperationCanceledException(
-                $"Failed to connect to server {address}:{port} within {_connectionTimeout.TotalMilliseconds}ms.");
+                $"Failed to connect to server {address}:{port} within {timeoutValue.TotalMilliseconds}ms.");
         }
         catch
         {
@@ -175,7 +159,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
 #else
         using var _ = ctr;
         await _client.ConnectAsync(new IPEndPoint(address, port))
-            .Timeout(_connectionTimeout, cancellationToken)
+            .Timeout(DriverContext.Config.ConnectionTimeout, cancellationToken)
             .ConfigureAwait(false);
 #endif
     }
@@ -189,10 +173,11 @@ internal sealed class TcpSocketClient : ITcpSocketClient
         }
         catch (Exception e)
         {
+            var timeoutValue = DriverContext.Config.ConnectionTimeout;
             _logger?.Error(
                 e,
                 $"Failed to close connect to the server {address}:{port}" +
-                $" after connection timed out {_connectionTimeout.TotalMilliseconds}ms.");
+                $" after connection timed out {timeoutValue.TotalMilliseconds}ms.");
         }
 
         return Task.CompletedTask;
@@ -200,19 +185,20 @@ internal sealed class TcpSocketClient : ITcpSocketClient
 
     private void InitClient()
     {
-        var addressFamily = _ipv6Enabled ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
+        var ipv6 = DriverContext.Config.Ipv6Enabled;
+        var addressFamily = ipv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
 
         _client = new Socket(addressFamily, SocketType.Stream, ProtocolType.Tcp)
         {
             NoDelay = true
         };
 
-        if (_ipv6Enabled)
+        if (ipv6)
         {
             _client.DualMode = true;
         }
 
-        _client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, _socketKeepAliveEnabled);
+        _client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, DriverContext.Config.SocketKeepAlive);
     }
 
     private SslStream CreateSecureStream(Uri uri)
@@ -228,7 +214,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
                     return false;
                 }
 
-                var trust = _encryptionManager.TrustManager.ValidateServerCertificate(
+                var trust = DriverContext.EncryptionManager.TrustManager.ValidateServerCertificate(
                     uri,
                     new X509Certificate2(certificate.Export(X509ContentType.Cert)),
                     chain,

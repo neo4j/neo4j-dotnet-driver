@@ -34,7 +34,7 @@ internal sealed class SocketConnection : IConnection
     private readonly ISocketClient _client;
     private readonly string _idPrefix;
 
-    private readonly PrefixLogger _logger;
+    private readonly ILogger _logger;
 
     private readonly Queue<IRequestMessage> _messages = new();
     private readonly IBoltProtocolFactory _protocolFactory;
@@ -42,32 +42,27 @@ internal sealed class SocketConnection : IConnection
     private readonly IResponsePipeline _responsePipeline;
     private readonly SemaphoreSlim _sendLock = new(1, 1);
     private readonly ServerInfo _serverInfo;
-    private readonly string _userAgent;
 
     private string _id;
 
     internal SocketConnection(
         Uri uri,
-        SocketSettings socketSettings,
-        IAuthToken authToken,
-        string userAgent,
-        BufferSettings bufferSettings,
-        IDictionary<string, string> routingContext,
-        IAuthTokenManager authTokenManager,
-        ILogger logger = null)
+        DriverContext context,
+        IAuthToken authToken)
     {
         _idPrefix = $"conn-{uri.Host}:{uri.Port}-";
         _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
-        _logger = new PrefixLogger(logger, FormatPrefix(_id));
+        _logger = context.Logger != NullLogger.Instance
+            ? new PrefixLogger(context.Logger, FormatPrefix(_id))
+            : context.Logger;
 
-        _client = new SocketClient(uri, socketSettings, bufferSettings, _logger, null);
+        _client = new SocketClient(uri, context, _logger, null);
+        Context = context;
         AuthToken = authToken;
-        _userAgent = userAgent;
         _serverInfo = new ServerInfo(uri);
 
         _responsePipeline = new ResponsePipeline(_logger);
-        RoutingContext = routingContext;
-        AuthTokenManager = authTokenManager;
+        AuthTokenManager = context.AuthTokenManager;
         _protocolFactory = BoltProtocolFactory.Default;
     }
 
@@ -75,34 +70,31 @@ internal sealed class SocketConnection : IConnection
     internal SocketConnection(
         ISocketClient socketClient,
         IAuthToken authToken,
-        string userAgent,
         ILogger logger,
         ServerInfo server,
         IResponsePipeline responsePipeline = null,
         IAuthTokenManager authTokenManager = null,
-        IBoltProtocolFactory protocolFactory = null)
+        IBoltProtocolFactory protocolFactory = null, 
+        DriverContext context = null)
     {
         _client = socketClient ?? throw new ArgumentNullException(nameof(socketClient));
         AuthToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
-        _userAgent = userAgent ?? throw new ArgumentNullException(nameof(userAgent));
         _serverInfo = server ?? throw new ArgumentNullException(nameof(server));
         AuthTokenManager = authTokenManager;
-        RoutingContext = null;
-
         _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
         _logger = new PrefixLogger(logger, FormatPrefix(_id));
         _responsePipeline = responsePipeline ?? new ResponsePipeline(logger);
         _protocolFactory = protocolFactory ?? BoltProtocolFactory.Default;
+        Context = context;
     }
 
     internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
-
-    public IDictionary<string, string> RoutingContext { get; set; }
 
     public AccessMode? Mode { get; private set; }
 
     public string Database { get; private set; }
 
+    public IDictionary<string, string> RoutingContext => Context.RoutingContext;
     public BoltProtocolVersion Version => _client.Version;
 
     /// <summary>Internal Set used for tests.</summary>
@@ -122,7 +114,6 @@ internal sealed class SocketConnection : IConnection
     }
 
     public async Task InitAsync(
-        INotificationsConfig notificationsConfig,
         SessionConfig sessionConfig = null,
         CancellationToken cancellationToken = default)
     {
@@ -130,7 +121,7 @@ internal sealed class SocketConnection : IConnection
 
         try
         {
-            await _client.ConnectAsync(RoutingContext, cancellationToken).ConfigureAwait(false);
+            await _client.ConnectAsync(cancellationToken).ConfigureAwait(false);
             BoltProtocol = _protocolFactory.ForVersion(Version);
         }
         finally
@@ -148,7 +139,7 @@ internal sealed class SocketConnection : IConnection
 
         try
         {
-            await BoltProtocol.AuthenticateAsync(this, _userAgent, authToken, notificationsConfig)
+            await BoltProtocol.AuthenticateAsync(this, Context.Config.UserAgent, authToken, Context.Config.NotificationsConfig)
                 .ConfigureAwait(false);
         }
         catch (Exception ex)
@@ -261,6 +252,7 @@ internal sealed class SocketConnection : IConnection
     public IServerInfo Server => _serverInfo;
 
     public bool UtcEncodedDateTime { get; private set; }
+    public DriverContext Context { get; }
     public IAuthToken AuthToken { get; private set; }
     public bool TelemetryEnabled { get; set; }
 
@@ -272,7 +264,11 @@ internal sealed class SocketConnection : IConnection
             newConnId);
 
         _id = newConnId;
-        _logger.Prefix = FormatPrefix(_id);
+        
+        if (_logger is PrefixLogger logger)
+        {
+            logger.Prefix = FormatPrefix(_id);
+        }
     }
 
     public void UpdateVersion(ServerVersion newVersion)

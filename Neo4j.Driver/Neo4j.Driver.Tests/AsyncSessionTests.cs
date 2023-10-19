@@ -26,6 +26,7 @@ using Moq;
 using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Routing;
@@ -39,7 +40,7 @@ namespace Neo4j.Driver.Tests
         {
             return new AsyncSession(
                 new TestConnectionProvider(connection),
-                logger,
+                logger ?? NullLogger.Instance,
                 null,
                 0,
                 new Driver.SessionConfig(),
@@ -394,12 +395,9 @@ namespace Neo4j.Driver.Tests
             {
                 var driver = new Internal.Driver(
                     new Uri("neo4j://myTest.org"),
-                    false,
                     new TestConnectionProvider(Mock.Of<IConnection>()),
                     null,
-                    null,
-                    null,
-                    Config.Default);
+                    TestDriverContext.MockContext);
 
                 return driver;
             }
@@ -415,7 +413,7 @@ namespace Neo4j.Driver.Tests
 
             private IConnection Connection { get; }
             private AccessMode Mode { get; set; }
-            public IDictionary<string, string> RoutingContext { get; set; }
+            public IDictionary<string, string> RoutingContext { get; }
 
             public Task<IConnection> AcquireAsync(
                 AccessMode mode,
@@ -432,10 +430,10 @@ namespace Neo4j.Driver.Tests
                 throw new NotSupportedException();
             }
 
-            public ConnectionSettings ConnectionSettings => new(
+            public DriverContext DriverContext => new(
                 new Uri("neo4j://myTest.org"),
                 AuthTokenManagers.Static(AuthTokens.None),
-                Config.Default);
+                new Config());
 
             public Task<bool> SupportsMultiDbAsync()
             {

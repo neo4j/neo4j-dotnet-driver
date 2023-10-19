@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver;
@@ -72,7 +73,7 @@ public sealed class ConfigBuilder
     /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithLogger(ILogger logger)
     {
-        _config.Logger = logger;
+        _config.Logger = logger ?? NullLogger.Instance;
         return this;
     }
 
@@ -203,6 +204,13 @@ public sealed class ConfigBuilder
     /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithDefaultReadBufferSize(int defaultReadBufferSize)
     {
+        if (defaultReadBufferSize < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(defaultReadBufferSize),
+                defaultReadBufferSize,
+                "must be >= 0");
+        }
         _config.DefaultReadBufferSize = defaultReadBufferSize;
         return this;
     }
@@ -216,6 +224,13 @@ public sealed class ConfigBuilder
     /// </remarks>
     public ConfigBuilder WithMaxReadBufferSize(int maxReadBufferSize)
     {
+        if (maxReadBufferSize < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(maxReadBufferSize),
+                maxReadBufferSize,
+                "must be >= 0");
+        }
         _config.MaxReadBufferSize = maxReadBufferSize;
         return this;
     }
@@ -225,6 +240,13 @@ public sealed class ConfigBuilder
     /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithDefaultWriteBufferSize(int defaultWriteBufferSize)
     {
+        if (defaultWriteBufferSize < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(defaultWriteBufferSize),
+                defaultWriteBufferSize,
+                "must be >= 0");
+        }
         _config.DefaultWriteBufferSize = defaultWriteBufferSize;
         return this;
     }
@@ -238,6 +260,13 @@ public sealed class ConfigBuilder
     /// </remarks>
     public ConfigBuilder WithMaxWriteBufferSize(int maxWriteBufferSize)
     {
+        if (maxWriteBufferSize < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(maxWriteBufferSize),
+                maxWriteBufferSize,
+                "must be >= 0");
+        }
         _config.MaxWriteBufferSize = maxWriteBufferSize;
         return this;
     }
@@ -251,6 +280,12 @@ public sealed class ConfigBuilder
     /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithFetchSize(long size)
     {
+        if (size <= 0 && size != Config.Infinite)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(size),
+                $"The record fetch size may not be 0 or negative. Illegal record fetch size: {size}.");
+        }
         _config.FetchSize = size;
         return this;
     }

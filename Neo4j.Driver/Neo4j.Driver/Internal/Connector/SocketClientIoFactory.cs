@@ -21,15 +21,15 @@ namespace Neo4j.Driver.Internal.Connector;
 
 internal interface IConnectionIoFactory
 {
-    ITcpSocketClient TcpSocketClient(SocketSettings socketSettings, ILogger logger);
+    ITcpSocketClient TcpSocketClient(DriverContext context, ILogger logger);
     MessageFormat Format(BoltProtocolVersion version);
 
     IMessageReader Readers(
         ITcpSocketClient client,
-        BufferSettings settings,
+        DriverContext context,
         ILogger logger);
 
-    (IChunkWriter, IMessageWriter) Writers(ITcpSocketClient client, BufferSettings settings, ILogger logger);
+    (IChunkWriter, IMessageWriter) Writers(ITcpSocketClient client, DriverContext context, ILogger logger);
 }
 
 internal sealed class SocketClientIoFactory : IConnectionIoFactory
@@ -40,9 +40,9 @@ internal sealed class SocketClientIoFactory : IConnectionIoFactory
     {
     }
 
-    public ITcpSocketClient TcpSocketClient(SocketSettings socketSettings, ILogger logger)
+    public ITcpSocketClient TcpSocketClient(DriverContext context, ILogger logger)
     {
-        return new TcpSocketClient(socketSettings, logger);
+        return new TcpSocketClient(context, logger);
     }
 
     public MessageFormat Format(BoltProtocolVersion version)
@@ -52,15 +52,15 @@ internal sealed class SocketClientIoFactory : IConnectionIoFactory
 
     public IMessageReader Readers(
         ITcpSocketClient client,
-        BufferSettings settings,
+        DriverContext context,
         ILogger logger)
     {
-        return new MessageReader(new ChunkReader(client.ReaderStream), settings, logger);
+        return new MessageReader(new ChunkReader(client.ReaderStream), context, logger);
     }
 
-    public (IChunkWriter, IMessageWriter) Writers(ITcpSocketClient client, BufferSettings settings, ILogger logger)
+    public (IChunkWriter, IMessageWriter) Writers(ITcpSocketClient client, DriverContext context, ILogger logger)
     {
-        var chunkWriter = new ChunkWriter(client.WriterStream, settings, logger);
+        var chunkWriter = new ChunkWriter(client.WriterStream, context, logger);
         var messageWriter = new MessageWriter(chunkWriter);
         return (chunkWriter, messageWriter);
     }

@@ -16,20 +16,15 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Routing;
-using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver;
 
 /// <summary>Creates <see cref="IDriver"/> instances, optionally letting you configure them.</summary>
 public static class GraphDatabase
 {
-    internal const int DefaultBoltPort = 7687;
-
     /// <summary>
     /// Gets a new <see cref="IBookmarkManagerFactory"/>, which can construct a new default
     /// <see cref="IBookmarkManager"/> instance.<br/> The <see cref="IBookmarkManager"/> instance should be passed to
@@ -204,66 +199,38 @@ public static class GraphDatabase
         uri = uri ?? throw new ArgumentNullException(nameof(uri));
         authTokenManager = authTokenManager ?? throw new ArgumentNullException(nameof(authTokenManager));
 
-        var config = ConfigBuilders.BuildConfig(action);
+        Neo4jUri.EnsureNoRoutingContextOnBolt(uri);
 
-        var connectionSettings = new ConnectionSettings(uri, authTokenManager, config);
-        var bufferSettings = new BufferSettings(config);
-        var connectionFactory = new PooledConnectionFactory(bufferSettings, config.Logger);
+        var builder = Config.Builder;
+        action?.Invoke(builder);
+        var config = builder.Build();
+        
+        var context = new DriverContext(uri, authTokenManager, config);
+        var connectionFactory = new PooledConnectionFactory(context);
 
-        return CreateDriver(uri, config, connectionFactory, connectionSettings);
+        return CreateDriver(connectionFactory, context);
     }
 
     internal static IDriver CreateDriver(
-        Uri uri,
-        Config config,
         IPooledConnectionFactory connectionFactory,
-        ConnectionSettings connectionSettings)
+        DriverContext context)
     {
-        var logger = config.Logger;
-
-        var parsedUri = uri.ParseBoltUri(DefaultBoltPort);
-        var routingContext = uri.ParseRoutingContext(DefaultBoltPort);
-        var routingSettings = new RoutingSettings(parsedUri, routingContext, config);
-
-        var metrics = config.MetricsEnabled ? new DefaultMetrics() : null;
-        var connectionPoolSettings = new ConnectionPoolSettings(config, metrics);
-
-        var retryLogic = new AsyncRetryLogic(config.MaxTransactionRetryTime, logger);
-
-        EnsureNoRoutingContextOnBolt(uri, routingContext);
-
-        IConnectionProvider connectionProvider = parsedUri.IsRoutingUri()
+        var parsedUri = Neo4jUri.ParseBoltUri(context.InitialUri, Neo4jUri.DefaultBoltPort);
+        IConnectionProvider connectionProvider = Neo4jUri.IsRoutingUri(parsedUri)
             ? new LoadBalancer(
+                parsedUri,
                 connectionFactory,
-                routingSettings,
-                connectionPoolSettings,
-                connectionSettings,
-                logger,
-                config.NotificationsConfig)
+                context)
             : new ConnectionPool(
                 parsedUri,
                 connectionFactory,
-                connectionPoolSettings,
-                logger,
-                connectionSettings,
-                null,
-                config.NotificationsConfig);
+                context);
 
+        var retryLogic = new AsyncRetryLogic(context.Config.MaxTransactionRetryTime, context.Config.Logger);
         return new Internal.Driver(
             parsedUri,
-            connectionSettings.SocketSettings.EncryptionManager.UseTls,
             connectionProvider,
             retryLogic,
-            logger,
-            metrics,
-            config);
-    }
-
-    private static void EnsureNoRoutingContextOnBolt(Uri uri, IDictionary<string, string> routingContext)
-    {
-        if (!uri.IsRoutingUri() && !string.IsNullOrEmpty(uri.Query))
-        {
-            throw new ArgumentException($"Routing context are not supported with scheme 'bolt'. Given URI: '{uri}'");
-        }
+            context);
     }
 }

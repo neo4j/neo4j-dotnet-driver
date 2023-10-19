@@ -39,8 +39,6 @@ internal abstract class DelegatedConnection : IConnection
 
     public string Database => Delegate.Database;
 
-    public IDictionary<string, string> RoutingContext => Delegate.RoutingContext;
-
     public ValueTask<bool> NotifySecurityExceptionAsync(SecurityException exception)
     {
         return Delegate.NotifySecurityExceptionAsync(exception);
@@ -82,6 +80,7 @@ internal abstract class DelegatedConnection : IConnection
         }
     }
 
+    public IDictionary<string, string> RoutingContext => Delegate.RoutingContext;
     public BoltProtocolVersion Version => Delegate.Version;
 
     public IAuthTokenManager AuthTokenManager => Delegate.AuthTokenManager;
@@ -97,13 +96,12 @@ internal abstract class DelegatedConnection : IConnection
     }
 
     public async Task InitAsync(
-        INotificationsConfig notificationsConfig,
         SessionConfig sessionConfig = null,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            await Delegate.InitAsync(notificationsConfig, sessionConfig, cancellationToken).ConfigureAwait(false);
+            await Delegate.InitAsync(sessionConfig, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception e)
         {

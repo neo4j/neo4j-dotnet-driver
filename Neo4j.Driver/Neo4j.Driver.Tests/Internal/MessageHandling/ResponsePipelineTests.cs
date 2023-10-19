@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
 
@@ -103,9 +104,9 @@ namespace Neo4j.Driver.Internal.MessageHandling
             pipeline.HasNoPendingMessages.Should().BeTrue();
         }
 
-        private static ResponsePipeline CreatePipelineWithHandler(ILogger logger)
+        private static ResponsePipeline CreatePipelineWithHandler(ILogger logger = null)
         {
-            var pipeline = new ResponsePipeline(logger);
+            var pipeline = new ResponsePipeline(logger ?? NullLogger.Instance);
 
             var handler = new Mock<IResponseHandler>();
             pipeline.Enqueue(handler.Object);
@@ -146,7 +147,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [Fact]
             public void ShouldDequeue()
             {
-                var pipeline = CreatePipelineWithHandler(null);
+                var pipeline = CreatePipelineWithHandler();
                 var metadata = new Dictionary<string, object> { { "x", 1 }, { "y", true } };
 
                 pipeline.HasNoPendingMessages.Should().BeFalse();
@@ -159,7 +160,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [Fact]
             public void ShouldInvokeHandler()
             {
-                var pipeline = new ResponsePipeline(null);
+                var pipeline = new ResponsePipeline(NullLogger.Instance);
 
                 var handler = new Mock<IResponseHandler>();
                 pipeline.Enqueue(handler.Object);
@@ -204,7 +205,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [Fact]
             public void ShouldNotDequeue()
             {
-                var pipeline = CreatePipelineWithHandler(null);
+                var pipeline = CreatePipelineWithHandler();
                 var fields = new object[] { 1, true, "string" };
 
                 pipeline.HasNoPendingMessages.Should().BeFalse();
@@ -219,7 +220,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [Fact]
             public void ShouldInvokeHandler()
             {
-                var pipeline = new ResponsePipeline(null);
+                var pipeline = new ResponsePipeline(NullLogger.Instance);
 
                 var handler = new Mock<IResponseHandler>();
                 pipeline.Enqueue(handler.Object);
@@ -268,7 +269,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [Fact]
             public void ShouldDequeue()
             {
-                var pipeline = CreatePipelineWithHandler(null);
+                var pipeline = CreatePipelineWithHandler();
                 var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
 
                 pipeline.HasNoPendingMessages.Should().BeFalse();
@@ -281,7 +282,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [Fact]
             public void ShouldInvokeHandler()
             {
-                var pipeline = new ResponsePipeline(null);
+                var pipeline = new ResponsePipeline(NullLogger.Instance);
                 var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
 
                 var handler = new Mock<IResponseHandler>();
@@ -297,7 +298,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [Fact]
             public void ShouldRecordErrorAndThrowOnAssertNoFailure()
             {
-                var pipeline = CreatePipelineWithHandler(null);
+                var pipeline = CreatePipelineWithHandler();
                 var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
 
                 pipeline.OnFailure(code, message);
@@ -314,7 +315,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [Fact]
             public void ShouldRecordErrorAndNotThrowOnAssertNoProtocolViolation()
             {
-                var pipeline = CreatePipelineWithHandler(null);
+                var pipeline = CreatePipelineWithHandler();
                 var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
 
                 pipeline.OnFailure(code, message);
@@ -327,7 +328,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [Fact]
             public void ShouldRecordErrorAndThrowOnAssertNoProtocolViolation()
             {
-                var pipeline = new ResponsePipeline(null);
+                var pipeline = new ResponsePipeline(NullLogger.Instance);
                 var (code, message) = ("Neo.ClientError.Request.Invalid", "protocol exception.");
 
                 var handler = new Mock<IResponseHandler>();
@@ -376,7 +377,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [Fact]
             public void ShouldDequeue()
             {
-                var pipeline = CreatePipelineWithHandler(null);
+                var pipeline = CreatePipelineWithHandler();
 
                 pipeline.HasNoPendingMessages.Should().BeFalse();
 
@@ -388,7 +389,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [Fact]
             public void ShouldInvokeHandler()
             {
-                var pipeline = new ResponsePipeline(null);
+                var pipeline = new ResponsePipeline(NullLogger.Instance);
 
                 var handler = new Mock<IResponseHandler>();
                 pipeline.Enqueue(handler.Object);
@@ -401,7 +402,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [Fact]
             public void ShouldInvokeOnFailureAsyncOfHandlerIfHasRecordedError()
             {
-                var pipeline = CreatePipelineWithHandler(null);
+                var pipeline = CreatePipelineWithHandler();
                 var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
                 pipeline.OnFailure(code, message);
 

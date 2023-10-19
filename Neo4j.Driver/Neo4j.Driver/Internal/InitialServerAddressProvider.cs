@@ -20,36 +20,12 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal;
 
-internal class RoutingSettings
-{
-    private static readonly TimeSpan DefaultRoutingTablePurgeDelay = TimeSpan.FromSeconds(30);
-
-    public RoutingSettings(Uri initServerUri, IDictionary<string, string> routingContext, Config config)
-    {
-        if (config == null)
-        {
-            throw new ArgumentNullException(nameof(config));
-        }
-
-        InitialServerAddressProvider = new InitialServerAddressProvider(
-            initServerUri ?? throw new ArgumentNullException(nameof(initServerUri)),
-            config.Resolver);
-
-        RoutingContext = routingContext ?? throw new ArgumentNullException(nameof(routingContext));
-        RoutingTablePurgeDelay = DefaultRoutingTablePurgeDelay;
-    }
-
-    public IDictionary<string, string> RoutingContext { get; }
-    public IInitialServerAddressProvider InitialServerAddressProvider { get; }
-    public TimeSpan RoutingTablePurgeDelay { get; }
-}
-
 internal interface IInitialServerAddressProvider
 {
     ISet<Uri> Get();
 }
 
-internal class InitialServerAddressProvider : IInitialServerAddressProvider
+internal sealed class InitialServerAddressProvider : IInitialServerAddressProvider
 {
     private readonly Uri _initAddress;
     private readonly IServerAddressResolver _resolver;

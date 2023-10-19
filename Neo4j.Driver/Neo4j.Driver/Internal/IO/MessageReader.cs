@@ -29,11 +29,11 @@ internal sealed class MessageReader : IMessageReader
     private readonly int _maxBufferSize;
     private int _shrinkCounter;
 
-    public MessageReader(IChunkReader chunkReader, BufferSettings bufferSettings, ILogger logger)
+    public MessageReader(IChunkReader chunkReader, DriverContext driverContext, ILogger logger)
     {
         _chunkReader = chunkReader;
-        _defaultBufferSize = bufferSettings.DefaultReadBufferSize;
-        _maxBufferSize = bufferSettings.MaxReadBufferSize;
+        _defaultBufferSize = driverContext.Config.DefaultReadBufferSize;
+        _maxBufferSize = driverContext.Config.MaxReadBufferSize;
         _logger = logger;
     }
 
@@ -71,7 +71,7 @@ internal sealed class MessageReader : IMessageReader
             return;
         }
 
-        _logger?.Info(
+        _logger.Info(
             $@"Shrinking read buffers to the default read buffer size {
                 _defaultBufferSize
             } since its size reached {

@@ -40,7 +40,7 @@ internal sealed class InsecureTrustManager : TrustManager
         {
             if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch))
             {
-                Logger?.Error(
+                Logger.Error(
                     null,
                     $"{GetType().Name}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
 
@@ -48,7 +48,7 @@ internal sealed class InsecureTrustManager : TrustManager
             }
         }
 
-        Logger?.Info($"{GetType().Name}: Trusting {uri} with provided certificate '{certificate.Subject}'.");
+        Logger.Info($"{GetType().Name}: Trusting {uri} with provided certificate '{certificate.Subject}'.");
         return true;
     }
 }

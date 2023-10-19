@@ -32,7 +32,6 @@ public sealed class SessionConfig
 {
     internal static readonly SessionConfig Default = new();
     private IEnumerable<Bookmarks> _bookmarks;
-    private long? _fetchSize;
     private string _impersonatedUser;
 
     internal SessionConfig()
@@ -40,7 +39,7 @@ public sealed class SessionConfig
         DefaultAccessMode = AccessMode.Write;
         Database = null;
         _bookmarks = null;
-        _fetchSize = null;
+        FetchSize = null;
         _impersonatedUser = null;
     }
 
@@ -121,11 +120,7 @@ public sealed class SessionConfig
     /// in batches. This fetch size defines how many records to pull in each batch. Use <see cref="Config.Infinite"/> to
     /// disable batching and always pull all records in one batch instead.
     /// </summary>
-    public long? FetchSize
-    {
-        get => _fetchSize;
-        internal set => _fetchSize = FetchSizeUtil.AssertValidFetchSize(value);
-    }
+    public long? FetchSize { get; internal set; }
 
     /// <summary>
     /// Allows the specification of a username that the user wants to impersonate for the duration of the session.
@@ -289,6 +284,12 @@ public sealed class SessionConfigBuilder
     /// <seealso cref="SessionConfig.FetchSize"/>
     public SessionConfigBuilder WithFetchSize(long size)
     {
+        if (size <= 0 && size != Config.Infinite)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(size),
+                $"The {nameof(SessionConfig)} fetch size may not be 0 or negative. Illegal record fetch size: {size}.");
+        }
         _config.FetchSize = size;
         return this;
     }

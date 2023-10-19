@@ -27,7 +27,6 @@ namespace Neo4j.Driver.Internal.Routing;
 
 internal class ClusterConnectionPool : IClusterConnectionPool
 {
-    private readonly ILogger _logger;
     private readonly IConnectionPoolFactory _poolFactory;
 
     private readonly ConcurrentDictionary<Uri, IConnectionPool> _pools = new();
@@ -37,41 +36,29 @@ internal class ClusterConnectionPool : IClusterConnectionPool
     public ClusterConnectionPool(
         IEnumerable<Uri> initUris,
         IPooledConnectionFactory connectionFactory,
-        RoutingSettings routingSetting,
-        ConnectionPoolSettings poolSettings,
-        ConnectionSettings connectionSettings,
-        ILogger logger,
-        INotificationsConfig notificationsConfig
+        DriverContext driverContext
     ) : this(
         initUris,
         new ConnectionPoolFactory(
             connectionFactory,
-            poolSettings,
-            routingSetting.RoutingContext,
-            connectionSettings,
-            logger,
-            notificationsConfig),
-        logger)
+            driverContext))
     {
     }
 
     // test only
     internal ClusterConnectionPool(
         IConnectionPoolFactory poolFactory,
-        ConcurrentDictionary<Uri, IConnectionPool> clusterPool,
-        ILogger logger = null
+        ConcurrentDictionary<Uri, IConnectionPool> clusterPool
     ) :
-        this(Enumerable.Empty<Uri>(), poolFactory, logger)
+        this(Enumerable.Empty<Uri>(), poolFactory)
     {
         _pools = clusterPool;
     }
 
     private ClusterConnectionPool(
         IEnumerable<Uri> initUris,
-        IConnectionPoolFactory poolFactory,
-        ILogger logger)
+        IConnectionPoolFactory poolFactory)
     {
-        _logger = logger;
         _poolFactory = poolFactory;
         Add(initUris);
     }
