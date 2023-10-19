@@ -145,14 +145,7 @@ internal class ConnectionValidator : IConnectionValidator
         return false;
     }
 
-
-    public static bool IsTimeoutDetectionEnabled(TimeSpan timeout)
-    {
-        return timeout.TotalMilliseconds >= 0;
-    }
-
-    public static bool IsTimeoutDetectionDisabled(TimeSpan timeout)
-    {
-        return timeout.TotalMilliseconds < 0;
-    }
+    public static bool IsTimeoutDetectionEnabled(TimeSpan timeout) => timeout.TotalMilliseconds >= 0;
+    
+    public static bool IsTimeoutDetectionDisabled(TimeSpan timeout) => !IsTimeoutDetectionEnabled(timeout);
 }
