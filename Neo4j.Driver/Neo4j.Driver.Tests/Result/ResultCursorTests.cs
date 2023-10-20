@@ -32,14 +32,14 @@ namespace Neo4j.Driver.Tests
 {
     public class ResultCursorTests
     {
-        private static Task<IRecord> NextRecordFromEnum(IEnumerator<IRecord> resultEnum)
+        private static ValueTask<IRecord> NextRecordFromEnum(IEnumerator<IRecord> resultEnum)
         {
             if (resultEnum.MoveNext())
             {
-                return Task.FromResult(resultEnum.Current);
+                return ValueTask.FromResult(resultEnum.Current);
             }
 
-            return Task.FromResult((IRecord)null);
+            return ValueTask.FromResult((IRecord)null);
         }
 
         public class Constructor
@@ -49,7 +49,7 @@ namespace Neo4j.Driver.Tests
             {
                 var stream = new Mock<IResultStream>();
                 stream.Setup(x => x.NextRecordAsync()).Returns(NextRecordFromEnum(new List<IRecord>().GetEnumerator()));
-                stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(new[] { "test" }));
+                stream.Setup(x => x.GetKeysAsync()).Returns(() => ValueTask.FromResult(new[] { "test" }));
 
                 var result =
                     new ResultCursor(stream.Object);
@@ -89,7 +89,7 @@ namespace Neo4j.Driver.Tests
 
                 var stream = new Mock<IResultStream>();
                 stream.Setup(x => x.NextRecordAsync()).Returns(() => NextRecordFromEnum(recordYielderEnum));
-                stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(TestRecordYielder.Keys.ToArray()));
+                stream.Setup(x => x.GetKeysAsync()).Returns(() => ValueTask.FromResult(TestRecordYielder.Keys.ToArray()));
 
                 var cursor = new ResultCursor(stream.Object);
                 var records = new List<IRecord>();
@@ -109,7 +109,7 @@ namespace Neo4j.Driver.Tests
 
                 var stream = new Mock<IResultStream>();
                 stream.Setup(x => x.NextRecordAsync()).Returns(() => NextRecordFromEnum(recordYielderEnum));
-                stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(TestRecordYielder.Keys.ToArray()));
+                stream.Setup(x => x.GetKeysAsync()).Returns(() => ValueTask.FromResult(TestRecordYielder.Keys.ToArray()));
 
                 var count = 0;
                 var cursor = new ResultCursor(stream.Object);
@@ -143,7 +143,7 @@ namespace Neo4j.Driver.Tests
 
                 var stream = new Mock<IResultStream>();
                 stream.Setup(x => x.NextRecordAsync()).Returns(() => NextRecordFromEnum(recordYielderEnum));
-                stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(TestRecordYielder.Keys.ToArray()));
+                stream.Setup(x => x.GetKeysAsync()).Returns(() => ValueTask.FromResult(TestRecordYielder.Keys.ToArray()));
 
                 var result = new ResultCursor(stream.Object);
                 var records = new List<IRecord>();
@@ -263,7 +263,7 @@ namespace Neo4j.Driver.Tests
                     () =>
                     {
                         getSummaryCalled = true;
-                        return Task.FromResult((IResultSummary)null);
+                        return ValueTask.FromResult((IResultSummary)null);
                     });
 
                 // ReSharper disable once UnusedVariable
@@ -280,8 +280,8 @@ namespace Neo4j.Driver.Tests
                     1,
                     0,
                     () => getSummaryCalled++ == 0
-                        ? Task.FromException<IResultSummary>(new Exception("error!"))
-                        : Task.FromResult((IResultSummary)new FakeSummary()));
+                        ? ValueTask.FromException<IResultSummary>(new Exception("error!"))
+                        : ValueTask.FromResult((IResultSummary)new FakeSummary()));
 
                 var ex = await Xunit.Record.ExceptionAsync(async () => await result.ConsumeAsync());
 
@@ -300,7 +300,7 @@ namespace Neo4j.Driver.Tests
                     () =>
                     {
                         getSummaryCalled++;
-                        return Task.FromResult((IResultSummary)new FakeSummary());
+                        return ValueTask.FromResult((IResultSummary)new FakeSummary());
                     });
 
                 // ReSharper disable once NotAccessedVariable
@@ -449,7 +449,7 @@ namespace Neo4j.Driver.Tests
             public static ResultCursor CreateResultCursor(
                 int keySize,
                 int recordSize = 1,
-                Func<Task<IResultSummary>> getSummaryFunc = null,
+                Func<ValueTask<IResultSummary>> getSummaryFunc = null,
                 CancellationTokenSource cancellationTokenSource = null)
             {
                 var keys = RecordCreator.CreateKeys(keySize);
@@ -459,10 +459,10 @@ namespace Neo4j.Driver.Tests
                 var stream = new Mock<IResultStream>();
                 if (getSummaryFunc == null)
                 {
-                    getSummaryFunc = () => Task.FromResult((IResultSummary)new FakeSummary());
+                    getSummaryFunc = () => ValueTask.FromResult((IResultSummary)new FakeSummary());
                 }
 
-                stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(keys.ToArray()));
+                stream.Setup(x => x.GetKeysAsync()).Returns(() => ValueTask.FromResult(keys.ToArray()));
                 stream.Setup(x => x.NextRecordAsync()).Returns(() => NextRecordFromEnum(recordsEnum));
                 stream.Setup(x => x.ConsumeAsync()).Returns(getSummaryFunc);
                 stream.Setup(x => x.Cancel()).Callback(() => cancellationTokenSource?.Cancel());

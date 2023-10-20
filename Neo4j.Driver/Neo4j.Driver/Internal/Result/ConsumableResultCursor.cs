@@ -21,19 +21,22 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Result;
 
-internal class ConsumableResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
+internal sealed class ConsumableResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
 {
     private readonly IInternalResultCursor _cursor;
     private bool _isConsumed;
+    private readonly IAsyncEnumerator<IRecord> _enumeator;
 
     public ConsumableResultCursor(IInternalResultCursor cursor)
     {
         _cursor = cursor;
+        _enumeator = _cursor.GetAsyncEnumerator();
     }
 
     public ValueTask<bool> MoveNextAsync()
     {
-        return new ValueTask<bool>(FetchAsync());
+        AssertNotConsumed();
+        return _enumeator.MoveNextAsync();
     }
 
     public ValueTask DisposeAsync()
@@ -62,7 +65,7 @@ internal class ConsumableResultCursor : IInternalResultCursor, IAsyncEnumerator<
     public Task<bool> FetchAsync()
     {
         AssertNotConsumed();
-        return _cursor.FetchAsync();
+        return MoveNextAsync().AsTask();
     }
 
     public IRecord Current

@@ -92,7 +92,7 @@ namespace Neo4j.Driver.Tests
             public static IInternalResultCursor CreateResultCursor(
                 int keySize,
                 int recordSize = 1,
-                Func<Task<IResultSummary>> getSummaryFunc = null,
+                Func<ValueTask<IResultSummary>> getSummaryFunc = null,
                 CancellationTokenSource cancellationTokenSource = null)
             {
                 var cursor = ResultCursorTests.ResultCursorCreator.CreateResultCursor(

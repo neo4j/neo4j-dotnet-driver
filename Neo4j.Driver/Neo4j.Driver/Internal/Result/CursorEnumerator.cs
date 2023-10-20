@@ -1,4 +1,4 @@
-// Copyright (c) "Neo4j"
+﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [http://neo4j.com]
 // 
 // This file is part of Neo4j.
@@ -15,14 +15,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Result;
 
-internal interface IResultStream
+internal class CursorEnumerator : IAsyncEnumerator<IRecord>
 {
-    ValueTask<string[]> GetKeysAsync();
-    ValueTask<IRecord> NextRecordAsync();
-    void Cancel();
-    ValueTask<IResultSummary> ConsumeAsync();
+    private readonly IAsyncEnumerator<IRecord> _cursor;
+    private readonly CancellationToken _token;
+
+    public CursorEnumerator(IAsyncEnumerator<IRecord> cursor, CancellationToken token)
+    {
+        _cursor = cursor;
+        _token = token;
+    }
+
+    public ValueTask<bool> MoveNextAsync()
+    {
+        _token.ThrowIfCancellationRequested();
+        return _cursor.MoveNextAsync();
+    }
+
+    public IRecord Current => _cursor.Current;
+
+    public ValueTask DisposeAsync()
+    {
+        return new ValueTask(Task.CompletedTask);
+    }
 }
