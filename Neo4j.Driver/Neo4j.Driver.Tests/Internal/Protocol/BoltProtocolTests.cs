@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -346,8 +347,18 @@ namespace Neo4j.Driver.Internal.Protocol
                 mockRtResult.SetupGet(x => x.Values).Returns(new Dictionary<string, object>());
 
                 var mockCursor = new Mock<IInternalResultCursor>();
-                mockCursor.SetupSequence(x => x.FetchAsync()).ReturnsAsync(true).ReturnsAsync(false);
-                mockCursor.SetupGet(x => x.Current).Returns(mockRtResult.Object);
+                var enumerator = new Mock<IAsyncEnumerator<IRecord>>();
+                enumerator
+                    .SetupSequence(x => x.MoveNextAsync())
+                    .ReturnsAsync(true)
+                    .ReturnsAsync(false);
+                enumerator
+                    .SetupSequence(x => x.Current)
+                    .Returns(mockRtResult.Object)
+                    .Returns(default(IRecord));
+                mockCursor
+                    .Setup(x => x.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
+                    .Returns(enumerator.Object);
 
                 var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
                 resultCursorBuilderMock.Setup(x => x.CreateCursor()).Returns(mockCursor.Object);
@@ -429,10 +440,11 @@ namespace Neo4j.Driver.Internal.Protocol
 
                 var mockRtResult = new Mock<IRecord>();
                 mockRtResult.SetupGet(x => x.Values).Returns(new Dictionary<string, object>());
-
+                var enumerator = new Mock<IAsyncEnumerator<IRecord>>();
+                enumerator.SetupSequence(x => x.MoveNextAsync()).ReturnsAsync(true).ReturnsAsync(false);
+                enumerator.SetupSequence(x => x.Current).Returns(mockRtResult.Object).Returns(default(IRecord));
                 var mockCursor = new Mock<IInternalResultCursor>();
-                mockCursor.SetupSequence(x => x.FetchAsync()).ReturnsAsync(true).ReturnsAsync(false);
-                mockCursor.SetupGet(x => x.Current).Returns(mockRtResult.Object);
+                mockCursor.Setup(x => x.GetAsyncEnumerator(It.IsAny<CancellationToken>())).Returns(enumerator.Object);
 
                 var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
                 resultCursorBuilderMock.Setup(x => x.CreateCursor()).Returns(mockCursor.Object);

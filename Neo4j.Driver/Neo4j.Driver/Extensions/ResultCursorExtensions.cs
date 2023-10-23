@@ -150,7 +150,7 @@ public static class ResultCursorExtensions
         var enumerator = result.GetAsyncEnumerator();
         while (await enumerator.MoveNextAsync().ConfigureAwait(false))
         {
-            var record = result.Current;
+            var record = enumerator.Current;
             operation(record);
         }
 
