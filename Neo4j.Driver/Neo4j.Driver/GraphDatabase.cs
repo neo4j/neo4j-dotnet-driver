@@ -16,7 +16,7 @@
 // limitations under the License.
 
 using System;
-using Neo4j.Driver.Preview.Auth;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Routing;
 
@@ -146,7 +146,17 @@ public static class GraphDatabase
         return Driver(uri, authToken, null);
     }
 
-    internal static IDriver Driver(Uri uri, IAuthTokenManager authTokenManager)
+    /// <summary>Returns a driver for a Neo4j instance with default configuration settings.</summary>
+    /// <param name="uri">
+    /// The URI to the Neo4j instance. Should be in the form
+    /// <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>. If <c>port</c> is not supplied the default of <c>7687</c> will
+    /// be used. The supported protocols in URI could either be <c>bolt</c> or <c>neo4j</c>. The protocol <c>bolt</c> should be
+    /// used when creating a driver connecting to the Neo4j instance directly. The protocol <c>neo4j</c> should be used when
+    /// creating a driver with built-in routing.
+    /// </param>
+    /// <param name="authTokenManager">The <see cref="IAuthTokenManager"/> to use for authentication.</param>
+    /// <returns>A new <see cref="IDriver"/> instance.</returns>
+    public  static IDriver Driver(Uri uri, IAuthTokenManager authTokenManager)
     {
         return Driver(uri, authTokenManager, null);
     }
@@ -171,7 +181,22 @@ public static class GraphDatabase
         return Driver(new Uri(uri), authToken, action);
     }
 
-    internal static IDriver Driver(string uri, IAuthTokenManager authTokenManager, Action<ConfigBuilder> action)
+    /// <summary>Returns a driver for a Neo4j instance with custom configuration.</summary>
+    /// <param name="uri">
+    /// The URI to the Neo4j instance. Should be in the form
+    /// <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>. If <c>port</c> is not supplied the default of <c>7687</c> will
+    /// be used. The supported protocols in URI could either be <c>bolt</c> or <c>neo4j</c>. The protocol <c>bolt</c> should be
+    /// used when creating a driver connecting to the Neo4j instance directly. The protocol <c>neo4j</c> should be used when
+    /// creating a driver with built-in routing.
+    /// </param>
+    /// <param name="authTokenManager">The <see cref="IAuthTokenManager"/> to use for authentication.</param>
+    /// <param name="action">
+    /// Specifies how to build a driver configuration <see cref="Config"/>, using
+    /// <see cref="ConfigBuilder"/>. If set to <c>null</c>, then no modification will be carried out and the default driver
+    /// configurations <see cref="Config"/> will be used when creating the driver.
+    /// </param>
+    /// <returns>A new <see cref="IDriver"/> instance.</returns>
+    public static IDriver Driver(string uri, IAuthTokenManager authTokenManager, Action<ConfigBuilder> action)
     {
         return Driver(new Uri(uri), authTokenManager, action);
     }
@@ -194,7 +219,22 @@ public static class GraphDatabase
         return Driver(uri, AuthTokenManagers.Static(authToken), action);
     }
 
-    internal static IDriver Driver(Uri uri, IAuthTokenManager authTokenManager, Action<ConfigBuilder> action)
+    /// <summary>Returns a driver for a Neo4j instance with custom configuration.</summary>
+    /// <param name="uri">
+    /// The URI to the Neo4j instance. Should be in the form
+    /// <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>. If <c>port</c> is not supplied the default of <c>7687</c> will
+    /// be used. The supported protocols in URI could either be <c>bolt</c> or <c>neo4j</c>. The protocol <c>bolt</c> should be
+    /// used when creating a driver connecting to the Neo4j instance directly. The protocol <c>neo4j</c> should be used when
+    /// creating a driver with built-in routing.
+    /// </param>
+    /// <param name="authTokenManager">The <see cref="IAuthTokenManager"/> to use for authentication.</param>
+    /// <param name="action">
+    /// Specifies how to build a driver configuration <see cref="Config"/>, using
+    /// <see cref="ConfigBuilder"/>. If set to <c>null</c>, then no modification will be carried out and the default driver
+    /// configurations <see cref="Config"/> will be used when creating the driver.
+    /// </param>
+    /// <returns>A new <see cref="IDriver"/> instance.</returns>
+    public static IDriver Driver(Uri uri, IAuthTokenManager authTokenManager, Action<ConfigBuilder> action)
     {
         uri = uri ?? throw new ArgumentNullException(nameof(uri));
         authTokenManager = authTokenManager ?? throw new ArgumentNullException(nameof(authTokenManager));
