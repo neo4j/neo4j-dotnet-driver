@@ -156,7 +156,7 @@ public static class GraphDatabase
     /// </param>
     /// <param name="authTokenManager">The <see cref="IAuthTokenManager"/> to use for authentication.</param>
     /// <returns>A new <see cref="IDriver"/> instance.</returns>
-    public  static IDriver Driver(Uri uri, IAuthTokenManager authTokenManager)
+    public static IDriver Driver(Uri uri, IAuthTokenManager authTokenManager)
     {
         return Driver(uri, authTokenManager, null);
     }
