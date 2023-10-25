@@ -20,7 +20,7 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Services;
 
-namespace Neo4j.Driver.Preview.Auth;
+namespace Neo4j.Driver.Auth;
 
 /// <summary>
 /// This class provides common implementations of <see cref="IAuthTokenManager"/> without needing to create a new

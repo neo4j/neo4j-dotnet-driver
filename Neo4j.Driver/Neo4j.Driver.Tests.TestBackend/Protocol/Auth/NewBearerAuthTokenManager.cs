@@ -17,7 +17,7 @@
 
 using System;
 using System.Threading.Tasks;
-using Neo4j.Driver.Preview.Auth;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Auth;
 

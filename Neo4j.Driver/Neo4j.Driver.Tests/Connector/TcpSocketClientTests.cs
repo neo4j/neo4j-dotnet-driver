@@ -24,7 +24,7 @@ using FluentAssertions;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Preview.Auth;
+using Neo4j.Driver.Auth;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Connector

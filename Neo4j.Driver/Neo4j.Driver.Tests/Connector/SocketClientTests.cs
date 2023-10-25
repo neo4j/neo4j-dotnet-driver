@@ -27,7 +27,7 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Preview.Auth;
+using Neo4j.Driver.Auth;
 using Xunit;
 
 namespace Neo4j.Driver.Tests

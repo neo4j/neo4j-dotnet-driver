@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Auth;
-using Neo4j.Driver.Preview.Auth;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Tests;
 using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
