@@ -1,7 +1,0 @@
-{
-  "profiles": {
-    "Neo4j.Driver.Tests.TestBackend.UnitTests": {
-      "commandName": "Project"
-    }
-  }
-}
