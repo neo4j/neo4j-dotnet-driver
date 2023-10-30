@@ -22,7 +22,6 @@ using FluentAssertions;
 using Neo4j.Driver.Auth;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Connector.Trust;
 using Org.BouncyCastle.Pkcs;

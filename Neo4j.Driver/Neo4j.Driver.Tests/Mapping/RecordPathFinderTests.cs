@@ -17,7 +17,6 @@
 
 using System.Collections.Generic;
 using FluentAssertions;
-using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.Types;
 using Neo4j.Driver.Preview.Mapping;
 using Xunit;

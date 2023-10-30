@@ -23,7 +23,6 @@ using Neo4j.Driver.Tests;
 using Xunit;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
-using static Neo4j.Driver.SessionConfigBuilder;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;
 

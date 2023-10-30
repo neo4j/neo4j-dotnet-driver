@@ -22,7 +22,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.MessageHandling;
 using Xunit;
 using Record = Neo4j.Driver.Internal.Result.Record;
 
