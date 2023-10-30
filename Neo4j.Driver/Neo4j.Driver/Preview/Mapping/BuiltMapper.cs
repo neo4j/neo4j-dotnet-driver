@@ -23,22 +23,22 @@ using System.Reflection;
 
 namespace Neo4j.Driver.Preview.Mapping;
 
-internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new()
+internal class BuiltMapper<T> : IRecordMapper<T> where T : new()
 {
     private readonly IMappingSourceDelegateBuilder _mappingSourceDelegateBuilder = new MappingSourceDelegateBuilder();
 
-    private Func<IRecord, TObject> _wholeObjectMapping;
-    private readonly List<Action<TObject, IRecord>> _recordMappings = new();
+    private Func<IRecord, T> _wholeObjectMapping;
+    private readonly List<Action<T, IRecord>> _recordMappings = new();
 
     private readonly MethodInfo _asGenericMethod =
         typeof(ValueExtensions).GetMethod(nameof(ValueExtensions.As), new[] { typeof(object) });
 
-    public TObject Map(IRecord record)
+    public T Map(IRecord record)
     {
         // if there's a whole-object mapping, use it, otherwise create a new object
         var obj = _wholeObjectMapping is not null
             ? _wholeObjectMapping(record)
-            : new TObject();
+            : new T();
 
         // if there are individual mappings for the properties, apply them
         foreach (var mapping in _recordMappings)
@@ -49,7 +49,7 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
         return obj;
     }
 
-    public void AddWholeObjectMapping(Func<IRecord, TObject> mappingFunction)
+    public void AddWholeObjectMapping(Func<IRecord, T> mappingFunction)
     {
         _wholeObjectMapping = mappingFunction;
     }
@@ -59,11 +59,13 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
         EntityMappingInfo entityMappingInfo,
         Func<object, object> converter = null)
     {
-        // create the .As<TProperty> method we're going to use
         var propertyType = propertySetter.GetParameters()[0].ParameterType;
         var asMethod = _asGenericMethod.MakeGenericMethod(propertyType);
+        object ValueAsPropertyType(object o) => asMethod.Invoke(null, new[] { o });
         var getter = _mappingSourceDelegateBuilder.GetMappingDelegate(entityMappingInfo);
         AddMapping(propertySetter, GetValue);
+
+        return;
 
         object GetValue(IRecord record)
         {
@@ -87,7 +89,7 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
                 ICollection list => CreateMappedList(list, propertyType, record),
 
                 // otherwise, convert the value to the type of the property
-                _ => asMethod.Invoke(null, new[] { value })
+                _ => ValueAsPropertyType(value)
             };
         }
     }
@@ -97,6 +99,7 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
         var newList = (IList)Activator.CreateInstance(desiredListType);
         var desiredItemType = desiredListType.GetGenericArguments()[0];
         var asMethod = _asGenericMethod.MakeGenericMethod(desiredItemType);
+        object ChangeToDesiredType(object o) => asMethod.Invoke(null, new[] { o });
 
         foreach (var item in list)
         {
@@ -118,7 +121,7 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
             else
             {
                 // otherwise, just convert the item to the type of the list
-                newList!.Add(asMethod.Invoke(null, new[] { item }));
+                newList!.Add(ChangeToDesiredType(item));
             }
         }
 
@@ -132,7 +135,7 @@ internal class BuiltMapper<TObject> : IRecordMapper<TObject> where TObject : new
         _recordMappings.Add(MapFromRecord);
         return;
 
-        void MapFromRecord(TObject obj, IRecord record)
+        void MapFromRecord(T obj, IRecord record)
         {
             var value = valueGetter(record);
             if (value is null && record is DictAsRecord { Record: var parentRecord })

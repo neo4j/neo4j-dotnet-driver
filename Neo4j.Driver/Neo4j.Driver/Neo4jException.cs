@@ -588,7 +588,7 @@ public class TransactionClosedException : ClientException
 /// <summary>
 /// The exception that is thrown when trying to further interact with a terminated transaction.
 /// Transactions are terminated when they incur errors. <br/>
-/// If created by the driver the <see cref="ClientException.Code"/> will be null.
+/// If created by the driver the <see cref="Neo4jException.Code"/> will be null.
 /// </summary>
 [DataContract]
 public sealed class TransactionTerminatedException : ClientException
