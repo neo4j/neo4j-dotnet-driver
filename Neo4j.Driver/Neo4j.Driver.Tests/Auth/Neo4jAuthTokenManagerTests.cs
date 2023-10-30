@@ -19,7 +19,6 @@ using System;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using Moq.AutoMock;
 using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Services;

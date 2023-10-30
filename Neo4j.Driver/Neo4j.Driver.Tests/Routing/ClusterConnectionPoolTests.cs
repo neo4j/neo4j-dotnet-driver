@@ -25,7 +25,6 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Routing;
 using Xunit;
