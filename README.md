@@ -72,8 +72,7 @@ var response = await driver.ExecutableQuery("MATCH (n:Node) RETURN n.id")
     .WithConfig(dbConfig)
     .ExecuteAsync();
 ```
-The response from the fluent APIs is an [EagerResult&lt;T&gt;](https://neo4j.com/docs/api/dotnet-driver/current/api/Neo4j.Driver.EagerResult-1.html).  
-[EagerResult](https://neo4j.com/docs/api/dotnet-driver/current/api/Neo4j.Driver.EagerResult-1.html)<IReadOnlyList<[IRecord](https://neo4j.com/docs/api/dotnet-driver/current/api/Neo4j.Driver.IRecord.html)>> unless we use other APIs; more on that later. 
+The response from the fluent APIs is an [EagerResult](https://neo4j.com/docs/api/dotnet-driver/current/api/Neo4j.Driver.EagerResult-1.html)<IReadOnlyList<[IRecord](https://neo4j.com/docs/api/dotnet-driver/current/api/Neo4j.Driver.IRecord.html)>> unless we use other APIs; more on that later. 
 EagerResult comprises of the following:
 - All records materialized(`Result`).
 - keys returned from the query(`Keys`).
