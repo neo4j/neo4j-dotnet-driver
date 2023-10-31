@@ -2,7 +2,7 @@
 This repository contains the official [Neo4j](https://neo4j.com/) driver for .NET.  
 
 ### [API Docs](https://neo4j.com/docs/api/dotnet-driver/current/) | [Driver Manual](https://neo4j.com/docs/dotnet-manual/current/) | [Example Web App](https://github.com/neo4j-examples/movies-dotnetcore-bolt) | [Change Log](https://github.com/neo4j/neo4j-dotnet-driver/wiki/5.X-Change-Log)
-This document covers the usage of the driver for contribution guidance see the [Contribution guide](./CONTRIBUTING.md).
+This document covers the usage of the driver; for contribution guidance, see [Contributing](./CONTRIBUTING.md).
 
 ## Installation
 Neo4j publishes its .NET libraries to NuGet with the following targets:
@@ -54,14 +54,13 @@ To ensure the credentials and URLs specified when creating the driver, you can c
 
 ### Executing a single query transaction:
 ```csharp
-_ = await driver
-    .ExecutableQuery("CREATE (:Node{id: 0})")
+await driver.ExecutableQuery("CREATE (:Node{id: 0})")
     .WithConfig(new QueryConfig(database:"neo4j"))
     .ExecuteAsync();
 ```
 As of version 5.10, The .NET driver includes a fluent querying API on the driver's IDriver interface. The fluent API is the most concise API for executing single query transactions. It avoids the boilerplate that comes with handling complex problems, such as results that exceed memory or multi-query transactions.
 
-### Remember to specify a database
+### Remember to specify a database.
 ```csharp
     .WithConfig(new QueryConfig(database:"neo4j"))
 ```
@@ -69,21 +68,23 @@ Always specify the database when you know which database the transaction should 
 
 ### Getting Results
 ```csharp
-var response = await driver
-        .ExecutableQuery("MATCH (n:Node) RETURN n.id")
-        .WithConfig(new QueryConfig(database:"neo4j"))
-        .ExecuteAsync();
+var response = await driver.ExecutableQuery("MATCH (n:Node) RETURN n.id")
+    .WithConfig(dbConfig)
+    .ExecuteAsync();
 ```
 The response from the fluent APIs is an [EagerResult&lt;T&gt;](https://neo4j.com/docs/api/dotnet-driver/current/api/Neo4j.Driver.EagerResult-1.html).  
-EagerResult<IReadOnlyList<[IRecord](https://neo4j.com/docs/api/dotnet-driver/current/api/Neo4j.Driver.IRecord.html)>> is returned unless other fluent methods are invoked, The result is comprised of:
+[EagerResult](https://neo4j.com/docs/api/dotnet-driver/current/api/Neo4j.Driver.EagerResult-1.html)<IReadOnlyList<[IRecord](https://neo4j.com/docs/api/dotnet-driver/current/api/Neo4j.Driver.IRecord.html)>> unless we use other APIs; more on that later. 
+EagerResult comprises of the following:
 - All records materialized(`Result`).
 - keys returned from the query(`Keys`).
 - a [query summary](https://neo4j.com/docs/api/dotnet-driver/current/api/Neo4j.Driver.IResultSummary.html)(`Summary`). 
 
 #### Decomposing EagerResult
 ```csharp
-var (results, _, _) = await driver.ExecutableQuery(query).ExecuteAsync();
-foreach (var record in results)
+var (result, _, _) = await driver.ExecutableQuery(query)
+    .WithConfig(dbConfig)
+    .ExecuteAsync();
+foreach (var record in result)
     Console.WriteLine($"node: {record["n.id"]}")
 ```
 EagerResult allows you to discard unneeded values with decomposition for an expressive API. 
