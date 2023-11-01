@@ -55,7 +55,12 @@ internal sealed class SocketClientIoFactory : IConnectionIoFactory
         DriverContext context,
         ILogger logger)
     {
-        return new MessageReader(new ChunkReader(client.ReaderStream), context, logger);
+        if (context.Config.MessageReaderConfig.DisablePipelinedMessageReader)
+        {
+            return new MessageReader(new ChunkReader(client.ReaderStream), context, logger);
+        }
+
+        return new PipelinedMessageReader(client.ReaderStream, context);
     }
 
     public (IChunkWriter, IMessageWriter) Writers(ITcpSocketClient client, DriverContext context, ILogger logger)

@@ -62,7 +62,6 @@ internal sealed class SocketClient : ISocketClient
         _connectionIoFactory = connectionIoFactory ?? SocketClientIoFactory.Default;
         _handshaker = boltHandshaker ?? BoltHandshaker.Default;
 
-        _readBufferStream = new MemoryStream(context.Config.MaxReadBufferSize);
         _tcpSocketClient = _connectionIoFactory.TcpSocketClient(context, _logger);
     }
 

@@ -36,13 +36,14 @@ internal sealed class PipelinedMessageReader : IMessageReader
     private int _timeoutInMs;
     private CancellationTokenSource _source;
     private readonly Memory<byte> _headerMemory;
+    private readonly StreamPipeReaderOptions _options;
 
-    private const int MaxChunkSize = 65_535;
-
-    public PipelinedMessageReader(Stream inputStream, int timeout)
+    public PipelinedMessageReader(Stream inputStream, DriverContext context)
     {
-        _timeoutInMs = timeout;
+        _timeoutInMs = inputStream.ReadTimeout;
         _stream = inputStream;
+        _logger = context.Logger;
+        _options = context.Config.MessageReaderConfig.StreamPipeReaderOptions;
         _source = new CancellationTokenSource();
         _headerMemory = new Memory<byte>(new byte[2]);
     }
@@ -54,8 +55,7 @@ internal sealed class PipelinedMessageReader : IMessageReader
 
     public async ValueTask ReadAsync(IResponsePipeline pipeline, MessageFormat format)
     {
-        var pipeReader = PipeReader.Create(_stream, 
-            new StreamPipeReaderOptions(leaveOpen: true, bufferSize: MaxChunkSize + 4));
+        var pipeReader = PipeReader.Create(_stream, _options);
 
         try
         {
@@ -106,11 +106,6 @@ internal sealed class PipelinedMessageReader : IMessageReader
         }
     }
 
-    public ValueTask ReadAsync(IResponsePipeline pipeline, PackStreamReader reader)
-    {
-        throw new NotImplementedException();
-    }
-
     private void ResetCancellation()
     {
         if (_timeoutInMs <= 0)
@@ -142,7 +137,7 @@ internal sealed class PipelinedMessageReader : IMessageReader
         {
             throw new IOException("Unexpected end of stream, unable to read expected data from the network connection");
         }
-    
+
         var lengthSlice = readResult.Buffer.Slice(0, 2);
         lengthSlice.CopyTo(_headerMemory.Span);
         var size = BinaryPrimitives.ReadUInt16BigEndian(_headerMemory.Span);

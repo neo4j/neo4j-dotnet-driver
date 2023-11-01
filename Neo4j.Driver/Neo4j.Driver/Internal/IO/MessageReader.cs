@@ -15,7 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.IO;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
@@ -41,7 +40,7 @@ internal sealed class MessageReader : IMessageReader
         _defaultBufferSize = driverContext.Config.DefaultReadBufferSize;
         _maxBufferSize = driverContext.Config.MaxReadBufferSize;
         _logger = logger;
-        BufferStream = new MemoryStream(bufferSettings.MaxReadBufferSize);
+        BufferStream = new MemoryStream(driverContext.Config.MaxReadBufferSize);
         _readerBuffers = new ByteBuffers();
     }
 
