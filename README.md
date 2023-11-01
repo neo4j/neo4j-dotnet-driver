@@ -68,7 +68,7 @@ Always specify the database when you know which database the transaction should 
 
 ### Getting Results
 ```csharp
-var response = await driver.ExecutableQuery("MATCH (n:Node) RETURN n.id")
+var response = await driver.ExecutableQuery("MATCH (n:Node) RETURN n.id as id")
     .WithConfig(dbConfig)
     .ExecuteAsync();
 ```
@@ -84,10 +84,14 @@ var (result, _, _) = await driver.ExecutableQuery(query)
     .WithConfig(dbConfig)
     .ExecuteAsync();
 foreach (var record in result)
-    Console.WriteLine($"node: {record["n.id"]}")
+    Console.WriteLine($"node: {record["id"]}")
 ```
 EagerResult allows you to discard unneeded values with decomposition for an expressive API. 
 
 #### Mapping
-```
+```csharp
+var (result, _, _) = await driver.ExecutableQuery(query)
+    .WithConfig(dbConfig)
+    .WithMap(record => new EntityDTO { id = record["id"].As<long>() })
+    .ExecuteAsync();
 ```
