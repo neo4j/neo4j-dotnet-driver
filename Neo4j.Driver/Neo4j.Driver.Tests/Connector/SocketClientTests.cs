@@ -99,7 +99,7 @@ namespace Neo4j.Driver.Tests
             var mw = messageWriter ?? Mock.Of<IMessageWriter>();
 
             factory
-                .Setup(x => x.Readers(It.IsAny<ITcpSocketClient>(), It.IsAny<DriverContext>(), It.IsAny<ILogger>()))
+                .Setup(x => x.MessageReader(It.IsAny<ITcpSocketClient>(), It.IsAny<DriverContext>(), It.IsAny<ILogger>()))
                 .Returns(mr);
 
             factory
@@ -229,15 +229,7 @@ namespace Neo4j.Driver.Tests
 
                 var (_, factory) = CreateMockIoFactory(null, x => SetupFactory(x, messageReader: readerMock.Object));
 
-                var psFactory = new Mock<IPackStreamFactory>();
-                psFactory.Setup(
-                        x => x.BuildReader(
-                            It.IsAny<MessageFormat>(),
-                            It.IsAny<MemoryStream>(),
-                            It.IsAny<ByteBuffers>()))
-                    .Returns(new PackStreamReader(null, null, null));
-
-                var client = NewClient(factory, psFactory);
+                var client = NewClient(factory);
                 await client.ConnectAsync();
 
                 // When

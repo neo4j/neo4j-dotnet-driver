@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.IO;
@@ -79,9 +78,8 @@ internal sealed class SocketClient : ISocketClient
             .ConfigureAwait(false);
 
         _format = _connectionIoFactory.Format(Version);
-        _messageReader = _connectionIoFactory.Readers(_tcpSocketClient, Context, _logger);
+        _messageReader = _connectionIoFactory.MessageReader(_tcpSocketClient, Context, _logger);
         (_chunkWriter, _messageWriter) = _connectionIoFactory.Writers(_tcpSocketClient, Context, _logger);
-
         SetOpened();
     }
 
@@ -89,11 +87,11 @@ internal sealed class SocketClient : ISocketClient
 
     public async Task SendAsync(IEnumerable<IRequestMessage> messages)
     {
+        var writer = _packstreamFactory.BuildWriter(_format, _chunkWriter);
         try
         {
             foreach (var message in messages)
             {
-                var writer = _packstreamFactory.BuildWriter(_format, _chunkWriter);
                 _messageWriter.Write(message, writer);
                 _logger.Debug(MessagePattern, message);
             }

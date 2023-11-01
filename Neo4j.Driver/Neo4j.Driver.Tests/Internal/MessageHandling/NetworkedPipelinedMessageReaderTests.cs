@@ -25,6 +25,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Tests;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.MessageHandling
@@ -82,7 +83,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                     try
                     {
                         await client.ConnectAsync(IPAddress.Loopback, Port, cts.Token);
-                        var pipereader = new PipelinedMessageReader(client.GetStream(), -1);
+                        var pipereader = new PipelinedMessageReader(client.GetStream(), TestDriverContext.MockContext);
                         await pipereader.ReadAsync(
                             pipeline.Object,
                             new MessageFormat(BoltProtocolVersion.V5_0));
@@ -141,7 +142,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                     try
                     {
                         await client.ConnectAsync(IPAddress.Loopback, Port, cts.Token);
-                        var pipereader = new PipelinedMessageReader(client.GetStream(), -1);
+                        var pipereader = new PipelinedMessageReader(client.GetStream(), TestDriverContext.MockContext);
                         pipereader.SetReadTimeoutInMs(250);
                         var exc = await Record.ExceptionAsync(
                             async () =>
@@ -224,7 +225,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                     try
                     {
                         await client.ConnectAsync(IPAddress.Loopback, Port, cts.Token);
-                        var pipereader = new PipelinedMessageReader(client.GetStream(), -1);
+                        var pipereader = new PipelinedMessageReader(client.GetStream(), TestDriverContext.MockContext);
                         pipereader.SetReadTimeoutInMs(1000);
                         await pipereader.ReadAsync(
                             pipeline.Object,
@@ -285,7 +286,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                     try
                     {
                         await client.ConnectAsync(IPAddress.Loopback, Port, cts.Token);
-                        var pipereader = new PipelinedMessageReader(client.GetStream(), -1);
+                        var pipereader = new PipelinedMessageReader(client.GetStream(), TestDriverContext.MockContext);
                         pipereader.SetReadTimeoutInMs(2000);
                         var exc = await Record.ExceptionAsync(
                             async () =>
@@ -360,7 +361,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                     try
                     {
                         await client.ConnectAsync(IPAddress.Loopback, Port, cts.Token);
-                        var pipereader = new PipelinedMessageReader(client.GetStream(), -1);
+                        var pipereader = new PipelinedMessageReader(client.GetStream(), TestDriverContext.MockContext);
                         pipereader.SetReadTimeoutInMs(2000);
                         var exc = await Record.ExceptionAsync(
                             async () =>

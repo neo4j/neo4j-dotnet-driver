@@ -31,28 +31,26 @@ namespace Neo4j.Driver.Internal.IO;
 
 internal sealed class PipelinedMessageReader : IMessageReader
 {
-    private readonly ILogger _logger;
     private readonly Stream _stream;
     private int _timeoutInMs;
     private CancellationTokenSource _source;
     private readonly Memory<byte> _headerMemory;
     private readonly StreamPipeReaderOptions _options;
 
-    public PipelinedMessageReader(Stream inputStream, DriverContext context)
+    internal PipelinedMessageReader(Stream inputStream, DriverContext context)
+        : this(inputStream, context, inputStream.ReadTimeout)
     {
-        _timeoutInMs = inputStream.ReadTimeout;
+    }
+    
+    internal PipelinedMessageReader(Stream inputStream, DriverContext context, int timeout)
+    {
+        _timeoutInMs = timeout;
         _stream = inputStream;
-        _logger = context.Logger;
         _options = context.Config.MessageReaderConfig.StreamPipeReaderOptions;
         _source = new CancellationTokenSource();
         _headerMemory = new Memory<byte>(new byte[2]);
     }
-    
-    ~PipelinedMessageReader()
-    {
-        _source.Dispose();
-    }
-
+  
     public async ValueTask ReadAsync(IResponsePipeline pipeline, MessageFormat format)
     {
         var pipeReader = PipeReader.Create(_stream, _options);

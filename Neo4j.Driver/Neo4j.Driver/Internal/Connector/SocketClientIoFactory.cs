@@ -24,7 +24,7 @@ internal interface IConnectionIoFactory
     ITcpSocketClient TcpSocketClient(DriverContext context, ILogger logger);
     MessageFormat Format(BoltProtocolVersion version);
 
-    IMessageReader Readers(
+    IMessageReader MessageReader(
         ITcpSocketClient client,
         DriverContext context,
         ILogger logger);
@@ -50,7 +50,7 @@ internal sealed class SocketClientIoFactory : IConnectionIoFactory
         return new MessageFormat(version);
     }
 
-    public IMessageReader Readers(
+    public IMessageReader MessageReader(
         ITcpSocketClient client,
         DriverContext context,
         ILogger logger)
