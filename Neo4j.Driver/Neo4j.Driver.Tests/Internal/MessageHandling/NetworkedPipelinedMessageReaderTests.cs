@@ -86,7 +86,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                         var pipereader = new PipelinedMessageReader(client.GetStream(), TestDriverContext.MockContext);
                         await pipereader.ReadAsync(
                             pipeline.Object,
-                            new MessageFormat(BoltProtocolVersion.V5_0));
+                            new MessageFormat(BoltProtocolVersion.V5_0, TestDriverContext.MockContext));
                     }
                     finally
                     {
@@ -149,7 +149,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                             {
                                 await pipereader.ReadAsync(
                                     pipeline.Object,
-                                    new MessageFormat(BoltProtocolVersion.V5_0));
+                                    new MessageFormat(BoltProtocolVersion.V5_0, TestDriverContext.MockContext));
                             });
                         
                         exc.Should().BeOfType<ConnectionReadTimeoutException>();
@@ -229,7 +229,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                         pipereader.SetReadTimeoutInMs(1000);
                         await pipereader.ReadAsync(
                             pipeline.Object,
-                            new MessageFormat(BoltProtocolVersion.V5_0));
+                            new MessageFormat(BoltProtocolVersion.V5_0, TestDriverContext.MockContext));
                     }
                     finally
                     {
@@ -293,7 +293,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                             {
                                 await pipereader.ReadAsync(
                                     pipeline.Object,
-                                    new MessageFormat(BoltProtocolVersion.V5_0));
+                                    new MessageFormat(BoltProtocolVersion.V5_0, TestDriverContext.MockContext));
                             });
                         
                         exc.Should().BeOfType<ConnectionReadTimeoutException>();
@@ -368,7 +368,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                             {
                                 await pipereader.ReadAsync(
                                     pipeline.Object,
-                                    new MessageFormat(BoltProtocolVersion.V5_0));
+                                    new MessageFormat(BoltProtocolVersion.V5_0, TestDriverContext.MockContext));
                             });
                         
                         exc.Should().BeOfType<ConnectionReadTimeoutException>();

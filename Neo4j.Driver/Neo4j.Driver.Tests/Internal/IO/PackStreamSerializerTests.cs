@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO.Utils;
+using Neo4j.Driver.Tests;
 
 namespace Neo4j.Driver.Internal.IO
 {
@@ -67,14 +68,14 @@ namespace Neo4j.Driver.Internal.IO
 
         internal PackStreamWriterMachine CreateWriterMachine(BoltProtocolVersion version)
         {
-            var format = new MessageFormat(version);
+            var format = new MessageFormat(version, TestDriverContext.MockContext);
 
             return new PackStreamWriterMachine(stream => new PackStreamWriter(format, stream));
         }
 
         internal PackStreamReaderMachine CreateReaderMachine(BoltProtocolVersion version, byte[] bytes)
         {
-            var format = new MessageFormat(version);
+            var format = new MessageFormat(version, TestDriverContext.MockContext);
             return new PackStreamReaderMachine(
                 bytes,
                 stream => new PackStreamReader(format, stream, new ByteBuffers()));

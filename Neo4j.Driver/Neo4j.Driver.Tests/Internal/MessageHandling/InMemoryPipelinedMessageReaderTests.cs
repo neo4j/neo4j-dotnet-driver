@@ -61,7 +61,8 @@ namespace Neo4j.Driver.Internal.MessageHandling
             var pipereader = new PipelinedMessageReader(memoryStream, TestDriverContext.MockContext, -1);
             var pipeline = MockPipeline();
 
-            await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0));
+            await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0,
+                TestDriverContext.MockContext));
 
             pipeline.Verify(x => x.OnSuccess(It.IsAny<Dictionary<string, object>>()), Times.Once);
         }
@@ -84,7 +85,8 @@ namespace Neo4j.Driver.Internal.MessageHandling
             memoryStream.Position = 0L;
             var pipereader = new PipelinedMessageReader(memoryStream, TestDriverContext.MockContext, -1);
             var pipeline = MockPipeline();
-            await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0));
+            await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0,
+                TestDriverContext.MockContext));
 
             pipeline.Verify(x => x.OnSuccess(It.IsAny<Dictionary<string, object>>()), Times.Once);
         }
@@ -108,7 +110,8 @@ namespace Neo4j.Driver.Internal.MessageHandling
             memoryStream.Position = 0L;
             var pipereader = new PipelinedMessageReader(memoryStream, TestDriverContext.MockContext, -1);
             var pipeline = MockPipeline();
-            await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0));
+            await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0,
+                TestDriverContext.MockContext));
 
             pipeline.Verify(x => x.OnSuccess(It.IsAny<Dictionary<string, object>>()), Times.Once);
         }
@@ -140,7 +143,8 @@ namespace Neo4j.Driver.Internal.MessageHandling
             memoryStream.Position = 0L;
             var pipereader = new PipelinedMessageReader(memoryStream, TestDriverContext.MockContext, -1);
             var pipeline = MockPipeline();
-            await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0));
+            await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0,
+                TestDriverContext.MockContext));
 
             pipeline.Verify(x => x.OnSuccess(It.IsAny<Dictionary<string, object>>()), Times.Once);
         }
@@ -177,7 +181,8 @@ namespace Neo4j.Driver.Internal.MessageHandling
             var memoryStream = new MemoryStream(message);
             var pipereader = new PipelinedMessageReader(memoryStream, TestDriverContext.MockContext, -1);
             var pipeline = MockPipeline();
-            await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0));
+            await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0,
+                TestDriverContext.MockContext));
             pipeline.Verify(x => x.OnFailure("a", "b"), Times.Once);
             pipeline.Verify(x => x.OnIgnored(), Times.Never);
         }
@@ -191,7 +196,8 @@ namespace Neo4j.Driver.Internal.MessageHandling
             var pipereader = new PipelinedMessageReader(memoryStream, TestDriverContext.MockContext, -1);
 
             var pipeline = MockPipeline();
-            await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0));
+            await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0,
+                TestDriverContext.MockContext));
 
             pipeline.Verify(
                 x => x.OnSuccess(It.Is<Dictionary<string, object>>(y => y["a"].As<byte[]>().Length == 500_000)),

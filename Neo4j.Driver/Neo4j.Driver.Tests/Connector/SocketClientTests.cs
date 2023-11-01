@@ -88,7 +88,7 @@ namespace Neo4j.Driver.Tests
             IMessageReader messageReader = null,
             IMessageWriter messageWriter = null)
         {
-            var fmt = format ?? new MessageFormat(Version);
+            var fmt = format ?? new MessageFormat(Version, TestDriverContext.MockContext);
             var cw = writer ??
                 new ChunkWriter(
                     new MemoryStream(),
@@ -106,7 +106,7 @@ namespace Neo4j.Driver.Tests
                 .Setup(x => x.Writers(It.IsAny<ITcpSocketClient>(), It.IsAny<DriverContext>(), It.IsAny<ILogger>()))
                 .Returns((cw, mw));
 
-            factory.Setup(x => x.Format(Version)).Returns(fmt);
+            factory.Setup(x => x.Format(Version, TestDriverContext.MockContext)).Returns(fmt);
         }
 
         public class ConnectMethod
@@ -139,7 +139,7 @@ namespace Neo4j.Driver.Tests
 
                 ex.Should().NotBeNull().And.Be(exception);
 
-                io.Verify(x => x.Format(It.IsAny<BoltProtocolVersion>()), Times.Never);
+                io.Verify(x => x.Format(It.IsAny<BoltProtocolVersion>(), It.IsAny<DriverContext>()), Times.Never);
             }
         }
 

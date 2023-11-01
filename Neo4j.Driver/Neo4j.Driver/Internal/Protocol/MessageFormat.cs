@@ -61,14 +61,24 @@ internal sealed class MessageFormat
     private readonly Dictionary<byte, IPackStreamSerializer> _readerStructHandlers = new();
     private readonly Dictionary<Type, IPackStreamSerializer> _writerStructHandlers = new();
 
-    internal MessageFormat(BoltProtocolVersion version)
+    internal MessageFormat(BoltProtocolVersion version, DriverContext context)
     {
         Version = version;
         // Response Message Types
-        AddMessageHandler(FailureMessageSerializer.Instance);
-        AddMessageHandler(IgnoredMessageSerializer.Instance);
-        AddMessageHandler(RecordMessageSerializer.Instance);
-        AddMessageHandler(SuccessMessageSerializer.Instance);
+        if (context.Config.MessageReaderConfig.DisablePipelinedMessageReader)
+        {
+            AddHandler(FailureMessageSerializer.Instance);
+            AddHandler(IgnoredMessageSerializer.Instance);
+            AddHandler(RecordMessageSerializer.Instance);
+            AddHandler(SuccessMessageSerializer.Instance);
+        }
+        else
+        {
+            AddMessageHandler(FailureMessageSerializer.Instance);
+            AddMessageHandler(IgnoredMessageSerializer.Instance);
+            AddMessageHandler(RecordMessageSerializer.Instance);
+            AddMessageHandler(SuccessMessageSerializer.Instance);
+        }
 
         // Add V2 Spatial Types
         AddHandler(PointSerializer.Instance);

@@ -77,7 +77,7 @@ internal sealed class SocketClient : ISocketClient
             .DoHandshakeAsync(_tcpSocketClient, _logger, cancellationToken)
             .ConfigureAwait(false);
 
-        _format = _connectionIoFactory.Format(Version);
+        _format = _connectionIoFactory.Format(Version, Context);
         _messageReader = _connectionIoFactory.MessageReader(_tcpSocketClient, Context, _logger);
         (_chunkWriter, _messageWriter) = _connectionIoFactory.Writers(_tcpSocketClient, Context, _logger);
         SetOpened();

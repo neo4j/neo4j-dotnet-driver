@@ -22,7 +22,7 @@ namespace Neo4j.Driver.Internal.Connector;
 internal interface IConnectionIoFactory
 {
     ITcpSocketClient TcpSocketClient(DriverContext context, ILogger logger);
-    MessageFormat Format(BoltProtocolVersion version);
+    MessageFormat Format(BoltProtocolVersion version, DriverContext context);
 
     IMessageReader MessageReader(
         ITcpSocketClient client,
@@ -45,9 +45,9 @@ internal sealed class SocketClientIoFactory : IConnectionIoFactory
         return new TcpSocketClient(context, logger);
     }
 
-    public MessageFormat Format(BoltProtocolVersion version)
+    public MessageFormat Format(BoltProtocolVersion version, DriverContext context)
     {
-        return new MessageFormat(version);
+        return new MessageFormat(version, context);
     }
 
     public IMessageReader MessageReader(

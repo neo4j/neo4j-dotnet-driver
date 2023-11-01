@@ -20,6 +20,7 @@ using System.IO;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Tests;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers
@@ -55,7 +56,7 @@ namespace Neo4j.Driver.Internal.IO.MessageSerializers
             using var memory = new MemoryStream();
 
             var boltProtocolVersion = new BoltProtocolVersion(major, minor);
-            var format = new MessageFormat(boltProtocolVersion);
+            var format = new MessageFormat(boltProtocolVersion, TestDriverContext.MockContext);
             var psw = new PackStreamWriter(format, memory);
 
             var message = new BeginMessage(
