@@ -21,7 +21,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector;
@@ -71,7 +70,7 @@ namespace Neo4j.Driver.Tests.Routing
             }
 
             ClientMock = clientMock ?? new Mock<ISocketClient>();
-            ClientMock.Setup(x => x.ConnectAsync(null, CancellationToken.None))
+            ClientMock.Setup(x => x.ConnectAsync(CancellationToken.None))
                 .Returns(Task.FromResult(new Mock<IBoltProtocol>().Object));
 
             ClientMock.Setup(x => x.SendAsync(It.IsAny<IEnumerable<IRequestMessage>>()))
@@ -114,7 +113,7 @@ namespace Neo4j.Driver.Tests.Routing
             auth ??= AuthTokens.None;
             return new HelloMessage(
                 BoltProtocolVersion.V3_0,
-                ConnectionSettings.DefaultUserAgent,
+                Config.DefaultUserAgent,
                 auth.AsDictionary(),
                 null);
         }
@@ -153,7 +152,7 @@ namespace Neo4j.Driver.Tests.Routing
             auth ??= AuthTokens.None;
             return new HelloMessage(
                 BoltProtocolVersion.V4_1,
-                ConnectionSettings.DefaultUserAgent,
+                Config.DefaultUserAgent,
                 auth.AsDictionary(),
                 null);
         }

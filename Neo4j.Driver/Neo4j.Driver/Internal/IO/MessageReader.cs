@@ -35,11 +35,11 @@ internal sealed class MessageReader : IMessageReader
 
     public MemoryStream BufferStream { get; }
 
-    public MessageReader(IChunkReader chunkReader, BufferSettings bufferSettings, ILogger logger)
+    public MessageReader(IChunkReader chunkReader, DriverContext driverContext, ILogger logger)
     {
         _chunkReader = chunkReader;
-        _defaultBufferSize = bufferSettings.DefaultReadBufferSize;
-        _maxBufferSize = bufferSettings.MaxReadBufferSize;
+        _defaultBufferSize = driverContext.Config.DefaultReadBufferSize;
+        _maxBufferSize = driverContext.Config.MaxReadBufferSize;
         _logger = logger;
         BufferStream = new MemoryStream(bufferSettings.MaxReadBufferSize);
         _readerBuffers = new ByteBuffers();
@@ -80,7 +80,7 @@ internal sealed class MessageReader : IMessageReader
             return;
         }
 
-        _logger?.Info(
+        _logger.Info(
             $@"Shrinking read buffers to the default read buffer size {
                 _defaultBufferSize
             } since its size reached {

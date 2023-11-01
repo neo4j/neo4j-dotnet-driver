@@ -36,7 +36,6 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
 {
     private static readonly byte[] ZeroChunkSizeBuffer = PackStreamBitConverter.GetBytes((ushort)0);
 
-    private readonly int _chunkSize;
     private readonly MemoryStream _chunkStream;
     private readonly int _defaultBufferSize;
     private readonly Stream _downStream;
@@ -48,7 +47,7 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
     private long _startPos = -1;
 
     //TODO: ArrayPool avoid creating a new array for each chunk writer
-    public ChunkWriter(Stream downStream, BufferSettings settings, ILogger logger)
+    public ChunkWriter(Stream downStream, DriverContext context, ILogger logger)
     {
         _downStream = downStream ?? throw new ArgumentNullException(nameof(downStream));
 
@@ -58,12 +57,11 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
                 $"Parameter {nameof(downStream)} is invalid. " +
                 $"Property:{nameof(downStream.CanWrite)} is false but should be true");
         }
-
-        _chunkSize = Constants.MaxChunkSize;
+        
         _logger = logger;
-        _defaultBufferSize = settings.DefaultWriteBufferSize;
-        _maxBufferSize = settings.MaxWriteBufferSize;
-        _chunkStream = new MemoryStream(settings.DefaultWriteBufferSize);
+        _defaultBufferSize = context.Config.DefaultWriteBufferSize;
+        _maxBufferSize = context.Config.MaxWriteBufferSize;
+        _chunkStream = new MemoryStream(context.Config.DefaultWriteBufferSize);
     }
 
     public Stream Stream => this;
@@ -84,7 +82,7 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
         var nextLength = currentLength + count;
 
         // Is the data exceeding our maximum chunk size?
-        if (nextLength <= _chunkSize)
+        if (nextLength <= Constants.MaxChunkSize)
         {
             _chunkStream.Write(buffer, offset, count);
             return;
@@ -95,7 +93,7 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
 
         while (leftToChunk > 0)
         {
-            var thisChunkSize = (int)Math.Min(leftToChunk, _chunkSize - currentLength);
+            var thisChunkSize = (int)Math.Min(leftToChunk, Constants.MaxChunkSize - currentLength);
 
             _chunkStream.Write(buffer, thisChunkIndex, thisChunkSize);
 
@@ -158,7 +156,7 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
         _chunkStream.SetLength(0);
         if (_chunkStream.Capacity > _maxBufferSize)
         {
-            _logger?.Info(
+            _logger.Info(
                 $@"Shrinking write buffers to the default write buffer size {
                     _defaultBufferSize
                 } since its size reached {
@@ -177,7 +175,7 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
 
     private void LogStream(MemoryStream stream)
     {
-        if (_logger != null && _logger.IsTraceEnabled())
+        if (_logger.IsTraceEnabled())
         {
             var buffer = stream.ToArray();
             _logger.Trace("C: {0}", buffer.ToHexString(0, buffer.Length));

@@ -22,7 +22,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
-using static Neo4j.Driver.Internal.Throw.ObjectDisposedException;
+using Neo4j.Driver.Internal.Logging;
 using static Neo4j.Driver.Internal.Util.ConnectionContext;
 
 namespace Neo4j.Driver.Internal.Routing;
@@ -38,47 +38,41 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
     private int _closedMarker;
 
     public LoadBalancer(
+        Uri parsedUri,
         IPooledConnectionFactory connectionFactory,
-        RoutingSettings routingSettings,
-        ConnectionPoolSettings poolSettings,
-        ConnectionSettings connectionSettings,
-        ILogger logger,
-        INotificationsConfig notificationsConfig)
+        DriverContext driverContext)
     {
-        RoutingSetting = routingSettings;
-        RoutingContext = RoutingSetting.RoutingContext;
-
-        ConnectionSettings = connectionSettings;
-        _logger = logger;
+        DriverContext = driverContext;
 
         _clusterConnectionPool = new ClusterConnectionPool(
             Enumerable.Empty<Uri>(),
             connectionFactory,
-            RoutingSetting,
-            poolSettings,
-            connectionSettings,
-            logger,
-            notificationsConfig);
+            DriverContext);
 
-        _routingTableManager = new RoutingTableManager(routingSettings, this, logger);
-        _loadBalancingStrategy = CreateLoadBalancingStrategy(_clusterConnectionPool, _logger);
-        _initialServerAddressProvider = routingSettings.InitialServerAddressProvider;
+        _logger = driverContext.Logger;
+        _initialServerAddressProvider = new InitialServerAddressProvider(parsedUri, driverContext.Config.Resolver);
+        _routingTableManager = new RoutingTableManager(_initialServerAddressProvider, this, _logger);
+        _loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy(
+            _clusterConnectionPool,
+            _logger);
     }
-
-    // for test only
+    
+    /// <summary>
+    /// TEST ONLY.
+    /// </summary>
+    /// <param name="clusterConnPool"></param>
+    /// <param name="routingTableManager"></param>
     internal LoadBalancer(
         IClusterConnectionPool clusterConnPool,
         IRoutingTableManager routingTableManager)
     {
-        var config = Config.Default;
-        _logger = config.Logger;
-
+        _logger = NullLogger.Instance;
         _clusterConnectionPool = clusterConnPool;
         _routingTableManager = routingTableManager;
-        _loadBalancingStrategy = CreateLoadBalancingStrategy(clusterConnPool, _logger);
+        _loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy(
+            clusterConnPool,
+            _logger);
     }
-
-    public RoutingSettings RoutingSetting { get; set; }
 
     private bool IsClosed => _closedMarker > 0;
 
@@ -97,8 +91,6 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         return CreateClusterConnectionAsync(uri, AccessMode.Write, null, sessionConfig, Bookmarks.Empty);
     }
 
-    public IDictionary<string, string> RoutingContext { get; set; }
-
     public async Task<IConnection> AcquireAsync(
         AccessMode mode,
         string database,
@@ -108,7 +100,9 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
     {
         if (IsClosed)
         {
-            throw GetDriverDisposedException(nameof(LoadBalancer));
+            throw new ObjectDisposedException(
+                nameof(LoadBalancer),
+                "Failed to acquire a new connection as the driver has already been disposed.");
         }
 
         var conn = await AcquireConnectionAsync(mode, database, sessionConfig, bookmarks, forceAuth)
@@ -116,7 +110,9 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
 
         if (IsClosed)
         {
-            throw GetDriverDisposedException(nameof(LoadBalancer));
+            throw new ObjectDisposedException(
+                nameof(LoadBalancer),
+                "Failed to acquire a new connection as the driver has already been disposed.");
         }
 
         return conn;
@@ -146,7 +142,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             "ensure the database is running and that there is a working network connection to it.");
     }
 
-    public ConnectionSettings ConnectionSettings { get; }
+    public DriverContext DriverContext { get; }
 
     public Task<bool> SupportsMultiDbAsync()
     {
@@ -176,7 +172,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
 
     public Task OnConnectionErrorAsync(Uri uri, string database, Exception e)
     {
-        _logger?.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
+        _logger.Info($"Server at {uri} is no longer available due to error: {e.Message}.");
         _routingTableManager.ForgetServer(uri, database);
         return _clusterConnectionPool.DeactivateAsync(uri);
     }
@@ -321,10 +317,5 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             .AppendFormat("closed={0}", IsClosed)
             .Append("}")
             .ToString();
-    }
-
-    private static ILoadBalancingStrategy CreateLoadBalancingStrategy(IClusterConnectionPool pool, ILogger logger)
-    {
-        return new LeastConnectedLoadBalancingStrategy(pool, logger);
     }
 }

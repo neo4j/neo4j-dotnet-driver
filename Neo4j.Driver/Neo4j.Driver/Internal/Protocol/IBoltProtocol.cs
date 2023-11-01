@@ -45,13 +45,14 @@ internal interface IBoltProtocol
         AutoCommitParams autoCommitParams,
         INotificationsConfig notificationsConfig);
 
-    Task BeginTransactionAsync(IConnection connection, BeginProtocolParams beginParams);
+    Task BeginTransactionAsync(IConnection connection, BeginTransactionParams beginParams);
 
     Task<IResultCursor> RunInExplicitTransactionAsync(
         IConnection connection,
         Query query,
         bool reactive,
-        long fetchSize = Config.Infinite);
+        long fetchSize,
+        IInternalAsyncTransaction transaction);
 
     Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker);
     Task RollbackTransactionAsync(IConnection connection);

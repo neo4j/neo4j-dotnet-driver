@@ -19,7 +19,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;
 
@@ -28,38 +27,30 @@ namespace Neo4j.Driver.Internal;
 internal sealed class Driver : IInternalDriver
 {
     private readonly DefaultBookmarkManager _bookmarkManager;
-
     private readonly IConnectionProvider _connectionProvider;
-    private readonly ILogger _logger;
-    private readonly IMetrics _metrics;
     private readonly IAsyncRetryLogic _retryLogic;
+
     private int _closedMarker;
 
     internal Driver(
         Uri uri,
-        bool encrypted,
         IConnectionProvider connectionProvider,
         IAsyncRetryLogic retryLogic,
-        ILogger logger = null,
-        IMetrics metrics = null,
-        Config config = null)
+        DriverContext driverContext)
     {
         Uri = uri;
-        Encrypted = encrypted;
-        _logger = logger;
-        _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
+        Context = driverContext;
         _retryLogic = retryLogic;
-        _metrics = metrics;
-        Config = config;
+        _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
         _bookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig());
     }
 
     public Uri Uri { get; }
+    internal DriverContext Context { get; }
 
     private bool IsClosed => _closedMarker > 0;
-    public bool Encrypted { get; }
-
-    public Config Config { get; }
+    public bool Encrypted => Context.EncryptionManager.UseTls;
+    public Config Config => Context.Config;
 
     public IAsyncSession AsyncSession()
     {
@@ -82,11 +73,12 @@ internal sealed class Driver : IInternalDriver
 
         var session = new AsyncSession(
             _connectionProvider,
-            _logger,
+            Config.Logger,
             _retryLogic,
             Config.FetchSize,
             sessionConfig,
-            reactive);
+            reactive,
+            !Config.TelemetryDisabled);
 
         if (IsClosed)
         {
@@ -227,17 +219,6 @@ internal sealed class Driver : IInternalDriver
         throw new ObjectDisposedException(
             nameof(Driver),
             "Cannot open a new session on a driver that is already disposed.");
-    }
-
-    internal IMetrics GetMetrics()
-    {
-        if (_metrics == null)
-        {
-            throw new InvalidOperationException(
-                "Cannot access driver metrics if it is not enabled when creating this driver.");
-        }
-
-        return _metrics;
     }
 
     private async Task<EagerResult<T>> ExecuteQueryAsyncInternal<T>(

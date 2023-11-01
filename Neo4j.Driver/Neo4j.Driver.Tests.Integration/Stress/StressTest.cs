@@ -16,7 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -24,7 +23,6 @@ using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.IntegrationTests.Extensions;
 using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal;
@@ -826,39 +824,6 @@ public abstract class StressTest: IDisposable
         public bool CompareAndSet(T value, T comparand)
         {
             return Interlocked.CompareExchange(ref _reference, value, comparand) == comparand;
-        }
-    }
-
-    private class MonitoredPooledConnectionFactory : IPooledConnectionFactory
-    {
-        private readonly IPooledConnectionFactory _delegate;
-        public readonly ConcurrentQueue<IPooledConnection> Connections = new();
-
-        public MonitoredPooledConnectionFactory(IPooledConnectionFactory factory)
-        {
-            _delegate = factory;
-        }
-
-        public IPooledConnection Create(
-            Uri uri,
-            IConnectionReleaseManager releaseManager,
-            SocketSettings socketSettings,
-            IAuthToken authToken,
-            IAuthTokenManager authTokenManager,
-            string userAgent,
-            IDictionary<string, string> routingContext)
-        {
-            var pooledConnection = _delegate.Create(
-                uri,
-                releaseManager,
-                socketSettings,
-                authToken,
-                authTokenManager,
-                userAgent,
-                routingContext);
-
-            Connections.Enqueue(pooledConnection);
-            return pooledConnection;
         }
     }
 

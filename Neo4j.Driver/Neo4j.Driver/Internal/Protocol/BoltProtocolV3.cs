@@ -138,8 +138,9 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             null,
             null,
             autoCommitParams.ResultResourceHandler,
-            Config.Infinite,
-            false);
+            Config.Infinite, // Bolt V3 uses pull all so fetchSize is ignored.
+            false,
+            NullTransaction.Instance);
 
         var runHandler = _protocolHandlerFactory.NewRunResponseHandlerV3(streamBuilder, summaryBuilder);
         var pullAllHandler = _protocolHandlerFactory.NewPullAllResponseHandler(
@@ -159,7 +160,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         return streamBuilder.CreateCursor();
     }
 
-    public async Task BeginTransactionAsync(IConnection connection, BeginProtocolParams beginParams)
+    public async Task BeginTransactionAsync(IConnection connection, BeginTransactionParams beginParams)
     {
         connection.SessionConfig = beginParams.SessionConfig;
         ValidateImpersonatedUserForVersion(connection);
@@ -178,17 +179,18 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             beginParams.NotificationsConfig);
 
         await connection.EnqueueAsync(message, NoOpResponseHandler.Instance).ConfigureAwait(false);
-        if (beginParams.AwaitBeginResult)
+        if (beginParams.TransactionInfo.AwaitBegin)
         {
             await connection.SyncAsync().ConfigureAwait(false);
         }
     }
-
+    
     public async Task<IResultCursor> RunInExplicitTransactionAsync(
         IConnection connection,
         Query query,
         bool reactive,
-        long fetchSize = Config.Infinite)
+        long _,
+        IInternalAsyncTransaction transaction)
     {
         var summaryBuilder = new SummaryBuilder(query, connection.Server);
         var streamBuilder = _protocolHandlerFactory.NewResultCursorBuilder(
@@ -198,8 +200,9 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             null,
             null,
             null,
-            Config.Infinite,
-            false);
+            Config.Infinite, // Bolt Protocol 3 uses PULLALL so fetch size is ignored.
+            false,
+            transaction);
 
         var runHandler = _protocolHandlerFactory.NewRunResponseHandlerV3(streamBuilder, summaryBuilder);
         var pullAllHandler = _protocolHandlerFactory.NewPullAllResponseHandler(streamBuilder, summaryBuilder, null);

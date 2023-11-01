@@ -46,7 +46,11 @@ internal sealed class HelloResponseHandler : MetadataCollectingResponseHandler
         UpdateConnectionServerVersion();
         UpdateId();
         UpdateUtcEncodedDateTime();
-        UpdateReadTimeout();
+
+        var configMetadata = GetMetadata<ConfigurationHintsCollector, Dictionary<string, object>>();
+
+        UpdateReadTimeout(configMetadata);
+        UpdateTelemetryEnabled(configMetadata);
     }
 
     private void UpdateUtcEncodedDateTime()
@@ -63,16 +67,9 @@ internal sealed class HelloResponseHandler : MetadataCollectingResponseHandler
         }
     }
 
-    private void UpdateReadTimeout()
+    private void UpdateReadTimeout(Dictionary<string, object> configMetadata)
     {
-        if (_connection.Version < BoltProtocolVersion.V4_3)
-        {
-            return;
-        }
-
-        var configMetadata = GetMetadata<ConfigurationHintsCollector, Dictionary<string, object>>();
-
-        if (configMetadata == null)
+        if (configMetadata == null || _connection.Version < BoltProtocolVersion.V4_3)
         {
             return;
         }
@@ -81,6 +78,21 @@ internal sealed class HelloResponseHandler : MetadataCollectingResponseHandler
         if (timeoutFound && timeoutObject is long timeoutSec)
         {
             _connection.SetReadTimeoutInSeconds((int)timeoutSec);
+        }
+    }
+
+    private void UpdateTelemetryEnabled(Dictionary<string, object> configMetadata)
+    {
+        if (configMetadata == null || _connection.Version < BoltProtocolVersion.V5_4)
+        {
+            _connection.TelemetryEnabled = false;
+            return;
+        }
+
+        var found = configMetadata.TryGetValue("telemetry.enabled", out var value);
+        if (found && value is bool telemetryEnabled)
+        {
+            _connection.TelemetryEnabled = telemetryEnabled;
         }
     }
 

@@ -16,7 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Routing;
@@ -25,8 +24,7 @@ namespace Neo4j.Driver.Internal;
 
 internal interface IConnectionProvider : IAsyncDisposable
 {
-    IDictionary<string, string> RoutingContext { get; set; }
-    ConnectionSettings ConnectionSettings { get; }
+    DriverContext DriverContext { get; }
 
     Task<IConnection> AcquireAsync(
         AccessMode mode,

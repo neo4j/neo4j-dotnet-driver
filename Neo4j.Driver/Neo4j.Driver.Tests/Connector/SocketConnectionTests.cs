@@ -22,7 +22,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Preview.Auth;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -36,7 +36,7 @@ namespace Neo4j.Driver.Tests
     public class SocketConnectionTests
     {
         private static IAuthToken AuthToken => AuthTokens.None;
-        private static string UserAgent => ConnectionSettings.DefaultUserAgent;
+        private static string UserAgent => Config.DefaultUserAgent;
         private static ILogger Logger => new Mock<ILogger>().Object;
         private static Uri uri => new("http://neo4j.com");
         private static ServerInfo Server => new(uri);
@@ -47,19 +47,20 @@ namespace Neo4j.Driver.Tests
             IResponsePipeline pipeline = null,
             ServerInfo server = null,
             ILogger logger = null,
-            IBoltProtocolFactory boltProtocolFactory = null)
+            IBoltProtocolFactory boltProtocolFactory = null,
+            DriverContext context = null)
         {
             socketClient ??= SocketClient;
             server ??= Server;
             return new SocketConnection(
                 socketClient,
                 AuthToken,
-                UserAgent,
                 logger ?? Logger,
                 server,
                 pipeline,
                 AuthTokenManagers.None,
-                boltProtocolFactory);
+                boltProtocolFactory,
+                context);
         }
 
         public class InitMethod
@@ -75,13 +76,14 @@ namespace Neo4j.Driver.Tests
                 var bpFactory = new Mock<IBoltProtocolFactory>();
                 bpFactory.Setup(x => x.ForVersion(BoltProtocolVersion.V3_0)).Returns(protocolMock.Object);
 
-                var conn = NewSocketConnection(mockClient.Object, boltProtocolFactory: bpFactory.Object);
+                var conn = NewSocketConnection(mockClient.Object, boltProtocolFactory: bpFactory.Object,
+                    context: new DriverContext(new Uri("bolt://localhost:7687"), AuthTokenManagers.None, new Config()));
 
                 // When
                 await conn.InitAsync(null);
 
                 // Then
-                mockClient.Verify(c => c.ConnectAsync(null, CancellationToken.None), Times.Once);
+                mockClient.Verify(c => c.ConnectAsync(CancellationToken.None), Times.Once);
                 protocolMock.Verify(
                     x => x.AuthenticateAsync(
                         conn,
@@ -96,11 +98,11 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mockClient = new Mock<ISocketClient>();
-                mockClient.Setup(x => x.ConnectAsync(null, CancellationToken.None))
+                mockClient.Setup(x => x.ConnectAsync(CancellationToken.None))
                     .Throws(new IOException("I will stop socket conn from initialization"));
 
                 // ReSharper disable once ObjectCreationAsStatement
-                var conn = new SocketConnection(mockClient.Object, AuthToken, UserAgent, Logger, Server);
+                var conn = new SocketConnection(mockClient.Object, AuthToken, Logger, Server);
                 // When
                 var error = await Record.ExceptionAsync(() => conn.InitAsync(null));
                 // Then
@@ -225,7 +227,7 @@ namespace Neo4j.Driver.Tests
             {
                 var mockClient = new Mock<ISocketClient>();
                 var mockProtocol = new Mock<IBoltProtocol>();
-                mockClient.Setup(x => x.ConnectAsync(null, CancellationToken.None));
+                mockClient.Setup(x => x.ConnectAsync(CancellationToken.None));
 
                 var con = NewSocketConnection(mockClient.Object);
 

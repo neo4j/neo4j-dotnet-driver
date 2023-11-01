@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Reflection;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Logging;
@@ -44,16 +45,19 @@ namespace Neo4j.Driver;
 /// </remarks>
 public class Config
 {
+    static Config()
+    {
+        var version = Assembly.GetExecutingAssembly().GetName().Version;
+        DefaultUserAgent = $"neo4j-dotnet/{version.Major.ToString()}.{version.Minor.ToString()}";
+    }
+
+    internal static string DefaultUserAgent { get; }
+
     /// <summary>This const defines the value of infinite in terms of configuration properties.</summary>
     public const int Infinite = -1;
 
     /// <summary>This const defines the value of infinite interval in terms of configuration properties.</summary>
     public static readonly TimeSpan InfiniteInterval = TimeSpan.FromMilliseconds(-1);
-
-    /// <summary>Returns the default configuration for the <see cref="IDriver"/>.</summary>
-    internal static readonly Config Default = new();
-
-    private long _fetchSize = Constants.DefaultFetchSize;
 
     private int _maxIdleConnPoolSize = Infinite;
 
@@ -171,17 +175,13 @@ public class Config
     /// in batches. This fetch size defines how many records to pull in each batch. Use <see cref="Infinite"/> to disable
     /// batching and always pull all records in one batch instead.
     /// </summary>
-    public long FetchSize
-    {
-        get => _fetchSize;
-        internal set => _fetchSize = FetchSizeUtil.AssertValidFetchSize(value);
-    }
+    public long FetchSize { get; internal set; } = Constants.DefaultFetchSize;
 
     /// <summary>
     /// Used to get and set the User Agent string. If not used the default will be "neo4j-dotnet/x.y" where x is the
     /// major version and y is the minor version.
     /// </summary>
-    public string UserAgent { get; set; } = ConnectionSettings.DefaultUserAgent;
+    public string UserAgent { get; internal set; } = DefaultUserAgent;
 
     /// <summary>
     /// The configuration for setting which notifications the server should send to the client.<br/> This
@@ -198,4 +198,21 @@ public class Config
     /// <seealso cref="INotification"/>
     /// <seealso cref="IResultSummary.Notifications"/>
     public INotificationsConfig NotificationsConfig { get; internal set; }
+
+    /// <summary>
+    /// The configuration for whether the driver attempts to send telemetry data.<br/>
+    /// The telemetry collected covers high level usage of the driver and does not include any queries or
+    /// parameters.<br/>
+    /// Current collected metrics:
+    /// <list type="bullet">
+    ///     <item>Which method was used to start a transaction.</item>
+    /// </list>
+    /// Telemetry metrics are sent via Bolt to the uri provided when creating the driver instance or servers that make up
+    /// the cluster members and Neo4j makes no attempt to collect these usage metrics from outside of AuraDB
+    /// (Neo4j's cloud offering).<br/>
+    /// Users can configure Neo4j server's collection collection behavior of client drivers telemetry data and log the
+    /// telemetry data for diagnostics purposes.<br/>
+    /// By default the driver allows the collection of this telemetry. 
+    /// </summary>
+    public bool TelemetryDisabled { get; set; }
 }

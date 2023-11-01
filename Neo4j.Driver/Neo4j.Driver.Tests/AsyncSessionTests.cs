@@ -23,9 +23,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Preview.Auth;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Routing;
@@ -39,11 +40,12 @@ namespace Neo4j.Driver.Tests
         {
             return new AsyncSession(
                 new TestConnectionProvider(connection),
-                logger,
+                logger ?? NullLogger.Instance,
                 null,
                 0,
                 new Driver.SessionConfig(),
-                reactive);
+                reactive,
+                false);
         }
 
         internal static Mock<IConnection> NewMockedConnection(Mock<IBoltProtocol> protocol = null)
@@ -178,7 +180,7 @@ namespace Neo4j.Driver.Tests
                     x =>
                         x.BeginTransactionAsync(
                             It.IsAny<IConnection>(),
-                            It.Is<BeginProtocolParams>(y => y.AwaitBeginResult == true)),
+                            It.Is<BeginTransactionParams>(y => y.TransactionInfo.AwaitBegin == true)),
                     Times.Once);
             }
 
@@ -227,7 +229,7 @@ namespace Neo4j.Driver.Tests
                         x =>
                             x.BeginTransactionAsync(
                                 It.IsAny<IConnection>(),
-                                It.IsAny<BeginProtocolParams>()))
+                                It.IsAny<BeginTransactionParams>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
 
                 var session = NewSession(mockConn.Object);
@@ -252,7 +254,7 @@ namespace Neo4j.Driver.Tests
                         x =>
                             x.BeginTransactionAsync(
                                 It.IsAny<IConnection>(),
-                                It.IsAny<BeginProtocolParams>()))
+                                It.IsAny<BeginTransactionParams>()))
                     .Returns(Task.CompletedTask)
                     .Callback(
                         () =>
@@ -296,6 +298,7 @@ namespace Neo4j.Driver.Tests
                     new AsyncRetryLogic(TimeSpan.Zero, null),
                     0,
                     new Driver.SessionConfig(),
+                    false,
                     false);
 
                 await session.PipelinedExecuteReadAsync(_ => Task.FromResult(null as EagerResult<IRecord[]>));
@@ -304,7 +307,7 @@ namespace Neo4j.Driver.Tests
                     x =>
                         x.BeginTransactionAsync(
                             It.IsAny<IConnection>(),
-                            It.Is<BeginProtocolParams>(y => y.AwaitBeginResult == false)),
+                            It.Is<BeginTransactionParams>(y => y.TransactionInfo.AwaitBegin == false)),
                     Times.Once);
             }
         }
@@ -320,7 +323,7 @@ namespace Neo4j.Driver.Tests
                         x =>
                             x.BeginTransactionAsync(
                                 It.IsAny<IConnection>(),
-                                It.IsAny<BeginProtocolParams>()))
+                                It.IsAny<BeginTransactionParams>()))
                     .Throws(new IOException("Triggered an error when beginTx"));
 
                 var session = NewSession(mockConn.Object);
@@ -392,12 +395,9 @@ namespace Neo4j.Driver.Tests
             {
                 var driver = new Internal.Driver(
                     new Uri("neo4j://myTest.org"),
-                    false,
                     new TestConnectionProvider(Mock.Of<IConnection>()),
                     null,
-                    null,
-                    null,
-                    Config.Default);
+                    TestDriverContext.MockContext);
 
                 return driver;
             }
@@ -413,7 +413,7 @@ namespace Neo4j.Driver.Tests
 
             private IConnection Connection { get; }
             private AccessMode Mode { get; set; }
-            public IDictionary<string, string> RoutingContext { get; set; }
+            public IDictionary<string, string> RoutingContext { get; }
 
             public Task<IConnection> AcquireAsync(
                 AccessMode mode,
@@ -430,10 +430,10 @@ namespace Neo4j.Driver.Tests
                 throw new NotSupportedException();
             }
 
-            public ConnectionSettings ConnectionSettings => new(
+            public DriverContext DriverContext => new(
                 new Uri("neo4j://myTest.org"),
                 AuthTokenManagers.Static(AuthTokens.None),
-                Config.Default);
+                new Config());
 
             public Task<bool> SupportsMultiDbAsync()
             {
@@ -483,7 +483,7 @@ namespace Neo4j.Driver.Tests
                     .WithBookmarkManager(bookmarkManager.Object)
                     .Build();
 
-                using (var session = new AsyncSession(null, null, null, 0, cfg, false))
+                using (var session = new AsyncSession(null, null, null, 0, cfg, false, false))
                 {
                     session.UpdateBookmarks(new InternalBookmarks("a"));
                     bookmarkManager.Verify(

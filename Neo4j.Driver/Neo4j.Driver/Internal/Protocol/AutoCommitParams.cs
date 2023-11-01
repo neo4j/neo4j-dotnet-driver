@@ -31,4 +31,5 @@ internal sealed record AutoCommitParams
 
     public SessionConfig SessionConfig { get; init; }
     public long FetchSize { get; init; } = Neo4j.Driver.Config.Infinite;
+    public TransactionInfo TransactionInfo { get; set; }
 }

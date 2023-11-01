@@ -28,7 +28,7 @@ internal interface ISocketClient : IAsyncDisposable
 {
     BoltProtocolVersion Version { get; }
     bool IsOpen { get; }
-    Task ConnectAsync(IDictionary<string, string> routingContext, CancellationToken token = default);
+    Task ConnectAsync(CancellationToken token = default);
     Task SendAsync(IEnumerable<IRequestMessage> messages);
     Task ReceiveAsync(IResponsePipeline responsePipeline);
     Task ReceiveOneAsync(IResponsePipeline responsePipeline);

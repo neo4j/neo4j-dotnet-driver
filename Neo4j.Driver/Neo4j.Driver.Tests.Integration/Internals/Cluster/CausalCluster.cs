@@ -20,7 +20,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using Neo4j.Driver.Preview.Auth;
 
 namespace Neo4j.Driver.IntegrationTests.Internals;
 

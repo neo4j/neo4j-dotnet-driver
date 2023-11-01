@@ -101,7 +101,7 @@ internal class ConnectionValidator : IConnectionValidator
 
     private void RestartIdleTimer(IPooledConnection connection)
     {
-        if (_connIdleTimeout.IsTimeoutDetectionEnabled())
+        if (IsTimeoutDetectionEnabled(_connIdleTimeout))
         {
             connection.IdleTimer.Start();
         }
@@ -109,7 +109,7 @@ internal class ConnectionValidator : IConnectionValidator
 
     private void ResetIdleTimer(IPooledConnection connection)
     {
-        if (_connIdleTimeout.IsTimeoutDetectionEnabled())
+        if (IsTimeoutDetectionEnabled(_connIdleTimeout))
         {
             connection.IdleTimer.Reset();
         }
@@ -117,7 +117,7 @@ internal class ConnectionValidator : IConnectionValidator
 
     private bool HasBeenAliveForTooLong(IPooledConnection connection)
     {
-        if (_maxConnLifetime.IsTimeoutDetectionDisabled())
+        if (IsTimeoutDetectionDisabled(_maxConnLifetime))
         {
             return false;
         }
@@ -132,7 +132,7 @@ internal class ConnectionValidator : IConnectionValidator
 
     private bool HasBeenIdleForTooLong(IPooledConnection connection)
     {
-        if (_connIdleTimeout.IsTimeoutDetectionDisabled())
+        if (IsTimeoutDetectionDisabled(_connIdleTimeout))
         {
             return false;
         }
@@ -144,4 +144,8 @@ internal class ConnectionValidator : IConnectionValidator
 
         return false;
     }
+
+    public static bool IsTimeoutDetectionEnabled(TimeSpan timeout) => timeout.TotalMilliseconds >= 0;
+    
+    public static bool IsTimeoutDetectionDisabled(TimeSpan timeout) => !IsTimeoutDetectionEnabled(timeout);
 }

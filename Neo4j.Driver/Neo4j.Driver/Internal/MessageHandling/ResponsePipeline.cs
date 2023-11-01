@@ -126,33 +126,33 @@ internal sealed class ResponsePipeline : IResponsePipeline
 
     private void LogSuccess(IDictionary<string, object> meta)
     {
-        if (_logger != null && _logger.IsDebugEnabled())
+        if (_logger.IsDebugEnabled())
         {
-            _logger?.Debug(MessagePattern, new SuccessMessage(meta));
+            _logger.Debug(MessagePattern, new SuccessMessage(meta));
         }
     }
 
     private void LogRecord(object[] fields)
     {
-        if (_logger != null && _logger.IsDebugEnabled())
+        if (_logger.IsDebugEnabled())
         {
-            _logger?.Debug(MessagePattern, new RecordMessage(fields));
+            _logger.Debug(MessagePattern, new RecordMessage(fields));
         }
     }
 
     private void LogFailure(string code, string message)
     {
-        if (_logger != null && _logger.IsDebugEnabled())
+        if (_logger.IsDebugEnabled())
         {
-            _logger?.Debug(MessagePattern, new FailureMessage(code, message));
+            _logger.Debug(MessagePattern, new FailureMessage(code, message));
         }
     }
 
     private void LogIgnored()
     {
-        if (_logger != null && _logger.IsDebugEnabled())
+        if (_logger.IsDebugEnabled())
         {
-            _logger?.Debug(MessagePattern, IgnoredMessage.Instance);
+            _logger.Debug(MessagePattern, IgnoredMessage.Instance);
         }
     }
 }

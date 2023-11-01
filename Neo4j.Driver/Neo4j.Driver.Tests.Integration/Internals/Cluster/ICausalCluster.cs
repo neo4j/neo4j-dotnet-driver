@@ -16,7 +16,6 @@
 // limitations under the License.
 
 using System;
-using Neo4j.Driver.Preview.Auth;
 
 namespace Neo4j.Driver.IntegrationTests.Internals;
 

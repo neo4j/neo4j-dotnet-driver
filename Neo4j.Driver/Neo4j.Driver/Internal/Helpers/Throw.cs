@@ -21,16 +21,6 @@ namespace Neo4j.Driver.Internal;
 
 internal static class Throw
 {
-    public static class ObjectDisposedException
-    {
-        public static System.ObjectDisposedException GetDriverDisposedException(string typeName)
-        {
-            return new System.ObjectDisposedException(
-                typeName,
-                "Failed to acquire a new connection as the driver has already been disposed.");
-        }
-    }
-
     public static class ProtocolException
     {
         public static void IfNotEqual(int first, int second, string firstParam, string secondParam)
@@ -69,17 +59,6 @@ internal static class Throw
 
     public static class ArgumentOutOfRangeException
     {
-        public static void IfValueLessThan(long value, long limit, string parameterName)
-        {
-            if (value < limit)
-            {
-                throw new System.ArgumentOutOfRangeException(
-                    parameterName,
-                    value,
-                    $"Value given ({value}) cannot be less than {limit}.");
-            }
-        }
-
         public static void IfFalse(bool value, string nameofValue)
         {
             if (!value)

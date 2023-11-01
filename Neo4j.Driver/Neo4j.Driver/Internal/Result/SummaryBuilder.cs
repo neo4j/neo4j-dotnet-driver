@@ -347,6 +347,8 @@ internal class Notification : INotification
                 "unsupported" => NotificationCategory.Unsupported,
                 "performance" => NotificationCategory.Performance,
                 "deprecation" => NotificationCategory.Deprecation,
+                "security" => NotificationCategory.Security,
+                "topology" => NotificationCategory.Topology,
                 "generic" => NotificationCategory.Generic,
                 var _ => NotificationCategory.Unknown
             };

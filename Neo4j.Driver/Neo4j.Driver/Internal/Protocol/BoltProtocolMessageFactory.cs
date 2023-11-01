@@ -19,6 +19,7 @@ using System;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Telemetry;
 
 namespace Neo4j.Driver.Internal;
 
@@ -54,6 +55,8 @@ internal interface IBoltProtocolMessageFactory
         TransactionConfig config,
         AccessMode mode,
         INotificationsConfig notificationsConfig);
+
+    TelemetryMessage NewTelemetryMessage(IConnection connection, TransactionInfo info);
 }
 
 internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
@@ -82,6 +85,11 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
         INotificationsConfig notificationsConfig)
     {
         return new RunWithMetadataMessage(connection.Version, query, notificationsConfig: notificationsConfig);
+    }
+
+    public TelemetryMessage NewTelemetryMessage(QueryApiType apiUsage)
+    {
+        return new TelemetryMessage(apiUsage);
     }
 
     public PullMessage NewPullMessage(long fetchSize)
@@ -161,5 +169,10 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
             mode,
             connection.SessionConfig,
             notificationsConfig);
+    }
+
+    public TelemetryMessage NewTelemetryMessage(IConnection connection, TransactionInfo info)
+    {
+        return new TelemetryMessage(info.ApiType);
     }
 }

@@ -30,7 +30,7 @@ internal static class DriverLoggerUtil
         }
         catch (Exception ex)
         {
-            logger?.Error(ex, message);
+            logger.Error(ex, message);
             throw;
         }
     }
@@ -43,7 +43,7 @@ internal static class DriverLoggerUtil
         }
         catch (Exception ex)
         {
-            logger?.Error(ex, message);
+            logger.Error(ex, message);
             throw;
         }
     }

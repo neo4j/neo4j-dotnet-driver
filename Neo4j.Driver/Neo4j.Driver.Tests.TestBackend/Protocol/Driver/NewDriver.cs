@@ -19,7 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Neo4j.Driver.Preview.Auth;
+using Neo4j.Driver.Auth;
 using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
@@ -157,6 +157,11 @@ internal class NewDriver : IProtocolObject
             }
         }
 
+        if(data.telemetryDisabled.HasValue && data.telemetryDisabled.Value)
+        {
+            configBuilder.WithTelemetryDisabled();
+        }
+
         var logger = new SimpleLogger();
         configBuilder.WithLogger(logger);
     }
@@ -181,6 +186,7 @@ internal class NewDriver : IProtocolObject
         public int connectionTimeoutMs { get; set; } = -1;
         public int? maxConnectionPoolSize { get; set; }
         public int? connectionAcquisitionTimeoutMs { get; set; }
+        public bool? telemetryDisabled { get; set; }
 
         public string[] trustedCertificates
         {

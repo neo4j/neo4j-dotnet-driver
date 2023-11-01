@@ -21,6 +21,7 @@ using System.IO;
 using System.Linq;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.IO.Utils;
 using Xunit;
 
@@ -279,8 +280,8 @@ namespace Neo4j.Driver.Internal.IO
         {
             var buffer = Enumerable.Range(0, messageSize).Select(i => i % byte.MaxValue).Select(i => (byte)i).ToArray();
             var stream = new MemoryStream();
-            var settings = new BufferSettings(Config.Default);
-            var writer = new ChunkWriter(stream, settings, new Mock<ILogger>().Object);
+            var cs = new DriverContext(new Uri("bolt://localhost:7687"), new StaticAuthTokenManager(AuthTokens.None), new Config());
+            var writer = new ChunkWriter(stream, cs, new Mock<ILogger>().Object);
 
             writer.OpenChunk();
             writer.Write(buffer, 0, buffer.Length);

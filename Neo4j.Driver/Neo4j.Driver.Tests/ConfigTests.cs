@@ -17,6 +17,7 @@
 
 using System;
 using FluentAssertions;
+using Moq;
 using Neo4j.Driver.Internal.Connector.Trust;
 using Neo4j.Driver.Internal.Logging;
 using Xunit;
@@ -30,7 +31,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void DefaultConfigShouldGiveCorrectValueBack()
             {
-                var config = Config.Default;
+                var config = new Config();
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeNull();
                 config.Logger.Should().BeOfType<NullLogger>();
@@ -57,7 +58,7 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldDefaultToNoEncryptionAndNoTrust()
             {
-                var config = Config.Default;
+                var config = new Config();
                 config.NullableEncryptionLevel.Should().BeNull();
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeNull();
@@ -110,10 +111,21 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void WithLoggingShouldModifyTheSingleValue()
             {
+                var mockLogger = new Mock<ILogger>();
+                var config = Config.Builder.WithLogger(mockLogger.Object).Build();
+                config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+                config.TrustManager.Should().BeNull();
+                config.Logger.Should().Be(mockLogger.Object);
+                config.MaxIdleConnectionPoolSize.Should().Be(100);
+            }
+
+            [Fact]
+            public void WithLoggingShouldRemainNullSafe()
+            {
                 var config = Config.Builder.WithLogger(null).Build();
                 config.EncryptionLevel.Should().Be(EncryptionLevel.None);
                 config.TrustManager.Should().BeNull();
-                config.Logger.Should().BeNull();
+                config.Logger.Should().Be(NullLogger.Instance);
                 config.MaxIdleConnectionPoolSize.Should().Be(100);
             }
 
@@ -151,11 +163,12 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ChangingNewConfigShouldNotAffectOtherConfig()
             {
-                var config = Config.Default;
+                var config = new Config();
                 var config1 = Config.Builder.WithMaxIdleConnectionPoolSize(3).Build();
-                var config2 = Config.Builder.WithLogger(null).Build();
+                var mockLogger = new Mock<ILogger>();
+                var config2 = Config.Builder.WithLogger(mockLogger.Object).Build();
 
-                config2.Logger.Should().BeNull();
+                config2.Logger.Should().Be(mockLogger.Object);
                 config2.MaxIdleConnectionPoolSize.Should().Be(100);
 
                 config1.MaxIdleConnectionPoolSize.Should().Be(3);

@@ -16,8 +16,6 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal;
@@ -27,43 +25,28 @@ internal interface IPooledConnectionFactory
     IPooledConnection Create(
         Uri uri,
         IConnectionReleaseManager releaseManager,
-        SocketSettings socketSettings,
-        IAuthToken authToken,
-        IAuthTokenManager authTokenManager,
-        string userAgent,
-        IDictionary<string, string> routingContext);
+        IAuthToken authToken);
 }
 
 internal class PooledConnectionFactory : IPooledConnectionFactory
 {
-    private readonly BufferSettings _bufferSettings;
-    private readonly ILogger _logger;
+    private readonly DriverContext _driverContext;
 
-    public PooledConnectionFactory(BufferSettings bufferSettings, ILogger logger)
+    public PooledConnectionFactory(DriverContext driverContext)
     {
-        _bufferSettings = bufferSettings ?? throw new ArgumentNullException(nameof(bufferSettings));
-        _logger = logger;
+        _driverContext = driverContext;
     }
 
     public IPooledConnection Create(
         Uri uri,
         IConnectionReleaseManager releaseManager,
-        SocketSettings socketSettings,
-        IAuthToken authToken,
-        IAuthTokenManager authTokenManager,
-        string userAgent,
-        IDictionary<string, string> routingContext)
+        IAuthToken authToken)
     {
         return new PooledConnection(
             new SocketConnection(
                 uri,
-                socketSettings,
-                authToken,
-                userAgent,
-                _bufferSettings,
-                routingContext,
-                authTokenManager,
-                _logger),
+                _driverContext,
+                authToken),
             releaseManager ?? throw new ArgumentNullException(nameof(releaseManager)));
     }
 }

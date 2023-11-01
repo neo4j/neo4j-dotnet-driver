@@ -25,6 +25,7 @@ using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.MessageHandling.V3;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.Internal.Telemetry;
 using Neo4j.Driver.Internal.Types;
 using Xunit;
 using Record = Xunit.Record;
@@ -170,7 +171,8 @@ namespace Neo4j.Driver.Internal.Protocol
                             It.IsAny<IBookmarksTracker>(),
                             It.IsAny<IResultResourceHandler>(),
                             It.IsAny<long>(),
-                            It.IsAny<bool>()))
+                            It.IsAny<bool>(),
+                            It.IsAny<IInternalAsyncTransaction>()))
                     .Returns(resultCursorBuilderMock.Object);
 
                 var protocol = new BoltProtocolV3(msgFactory.Object, handlerFactory.Object);
@@ -347,7 +349,8 @@ namespace Neo4j.Driver.Internal.Protocol
                             It.IsAny<IBookmarksTracker>(),
                             It.IsAny<IResultResourceHandler>(),
                             It.IsAny<long>(),
-                            It.IsAny<bool>()))
+                            It.IsAny<bool>(),
+                            It.IsAny<IInternalAsyncTransaction>()))
                     .Returns(resultCursorBuilderMock.Object);
 
                 var protocol = new BoltProtocolV3(msgFactory.Object, handlerFactory.Object);
@@ -362,7 +365,8 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         mockRrh.Object,
                         Config.Infinite,
-                        false),
+                        false,
+                        It.IsAny<IInternalAsyncTransaction>()),
                     Times.Once);
 
                 mockConn.Verify(
@@ -394,13 +398,13 @@ namespace Neo4j.Driver.Internal.Protocol
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocolV3.Instance.BeginTransactionAsync(
                         mockConn.Object,
-                        new BeginProtocolParams(
+                        new BeginTransactionParams(
                         null,
                         null,
                         TransactionConfig.Default,
                         null,
                         null,
-                        true)));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
 
                 exception.Should().BeOfType<ArgumentException>();
             }
@@ -418,13 +422,13 @@ namespace Neo4j.Driver.Internal.Protocol
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocolV3.Instance.BeginTransactionAsync(
                         mockConn.Object,
-                        new BeginProtocolParams(
+                        new BeginTransactionParams(
                         null,
                         null,
                         TransactionConfig.Default,
                         null,
                         new NotificationsDisabledConfig(),
-                        true)));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
 
                 exception.Should().BeOfType<ArgumentOutOfRangeException>();
             }
@@ -441,13 +445,13 @@ namespace Neo4j.Driver.Internal.Protocol
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocolV3.Instance.BeginTransactionAsync(
                         mockConn.Object,
-                        new BeginProtocolParams(
+                        new BeginTransactionParams(
                         null,
                         null,
                         TransactionConfig.Default,
                         null,
                         new NotificationsDisabledConfig(),
-                        true)));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
 
                 exception.Should().BeNull();
             }
@@ -461,13 +465,13 @@ namespace Neo4j.Driver.Internal.Protocol
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocolV3.Instance.BeginTransactionAsync(
                         mockConn.Object,
-                        new BeginProtocolParams(
+                        new BeginTransactionParams(
                         "db",
                         null,
                         TransactionConfig.Default,
                         null,
                         null,
-                        true)));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
 
                 exception.Should().BeOfType<ClientException>();
             }
@@ -482,13 +486,13 @@ namespace Neo4j.Driver.Internal.Protocol
                 var exception = await Record.ExceptionAsync(
                     () => BoltProtocolV3.Instance.BeginTransactionAsync(
                         mockConn.Object,
-                        new BeginProtocolParams(
+                        new BeginTransactionParams(
                         null,
                         null,
                         TransactionConfig.Default,
                         null,
                         null,
-                        true)));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
 
                 exception.Should().BeOfType<InvalidOperationException>();
             }
@@ -518,13 +522,13 @@ namespace Neo4j.Driver.Internal.Protocol
                 var bookmarks = new InternalBookmarks();
                 await protocol.BeginTransactionAsync(
                     mockConn.Object,
-                    new BeginProtocolParams(
+                    new BeginTransactionParams(
                     null,
                     bookmarks,
                     tc,
                     null,
                     null,
-                    true));
+                    new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)));
 
                 msgFactory.Verify(
                     x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
@@ -563,13 +567,13 @@ namespace Neo4j.Driver.Internal.Protocol
                 var bookmarks = new InternalBookmarks();
                 await protocol.BeginTransactionAsync(
                     mockConn.Object,
-                    new BeginProtocolParams(
+                    new BeginTransactionParams(
                         null,
                         bookmarks,
                         tc,
                         null,
                         null,
-                        false));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, false)));
 
                 msgFactory.Verify(
                     x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
@@ -625,11 +629,13 @@ namespace Neo4j.Driver.Internal.Protocol
                             It.IsAny<IBookmarksTracker>(),
                             It.IsAny<IResultResourceHandler>(),
                             It.IsAny<long>(),
-                            It.IsAny<bool>()))
+                            It.IsAny<bool>(),
+                            It.IsAny<IInternalAsyncTransaction>()))
                     .Returns(resultCursorBuilderMock.Object);
 
                 var protocol = new BoltProtocolV3(msgFactory.Object, handlerFactory.Object);
-                await protocol.RunInExplicitTransactionAsync(mockConn.Object, query, false);
+                var mockTransaction = new Mock<IInternalAsyncTransaction>();
+                await protocol.RunInExplicitTransactionAsync(mockConn.Object, query, false, 0L, mockTransaction.Object);
 
                 handlerFactory.Verify(
                     x => x.NewResultCursorBuilder(
@@ -640,7 +646,8 @@ namespace Neo4j.Driver.Internal.Protocol
                         null,
                         null,
                         Config.Infinite,
-                        false),
+                        false,
+                        It.IsAny<IInternalAsyncTransaction>()),
                     Times.Once);
 
                 mockConn.Verify(

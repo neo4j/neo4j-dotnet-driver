@@ -23,9 +23,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Preview.Auth;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Routing;
 using Xunit;
@@ -44,22 +43,15 @@ namespace Neo4j.Driver.Tests.Routing
                 var uri = new Uri("bolt://123:456");
                 var uris = new HashSet<Uri> { uri };
                 var connFactory = new Mock<IPooledConnectionFactory>().Object;
-                var poolSettings = new ConnectionPoolSettings(Config.Default);
-                var routingSetting = new RoutingSettings(uri, new Dictionary<string, string>(), Config.Default);
-                var connectionSettings = new ConnectionSettings(
+                var driverContext = new DriverContext(
                     uri,
                     AuthTokenManagers.None,
-                    Config.Default,
-                    new DefaultHostResolver(false));
+                    new Config());
 
                 var pool = new ClusterConnectionPool(
                     uris,
                     connFactory,
-                    routingSetting,
-                    poolSettings,
-                    connectionSettings,
-                    null,
-                    null);
+                    driverContext);
 
                 pool.ToString().Should().Contain("bolt://123:456/");
 
@@ -98,7 +90,7 @@ namespace Neo4j.Driver.Tests.Routing
                 // Given
                 var mockedConnectionPool = new Mock<IConnectionPool>();
                 var mockedConnection = new Mock<IPooledConnection>();
-                mockedConnection.Setup(c => c.InitAsync(null, It.IsAny<SessionConfig>(), CancellationToken.None))
+                mockedConnection.Setup(c => c.InitAsync(It.IsAny<SessionConfig>(), CancellationToken.None))
                     .Returns(Task.FromException(new InvalidOperationException("An exception")));
 
                 mockedConnectionPool.Setup(
@@ -124,7 +116,7 @@ namespace Neo4j.Driver.Tests.Routing
                     await Record.ExceptionAsync(() => connection.InitAsync(null));
 
                 mockedConnection.Verify(
-                    c => c.InitAsync(null, It.IsAny<SessionConfig>(), CancellationToken.None),
+                    c => c.InitAsync(It.IsAny<SessionConfig>(), CancellationToken.None),
                     Times.Once);
 
                 exception.Should().BeOfType<InvalidOperationException>();

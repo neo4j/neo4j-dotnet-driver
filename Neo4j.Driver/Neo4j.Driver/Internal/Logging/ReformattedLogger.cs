@@ -25,29 +25,29 @@ internal abstract class ReformattedLogger : ILogger
 
     protected ReformattedLogger(ILogger logger)
     {
-        _delegate = logger;
+        _delegate = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public void Error(Exception cause, string message, params object[] args)
     {
-        _delegate?.Error(cause, Reformat(message), args);
+        _delegate.Error(cause, Reformat(message), args);
     }
 
     public void Warn(Exception cause, string message, params object[] args)
     {
-        _delegate?.Warn(cause, Reformat(message), args);
+        _delegate.Warn(cause, Reformat(message), args);
     }
 
     public void Info(string message, params object[] args)
     {
-        _delegate?.Info(Reformat(message), args);
+        _delegate.Info(Reformat(message), args);
     }
 
     public void Debug(string message, params object[] args)
     {
         if (IsDebugEnabled())
         {
-            _delegate?.Debug(Reformat(message), args);
+            _delegate.Debug(Reformat(message), args);
         }
     }
 
@@ -55,13 +55,13 @@ internal abstract class ReformattedLogger : ILogger
     {
         if (IsTraceEnabled())
         {
-            _delegate?.Trace(Reformat(message), args);
+            _delegate.Trace(Reformat(message), args);
         }
     }
 
     public bool IsTraceEnabled()
     {
-        return _delegate != null && _delegate.IsTraceEnabled();
+        return _delegate.IsTraceEnabled();
     }
 
     public bool IsDebugEnabled()

@@ -18,7 +18,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Preview.Auth;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Util;
@@ -67,7 +67,6 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
     void Configure(string database, AccessMode? mode);
 
     Task InitAsync(
-        INotificationsConfig notificationsConfig,
         SessionConfig sessionConfig = null,
         CancellationToken cancellationToken = default);
 
@@ -103,6 +102,7 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
 
     void SetUseUtcEncodedDateTime();
     ValueTask ValidateCredsAsync();
+    bool TelemetryEnabled { get; set; }
 }
 
 internal interface IConnectionRunner
@@ -123,9 +123,10 @@ internal interface IConnectionRunner
         AutoCommitParams autoCommitParams,
         INotificationsConfig notificationsConfig);
 
-    Task BeginTransactionAsync(BeginProtocolParams beginParams);
+    Task BeginTransactionAsync(BeginTransactionParams beginParams);
 
-    Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize);
+    Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize,
+        IInternalAsyncTransaction transaction);
     Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker);
     Task RollbackTransactionAsync();
 }

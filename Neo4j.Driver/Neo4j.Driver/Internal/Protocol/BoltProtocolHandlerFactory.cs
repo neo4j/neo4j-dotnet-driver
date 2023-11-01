@@ -35,7 +35,8 @@ internal interface IBoltProtocolHandlerFactory
         IBookmarksTracker bookmarksTracker,
         IResultResourceHandler resultResourceHandler,
         long fetchSize,
-        bool reactive);
+        bool reactive,
+        IInternalAsyncTransaction transaction);
 
     RunResponseHandler NewRunResponseHandler(IResultCursorBuilder streamBuilder, SummaryBuilder summaryBuilder);
 
@@ -56,6 +57,8 @@ internal interface IBoltProtocolHandlerFactory
         IResultCursorBuilder streamBuilder,
         SummaryBuilder summaryBuilder,
         IBookmarksTracker bookmarksTracker);
+    
+    TelemetryResponseHandler NewTelemetryResponseHandler(TransactionInfo info);
 }
 
 internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
@@ -70,7 +73,8 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
         IBookmarksTracker bookmarksTracker,
         IResultResourceHandler resultResourceHandler,
         long fetchSize,
-        bool reactive)
+        bool reactive,
+        IInternalAsyncTransaction transaction)
     {
         return new ResultCursorBuilder(
             summaryBuilder,
@@ -79,7 +83,8 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
             cancelRequest?.Invoke(connection, summaryBuilder, bookmarksTracker),
             resultResourceHandler,
             fetchSize,
-            reactive);
+            reactive,
+            transaction);
     }
 
     public RunResponseHandler NewRunResponseHandler(IResultCursorBuilder streamBuilder, SummaryBuilder summaryBuilder)
@@ -123,5 +128,10 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
         IBookmarksTracker bookmarksTracker)
     {
         return new PullAllResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
+    }
+
+    public TelemetryResponseHandler NewTelemetryResponseHandler(TransactionInfo info)
+    {
+        return new TelemetryResponseHandler(info);
     }
 }

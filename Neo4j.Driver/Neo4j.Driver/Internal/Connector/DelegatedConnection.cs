@@ -19,7 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Preview.Auth;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Util;
@@ -38,8 +38,6 @@ internal abstract class DelegatedConnection : IConnection
     public AccessMode? Mode => Delegate.Mode;
 
     public string Database => Delegate.Database;
-
-    public IDictionary<string, string> RoutingContext => Delegate.RoutingContext;
 
     public ValueTask<bool> NotifySecurityExceptionAsync(SecurityException exception)
     {
@@ -82,6 +80,7 @@ internal abstract class DelegatedConnection : IConnection
         }
     }
 
+    public IDictionary<string, string> RoutingContext => Delegate.RoutingContext;
     public BoltProtocolVersion Version => Delegate.Version;
 
     public IAuthTokenManager AuthTokenManager => Delegate.AuthTokenManager;
@@ -97,13 +96,12 @@ internal abstract class DelegatedConnection : IConnection
     }
 
     public async Task InitAsync(
-        INotificationsConfig notificationsConfig,
         SessionConfig sessionConfig = null,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            await Delegate.InitAsync(notificationsConfig, sessionConfig, cancellationToken).ConfigureAwait(false);
+            await Delegate.InitAsync(sessionConfig, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -194,6 +192,13 @@ internal abstract class DelegatedConnection : IConnection
         return Delegate.ValidateCredsAsync();
     }
 
+    /// <inheritdoc />
+    public bool TelemetryEnabled
+    {
+        get => Delegate.TelemetryEnabled;
+        set => Delegate.TelemetryEnabled = value;
+    }
+
     public Task LoginAsync(string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
     {
         return BoltProtocol.AuthenticateAsync(this, userAgent, authToken, notificationsConfig);
@@ -224,14 +229,15 @@ internal abstract class DelegatedConnection : IConnection
         return BoltProtocol.RunInAutoCommitTransactionAsync(this, autoCommitParams, notificationsConfig);
     }
 
-    public Task BeginTransactionAsync(BeginProtocolParams beginProtocolParams)
+    public Task BeginTransactionAsync(BeginTransactionParams beginTransactionParams)
     {
-        return BoltProtocol.BeginTransactionAsync(this, beginProtocolParams);
+        return BoltProtocol.BeginTransactionAsync(this, beginTransactionParams);
     }
 
-    public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize)
+    public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize,
+        IInternalAsyncTransaction transaction)
     {
-        return BoltProtocol.RunInExplicitTransactionAsync(this, query, reactive, fetchSize);
+        return BoltProtocol.RunInExplicitTransactionAsync(this, query, reactive, fetchSize, transaction);
     }
 
     public Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker)

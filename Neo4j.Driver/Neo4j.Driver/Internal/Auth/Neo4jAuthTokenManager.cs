@@ -20,7 +20,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Services;
-using Neo4j.Driver.Preview.Auth;
+using Neo4j.Driver.Auth;
 
 namespace Neo4j.Driver.Internal.Auth;
 
