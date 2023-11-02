@@ -149,9 +149,8 @@ namespace Neo4j.Driver.Internal.MessageHandling
             pipeline.Verify(x => x.OnSuccess(It.IsAny<Dictionary<string, object>>()), Times.Once);
         }
 
-
         [Fact]
-        public async Task ShouldStopReadingOnFailure()
+        public async Task ShouldStopReadAllMessagesAfterAFailure()
         {
             var message =
                 new byte[]
@@ -170,7 +169,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                     PackStream.String8, 1, Encoding.UTF8.GetBytes("b")[0],
                     // 24  bytes
                     0x00, 0x00,
-                    // Ignored, this should not be read yet.
+                    // Ignored.
                     0x00, 0x02,
                     PackStream.TinyStruct, MessageFormat.MsgIgnored,
                     0x00, 0x00
@@ -180,13 +179,15 @@ namespace Neo4j.Driver.Internal.MessageHandling
             
             var memoryStream = new MemoryStream(message);
             var pipereader = new PipelinedMessageReader(memoryStream, TestDriverContext.MockContext, -1);
-            var pipeline = MockPipeline();
+            var done = (object)false;
+            var pipeline = new Mock<IResponsePipeline>();
+            pipeline.Setup(x => x.OnIgnored()).Callback(() => done = true);
+            pipeline.SetupGet(x => x.HasNoPendingMessages).Returns(() => (bool)done);
             await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0,
                 TestDriverContext.MockContext));
             pipeline.Verify(x => x.OnFailure("a", "b"), Times.Once);
-            pipeline.Verify(x => x.OnIgnored(), Times.Never);
+            pipeline.Verify(x => x.OnIgnored(), Times.Once);
         }
-
 
         [Fact]
         public async Task ShouldReadLargeMessages()
