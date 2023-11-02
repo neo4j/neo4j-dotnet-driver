@@ -69,21 +69,13 @@ internal sealed class PipelinedMessageReader : IMessageReader
                 // TODO: Optimize messages and dispatching to avoid allocations.
                 // Dispatch the message to the pipeline, which will handle it.
                 message.Dispatch(pipeline);
-
-                // If the message is a failure message the connection requires reset and subsequent messages can be
-                // ignored.
-                if (message is FailureMessage)
-                {
-                    break;
-                }
             }
 
             await pipeReader.CompleteAsync().ConfigureAwait(false);
         }
-        catch (IOException io)
+        catch (IOException)
         {
-            await pipeReader.CompleteAsync(io).ConfigureAwait(false);
-            _stream.Close();
+            await pipeReader.CompleteAsync().ConfigureAwait(false);
             // If the exception is an IO exception, the connection requires reset and subsequent messages can be
             // ignored.
             throw;
