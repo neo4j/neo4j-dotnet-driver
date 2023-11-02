@@ -23,36 +23,7 @@ using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.IO;
 
-internal interface IPackStreamReader
-{
-    ByteBuffers Buffers { get; }
-    MessageFormat Format { get; }
-    
-    object Read();
-    IResponseMessage ReadMessage();
-    Dictionary<string, object> ReadMap();
-    IList<object> ReadList();
-    object ReadStruct();
-    object ReadNull();
-    bool ReadBoolean();
-    int ReadInteger();
-    long ReadLong();
-    double ReadDouble();
-    string ReadString();
-    byte[] ReadBytes();
-    long ReadMapHeader();
-    long ReadListHeader();
-    byte ReadStructSignature();
-    long ReadStructHeader();
-    byte NextByte();
-    short NextShort();
-    int NextInt();
-    long NextLong();
-    double NextDouble();
-    byte PeekByte();
-}
-
-internal sealed class PackStreamReader : IPackStreamReader
+internal sealed class PackStreamReader
 {
     public ByteBuffers Buffers { get; }
     public MessageFormat Format { get; }
