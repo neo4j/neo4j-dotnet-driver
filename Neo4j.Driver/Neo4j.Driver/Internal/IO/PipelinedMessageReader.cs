@@ -54,7 +54,6 @@ internal sealed class PipelinedMessageReader : IMessageReader
     public async ValueTask ReadAsync(IResponsePipeline pipeline, MessageFormat format)
     {
         var pipeReader = PipeReader.Create(_stream, _options);
-
         try
         {
             while (!pipeline.HasNoPendingMessages)
@@ -76,9 +75,11 @@ internal sealed class PipelinedMessageReader : IMessageReader
         catch (IOException)
         {
             await pipeReader.CompleteAsync().ConfigureAwait(false);
-            // If the exception is an IO exception, the connection requires reset and subsequent messages can be
-            // ignored.
-            throw;
+            // if we received a failure message, then IOException it can be the server closed the connection.
+            if (!pipeline.PendingFailure)
+            {
+                throw;
+            }
         }
         catch (OperationCanceledException canceledException)
         {
