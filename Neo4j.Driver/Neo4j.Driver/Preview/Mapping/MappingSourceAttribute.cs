@@ -50,7 +50,7 @@ internal record EntityMappingInfo(string Path, EntityMappingSource EntityMapping
 /// marked property. This attribute does not affect custom-defined mappers. A path may consist of the name of the
 /// field to be mapped, or a dot-separated path to a nested field.
 /// </summary>
-[AttributeUsage(AttributeTargets.Property)]
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public class MappingSourceAttribute : Attribute
 {
     internal EntityMappingInfo EntityMappingInfo { get; }
@@ -69,6 +69,16 @@ public class MappingSourceAttribute : Attribute
         EntityMappingInfo = new EntityMappingInfo(path, EntityMappingSource.Property);
     }
 
+    /// <summary>
+    /// Instructs the default mapper to use a different field than the property name when mapping a value to the
+    /// marked property.
+    /// </summary>
+    /// <param name="key">
+    /// Identifier for the value in the field in the record. If the path is a dot-separated path, then the
+    /// first part of the path is the key for the entity (or dictionary) field in the record, and the
+    /// last part is the key within that entity or dictionary.
+    /// </param>
+    /// <param name="entityMappingSource">The source of the value to be mapped.</param>
     public MappingSourceAttribute(string key, EntityMappingSource entityMappingSource)
     {
         EntityMappingInfo = new EntityMappingInfo(key, entityMappingSource);

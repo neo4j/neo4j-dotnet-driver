@@ -33,7 +33,7 @@ public interface IMappingRegistry
     /// a fluent API for defining the mapping.</param>
     /// <typeparam name="T">The type to be mapped.</typeparam>
     /// <returns>This instance for method chaining.</returns>
-    IMappingRegistry RegisterMapping<T>(Action<IMappingBuilder<T>> mappingBuilder) where T : new();
+    IMappingRegistry RegisterMapping<T>(Action<IMappingBuilder<T>> mappingBuilder);
 }
 
 /// <summary>
@@ -67,7 +67,7 @@ public class RecordObjectMapping : IMappingRegistry
         Instance._mappers[typeof(T)] = mapper;
     }
 
-    internal static IRecordMapper<T> GetMapper<T>() where T : new()
+    internal static IRecordMapper<T> GetMapper<T>()
     {
         return (IRecordMapper<T>)GetMapperForType(typeof(T));
     }
@@ -91,7 +91,7 @@ public class RecordObjectMapping : IMappingRegistry
     /// <param name="record">The record to be mapped.</param>
     /// <typeparam name="T">The type of object to be mapped.</typeparam>
     /// <returns>The mapped object.</returns>
-    public static T Map<T>(IRecord record) where T : new()
+    public static T Map<T>(IRecord record)
     {
         return GetMapper<T>().Map(record);
     }

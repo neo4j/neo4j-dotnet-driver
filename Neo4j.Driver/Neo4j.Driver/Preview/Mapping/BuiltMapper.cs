@@ -16,32 +16,28 @@
 // limitations under the License.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
 namespace Neo4j.Driver.Preview.Mapping;
 
-internal class BuiltMapper<T> : IRecordMapper<T> where T : new()
+internal class BuiltMapper<T> : IRecordMapper<T>
 {
-    private readonly IMappingSourceDelegateBuilder _mappingSourceDelegateBuilder = new MappingSourceDelegateBuilder();
+    private readonly IMappableValueProvider _mappableValueProvider = new MappableValueProvider();
 
     private Func<IRecord, T> _wholeObjectMapping;
-    private readonly List<Action<T, IRecord>> _recordMappings = new();
-
-    private readonly MethodInfo _asGenericMethod =
-        typeof(ValueExtensions).GetMethod(nameof(ValueExtensions.As), new[] { typeof(object) });
+    private readonly List<Action<T, IRecord>> _propertyMappings = new();
 
     public T Map(IRecord record)
     {
         // if there's a whole-object mapping, use it, otherwise create a new object
         var obj = _wholeObjectMapping is not null
             ? _wholeObjectMapping(record)
-            : new T();
+            : CreateObject<T>();
 
         // if there are individual mappings for the properties, apply them
-        foreach (var mapping in _recordMappings)
+        foreach (var mapping in _propertyMappings)
         {
             mapping(obj, record);
         }
@@ -49,9 +45,65 @@ internal class BuiltMapper<T> : IRecordMapper<T> where T : new()
         return obj;
     }
 
+    private static T CreateObject<T>()
+    {
+        // check for parameterless constructor
+        var constructor = typeof(T).GetConstructor(Type.EmptyTypes);
+        if (constructor is null)
+        {
+            throw new InvalidOperationException(
+                $"Cannot create an instance of type {typeof(T).Name} " +
+                $"because it does not have a parameterless constructor.");
+        }
+
+        return (T)constructor.Invoke(Array.Empty<object>());
+    }
+
     public void AddWholeObjectMapping(Func<IRecord, T> mappingFunction)
     {
         _wholeObjectMapping = mappingFunction;
+    }
+
+    public void AddConstructorMapping(ConstructorInfo constructorInfo)
+    {
+        // this part only happens once, at the time of building the mapper
+        var parameters = constructorInfo.GetParameters();
+        var paramMappings = parameters.Select(
+            parameter => new
+            {
+                parameter,
+                mapping = parameter.GetCustomAttribute<MappingSourceAttribute>()?.EntityMappingInfo ??
+                    new EntityMappingInfo(parameter.Name, EntityMappingSource.Property)
+            });
+
+        _wholeObjectMapping = MapFromRecord;
+        return;
+
+        // this part happens every time a record is mapped
+        T MapFromRecord(IRecord record)
+        {
+            var args = new List<object>();
+            foreach (var p in paramMappings)
+            {
+                var success = _mappableValueProvider.TryGetMappableValue(
+                    record,
+                    r => _mappableValueProvider.GetConvertedValue(r, p.mapping, p.parameter.ParameterType, null),
+                    p.parameter.ParameterType,
+                    out var mappable);
+
+                if (!success)
+                {
+                    throw new InvalidOperationException(
+                        $"Cannot map record to type {typeof(T).Name} " +
+                        $"because the record does not contain a value for the parameter '{p.parameter.Name}'.");
+                }
+
+                args.Add(mappable);
+
+            }
+
+            return (T)constructorInfo.Invoke(args.ToArray());
+        }
     }
 
     public void AddMappingBySetter(
@@ -59,108 +111,38 @@ internal class BuiltMapper<T> : IRecordMapper<T> where T : new()
         EntityMappingInfo entityMappingInfo,
         Func<object, object> converter = null)
     {
+        // this part only happens once, at the time of building the mapper
         var propertyType = propertySetter.GetParameters()[0].ParameterType;
-        var asMethod = _asGenericMethod.MakeGenericMethod(propertyType);
-        object ValueAsPropertyType(object o) => asMethod.Invoke(null, new[] { o });
-        var getter = _mappingSourceDelegateBuilder.GetMappingDelegate(entityMappingInfo);
         AddMapping(propertySetter, GetValue);
-
         return;
 
+        // this part happens every time a record is mapped
         object GetValue(IRecord record)
         {
-            var found = getter(record, out var value);
-
-            return value switch
-            {
-                _ when !found => null,
-                null => null,
-
-                // prioritise a custom converter if there is one
-                _ when converter is not null => converter(value),
-
-                // don't convert entities, just pass them through to be handled specially
-                IEntity entity => entity,
-
-                // special case: if they want to map a list to a string, convert to comma-separated
-                ICollection list when propertyType == typeof(string) => string.Join(",", list.Cast<object>()),
-
-                // if it's a list, map the individual items in the list
-                ICollection list => CreateMappedList(list, propertyType, record),
-
-                // otherwise, convert the value to the type of the property
-                _ => ValueAsPropertyType(value)
-            };
+            return _mappableValueProvider.GetConvertedValue(record, entityMappingInfo, propertyType, converter);
         }
-    }
-
-    private IList CreateMappedList(IEnumerable list, Type desiredListType, IRecord record)
-    {
-        var newList = (IList)Activator.CreateInstance(desiredListType);
-        var desiredItemType = desiredListType.GetGenericArguments()[0];
-        var asMethod = _asGenericMethod.MakeGenericMethod(desiredItemType);
-        object ChangeToDesiredType(object o) => asMethod.Invoke(null, new[] { o });
-
-        foreach (var item in list)
-        {
-            // entities and dictionaries can use the same logic, we can make them both into dictionaries
-            var dict = item switch
-            {
-                IEntity entity => entity.Properties,
-                IReadOnlyDictionary<string, object> dictionary => dictionary,
-                _ => null
-            };
-
-            if (dict is not null)
-            {
-                // if the item is an entity or dictionary, we need to make it into a record and then map that
-                var subRecord = new DictAsRecord(dict, record);
-                var newItem = RecordObjectMapping.Map(subRecord, desiredItemType);
-                newList!.Add(newItem);
-            }
-            else
-            {
-                // otherwise, just convert the item to the type of the list
-                newList!.Add(ChangeToDesiredType(item));
-            }
-        }
-
-        return newList;
     }
 
     public void AddMapping(
         MethodInfo propertySetter,
         Func<IRecord, object> valueGetter)
     {
-        _recordMappings.Add(MapFromRecord);
+        // this part only happens once, at the time of building the mapper
+        _propertyMappings.Add(MapFromRecord);
         return;
 
+        // this part happens every time a record is mapped
         void MapFromRecord(T obj, IRecord record)
         {
-            var value = valueGetter(record);
-            if (value is null && record is DictAsRecord { Record: var parentRecord })
+            var mappableValueFound = _mappableValueProvider.TryGetMappableValue(
+                record,
+                valueGetter,
+                propertySetter.GetParameters()[0].ParameterType,
+                out var mappableValue);
+
+            if (mappableValueFound)
             {
-                // try the path relative to the parent record
-                value = valueGetter(parentRecord);
-            }
-
-            switch (value)
-            {
-                // if null is returned, leave the property as the default value: the record may not have the given field
-                case null: return;
-
-                // if the value is an entity, make it into a fake record and map that (indirectly recursive)
-                case IEntity entity:
-                    var destType = propertySetter.GetParameters()[0].ParameterType;
-                    var dictAsRecord = new DictAsRecord(entity.Properties, record);
-                    var newEntityDest = RecordObjectMapping.Map(dictAsRecord, destType);
-                    propertySetter.Invoke(obj, new[] { newEntityDest });
-                    return;
-
-                // otherwise, just set the property to the value
-                default:
-                    propertySetter.Invoke(obj, new[] { value });
-                    return;
+                propertySetter.Invoke(obj, new[] { mappableValue });
             }
         }
     }
