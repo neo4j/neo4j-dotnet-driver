@@ -155,14 +155,13 @@ internal sealed class SocketClient : ISocketClient
         _format.UseUtcEncoder();
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
         {
+            await _messageReader.DisposeAsync();
             _tcpSocketClient.Dispose();
         }
-
-        return default;
     }
 
     private void SetOpened()

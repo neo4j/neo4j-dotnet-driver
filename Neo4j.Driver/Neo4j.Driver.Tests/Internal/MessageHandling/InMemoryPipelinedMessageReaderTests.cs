@@ -179,14 +179,11 @@ namespace Neo4j.Driver.Internal.MessageHandling
             
             var memoryStream = new MemoryStream(message);
             var pipereader = new PipelinedMessageReader(memoryStream, TestDriverContext.MockContext, -1);
-            var done = (object)false;
-            var pipeline = new Mock<IResponsePipeline>();
-            pipeline.Setup(x => x.OnIgnored()).Callback(() => done = true);
-            pipeline.SetupGet(x => x.HasNoPendingMessages).Returns(() => (bool)done);
+            var pipeline = MockPipeline();
             await pipereader.ReadAsync(pipeline.Object, new MessageFormat(BoltProtocolVersion.V5_0,
                 TestDriverContext.MockContext));
             pipeline.Verify(x => x.OnFailure("a", "b"), Times.Once);
-            pipeline.Verify(x => x.OnIgnored(), Times.Once);
+            pipeline.Verify(x => x.OnIgnored(), Times.Never);
         }
 
         [Fact]

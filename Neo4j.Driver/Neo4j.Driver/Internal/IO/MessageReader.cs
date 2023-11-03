@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.IO;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
@@ -104,6 +105,18 @@ internal sealed class MessageReader : IMessageReader
         else
         {
             throw new ProtocolException($"Unknown response message type {message.GetType().FullName}");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (BufferStream is IAsyncDisposable bufferStreamAsyncDisposable)
+        {
+            await bufferStreamAsyncDisposable.DisposeAsync();
+        }
+        else if (BufferStream != null)
+        {
+            BufferStream.Dispose();
         }
     }
 }

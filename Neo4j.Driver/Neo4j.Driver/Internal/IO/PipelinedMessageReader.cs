@@ -49,11 +49,18 @@ internal sealed class PipelinedMessageReader : IMessageReader
         _options = context.Config.MessageReaderConfig.StreamPipeReaderOptions;
         _source = new CancellationTokenSource();
         _headerMemory = new Memory<byte>(new byte[2]);
+        pipeReader = PipeReader.Create(_stream, _options);
     }
-  
+    
+    public ValueTask DisposeAsync()
+    {
+        _source.Dispose();
+        return pipeReader.CompleteAsync();
+    }
+
+    private PipeReader pipeReader;
     public async ValueTask ReadAsync(IResponsePipeline pipeline, MessageFormat format)
     {
-        var pipeReader = PipeReader.Create(_stream, _options);
         try
         {
             while (!pipeline.HasNoPendingMessages)
@@ -77,7 +84,7 @@ internal sealed class PipelinedMessageReader : IMessageReader
                 }
             }
 
-            await pipeReader.CompleteAsync().ConfigureAwait(false);
+            // await pipeReader.CompleteAsync().ConfigureAwait(false);
         }
         catch (IOException io)
         {
