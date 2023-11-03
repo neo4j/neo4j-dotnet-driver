@@ -38,8 +38,6 @@ internal sealed class ResponsePipeline : IResponsePipeline
         _error = null;
     }
 
-    public bool PendingFailure => _error != null;
-
     public bool IsHealthy(out Exception error)
     {
         if (_error != null)
