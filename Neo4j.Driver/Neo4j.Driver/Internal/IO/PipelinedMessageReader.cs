@@ -35,7 +35,7 @@ internal sealed class PipelinedMessageReader : IMessageReader
     private int _timeoutInMs;
     private CancellationTokenSource _source;
     private readonly Memory<byte> _headerMemory;
-    private readonly StreamPipeReaderOptions _options;
+    private readonly PipeReader _pipeReader;
 
     internal PipelinedMessageReader(Stream inputStream, DriverContext context)
         : this(inputStream, context, inputStream.ReadTimeout)
@@ -46,26 +46,24 @@ internal sealed class PipelinedMessageReader : IMessageReader
     {
         _timeoutInMs = timeout;
         _stream = inputStream;
-        _options = context.Config.MessageReaderConfig.StreamPipeReaderOptions;
         _source = new CancellationTokenSource();
         _headerMemory = new Memory<byte>(new byte[2]);
-        pipeReader = PipeReader.Create(_stream, _options);
+        _pipeReader = PipeReader.Create(_stream, context.Config.MessageReaderConfig.StreamPipeReaderOptions);
     }
     
     public ValueTask DisposeAsync()
     {
         _source.Dispose();
-        return pipeReader.CompleteAsync();
+        return _pipeReader.CompleteAsync();
     }
 
-    private PipeReader pipeReader;
     public async ValueTask ReadAsync(IResponsePipeline pipeline, MessageFormat format)
     {
         try
         {
             while (!pipeline.HasNoPendingMessages)
             {
-                var message = await ReadNextMessage(format, pipeReader).ConfigureAwait(false);
+                var message = await ReadNextMessage(format, _pipeReader).ConfigureAwait(false);
                 if (message == null)
                 {
                     // Noop message,
@@ -88,20 +86,20 @@ internal sealed class PipelinedMessageReader : IMessageReader
         }
         catch (IOException io)
         {
-            await pipeReader.CompleteAsync().ConfigureAwait(false);
+            await _pipeReader.CompleteAsync().ConfigureAwait(false);
             throw;
         }
         catch (OperationCanceledException canceledException)
         {
             // A timeout has occurred, close the connection.
-            await pipeReader.CompleteAsync(canceledException).ConfigureAwait(false);
+            await _pipeReader.CompleteAsync(canceledException).ConfigureAwait(false);
             _stream.Close();
             throw new ConnectionReadTimeoutException("Failed to read message from server within the specified timeout.",
                 canceledException);
         }
         catch (Exception ex)
         {
-            await pipeReader.CompleteAsync(ex).ConfigureAwait(false);
+            await _pipeReader.CompleteAsync(ex).ConfigureAwait(false);
             // If the exception is a protocol exception, the connection requires reset and subsequent messages can be
             throw;
         }

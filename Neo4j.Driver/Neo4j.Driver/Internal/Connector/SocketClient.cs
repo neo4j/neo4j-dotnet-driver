@@ -159,7 +159,7 @@ internal sealed class SocketClient : ISocketClient
     {
         if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
         {
-            await _messageReader.DisposeAsync();
+            await (_messageReader?.DisposeAsync() ?? new ValueTask(Task.CompletedTask));
             _tcpSocketClient.Dispose();
         }
     }
