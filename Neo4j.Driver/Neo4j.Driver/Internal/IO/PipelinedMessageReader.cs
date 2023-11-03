@@ -61,30 +61,10 @@ internal sealed class PipelinedMessageReader : IMessageReader
     {
         try
         {
-            while (!pipeline.HasNoPendingMessages)
-            {
-                var message = await ReadNextMessage(format, _pipeReader).ConfigureAwait(false);
-                if (message == null)
-                {
-                    // Noop message,
-                    continue;
-                }
-
-                // TODO: Optimize messages and dispatching to avoid allocations.
-                // Dispatch the message to the pipeline, which will handle it.
-                message.Dispatch(pipeline);
-
-                // If the message is a failure message the connection requires reset and subsequent messages can be
-                // ignored.
-                if (message is FailureMessage)
-                {
-                    break;
-                }
-            }
-
-            // await pipeReader.CompleteAsync().ConfigureAwait(false);
+            var message = await ReadNextMessage(format, _pipeReader).ConfigureAwait(false);
+            message.Dispatch(pipeline);
         }
-        catch (IOException io)
+        catch (IOException)
         {
             await _pipeReader.CompleteAsync().ConfigureAwait(false);
             throw;
@@ -127,27 +107,34 @@ internal sealed class PipelinedMessageReader : IMessageReader
         _source.CancelAfter(_timeoutInMs);
     }
 
-    private async ValueTask<IResponseMessage?> ReadNextMessage(MessageFormat format, PipeReader pipeReader)
+    private async ValueTask<IResponseMessage> ReadNextMessage(MessageFormat format, PipeReader pipeReader)
     {
-        ResetCancellation();
-        // Read Bolt protocol chunk header
-        var readResult = await pipeReader.ReadAtLeastAsync(2, _source.Token).ConfigureAwait(false);
-        if (readResult is { IsCompleted: true, Buffer.Length: < 2 })
+        ReadResult readResult;
+        ushort size;
+        do
         {
-            throw new IOException("Unexpected end of stream, unable to read expected data from the network connection");
-        }
+            ResetCancellation();
+            // Read Bolt protocol chunk header
+            readResult = await pipeReader.ReadAtLeastAsync(2, _source.Token).ConfigureAwait(false);
+            if (readResult is { IsCompleted: true, Buffer.Length: < 2 })
+            {
+                throw new IOException("Unexpected end of stream, unable to read expected data from the network connection");
+            }
 
-        var lengthSlice = readResult.Buffer.Slice(0, 2);
-        lengthSlice.CopyTo(_headerMemory.Span);
-        var size = BinaryPrimitives.ReadUInt16BigEndian(_headerMemory.Span);
-        
-        // if the size is 0, it means the message was a noop message.
-        if (size == 0)
-        {
-            // Advance the pipeReader to the next chunk
-            pipeReader.AdvanceTo(readResult.Buffer.Slice(2).Start);
-            return null;
-        }
+            var lengthSlice = readResult.Buffer.Slice(0, 2);
+            lengthSlice.CopyTo(_headerMemory.Span);
+            size = BinaryPrimitives.ReadUInt16BigEndian(_headerMemory.Span);
+            
+            // if the size is 0, it means the message was a noop message.
+            if (size == 0)
+            {
+                // Advance the pipeReader to the next chunk
+                pipeReader.AdvanceTo(readResult.Buffer.Slice(2).Start);
+                continue;
+            }
+            break;
+        } while(true);
+
 
         // Read chunks storing the lengths of each chunk.
         // Because the length of the message is unknown until the end of writing allocating a single buffer to read the entire
@@ -253,5 +240,9 @@ internal sealed class PipelinedMessageReader : IMessageReader
     public void SetReadTimeoutInMs(int ms)
     {
         _timeoutInMs = ms;
+    }
+
+    internal void close_reader()
+    {
     }
 }
