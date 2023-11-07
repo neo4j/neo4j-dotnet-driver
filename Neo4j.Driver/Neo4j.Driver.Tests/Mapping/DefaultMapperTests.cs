@@ -134,6 +134,25 @@ public class DefaultMapperTests
         act.Should().Throw<InvalidOperationException>();
     }
 
+    [Fact]
+    public void ShouldMapFromNodesInRecords()
+    {
+        var record = new Record(
+            new[] { "person" },
+            new object[]
+            {
+                new Node(
+                    1,
+                    new[] { "Person" },
+                    new Dictionary<string, object> { { "name", "Dani" }, { "born", 1977 } })
+            });
+
+        var mapper = DefaultMapper.Get<Person>();
+        var person = mapper.Map(record);
+        person.Name.Should().Be("Dani");
+        person.Born.Should().Be(1977);
+    }
+
     public class NaturalPhenomenon
     {
         public string Name { get; }
@@ -215,23 +234,55 @@ public class DefaultMapperTests
         result.Year.Should().Be(2021);
     }
 
-    [Fact]
-    public void ShouldMapFromNodesInRecords()
+    public class YearOfPhenomena
     {
-        var record = new Record(
-            new[] { "person" },
-            new object[]
-            {
-                new Node(
-                    1,
-                    new[] { "Person" },
-                    new Dictionary<string, object> { { "name", "Dani" }, { "born", 1977 } })
-            });
+        public int Year { get; }
+        public List<NaturalPhenomenon> Phenomena { get; }
 
-        var mapper = DefaultMapper.Get<Person>();
-        var person = mapper.Map(record);
-        person.Name.Should().Be("Dani");
-        person.Born.Should().Be(1977);
+        public YearOfPhenomena(int year, List<NaturalPhenomenon> phenomena)
+        {
+            Year = year;
+            Phenomena = phenomena;
+        }
+    }
+
+    [Fact]
+    public void ShouldMapListsOfNodesThroughConstructor()
+    {
+        var firstPhenomenon = new Node(
+            1,
+            new[] { "Phenomenon" },
+            new Dictionary<string, object>
+                { { "name", "Hurricane" }, { "components", new List<string> { "wind", "rain" } } });
+
+        var secondPhenomenon = new Node(
+            2,
+            new[] { "Phenomenon" },
+            new Dictionary<string, object>
+                { { "name", "Tornado" }, { "components", new List<string> { "wind", "debris" } } });
+
+        var thirdPhenomenon = new Node(
+            3,
+            new[] { "Phenomenon" },
+            new Dictionary<string, object>
+                { { "name", "Earthquake" }, { "components", new List<string> { "earth", "quaking" } } });
+
+        var phenomena = new List<Node> { firstPhenomenon, secondPhenomenon, thirdPhenomenon };
+
+        var record = new Record(
+            new[] { "year", "phenomena" },
+            new object[] { 2021, phenomena });
+
+        var mapper = DefaultMapper.Get<YearOfPhenomena>();
+        var result = mapper.Map(record);
+        result.Year.Should().Be(2021);
+        result.Phenomena.Should().HaveCount(3);
+        result.Phenomena[0].Name.Should().Be("Hurricane");
+        result.Phenomena[0].Components.Should().BeEquivalentTo("wind", "rain");
+        result.Phenomena[1].Name.Should().Be("Tornado");
+        result.Phenomena[1].Components.Should().BeEquivalentTo("wind", "debris");
+        result.Phenomena[2].Name.Should().Be("Earthquake");
+        result.Phenomena[2].Components.Should().BeEquivalentTo("earth", "quaking");
     }
 
     private class ClassWithProperties
