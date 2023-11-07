@@ -39,7 +39,6 @@ public static class ExecutableQueryMappingExtensions
         this Task<EagerResult<IReadOnlyList<IRecord>>> recordsTask)
     {
         var records = await recordsTask.ConfigureAwait(false);
-        var mapper = RecordObjectMapping.GetMapper<T>();
-        return records.Result.Select(mapper.Map).ToList();
+        return records.Result.Select(RecordObjectMapping.Map<T>).ToList();
     }
 }

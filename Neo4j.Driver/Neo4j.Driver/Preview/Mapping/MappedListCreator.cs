@@ -28,6 +28,8 @@ internal interface IMappedListCreator
 
 internal class MappedListCreator : IMappedListCreator
 {
+    private readonly IRecordObjectMapping _recordObjectMapping = RecordObjectMapping.Instance;
+
     public IList CreateMappedList(IEnumerable list, Type desiredListType, IRecord record)
     {
         var newList = (IList)Activator.CreateInstance(desiredListType);
@@ -47,7 +49,7 @@ internal class MappedListCreator : IMappedListCreator
             {
                 // if the item is an entity or dictionary, we need to make it into a record and then map that
                 var subRecord = new DictAsRecord(dict, record);
-                var newItem = RecordObjectMapping.Map(subRecord, desiredItemType);
+                var newItem = _recordObjectMapping.Map(subRecord, desiredItemType);
                 newList!.Add(newItem);
             }
             else

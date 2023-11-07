@@ -39,8 +39,19 @@ internal interface IMappableValueProvider
 
 internal class MappableValueProvider : IMappableValueProvider
 {
-    private readonly IMappedListCreator _mappedListCreator = new MappedListCreator();
-    private readonly IMappingSourceDelegateBuilder _mappingSourceDelegateBuilder = new MappingSourceDelegateBuilder();
+    private readonly IMappedListCreator _mappedListCreator;
+    private readonly IMappingSourceDelegateBuilder _mappingSourceDelegateBuilder;
+    private readonly IRecordObjectMapping _recordObjectMapping;
+
+    internal MappableValueProvider(
+        IMappedListCreator mappedListCreator = null,
+        IMappingSourceDelegateBuilder mappingSourceDelegateBuilder = null,
+        IRecordObjectMapping recordObjectMapping = null)
+    {
+        _mappedListCreator = mappedListCreator ?? new MappedListCreator();
+        _mappingSourceDelegateBuilder = mappingSourceDelegateBuilder ?? new MappingSourceDelegateBuilder();
+        _recordObjectMapping = recordObjectMapping ?? RecordObjectMapping.Instance;
+    }
 
     public bool TryGetMappableValue(
         IRecord record,
@@ -65,13 +76,13 @@ internal class MappableValueProvider : IMappableValueProvider
             // if the value is an entity, make it into a fake record and map that (indirectly recursive)
             case IEntity entity:
                 var dictAsRecord = new DictAsRecord(entity.Properties, record);
-                result = RecordObjectMapping.Map(dictAsRecord, desiredType);
+                result = _recordObjectMapping.Map(dictAsRecord, desiredType);
                 return true;
 
             // if the value is a dictionary, make it into a fake record and map that (indirectly recursive)
             case IReadOnlyDictionary<string, object> dictionary:
                 dictAsRecord = new DictAsRecord(dictionary, record);
-                result = RecordObjectMapping.Map(dictAsRecord, desiredType);
+                result = _recordObjectMapping.Map(dictAsRecord, desiredType);
                 return true;
 
             // otherwise, just set the property to the value
@@ -85,7 +96,7 @@ internal class MappableValueProvider : IMappableValueProvider
         IRecord record,
         EntityMappingInfo mappingInfo,
         Type propertyType,
-        Func<object, object>? converter = null)
+        Func<object, object> converter = null)
     {
         var getter = _mappingSourceDelegateBuilder.GetMappingDelegate(mappingInfo);
         var found = getter(record, out var value);
