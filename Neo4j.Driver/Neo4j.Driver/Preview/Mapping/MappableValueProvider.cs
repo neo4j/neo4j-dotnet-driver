@@ -85,7 +85,7 @@ internal class MappableValueProvider : IMappableValueProvider
                 result = _recordObjectMapping.Map(dictAsRecord, desiredType);
                 return true;
 
-            // otherwise, just set the property to the value
+            // otherwise, just return the value
             default:
                 result = value;
                 return true;

@@ -74,9 +74,10 @@ namespace Neo4j.Driver.Tests.Mapping
         public void ShouldLeaveDefaultsIfFieldAbsent()
         {
             var record = new Record(new[] { "born" }, new object[] { 1977 });
-            var person = record.AsObject<TestPerson>();
-            person.Name.Should().Be("A. Test Name");
-            person.Born.Should().Be(1977);
+            var person = RecordObjectMapping.Map(record, typeof(TestPerson)) as TestPerson;
+            person.Should().NotBeNull();
+            person!.Name.Should().Be("A. Test Name");
+            person!.Born.Should().Be(1977);
         }
 
         private class Movie

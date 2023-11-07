@@ -28,7 +28,12 @@ internal interface IMappedListCreator
 
 internal class MappedListCreator : IMappedListCreator
 {
-    private readonly IRecordObjectMapping _recordObjectMapping = RecordObjectMapping.Instance;
+    private readonly IRecordObjectMapping _recordObjectMapping;
+
+    internal MappedListCreator(IRecordObjectMapping recordObjectMapping = null)
+    {
+        _recordObjectMapping = recordObjectMapping ?? RecordObjectMapping.Instance;
+    }
 
     public IList CreateMappedList(IEnumerable list, Type desiredListType, IRecord record)
     {
