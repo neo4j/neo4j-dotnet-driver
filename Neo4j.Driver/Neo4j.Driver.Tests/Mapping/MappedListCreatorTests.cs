@@ -20,8 +20,8 @@ using System.Linq;
 using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
-using Neo4j.Driver.Internal.Types;
 using Neo4j.Driver.Preview.Mapping;
+using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Mapping;
@@ -40,7 +40,13 @@ public class MappedListCreatorTests
 
     private class Person
     {
-        public string Name { get; set; } = null!;
+        public Person(string name, int age)
+        {
+            Name = name;
+            Age = age;
+        }
+
+        public string Name { get; set; }
         public int Age { get; set; }
     }
 
@@ -51,22 +57,16 @@ public class MappedListCreatorTests
             { new Dictionary<string, object>(), new Dictionary<string, object>(), new Dictionary<string, object>() };
 
         var record = Mock.Of<IRecord>();
+        var people = new List<Person>{ new("Alan", 99), new("Basil", 999), new("David", 9999) };
 
         _mocker.GetMock<IRecordObjectMapping>()
             .SetupSequence(x => x.Map(It.IsAny<DictAsRecord>(), typeof(Person)))
-            .Returns(new Person { Name = "Alan", Age = 99 })
-            .Returns(new Person { Name = "Basil", Age = 999 })
-            .Returns(new Person { Name = "David", Age = 9999 });
+            .ReturnsSequence(people);
 
         var subject = _mocker.CreateInstance<MappedListCreator>(true);
-
         var mappedList = subject.CreateMappedList(list, typeof(List<Person>), record);
 
-        mappedList.Should()
-            .BeEquivalentTo(
-                new Person { Name = "Alan", Age = 99 },
-                new Person { Name = "Basil", Age = 999 },
-                new Person { Name = "David", Age = 9999 });
+        mappedList.Should().BeEquivalentTo(people);
     }
 
     [Fact]
@@ -74,21 +74,15 @@ public class MappedListCreatorTests
     {
         var list = new List<IEntity> { Mock.Of<IEntity>(), Mock.Of<IEntity>(), Mock.Of<IEntity>() };
         var record = Mock.Of<IRecord>();
+        var people = new List<Person> { new("Alan", 99), new("Basil", 999), new("David", 9999) };
 
         _mocker.GetMock<IRecordObjectMapping>()
             .SetupSequence(x => x.Map(It.IsAny<DictAsRecord>(), typeof(Person)))
-            .Returns(new Person { Name = "Alan", Age = 99 })
-            .Returns(new Person { Name = "Basil", Age = 999 })
-            .Returns(new Person { Name = "David", Age = 9999 });
+            .ReturnsSequence(people);
 
         var subject = _mocker.CreateInstance<MappedListCreator>(true);
-
         var mappedList = subject.CreateMappedList(list, typeof(List<Person>), record);
 
-        mappedList.Should()
-            .BeEquivalentTo(
-                new Person { Name = "Alan", Age = 99 },
-                new Person { Name = "Basil", Age = 999 },
-                new Person { Name = "David", Age = 9999 });
+        mappedList.Should().BeEquivalentTo(people);
     }
 }
