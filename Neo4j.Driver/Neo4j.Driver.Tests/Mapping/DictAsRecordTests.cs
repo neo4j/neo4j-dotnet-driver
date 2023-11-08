@@ -15,8 +15,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using FluentAssertions;
+using Neo4j.Driver.Internal.Types;
 using Neo4j.Driver.Preview.Mapping;
 using Xunit;
 using Record = Neo4j.Driver.Internal.Result.Record;
@@ -26,13 +28,13 @@ namespace Neo4j.Driver.Tests.Mapping
     public class DictAsRecordTests
     {
         [Fact]
-        public void ShouldReturnCorrectValues()
+        public void ShouldUsePropertiesOfDict()
         {
-            var originalRecord = new Record(new[] {"name", "age"}, new object[] {"Bob", 42});
+            var originalRecord = new Record(new[] { "name", "age" }, new object[] { "Bob", 42 });
             var dict = new Dictionary<string, object>
             {
-                {"key1", "value1"},
-                {"key2", "value2"}
+                { "key1", "value1" },
+                { "key2", "value2" }
             };
 
             var subject = new DictAsRecord(dict, originalRecord);
@@ -44,6 +46,33 @@ namespace Neo4j.Driver.Tests.Mapping
             subject[1].Should().Be("value2");
             subject["key1"].Should().Be("value1");
             subject["key2"].Should().Be("value2");
+        }
+
+        [Fact]
+        public void ShouldUsePropertiesOfEntity()
+        {
+            var originalRecord = new Record(new[] { "name", "age" }, new object[] { "Bob", 42 });
+            var entity = new Node(
+                1,
+                new[] { "Person" },
+                new Dictionary<string, object> { { "key1", "value1" }, { "key2", "value2" } });
+
+            var subject = new DictAsRecord(entity, originalRecord);
+
+            subject.Record.Should().BeSameAs(originalRecord);
+            subject.Keys.Should().BeEquivalentTo(entity.Properties.Keys);
+            subject.Values.Should().BeEquivalentTo(entity.Properties);
+            subject[0].Should().Be("value1");
+            subject[1].Should().Be("value2");
+            subject["key1"].Should().Be("value1");
+            subject["key2"].Should().Be("value2");
+        }
+
+        [Fact]
+        public void ShouldThrowIfDictIsNotAnEntityOrDictionary()
+        {
+            var act = () => new DictAsRecord(42, null);
+            act.Should().Throw<InvalidOperationException>();
         }
     }
 }

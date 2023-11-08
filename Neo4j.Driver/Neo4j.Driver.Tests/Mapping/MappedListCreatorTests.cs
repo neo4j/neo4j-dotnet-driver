@@ -45,66 +45,50 @@ public class MappedListCreatorTests
     }
 
     [Fact]
-    public void ShouldCreateListOfMappedObjectsFromEntities()
+    public void ShouldCreateListOfMappedObjectsFromDictionaries()
     {
-        var dave = new Dictionary<string, object> { { "Name", "Dave" }, { "Age", 42 } };
-        var barney = new Dictionary<string, object> { { "Name", "Barney" }, { "Age", 38 } };
-        var ziggy = new Dictionary<string, object> { { "Name", "Ziggy" }, { "Age", 2 } };
-        var list = new List<object> { dave, barney, ziggy };
+        var list = new List<object>
+            { new Dictionary<string, object>(), new Dictionary<string, object>(), new Dictionary<string, object>() };
 
         var record = Mock.Of<IRecord>();
 
-        var firstPerson = new Person { Name = "Alan", Age = 99 };
-        var secondPerson = new Person { Name = "Basil", Age = 999 };
-        var thirdPerson = new Person { Name = "Michael", Age = 9999 };
-
         _mocker.GetMock<IRecordObjectMapping>()
             .SetupSequence(x => x.Map(It.IsAny<DictAsRecord>(), typeof(Person)))
-            .Returns(firstPerson)
-            .Returns(secondPerson)
-            .Returns(thirdPerson);
+            .Returns(new Person { Name = "Alan", Age = 99 })
+            .Returns(new Person { Name = "Basil", Age = 999 })
+            .Returns(new Person { Name = "David", Age = 9999 });
 
         var subject = _mocker.CreateInstance<MappedListCreator>(true);
+
         var mappedList = subject.CreateMappedList(list, typeof(List<Person>), record);
 
-        mappedList.Should().BeEquivalentTo(firstPerson, secondPerson, thirdPerson);
+        mappedList.Should()
+            .BeEquivalentTo(
+                new Person { Name = "Alan", Age = 99 },
+                new Person { Name = "Basil", Age = 999 },
+                new Person { Name = "David", Age = 9999 });
     }
 
     [Fact]
-    public void ShouldCreateListOfMappedObjectsFromDictionaries()
+    public void ShouldCreateListOfMappedObjectsFromNodes()
     {
-        var dave = new Node(
-            0,
-            new[] { "person" },
-            new Dictionary<string, object> { { "name", "Dave" }, { "age", 42 } });
-
-        var barney = new Node(
-            1,
-            new[] { "person" },
-            new Dictionary<string, object> { { "name", "Barney" }, { "age", 38 } });
-
-        var ziggy = new Node(
-            2,
-            new[] { "person" },
-            new Dictionary<string, object> { { "name", "Ziggy" }, { "age", 2 } });
-
-        var list = new List<object> { dave, barney, ziggy };
-
+        var list = new List<IEntity> { Mock.Of<IEntity>(), Mock.Of<IEntity>(), Mock.Of<IEntity>() };
         var record = Mock.Of<IRecord>();
-
-        var firstPerson = new Person { Name = "Alan", Age = 99 };
-        var secondPerson = new Person { Name = "Basil", Age = 999 };
-        var thirdPerson = new Person { Name = "Michael", Age = 9999 };
 
         _mocker.GetMock<IRecordObjectMapping>()
             .SetupSequence(x => x.Map(It.IsAny<DictAsRecord>(), typeof(Person)))
-            .Returns(firstPerson)
-            .Returns(secondPerson)
-            .Returns(thirdPerson);
+            .Returns(new Person { Name = "Alan", Age = 99 })
+            .Returns(new Person { Name = "Basil", Age = 999 })
+            .Returns(new Person { Name = "David", Age = 9999 });
 
         var subject = _mocker.CreateInstance<MappedListCreator>(true);
+
         var mappedList = subject.CreateMappedList(list, typeof(List<Person>), record);
 
-        mappedList.Should().BeEquivalentTo(firstPerson, secondPerson, thirdPerson);
+        mappedList.Should()
+            .BeEquivalentTo(
+                new Person { Name = "Alan", Age = 99 },
+                new Person { Name = "Basil", Age = 999 },
+                new Person { Name = "David", Age = 9999 });
     }
 }

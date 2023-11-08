@@ -33,7 +33,7 @@ public class MappableValueProviderTests
     private readonly AutoMocker _mocker = new();
 
     [Fact]
-    public void ShouldReturnFalseWhenFieldNotFound()
+    public void TryGetMappableValueShouldReturnFalseWhenFieldNotFound()
     {
         var subject = _mocker.CreateInstance<MappableValueProvider>(true);
 
@@ -122,7 +122,7 @@ public class MappableValueProviderTests
     }
 
     [Fact]
-    public void ShouldReturnNullWhenFieldNotFound()
+    public void GetConvertedValueShouldReturnNullWhenFieldNotFound()
     {
         var entityMappingInfo = new EntityMappingInfo("field-name", EntityMappingSource.Property);
         _mocker.GetMock<IMappingSourceDelegateBuilder>()

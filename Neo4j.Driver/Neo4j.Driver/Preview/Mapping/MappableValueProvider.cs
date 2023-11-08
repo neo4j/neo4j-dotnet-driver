@@ -73,15 +73,9 @@ internal class MappableValueProvider : IMappableValueProvider
             // if null is returned, leave the property as the default value: the record may not have the given field
             case null: return false;
 
-            // if the value is an entity, make it into a fake record and map that (indirectly recursive)
-            case IEntity entity:
-                var dictAsRecord = new DictAsRecord(entity.Properties, record);
-                result = _recordObjectMapping.Map(dictAsRecord, desiredType);
-                return true;
-
-            // if the value is a dictionary, make it into a fake record and map that (indirectly recursive)
-            case IReadOnlyDictionary<string, object> dictionary:
-                dictAsRecord = new DictAsRecord(dictionary, record);
+            // if the value is an entity or dictionary, make it into a fake record and map that (indirectly recursive)
+            case IEntity or IDictionary<string, object>:
+                var dictAsRecord = new DictAsRecord(value, record);
                 result = _recordObjectMapping.Map(dictAsRecord, desiredType);
                 return true;
 

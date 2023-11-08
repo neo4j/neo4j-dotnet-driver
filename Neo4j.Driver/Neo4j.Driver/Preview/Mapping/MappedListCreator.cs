@@ -42,18 +42,10 @@ internal class MappedListCreator : IMappedListCreator
 
         foreach (var item in list)
         {
-            // entities and dictionaries can use the same logic, we can make them both into dictionaries
-            var dict = item switch
-            {
-                IEntity entity => entity.Properties,
-                IReadOnlyDictionary<string, object> dictionary => dictionary,
-                _ => null
-            };
-
-            if (dict is not null)
+            if (item is IEntity or IReadOnlyDictionary<string, object>)
             {
                 // if the item is an entity or dictionary, we need to make it into a record and then map that
-                var subRecord = new DictAsRecord(dict, record);
+                var subRecord = new DictAsRecord(item, record);
                 var newItem = _recordObjectMapping.Map(subRecord, desiredItemType);
                 newList!.Add(newItem);
             }
