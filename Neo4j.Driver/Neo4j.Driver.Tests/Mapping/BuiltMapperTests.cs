@@ -45,10 +45,12 @@ public class BuiltMapperTests
     }
 
     [Fact]
-    public void ShouldUseConstructorIfPossible()
+    public void ShouldUseConstructorWhenInstructed()
     {
         var mapper = new BuiltMapper<NoParameterlessConstructor>();
-        mapper.AddWholeObjectMapping(r => new NoParameterlessConstructor(r.GetInt("value")));
+
+        var constructor = typeof(NoParameterlessConstructor).GetConstructors()[0];
+        mapper.AddConstructorMapping(constructor);
         var result = mapper.Map(new Record(new[] { "value" }, new object[] { 48 }));
         result.Value.Should().Be(48);
     }
