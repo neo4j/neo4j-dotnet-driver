@@ -316,7 +316,7 @@ public class DefaultMapperTests
     private class ClassWithPropertiesWithMappingHints
     {
         public ClassWithPropertiesWithMappingHints(
-            [MappingSource("Year")] int year,
+            [MappingSource("year")] int year,
             string occurrence)
         {
             Year = year * 10;
@@ -325,14 +325,16 @@ public class DefaultMapperTests
 
         public int Year { get; set; }
         public string Occurrence { get; set; }
-        public string Description { get; set; }
+
+        [MappingSource("description")]
+        public string OtherText { get; set; }
     }
 
     [Fact]
     public void ShouldSetPropertiesNotSetInConstructorWithMappingHints()
     {
         var record = new Record(
-            new[] { "Year", "occurrence", "description", "something" },
+            new[] { "year", "occurrence", "description", "something" },
             new object[] { 2021, "PANDEMIC", "Covid-19", "something" });
 
         var mapper = DefaultMapper.Get<ClassWithPropertiesWithMappingHints>();
@@ -340,7 +342,7 @@ public class DefaultMapperTests
 
         result.Year.Should().Be(20210);
         result.Occurrence.Should().Be("pandemic");
-        result.Description.Should().Be("Covid-19");
+        result.OtherText.Should().Be("Covid-19");
     }
 
     private class NoConstructors
