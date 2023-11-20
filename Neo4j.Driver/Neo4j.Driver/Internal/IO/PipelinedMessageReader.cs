@@ -36,6 +36,7 @@ internal sealed class PipelinedMessageReader : IMessageReader
     private CancellationTokenSource _source;
     private readonly Memory<byte> _headerMemory;
     private readonly PipeReader _pipeReader;
+    private readonly MemoryPool<byte> _pool;
 
     internal PipelinedMessageReader(Stream inputStream, DriverContext context)
         : this(inputStream, context, inputStream.ReadTimeout)
@@ -46,6 +47,7 @@ internal sealed class PipelinedMessageReader : IMessageReader
     {
         _timeoutInMs = timeout;
         _stream = inputStream;
+        _pool = context.Config.MessageReaderConfig.MemoryPool;
         _source = new CancellationTokenSource();
         _headerMemory = new Memory<byte>(new byte[2]);
         _pipeReader = PipeReader.Create(_stream, context.Config.MessageReaderConfig.StreamPipeReaderOptions);
@@ -176,19 +178,21 @@ internal sealed class PipelinedMessageReader : IMessageReader
         } while (size != 0);
 
         // If there is only one chunk and it is a single segment, we can just read it directly
-        if (sizes.Count == 1)
+        if (sizes.Count == 1 && SingleSegmentSlice(readResult, totalSize, out var chunkBuffer))
         {
-            var chunkBuffer = readResult.Buffer.Slice(2, totalSize + 2);
-            if (chunkBuffer.IsSingleSegment)
-            {
-                return RawParse(format, pipeReader, totalSize, chunkBuffer);
-            }
+            return RawParse(format, pipeReader, totalSize, chunkBuffer);
         }
 
         // Otherwise we need to copy the data into a single buffer to parse it.
         return CondenseChunksAndParse(format, pipeReader, totalSize, sizes, readResult);
     }
-
+    
+    private static bool SingleSegmentSlice(ReadResult readResult, int totalSize, out ReadOnlySequence<byte> chunkBuffer)
+    {
+        chunkBuffer = readResult.Buffer.Slice(2, totalSize + 2);
+        return chunkBuffer.IsSingleSegment;
+    }
+    
     private static IResponseMessage RawParse(
         MessageFormat format,
         PipeReader pipeReader,
@@ -205,15 +209,15 @@ internal sealed class PipelinedMessageReader : IMessageReader
         return message;
     }
     
-    private static IResponseMessage CondenseChunksAndParse(
+    private IResponseMessage CondenseChunksAndParse(
         MessageFormat format,
         PipeReader pipeReader,
         int totalSize,
         List<ushort> sizes,
         ReadResult readResult)
     {
-        // Borrow memory from shared pool..
-        using var memory = MemoryPool<byte>.Shared.Rent(totalSize);
+        // Borrow memory from shared pool
+        using var memory = _pool.Rent(totalSize);
         var span = memory.Memory.Span.Slice(0, totalSize);
         // Copy all chunks into span removing chunk headers.
         CopyToMemory(sizes, readResult, span, pipeReader);
