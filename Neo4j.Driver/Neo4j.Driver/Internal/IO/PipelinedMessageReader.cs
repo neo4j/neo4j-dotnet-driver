@@ -241,8 +241,4 @@ internal sealed class PipelinedMessageReader : IMessageReader
     {
         _timeoutInMs = ms;
     }
-
-    internal void close_reader()
-    {
-    }
 }
