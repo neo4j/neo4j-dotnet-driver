@@ -108,15 +108,9 @@ internal sealed class MessageReader : IMessageReader
         }
     }
 
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
-        if (BufferStream is IAsyncDisposable bufferStreamAsyncDisposable)
-        {
-            await bufferStreamAsyncDisposable.DisposeAsync();
-        }
-        else if (BufferStream != null)
-        {
-            BufferStream.Dispose();
-        }
+        BufferStream.Dispose();
+        return new ValueTask(Task.CompletedTask);
     }
 }
