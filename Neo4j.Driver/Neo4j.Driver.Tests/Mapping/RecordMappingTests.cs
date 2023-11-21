@@ -404,5 +404,64 @@ namespace Neo4j.Driver.Tests.Mapping
             mappedObject.Books[0].Title.Should().Be("The Green Man");
             mappedObject.Books[1].Title.Should().Be("The Thin End");
         }
+
+        private record Song(
+            [MappingSource("recordingArtist")] string Artist,
+            string Title,
+            int Year);
+
+        [Fact]
+        public void ShouldMapToRecords()
+        {
+            var record = new Record(
+                new[] { "recordingArtist", "title", "year" },
+                new object[] { "The Beatles", "Yellow Submarine", 1966 });
+
+            var song = record.AsObject<Song>();
+            song.Artist.Should().Be("The Beatles");
+            song.Title.Should().Be("Yellow Submarine");
+            song.Year.Should().Be(1966);
+        }
+
+        [Fact]
+        public void ShouldMapToRecordsWithNulls()
+        {
+            var record = new Record(
+                new[] { "recordingArtist", "title", "year" },
+                new object[] { "The Beatles", null, 1966 });
+
+            var song = record.AsObject<Song>();
+            song.Artist.Should().Be("The Beatles");
+            song.Title.Should().BeNull();
+            song.Year.Should().Be(1966);
+        }
+
+        [Fact]
+        public void ShouldMapToRecordsWithMissingFields()
+        {
+            var record = new Record(
+                new[] { "recordingArtist", "year" },
+                new object[] { "The Beatles", 1966 });
+
+            var song = record.AsObject<Song>();
+            song.Artist.Should().Be("The Beatles");
+            song.Title.Should().BeNull();
+            song.Year.Should().Be(1966);
+        }
+
+        private class ClassWithInitProperties
+        {
+            public string Name { get; init; } = "";
+            public int Age { get; init; }
+        }
+
+        [Fact]
+        public void ShouldMapToInitProperties()
+        {
+            var record = new Record(new[] { "name", "age" }, new object[] { "Bob", 1977 });
+            var person = record.AsObject<ClassWithInitProperties>();
+            person.Name.Should().Be("Bob");
+            person.Age.Should().Be(1977);
+        }
     }
 }
