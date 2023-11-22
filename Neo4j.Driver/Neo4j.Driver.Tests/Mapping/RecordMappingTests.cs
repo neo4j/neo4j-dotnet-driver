@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -424,29 +425,27 @@ namespace Neo4j.Driver.Tests.Mapping
         }
 
         [Fact]
-        public void ShouldMapToRecordsWithNulls()
+        public void ShouldFailMappingToRecordsWithNulls()
         {
             var record = new Record(
                 new[] { "recordingArtist", "title", "year" },
                 new object[] { "The Beatles", null, 1966 });
 
-            var song = record.AsObject<Song>();
-            song.Artist.Should().Be("The Beatles");
-            song.Title.Should().BeNull();
-            song.Year.Should().Be(1966);
+            var act = () => record.AsObject<Song>();
+
+            act.Should().Throw<InvalidOperationException>();
         }
 
         [Fact]
-        public void ShouldMapToRecordsWithMissingFields()
+        public void ShouldFailMappingToRecordsWithMissingFields()
         {
             var record = new Record(
                 new[] { "recordingArtist", "year" },
                 new object[] { "The Beatles", 1966 });
 
-            var song = record.AsObject<Song>();
-            song.Artist.Should().Be("The Beatles");
-            song.Title.Should().BeNull();
-            song.Year.Should().Be(1966);
+            var act = () => record.AsObject<Song>();
+
+            act.Should().Throw<InvalidOperationException>();
         }
 
         private class ClassWithInitProperties
