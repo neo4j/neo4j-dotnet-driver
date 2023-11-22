@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -74,9 +75,10 @@ namespace Neo4j.Driver.Tests.Mapping
         public void ShouldLeaveDefaultsIfFieldAbsent()
         {
             var record = new Record(new[] { "born" }, new object[] { 1977 });
-            var person = record.AsObject<TestPerson>();
-            person.Name.Should().Be("A. Test Name");
-            person.Born.Should().Be(1977);
+            var person = RecordObjectMapping.Map(record, typeof(TestPerson)) as TestPerson;
+            person.Should().NotBeNull();
+            person!.Name.Should().Be("A. Test Name");
+            person!.Born.Should().Be(1977);
         }
 
         private class Movie
@@ -402,6 +404,63 @@ namespace Neo4j.Driver.Tests.Mapping
             mappedObject.Books.Should().HaveCount(2);
             mappedObject.Books[0].Title.Should().Be("The Green Man");
             mappedObject.Books[1].Title.Should().Be("The Thin End");
+        }
+
+        private record Song(
+            [MappingSource("recordingArtist")] string Artist,
+            string Title,
+            int Year);
+
+        [Fact]
+        public void ShouldMapToRecords()
+        {
+            var record = new Record(
+                new[] { "recordingArtist", "title", "year" },
+                new object[] { "The Beatles", "Yellow Submarine", 1966 });
+
+            var song = record.AsObject<Song>();
+            song.Artist.Should().Be("The Beatles");
+            song.Title.Should().Be("Yellow Submarine");
+            song.Year.Should().Be(1966);
+        }
+
+        [Fact]
+        public void ShouldFailMappingToRecordsWithNulls()
+        {
+            var record = new Record(
+                new[] { "recordingArtist", "title", "year" },
+                new object[] { "The Beatles", null, 1966 });
+
+            var act = () => record.AsObject<Song>();
+
+            act.Should().Throw<InvalidOperationException>();
+        }
+
+        [Fact]
+        public void ShouldFailMappingToRecordsWithMissingFields()
+        {
+            var record = new Record(
+                new[] { "recordingArtist", "year" },
+                new object[] { "The Beatles", 1966 });
+
+            var act = () => record.AsObject<Song>();
+
+            act.Should().Throw<InvalidOperationException>();
+        }
+
+        private class ClassWithInitProperties
+        {
+            public string Name { get; init; } = "";
+            public int Age { get; init; }
+        }
+
+        [Fact]
+        public void ShouldMapToInitProperties()
+        {
+            var record = new Record(new[] { "name", "age" }, new object[] { "Bob", 1977 });
+            var person = record.AsObject<ClassWithInitProperties>();
+            person.Name.Should().Be("Bob");
+            person.Age.Should().Be(1977);
         }
     }
 }

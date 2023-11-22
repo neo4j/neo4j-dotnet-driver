@@ -21,7 +21,10 @@ using System.Reflection;
 
 namespace Neo4j.Driver.Preview.Mapping;
 
-internal class MappingBuilder<T> : IMappingBuilder<T> where T : new()
+/// <summary>
+/// This class wraps the <see cref="BuiltMapper{T}"/> and exposes a fluent API for building the mapper.
+/// </summary>
+internal class MappingBuilder<T> : IMappingBuilder<T>
 {
     private readonly BuiltMapper<T> _builtMapper = new();
 
@@ -46,7 +49,6 @@ internal class MappingBuilder<T> : IMappingBuilder<T> where T : new()
         return this;
     }
 
-    /// <inheritdoc />
     public IMappingBuilder<T> Map<TProperty>(
         Expression<Func<T, TProperty>> destination,
         Func<IRecord, object> valueGetter)
@@ -62,6 +64,12 @@ internal class MappingBuilder<T> : IMappingBuilder<T> where T : new()
         return this;
     }
 
+    internal IMappingBuilder<T> UseConstructor(ConstructorInfo constructor)
+    {
+        _builtMapper.AddConstructorMapping(constructor);
+        return this;
+    }
+
     /// <inheritdoc />
     public IMappingBuilder<T> UseDefaultMapping()
     {
@@ -74,6 +82,10 @@ internal class MappingBuilder<T> : IMappingBuilder<T> where T : new()
         return _builtMapper;
     }
 
+    /// <summary>
+    /// Given an expression that represents a property (e.g. <c>o => o.Name</c>),
+    /// return the <see cref="MethodInfo"/> for the setter for that property.
+    /// </summary>
     private static MethodInfo GetPropertySetter<TProperty>(Expression<Func<T, TProperty>> destination)
     {
         var body = destination.Body.ToString();

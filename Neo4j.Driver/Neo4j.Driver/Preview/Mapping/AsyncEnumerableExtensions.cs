@@ -64,7 +64,6 @@ public static class AsyncEnumerableExtensions
     public static async IAsyncEnumerable<T> AsObjectsAsync<T>(
         this IAsyncEnumerable<IRecord> asyncEnumerable,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
-        where T : new()
     {
         await foreach (var item in asyncEnumerable.ConfigureAwait(false).WithCancellation(cancellationToken))
         {

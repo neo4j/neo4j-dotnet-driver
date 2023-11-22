@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -24,9 +25,15 @@ internal class DictAsRecord : IRecord
 {
     private readonly IReadOnlyDictionary<string, object> _dict;
 
-    public DictAsRecord(IReadOnlyDictionary<string, object> dict, IRecord record)
+    public DictAsRecord(object dict, IRecord record)
     {
-        _dict = dict;
+        _dict = dict switch
+        {
+            IEntity entity => entity.Properties,
+            IReadOnlyDictionary<string, object> dictionary => dictionary,
+            _ => throw new InvalidOperationException($"Cannot create a DictAsRecord from a {dict.GetType().Name}")
+        };
+
         Record = record;
     }
 

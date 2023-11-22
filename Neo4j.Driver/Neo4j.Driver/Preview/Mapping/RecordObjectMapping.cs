@@ -33,15 +33,20 @@ public interface IMappingRegistry
     /// a fluent API for defining the mapping.</param>
     /// <typeparam name="T">The type to be mapped.</typeparam>
     /// <returns>This instance for method chaining.</returns>
-    IMappingRegistry RegisterMapping<T>(Action<IMappingBuilder<T>> mappingBuilder) where T : new();
+    IMappingRegistry RegisterMapping<T>(Action<IMappingBuilder<T>> mappingBuilder);
+}
+
+internal interface IRecordObjectMapping
+{
+    object Map(IRecord record, Type type);
 }
 
 /// <summary>
 /// Controls global record mapping configuration.
 /// </summary>
-public class RecordObjectMapping : IMappingRegistry
+public class RecordObjectMapping : IMappingRegistry, IRecordObjectMapping
 {
-    private static RecordObjectMapping Instance = new();
+    internal static RecordObjectMapping Instance { get; private set; } = new();
 
     private readonly Dictionary<Type, object> _mappers = new();
     private readonly Dictionary<Type, MethodInfo> _mapMethods = new();
@@ -52,6 +57,7 @@ public class RecordObjectMapping : IMappingRegistry
 
     internal static void Reset()
     {
+        // discard the current instance and create a new one, which will have no mappers registered
         Instance = new RecordObjectMapping();
     }
 
@@ -67,12 +73,7 @@ public class RecordObjectMapping : IMappingRegistry
         Instance._mappers[typeof(T)] = mapper;
     }
 
-    internal static IRecordMapper<T> GetMapper<T>() where T : new()
-    {
-        return (IRecordMapper<T>)GetMapperForType(typeof(T));
-    }
-
-    internal static object GetMapperForType(Type type)
+    private static object GetMapperForType(Type type)
     {
         if (Instance._mappers.TryGetValue(type, out var m))
         {
@@ -80,9 +81,9 @@ public class RecordObjectMapping : IMappingRegistry
         }
 
         // no mapper registered for this type, so use the default mapper
-        var getMethod = typeof(DefaultMapper).GetMethod(nameof(DefaultMapper.Get));
-        var genericMethod = getMethod!.MakeGenericMethod(type);
-        return genericMethod.Invoke(null, null);
+        var openGenericMethod = typeof(DefaultMapper).GetMethod(nameof(DefaultMapper.Get));
+        var closedGenericMethod = openGenericMethod!.MakeGenericMethod(type);
+        return closedGenericMethod.Invoke(null, null);
     }
 
     /// <summary>
@@ -91,9 +92,10 @@ public class RecordObjectMapping : IMappingRegistry
     /// <param name="record">The record to be mapped.</param>
     /// <typeparam name="T">The type of object to be mapped.</typeparam>
     /// <returns>The mapped object.</returns>
-    public static T Map<T>(IRecord record) where T : new()
+    public static T Map<T>(IRecord record)
     {
-        return GetMapper<T>().Map(record);
+        var mapper = (IRecordMapper<T>)GetMapperForType(typeof(T));
+        return mapper.Map(record);
     }
 
     /// <summary>
@@ -106,6 +108,11 @@ public class RecordObjectMapping : IMappingRegistry
         RegisterProvider(new T());
     }
 
+    /// <summary>
+    /// Registers a mapping provider. This will call <see cref="IMappingProvider.CreateMappers"/> on the
+    /// provider, allowing it to register any mappers it wishes.
+    /// </summary>
+    /// <param name="provider"></param>
     public static void RegisterProvider(IMappingProvider provider)
     {
         provider.CreateMappers(Instance);
@@ -140,6 +147,11 @@ public class RecordObjectMapping : IMappingRegistry
     /// <param name="type">The type of object to be mapped.</param>
     /// <returns>The mapped object.</returns>
     public static object Map(IRecord record, Type type)
+    {
+        return ((IRecordObjectMapping)Instance).Map(record, type);
+    }
+
+    object IRecordObjectMapping.Map(IRecord record, Type type)
     {
         var mapMethod = Instance.GetMapMethodForType(type);
         var mapperForType = GetMapperForType(type);
