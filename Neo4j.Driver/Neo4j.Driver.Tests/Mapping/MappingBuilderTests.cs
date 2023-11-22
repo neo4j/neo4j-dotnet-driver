@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -20,39 +18,38 @@ using FluentAssertions;
 using Neo4j.Driver.Preview.Mapping;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.Mapping
+namespace Neo4j.Driver.Tests.Mapping;
+
+public class MappingBuilderTests
 {
-    public class MappingBuilderTests
+    private class TestClass
     {
-        private class TestClass
-        {
-            public int Settable { get; set; }
-            public int NotSettable { get; } = -1;
-            public int NotAProperty = 0x6060B017;
-        }
+        public int Settable { get; set; }
+        public int NotSettable { get; } = -1;
+        public int NotAProperty = 0x6060B017;
+    }
 
-        [Fact]
-        public void ShouldThrowIfNotAMemberExpression()
-        {
-            var subject = new MappingBuilder<TestClass>();
-            var act = () => subject.Map(x => "something", "foo");
-            act.Should().Throw<ArgumentException>();
-        }
+    [Fact]
+    public void ShouldThrowIfNotAMemberExpression()
+    {
+        var subject = new MappingBuilder<TestClass>();
+        var act = () => subject.Map(x => "something", "foo");
+        act.Should().Throw<ArgumentException>();
+    }
 
-        [Fact]
-        public void ShouldThrowIfNotAPropertyExpression()
-        {
-            var subject = new MappingBuilder<TestClass>();
-            var act = () => subject.Map(x => x.NotAProperty, "foo");
-            act.Should().Throw<ArgumentException>();
-        }
+    [Fact]
+    public void ShouldThrowIfNotAPropertyExpression()
+    {
+        var subject = new MappingBuilder<TestClass>();
+        var act = () => subject.Map(x => x.NotAProperty, "foo");
+        act.Should().Throw<ArgumentException>();
+    }
 
-        [Fact]
-        public void ShouldThrowIfPropertyDoesNotHaveASetter()
-        {
-            var subject = new MappingBuilder<TestClass>();
-            var act = () => subject.Map(x => x.NotSettable, "foo");
-            act.Should().Throw<ArgumentException>();
-        }
+    [Fact]
+    public void ShouldThrowIfPropertyDoesNotHaveASetter()
+    {
+        var subject = new MappingBuilder<TestClass>();
+        var act = () => subject.Map(x => x.NotSettable, "foo");
+        act.Should().Throw<ArgumentException>();
     }
 }

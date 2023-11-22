@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -22,108 +20,107 @@ using Neo4j.Driver.Preview.Mapping;
 using Xunit;
 using Record = Neo4j.Driver.Internal.Result.Record;
 
-namespace Neo4j.Driver.Tests.Mapping
+namespace Neo4j.Driver.Tests.Mapping;
+
+public class RecordNodeExtensionsTests
 {
-    public class RecordNodeExtensionsTests
+    [Fact]
+    public void ShouldGetTypedValueFromRecord_string()
     {
-        [Fact]
-        public void ShouldGetTypedValueFromRecord_string()
-        {
-            var record = new Record(new[] { "key" }, new object[] { "value" });
-            record.GetString("key").Should().Be("value");
-        }
+        var record = new Record(new[] { "key" }, new object[] { "value" });
+        record.GetString("key").Should().Be("value");
+    }
 
-        [Fact]
-        public void ShouldGetTypedValueFromRecord_int()
-        {
-            var record = new Record(new[] { "key" }, new object[] { 1L });
-            record.GetInt("key").Should().Be(1);
-        }
+    [Fact]
+    public void ShouldGetTypedValueFromRecord_int()
+    {
+        var record = new Record(new[] { "key" }, new object[] { 1L });
+        record.GetInt("key").Should().Be(1);
+    }
 
-        [Fact]
-        public void ShouldGetTypedValueFromRecord_long()
-        {
-            var record = new Record(new[] { "key" }, new object[] { 1L });
-            record.GetLong("key").Should().Be(1L);
-        }
+    [Fact]
+    public void ShouldGetTypedValueFromRecord_long()
+    {
+        var record = new Record(new[] { "key" }, new object[] { 1L });
+        record.GetLong("key").Should().Be(1L);
+    }
 
-        [Fact]
-        public void ShouldGetTypedValueFromRecord_double()
-        {
-            var record = new Record(new[] { "key" }, new object[] { 1.0 });
-            record.GetDouble("key").Should().Be(1.0);
-        }
+    [Fact]
+    public void ShouldGetTypedValueFromRecord_double()
+    {
+        var record = new Record(new[] { "key" }, new object[] { 1.0 });
+        record.GetDouble("key").Should().Be(1.0);
+    }
 
-        [Fact]
-        public void ShouldGetTypedValueFromRecord_float()
-        {
-            var record = new Record(new[] { "key" }, new object[] { 1.0 });
-            record.GetFloat("key").Should().Be(1.0f);
-        }
+    [Fact]
+    public void ShouldGetTypedValueFromRecord_float()
+    {
+        var record = new Record(new[] { "key" }, new object[] { 1.0 });
+        record.GetFloat("key").Should().Be(1.0f);
+    }
 
-        [Fact]
-        public void ShouldGetTypedValueFromRecord_bool()
-        {
-            var record = new Record(new[] { "key" }, new object[] { true });
-            record.GetBool("key").Should().Be(true);
-        }
+    [Fact]
+    public void ShouldGetTypedValueFromRecord_bool()
+    {
+        var record = new Record(new[] { "key" }, new object[] { true });
+        record.GetBool("key").Should().Be(true);
+    }
 
-        [Fact]
-        public void ShouldGetTypedValueFromRecord_entity()
-        {
-            var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", "value" } });
-            var record = new Record(new[] { "key" }, new object[] { node });
-            record.GetEntity("key").Should().Be(node);
-        }
+    [Fact]
+    public void ShouldGetTypedValueFromRecord_entity()
+    {
+        var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", "value" } });
+        var record = new Record(new[] { "key" }, new object[] { node });
+        record.GetEntity("key").Should().Be(node);
+    }
 
-        [Fact]
-        public void ShouldGetValueFromEntity_string()
-        {
-            var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", "value" } });
-            node.GetString("key").Should().Be("value");
-        }
+    [Fact]
+    public void ShouldGetValueFromEntity_string()
+    {
+        var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", "value" } });
+        node.GetString("key").Should().Be("value");
+    }
 
-        [Fact]
-        public void ShouldGetValueFromEntity_int()
-        {
-            var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", 1L } });
-            node.GetInt("key").Should().Be(1);
-        }
+    [Fact]
+    public void ShouldGetValueFromEntity_int()
+    {
+        var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", 1L } });
+        node.GetInt("key").Should().Be(1);
+    }
 
-        [Fact]
-        public void ShouldGetValueFromEntity_long()
-        {
-            var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", 1L } });
-            node.GetLong("key").Should().Be(1L);
-        }
+    [Fact]
+    public void ShouldGetValueFromEntity_long()
+    {
+        var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", 1L } });
+        node.GetLong("key").Should().Be(1L);
+    }
 
-        [Fact]
-        public void ShouldGetValueFromEntity_double()
-        {
-            var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", 1.0 } });
-            node.GetDouble("key").Should().Be(1.0);
-        }
+    [Fact]
+    public void ShouldGetValueFromEntity_double()
+    {
+        var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", 1.0 } });
+        node.GetDouble("key").Should().Be(1.0);
+    }
 
-        [Fact]
-        public void ShouldGetValueFromEntity_float()
-        {
-            var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", 1.0 } });
-            node.GetFloat("key").Should().Be(1.0f);
-        }
+    [Fact]
+    public void ShouldGetValueFromEntity_float()
+    {
+        var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", 1.0 } });
+        node.GetFloat("key").Should().Be(1.0f);
+    }
 
-        [Fact]
-        public void ShouldGetValueFromEntity_bool()
-        {
-            var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", true } });
-            node.GetBool("key").Should().Be(true);
-        }
+    [Fact]
+    public void ShouldGetValueFromEntity_bool()
+    {
+        var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", true } });
+        node.GetBool("key").Should().Be(true);
+    }
 
-        [Fact]
-        public void ShouldGetValueFromEntity_Dictionary()
-        {
-            var dictionary = new Dictionary<string, object> { { "key", "value" } };
-            var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "field", dictionary } });
-            node.GetValue<Dictionary<string, object>>("field").Should().BeEquivalentTo(dictionary);
-        }
+    [Fact]
+    public void ShouldGetValueFromEntity_Dictionary()
+    {
+        var dictionary = new Dictionary<string, object> { { "key", "value" } };
+        var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "field", dictionary } });
+        node.GetValue<Dictionary<string, object>>("field").Should().BeEquivalentTo(dictionary);
     }
 }
