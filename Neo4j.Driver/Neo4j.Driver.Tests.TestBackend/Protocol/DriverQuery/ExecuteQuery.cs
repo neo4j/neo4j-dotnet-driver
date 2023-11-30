@@ -117,5 +117,6 @@ internal class ExecuteQuery : IProtocolObject
         public string database { get; set; }
         public string impersonatedUser { get; set; }
         public string bookmarkManagerId { get; set; }
+        public AuthorizationToken authorizationToken { get; set; }
     }
 }
