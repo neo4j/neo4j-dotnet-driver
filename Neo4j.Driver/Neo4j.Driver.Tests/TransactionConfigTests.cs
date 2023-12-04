@@ -65,15 +65,7 @@ public class TransactionConfigTests
         public void ShouldAllowToInitToNewValue(TimeSpan? input)
         {
             var config = new TransactionConfig { Timeout = input };
-
-            if (input == TimeSpan.MaxValue)
-            {
-                config.Timeout.Should().Be(TimeSpan.Zero);
-            }
-            else
-            {
-                config.Timeout.Should().Be(input);
-            }
+            config.Timeout.Should().Be(input);
         }
 
         [Fact]

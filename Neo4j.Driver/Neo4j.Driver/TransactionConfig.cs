@@ -39,7 +39,7 @@ public sealed class TransactionConfig
     /// make the transaction execute indefinitely.
     /// </summary>
     /// <remarks>All positive non-whole millisecond values will be rounded to the next whole millisecond.</remarks>
-    /// <remarks><see cref="TimeSpan.MaxValue"/> will be treated as <see cref="TimeSpan.Zero"/> and remove all timeout.</remarks>
+    /// <remarks><see cref="TimeSpan.MaxValue"/> ticks will be ignored.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">
     /// If the value given to transaction timeout in milliseconds is less than
     /// zero.
@@ -49,17 +49,12 @@ public sealed class TransactionConfig
         get => _timeout;
         init
         {
-            if (!value.HasValue)
+            if (!value.HasValue || value.Value == TimeSpan.MaxValue)
             {
+                _timeout = value;
                 return;
             }
             
-            if (value.Value == TimeSpan.MaxValue)
-            {
-                _timeout = TimeSpan.Zero;
-                return;
-            }
-
             if (value.Value < TimeSpan.Zero)
             {
                 throw new ArgumentOutOfRangeException(
