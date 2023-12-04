@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -26,7 +24,7 @@ internal class LocalDateTimeSerializer : IPackStreamSerializer
     public const int StructSize = 2;
     internal static readonly LocalDateTimeSerializer Instance = new();
 
-    public IEnumerable<byte> ReadableStructs => new[] { StructType };
+    public byte[] ReadableStructs => new[] { StructType };
 
     public IEnumerable<Type> WritableTypes => new[] { typeof(LocalDateTime) };
 
@@ -47,5 +45,13 @@ internal class LocalDateTimeSerializer : IPackStreamSerializer
         writer.WriteStructHeader(StructSize, StructType);
         writer.WriteLong(dateTime.ToEpochSeconds());
         writer.WriteInt(dateTime.Nanosecond);
+    }
+
+    public (object, int) DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    {
+        PackStream.EnsureStructSize("LocalDateTime", StructSize, size);
+        var epochSeconds = reader.ReadLong();
+        var nanosOfSecond = reader.ReadInteger();
+        return (TemporalHelpers.EpochSecondsAndNanoToDateTime(epochSeconds, nanosOfSecond), reader.Index);
     }
 }

@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -26,7 +24,7 @@ internal sealed class DurationSerializer : IPackStreamSerializer
     public const int StructSize = 4;
     internal static readonly DurationSerializer Instance = new();
 
-    public IEnumerable<byte> ReadableStructs => new[] { StructType };
+    public byte[] ReadableStructs => new[] { StructType };
 
     public IEnumerable<Type> WritableTypes => new[] { typeof(Duration) };
 
@@ -51,5 +49,17 @@ internal sealed class DurationSerializer : IPackStreamSerializer
         writer.WriteLong(duration.Days);
         writer.WriteLong(duration.Seconds);
         writer.WriteInt(duration.Nanos);
+    }
+
+    public (object, int) DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    {
+        PackStream.EnsureStructSize("Duration", StructSize, size);
+
+        var months = reader.ReadLong();
+        var days = reader.ReadLong();
+        var seconds = reader.ReadLong();
+        var nanos = reader.ReadInteger();
+
+        return (new Duration(months, days, seconds, nanos), reader.Index);
     }
 }

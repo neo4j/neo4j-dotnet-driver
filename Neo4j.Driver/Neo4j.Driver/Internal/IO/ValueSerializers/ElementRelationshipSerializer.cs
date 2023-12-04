@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -24,7 +22,7 @@ internal sealed class ElementRelationshipSerializer : ReadOnlySerializer
 {
     public const byte Relationship = (byte)'R';
     internal static readonly ElementRelationshipSerializer Instance = new();
-    public override IEnumerable<byte> ReadableStructs => new[] { Relationship };
+    public override byte[] ReadableStructs => new[] { Relationship };
 
     public override object Deserialize(PackStreamReader reader)
     {
@@ -40,5 +38,21 @@ internal sealed class ElementRelationshipSerializer : ReadOnlySerializer
         var endUrn = reader.ReadString();
 
         return new Relationship(relId, urn, relStartId, relEndId, startUrn, endUrn, relType, props);
+    }
+
+    public override (object, int) DeserializeSpan(SpanPackStreamReader reader)
+    {
+        var relId = reader.ReadLong();
+        var relStartId = reader.ReadLong();
+        var relEndId = reader.ReadLong();
+
+        var relType = reader.ReadString();
+        var props = reader.ReadMap();
+
+        var urn = reader.ReadString();
+        var startUrn = reader.ReadString();
+        var endUrn = reader.ReadString();
+
+        return (new Relationship(relId, urn, relStartId, relEndId, startUrn, endUrn, relType, props), reader.Index);
     }
 }

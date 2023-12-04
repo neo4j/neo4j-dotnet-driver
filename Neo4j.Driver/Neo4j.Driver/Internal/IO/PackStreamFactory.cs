@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -23,7 +21,6 @@ namespace Neo4j.Driver.Internal.IO;
 internal interface IPackStreamFactory
 {
     PackStreamWriter BuildWriter(MessageFormat format, IChunkWriter stream);
-    PackStreamReader BuildReader(MessageFormat format, MemoryStream stream, ByteBuffers buffers);
 }
 
 internal sealed class PackStreamFactory : IPackStreamFactory
@@ -37,10 +34,5 @@ internal sealed class PackStreamFactory : IPackStreamFactory
     public PackStreamWriter BuildWriter(MessageFormat format, IChunkWriter stream)
     {
         return new PackStreamWriter(format, stream.Stream);
-    }
-
-    public PackStreamReader BuildReader(MessageFormat format, MemoryStream stream, ByteBuffers buffers)
-    {
-        return new PackStreamReader(format, stream, buffers);
     }
 }

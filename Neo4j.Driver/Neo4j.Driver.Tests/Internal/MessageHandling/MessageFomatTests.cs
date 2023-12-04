@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -21,6 +19,7 @@ using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.IO.ValueSerializers;
 using Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
+using Neo4j.Driver.Tests;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.MessageHandling
@@ -41,15 +40,11 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [InlineData(6, 0)]
             public void ShouldHaveGeneralReaderStructSerializers(int major, int minor)
             {
-                var format = new MessageFormat(new BoltProtocolVersion(major, minor));
+                var format = new MessageFormat(new BoltProtocolVersion(major, minor), TestDriverContext.MockContext);
                 format.ReaderStructHandlers.Values.Should()
                     .Contain(
                         new IPackStreamSerializer[]
                         {
-                            FailureMessageSerializer.Instance,
-                            IgnoredMessageSerializer.Instance,
-                            RecordMessageSerializer.Instance,
-                            SuccessMessageSerializer.Instance,
                             PointSerializer.Instance,
                             LocalDateSerializer.Instance,
                             LocalTimeSerializer.Instance,
@@ -72,7 +67,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [InlineData(6, 0)]
             public void ShouldHaveGeneralWriterStructSerializers(int major, int minor)
             {
-                var format = new MessageFormat(new BoltProtocolVersion(major, minor));
+                var format = new MessageFormat(new BoltProtocolVersion(major, minor), TestDriverContext.MockContext);
                 format.WriteStructHandlers.Values.Should()
                     .Contain(
                         new IPackStreamSerializer[]
@@ -105,7 +100,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                     ElementUnboundRelationshipSerializer.Instance
                 };
 
-                var format = new MessageFormat(new BoltProtocolVersion(major, minor));
+                var format = new MessageFormat(new BoltProtocolVersion(major, minor), TestDriverContext.MockContext);
 
                 format.ReaderStructHandlers.Values.Should().Contain(serializers);
             }
@@ -126,7 +121,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
                     UnboundRelationshipSerializer.Instance
                 };
 
-                var format = new MessageFormat(new BoltProtocolVersion(major, minor));
+                var format = new MessageFormat(new BoltProtocolVersion(major, minor), TestDriverContext.MockContext);
 
                 format.ReaderStructHandlers.Values.Should().Contain(serializers);
             }
@@ -146,7 +141,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [InlineData(4, 4)]
             public void MessageFormatShouldDefaultToNonUtcDateSerializers(int major, int minor)
             {
-                var format = new MessageFormat(new BoltProtocolVersion(major, minor));
+                var format = new MessageFormat(new BoltProtocolVersion(major, minor), TestDriverContext.MockContext);
                 format.ReaderStructHandlers.Keys.Should()
                     .Contain(NonUtcEncoderBytes)
                     .And.NotContain(UtcEncoderBytes);
@@ -166,7 +161,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [InlineData(6, 0)]
             public void MessageFormatShouldDefaultToUtcDateSerializers(int major, int minor)
             {
-                var format = new MessageFormat(new BoltProtocolVersion(major, minor));
+                var format = new MessageFormat(new BoltProtocolVersion(major, minor), TestDriverContext.MockContext);
                 format.ReaderStructHandlers.Keys.Should()
                     .Contain(UtcEncoderBytes)
                     .And.NotContain(NonUtcEncoderBytes);
@@ -187,7 +182,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [InlineData(4, 2)]
             public void MessageFormatShouldIgnoreUseUtcEncoderWhenInvalid(int major, int minor)
             {
-                var format = new MessageFormat(new BoltProtocolVersion(major, minor));
+                var format = new MessageFormat(new BoltProtocolVersion(major, minor), TestDriverContext.MockContext);
 
                 //ignored for < 4.3
                 format.UseUtcEncoder();
@@ -212,7 +207,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
             [InlineData(6, 0)]
             public void MessageFormatShouldUseUtcEncoderWhenInvalid(int major, int minor)
             {
-                var format = new MessageFormat(new BoltProtocolVersion(major, minor));
+                var format = new MessageFormat(new BoltProtocolVersion(major, minor), TestDriverContext.MockContext);
 
                 //ignored for version > 4.4 and applied for 4.3 & 4.4
                 format.UseUtcEncoder();

@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -588,7 +586,7 @@ public class TransactionClosedException : ClientException
 /// <summary>
 /// The exception that is thrown when trying to further interact with a terminated transaction.
 /// Transactions are terminated when they incur errors. <br/>
-/// If created by the driver the <see cref="ClientException.Code"/> will be null.
+/// If created by the driver the <see cref="Neo4jException.Code"/> will be null.
 /// </summary>
 [DataContract]
 public sealed class TransactionTerminatedException : ClientException

@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -60,6 +58,29 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             var reader = readerMachine.Reader();
             var value = reader.Read();
 
+            Validate(value);
+        }
+
+        [Fact]
+        public void ShouldDeserializeSpanDuration()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            writer.WriteStructHeader(DurationSerializer.StructSize, DurationSerializer.StructType);
+            writer.Write(21L);
+            writer.Write(8L);
+            writer.Write(564L);
+            writer.Write(865);
+
+            var reader = CreateSpanReader(writerMachine.GetOutput());
+            var value = reader.Read();
+
+            Validate(value);
+        }
+
+        private static void Validate(object value)
+        {
             value.Should().NotBeNull();
             value.Should().BeOfType<Duration>().Which.Months.Should().Be(21L);
             value.Should().BeOfType<Duration>().Which.Days.Should().Be(8L);

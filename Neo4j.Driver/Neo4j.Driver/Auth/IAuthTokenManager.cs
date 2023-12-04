@@ -1,7 +1,5 @@
 // Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -18,9 +16,12 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Preview.Auth;
+namespace Neo4j.Driver.Auth;
 
-/// <summary>Common interface for components that can provide auth tokens.</summary>
+/// <summary>
+/// Common interface for components that can provide auth tokens. For pre-baked implementations
+/// of this interface, see <see cref="AuthTokenManagers"/>.
+/// </summary>
 public interface IAuthTokenManager
 {
     /// <summary>
@@ -36,10 +37,10 @@ public interface IAuthTokenManager
     /// <p/>
     /// This will be called when driver throws a <see cref="SecurityException"/>.
     /// </summary>
-    /// <returns>
     /// <param name="token">The token.</param>
     /// <param name="exception">The security exception thrown by the server.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+    /// <returns>
     /// A <see cref="Task"/> representing the asynchronous operation.
     /// </returns>
     ValueTask<bool> HandleSecurityExceptionAsync(

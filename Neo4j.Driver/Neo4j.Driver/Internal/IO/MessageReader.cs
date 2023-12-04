@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -15,7 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.IO;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 
@@ -28,6 +29,9 @@ internal sealed class MessageReader : IMessageReader
     private readonly ILogger _logger;
     private readonly int _maxBufferSize;
     private int _shrinkCounter;
+    readonly ByteBuffers _readerBuffers;
+
+    public MemoryStream BufferStream { get; }
 
     public MessageReader(IChunkReader chunkReader, DriverContext driverContext, ILogger logger)
     {
@@ -35,12 +39,15 @@ internal sealed class MessageReader : IMessageReader
         _defaultBufferSize = driverContext.Config.DefaultReadBufferSize;
         _maxBufferSize = driverContext.Config.MaxReadBufferSize;
         _logger = logger;
+        BufferStream = new MemoryStream(driverContext.Config.MaxReadBufferSize);
+        _readerBuffers = new ByteBuffers();
     }
 
-    public async Task ReadAsync(IResponsePipeline pipeline, PackStreamReader reader)
+    public async ValueTask ReadAsync(IResponsePipeline pipeline, MessageFormat format)
     {
-        var messageCount = await _chunkReader.ReadMessageChunksToBufferStreamAsync(reader.Stream).ConfigureAwait(false);
-        ConsumeMessages(pipeline, messageCount, reader);
+        var messageCount = await _chunkReader.ReadMessageChunksToBufferStreamAsync(BufferStream).ConfigureAwait(false);
+        var psr = new PackStreamReader(format, BufferStream, _readerBuffers);
+        ConsumeMessages(pipeline, messageCount, psr);
     }
 
     public void SetReadTimeoutInMs(int ms)
@@ -97,5 +104,11 @@ internal sealed class MessageReader : IMessageReader
         {
             throw new ProtocolException($"Unknown response message type {message.GetType().FullName}");
         }
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        BufferStream.Dispose();
+        return new ValueTask(Task.CompletedTask);
     }
 }

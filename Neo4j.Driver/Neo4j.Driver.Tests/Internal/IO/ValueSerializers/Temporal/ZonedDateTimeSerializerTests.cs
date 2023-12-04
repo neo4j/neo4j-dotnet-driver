@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -75,20 +73,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             var reader = readerMachine.Reader();
             var value = reader.Read();
 
-            value.Should().NotBeNull();
-            value.Should().BeOfType<ZonedDateTime>().Which.Year.Should().Be(1978);
-            value.Should().BeOfType<ZonedDateTime>().Which.Month.Should().Be(12);
-            value.Should().BeOfType<ZonedDateTime>().Which.Day.Should().Be(16);
-            value.Should().BeOfType<ZonedDateTime>().Which.Hour.Should().Be(12);
-            value.Should().BeOfType<ZonedDateTime>().Which.Minute.Should().Be(35);
-            value.Should().BeOfType<ZonedDateTime>().Which.Second.Should().Be(59);
-            value.Should().BeOfType<ZonedDateTime>().Which.Nanosecond.Should().Be(128000987);
-            value.Should()
-                .BeOfType<ZonedDateTime>()
-                .Which.Zone.Should()
-                .BeOfType<ZoneOffset>()
-                .Which.OffsetSeconds.Should()
-                .Be((int)TimeSpan.FromMinutes(-150).TotalSeconds);
+            ValidateOffset(value);
         }
 
         [Fact]
@@ -126,6 +111,63 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             var reader = readerMachine.Reader();
             var value = reader.Read();
 
+            ValidateZoneId(value);
+        }
+
+        [Fact]
+        public void ShouldDeserializeSpanDateTimeWithOffset()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            writer.WriteStructHeader(ZonedDateTimeSerializer.StructSize, ZonedDateTimeSerializer.StructTypeWithOffset);
+            writer.Write(282659759);
+            writer.Write(128000987);
+            writer.Write(-9000);
+
+            var reader = CreateSpanReader(writerMachine.GetOutput());
+            var value = reader.Read();
+
+            ValidateOffset(value);
+        }
+
+        private static void ValidateOffset(object value)
+        {
+            value.Should().NotBeNull();
+            value.Should().BeOfType<ZonedDateTime>().Which.Year.Should().Be(1978);
+            value.Should().BeOfType<ZonedDateTime>().Which.Month.Should().Be(12);
+            value.Should().BeOfType<ZonedDateTime>().Which.Day.Should().Be(16);
+            value.Should().BeOfType<ZonedDateTime>().Which.Hour.Should().Be(12);
+            value.Should().BeOfType<ZonedDateTime>().Which.Minute.Should().Be(35);
+            value.Should().BeOfType<ZonedDateTime>().Which.Second.Should().Be(59);
+            value.Should().BeOfType<ZonedDateTime>().Which.Nanosecond.Should().Be(128000987);
+            value.Should()
+                .BeOfType<ZonedDateTime>()
+                .Which.Zone.Should()
+                .BeOfType<ZoneOffset>()
+                .Which.OffsetSeconds.Should()
+                .Be((int)TimeSpan.FromMinutes(-150).TotalSeconds);
+        }
+
+        [Fact]
+        public void ShouldDeserializeSpanDateTimeWithZoneId()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            writer.WriteStructHeader(ZonedDateTimeSerializer.StructSize, ZonedDateTimeSerializer.StructTypeWithId);
+            writer.Write(282659759);
+            writer.Write(128000987);
+            writer.Write("Europe/Istanbul");
+
+            var reader = CreateSpanReader(writerMachine.GetOutput());
+            var value = reader.Read();
+
+            ValidateZoneId(value);
+        }
+
+        private static void ValidateZoneId(object value)
+        {
             value.Should().NotBeNull();
             value.Should().BeOfType<ZonedDateTime>().Which.Year.Should().Be(1978);
             value.Should().BeOfType<ZonedDateTime>().Which.Month.Should().Be(12);

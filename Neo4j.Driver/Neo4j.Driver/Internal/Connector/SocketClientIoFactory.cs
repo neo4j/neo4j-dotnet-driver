@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -22,9 +20,9 @@ namespace Neo4j.Driver.Internal.Connector;
 internal interface IConnectionIoFactory
 {
     ITcpSocketClient TcpSocketClient(DriverContext context, ILogger logger);
-    MessageFormat Format(BoltProtocolVersion version);
+    MessageFormat Format(BoltProtocolVersion version, DriverContext context);
 
-    IMessageReader Readers(
+    IMessageReader MessageReader(
         ITcpSocketClient client,
         DriverContext context,
         ILogger logger);
@@ -45,17 +43,22 @@ internal sealed class SocketClientIoFactory : IConnectionIoFactory
         return new TcpSocketClient(context, logger);
     }
 
-    public MessageFormat Format(BoltProtocolVersion version)
+    public MessageFormat Format(BoltProtocolVersion version, DriverContext context)
     {
-        return new MessageFormat(version);
+        return new MessageFormat(version, context);
     }
 
-    public IMessageReader Readers(
+    public IMessageReader MessageReader(
         ITcpSocketClient client,
         DriverContext context,
         ILogger logger)
     {
-        return new MessageReader(new ChunkReader(client.ReaderStream), context, logger);
+        if (context.Config.MessageReaderConfig.DisablePipelinedMessageReader)
+        {
+            return new MessageReader(new ChunkReader(client.ReaderStream), context, logger);
+        }
+
+        return new PipelinedMessageReader(client.ReaderStream, context);
     }
 
     public (IChunkWriter, IMessageWriter) Writers(ITcpSocketClient client, DriverContext context, ILogger logger)

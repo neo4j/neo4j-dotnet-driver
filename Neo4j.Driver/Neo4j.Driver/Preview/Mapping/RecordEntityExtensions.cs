@@ -29,7 +29,7 @@ public static class RecordEntityExtensions
     /// <param name="record">The record to convert.</param>
     /// <typeparam name="T">The type to map to.</typeparam>
     /// <returns>The mapped object.</returns>
-    public static T AsObject<T>(this IRecord record) where T : new()
+    public static T AsObject<T>(this IRecord record)
     {
         return RecordObjectMapping.Map<T>(record);
     }
@@ -41,7 +41,7 @@ public static class RecordEntityExtensions
     /// <param name="key">The key of the value.</param>
     /// <typeparam name="T">The type to convert to.</typeparam>
     /// <returns>The converted value.</returns>
-    public static T? GetValue<T>(this IRecord record, string key)
+    public static T GetValue<T>(this IRecord record, string key)
     {
         return record.Values.TryGetValue(key, out var value) ? value.As<T>() : default;
     }
@@ -64,7 +64,7 @@ public static class RecordEntityExtensions
     /// <param name="key">The key of the value.</param>
     /// <typeparam name="T">The type to convert to.</typeparam>
     /// <returns>The converted value.</returns>
-    public static T? GetValue<T>(this IEntity entity, string key)
+    public static T GetValue<T>(this IEntity entity, string key)
     {
         return entity.Properties.TryGetValue(key, out var value) ? value.As<T>() : default;
     }

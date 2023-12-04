@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -15,16 +13,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver;
+using FluentAssertions;
+using Moq;
+using Xunit;
 
-/// <summary>
-/// An authentication token is used to authenticate with a Neo4j instance. It usually contains a <c>Principal</c>,
-/// for instance a username, and one or more <c>Credentials</c>, for instance a password. See <see cref="AuthTokens"/> for
-/// available types of <see cref="IAuthToken"/>s.
-/// </summary>
-/// <remarks>
-///     <see cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder})"/>
-/// </remarks>
-public interface IAuthToken
+namespace Neo4j.Driver.Tests.TestUtil;
+
+public class MockExtensionsTests
 {
+    public interface IntGetter
+    {
+        int Value { get; }
+    }
+
+    [Fact]
+    public void ShouldSetupSequentialReturns()
+    {
+        var mock = new Mock<IntGetter>();
+        mock.SetupSequence(x => x.Value).ReturnsSequence(new[] { 1, 2, 3 });
+
+        mock.Object.Value.Should().Be(1);
+        mock.Object.Value.Should().Be(2);
+        mock.Object.Value.Should().Be(3);
+    }
 }

@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -55,6 +53,29 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var reader = readerMachine.Reader();
+            var value = reader.Read();
+
+            value.Should().NotBeNull();
+            value.Should().BeOfType<LocalDateTime>().Which.Year.Should().Be(1978);
+            value.Should().BeOfType<LocalDateTime>().Which.Month.Should().Be(12);
+            value.Should().BeOfType<LocalDateTime>().Which.Day.Should().Be(16);
+            value.Should().BeOfType<LocalDateTime>().Which.Hour.Should().Be(12);
+            value.Should().BeOfType<LocalDateTime>().Which.Minute.Should().Be(35);
+            value.Should().BeOfType<LocalDateTime>().Which.Second.Should().Be(59);
+            value.Should().BeOfType<LocalDateTime>().Which.Nanosecond.Should().Be(128000987);
+        }
+
+        [Fact]
+        public void ShouldDeserializeSpanDateTime()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            writer.WriteStructHeader(LocalDateTimeSerializer.StructSize, LocalDateTimeSerializer.StructType);
+            writer.Write(282659759);
+            writer.Write(128000987);
+
+            var reader = CreateSpanReader(writerMachine.GetOutput());
             var value = reader.Read();
 
             value.Should().NotBeNull();

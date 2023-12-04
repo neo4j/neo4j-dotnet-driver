@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -20,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO.Utils;
+using Neo4j.Driver.Tests;
 
 namespace Neo4j.Driver.Internal.IO
 {
@@ -58,16 +57,23 @@ namespace Neo4j.Driver.Internal.IO
                 stream => new PackStreamReader(format, stream, new ByteBuffers()));
         }
 
+        internal SpanPackStreamReader CreateSpanReader(byte[] bytes)
+        {
+            var data = new Span<byte>(bytes);
+            var messageFormat = new MessageFormat(new[] { SerializerUnderTest }.Concat(SerializersNeeded));
+            return new SpanPackStreamReader(messageFormat, data);
+        }
+
         internal PackStreamWriterMachine CreateWriterMachine(BoltProtocolVersion version)
         {
-            var format = new MessageFormat(version);
+            var format = new MessageFormat(version, TestDriverContext.MockContext);
 
             return new PackStreamWriterMachine(stream => new PackStreamWriter(format, stream));
         }
 
         internal PackStreamReaderMachine CreateReaderMachine(BoltProtocolVersion version, byte[] bytes)
         {
-            var format = new MessageFormat(version);
+            var format = new MessageFormat(version, TestDriverContext.MockContext);
             return new PackStreamReaderMachine(
                 bytes,
                 stream => new PackStreamReader(format, stream, new ByteBuffers()));

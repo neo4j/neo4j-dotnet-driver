@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -26,7 +24,7 @@ internal sealed class OffsetTimeSerializer : IPackStreamSerializer
     public const int StructSize = 2;
     internal static readonly OffsetTimeSerializer Instance = new();
 
-    public IEnumerable<byte> ReadableStructs => new[] { StructType };
+    public byte[] ReadableStructs => new[] { StructType };
 
     public IEnumerable<Type> WritableTypes => new[] { typeof(OffsetTime) };
 
@@ -47,5 +45,15 @@ internal sealed class OffsetTimeSerializer : IPackStreamSerializer
         writer.WriteStructHeader(StructSize, StructType);
         writer.WriteLong(time.ToNanoOfDay());
         writer.WriteInt(time.OffsetSeconds);
+    }
+
+    public (object, int) DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    {
+        PackStream.EnsureStructSize("Time", StructSize, size);
+
+        var nanosOfDay = reader.ReadLong();
+        var offsetSeconds = reader.ReadInteger();
+
+        return (new OffsetTime(TemporalHelpers.NanoOfDayToTime(nanosOfDay), offsetSeconds), reader.Index);
     }
 }

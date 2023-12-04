@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -77,6 +75,42 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             reader.PeekNextType().Should().Be(PackStreamType.Struct);
             reader.ReadStructHeader().Should().Be(1);
             reader.ReadStructSignature().Should().Be((byte)'D');
+            reader.Read().Should().Be(-7063L);
+        }
+#endif
+        
+        [Fact]
+        public void ShouldDeserializeSpanDate()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            writer.WriteStructHeader(LocalDateSerializer.StructSize, LocalDateSerializer.StructType);
+            writer.Write(-7063L);
+
+            var reader = CreateSpanReader(writerMachine.GetOutput());
+            var value = reader.Read();
+
+            value.Should().NotBeNull();
+            value.Should().BeOfType<LocalDate>().Which.Year.Should().Be(1950);
+            value.Should().BeOfType<LocalDate>().Which.Month.Should().Be(8);
+            value.Should().BeOfType<LocalDate>().Which.Day.Should().Be(31);
+        }
+
+#if NET6_0_OR_GREATER
+        [Fact]
+        public void ShouldSerializeSpanDateOnly()
+        {
+            var date = new DateOnly(1950, 8, 31);
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            writer.Write(date);
+
+            var reader = CreateSpanReader(writerMachine.GetOutput());
+            reader.PeekNextType().Should().Be(PackStreamType.Struct);
+            reader.ReadStructHeader().Should().Be(1);
+            reader.NextByte().Should().Be((byte)'D');
             reader.Read().Should().Be(-7063L);
         }
 #endif

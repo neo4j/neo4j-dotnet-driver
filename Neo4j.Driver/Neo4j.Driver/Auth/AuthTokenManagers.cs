@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -20,11 +18,11 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Services;
 
-namespace Neo4j.Driver.Preview.Auth;
+namespace Neo4j.Driver.Auth;
 
 /// <summary>
-/// This class provides common implementations of <see cref="IAuthTokenManager"/> without needing to create a new
-/// class that implements that interface.
+/// This class provides common implementations of <see cref="IAuthTokenManager"/> for various types of
+/// authentication.
 /// </summary>
 public static class AuthTokenManagers
 {
@@ -32,7 +30,7 @@ public static class AuthTokenManagers
     /// An implementation of <see cref="IAuthTokenManager"/> that allows connection with auth disabled. This will only
     /// work if authentication is disabled on the Neo4j Instance we are connecting to.
     /// </summary>
-    public static IAuthTokenManager None => Static(AuthTokens.None);
+    public static IAuthTokenManager None { get; } = Static(AuthTokens.None);
 
     /// <summary>
     /// An implementation of <see cref="IAuthTokenManager"/> that allows connection using a static token that never

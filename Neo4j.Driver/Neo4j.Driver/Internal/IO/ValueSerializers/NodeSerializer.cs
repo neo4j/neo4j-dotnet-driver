@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -24,7 +22,7 @@ internal sealed class NodeSerializer : ReadOnlySerializer
 {
     public const byte Node = (byte)'N';
     internal static readonly NodeSerializer Instance = new();
-    public override IEnumerable<byte> ReadableStructs => new[] { Node };
+    public override byte[] ReadableStructs => new[] { Node };
 
     public override object Deserialize(PackStreamReader reader)
     {
@@ -46,5 +44,27 @@ internal sealed class NodeSerializer : ReadOnlySerializer
         }
 
         return new Node(urn, labels, props);
+    }
+
+    public override (object, int) DeserializeSpan(SpanPackStreamReader reader)
+    {
+        var urn = reader.ReadLong();
+
+        var numLabels = reader.ReadListHeader();
+        var labels = new List<string>(numLabels);
+        for (var i = 0; i < numLabels; i++)
+        {
+            labels.Add(reader.ReadString());
+        }
+
+        var numProps = reader.ReadMapHeader();
+        var props = new Dictionary<string, object>(numProps);
+        for (var i = 0; i < numProps; i++)
+        {
+            var key = reader.ReadString();
+            props.Add(key, reader.Read());
+        }
+
+        return (new Node(urn, labels, props), reader.Index);
     }
 }

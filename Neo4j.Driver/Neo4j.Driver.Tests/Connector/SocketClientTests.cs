@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -16,7 +14,6 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,7 +24,6 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Preview.Auth;
 using Xunit;
 
 namespace Neo4j.Driver.Tests
@@ -90,7 +86,7 @@ namespace Neo4j.Driver.Tests
             IMessageReader messageReader = null,
             IMessageWriter messageWriter = null)
         {
-            var fmt = format ?? new MessageFormat(Version);
+            var fmt = format ?? new MessageFormat(Version, TestDriverContext.MockContext);
             var cw = writer ??
                 new ChunkWriter(
                     new MemoryStream(),
@@ -101,14 +97,14 @@ namespace Neo4j.Driver.Tests
             var mw = messageWriter ?? Mock.Of<IMessageWriter>();
 
             factory
-                .Setup(x => x.Readers(It.IsAny<ITcpSocketClient>(), It.IsAny<DriverContext>(), It.IsAny<ILogger>()))
+                .Setup(x => x.MessageReader(It.IsAny<ITcpSocketClient>(), It.IsAny<DriverContext>(), It.IsAny<ILogger>()))
                 .Returns(mr);
 
             factory
                 .Setup(x => x.Writers(It.IsAny<ITcpSocketClient>(), It.IsAny<DriverContext>(), It.IsAny<ILogger>()))
                 .Returns((cw, mw));
 
-            factory.Setup(x => x.Format(Version)).Returns(fmt);
+            factory.Setup(x => x.Format(Version, TestDriverContext.MockContext)).Returns(fmt);
         }
 
         public class ConnectMethod
@@ -141,7 +137,7 @@ namespace Neo4j.Driver.Tests
 
                 ex.Should().NotBeNull().And.Be(exception);
 
-                io.Verify(x => x.Format(It.IsAny<BoltProtocolVersion>()), Times.Never);
+                io.Verify(x => x.Format(It.IsAny<BoltProtocolVersion>(), It.IsAny<DriverContext>()), Times.Never);
             }
         }
 
@@ -231,22 +227,14 @@ namespace Neo4j.Driver.Tests
 
                 var (_, factory) = CreateMockIoFactory(null, x => SetupFactory(x, messageReader: readerMock.Object));
 
-                var psFactory = new Mock<IPackStreamFactory>();
-                psFactory.Setup(
-                        x => x.BuildReader(
-                            It.IsAny<MessageFormat>(),
-                            It.IsAny<MemoryStream>(),
-                            It.IsAny<ByteBuffers>()))
-                    .Returns(new PackStreamReader(null, null, null));
-
-                var client = NewClient(factory, psFactory);
+                var client = NewClient(factory);
                 await client.ConnectAsync();
 
                 // When
                 await client.ReceiveOneAsync(pipeline.Object);
 
                 // Then
-                readerMock.Verify(x => x.ReadAsync(pipeline.Object, It.IsAny<PackStreamReader>()), Times.Once);
+                readerMock.Verify(x => x.ReadAsync(pipeline.Object, It.IsAny<MessageFormat>()), Times.Once);
             }
 
             [Fact]
@@ -257,7 +245,7 @@ namespace Neo4j.Driver.Tests
 
                 var readerMock = new Mock<IMessageReader>();
                 readerMock
-                    .Setup(x => x.ReadAsync(mockPipeline.Object, It.IsAny<PackStreamReader>()))
+                    .Setup(x => x.ReadAsync(mockPipeline.Object, It.IsAny<MessageFormat>()))
                     .Throws<IOException>();
 
                 var (connMock, factory) = CreateMockIoFactory(
@@ -272,7 +260,7 @@ namespace Neo4j.Driver.Tests
 
                 // Then
                 exception.Should().BeOfType<IOException>();
-                readerMock.Verify(x => x.ReadAsync(mockPipeline.Object, It.IsAny<PackStreamReader>()), Times.Once);
+                readerMock.Verify(x => x.ReadAsync(mockPipeline.Object, It.IsAny<MessageFormat>()), Times.Once);
                 connMock.Verify(x => x.Dispose(), Times.Once);
             }
 
@@ -283,7 +271,7 @@ namespace Neo4j.Driver.Tests
                 var mockPipeline = new Mock<IResponsePipeline>();
 
                 var readerMock = new Mock<IMessageReader>();
-                readerMock.Setup(x => x.ReadAsync(mockPipeline.Object, It.IsAny<PackStreamReader>()))
+                readerMock.Setup(x => x.ReadAsync(mockPipeline.Object, It.IsAny<MessageFormat>()))
                     .Throws(new ProtocolException("test"));
 
                 var (connMock, factory) = CreateMockIoFactory(
@@ -298,7 +286,7 @@ namespace Neo4j.Driver.Tests
 
                 // Then
                 exception.Should().BeOfType<ProtocolException>();
-                readerMock.Verify(x => x.ReadAsync(mockPipeline.Object, It.IsAny<PackStreamReader>()), Times.Once);
+                readerMock.Verify(x => x.ReadAsync(mockPipeline.Object, It.IsAny<MessageFormat>()), Times.Once);
                 connMock.Verify(x => x.Dispose(), Times.Once);
             }
 
@@ -316,7 +304,7 @@ namespace Neo4j.Driver.Tests
                 var client = NewClient(factory);
                 await client.ConnectAsync();
 
-                readerMock.Setup(x => x.ReadAsync(pipeline.Object, It.IsAny<PackStreamReader>()))
+                readerMock.Setup(x => x.ReadAsync(pipeline.Object, It.IsAny<MessageFormat>()))
                     .ThrowsAsync(new DatabaseException());
 
                 // When
@@ -324,7 +312,7 @@ namespace Neo4j.Driver.Tests
 
                 // Then
                 exception.Should().BeOfType<DatabaseException>();
-                readerMock.Verify(x => x.ReadAsync(pipeline.Object, It.IsAny<PackStreamReader>()), Times.Once);
+                readerMock.Verify(x => x.ReadAsync(pipeline.Object, It.IsAny<MessageFormat>()), Times.Once);
                 connMock.Verify(x => x.Dispose(), Times.Once);
             }
         }

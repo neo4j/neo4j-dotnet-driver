@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -15,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using FluentAssertions;
@@ -115,6 +114,62 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
                         new KeyValuePair<string, object>("prop2", 15L),
                         new KeyValuePair<string, object>("prop3", true)
                     });
+        }
+        
+        [Fact]
+        public void ShouldDeserializeSpan()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            SerializeNode(writer);
+
+            var readerMachine = CreateSpanReader(writerMachine.GetOutput());
+            var value = readerMachine.Read();
+
+            VerifySerializedNode(value);
+        }
+
+        [Fact]
+        public void ShouldDeserializeSpanWhenInList()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            writer.WriteListHeader(1);
+            SerializeNode(writer);
+
+            var readerMachine = CreateSpanReader(writerMachine.GetOutput());
+            var value = readerMachine.Read();
+
+            value.Should().NotBeNull();
+            value.Should().BeAssignableTo<IList>().Which.Should().HaveCount(1);
+
+            VerifySerializedNode(value.Should().BeAssignableTo<IList>().Which[0]);
+        }
+
+        [Fact]
+        public void ShouldDeserializeSpanWhenInMap()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            writer.WriteMapHeader(1);
+            writer.Write("x");
+            SerializeNode(writer);
+
+            var readerMachine = CreateSpanReader(writerMachine.GetOutput());
+            var value = readerMachine.Read();
+
+            value.Should().NotBeNull();
+            value.Should()
+                .BeAssignableTo<IDictionary<string, object>>()
+                .Which.Should()
+                .HaveCount(1)
+                .And
+                .ContainKey("x");
+
+            VerifySerializedNode(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
         }
     }
 }
