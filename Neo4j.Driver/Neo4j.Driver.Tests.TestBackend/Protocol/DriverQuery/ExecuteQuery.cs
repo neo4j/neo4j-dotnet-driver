@@ -69,12 +69,19 @@ internal class ExecuteQuery : IProtocolObject
             }
         }
 
+        var transactionConfig = new TransactionConfig
+        {
+            Timeout = data.config.timeout.HasValue ? TimeSpan.FromMilliseconds(data.config.timeout.Value) : null,
+            Metadata = data.config.txMeta ?? new Dictionary<string, object>()
+        };
+
         return new QueryConfig(
             routingControl,
             data.config.database,
             data.config.impersonatedUser,
             bookmarkManager,
-            enableBookmarkManager);
+            enableBookmarkManager,
+            transactionConfig);
     }
 
     public override string Respond()
@@ -117,5 +124,7 @@ internal class ExecuteQuery : IProtocolObject
         public string database { get; set; }
         public string impersonatedUser { get; set; }
         public string bookmarkManagerId { get; set; }
+        public int? timeout { get; set; }
+        public Dictionary<string, object> txMeta { get; set; }
     }
 }
