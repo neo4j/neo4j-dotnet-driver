@@ -39,6 +39,7 @@ public sealed class TransactionConfig
     /// make the transaction execute indefinitely.
     /// </summary>
     /// <remarks>All positive non-whole millisecond values will be rounded to the next whole millisecond.</remarks>
+    /// <remarks><see cref="TimeSpan.MaxValue"/> will be treated as <see cref="TimeSpan.Zero"/> and remove all timeout.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">
     /// If the value given to transaction timeout in milliseconds is less than
     /// zero.
@@ -50,6 +51,12 @@ public sealed class TransactionConfig
         {
             if (!value.HasValue)
             {
+                return;
+            }
+            
+            if (value.Value == TimeSpan.MaxValue)
+            {
+                _timeout = TimeSpan.Zero;
                 return;
             }
 
@@ -127,27 +134,31 @@ public sealed class TransactionConfigBuilder
     /// <returns>this <see cref="TransactionConfigBuilder"/> instance.</returns>
     public TransactionConfigBuilder WithTimeout(TimeSpan? timeout)
     {
-        _config._timeout = FixSubmilliseconds(timeout);
-        return this;
-    }
-
-    private TimeSpan? FixSubmilliseconds(TimeSpan? timeout)
-    {
-        if (timeout == null || timeout == TimeSpan.MaxValue)
+        if (!timeout.HasValue || timeout.Value == TimeSpan.MaxValue)
         {
-            return timeout;
+            _config._timeout = timeout;
+            return this;
         }
 
+        if (timeout.Value < TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(  
+                nameof(timeout),
+                "Transaction timeout should not be negative.");
+        }
+        
         if (timeout.Value.Ticks % TimeSpan.TicksPerMillisecond == 0)
         {
-            return timeout;
+            _config._timeout = timeout;
         }
-
-        var result = TimeSpan.FromMilliseconds(Math.Ceiling(timeout.Value.TotalMilliseconds));
-        _logger.Info(
-            $"Transaction timeout {timeout} contains sub-millisecond precision and will be rounded up to {result}.");
-
-        return result;
+        else
+        {
+            _config._timeout = TimeSpan.FromMilliseconds(Math.Ceiling(timeout.Value.TotalMilliseconds));
+            _logger.Info(
+                $"Transaction timeout {timeout} contains sub-millisecond precision and will be rounded up to {_config._timeout}.");
+        }
+        
+        return this;
     }
 
     /// <summary>
