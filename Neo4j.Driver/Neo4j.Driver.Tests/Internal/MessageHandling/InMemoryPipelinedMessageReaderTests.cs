@@ -68,7 +68,7 @@ namespace Neo4j.Driver.Internal.MessageHandling
         }
 
         [Fact]
-        public async Task ShouldReadMutlichunkMessage()
+        public async Task ShouldReadMultiChunkMessage()
         {
             using var memoryStream = new MemoryStream(new byte[64]);
 
