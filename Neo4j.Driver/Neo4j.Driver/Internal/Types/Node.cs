@@ -20,7 +20,7 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Types;
 
-internal class Node : INode
+internal sealed class Node : INode
 {
     public Node(long id, IReadOnlyList<string> labels, IReadOnlyDictionary<string, object> prop)
     {

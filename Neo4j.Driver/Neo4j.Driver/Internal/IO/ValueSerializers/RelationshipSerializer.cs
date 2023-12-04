@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
 using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers;
@@ -22,7 +21,7 @@ internal sealed class RelationshipSerializer : ReadOnlySerializer
 {
     public const byte Relationship = (byte)'R';
     internal static readonly RelationshipSerializer Instance = new();
-    public override IEnumerable<byte> ReadableStructs => new[] { Relationship };
+    public override byte[] ReadableStructs => new[] { Relationship };
 
     public override object Deserialize(PackStreamReader reader)
     {
@@ -33,5 +32,16 @@ internal sealed class RelationshipSerializer : ReadOnlySerializer
         var props = reader.ReadMap();
 
         return new Relationship(urn, startUrn, endUrn, relType, props);
+    }
+
+    public override (object, int) DeserializeSpan(SpanPackStreamReader reader)
+    {
+        var urn = reader.ReadLong();
+        var startUrn = reader.ReadLong();
+        var endUrn = reader.ReadLong();
+        var relType = reader.ReadString();
+        var props = reader.ReadMap();
+
+        return (new Relationship(urn, startUrn, endUrn, relType, props), reader.Index);
     }
 }

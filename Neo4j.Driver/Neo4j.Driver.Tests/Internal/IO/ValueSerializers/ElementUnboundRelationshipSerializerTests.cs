@@ -40,12 +40,38 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
                 {
                     { "prop3", true }
                 });
-
             writer.Write("r1");
 
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var value = readerMachine.Reader().Read();
 
+            Validate(value);
+        }
+
+        [Fact]
+        public void ShouldDeserializeSpan()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            writer.WriteStructHeader(3, UnboundRelationshipSerializer.UnboundRelationship);
+            writer.Write(1);
+            writer.Write("RELATES_TO");
+            writer.Write(
+                new Dictionary<string, object>
+                {
+                    { "prop3", true }
+                });
+            writer.Write("r1");
+
+            var readerMachine = CreateSpanReader(writerMachine.GetOutput());
+            var value = readerMachine.Read();
+
+            Validate(value);
+        }
+
+        private static void Validate(object value)
+        {
             value.Should().NotBeNull();
             value.Should().BeOfType<Relationship>().Which.Id.Should().Be(1L);
             value.Should().BeOfType<Relationship>().Which.StartNodeId.Should().Be(-1L);

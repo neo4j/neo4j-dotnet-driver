@@ -21,7 +21,6 @@ namespace Neo4j.Driver.Internal.IO;
 internal interface IPackStreamFactory
 {
     PackStreamWriter BuildWriter(MessageFormat format, IChunkWriter stream);
-    PackStreamReader BuildReader(MessageFormat format, MemoryStream stream, ByteBuffers buffers);
 }
 
 internal sealed class PackStreamFactory : IPackStreamFactory
@@ -35,10 +34,5 @@ internal sealed class PackStreamFactory : IPackStreamFactory
     public PackStreamWriter BuildWriter(MessageFormat format, IChunkWriter stream)
     {
         return new PackStreamWriter(format, stream.Stream);
-    }
-
-    public PackStreamReader BuildReader(MessageFormat format, MemoryStream stream, ByteBuffers buffers)
-    {
-        return new PackStreamReader(format, stream, buffers);
     }
 }

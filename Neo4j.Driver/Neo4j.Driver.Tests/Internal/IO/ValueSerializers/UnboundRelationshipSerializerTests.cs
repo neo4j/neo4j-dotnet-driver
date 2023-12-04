@@ -89,6 +89,62 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             VerifySerializedUnboundRelationship(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
         }
 
+        [Fact]
+        public void ShouldDeserializeSpan()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            SerializeUnboundRelationship(writer);
+
+            var reader = CreateSpanReader(writerMachine.GetOutput());
+            var value = reader.Read();
+
+            VerifySerializedUnboundRelationship(value);
+        }
+
+        [Fact]
+        public void ShouldDeserializeSpanWhenInList()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            writer.WriteListHeader(1);
+            SerializeUnboundRelationship(writer);
+
+            var reader = CreateSpanReader(writerMachine.GetOutput());
+            var value = reader.Read();
+
+            value.Should().NotBeNull();
+            value.Should().BeAssignableTo<IList>().Which.Should().HaveCount(1);
+
+            VerifySerializedUnboundRelationship(value.Should().BeAssignableTo<IList>().Which[0]);
+        }
+
+        [Fact]
+        public void ShouldDeserializeSpanWhenInMap()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            writer.WriteMapHeader(1);
+            writer.Write("x");
+            SerializeUnboundRelationship(writer);
+
+            var reader = CreateSpanReader(writerMachine.GetOutput());
+            var value = reader.Read();
+
+            value.Should().NotBeNull();
+            value.Should()
+                .BeAssignableTo<IDictionary<string, object>>()
+                .Which.Should()
+                .HaveCount(1)
+                .And
+                .ContainKey("x");
+
+            VerifySerializedUnboundRelationship(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
+        }
+        
         private static void SerializeUnboundRelationship(PackStreamWriter writer)
         {
             writer.WriteStructHeader(3, UnboundRelationshipSerializer.UnboundRelationship);

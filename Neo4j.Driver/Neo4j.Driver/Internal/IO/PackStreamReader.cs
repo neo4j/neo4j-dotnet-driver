@@ -17,22 +17,22 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.IO;
 
 internal sealed class PackStreamReader
 {
-    private static readonly byte[] EmptyByteArray = Array.Empty<byte>();
-    private readonly ByteBuffers _buffers;
-    private readonly MessageFormat _format;
+    public ByteBuffers Buffers { get; }
+    public MessageFormat Format { get; }
 
     public MemoryStream Stream;
 
     internal PackStreamReader(MessageFormat format, MemoryStream stream, ByteBuffers buffers)
     {
-        _format = format;
+        Format = format;
         Stream = stream;
-        _buffers = buffers;
+        Buffers = buffers;
     }
 
     public object Read()
@@ -42,11 +42,25 @@ internal sealed class PackStreamReader
         return result;
     }
 
+    public IResponseMessage ReadMessage()
+    {
+        var size = ReadStructHeader();
+        var signature = ReadStructSignature();
+
+        if (Format.ReaderStructHandlers.TryGetValue(signature, out var handler))
+        {
+            return (IResponseMessage)handler.Deserialize(Format.Version, this, signature, size);
+        }
+
+        throw new ProtocolException("Unknown structure type: " + signature);
+    }
+
     public Dictionary<string, object> ReadMap()
     {
         var size = (int)ReadMapHeader();
         if (size == 0)
         {
+           
             return new Dictionary<string, object>(0);
         }
 
@@ -116,9 +130,9 @@ internal sealed class PackStreamReader
         var size = ReadStructHeader();
         var signature = ReadStructSignature();
 
-        if (_format.ReaderStructHandlers.TryGetValue(signature, out var handler))
+        if (Format.ReaderStructHandlers.TryGetValue(signature, out var handler))
         {
-            return handler.Deserialize(_format.Version, this, signature, size);
+            return handler.Deserialize(Format.Version, this, signature, size);
         }
 
         throw new ProtocolException("Unknown structure type: " + signature);
@@ -259,7 +273,7 @@ internal sealed class PackStreamReader
     {
         if (size == 0)
         {
-            return EmptyByteArray;
+            return Array.Empty<byte>();
         }
 
         var heapBuffer = new byte[size];
@@ -473,43 +487,43 @@ internal sealed class PackStreamReader
 
     internal sbyte NextSByte()
     {
-        Stream.Read(_buffers.ByteArray);
-        return (sbyte)_buffers.ByteArray[0];
+        Stream.Read(Buffers.ByteArray);
+        return (sbyte)Buffers.ByteArray[0];
     }
 
     public byte NextByte()
     {
-        Stream.Read(_buffers.ByteArray);
+        Stream.Read(Buffers.ByteArray);
 
-        return _buffers.ByteArray[0];
+        return Buffers.ByteArray[0];
     }
 
     public short NextShort()
     {
-        Stream.Read(_buffers.ShortBuffer);
+        Stream.Read(Buffers.ShortBuffer);
 
-        return PackStreamBitConverter.ToInt16(_buffers.ShortBuffer);
+        return PackStreamBitConverter.ToInt16(Buffers.ShortBuffer);
     }
 
     public int NextInt()
     {
-        Stream.Read(_buffers.IntBuffer);
+        Stream.Read(Buffers.IntBuffer);
 
-        return PackStreamBitConverter.ToInt32(_buffers.IntBuffer);
+        return PackStreamBitConverter.ToInt32(Buffers.IntBuffer);
     }
 
     public long NextLong()
     {
-        Stream.Read(_buffers.LongBuffer);
+        Stream.Read(Buffers.LongBuffer);
 
-        return PackStreamBitConverter.ToInt64(_buffers.LongBuffer);
+        return PackStreamBitConverter.ToInt64(Buffers.LongBuffer);
     }
 
     public double NextDouble()
     {
-        Stream.Read(_buffers.LongBuffer);
+        Stream.Read(Buffers.LongBuffer);
 
-        return PackStreamBitConverter.ToDouble(_buffers.LongBuffer);
+        return PackStreamBitConverter.ToDouble(Buffers.LongBuffer);
     }
 
     public byte PeekByte()

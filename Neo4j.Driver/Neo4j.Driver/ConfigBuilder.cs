@@ -440,4 +440,13 @@ public sealed class ConfigBuilder
         _config.TelemetryDisabled = true;
         return this;
     }
+
+    /// <summary>
+    /// Sets the <see cref="MessageReaderConfig"/> config to use in the driver.
+    /// </summary>
+    public ConfigBuilder WithMessageReaderConfig(MessageReaderConfig config)
+    {
+        _config.MessageReaderConfig = config ?? throw new ArgumentNullException(nameof(config));
+        return this;
+    }
 }

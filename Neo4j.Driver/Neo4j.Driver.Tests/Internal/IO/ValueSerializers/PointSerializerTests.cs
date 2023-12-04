@@ -76,11 +76,7 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             var reader = readerMachine.Reader();
             var value = reader.Read();
 
-            value.Should().NotBeNull();
-            value.Should().BeOfType<Point>().Which.SrId.Should().Be(7203);
-            value.Should().BeOfType<Point>().Which.X.Should().Be(51.5044585);
-            value.Should().BeOfType<Point>().Which.Y.Should().Be(-0.105658);
-            value.Should().BeOfType<Point>().Which.Z.Should().Be(double.NaN);
+            ValidatePoint2D(value);
         }
 
         [Fact]
@@ -99,6 +95,56 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             var reader = readerMachine.Reader();
             var value = reader.Read();
 
+            ValidatePoint3D(value);
+        }
+
+        [Fact]
+        public void ShouldDeserializeSpanPoint2D()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            writer.WriteStructHeader(PointSerializer.Point2DStructSize, PointSerializer.Point2DStructType);
+            writer.Write(7203);
+            writer.Write(51.5044585);
+            writer.Write(-0.105658);
+
+            var reader = CreateSpanReader(writerMachine.GetOutput());
+            var value = reader.Read();
+
+            ValidatePoint2D(value);
+        }
+
+
+        [Fact]
+        public void ShouldDeserializeSpanPoint3D()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            writer.WriteStructHeader(PointSerializer.Point3DStructSize, PointSerializer.Point3DStructType);
+            writer.Write(7203);
+            writer.Write(51.5044585);
+            writer.Write(-0.105658);
+            writer.Write(35.25);
+
+            var reader = CreateSpanReader(writerMachine.GetOutput());
+            var value = reader.Read();
+
+            ValidatePoint3D(value);
+        }
+
+        private static void ValidatePoint2D(object value)
+        {
+            value.Should().NotBeNull();
+            value.Should().BeOfType<Point>().Which.SrId.Should().Be(7203);
+            value.Should().BeOfType<Point>().Which.X.Should().Be(51.5044585);
+            value.Should().BeOfType<Point>().Which.Y.Should().Be(-0.105658);
+            value.Should().BeOfType<Point>().Which.Z.Should().Be(double.NaN);
+        }
+        
+        private static void ValidatePoint3D(object value)
+        {
             value.Should().NotBeNull();
             value.Should().BeOfType<Point>().Which.SrId.Should().Be(7203);
             value.Should().BeOfType<Point>().Which.X.Should().Be(51.5044585);

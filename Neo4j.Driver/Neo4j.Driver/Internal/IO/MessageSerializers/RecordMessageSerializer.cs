@@ -13,17 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers;
 
-internal sealed class RecordMessageSerializer : ReadOnlySerializer
+internal sealed class RecordMessageSerializer : ReadOnlySerializer, IPackStreamMessageDeserializer
 {
     internal static RecordMessageSerializer Instance = new();
 
     private static readonly byte[] StructTags = { MessageFormat.MsgRecord };
-    public override IEnumerable<byte> ReadableStructs => StructTags;
+    public override byte[] ReadableStructs => StructTags;
 
     public override object Deserialize(PackStreamReader reader)
     {
@@ -34,6 +36,17 @@ internal sealed class RecordMessageSerializer : ReadOnlySerializer
             fields[i] = reader.Read();
         }
 
+        return new RecordMessage(fields);
+    }
+
+    public IResponseMessage DeserializeMessage(BoltProtocolVersion formatVersion, SpanPackStreamReader packStreamReader)
+    {
+        var fieldCount = packStreamReader.ReadListHeader();
+        var fields = new object[fieldCount];
+        for (var i = 0; i < fieldCount; i++)
+        {
+            fields[i] = packStreamReader.Read();
+        }
         return new RecordMessage(fields);
     }
 }

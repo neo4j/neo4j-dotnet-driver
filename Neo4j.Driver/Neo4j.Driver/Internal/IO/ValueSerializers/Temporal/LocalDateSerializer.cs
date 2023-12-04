@@ -25,7 +25,7 @@ internal sealed class LocalDateSerializer : IPackStreamSerializer
     public const byte StructType = (byte)'D';
     public const int StructSize = 1;
 
-    public IEnumerable<byte> ReadableStructs => new[] { StructType };
+    public byte[] ReadableStructs => new[] { StructType };
 
 #if NET6_0_OR_GREATER
     public IEnumerable<Type> WritableTypes => new[] { typeof(LocalDate), typeof(DateOnly) };
@@ -52,6 +52,15 @@ internal sealed class LocalDateSerializer : IPackStreamSerializer
         }
 #endif
         WriteLocalDate(writer, value);
+    }
+
+    public (object, int) DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    {
+        PackStream.EnsureStructSize("Date", StructSize, size);
+
+        var epochDays = reader.ReadLong();
+
+        return (TemporalHelpers.EpochDaysToDate(epochDays), reader.Index);
     }
 
     private static void WriteLocalDate(PackStreamWriter writer, object value)
