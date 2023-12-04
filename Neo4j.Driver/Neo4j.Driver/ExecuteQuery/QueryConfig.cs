@@ -40,14 +40,18 @@ public class QueryConfig
         string database = null,
         string impersonatedUser = null,
         IBookmarkManager bookmarkManager = null,
-        bool enableBookmarkManager = true)
+        bool enableBookmarkManager = true,
+        TransactionConfig transactionConfig = null)
     {
         Routing = routing;
         Database = database;
         ImpersonatedUser = impersonatedUser;
         BookmarkManager = bookmarkManager;
         EnableBookmarkManager = enableBookmarkManager;
+        TransactionConfig = transactionConfig ?? TransactionConfig.Default;
     }
+    /// <summary>Config for the transaction that will be used to execute the query.</summary>
+    public TransactionConfig TransactionConfig { get; }
 
     /// <summary>Members of the cluster the query can be processed by.</summary>
     public RoutingControl Routing { get; }
@@ -94,8 +98,9 @@ public class QueryConfig<T> : QueryConfig
         string database = null,
         string impersonatedUser = null,
         IBookmarkManager bookmarkManager = null,
-        bool enableBookmarkManager = true)
-        : base(routing, database, impersonatedUser, bookmarkManager, enableBookmarkManager)
+        bool enableBookmarkManager = true,
+        TransactionConfig transactionConfig = null)
+        : base(routing, database, impersonatedUser, bookmarkManager, enableBookmarkManager, transactionConfig)
     {
         CursorProcessor = cursorProcessor ?? throw new ArgumentNullException(nameof(cursorProcessor));
     }

@@ -16,55 +16,44 @@
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Internal.IO;
 
 namespace Neo4j.Driver;
 
 /// <summary>
 /// Configuration object containing settings for explicit and auto-commit transactions. Leave the fields unmodified to use
 /// server side transaction configurations.
-/// <para/>
-/// For example, the following code starts a transaction using server default transaction configurations.
-/// <code>
-/// session.BeginTransaction(b=>{});
-/// </code>
 /// </summary>
 public sealed class TransactionConfig
 {
     internal static readonly TransactionConfig Default = new();
-    private IDictionary<string, object> _metadata;
-    private TimeSpan? _timeout;
-
-    internal TransactionConfig()
-    {
-        _timeout = null;
-        _metadata = PackStream.EmptyDictionary;
-    }
-
-    internal TransactionConfig(IDictionary<string, object> metadata, TimeSpan? timeout)
-    {
-        _metadata = metadata;
-        _timeout = timeout;
-    }
+    internal IDictionary<string, object> _metadata = new Dictionary<string, object>();
+    internal TimeSpan? _timeout = null;
 
     /// <summary>
-    /// Transaction timeout. Transactions that execute longer than the configured timeout will be terminated
-    /// by the database. This functionality allows user code to limit query/transaction execution time. The specified timeout
-    /// overrides the default timeout configured in the database using the <code>db.transaction.timeout</code> setting 
-    /// (<code>dbms.transaction.timeout</code> before Neo4j 5.0). Values higher than <code>db.transaction.timeout</code> will be
-    /// ignored and will fall back to the default for server versions between 4.2 and 5.2 (inclusive). Leave this field unmodified or set it
-    /// to <code>null</code> to use the default timeout configured on the server. A timeout of zero will make the transaction
-    /// execute indefinitely.
+    /// Transaction timeout. Transactions that execute longer than the configured timeout will be terminated by the
+    /// database. This functionality allows user code to limit query/transaction execution time. The specified timeout
+    /// overrides the default timeout configured in the database using the <code>db.transaction.timeout</code> setting (
+    /// <code>dbms.transaction.timeout</code> before Neo4j 5.0). Values higher than <code>db.transaction.timeout</code> will be
+    /// ignored and will fall back to the default for server versions between 4.2 and 5.2 (inclusive). Leave this field
+    /// unmodified or set it to <code>null</code> to use the default timeout configured on the server. A timeout of zero will
+    /// make the transaction execute indefinitely.
     /// </summary>
+    /// <remarks>All positive non-whole millisecond values will be rounded to the next whole millisecond.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">
-    /// If the value given to transaction timeout in milliseconds is less than zero.
+    /// If the value given to transaction timeout in milliseconds is less than
+    /// zero.
     /// </exception>
     public TimeSpan? Timeout
     {
         get => _timeout;
-        internal set
+        init
         {
-            if ((value ?? TimeSpan.Zero) < TimeSpan.Zero)
+            if (!value.HasValue)
+            {
+                return;
+            }
+
+            if (value.Value < TimeSpan.Zero)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(value),
@@ -72,7 +61,14 @@ public sealed class TransactionConfig
                     "Transaction timeout should not be negative.");
             }
 
-            _timeout = value;
+            if (value.Value.Ticks % TimeSpan.TicksPerMillisecond == 0)
+            {
+                _timeout = value;
+                return;
+            }
+
+            var result = TimeSpan.FromMilliseconds(Math.Ceiling(value.Value.TotalMilliseconds));
+            _timeout = result;
         }
     }
 
@@ -86,7 +82,7 @@ public sealed class TransactionConfig
     public IDictionary<string, object> Metadata
     {
         get => _metadata;
-        internal set => _metadata =
+        init => _metadata =
             value ?? throw new ArgumentNullException(nameof(value), "Transaction metadata should not be null");
     }
 
@@ -101,8 +97,8 @@ public sealed class TransactionConfig
 /// <summary>The builder to create a <see cref="TransactionConfig"/></summary>
 public sealed class TransactionConfigBuilder
 {
-    private readonly ILogger _logger;
     private readonly TransactionConfig _config;
+    private readonly ILogger _logger;
 
     internal TransactionConfigBuilder(
         ILogger logger,
@@ -115,28 +111,29 @@ public sealed class TransactionConfigBuilder
     /// <summary>
     /// Sets the transaction timeout. Transactions that execute longer than the configured timeout will be terminated
     /// by the database. This functionality allows user code to limit query/transaction execution time. The specified timeout
-    /// overrides the default timeout configured in the database using the <code>db.transaction.timeout</code> setting 
-    /// (<code>dbms.transaction.timeout</code> before Neo4j 5.0). Values higher than <code>db.transaction.timeout</code> will be
-    /// ignored and will fall back to default for server versions between 4.2 and 5.2 (inclusive). Leave this field unmodified or
-    /// set it to <code>null</code> to use the default timeout configured on the server. A timeout of zero will make the transaction
-    /// execute indefinitely.
+    /// overrides the default timeout configured in the database using the <code>db.transaction.timeout</code> setting (
+    /// <code>dbms.transaction.timeout</code> before Neo4j 5.0). Values higher than <code>db.transaction.timeout</code> will be
+    /// ignored and will fall back to default for server versions between 4.2 and 5.2 (inclusive). Leave this field unmodified
+    /// or set it to <code>null</code> to use the default timeout configured on the server. A timeout of zero will make the
+    /// transaction execute indefinitely.
     /// <para/>
     /// If the timeout is not an exact number of milliseconds, it will be rounded up to the next millisecond.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">
-    /// If the value given to transaction timeout in milliseconds is less than zero.
+    /// If the value given to transaction timeout in milliseconds is less than
+    /// zero.
     /// </exception>
     /// <param name="timeout">The new timeout.</param>
     /// <returns>this <see cref="TransactionConfigBuilder"/> instance.</returns>
     public TransactionConfigBuilder WithTimeout(TimeSpan? timeout)
     {
-        _config.Timeout = FixSubmilliseconds(timeout);
+        _config._timeout = FixSubmilliseconds(timeout);
         return this;
     }
 
     private TimeSpan? FixSubmilliseconds(TimeSpan? timeout)
     {
-        if(timeout == null || timeout == TimeSpan.MaxValue)
+        if (timeout == null || timeout == TimeSpan.MaxValue)
         {
             return timeout;
         }
@@ -164,7 +161,9 @@ public sealed class TransactionConfigBuilder
     /// <returns>this <see cref="TransactionConfigBuilder"/> instance</returns>
     public TransactionConfigBuilder WithMetadata(IDictionary<string, object> metadata)
     {
-        _config.Metadata = metadata;
+        _config._metadata = metadata ??
+            throw new ArgumentNullException(nameof(metadata), "Transaction metadata should not be null");
+
         return this;
     }
 
