@@ -125,7 +125,6 @@ internal class ExecuteQuery : IProtocolObject
         public string impersonatedUser { get; set; }
         public string bookmarkManagerId { get; set; }
         public int? timeout { get; set; }
-        [JsonProperty(Required = Required.AllowNull)]
         [JsonConverter(typeof(QueryParameterConverter))]
         public Dictionary<string, CypherToNativeObject> txMeta { get; set; }
     }
