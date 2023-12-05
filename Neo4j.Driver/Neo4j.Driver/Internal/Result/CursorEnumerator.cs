@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Result;
 
-internal class CursorEnumerator : IAsyncEnumerator<IRecord>
+internal sealed class CursorEnumerator : IAsyncEnumerator<IRecord>
 {
     private readonly IAsyncEnumerator<IRecord> _cursor;
     private readonly CancellationToken _token;

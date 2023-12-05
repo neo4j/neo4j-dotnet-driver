@@ -1,4 +1,4 @@
-﻿// Copyright (c) "Neo4j"
+// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -20,8 +20,11 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Result;
 
-internal class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
+internal sealed class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
 {
+    private readonly IInternalResultCursor _cursor;
+    private bool _isConsumed;
+    
     private readonly IResultStream _resultStream;
     private bool _atEnd;
     private IRecord _current;
@@ -35,10 +38,9 @@ internal class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
         _resultStream = resultStream ?? throw new ArgumentNullException(nameof(resultStream));
     }
 
-    public bool IsOpen => _summary == null;
-
     public async ValueTask<bool> MoveNextAsync()
     {
+        AssertNotConsumed();
         if (_peeked != null)
         {
             _current = _peeked;
@@ -64,17 +66,18 @@ internal class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
 
     public ValueTask DisposeAsync()
     {
-        // should we ConsumeAsync here? Probably not.
         return new ValueTask(Task.CompletedTask);
     }
 
     public Task<string[]> KeysAsync()
     {
-        return _keys ??= _resultStream.GetKeysAsync().AsTask();
+        _keys ??= _resultStream.GetKeysAsync().AsTask();
+        return _keys;
     }
 
     public Task<IResultSummary> ConsumeAsync()
     {
+        _isConsumed = true;
         if (_summary == null)
         {
             Cancel();
@@ -91,8 +94,10 @@ internal class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
         return _summary;
     }
 
+
     public async Task<IRecord> PeekAsync()
     {
+        AssertNotConsumed();
         if (_peeked != null)
         {
             return _peeked;
@@ -116,6 +121,7 @@ internal class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
 
     public Task<bool> FetchAsync()
     {
+        AssertNotConsumed();
         return MoveNextAsync().AsTask();
     }
 
@@ -123,6 +129,7 @@ internal class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
     {
         get
         {
+            AssertNotConsumed();
             if (!_atEnd && _current == null && _peeked == null)
             {
                 throw new InvalidOperationException("Tried to access Current without calling FetchAsync.");
@@ -132,6 +139,8 @@ internal class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
         }
     }
 
+    public bool IsOpen => !_isConsumed && _summary == null;
+
     public void Cancel()
     {
         _resultStream.Cancel();
@@ -140,5 +149,13 @@ internal class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
     public IAsyncEnumerator<IRecord> GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
         return new CursorEnumerator(this, cancellationToken);
+    }
+
+    private void AssertNotConsumed()
+    {
+        if (_isConsumed)
+        {
+            throw ErrorExtensions.NewResultConsumedException();
+        }
     }
 }

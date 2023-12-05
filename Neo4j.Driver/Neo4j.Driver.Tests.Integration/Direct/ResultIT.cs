@@ -346,11 +346,11 @@ public sealed class ResultIT : DirectDriverTestBase
 
     private static async Task AssertCannotAccessRecords(IResultCursor cursor)
     {
-        await ConsumedException.ThrowsResultConsumedException(() => cursor.FetchAsync());
-        await ConsumedException.ThrowsResultConsumedException(() => cursor.PeekAsync());
-        ConsumedException.ThrowsResultConsumedException(() => cursor.Current);
-        await ConsumedException.ThrowsResultConsumedException(() => cursor.SingleAsync());
-        await ConsumedException.ThrowsResultConsumedException(() => cursor.ToListAsync());
-        await ConsumedException.ThrowsResultConsumedException(() => cursor.ForEachAsync(_ => {}));
+        await ResultCursorTests.ConsumedException.ThrowsResultConsumedException(() => cursor.FetchAsync());
+        await ResultCursorTests.ConsumedException.ThrowsResultConsumedException(() => cursor.PeekAsync());
+        ResultCursorTests.ConsumedException.ThrowsResultConsumedException(() => cursor.Current);
+        await ResultCursorTests.ConsumedException.ThrowsResultConsumedException(() => cursor.SingleAsync());
+        await ResultCursorTests.ConsumedException.ThrowsResultConsumedException(() => cursor.ToListAsync());
+        await ResultCursorTests.ConsumedException.ThrowsResultConsumedException(() => cursor.ForEachAsync(_ => {}));
     }
 }
