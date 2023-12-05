@@ -45,7 +45,7 @@ internal abstract class BaseSessionType
                 configBuilder.WithTimeout(timeout);
             }
         }
-        catch (ArgumentOutOfRangeException e) when ((timeout ?? 0) < 0 && e.ParamName == "value")
+        catch (ArgumentOutOfRangeException e) when ((timeout ?? 0) < 0 && e.ParamName == "timeout")
         {
             throw new DriverExceptionWrapper(e);
         }
