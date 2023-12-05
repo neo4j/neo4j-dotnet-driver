@@ -233,11 +233,13 @@ internal sealed class Driver : IInternalDriver
         {
             if (config.Routing == RoutingControl.Readers)
             {
-                return await session.PipelinedExecuteReadAsync(x => Work(query, x, cursorProcessor, cancellationToken))
+                return await session.PipelinedExecuteReadAsync(x => Work(query, x, cursorProcessor, cancellationToken),
+                        config.TransactionConfig)
                     .ConfigureAwait(false);
             }
 
-            return await session.PipelinedExecuteWriteAsync(x => Work(query, x, cursorProcessor, cancellationToken))
+            return await session.PipelinedExecuteWriteAsync(x => Work(query, x, cursorProcessor, cancellationToken),
+                    config.TransactionConfig)
                 .ConfigureAwait(false);
         }
     }

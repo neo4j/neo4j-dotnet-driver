@@ -141,13 +141,13 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         Action<TransactionConfigBuilder> action,
         bool disposeUnconsumedSessionResult)
     {
-        var tx = await TryExecuteAsync(
+        var config = BuildTransactionConfig(action);
+        return await TryExecuteAsync(
                 _logger,
-                () => BeginTransactionWithoutLoggingAsync(mode, action, disposeUnconsumedSessionResult,
+                () => BeginTransactionWithoutLoggingAsync(mode,
+                    config, disposeUnconsumedSessionResult,
                     new TransactionInfo(QueryApiType.UnmanagedTransaction, TelemetryEnabled, true)))
             .ConfigureAwait(false);
-
-        return tx;
     }
 
     public Task<IResultCursor> RunAsync(
@@ -195,18 +195,20 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         return result;
     }
 
-    public Task<EagerResult<T>> PipelinedExecuteReadAsync<T>(Func<IAsyncQueryRunner, Task<EagerResult<T>>> func)
+    public Task<EagerResult<T>> PipelinedExecuteReadAsync<T>(Func<IAsyncQueryRunner, Task<EagerResult<T>>> func,
+        TransactionConfig config)
     {
         return RunTransactionAsync(
             AccessMode.Read,
             func,
-            null,
+            config,
             new TransactionInfo(QueryApiType.DriverLevel, TelemetryEnabled, false));
     }
 
-    public Task<EagerResult<T>> PipelinedExecuteWriteAsync<T>(Func<IAsyncQueryRunner, Task<EagerResult<T>>> func)
+    public Task<EagerResult<T>> PipelinedExecuteWriteAsync<T>(Func<IAsyncQueryRunner, Task<EagerResult<T>>> func,
+        TransactionConfig config)
     {
-        return RunTransactionAsync(AccessMode.Write, func, null,
+        return RunTransactionAsync(AccessMode.Write, func, config,
             new TransactionInfo(QueryApiType.DriverLevel, TelemetryEnabled, false));
     }
 
@@ -225,54 +227,54 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         Func<IAsyncTransaction, Task<T>> work,
         Action<TransactionConfigBuilder> action = null)
     {
-        return RunTransactionAsync(AccessMode.Read, work, action);
+        return RunTransactionAsync(AccessMode.Read, work, BuildTransactionConfig(action));
     }
 
     public Task ReadTransactionAsync(
         Func<IAsyncTransaction, Task> work,
         Action<TransactionConfigBuilder> action = null)
     {
-        return RunTransactionAsync(AccessMode.Read, work, action);
+        return RunTransactionAsync(AccessMode.Read, work, BuildTransactionConfig(action));
     }
 
     public Task<T> WriteTransactionAsync<T>(
         Func<IAsyncTransaction, Task<T>> work,
         Action<TransactionConfigBuilder> action = null)
     {
-        return RunTransactionAsync(AccessMode.Write, work, action);
+        return RunTransactionAsync(AccessMode.Write, work, BuildTransactionConfig(action));
     }
 
     public Task WriteTransactionAsync(
         Func<IAsyncTransaction, Task> work,
         Action<TransactionConfigBuilder> action = null)
     {
-        return RunTransactionAsync(AccessMode.Write, work, action);
+        return RunTransactionAsync(AccessMode.Write, work, BuildTransactionConfig(action));
     }
 
     public Task ExecuteReadAsync(Func<IAsyncQueryRunner, Task> work, Action<TransactionConfigBuilder> action = null)
     {
-        return RunTransactionAsync(AccessMode.Read, work, action);
+        return RunTransactionAsync(AccessMode.Read, work, BuildTransactionConfig(action));
     }
 
     public Task<T> ExecuteReadAsync<T>(
         Func<IAsyncQueryRunner, Task<T>> work,
         Action<TransactionConfigBuilder> action = null)
     {
-        return RunTransactionAsync(AccessMode.Read, work, action);
+        return RunTransactionAsync(AccessMode.Read, work, BuildTransactionConfig(action));
     }
 
     public Task ExecuteWriteAsync(
         Func<IAsyncQueryRunner, Task> work,
         Action<TransactionConfigBuilder> action = null)
     {
-        return RunTransactionAsync(AccessMode.Write, work, action);
+        return RunTransactionAsync(AccessMode.Write, work, BuildTransactionConfig(action));
     }
 
     public Task<T> ExecuteWriteAsync<T>(
         Func<IAsyncQueryRunner, Task<T>> work,
         Action<TransactionConfigBuilder> action = null)
     {
-        return RunTransactionAsync(AccessMode.Write, work, action);
+        return RunTransactionAsync(AccessMode.Write, work, BuildTransactionConfig(action));
     }
 
     private async Task<Bookmarks> GetBookmarksAsync()
@@ -285,24 +287,8 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
 
     private Task RunTransactionAsync(
         AccessMode mode,
-        Func<IAsyncQueryRunner, Task> work,
-        Action<TransactionConfigBuilder> action)
-    {
-        return RunTransactionAsync(
-            mode,
-            async tx =>
-            {
-                await work(tx).ConfigureAwait(false);
-                var ignored = 1;
-                return ignored;
-            },
-            action);
-    }
-
-    private Task RunTransactionAsync(
-        AccessMode mode,
         Func<IAsyncTransaction, Task> work,
-        Action<TransactionConfigBuilder> action,
+        TransactionConfig config,
         TransactionInfo transactionInfo = null)
     {
         return RunTransactionAsync(
@@ -313,24 +299,23 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                 var ignored = 1;
                 return ignored;
             },
-            action,
+            config,
             transactionInfo);
     }
 
     private Task<T> RunTransactionAsync<T>(
         AccessMode mode,
         Func<IAsyncTransaction, Task<T>> work,
-        Action<TransactionConfigBuilder> action,
+        TransactionConfig config,
         TransactionInfo transactionInfo = null)
     {
         transactionInfo ??= new TransactionInfo (QueryApiType.TransactionFunction, TelemetryEnabled, true);
-        
         return TryExecuteAsync(
             _logger,
             () => _retryLogic.RetryAsync(
                 async () =>
                 {
-                    var tx = await BeginTransactionWithoutLoggingAsync(mode, action, true, transactionInfo).ConfigureAwait(false);
+                    var tx = await BeginTransactionWithoutLoggingAsync(mode, config, true, transactionInfo).ConfigureAwait(false);
                     try
                     {
                         var result = await work(tx).ConfigureAwait(false);
@@ -355,11 +340,10 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
 
     private async Task<IInternalAsyncTransaction> BeginTransactionWithoutLoggingAsync(
         AccessMode mode,
-        Action<TransactionConfigBuilder> action,
+        TransactionConfig config,
         bool disposeUnconsumedSessionResult,
         TransactionInfo transactionInfo)
     {
-        var config = BuildTransactionConfig(action);
         await EnsureCanRunMoreQuerysAsync(disposeUnconsumedSessionResult).ConfigureAwait(false);
 
         await AcquireConnectionAndDbNameAsync(mode).ConfigureAwait(false);
