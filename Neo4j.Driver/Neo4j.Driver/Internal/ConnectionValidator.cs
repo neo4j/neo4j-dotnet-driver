@@ -29,18 +29,22 @@ internal interface IConnectionValidator
     /// <summary>Healthy check before lending the connection outside the pool.</summary>
     /// <param name="connection">The connection to be checked.</param>
     /// <returns>True if the connection is in a good state to be used by transactions and sessions, otherwise false.</returns>
-    bool OnRequire(IPooledConnection connection);
+    Task<bool> OnRequireAsync(IPooledConnection connection);
 }
 
 internal class ConnectionValidator : IConnectionValidator
 {
     private readonly TimeSpan _connIdleTimeout;
     private readonly TimeSpan _maxConnLifetime;
+    private readonly TimeSpan? _connLivenessCheckTimeout;
+    private readonly ILogger _logger;
 
-    public ConnectionValidator(TimeSpan connIdleTimeout, TimeSpan maxConnLifetime)
+    public ConnectionValidator(DriverContext driverContext)
     {
-        _connIdleTimeout = connIdleTimeout;
-        _maxConnLifetime = maxConnLifetime;
+        _connIdleTimeout = driverContext.Config.ConnectionIdleTimeout;
+        _maxConnLifetime = driverContext.Config.MaxConnectionLifetime;
+        _connLivenessCheckTimeout = driverContext.Config.ConnectionLivenessCheckTimeout;
+        _logger = driverContext.Logger;
     }
 
     public async Task<bool> OnReleaseAsync(IPooledConnection connection)
@@ -69,13 +73,14 @@ internal class ConnectionValidator : IConnectionValidator
         return true;
     }
 
-    public bool OnRequire(IPooledConnection connection)
+    public async Task<bool> OnRequireAsync(IPooledConnection connection)
     {
         var isRequirable = connection.IsOpen &&
             !HasBeenIdleForTooLong(connection) &&
             !HasBeenAliveForTooLong(connection) &&
             !MarkedStale(connection) &&
-            AuthStatusIsRecoverable(connection);
+            AuthStatusIsRecoverable(connection) &&
+            await LivenessCheckPassed(connection).ConfigureAwait(false);
 
         if (isRequirable)
         {
@@ -143,7 +148,22 @@ internal class ConnectionValidator : IConnectionValidator
         return false;
     }
 
-    public static bool IsTimeoutDetectionEnabled(TimeSpan timeout) => timeout.TotalMilliseconds >= 0;
-    
-    public static bool IsTimeoutDetectionDisabled(TimeSpan timeout) => !IsTimeoutDetectionEnabled(timeout);
+    private static bool IsTimeoutDetectionEnabled(TimeSpan timeout) => timeout.TotalMilliseconds >= 0;
+
+    private static bool IsTimeoutDetectionDisabled(TimeSpan timeout) => !IsTimeoutDetectionEnabled(timeout);
+
+    private async Task<bool> LivenessCheckPassed(IPooledConnection connection)
+    {
+        if (_connLivenessCheckTimeout is not null &&
+            connection.IdleTimer.ElapsedMilliseconds > _connLivenessCheckTimeout.Value.TotalMilliseconds)
+        {
+            _logger.Debug(
+                "Connection has been idle for {0}ms, performing liveness check.",
+                connection.IdleTimer.ElapsedMilliseconds);
+            await connection.ResetAsync().ConfigureAwait(false);
+            ResetIdleTimer(connection);
+        }
+
+        return true;
+    }
 }

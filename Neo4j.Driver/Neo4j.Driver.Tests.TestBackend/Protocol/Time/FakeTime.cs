@@ -15,6 +15,7 @@
 
 using System;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Services;
 
 namespace Neo4j.Driver.Tests.TestBackend;
@@ -33,6 +34,7 @@ internal class FakeTimeInstall : IProtocolObject
         FakeTimeHolder.OriginalTimeProvider = DateTimeProvider.StaticInstance;
         DateTimeProvider.StaticInstance = FakeTime.Instance;
         FakeTime.Instance.Freeze();
+        TimerFactory.SetTimerType<DateTimeBasedTimer>();
         return Task.CompletedTask;
     }
 
@@ -67,6 +69,7 @@ internal class FakeTimeUninstall : IProtocolObject
     public override Task Process()
     {
         DateTimeProvider.StaticInstance = FakeTimeHolder.OriginalTimeProvider;
+        TimerFactory.SetTimerType<StopwatchBasedTimer>();
         FakeTime.Instance.Unfreeze();
         return Task.CompletedTask;
     }
@@ -79,7 +82,7 @@ internal class FakeTimeUninstall : IProtocolObject
 
 public class FakeTime : IDateTimeProvider
 {
-    public static FakeTime Instance = new();
+    public static readonly FakeTime Instance = new();
 
     private DateTime? _frozenTime;
 
@@ -90,7 +93,7 @@ public class FakeTime : IDateTimeProvider
 
     public void Freeze()
     {
-        _frozenTime = DateTime.Now;
+        _frozenTime = Now();
     }
 
     public void Advance(int milliseconds)

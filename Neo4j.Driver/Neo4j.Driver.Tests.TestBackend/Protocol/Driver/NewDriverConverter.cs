@@ -63,6 +63,9 @@ internal class NewDriverConverter : JsonConverter<NewDriver.NewDriverType>
         if (jsonObj.TryGetValue("notificationsDisabledCategories", out token))
             newDriverRequest.notificationsDisabledCategories = token.ToObject<string[]>();
 
+        if(jsonObj.TryGetValue("livenessCheckTimeoutMs", out token))
+            newDriverRequest.livenessCheckTimeoutMs = token.Value<int?>();
+
         return newDriverRequest;
     }
 }

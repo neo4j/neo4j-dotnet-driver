@@ -69,9 +69,7 @@ internal sealed class ConnectionPool : IConnectionPool
 
         _connectionFactory = connectionFactory;
         DriverContext = driverContext;
-        _connectionValidator = new ConnectionValidator(
-            driverContext.Config.ConnectionIdleTimeout,
-            driverContext.Config.MaxConnectionLifetime);
+        _connectionValidator = new ConnectionValidator(driverContext);
         
         _poolMetricsListener = driverContext.Metrics?.PutPoolMetrics($"{_id}-{GetHashCode()}", this);
     }
@@ -458,7 +456,7 @@ internal sealed class ConnectionPool : IConnectionPool
             var connection =
                 await GetPooledOrNewConnectionAsync(sessionConfig, cancellationToken).ConfigureAwait(false);
 
-            if (_connectionValidator.OnRequire(connection))
+            if (await _connectionValidator.OnRequireAsync(connection).ConfigureAwait(false))
             {
                 await AddConnectionAsync(connection).ConfigureAwait(false);
 

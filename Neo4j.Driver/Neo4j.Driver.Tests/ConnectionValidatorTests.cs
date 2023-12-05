@@ -17,6 +17,7 @@ using System;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal;
 using Xunit;
 
@@ -38,7 +39,15 @@ namespace Neo4j.Driver.Tests
                 maxConnLifetime = Config.InfiniteInterval;
             }
 
-            return new ConnectionValidator(connIdleTimeout.Value, maxConnLifetime.Value);
+            var config = new Config
+            {
+                ConnectionIdleTimeout = connIdleTimeout.Value,
+                MaxConnectionLifetime = maxConnLifetime.Value
+            };
+            
+            var context = new DriverContext(new Uri("bolt://localhost"), AuthTokenManagers.None, config);
+
+            return new ConnectionValidator(context);
         }
 
         public class IsConnectionReusableTests
@@ -88,17 +97,18 @@ namespace Neo4j.Driver.Tests
         public class IsValidMethod
         {
             [Fact]
-            public void ShouldBeInvalidIfConnectionIsNotOpen()
+            public async void ShouldBeInvalidIfConnectionIsNotOpen()
             {
                 var conn = new Mock<IPooledConnection>();
                 conn.Setup(x => x.IsOpen).Returns(false);
                 conn.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 var validator = NewConnectionValidator();
-                validator.OnRequire(conn.Object).Should().BeFalse();
+                var result = await validator.OnRequireAsync(conn.Object);
+                result.Should().BeFalse();
             }
 
             [Fact]
-            public void ShouldBeInvalidIfHasBeenIdleForTooLong()
+            public async void ShouldBeInvalidIfHasBeenIdleForTooLong()
             {
                 var conn = new Mock<IPooledConnection>();
                 conn.Setup(x => x.IsOpen).Returns(true);
@@ -106,11 +116,12 @@ namespace Neo4j.Driver.Tests
                 conn.Setup(x => x.IdleTimer).Returns(MockTimer(10));
 
                 var validator = NewConnectionValidator(TimeSpan.Zero);
-                validator.OnRequire(conn.Object).Should().BeFalse();
+                var result = await validator.OnRequireAsync(conn.Object);
+                result.Should().BeFalse();
             }
 
             [Fact]
-            public void ShouldBeInvalidIfHasBeenAliveForTooLong()
+            public async void ShouldBeInvalidIfHasBeenAliveForTooLong()
             {
                 var conn = new Mock<IPooledConnection>();
                 conn.Setup(x => x.IsOpen).Returns(true);
@@ -119,11 +130,12 @@ namespace Neo4j.Driver.Tests
                 conn.Setup(x => x.LifetimeTimer).Returns(MockTimer(10));
 
                 var validator = NewConnectionValidator(maxConnLifetime: TimeSpan.Zero);
-                validator.OnRequire(conn.Object).Should().BeFalse();
+                var result = await validator.OnRequireAsync(conn.Object);
+                result.Should().BeFalse();
             }
 
             [Fact]
-            public void ShouldBeValidAndResetIdleTimer()
+            public async Task ShouldBeValidAndResetIdleTimer()
             {
                 var conn = new Mock<IPooledConnection>();
                 var idleTimmer = new Mock<ITimer>();
@@ -134,7 +146,8 @@ namespace Neo4j.Driver.Tests
                 conn.Setup(x => x.LifetimeTimer).Returns(MockTimer(10));
 
                 var validator = NewConnectionValidator(TimeSpan.MaxValue, TimeSpan.MaxValue);
-                validator.OnRequire(conn.Object).Should().BeTrue();
+                var result = await validator.OnRequireAsync(conn.Object);
+                result.Should().BeTrue();
                 idleTimmer.Verify(x => x.Reset(), Times.Once);
             }
 

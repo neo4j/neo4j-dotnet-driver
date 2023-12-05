@@ -33,6 +33,7 @@
     <ItemGroup>
         <ProjectReference Include="..\Neo4j.Driver.Reactive\Neo4j.Driver.Reactive.csproj" />
         <ProjectReference Include="..\Neo4j.Driver.Simple\Neo4j.Driver.Simple.csproj" />
+        <ProjectReference Include="..\Neo4j.Driver.Tests.TestBackend\Neo4j.Driver.Tests.TestBackend.csproj" />
         <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.0'">

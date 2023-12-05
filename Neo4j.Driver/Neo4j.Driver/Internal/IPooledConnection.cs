@@ -28,17 +28,3 @@ internal interface IPooledConnection : IConnection
     /// <summary>Try to reset the connection to a clean state.</summary>
     Task ClearConnectionAsync();
 }
-
-internal interface ITimer
-{
-    /// <summary>Gets the total elapsed time measured by the current instance, in milliseconds.</summary>
-    /// <returns>A read-only long integer representing the total number of milliseconds measured by the current instance.</returns>
-    /// <filterpriority>1</filterpriority>
-    long ElapsedMilliseconds { get; }
-
-    /// <summary>Stops time interval measurement and resets the elapsed time to zero.</summary>
-    void Reset();
-
-    /// <summary>Starts, or resumes, measuring elapsed time for an interval.</summary>
-    void Start();
-}

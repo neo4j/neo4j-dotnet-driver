@@ -160,6 +160,12 @@ internal class NewDriver : IProtocolObject
             configBuilder.WithTelemetryDisabled();
         }
 
+        if(data.livenessCheckTimeoutMs.HasValue)
+        {
+            configBuilder.WithConnectionLivenessCheckTimeout(
+                TimeSpan.FromMilliseconds(data.livenessCheckTimeoutMs.Value));
+        }
+
         var logger = new SimpleLogger();
         configBuilder.WithLogger(logger);
     }
@@ -200,5 +206,7 @@ internal class NewDriver : IProtocolObject
 
         public string notificationsMinSeverity { get; set; }
         public string[] notificationsDisabledCategories { get; set; }
+
+        public int? livenessCheckTimeoutMs { get; set; }
     }
 }

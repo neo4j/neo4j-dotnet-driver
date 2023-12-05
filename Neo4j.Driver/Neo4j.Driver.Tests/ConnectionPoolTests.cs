@@ -76,11 +76,19 @@ namespace Neo4j.Driver.Tests
             BlockingCollection<IPooledConnection> idleConnections,
             ConcurrentHashSet<IPooledConnection> inUseConnections = null)
         {
+            var config = new Config
+            {
+                ConnectionIdleTimeout = Config.InfiniteInterval,
+                MaxConnectionLifetime = Config.InfiniteInterval
+            };
+            
+            var context = new DriverContext(new Uri("bolt://localhost"), AuthTokenManagers.None, config);
+
             return new ConnectionPool(
                 new MockedConnectionFactory(),
                 idleConnections,
                 inUseConnections,
-                validator: new ConnectionValidator(Config.InfiniteInterval, Config.InfiniteInterval),
+                validator: new ConnectionValidator(context),
                 driverContext: TestDriverContext.MockContext);
         }
 
@@ -1708,9 +1716,9 @@ namespace Neo4j.Driver.Tests
                 return Task.FromResult(_isValid);
             }
 
-            public bool OnRequire(IPooledConnection connection)
+            public Task<bool> OnRequireAsync(IPooledConnection connection)
             {
-                return _isValid;
+                return Task.FromResult(_isValid);
             }
         }
 

@@ -16,6 +16,7 @@
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Services;
 
 namespace Neo4j.Driver.Internal.Connector;
 
@@ -31,9 +32,9 @@ internal class PooledConnection : DelegatedConnection, IPooledConnection
     {
         _releaseManager = releaseManager;
         // IdleTimer starts to count when the connection is put back to the pool.
-        IdleTimer = new StopwatchBasedTimer();
+        IdleTimer = TimerFactory.CreateTimer();
         // LifetimeTimer starts to count once the connection is created.
-        LifetimeTimer = new StopwatchBasedTimer();
+        LifetimeTimer = TimerFactory.CreateTimer();
         LifetimeTimer.Start();
     }
 
@@ -118,27 +119,5 @@ internal class PooledConnection : DelegatedConnection, IPooledConnection
         return AuthorizationStatus != AuthorizationStatus.None &&
             Version >= BoltProtocolVersion.V5_1 &&
             error is AuthorizationException or TokenExpiredException;
-    }
-}
-
-internal class StopwatchBasedTimer : ITimer
-{
-    private readonly Stopwatch _stopwatch;
-
-    public StopwatchBasedTimer()
-    {
-        _stopwatch = new Stopwatch();
-    }
-
-    public long ElapsedMilliseconds => _stopwatch.ElapsedMilliseconds;
-
-    public void Reset()
-    {
-        _stopwatch.Reset();
-    }
-
-    public void Start()
-    {
-        _stopwatch.Start();
     }
 }
