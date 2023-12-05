@@ -26,19 +26,13 @@ namespace Neo4j.Driver.Tests
     {
         private static ConnectionValidator NewConnectionValidator(
             TimeSpan? connIdleTimeout = null,
-            TimeSpan? maxConnLifetime = null)
+            TimeSpan? maxConnLifetime = null,
+            TimeSpan? livelinessCheckTimeout = null)
         {
-            if (connIdleTimeout == null)
-            {
-                connIdleTimeout = Config.InfiniteInterval;
-            }
-
-            if (maxConnLifetime == null)
-            {
-                maxConnLifetime = Config.InfiniteInterval;
-            }
-
-            return new ConnectionValidator(connIdleTimeout.Value, maxConnLifetime.Value);
+            connIdleTimeout ??= Config.InfiniteInterval;
+            maxConnLifetime ??= Config.InfiniteInterval;
+            livelinessCheckTimeout ??= Config.InfiniteInterval;
+            return new ConnectionValidator(connIdleTimeout.Value, maxConnLifetime.Value, livelinessCheckTimeout.Value);
         }
 
         public class IsConnectionReusableTests
@@ -46,9 +40,8 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task ShouldReturnFalseIfTheConnectionIsNotOpen()
             {
-                var conn = new Mock<IPooledConnection>();
+                var (conn, _, _) = Mock();
                 conn.Setup(x => x.IsOpen).Returns(false);
-                conn.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 var validator = NewConnectionValidator();
                 var result = await validator.OnReleaseAsync(conn.Object);
                 result.Should().BeFalse();
@@ -57,9 +50,8 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task ShouldReturnFalseIfFailedToCleanConnection()
             {
-                var conn = new Mock<IPooledConnection>();
+                var (conn, _, _) = Mock();
                 conn.Setup(x => x.IsOpen).Returns(true);
-                conn.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 conn.Setup(x => x.ClearConnectionAsync())
                     .Returns(Task.FromException(new InvalidOperationException()));
 
@@ -71,11 +63,8 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public async Task ShouldResetIdleTimer()
             {
-                var conn = new Mock<IPooledConnection>();
-                var idleTimer = new Mock<ITimer>();
+                var (conn, idleTimer, _) = Mock();
                 conn.Setup(x => x.IsOpen).Returns(true);
-                conn.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
-                conn.Setup(x => x.IdleTimer).Returns(idleTimer.Object);
 
                 var validator = NewConnectionValidator(TimeSpan.Zero);
 
@@ -90,60 +79,71 @@ namespace Neo4j.Driver.Tests
             [Fact]
             public void ShouldBeInvalidIfConnectionIsNotOpen()
             {
-                var conn = new Mock<IPooledConnection>();
+                var (conn, _, _) = Mock();
                 conn.Setup(x => x.IsOpen).Returns(false);
-                conn.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 var validator = NewConnectionValidator();
-                validator.OnRequire(conn.Object).Should().BeFalse();
+                validator.GetConnectionLifetimeStatus(conn.Object).Should().Be(AcquireStatus.Unhealthy);
             }
 
             [Fact]
             public void ShouldBeInvalidIfHasBeenIdleForTooLong()
             {
-                var conn = new Mock<IPooledConnection>();
+                var (conn, idleTimer, _) = Mock();
                 conn.Setup(x => x.IsOpen).Returns(true);
-                conn.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
-                conn.Setup(x => x.IdleTimer).Returns(MockTimer(10));
+                idleTimer.Setup(x => x.ElapsedMilliseconds).Returns(10);
 
                 var validator = NewConnectionValidator(TimeSpan.Zero);
-                validator.OnRequire(conn.Object).Should().BeFalse();
+                validator.GetConnectionLifetimeStatus(conn.Object).Should().Be(AcquireStatus.Unhealthy);
             }
 
             [Fact]
             public void ShouldBeInvalidIfHasBeenAliveForTooLong()
             {
-                var conn = new Mock<IPooledConnection>();
+                var (conn, idleTimer, lifeTimer) = Mock();
                 conn.Setup(x => x.IsOpen).Returns(true);
-                conn.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
-                conn.Setup(x => x.IdleTimer).Returns(MockTimer(10));
-                conn.Setup(x => x.LifetimeTimer).Returns(MockTimer(10));
+                idleTimer.Setup(x => x.ElapsedMilliseconds).Returns(10);
+                lifeTimer.Setup(x => x.ElapsedMilliseconds).Returns(10);
 
                 var validator = NewConnectionValidator(maxConnLifetime: TimeSpan.Zero);
-                validator.OnRequire(conn.Object).Should().BeFalse();
+                validator.GetConnectionLifetimeStatus(conn.Object).Should().Be(AcquireStatus.Unhealthy);
             }
 
             [Fact]
             public void ShouldBeValidAndResetIdleTimer()
             {
-                var conn = new Mock<IPooledConnection>();
-                var idleTimmer = new Mock<ITimer>();
-                idleTimmer.Setup(x => x.ElapsedMilliseconds).Returns(10);
+                var (conn, idleTimer, _) = Mock();
+                idleTimer.Setup(x => x.ElapsedMilliseconds).Returns(10);
                 conn.Setup(x => x.IsOpen).Returns(true);
-                conn.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
-                conn.Setup(x => x.IdleTimer).Returns(idleTimmer.Object);
-                conn.Setup(x => x.LifetimeTimer).Returns(MockTimer(10));
 
                 var validator = NewConnectionValidator(TimeSpan.MaxValue, TimeSpan.MaxValue);
-                validator.OnRequire(conn.Object).Should().BeTrue();
-                idleTimmer.Verify(x => x.Reset(), Times.Once);
+                validator.GetConnectionLifetimeStatus(conn.Object).Should().Be(AcquireStatus.Healthy);
+                idleTimer.Verify(x => x.Reset(), Times.Once);
             }
 
-            private static ITimer MockTimer(long elapsedMilliseconds)
+            [Fact]
+            public void ShouldRequireLiveness()
             {
-                var timmer = new Mock<ITimer>();
-                timmer.Setup(x => x.ElapsedMilliseconds).Returns(elapsedMilliseconds);
-                return timmer.Object;
+                var (conn, idleTimer, _) = Mock();
+                idleTimer.Setup(x => x.ElapsedMilliseconds).Returns(10);
+                conn.Setup(x => x.IsOpen).Returns(true);
+
+                var validator = NewConnectionValidator(TimeSpan.MaxValue, TimeSpan.MaxValue, TimeSpan.FromMilliseconds(9));
+                validator.GetConnectionLifetimeStatus(conn.Object).Should().Be(AcquireStatus.RequiresLivenessProbe);
+                idleTimer.Verify(x => x.Reset(), Times.Once);
             }
+        }
+
+        private static (Mock<IPooledConnection> conn, Mock<ITimer> idle, Mock<ITimer> life) Mock()
+        {
+            var conn = new Mock<IPooledConnection>();
+            conn.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
+
+            var idleTimer = new Mock<ITimer>();
+            var lifeTimer = new Mock<ITimer>();
+
+            conn.Setup(x => x.IdleTimer).Returns(idleTimer.Object);
+            conn.Setup(x => x.LifetimeTimer).Returns(lifeTimer.Object);
+            return (conn, idleTimer, lifeTimer);
         }
     }
 }

@@ -29,18 +29,20 @@ internal interface IConnectionValidator
     /// <summary>Healthy check before lending the connection outside the pool.</summary>
     /// <param name="connection">The connection to be checked.</param>
     /// <returns>True if the connection is in a good state to be used by transactions and sessions, otherwise false.</returns>
-    bool OnRequire(IPooledConnection connection);
+    AcquireStatus GetConnectionLifetimeStatus(IPooledConnection connection);
 }
 
 internal class ConnectionValidator : IConnectionValidator
 {
-    private readonly TimeSpan _connIdleTimeout;
-    private readonly TimeSpan _maxConnLifetime;
+    private readonly long _connIdleTimeout;
+    private readonly long _maxConnLifetime;
+    private readonly long _liveness;
 
-    public ConnectionValidator(TimeSpan connIdleTimeout, TimeSpan maxConnLifetime)
+    public ConnectionValidator(TimeSpan connIdleTimeout, TimeSpan maxConnLifetime, TimeSpan? livenessCheckTimeout = null)
     {
-        _connIdleTimeout = connIdleTimeout;
-        _maxConnLifetime = maxConnLifetime;
+        _connIdleTimeout = connIdleTimeout >= TimeSpan.Zero ? (long)connIdleTimeout.TotalMilliseconds : long.MaxValue;
+        _maxConnLifetime = maxConnLifetime >= TimeSpan.Zero ? (long)maxConnLifetime.TotalMilliseconds : long.MaxValue;
+        _liveness = livenessCheckTimeout.HasValue ? (long)livenessCheckTimeout.Value.TotalMilliseconds : long.MaxValue;
     }
 
     public async Task<bool> OnReleaseAsync(IPooledConnection connection)
@@ -69,20 +71,24 @@ internal class ConnectionValidator : IConnectionValidator
         return true;
     }
 
-    public bool OnRequire(IPooledConnection connection)
+    public AcquireStatus GetConnectionLifetimeStatus(IPooledConnection connection)
     {
+        var idleTime = connection?.IdleTimer.ElapsedMilliseconds ?? 0L;
+        
         var isRequirable = connection.IsOpen &&
-            !HasBeenIdleForTooLong(connection) &&
+            !HasBeenIdleForTooLong(idleTime) &&
             !HasBeenAliveForTooLong(connection) &&
             !MarkedStale(connection) &&
             AuthStatusIsRecoverable(connection);
 
-        if (isRequirable)
+        if (!isRequirable)
         {
-            ResetIdleTimer(connection);
+            return AcquireStatus.Unhealthy;
         }
 
-        return isRequirable;
+        ResetIdleTimer(connection);
+        
+        return idleTime >= _liveness ? AcquireStatus.RequiresLivenessProbe : AcquireStatus.Healthy;
     }
 
     private bool AuthStatusIsRecoverable(IConnection connection)
@@ -99,7 +105,7 @@ internal class ConnectionValidator : IConnectionValidator
 
     private void RestartIdleTimer(IPooledConnection connection)
     {
-        if (IsTimeoutDetectionEnabled(_connIdleTimeout))
+        if (_connIdleTimeout < long.MaxValue)
         {
             connection.IdleTimer.Start();
         }
@@ -107,7 +113,7 @@ internal class ConnectionValidator : IConnectionValidator
 
     private void ResetIdleTimer(IPooledConnection connection)
     {
-        if (IsTimeoutDetectionEnabled(_connIdleTimeout))
+        if (_connIdleTimeout < long.MaxValue)
         {
             connection.IdleTimer.Reset();
         }
@@ -115,35 +121,19 @@ internal class ConnectionValidator : IConnectionValidator
 
     private bool HasBeenAliveForTooLong(IPooledConnection connection)
     {
-        if (IsTimeoutDetectionDisabled(_maxConnLifetime))
-        {
-            return false;
-        }
-
-        if (connection.LifetimeTimer.ElapsedMilliseconds > _maxConnLifetime.TotalMilliseconds)
-        {
-            return true;
-        }
-
-        return false;
+        return connection.LifetimeTimer.ElapsedMilliseconds > _maxConnLifetime;
     }
 
-    private bool HasBeenIdleForTooLong(IPooledConnection connection)
+    private bool HasBeenIdleForTooLong(double connectionIdleTime)
     {
-        if (IsTimeoutDetectionDisabled(_connIdleTimeout))
-        {
-            return false;
-        }
-
-        if (connection.IdleTimer.ElapsedMilliseconds > _connIdleTimeout.TotalMilliseconds)
-        {
-            return true;
-        }
-
-        return false;
+        return connectionIdleTime > _connIdleTimeout;
     }
 
-    public static bool IsTimeoutDetectionEnabled(TimeSpan timeout) => timeout.TotalMilliseconds >= 0;
-    
-    public static bool IsTimeoutDetectionDisabled(TimeSpan timeout) => !IsTimeoutDetectionEnabled(timeout);
+}
+
+internal enum AcquireStatus
+{
+    Healthy,
+    Unhealthy,
+    RequiresLivenessProbe
 }

@@ -37,7 +37,7 @@ internal static class SupportedFeatures
             "Feature:API:Driver.VerifyAuthentication",
             "Feature:API:Driver.VerifyConnectivity",
             "Feature:API:Driver.SupportsSessionAuth",
-            //"Feature:API:Liveness.Check",
+            "Feature:API:Liveness.Check",
             "Feature:API:Result.List",
             "Feature:API:Result.Peek",
             "Feature:API:Result.Single",

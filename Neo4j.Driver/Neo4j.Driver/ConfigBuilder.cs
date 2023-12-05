@@ -394,6 +394,7 @@ public sealed class ConfigBuilder
     /// <seealso cref="WithNotificationsDisabled"/>
     /// <seealso cref="SessionConfigBuilder.WithNotifications"/>
     /// <seealso cref="SessionConfigBuilder.WithNotificationsDisabled"/>
+    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithNotifications(
         Severity? minimumSeverity,
         Category[] disabledCategories)
@@ -435,6 +436,7 @@ public sealed class ConfigBuilder
     /// telemetry data for diagnostics purposes.<br/>
     /// By default the driver allows the collection of this telemetry.
     /// </summary>
+    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithTelemetryDisabled()
     {
         _config.TelemetryDisabled = true;
@@ -444,9 +446,21 @@ public sealed class ConfigBuilder
     /// <summary>
     /// Sets the <see cref="MessageReaderConfig"/> config to use in the driver.
     /// </summary>
+    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithMessageReaderConfig(MessageReaderConfig config)
     {
         _config.MessageReaderConfig = config ?? throw new ArgumentNullException(nameof(config));
+        return this;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="fromMilliseconds"></param>
+    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    public ConfigBuilder WithLivenessCheckTimeout(TimeSpan fromMilliseconds)
+    {
+        _config.ConnectionLivenessThreshold = fromMilliseconds;
         return this;
     }
 }

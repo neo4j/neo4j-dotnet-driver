@@ -71,7 +71,8 @@ internal sealed class ConnectionPool : IConnectionPool
         DriverContext = driverContext;
         _connectionValidator = new ConnectionValidator(
             driverContext.Config.ConnectionIdleTimeout,
-            driverContext.Config.MaxConnectionLifetime);
+            driverContext.Config.MaxConnectionLifetime,
+            driverContext.Config.ConnectionLivenessThreshold);
         
         _poolMetricsListener = driverContext.Metrics?.PutPoolMetrics($"{_id}-{GetHashCode()}", this);
     }
@@ -127,7 +128,7 @@ internal sealed class ConnectionPool : IConnectionPool
                         () => AcquireOrTimeoutAsync(database, sessionConfig, mode, ConnectionAcquisitionTimeout),
                         "Failed to acquire a connection from connection pool asynchronously.")
                     .ConfigureAwait(false);
-
+                
                 try
                 {
                     connection.SessionConfig = sessionConfig;
@@ -458,18 +459,33 @@ internal sealed class ConnectionPool : IConnectionPool
             var connection =
                 await GetPooledOrNewConnectionAsync(sessionConfig, cancellationToken).ConfigureAwait(false);
 
-            if (_connectionValidator.OnRequire(connection))
+            var acquireStatus = _connectionValidator.GetConnectionLifetimeStatus(connection);
+
+            if (acquireStatus == AcquireStatus.Unhealthy)
             {
-                await AddConnectionAsync(connection).ConfigureAwait(false);
-
-                connection.Configure(database, mode);
-
-                return connection;
+                await DestroyConnectionAsync(connection).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+                continue;
             }
 
-            await DestroyConnectionAsync(connection).ConfigureAwait(false);
-
-            cancellationToken.ThrowIfCancellationRequested();
+            if (acquireStatus == AcquireStatus.RequiresLivenessProbe)
+            {
+                try
+                {
+                    await connection.ResetAsync().ConfigureAwait(false);
+                    await connection.SyncAsync().ConfigureAwait(false);
+                }
+                catch
+                {
+                    await DestroyConnectionAsync(connection).ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    continue;
+                }
+            }
+            
+            await AddConnectionAsync(connection).ConfigureAwait(false);
+            connection.Configure(database, mode);
+            return connection;
         }
     }
 

@@ -251,6 +251,7 @@ namespace Neo4j.Driver.Tests
             {
                 var conns = new BlockingCollection<IPooledConnection>();
                 var closedMock = new Mock<IPooledConnection>();
+                closedMock.Setup(x => x.IdleTimer).Returns(new StopwatchBasedTimer());
                 closedMock.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 closedMock.Setup(x => x.IsOpen).Returns(false);
 
@@ -277,12 +278,29 @@ namespace Neo4j.Driver.Tests
                 conn.Should().NotBe(closedMock.Object);
             }
 
+            private Mock<IConnectionValidator> MockValidator(Action<Mock<IConnectionValidator>> setup = null)
+            {
+                var validator = new Mock<IConnectionValidator>();
+                if (setup != null)
+                {
+                    setup(validator);
+                }
+                else
+                {
+                    validator.Setup(x => x.OnReleaseAsync(It.IsAny<IPooledConnection>())).ReturnsAsync(true);
+                    validator.Setup(x => x.GetConnectionLifetimeStatus(It.IsAny<IPooledConnection>()))
+                        .Returns(AcquireStatus.Healthy);
+                }
+                return validator;
+            }
+
             [Fact]
             public async Task ShouldReuseWhenOpenConnectionInQueue()
             {
                 var conns = new BlockingCollection<IPooledConnection>();
                 var mock = new Mock<IPooledConnection>();
                 mock.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
+                mock.Setup(x => x.IdleTimer).Returns(new StopwatchBasedTimer());
                 mock.Setup(x => x.IsOpen).Returns(true);
                 mock.Setup(x => x.LifetimeTimer).Returns(MockedTimer);
 
@@ -314,8 +332,10 @@ namespace Neo4j.Driver.Tests
                 healthyMock.Setup(x => x.IsOpen).Returns(true);
                 healthyMock.Setup(x => x.Version).Returns(BoltProtocolVersion.V5_1);
                 healthyMock.Setup(x => x.LifetimeTimer).Returns(MockedTimer);
+                healthyMock.Setup(x => x.IdleTimer).Returns(new StopwatchBasedTimer());
                 var unhealthyMock = new Mock<IPooledConnection>();
                 unhealthyMock.Setup(x => x.IsOpen).Returns(false);
+                unhealthyMock.Setup(x => x.IdleTimer).Returns(new StopwatchBasedTimer());
 
                 conns.Add(unhealthyMock.Object);
                 conns.Add(healthyMock.Object);
@@ -389,6 +409,8 @@ namespace Neo4j.Driver.Tests
             {
                 // Given
                 var mock = new Mock<IPooledConnection>();
+                mock.Setup(x => x.IdleTimer).Returns(new StopwatchBasedTimer());
+                mock.Setup(x => x.LifetimeTimer).Returns(new StopwatchBasedTimer());
                 mock.Setup(x => x.AuthorizationStatus).Returns(AuthorizationStatus.FreshlyAuthenticated);
                 mock.Setup(x => x.IsOpen).Returns(true);
                 var timerMock = new Mock<ITimer>();
@@ -479,6 +501,8 @@ namespace Neo4j.Driver.Tests
                 for (var i = 0; i < numberOfThreads; i++)
                 {
                     var mock = new Mock<IPooledConnection>();
+                    mock.Setup(x => x.IdleTimer).Returns(new StopwatchBasedTimer());
+                    mock.Setup(x => x.LifetimeTimer).Returns(new StopwatchBasedTimer());
                     mock.Setup(x => x.AuthorizationStatus).Returns(AuthorizationStatus.FreshlyAuthenticated);
                     mock.Setup(x => x.Version).Returns(BoltProtocolVersion.V4_4);
                     mock.Setup(x => x.IsOpen).Returns(true);
@@ -533,6 +557,8 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var idleConnections = new BlockingCollection<IPooledConnection>();
                 var healthyMock = new Mock<IPooledConnection>();
+                healthyMock.Setup(x => x.IdleTimer).Returns(new StopwatchBasedTimer());
+                healthyMock.Setup(x => x.LifetimeTimer).Returns(new StopwatchBasedTimer());
                 healthyMock.Setup(x => x.AuthorizationStatus).Returns(AuthorizationStatus.FreshlyAuthenticated);
                 var pool = NewConnectionPoolWithConnectionTimeoutCheckDisabled(idleConnections);
 
@@ -1577,6 +1603,8 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var idleConnections = new BlockingCollection<IPooledConnection>();
                 var openConnMock = new Mock<IPooledConnection>();
+                openConnMock.Setup(x => x.LifetimeTimer).Returns(new StopwatchBasedTimer());
+                openConnMock.Setup(x => x.IdleTimer).Returns(new StopwatchBasedTimer());
                 var pool = NewConnectionPoolWithConnectionTimeoutCheckDisabled(idleConnections);
 
                 pool.NumberOfIdleConnections.Should().Be(0);
@@ -1606,6 +1634,8 @@ namespace Neo4j.Driver.Tests
                 // Given
                 var idleConnections = new BlockingCollection<IPooledConnection>();
                 var closedConnMock = new Mock<IPooledConnection>();
+
+                closedConnMock.Setup(x => x.IdleTimer).Returns(new StopwatchBasedTimer());
                 var pool = NewConnectionPoolWithConnectionTimeoutCheckDisabled(idleConnections);
 
                 pool.NumberOfIdleConnections.Should().Be(0);
@@ -1708,9 +1738,9 @@ namespace Neo4j.Driver.Tests
                 return Task.FromResult(_isValid);
             }
 
-            public bool OnRequire(IPooledConnection connection)
+            public AcquireStatus GetConnectionLifetimeStatus(IPooledConnection connection)
             {
-                return _isValid;
+                return _isValid ? AcquireStatus.Healthy : AcquireStatus.Unhealthy;
             }
         }
 

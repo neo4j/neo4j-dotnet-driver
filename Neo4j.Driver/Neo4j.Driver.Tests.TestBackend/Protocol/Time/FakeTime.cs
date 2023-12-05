@@ -14,7 +14,9 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Services;
 
 namespace Neo4j.Driver.Tests.TestBackend;
@@ -77,15 +79,23 @@ internal class FakeTimeUninstall : IProtocolObject
     }
 }
 
-public class FakeTime : IDateTimeProvider
+internal class FakeTime : IDateTimeProvider
 {
     public static FakeTime Instance = new();
 
     private DateTime? _frozenTime;
+    private List<FakeTimer> Timers = new();
 
     public DateTime Now()
     {
         return _frozenTime ?? DateTime.Now;
+    }
+
+    public ITimer NewTimer()
+    {
+        var t= new FakeTimer();
+        Timers.Add(t);
+        return t;
     }
 
     public void Freeze()
@@ -96,10 +106,32 @@ public class FakeTime : IDateTimeProvider
     public void Advance(int milliseconds)
     {
         _frozenTime = Now().AddMilliseconds(milliseconds);
+        foreach (var t in Timers)
+        {
+            t.Advance(milliseconds);
+        }
     }
 
     public void Unfreeze()
     {
         _frozenTime = null;
+    }
+}
+
+public class FakeTimer : ITimer
+{
+    public void Advance(int milliseconds)
+    {
+        ElapsedMilliseconds += milliseconds;
+    }
+
+    public long ElapsedMilliseconds { get; private set; }
+    public void Reset()
+    {
+        ElapsedMilliseconds = 0;
+    }
+
+    public void Start()
+    {
     }
 }

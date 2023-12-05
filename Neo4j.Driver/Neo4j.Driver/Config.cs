@@ -116,6 +116,11 @@ public class Config
     /// create a new connection when pool is not full.
     /// </summary>
     public TimeSpan ConnectionAcquisitionTimeout { get; internal set; } = TimeSpan.FromMinutes(1);
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    public TimeSpan? ConnectionLivenessThreshold { get; internal set; }
 
     /// <summary>The connection timeout when establishing a connection with a server.</summary>
     public TimeSpan ConnectionTimeout { get; internal set; } = TimeSpan.FromSeconds(30);
