@@ -65,6 +65,8 @@ internal class NewDriver : IProtocolObject
 
     private void DriverConfig(ConfigBuilder configBuilder)
     {
+        configBuilder.WithMetricsEnabled(true);
+        
         if (!string.IsNullOrEmpty(data.userAgent))
         {
             configBuilder.WithUserAgent(data.userAgent);
