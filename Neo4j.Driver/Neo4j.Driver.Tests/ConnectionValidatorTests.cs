@@ -29,10 +29,8 @@ namespace Neo4j.Driver.Tests
             TimeSpan? maxConnLifetime = null,
             TimeSpan? livelinessCheckTimeout = null)
         {
-            connIdleTimeout ??= Config.InfiniteInterval;
-            maxConnLifetime ??= Config.InfiniteInterval;
-            livelinessCheckTimeout ??= Config.InfiniteInterval;
-            return new ConnectionValidator(connIdleTimeout.Value, maxConnLifetime.Value, livelinessCheckTimeout.Value);
+            return new ConnectionValidator(connIdleTimeout ?? Config.InfiniteInterval,
+                maxConnLifetime ?? Config.InfiniteInterval, livelinessCheckTimeout);
         }
 
         public class IsConnectionReusableTests
