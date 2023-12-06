@@ -44,9 +44,6 @@ internal sealed class ConnectionPool : IConnectionPool
     private readonly ConcurrentHashSet<IPooledConnection> _inUseConnections = new();
 
     private readonly ILogger _logger;
-    private int MaxIdlePoolSize => DriverContext.Config.MaxIdleConnectionPoolSize;
-    private TimeSpan ConnectionAcquisitionTimeout => DriverContext.Config.ConnectionAcquisitionTimeout;
-    private int MaxPoolSize => DriverContext.Config.MaxConnectionPoolSize;
 
     private readonly IConnectionPoolListener _poolMetricsListener;
 
@@ -71,8 +68,9 @@ internal sealed class ConnectionPool : IConnectionPool
         DriverContext = driverContext;
         _connectionValidator = new ConnectionValidator(
             driverContext.Config.ConnectionIdleTimeout,
-            driverContext.Config.MaxConnectionLifetime);
-        
+            driverContext.Config.MaxConnectionLifetime,
+            driverContext.Config.ConnectionLivenessThreshold);
+
         _poolMetricsListener = driverContext.Metrics?.PutPoolMetrics($"{_id}-{GetHashCode()}", this);
     }
 
@@ -95,6 +93,10 @@ internal sealed class ConnectionPool : IConnectionPool
             _connectionValidator = validator;
         }
     }
+
+    private int MaxIdlePoolSize => DriverContext.Config.MaxIdleConnectionPoolSize;
+    private TimeSpan ConnectionAcquisitionTimeout => DriverContext.Config.ConnectionAcquisitionTimeout;
+    private int MaxPoolSize => DriverContext.Config.MaxConnectionPoolSize;
 
     private bool IsClosed => AtomicRead(ref _poolStatus) == Closed;
     private bool IsInactive => AtomicRead(ref _poolStatus) == Inactive;
@@ -458,18 +460,33 @@ internal sealed class ConnectionPool : IConnectionPool
             var connection =
                 await GetPooledOrNewConnectionAsync(sessionConfig, cancellationToken).ConfigureAwait(false);
 
-            if (_connectionValidator.OnRequire(connection))
+            var acquireStatus = _connectionValidator.GetConnectionLifetimeStatus(connection);
+
+            if (acquireStatus == AcquireStatus.Unhealthy)
             {
-                await AddConnectionAsync(connection).ConfigureAwait(false);
-
-                connection.Configure(database, mode);
-
-                return connection;
+                await DestroyConnectionAsync(connection).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+                continue;
             }
 
-            await DestroyConnectionAsync(connection).ConfigureAwait(false);
+            if (acquireStatus == AcquireStatus.RequiresLivenessProbe)
+            {
+                try
+                {
+                    await connection.ResetAsync().ConfigureAwait(false);
+                    await connection.SyncAsync().ConfigureAwait(false);
+                }
+                catch
+                {
+                    await DestroyConnectionAsync(connection).ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    continue;
+                }
+            }
 
-            cancellationToken.ThrowIfCancellationRequested();
+            await AddConnectionAsync(connection).ConfigureAwait(false);
+            connection.Configure(database, mode);
+            return connection;
         }
     }
 
