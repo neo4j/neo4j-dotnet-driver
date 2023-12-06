@@ -46,7 +46,7 @@ internal class FakeTimeInstall : IProtocolObject
 
 internal class FakeTimeTick : IProtocolObject
 {
-    public DataType data { get; set; }
+    public FakeTimeTickDto data { get; set; }
 
     public override Task Process()
     {
@@ -59,7 +59,7 @@ internal class FakeTimeTick : IProtocolObject
         return new ProtocolResponse("FakeTimeAck").Encode();
     }
 
-    public record DataType(int incrementMs);
+    public record FakeTimeTickDto(int incrementMs);
 }
 
 internal class FakeTimeUninstall : IProtocolObject
@@ -69,7 +69,7 @@ internal class FakeTimeUninstall : IProtocolObject
     public override Task Process()
     {
         DateTimeProvider.StaticInstance = FakeTimeHolder.OriginalTimeProvider;
-        FakeTime.Instance.Unfreeze();
+        FakeTime.Instance.Uninstall();
         return Task.CompletedTask;
     }
 
@@ -81,10 +81,10 @@ internal class FakeTimeUninstall : IProtocolObject
 
 internal class FakeTime : IDateTimeProvider
 {
-    public static FakeTime Instance = new();
+    public static readonly FakeTime Instance = new();
 
     private DateTime? _frozenTime;
-    private List<FakeTimer> Timers = new();
+    private readonly List<FakeTimer> _timers = new();
 
     public DateTime Now()
     {
@@ -94,7 +94,7 @@ internal class FakeTime : IDateTimeProvider
     public ITimer NewTimer()
     {
         var fakeTimer = new FakeTimer();
-        Timers.Add(fakeTimer);
+        _timers.Add(fakeTimer);
         return fakeTimer;
     }
 
@@ -106,29 +106,33 @@ internal class FakeTime : IDateTimeProvider
     public void Advance(int milliseconds)
     {
         _frozenTime = Now().AddMilliseconds(milliseconds);
-        foreach (var t in Timers)
+        foreach (var timer in _timers)
         {
-            t.Advance(milliseconds);
+            timer.Advance(milliseconds);
         }
     }
 
-    public void Unfreeze()
+    public void Uninstall()
     {
         _frozenTime = null;
+        _timers.Clear();
     }
 }
 
-public class FakeTimer : ITimer
+internal class FakeTimer : ITimer
 {
+    private long _advanced;
+    
     public void Advance(int milliseconds)
     {
-        ElapsedMilliseconds += milliseconds;
+        _advanced += milliseconds;
     }
 
-    public long ElapsedMilliseconds { get; private set; }
+    public long ElapsedMilliseconds => _advanced;
+    
     public void Reset()
     {
-        ElapsedMilliseconds = 0;
+        _advanced = 0;
     }
 
     public void Start()
