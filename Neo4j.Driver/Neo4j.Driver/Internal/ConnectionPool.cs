@@ -44,9 +44,6 @@ internal sealed class ConnectionPool : IConnectionPool
     private readonly ConcurrentHashSet<IPooledConnection> _inUseConnections = new();
 
     private readonly ILogger _logger;
-    private int MaxIdlePoolSize => DriverContext.Config.MaxIdleConnectionPoolSize;
-    private TimeSpan ConnectionAcquisitionTimeout => DriverContext.Config.ConnectionAcquisitionTimeout;
-    private int MaxPoolSize => DriverContext.Config.MaxConnectionPoolSize;
 
     private readonly IConnectionPoolListener _poolMetricsListener;
 
@@ -73,7 +70,7 @@ internal sealed class ConnectionPool : IConnectionPool
             driverContext.Config.ConnectionIdleTimeout,
             driverContext.Config.MaxConnectionLifetime,
             driverContext.Config.ConnectionLivenessThreshold);
-        
+
         _poolMetricsListener = driverContext.Metrics?.PutPoolMetrics($"{_id}-{GetHashCode()}", this);
     }
 
@@ -96,6 +93,10 @@ internal sealed class ConnectionPool : IConnectionPool
             _connectionValidator = validator;
         }
     }
+
+    private int MaxIdlePoolSize => DriverContext.Config.MaxIdleConnectionPoolSize;
+    private TimeSpan ConnectionAcquisitionTimeout => DriverContext.Config.ConnectionAcquisitionTimeout;
+    private int MaxPoolSize => DriverContext.Config.MaxConnectionPoolSize;
 
     private bool IsClosed => AtomicRead(ref _poolStatus) == Closed;
     private bool IsInactive => AtomicRead(ref _poolStatus) == Inactive;
@@ -128,7 +129,7 @@ internal sealed class ConnectionPool : IConnectionPool
                         () => AcquireOrTimeoutAsync(database, sessionConfig, mode, ConnectionAcquisitionTimeout),
                         "Failed to acquire a connection from connection pool asynchronously.")
                     .ConfigureAwait(false);
-                
+
                 try
                 {
                     connection.SessionConfig = sessionConfig;
@@ -482,7 +483,7 @@ internal sealed class ConnectionPool : IConnectionPool
                     continue;
                 }
             }
-            
+
             await AddConnectionAsync(connection).ConfigureAwait(false);
             connection.Configure(database, mode);
             return connection;

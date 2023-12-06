@@ -35,14 +35,19 @@ internal interface IConnectionValidator
 internal class ConnectionValidator : IConnectionValidator
 {
     private readonly long _connIdleTimeout;
+    private readonly long _livenessTimeout;
     private readonly long _maxConnLifetime;
-    private readonly long _liveness;
 
-    public ConnectionValidator(TimeSpan connIdleTimeout, TimeSpan maxConnLifetime, TimeSpan? livenessCheckTimeout = null)
+    public ConnectionValidator(
+        TimeSpan connIdleTimeout,
+        TimeSpan maxConnLifetime,
+        TimeSpan? livenessCheckTimeout = null)
     {
         _connIdleTimeout = connIdleTimeout >= TimeSpan.Zero ? (long)connIdleTimeout.TotalMilliseconds : long.MaxValue;
         _maxConnLifetime = maxConnLifetime >= TimeSpan.Zero ? (long)maxConnLifetime.TotalMilliseconds : long.MaxValue;
-        _liveness = livenessCheckTimeout.HasValue ? (long)livenessCheckTimeout.Value.TotalMilliseconds : long.MaxValue;
+        _livenessTimeout = livenessCheckTimeout.HasValue
+            ? (long)livenessCheckTimeout.Value.TotalMilliseconds
+            : long.MaxValue;
     }
 
     public async Task<bool> OnReleaseAsync(IPooledConnection connection)
@@ -74,7 +79,7 @@ internal class ConnectionValidator : IConnectionValidator
     public AcquireStatus GetConnectionLifetimeStatus(IPooledConnection connection)
     {
         var idleTime = connection?.IdleTimer.ElapsedMilliseconds ?? 0L;
-        
+
         var isRequirable = connection.IsOpen &&
             !HasBeenIdleForTooLong(idleTime) &&
             !HasBeenAliveForTooLong(connection) &&
@@ -87,8 +92,8 @@ internal class ConnectionValidator : IConnectionValidator
         }
 
         ResetIdleTimer(connection);
-        
-        return idleTime >= _liveness ? AcquireStatus.RequiresLivenessProbe : AcquireStatus.Healthy;
+
+        return idleTime >= _livenessTimeout ? AcquireStatus.RequiresLivenessProbe : AcquireStatus.Healthy;
     }
 
     private bool AuthStatusIsRecoverable(IConnection connection)
@@ -128,12 +133,4 @@ internal class ConnectionValidator : IConnectionValidator
     {
         return connectionIdleTime > _connIdleTimeout;
     }
-
-}
-
-internal enum AcquireStatus
-{
-    Healthy,
-    Unhealthy,
-    RequiresLivenessProbe
 }

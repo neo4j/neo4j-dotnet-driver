@@ -118,7 +118,19 @@ public class Config
     public TimeSpan ConnectionAcquisitionTimeout { get; internal set; } = TimeSpan.FromMinutes(1);
     
     /// <summary>
-    /// 
+    /// Pooled connections that have been idle in the pool for longer than this timeout will be tested before they are
+    /// used again, to ensure they are still live. If this option is set too low, an additional network call will
+    /// be incurred when acquiring a connection, which causes a performance hit.
+    /// <para/>
+    /// If this is set high, you may receive sessions that are backed by no longer live connections, which will lead
+    /// to exceptions in your application. Assuming the database is running, these exceptions will go away if you
+    /// retry acquiring sessions.
+    /// <para/>
+    /// Hence, this parameter tunes a balance between the likelihood of your application seeing connection problems, and
+    /// performance.
+    /// <para/>
+    /// You normally should not need to tune this parameter. No connection liveness check is done by default.
+    /// Value 0 means connections will always be tested for validity. Values less than 0 are not allowed.
     /// </summary>
     public TimeSpan? ConnectionLivenessThreshold { get; internal set; }
 

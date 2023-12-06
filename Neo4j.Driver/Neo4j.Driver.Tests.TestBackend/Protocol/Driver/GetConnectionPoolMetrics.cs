@@ -20,11 +20,15 @@ namespace Neo4j.Driver.Tests.TestBackend;
 
 internal class GetConnectionPoolMetrics : IProtocolObject
 {
-    public Request data { get; set; }
+    public GetConnectionPoolMetricsDto data { get; set; }
 
     public override string Respond()
     {
-        var driver = ObjManager.GetObject<NewDriver>(data.driverId).Driver as Internal.Driver;
+        if (ObjManager.GetObject<NewDriver>(data.driverId).Driver is not Internal.Driver driver)
+        {
+            throw new Exception("The driver is not an internal driver");
+        }
+        
         var metrics = driver.Context.Metrics.ConnectionPoolMetrics;
         var address = metrics.Where(x => x.Value.Id.Contains(data.address, StringComparison.OrdinalIgnoreCase))
             .Select(x => x.Value)
@@ -35,7 +39,7 @@ internal class GetConnectionPoolMetrics : IProtocolObject
             new { inUse = address.InUse, idle = address.Idle }).Encode();
     }
 
-    public class Request
+    public class GetConnectionPoolMetricsDto
     {
         public string driverId { get; set; }
         public string address { get; set; }

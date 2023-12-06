@@ -26,25 +26,26 @@ internal class NewDriver : IProtocolObject
 {
     public NewDriverType data { get; set; } = new();
 
-    [JsonIgnore] public IDriver Driver { get; set; }
+    [JsonIgnore]
+    public IDriver Driver { get; set; }
 
-    [JsonIgnore] private Controller Control { get; set; }
+    [JsonIgnore]
+    private Controller Control { get; set; }
 
     public override Task Process(Controller controller)
     {
         Control = controller;
 
-
         if (data.authorizationToken != null)
         {
-            IAuthToken authToken = data.authorizationToken.AsToken();
-           
+            var authToken = data.authorizationToken.AsToken();
+
             Driver = GraphDatabase.Driver(data.uri, authToken, DriverConfig);
         }
         else
         {
             var authDataManager = ObjManager.GetObject(data.authTokenManagerId);
-            
+
             if (authDataManager is NewNeo4jAuthTokenManager atm)
             {
                 Driver = GraphDatabase.Driver(data.uri, atm.TokenManager, DriverConfig);
@@ -66,7 +67,7 @@ internal class NewDriver : IProtocolObject
     private void DriverConfig(ConfigBuilder configBuilder)
     {
         configBuilder.WithMetricsEnabled(true);
-        
+
         if (!string.IsNullOrEmpty(data.userAgent))
         {
             configBuilder.WithUserAgent(data.userAgent);
@@ -152,19 +153,20 @@ internal class NewDriver : IProtocolObject
                 var cats = data.notificationsDisabledCategories
                     ?.Select(x => Enum.Parse<Category>(x, true))
                     .ToArray();
-                
+
                 configBuilder.WithNotifications(sev, cats);
             }
         }
 
-        if(data.telemetryDisabled.HasValue && data.telemetryDisabled.Value)
+        if (data.telemetryDisabled.HasValue && data.telemetryDisabled.Value)
         {
             configBuilder.WithTelemetryDisabled();
         }
 
         if (data.livenessCheckTimeoutMs.HasValue)
         {
-            configBuilder.WithLivenessCheckTimeout(TimeSpan.FromMilliseconds(data.livenessCheckTimeoutMs.Value));
+            configBuilder.WithConnectionLivenessCheckTimeout(
+                TimeSpan.FromMilliseconds(data.livenessCheckTimeoutMs.Value));
         }
 
         var logger = new SimpleLogger();

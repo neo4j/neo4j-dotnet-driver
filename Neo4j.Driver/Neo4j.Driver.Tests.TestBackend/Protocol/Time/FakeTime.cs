@@ -93,9 +93,9 @@ internal class FakeTime : IDateTimeProvider
 
     public ITimer NewTimer()
     {
-        var t= new FakeTimer();
-        Timers.Add(t);
-        return t;
+        var fakeTimer = new FakeTimer();
+        Timers.Add(fakeTimer);
+        return fakeTimer;
     }
 
     public void Freeze()
