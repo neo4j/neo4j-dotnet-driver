@@ -21,7 +21,6 @@ namespace Neo4j.Driver.Internal;
 internal interface IPooledConnection : IConnection
 {
     ITimer IdleTimer { get; }
-
     ITimer LifetimeTimer { get; }
     bool StaleCredentials { get; set; }
 

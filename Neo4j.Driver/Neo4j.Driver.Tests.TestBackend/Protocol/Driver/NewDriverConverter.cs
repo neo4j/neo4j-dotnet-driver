@@ -49,6 +49,7 @@ internal class NewDriverConverter : JsonConverter<NewDriver.NewDriverType>
         newDriverRequest.maxTxRetryTimeMs = jsonObj["maxTxRetryTimeMs"]?.Value<long?>();
         newDriverRequest.notificationsMinSeverity = jsonObj["notificationsMinSeverity"]?.Value<string>();
         newDriverRequest.telemetryDisabled = jsonObj["telemetryDisabled"]?.Value<bool?>();
+        newDriverRequest.livenessCheckTimeoutMs = jsonObj["livenessCheckTimeoutMs"]?.Value<int?>();
 
         if (jsonObj.TryGetValue("trustedCertificates", out var token))
         {
