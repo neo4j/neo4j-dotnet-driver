@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Auth;
 using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
@@ -117,5 +118,6 @@ internal class ExecuteQuery : IProtocolObject
         public string database { get; set; }
         public string impersonatedUser { get; set; }
         public string bookmarkManagerId { get; set; }
+        public AuthToken authorizationToken { get; set; }
     }
 }
