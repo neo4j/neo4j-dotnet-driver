@@ -15,23 +15,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.Runtime.Serialization;
 using Neo4j.Driver.Internal.ExceptionHandling;
 
 namespace Neo4j.Driver;
 
 /// <summary>
-/// The provided token has expired. The current driver instance is considered invalid. It should not
-/// be used anymore. The client must create a new driver instance with a valid token.
+/// A generic argument error has occurred. To recover from this a new session needs to be created.
 /// </summary>
-[ClientErrorCode("Neo.ClientError.Security.TokenExpired")]
-public class TokenExpiredException : SecurityException
+[DataContract]
+[ClientErrorCode("Neo.ClientError.Statement.ArgumentError")]
+public class StatementArgumentException : ClientException
 {
     /// <summary>
-    /// Create a new <see cref="TokenExpiredException"/> with an error message.
+    /// Create a new <see cref="StatementArgumentException" /> with an error message.
     /// </summary>
     /// <param name="message">The error message.</param>
-    public TokenExpiredException(string message) : base(message)
+    public StatementArgumentException(string message) : base(message)
     {
-
     }
 }
