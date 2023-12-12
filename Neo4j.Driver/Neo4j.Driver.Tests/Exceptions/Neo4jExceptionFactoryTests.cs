@@ -38,20 +38,18 @@ public class Neo4jExceptionFactoryTests
         new object[] { "Neo.ClientError.Request.InvalidFormat", typeof(ProtocolException) },
         new object[] { "Neo.ClientError.Security.TokenExpired", typeof(TokenExpiredException) },
         new object[] { "Neo.ClientError.Statement.TypeError", typeof(TypeException) },
-        new object[] { "Neo.ClientError.Security.##unknown##", typeof(UnknownSecurityException) }
+        new object[] { "Neo.ClientError.Security.##unknown##", typeof(UnknownSecurityException) },
+        new object[] { "Neo.DatabaseError.blah", typeof(DatabaseException) },
+        new object[] { "Neo.TransientError.TemporaryDisabled", typeof(TransientException) },
     };
 
     [Theory, MemberData(nameof(CodeToTypeMapping))]
     public void ShouldCreateCorrectExceptionType(string code, Type exceptionType)
     {
-        var subject = new ClientErrorExceptionFactory();
-        var exception = subject.GetException(code, "testmessage");
+        var subject = new Neo4jExceptionFactory();
+        var exception = subject.GetException(code, "test message");
         exception.Should().BeOfType(exceptionType);
-        exception.Should().BeAssignableTo<Neo4jException>();
-        if (exception is Neo4jException nEx)
-        {
-            nEx.Code.Should().Be(code);
-            nEx.Message.Should().Be("testmessage");
-        }
+        exception.Code.Should().Be(code);
+        exception.Message.Should().Be("test message");
     }
 }

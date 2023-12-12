@@ -22,7 +22,7 @@ namespace Neo4j.Driver.Internal;
 internal class SimpleWildcardHelper
 {
     /// <summary>
-    /// Returns true if the two strings are the same, or if <see cref="y"/> ends with an asterisk (*),
+    /// Returns true if the two strings are the same, or, if <see cref="y"/> ends with an asterisk (*),
     /// returns true if <see cref="x"/> starts with <see cref="y"/> (minus the asterisk).
     /// </summary>
     /// <param name="x">The string to check.</param>

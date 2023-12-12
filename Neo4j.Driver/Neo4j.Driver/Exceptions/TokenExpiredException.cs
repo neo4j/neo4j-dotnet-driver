@@ -23,7 +23,7 @@ namespace Neo4j.Driver;
 /// The provided token has expired. The current driver instance is considered invalid. It should not
 /// be used anymore. The client must create a new driver instance with a valid token.
 /// </summary>
-[ClientErrorCode("Neo.ClientError.Security.TokenExpired")]
+[ErrorCode("Neo.ClientError.Security.TokenExpired")]
 public class TokenExpiredException : SecurityException
 {
     /// <summary>

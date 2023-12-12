@@ -27,11 +27,6 @@ namespace Neo4j.Driver
     public class Neo4jException : Exception
     {
         /// <summary>
-        /// Gets whether the exception retriable or not.
-        /// </summary>
-        internal virtual bool IsRetriable => false;
-
-        /// <summary>
         /// Create a new <see cref="Neo4jException"/>
         /// </summary>
         public Neo4jException()
@@ -78,6 +73,11 @@ namespace Neo4j.Driver
         {
             Code = code;
         }
+
+        /// <summary>
+        /// Gets whether the exception retriable or not.
+        /// </summary>
+        public virtual bool IsRetriable => false;
 
         /// <summary>
         /// Gets or sets the code of a Neo4j exception.

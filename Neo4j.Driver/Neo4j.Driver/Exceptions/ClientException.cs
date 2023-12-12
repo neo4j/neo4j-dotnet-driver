@@ -26,7 +26,7 @@ namespace Neo4j.Driver;
 /// The error code provided can be used to determine further detail for the problem.
 /// </summary>
 [DataContract]
-[ClientErrorCode("Neo.ClientError.*")]
+[ErrorCode("Neo.ClientError.*")]
 public class ClientException : Neo4jException
 {
     /// <summary>

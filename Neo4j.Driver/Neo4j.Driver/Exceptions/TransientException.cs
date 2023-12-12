@@ -17,6 +17,7 @@
 
 using System;
 using System.Runtime.Serialization;
+using Neo4j.Driver.Internal.ExceptionHandling;
 
 namespace Neo4j.Driver;
 
@@ -26,9 +27,11 @@ namespace Neo4j.Driver;
 /// The error code provided can be used to determine further details for the problem.
 /// </summary>
 [DataContract]
+[ErrorCode("Neo.TransientError.*")]
 public class TransientException : Neo4jException
 {
-    internal override bool IsRetriable => true;
+    /// <inheritdoc />
+    public override bool IsRetriable => true;
 
     /// <summary>
     /// Create a new <see cref="TransientException"/>.

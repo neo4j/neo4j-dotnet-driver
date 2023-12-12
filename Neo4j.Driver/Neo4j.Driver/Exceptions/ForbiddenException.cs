@@ -24,7 +24,7 @@ namespace Neo4j.Driver;
 /// This operation is forbidden.
 /// </summary>
 [DataContract]
-[ClientErrorCode("Neo.ClientError.Security.Forbidden")]
+[ErrorCode("Neo.ClientError.Security.Forbidden")]
 public class ForbiddenException : SecurityException
 {
     /// <summary>

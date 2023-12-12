@@ -27,6 +27,9 @@ namespace Neo4j.Driver;
 [DataContract]
 public class SecurityException : Neo4jException
 {
+    internal bool Notified = false;
+    internal bool Retriable = false;
+
     /// <summary>
     /// Create a new <see cref="SecurityException"/> with an error message.
     /// </summary>
@@ -52,4 +55,10 @@ public class SecurityException : Neo4jException
     public SecurityException(string message, Exception innerException) : base(message, innerException)
     {
     }
+
+    /// <summary>
+    /// Whether or not the exception is retriable. If the exception is retriable, the driver will try to
+    /// re-run the operation that caused the exception.
+    /// </summary>
+    public override bool IsRetriable => Retriable;
 }

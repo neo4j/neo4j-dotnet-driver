@@ -17,6 +17,7 @@
 
 using System;
 using System.Runtime.Serialization;
+using Neo4j.Driver.Internal.ExceptionHandling;
 
 namespace Neo4j.Driver;
 
@@ -25,6 +26,7 @@ namespace Neo4j.Driver;
 /// The error code provided can be used to determine further detail for the problem.
 /// </summary>
 [DataContract]
+[ErrorCode("*")] // mop up any errors that haven't already been handled
 public class DatabaseException : Neo4jException
 {
     /// <summary>

@@ -25,7 +25,7 @@ namespace Neo4j.Driver;
 /// could not be found. This kind of errors are identified as non-transient and are not retried.
 /// </summary>
 [DataContract]
-[ClientErrorCode("Neo.ClientError.Database.DatabaseNotFound")]
+[ErrorCode("Neo.ClientError.Database.DatabaseNotFound")]
 public class FatalDiscoveryException : ClientException
 {
     /// <summary>

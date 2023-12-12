@@ -25,7 +25,7 @@ namespace Neo4j.Driver;
 /// To recover from this error, close the current driver and restart with the correct credentials
 /// </summary>
 [DataContract]
-[ClientErrorCode("Neo.ClientError.Security.Unauthorized")]
+[ErrorCode("Neo.ClientError.Security.Unauthorized")]
 public class AuthenticationException : SecurityException
 {
     /// <summary>

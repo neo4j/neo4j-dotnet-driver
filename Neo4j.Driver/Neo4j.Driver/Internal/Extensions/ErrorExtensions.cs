@@ -14,9 +14,7 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Sockets;
 using Neo4j.Driver.Internal.ExceptionHandling;
 
@@ -24,61 +22,32 @@ namespace Neo4j.Driver.Internal;
 
 internal static class ErrorExtensions
 {
+    private static Neo4jExceptionFactory _exceptionFactory = new();
+
     public static Neo4jException ParseServerException(string code, string message)
     {
-        private static ClientErrorExceptionFactory _clientErrorExceptionFactory = new();
-
-        public static Neo4jException ParseServerException(string code, string message)
-        {
-            Neo4jException error;
-            var parts = code.Split('.');
-            var classification = parts[1].ToLowerInvariant();
-            switch (classification)
-            {
-                case "clienterror":
-                    error = _clientErrorExceptionFactory.GetException(code, message);
-                    break;
-                case "transienterror":
-                    error = new TransientException(code, message);
-                    break;
-                default:
-                    error = new DatabaseException(code, message);
-                    break;
-            }
-
-            case "transienterror":
-                error = new TransientException(code, message);
-                break;
-
-            default:
-                error = new DatabaseException(code, message);
-                break;
-        }
-
-        return error;
+        return _exceptionFactory.GetException(code, message);
     }
 
     public static bool CanBeRetried(this Exception error)
     {
-        return error is Neo4jException neo4JException && neo4JException.IsRetriable;
+        return error is Neo4jException { IsRetriable: true };
     }
 
     public static bool IsRecoverableError(this Exception error)
     {
-        return error is ClientException || error is TransientException;
+        return error is ClientException or TransientException;
     }
 
     public static bool IsConnectionError(this Exception error)
     {
-        return error is IOException ||
-            error is SocketException ||
-            error.GetBaseException() is IOException ||
-            error.GetBaseException() is SocketException;
+        return error is IOException or SocketException ||
+            error.GetBaseException() is IOException or SocketException;
     }
 
-    public static bool IsAuthorizationError(this Exception error)
+    public static bool HasErrorCode(this Exception error, string errorCode)
     {
-        return error is AuthorizationException;
+        return error is Neo4jException neo4jException && neo4jException.Code == errorCode;
     }
 
     public static bool IsDatabaseUnavailableError(this Exception error)
@@ -101,19 +70,10 @@ internal static class ErrorExtensions
         return error.HasErrorCode("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase");
     }
 
-        public static ResultConsumedException NewResultConsumedException()
-        {
-            return new ResultConsumedException(
-                "Cannot access records on this result any more as the result has already been consumed " +
-                "or the query runner where the result is created has already been closed.");
-        }
-
-        public static IEnumerable<Type> GetAllNeo4jExceptions()
-        {
-            var type = typeof(Neo4jException);
-            var assembly = type.Assembly;
-            var types = assembly.GetExportedTypes().Where(t => type.IsAssignableFrom(t));
-            return types;
-        }
+    public static ResultConsumedException NewResultConsumedException()
+    {
+        return new ResultConsumedException(
+            "Cannot access records on this result any more as the result has already been consumed " +
+            "or the query runner where the result is created has already been closed.");
     }
 }

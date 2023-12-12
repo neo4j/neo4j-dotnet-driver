@@ -22,10 +22,10 @@ namespace Neo4j.Driver;
 /// <summary>
 /// The authorization information maintained on the server has expired. The client should reconnect.
 /// </summary>
-[ClientErrorCode("Neo.ClientError.Security.AuthorizationExpired")]
+[ErrorCode("Neo.ClientError.Security.AuthorizationExpired")]
 public class AuthorizationException : SecurityException
 {
-    internal override bool IsRetriable => true;
+    public override bool IsRetriable => true;
 
     /// <summary>
     /// Create a new <see cref="AuthorizationException"/> with an error message.
