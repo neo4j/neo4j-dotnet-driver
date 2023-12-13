@@ -255,13 +255,18 @@ public sealed class MessageReaderConfig
     /// setting this to true will revert the driver to the legacy message reader.</param>
     /// <param name="memoryPool">The memory pool for creating buffers when reading messages. The PipeReader will borrow
     /// memory from the pool of at least ReadBufferSize size. The message reader can request larger memory blocks to
-    /// host an entire message. User code can provide an implementation for monitoring; by default, the driver will use
-    /// .NET's <see cref="System.Buffers.MemoryPool{Byte}.Shared"/> pool.</param>
+    /// host an entire message. User code can provide an implementation for monitoring; by default, the driver will
+    /// allocate a new array pool that does not take advantage of shared memory pools.</param>
     /// <param name="minBufferSize">The minimum buffer size to use when renting memory from the pool. The default value
     /// is 65,539.</param>
     /// <seealso cref="PipeReader"/>
     /// <seealso cref="MemoryPool{T}"/>
     /// <seealso cref="StreamPipeReaderOptions"/>
+    /// <remarks>
+    /// To optimize the memory usage of the driver pass .NET's shared memory pool(<see cref="MemoryPool{T}.Shared"/>) as
+    /// the <paramref name="memoryPool"/>, this should only be used when there is complete trust over the usage of
+    /// shared memory buffers in the application as other components may be using the same memory pool.
+    /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">If <paramref name="minBufferSize"/>is less than 1.</exception>
     public MessageReaderConfig(bool disablePipelinedMessageReader = false, MemoryPool<byte> memoryPool = null, int minBufferSize = -1)
     {
@@ -291,7 +296,7 @@ public sealed class MessageReaderConfig
     /// The memory pool for creating buffers when reading messages. The PipeReader will borrow memory from the pool of
     /// at least <see cref="MinBufferSize"/> size. The message reader can request larger memory blocks to host
     /// an entire message. User code can provide an implementation for monitoring; by default, the driver will allocate
-    /// a new array pool for only it's use.
+    /// a new array pool that does not take advantage of shared memory pools.
     /// </summary>
     public MemoryPool<byte> MemoryPool { get; }
     
