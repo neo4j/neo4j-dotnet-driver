@@ -232,11 +232,11 @@ public class Config
     /// By default the driver allows the collection of this telemetry. 
     /// </summary>
     public bool TelemetryDisabled { get; set; }
-    
+
     /// <summary>
     /// The configuration for the driver's underlying message reading from the network.
     /// </summary>
-    public MessageReaderConfig MessageReaderConfig { get; internal set; } = MessageReaderConfig.Default;
+    public MessageReaderConfig MessageReaderConfig { get; internal set; } = new();
 }
 
 /// <summary>
@@ -244,15 +244,10 @@ public class Config
 /// </summary>
 public sealed class MessageReaderConfig
 {
-    internal static MessageReaderConfig Default { get; } = new();
-
     /// <summary>
     /// Constructs a new instance of <see cref="MessageReaderConfig"/>.<br/>
     /// The configuration for the driver's underlying message reading from the network.
     /// </summary>
-    /// <param name="disablePipelinedMessageReader">As of 5.15, the driver has migrated the underlying message reading
-    /// mechanism utilizing <see cref="PipeReader"/>; this optimizes the reading and memory usage of the driver, and
-    /// setting this to true will revert the driver to the legacy message reader.</param>
     /// <param name="memoryPool">The memory pool for creating buffers when reading messages. The PipeReader will borrow
     /// memory from the pool of at least ReadBufferSize size. The message reader can request larger memory blocks to
     /// host an entire message. User code can provide an implementation for monitoring; by default, the driver will
@@ -268,29 +263,25 @@ public sealed class MessageReaderConfig
     /// shared memory buffers in the application as other components may be using the same memory pool.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">If <paramref name="minBufferSize"/>is less than 1.</exception>
-    public MessageReaderConfig(bool disablePipelinedMessageReader = false, MemoryPool<byte> memoryPool = null, int minBufferSize = -1)
+    public MessageReaderConfig(MemoryPool<byte> memoryPool = null, int minBufferSize = -1)
     {
-        DisablePipelinedMessageReader = disablePipelinedMessageReader;
-        if (disablePipelinedMessageReader)
-        {
-            return;
-        }
-
         if (minBufferSize is < -1 or 0)
         {
             throw new ArgumentOutOfRangeException(nameof(minBufferSize));
         }
+
+        DisablePipelinedMessageReader = false;
         MinBufferSize = minBufferSize == -1 ? 65_535 + 4 : minBufferSize;
         MemoryPool = memoryPool ?? new PipeReaderMemoryPool(MinBufferSize);
         StreamPipeReaderOptions = new(MemoryPool, MinBufferSize, leaveOpen: true);
     }
-    
+
     /// <summary>
     /// As of 5.15, the driver has migrated the underlying message reading mechanism utilizing <see cref="PipeReader"/>;
     /// this optimizes the reading and memory usage of the driver, and setting this to true will revert the driver to
     /// the legacy message reader.
     /// </summary>
-    public bool DisablePipelinedMessageReader { get; }
+    internal bool DisablePipelinedMessageReader { get; }
     
     /// <summary>
     /// The memory pool for creating buffers when reading messages. The PipeReader will borrow memory from the pool of
