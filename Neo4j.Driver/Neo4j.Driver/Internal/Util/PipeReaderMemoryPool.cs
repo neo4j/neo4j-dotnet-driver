@@ -24,11 +24,12 @@ namespace Neo4j.Driver.Internal;
 internal sealed class PipeReaderMemoryPool : MemoryPool<byte>
 {
     private readonly int _defaultSize;
-    private ArrayPool<byte> Pool { get; } = ArrayPool<byte>.Create();
+    private readonly ArrayPool<byte> _pool;
 
     public PipeReaderMemoryPool(int defaultSize)
     {
         _defaultSize = defaultSize;
+        _pool = ArrayPool<byte>.Create();
     }
 
     public override int MaxBufferSize => int.MaxValue;
@@ -45,7 +46,7 @@ internal sealed class PipeReaderMemoryPool : MemoryPool<byte>
             throw new ArgumentOutOfRangeException(nameof(minimumBufferSize), minimumBufferSize, "requested size is invalid");
         }
         
-        return new PooledMemory(minimumBufferSize, Pool);
+        return new PooledMemory(minimumBufferSize, _pool);
     }
 
     protected override void Dispose(bool disposing)
