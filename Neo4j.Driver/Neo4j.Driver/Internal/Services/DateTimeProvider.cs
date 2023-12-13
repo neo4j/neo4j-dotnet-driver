@@ -14,12 +14,14 @@
 // limitations under the License.
 
 using System;
+using Neo4j.Driver.Internal.Connector;
 
 namespace Neo4j.Driver.Internal.Services;
 
 internal interface IDateTimeProvider
 {
     DateTime Now();
+    ITimer NewTimer();
 }
 
 internal class DateTimeProvider : IDateTimeProvider
@@ -35,5 +37,10 @@ internal class DateTimeProvider : IDateTimeProvider
     public DateTime Now()
     {
         return DateTime.UtcNow;
+    }
+
+    public ITimer NewTimer()
+    {
+        return new StopwatchBasedTimer();
     }
 }

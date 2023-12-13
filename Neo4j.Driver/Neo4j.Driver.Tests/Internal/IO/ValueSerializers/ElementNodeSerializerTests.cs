@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Types;
@@ -48,6 +49,11 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var value = readerMachine.Reader().Read();
 
+            Validate(value);
+        }
+
+        private static void Validate(object value)
+        {
             value.Should().NotBeNull();
             value.Should().BeOfType<Node>().Which.Id.Should().Be(1L);
             value.Should().BeOfType<Node>().Which.Labels.Should().Equal("Label1", "Label2");
@@ -64,6 +70,30 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
                     });
 
             value.Should().BeOfType<Node>().Which.ElementId.Should().Be("1");
+        }
+
+        [Fact]
+        public void ShouldDeserializeSpan()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            writer.WriteStructHeader(3, ElementNodeSerializer.Node);
+            writer.Write(1);
+            writer.Write(new List<string> { "Label1", "Label2" });
+            writer.Write(
+                new Dictionary<string, object>
+                {
+                    { "prop1", "something" },
+                    { "prop2", 15 },
+                    { "prop3", true }
+                });
+            writer.Write("1");
+
+            var readerMachine = CreateSpanReader(writerMachine.GetOutput());
+            var value = readerMachine.Read();
+
+            Validate(value);
         }
     }
 }

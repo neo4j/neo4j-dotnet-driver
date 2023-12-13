@@ -1,4 +1,5 @@
-﻿// Copyright (c) "Neo4j"
+﻿
+// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
@@ -13,18 +14,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
+namespace Neo4j.Driver.Internal;
 
-namespace Neo4j.Driver.Internal.IO;
-
-internal interface IPackStreamSerializer
+internal enum AcquireStatus
 {
-    byte[] ReadableStructs { get; }
-
-    IEnumerable<Type> WritableTypes { get; }
-
-    object Deserialize(BoltProtocolVersion version, PackStreamReader reader, byte signature, long size);
-    void Serialize(BoltProtocolVersion version, PackStreamWriter writer, object value);
-    (object, int) DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size);
+    Healthy,
+    Unhealthy,
+    RequiresLivenessProbe
 }

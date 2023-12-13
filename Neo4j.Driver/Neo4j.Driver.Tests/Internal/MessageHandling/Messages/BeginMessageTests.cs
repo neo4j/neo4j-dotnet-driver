@@ -56,7 +56,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
                 new BoltProtocolVersion(major, minor),
                 "neo4j",
                 bookmarks,
-                new TransactionConfig(txMeta, TimeSpan.FromSeconds(1)),
+                new TransactionConfig { Metadata = txMeta, Timeout = TimeSpan.FromSeconds(1) },
                 AccessMode.Read,
                 new SessionConfig("Douglas Fir"),
                 null);
@@ -89,7 +89,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
                 new BoltProtocolVersion(major, minor),
                 "neo4j",
                 bookmarks,
-                new TransactionConfig(txMeta, TimeSpan.FromSeconds(1)),
+                new TransactionConfig { Metadata = txMeta, Timeout = TimeSpan.FromSeconds(1) },
                 AccessMode.Read,
                 new SessionConfig("Douglas Fir"),
                 new NotificationsDisabledConfig());
@@ -122,7 +122,7 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
                 new BoltProtocolVersion(major, minor),
                 "neo4j",
                 bookmarks,
-                new TransactionConfig(txMeta, TimeSpan.FromSeconds(1)),
+                new TransactionConfig { Metadata = txMeta, Timeout = TimeSpan.FromSeconds(1) },
                 AccessMode.Read,
                 new SessionConfig("Douglas Fir"),
                 new NotificationsConfig(Severity.Warning, new[] { Category.Generic }));
@@ -153,12 +153,14 @@ namespace Neo4j.Driver.Internal.MessageHandling.Messages
                         BoltProtocolVersion.V4_3,
                         "neo4j",
                         new InternalBookmarks("bm:a"),
-                        new TransactionConfig(
-                            new Dictionary<string, object>
+                        new TransactionConfig
+                        {
+                            Metadata = new Dictionary<string, object>
                             {
                                 ["a"] = "b"
                             },
-                            TimeSpan.FromSeconds(1)),
+                            Timeout = TimeSpan.FromSeconds(1)
+                        },
                         AccessMode.Read,
                         new SessionConfig("Douglas Fir"),
                         null))

@@ -56,6 +56,27 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             var reader = readerMachine.Reader();
             var value = reader.Read();
 
+            Validate(value);
+        }
+
+        [Fact]
+        public void ShouldDeserializeSpanTimeWithOffset()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            writer.WriteStructHeader(OffsetTimeSerializer.StructSize, OffsetTimeSerializer.StructType);
+            writer.Write(45359128000987);
+            writer.Write((int)TimeSpan.FromMinutes(150).TotalSeconds);
+
+            var reader = CreateSpanReader(writerMachine.GetOutput());
+            var value = reader.Read();
+
+            Validate(value);
+        }
+
+        private static void Validate(object value)
+        {
             value.Should().NotBeNull();
             value.Should().BeOfType<OffsetTime>().Which.Hour.Should().Be(12);
             value.Should().BeOfType<OffsetTime>().Which.Minute.Should().Be(35);
@@ -66,5 +87,6 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
                 .Which.OffsetSeconds.Should()
                 .Be((int)TimeSpan.FromMinutes(150).TotalSeconds);
         }
+
     }
 }

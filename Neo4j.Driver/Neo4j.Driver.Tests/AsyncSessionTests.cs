@@ -299,7 +299,7 @@ namespace Neo4j.Driver.Tests
                     false,
                     false);
 
-                await session.PipelinedExecuteReadAsync(_ => Task.FromResult(null as EagerResult<IRecord[]>));
+                await session.PipelinedExecuteReadAsync(_ => Task.FromResult(null as EagerResult<IRecord[]>), new TransactionConfig());
 
                 mockProtocol.Verify(
                     x =>

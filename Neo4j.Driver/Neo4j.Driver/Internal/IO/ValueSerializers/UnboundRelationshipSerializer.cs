@@ -22,7 +22,7 @@ internal sealed class UnboundRelationshipSerializer : ReadOnlySerializer
 {
     public const byte UnboundRelationship = (byte)'r';
     internal static readonly UnboundRelationshipSerializer Instance = new();
-    public override IEnumerable<byte> ReadableStructs => new[] { UnboundRelationship };
+    public override byte[] ReadableStructs => new[] { UnboundRelationship };
 
     public override object Deserialize(PackStreamReader reader)
     {
@@ -31,5 +31,14 @@ internal sealed class UnboundRelationshipSerializer : ReadOnlySerializer
         var props = reader.ReadMap();
 
         return new Relationship(urn, -1, -1, relType, props);
+    }
+
+    public override (object, int) DeserializeSpan(SpanPackStreamReader reader)
+    {
+        var urn = reader.ReadLong();
+        var relType = reader.ReadString();
+        var props = reader.ReadMap();
+
+        return (new Relationship(urn, -1, -1, relType, props), reader.Index);
     }
 }

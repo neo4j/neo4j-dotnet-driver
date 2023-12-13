@@ -45,6 +45,20 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
         }
 
         [Fact]
+        public void ShouldDeserializeSpan()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            SerializePath(writer);
+
+            var reader = CreateSpanReader(writerMachine.GetOutput());
+            var value = reader.Read();
+
+            VerifySerializedPath(value);
+        }
+        
+        [Fact]
         public void ShouldDeserializeReverse()
         {
             var writerMachine = CreateWriterMachine();
@@ -55,6 +69,20 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
             var value = readerMachine.Reader().Read();
 
+            VerifySerializedPathReverse(value);
+        }
+
+        [Fact]
+        public void ShouldDeserializeSpanReverse()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            SerializePath(writer, true);
+
+            var reader = CreateSpanReader(writerMachine.GetOutput());
+            var value = reader.Read();
+            
             VerifySerializedPathReverse(value);
         }
 
@@ -76,6 +104,24 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             VerifySerializedPath(value.Should().BeAssignableTo<IList>().Which[0]);
         }
 
+        [Fact]
+        public void ShouldDeserializeSpanWhenInList()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            writer.WriteListHeader(1);
+            SerializePath(writer);
+
+            var reader = CreateSpanReader(writerMachine.GetOutput());
+            var value = reader.Read();
+
+            value.Should().NotBeNull();
+            value.Should().BeAssignableTo<IList>().Which.Should().HaveCount(1);
+
+            VerifySerializedPath(value.Should().BeAssignableTo<IList>().Which[0]);
+        }
+        
         [Fact]
         public void ShouldDeserializeWhenInMap()
         {
@@ -100,6 +146,30 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             VerifySerializedPath(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
         }
 
+        [Fact]
+        public void ShouldDeserializeSpanWhenInMap()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            writer.WriteMapHeader(1);
+            writer.Write("x");
+            SerializePath(writer);
+
+            var reader = CreateSpanReader(writerMachine.GetOutput());
+            var value = reader.Read();
+
+            value.Should().NotBeNull();
+            value.Should()
+                .BeAssignableTo<IDictionary<string, object>>()
+                .Which.Should()
+                .HaveCount(1)
+                .And
+                .ContainKey("x");
+
+            VerifySerializedPath(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
+        }
+        
         private static void SerializePath(PackStreamWriter writer, bool reverse = false)
         {
             writer.WriteStructHeader(3, PathSerializer.Path);

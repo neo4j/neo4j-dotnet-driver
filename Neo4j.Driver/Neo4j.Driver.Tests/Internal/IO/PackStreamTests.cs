@@ -20,6 +20,7 @@ using System.Linq;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO.Utils;
+using Neo4j.Driver.Tests;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.IO
@@ -43,14 +44,15 @@ namespace Neo4j.Driver.Internal.IO
 
         internal override PackStreamWriterMachine CreateWriterMachine(BoltProtocolVersion version = null)
         {
-            return CreateWriterMachine(new MessageFormat(version ?? BoltProtocolVersion.V3_0).WriteStructHandlers);
+            return CreateWriterMachine(new MessageFormat(version ?? BoltProtocolVersion.V3_0,
+                TestDriverContext.MockContext).WriteStructHandlers);
         }
 
         internal override PackStreamReaderMachine CreateReaderMachine(byte[] data, BoltProtocolVersion version = null)
         {
             return CreateReaderMachine(
                 data,
-                new MessageFormat(version ?? BoltProtocolVersion.V3_0).ReaderStructHandlers);
+                new MessageFormat(version ?? BoltProtocolVersion.V3_0, TestDriverContext.MockContext).ReaderStructHandlers);
         }
 
         internal virtual PackStreamWriterMachine CreateWriterMachine(
@@ -125,7 +127,7 @@ namespace Neo4j.Driver.Internal.IO
 
         private class StructTypeSerializer : IPackStreamSerializer
         {
-            public IEnumerable<byte> ReadableStructs => new[] { (byte)'S' };
+            public byte[] ReadableStructs => new[] { (byte)'S' };
 
             public IEnumerable<Type> WritableTypes => new[] { typeof(StructType) };
 
@@ -149,6 +151,11 @@ namespace Neo4j.Driver.Internal.IO
                 {
                     writer.Write(innerValue);
                 }
+            }
+
+            public (object, int) DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+            {
+                throw new NotImplementedException();
             }
         }
     }

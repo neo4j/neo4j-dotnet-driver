@@ -394,6 +394,7 @@ public sealed class ConfigBuilder
     /// <seealso cref="WithNotificationsDisabled"/>
     /// <seealso cref="SessionConfigBuilder.WithNotifications"/>
     /// <seealso cref="SessionConfigBuilder.WithNotificationsDisabled"/>
+    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithNotifications(
         Severity? minimumSeverity,
         Category[] disabledCategories)
@@ -435,9 +436,53 @@ public sealed class ConfigBuilder
     /// telemetry data for diagnostics purposes.<br/>
     /// By default the driver allows the collection of this telemetry.
     /// </summary>
+    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithTelemetryDisabled()
     {
         _config.TelemetryDisabled = true;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the <see cref="MessageReaderConfig"/> config to use in the driver.
+    /// </summary>
+    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    public ConfigBuilder WithMessageReaderConfig(MessageReaderConfig config)
+    {
+        _config.MessageReaderConfig = config ?? throw new ArgumentNullException(nameof(config));
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the connection liveness timeout. Pooled connections that have been idle in the pool for longer than this
+    /// timeout will be tested before they are used again, to ensure they are still live. If this option is set too low,
+    /// an additional network call will be incurred when acquiring a connection, which causes a performance hit.
+    /// <para/>
+    /// If this is set high, you may receive sessions that are backed by no longer live connections, which will lead
+    /// to exceptions in your application. Assuming the database is running, these exceptions will go away if you
+    /// retry acquiring sessions.
+    /// <para/>
+    /// Hence, this parameter tunes a balance between the likelihood of your application seeing connection problems, and
+    /// performance.
+    /// <para/>
+    /// You normally should not need to tune this parameter. No connection liveness check is done by default.
+    /// Value 0 means connections will always be tested for validity. Values less than 0 are not allowed.
+    /// </summary>
+    /// <param name="timeout">The liveness timeout.</param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// When <paramref name="timeout"/> is less than <see cref="TimeSpan.Zero"/>.
+    /// </exception>
+    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    public ConfigBuilder WithConnectionLivenessCheckTimeout(TimeSpan timeout)
+    {
+        if (timeout < TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(timeout),
+                timeout,
+                "must be >= 0");
+        }
+        _config.ConnectionLivenessThreshold = timeout;
         return this;
     }
 }

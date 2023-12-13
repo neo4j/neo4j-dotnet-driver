@@ -25,7 +25,7 @@ internal sealed class ZonedDateTimeSerializer : IPackStreamSerializer
     public const int StructSize = 3;
     internal static readonly ZonedDateTimeSerializer Instance = new();
 
-    public IEnumerable<byte> ReadableStructs => new[] { StructTypeWithId, StructTypeWithOffset };
+    public byte[] ReadableStructs => new[] { StructTypeWithId, StructTypeWithOffset };
 
     public IEnumerable<Type> WritableTypes => new[] { typeof(ZonedDateTime) };
 
@@ -78,5 +78,29 @@ internal sealed class ZonedDateTimeSerializer : IPackStreamSerializer
                 throw new ProtocolException(
                     $"{GetType().Name}: Zone('{dateTime.Zone.GetType().Name}') is not supported.");
         }
+    }
+
+    public (object, int) DeserializeSpan(
+        BoltProtocolVersion version,
+        SpanPackStreamReader reader,
+        byte signature,
+        int size)
+    {
+        PackStream.EnsureStructSize($"ZonedDateTime[{(char)signature}]", StructSize, size);
+
+        var epochSecondsUtc = reader.ReadLong();
+        var nanosOfSecond = reader.ReadInteger();
+
+        var zone = signature switch
+        {
+            StructTypeWithId => Zone.Of(reader.ReadString()),
+            StructTypeWithOffset => Zone.Of(reader.ReadInteger()),
+            _ =>
+                throw new ProtocolException(
+                    $"Unsupported struct signature {signature} passed to {nameof(ZonedDateTimeSerializer)}!")
+        };
+
+        return (new ZonedDateTime(TemporalHelpers.EpochSecondsAndNanoToDateTime(epochSecondsUtc, nanosOfSecond), zone),
+            reader.Index);
     }
 }

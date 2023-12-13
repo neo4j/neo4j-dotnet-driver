@@ -83,6 +83,62 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers
             VerifySerializedRelationship(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
         }
 
+        [Fact]
+        public void ShouldDeserializeSpan()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            SerializeRelationship(writer);
+
+            var reader = CreateSpanReader(writerMachine.GetOutput());
+            var value = reader.Read();
+
+            VerifySerializedRelationship(value);
+        }
+
+        [Fact]
+        public void ShouldDeserializeSpanWhenInList()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            writer.WriteListHeader(1);
+            SerializeRelationship(writer);
+
+            var reader = CreateSpanReader(writerMachine.GetOutput());
+            var value = reader.Read();
+
+            value.Should().NotBeNull();
+            value.Should().BeAssignableTo<IList>().Which.Should().HaveCount(1);
+
+            VerifySerializedRelationship(value.Should().BeAssignableTo<IList>().Which[0]);
+        }
+
+        [Fact]
+        public void ShouldDeserializeSpanWhenInMap()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            writer.WriteMapHeader(1);
+            writer.Write("x");
+            SerializeRelationship(writer);
+
+            var reader = CreateSpanReader(writerMachine.GetOutput());
+            var value = reader.Read();
+
+            value.Should().NotBeNull();
+            value.Should()
+                .BeAssignableTo<IDictionary<string, object>>()
+                .Which.Should()
+                .HaveCount(1)
+                .And
+                .ContainKey("x");
+
+            VerifySerializedRelationship(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
+        }
+        
         private static void SerializeRelationship(PackStreamWriter writer)
         {
             writer.WriteStructHeader(5, RelationshipSerializer.Relationship);

@@ -60,6 +60,26 @@ namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
             value.Should().BeOfType<LocalTime>().Which.Second.Should().Be(59);
             value.Should().BeOfType<LocalTime>().Which.Nanosecond.Should().Be(128000987);
         }
+
+        [Fact]
+        public void ShouldDeserializeSpanTime()
+        {
+            var writerMachine = CreateWriterMachine();
+            var writer = writerMachine.Writer;
+
+            writer.WriteStructHeader(LocalTimeSerializer.StructSize, LocalTimeSerializer.StructType);
+            writer.Write(45359128000987);
+
+            var reader = CreateSpanReader(writerMachine.GetOutput());
+            var value = reader.Read();
+
+            value.Should().NotBeNull();
+            value.Should().BeOfType<LocalTime>().Which.Hour.Should().Be(12);
+            value.Should().BeOfType<LocalTime>().Which.Minute.Should().Be(35);
+            value.Should().BeOfType<LocalTime>().Which.Second.Should().Be(59);
+            value.Should().BeOfType<LocalTime>().Which.Nanosecond.Should().Be(128000987);
+        }
+
 #if NET6_0_OR_GREATER
         [Fact]
         public void ShouldSerializeTimeOnly()

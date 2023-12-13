@@ -67,5 +67,4 @@ internal sealed class DriverContext
     public IHostResolver HostResolver { get; }
     public IInternalMetrics Metrics { get; }
     public IDictionary<string, string> RoutingContext { get; }
-
 }

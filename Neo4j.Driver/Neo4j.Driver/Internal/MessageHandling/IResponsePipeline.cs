@@ -22,18 +22,11 @@ internal interface IResponsePipeline
 {
     bool HasNoPendingMessages { get; }
     bool IsHealthy(out Exception error);
-
     void Enqueue(IResponseHandler handler);
-
     void OnSuccess(IDictionary<string, object> metadata);
-
     void OnRecord(object[] fieldValues);
-
     void OnFailure(string code, string message);
-
     void OnIgnored();
-
     void AssertNoFailure();
-
     void AssertNoProtocolViolation();
 }
