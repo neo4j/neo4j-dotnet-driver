@@ -119,5 +119,6 @@ internal class ExecuteQuery : IProtocolObject
         public string impersonatedUser { get; set; }
         public string bookmarkManagerId { get; set; }
         public AuthToken authorizationToken { get; set; }
+        public Dictionary<string, object> txMeta { get; set; }
     }
 }
