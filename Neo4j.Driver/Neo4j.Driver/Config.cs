@@ -270,12 +270,13 @@ public sealed class MessageReaderConfig
         {
             return;
         }
-        MemoryPool = memoryPool ?? MemoryPool<byte>.Shared;
+
         if (minBufferSize is < -1 or 0)
         {
             throw new ArgumentOutOfRangeException(nameof(minBufferSize));
         }
         MinBufferSize = minBufferSize == -1 ? 65_535 + 4 : minBufferSize;
+        MemoryPool = memoryPool ?? new PipeReaderMemoryPool(MinBufferSize);
         StreamPipeReaderOptions = new(MemoryPool, MinBufferSize, leaveOpen: true);
     }
     
@@ -289,8 +290,8 @@ public sealed class MessageReaderConfig
     /// <summary>
     /// The memory pool for creating buffers when reading messages. The PipeReader will borrow memory from the pool of
     /// at least <see cref="MinBufferSize"/> size. The message reader can request larger memory blocks to host
-    /// an entire message. User code can provide an implementation for monitoring; by default, the driver will use
-    /// .NET's <see cref="MemoryPool{Byte}.Shared"/> pool.
+    /// an entire message. User code can provide an implementation for monitoring; by default, the driver will allocate
+    /// a new array pool for only it's use.
     /// </summary>
     public MemoryPool<byte> MemoryPool { get; }
     
