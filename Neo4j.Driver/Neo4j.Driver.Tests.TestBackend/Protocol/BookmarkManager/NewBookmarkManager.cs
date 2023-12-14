@@ -20,7 +20,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class NewBookmarkManager : IProtocolObject
+internal class NewBookmarkManager : ProtocolObject
 {
     public NewBookmarkManagerDto data { get; set; } = new();
 

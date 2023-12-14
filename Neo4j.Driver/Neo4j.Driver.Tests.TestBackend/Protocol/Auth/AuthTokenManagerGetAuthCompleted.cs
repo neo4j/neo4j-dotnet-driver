@@ -17,7 +17,7 @@
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class AuthTokenManagerGetAuthCompleted : IProtocolObject
+internal class AuthTokenManagerGetAuthCompleted : ProtocolObject
 {
     public AuthTokenManagerGetAuthCompletedDto data { get; set; }
 

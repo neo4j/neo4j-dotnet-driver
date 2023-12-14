@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class SessionClose : IProtocolObject
+internal class SessionClose : ProtocolObject
 {
     public SessionCloseType data { get; set; } = new();
 

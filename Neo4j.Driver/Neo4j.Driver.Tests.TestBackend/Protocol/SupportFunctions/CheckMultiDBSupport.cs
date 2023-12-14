@@ -18,7 +18,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class CheckMultiDBSupport : IProtocolObject
+internal class CheckMultiDBSupport : ProtocolObject
 {
     public CheckMultiDBSupportType data { get; set; } = new();
 

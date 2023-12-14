@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class ResultPeek : IProtocolObject
+internal class ResultPeek : ProtocolObject
 {
     public ResultPeekType data { get; set; } = new();
 

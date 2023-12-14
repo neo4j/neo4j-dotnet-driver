@@ -20,7 +20,7 @@ namespace Neo4j.Driver.Tests.TestBackend;
 internal class ProtocolObjectManager
 {
     private static int ObjectCounter { get; set; }
-    private Dictionary<string, IProtocolObject> ProtocolObjects { get; } = new();
+    private Dictionary<string, ProtocolObject> ProtocolObjects { get; } = new();
     public int ObjectCount => ProtocolObjects.Count;
 
     public static string GenerateUniqueIdString()
@@ -33,13 +33,13 @@ internal class ProtocolObjectManager
         return ObjectCounter++;
     }
 
-    public void AddProtocolObject(IProtocolObject obj)
+    public void AddProtocolObject(ProtocolObject obj)
     {
         obj.SetUniqueId(GenerateUniqueIdString());
         ProtocolObjects[obj.uniqueId] = obj;
     }
 
-    public IProtocolObject GetObject(string id)
+    public ProtocolObject GetObject(string id)
     {
         if (string.IsNullOrEmpty(id))
         {
@@ -49,7 +49,7 @@ internal class ProtocolObjectManager
         return ProtocolObjects[id];
     }
 
-    public T GetObject<T>(string id) where T : IProtocolObject
+    public T GetObject<T>(string id) where T : ProtocolObject
     {
         if (string.IsNullOrEmpty(id))
         {

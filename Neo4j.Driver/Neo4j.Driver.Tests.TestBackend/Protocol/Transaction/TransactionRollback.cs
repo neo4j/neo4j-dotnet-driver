@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class TransactionRollback : IProtocolObject
+internal class TransactionRollback : ProtocolObject
 {
     public TransactionRollbackType data { get; set; } = new();
 

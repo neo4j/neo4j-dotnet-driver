@@ -19,7 +19,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class ProtocolException : IProtocolObject
+internal class ProtocolException : ProtocolObject
 {
     public ProtocolExceptionType data { get; set; } = new();
 

@@ -18,7 +18,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class VerifyAuthentication : IProtocolObject
+internal class VerifyAuthentication : ProtocolObject
 {
     public VerifyAuthenticationDTO data { get; set; } = null!;
     [JsonIgnore]

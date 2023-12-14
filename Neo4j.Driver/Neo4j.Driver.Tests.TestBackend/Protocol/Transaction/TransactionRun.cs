@@ -20,7 +20,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class TransactionRun : IProtocolObject
+internal class TransactionRun : ProtocolObject
 {
     public TransactionRunType data { get; set; } = new();
 

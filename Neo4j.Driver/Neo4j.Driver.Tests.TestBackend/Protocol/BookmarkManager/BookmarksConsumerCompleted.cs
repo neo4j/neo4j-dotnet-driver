@@ -15,7 +15,7 @@
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class BookmarksConsumerCompleted : IProtocolObject
+internal class BookmarksConsumerCompleted : ProtocolObject
 {
     public BookmarksConsumerCompletedDto data;
 

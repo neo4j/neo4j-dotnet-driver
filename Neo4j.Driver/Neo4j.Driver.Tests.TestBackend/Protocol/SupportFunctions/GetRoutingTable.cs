@@ -20,7 +20,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class GetRoutingTable : IProtocolObject
+internal class GetRoutingTable : ProtocolObject
 {
     public GetRoutingTableDataType data { get; set; } = new();
 

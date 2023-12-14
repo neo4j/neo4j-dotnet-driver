@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class RetryableNegative : IProtocolObject
+internal class RetryableNegative : ProtocolObject
 {
     public RetryableNegativeType data { get; set; } = new();
 

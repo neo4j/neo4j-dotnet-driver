@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class TransactionClose : IProtocolObject
+internal class TransactionClose : ProtocolObject
 {
     public TransactionCloseDataType data { get; set; } = new();
 

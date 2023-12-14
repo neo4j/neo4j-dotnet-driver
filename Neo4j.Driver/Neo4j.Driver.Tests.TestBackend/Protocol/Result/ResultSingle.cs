@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class ResultSingle : IProtocolObject
+internal class ResultSingle : ProtocolObject
 {
     public ResultSingleType data { get; set; } = new();
 

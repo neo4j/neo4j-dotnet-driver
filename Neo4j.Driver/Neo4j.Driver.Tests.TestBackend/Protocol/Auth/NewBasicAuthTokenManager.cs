@@ -24,7 +24,7 @@ using Neo4j.Driver.Internal.Auth;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal abstract class TestAuthTokenManager : IProtocolObject, IAuthTokenManager
+internal abstract class TestAuthTokenManager : ProtocolObject, IAuthTokenManager
 {
     public abstract ValueTask<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default);
 
@@ -34,7 +34,7 @@ internal abstract class TestAuthTokenManager : IProtocolObject, IAuthTokenManage
         CancellationToken cancellationToken = default);
 }
 
-internal class NewNeo4jAuthTokenManager : IProtocolObject
+internal class NewNeo4jAuthTokenManager : ProtocolObject
 {
     protected Controller _controller;
     public IAuthTokenManager TokenManager;
