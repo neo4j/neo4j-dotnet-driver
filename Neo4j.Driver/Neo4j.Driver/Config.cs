@@ -232,11 +232,11 @@ public class Config
     /// By default the driver allows the collection of this telemetry. 
     /// </summary>
     public bool TelemetryDisabled { get; set; }
-    
+
     /// <summary>
     /// The configuration for the driver's underlying message reading from the network.
     /// </summary>
-    public MessageReaderConfig MessageReaderConfig { get; internal set; } = MessageReaderConfig.Default;
+    public MessageReaderConfig MessageReaderConfig { get; internal set; } = new();
 }
 
 /// <summary>
@@ -244,53 +244,50 @@ public class Config
 /// </summary>
 public sealed class MessageReaderConfig
 {
-    internal static MessageReaderConfig Default { get; } = new();
-
     /// <summary>
     /// Constructs a new instance of <see cref="MessageReaderConfig"/>.<br/>
     /// The configuration for the driver's underlying message reading from the network.
     /// </summary>
-    /// <param name="disablePipelinedMessageReader">As of 5.15, the driver has migrated the underlying message reading
-    /// mechanism utilizing <see cref="PipeReader"/>; this optimizes the reading and memory usage of the driver, and
-    /// setting this to true will revert the driver to the legacy message reader.</param>
     /// <param name="memoryPool">The memory pool for creating buffers when reading messages. The PipeReader will borrow
     /// memory from the pool of at least ReadBufferSize size. The message reader can request larger memory blocks to
-    /// host an entire message. User code can provide an implementation for monitoring; by default, the driver will use
-    /// .NET's <see cref="System.Buffers.MemoryPool{Byte}.Shared"/> pool.</param>
+    /// host an entire message. User code can provide an implementation for monitoring; by default, the driver will
+    /// allocate a new array pool that does not take advantage of shared memory pools.</param>
     /// <param name="minBufferSize">The minimum buffer size to use when renting memory from the pool. The default value
     /// is 65,539.</param>
     /// <seealso cref="PipeReader"/>
     /// <seealso cref="MemoryPool{T}"/>
     /// <seealso cref="StreamPipeReaderOptions"/>
+    /// <remarks>
+    /// To optimize the memory usage of the driver pass .NET's shared memory pool(<see cref="MemoryPool{T}.Shared"/>) as
+    /// the <paramref name="memoryPool"/>, this should only be used when there is complete trust over the usage of
+    /// shared memory buffers in the application as other components may be using the same memory pool.
+    /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">If <paramref name="minBufferSize"/>is less than 1.</exception>
-    public MessageReaderConfig(bool disablePipelinedMessageReader = false, MemoryPool<byte> memoryPool = null, int minBufferSize = -1)
+    public MessageReaderConfig(MemoryPool<byte> memoryPool = null, int minBufferSize = -1)
     {
-        DisablePipelinedMessageReader = disablePipelinedMessageReader;
-        if (disablePipelinedMessageReader)
-        {
-            return;
-        }
-        MemoryPool = memoryPool ?? MemoryPool<byte>.Shared;
         if (minBufferSize is < -1 or 0)
         {
             throw new ArgumentOutOfRangeException(nameof(minBufferSize));
         }
+
+        DisablePipelinedMessageReader = false;
         MinBufferSize = minBufferSize == -1 ? 65_535 + 4 : minBufferSize;
+        MemoryPool = memoryPool ?? new PipeReaderMemoryPool(MinBufferSize);
         StreamPipeReaderOptions = new(MemoryPool, MinBufferSize, leaveOpen: true);
     }
-    
+
     /// <summary>
     /// As of 5.15, the driver has migrated the underlying message reading mechanism utilizing <see cref="PipeReader"/>;
     /// this optimizes the reading and memory usage of the driver, and setting this to true will revert the driver to
     /// the legacy message reader.
     /// </summary>
-    public bool DisablePipelinedMessageReader { get; }
+    internal bool DisablePipelinedMessageReader { get; }
     
     /// <summary>
     /// The memory pool for creating buffers when reading messages. The PipeReader will borrow memory from the pool of
     /// at least <see cref="MinBufferSize"/> size. The message reader can request larger memory blocks to host
-    /// an entire message. User code can provide an implementation for monitoring; by default, the driver will use
-    /// .NET's <see cref="MemoryPool{Byte}.Shared"/> pool.
+    /// an entire message. User code can provide an implementation for monitoring; by default, the driver will allocate
+    /// a new array pool that does not take advantage of shared memory pools.
     /// </summary>
     public MemoryPool<byte> MemoryPool { get; }
     
