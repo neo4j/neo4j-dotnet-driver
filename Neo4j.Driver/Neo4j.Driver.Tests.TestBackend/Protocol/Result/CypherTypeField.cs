@@ -22,7 +22,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class CypherTypeField : IProtocolObject
+internal class CypherTypeField : ProtocolObject
 {
     [JsonProperty("data")] public CypherTypeFieldRequest RequestData { get; set; } = new();
 

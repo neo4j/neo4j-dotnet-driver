@@ -15,7 +15,7 @@
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class BookmarkManagerSupplierRequest : IProtocolObject
+internal class BookmarkManagerSupplierRequest : ProtocolObject
 {
     public BookmarkManagerSupplierRequest(ProtocolObjectManager pom)
     {

@@ -31,7 +31,7 @@ internal class ResponseWriter
 
     private StreamWriter WriterTarget { get; }
 
-    public async Task<string> WriteResponseAsync(IProtocolObject protocolObject)
+    public async Task<string> WriteResponseAsync(ProtocolObject protocolObject)
     {
         return await WriteResponseAsync(protocolObject.Respond());
     }

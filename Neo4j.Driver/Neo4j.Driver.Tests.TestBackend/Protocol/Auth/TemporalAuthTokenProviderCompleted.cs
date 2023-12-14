@@ -17,7 +17,7 @@
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class TemporalAuthTokenProviderCompleted : IProtocolObject
+internal class TemporalAuthTokenProviderCompleted : ProtocolObject
 {
     public TemporalAuthTokenProviderCompletedDto data { get; set; }
 

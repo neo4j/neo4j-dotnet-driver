@@ -110,7 +110,7 @@ internal class RequestReader
         return false;
     }
 
-    public IProtocolObject CreateObjectFromData()
+    public ProtocolObject CreateObjectFromData()
     {
         return ProtocolObjectFactory.CreateObject(CurrentObjectData);
     }

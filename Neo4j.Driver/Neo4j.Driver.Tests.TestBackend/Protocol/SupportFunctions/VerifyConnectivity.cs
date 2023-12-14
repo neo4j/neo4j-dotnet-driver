@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class VerifyConnectivity : IProtocolObject
+internal class VerifyConnectivity : ProtocolObject
 {
     public VerifyConnectivityType Data { get; set; } = new();
 

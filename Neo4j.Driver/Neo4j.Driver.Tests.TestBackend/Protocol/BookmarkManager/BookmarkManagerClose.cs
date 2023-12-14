@@ -15,7 +15,7 @@
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class BookmarkManagerClose : IProtocolObject
+internal class BookmarkManagerClose : ProtocolObject
 {
     public BookmarkManagerCloseDto data;
 

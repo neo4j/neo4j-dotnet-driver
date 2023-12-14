@@ -55,7 +55,7 @@ internal class Controller
         BreakProcessLoop = false; //Ensure that any process loops that this one is running within still continue.
     }
 
-    public async Task<IProtocolObject> TryConsumeStreamObjectOfType(Type type)
+    public async Task<ProtocolObject> TryConsumeStreamObjectOfType(Type type)
     {
         //Read the next incoming request message
         await RequestReader.ParseNextRequest().ConfigureAwait(false);
@@ -70,7 +70,7 @@ internal class Controller
         return ProtocolObjectFactory.CreateObject(RequestReader.CurrentObjectData);
     }
 
-    public async Task<T> TryConsumeStreamObjectOfType<T>() where T : IProtocolObject
+    public async Task<T> TryConsumeStreamObjectOfType<T>() where T : ProtocolObject
     {
         var result = await TryConsumeStreamObjectOfType(typeof(T)).ConfigureAwait(false);
         return (T)result;
@@ -187,7 +187,7 @@ internal class Controller
         BreakProcessLoop = true;
     }
 
-    public async Task SendResponse(IProtocolObject protocolObject)
+    public async Task SendResponse(ProtocolObject protocolObject)
     {
         await ResponseWriter.WriteResponseAsync(protocolObject).ConfigureAwait(false);
     }

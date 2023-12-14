@@ -17,7 +17,7 @@
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class AuthTokenManagerHandleSecurityExceptionCompleted : IProtocolObject
+internal class AuthTokenManagerHandleSecurityExceptionCompleted : ProtocolObject
 {
     public AuthTokenManagerHandleSecurityExceptionCompletedDto data { get; set; }
 

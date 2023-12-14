@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class GetServerInfo : IProtocolObject
+internal class GetServerInfo : ProtocolObject
 {
     public GetServerInfoType Data { get; set; } = new();
     public IServerInfo ServerInfo { get; set; }

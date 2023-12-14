@@ -42,7 +42,7 @@ public static class Protocol
         Assembly
             .GetExecutingAssembly()
             .DefinedTypes
-            .Where(t => t.IsAssignableTo(typeof(IProtocolObject))));
+            .Where(t => t.IsAssignableTo(typeof(ProtocolObject))));
 
     public static void ValidateType(string typeName)
     {
@@ -66,7 +66,7 @@ public static class Protocol
     }
 }
 
-internal abstract class IProtocolObject
+internal abstract class ProtocolObject
 {
     public string name { get; set; }
 
@@ -97,9 +97,8 @@ internal abstract class IProtocolObject
         await Task.CompletedTask;
     }
 
-    public virtual async Task
-        Process(
-            Controller controller) //Default is to not use the controller object. But option to override this method and use it if necessary.
+    //Default is to not use the controller object. But option to override this method and use it if necessary.
+    public virtual async Task Process(Controller controller)
     {
         await Process();
     }

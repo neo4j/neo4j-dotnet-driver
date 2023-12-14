@@ -19,7 +19,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class Result : IProtocolObject
+internal class Result : ProtocolObject
 {
     [JsonIgnore] public IResultCursor ResultCursor { get; set; }
 

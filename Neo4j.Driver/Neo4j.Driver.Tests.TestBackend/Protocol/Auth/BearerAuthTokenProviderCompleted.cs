@@ -17,7 +17,7 @@
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class BearerAuthTokenProviderCompleted : IProtocolObject
+internal class BearerAuthTokenProviderCompleted : ProtocolObject
 {
     public BearerAuthTokenProviderCompletedDto data { get; set; }
 

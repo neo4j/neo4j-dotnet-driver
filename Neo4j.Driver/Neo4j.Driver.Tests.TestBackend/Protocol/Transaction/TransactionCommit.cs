@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class TransactionCommit : IProtocolObject
+internal class TransactionCommit : ProtocolObject
 {
     public TransactionCommitType data { get; set; } = new();
 

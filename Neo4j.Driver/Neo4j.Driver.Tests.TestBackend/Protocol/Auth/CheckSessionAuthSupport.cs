@@ -17,7 +17,7 @@
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class CheckSessionAuthSupport : IProtocolObject
+internal class CheckSessionAuthSupport : ProtocolObject
 {
     public CheckSessionAuthSupportDto data { get; set; }
 
