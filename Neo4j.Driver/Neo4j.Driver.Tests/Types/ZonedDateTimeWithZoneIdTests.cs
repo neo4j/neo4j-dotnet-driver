@@ -18,6 +18,8 @@ using System.Collections;
 using FluentAssertions;
 using Xunit;
 
+#pragma warning disable CS0618 // Type or member is obsolete - but we still test obsolete members
+
 namespace Neo4j.Driver.Tests.Types
 {
     public class ZonedDateTimeWithZoneIdTests
