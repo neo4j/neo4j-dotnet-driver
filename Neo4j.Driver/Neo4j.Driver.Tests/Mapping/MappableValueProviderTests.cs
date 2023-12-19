@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
@@ -21,8 +20,6 @@ using Moq.AutoMock;
 using Neo4j.Driver.Internal.Types;
 using Neo4j.Driver.Preview.Mapping;
 using Xunit;
-
-using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests.Mapping;
 

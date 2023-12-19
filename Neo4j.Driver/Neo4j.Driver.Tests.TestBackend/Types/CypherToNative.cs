@@ -19,6 +19,8 @@ using System.IO;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 
+#pragma warning disable CS0618 // Type or member is obsolete - but still needs to be handled
+
 namespace Neo4j.Driver.Tests.TestBackend;
 
 internal class CypherToNativeObject

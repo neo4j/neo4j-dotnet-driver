@@ -25,6 +25,7 @@ namespace Neo4j.Driver;
 [ErrorCode("Neo.ClientError.Security.AuthorizationExpired")]
 public class AuthorizationException : SecurityException
 {
+    /// <inheritdoc />
     public override bool IsRetriable => true;
 
     /// <summary>

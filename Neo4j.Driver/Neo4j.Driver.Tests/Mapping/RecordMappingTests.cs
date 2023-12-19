@@ -83,7 +83,7 @@ public class RecordMappingTests
     {
         public string Title { get; set; } = "";
         public int Released { get; set; }
-        public string? Tagline { get; set; }
+        public string Tagline { get; set; }
     }
 
     private class Person

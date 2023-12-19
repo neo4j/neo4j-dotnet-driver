@@ -29,6 +29,7 @@ namespace Neo4j.Driver;
 [DataContract]
 public class SessionExpiredException : Neo4jException
 {
+    /// <inheritdoc />
     public override bool IsRetriable => true;
 
     /// <summary>

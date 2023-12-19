@@ -35,6 +35,7 @@ public class QueryConfig
     /// Whether or not to use a <see cref="IBookmarkManager"/>, setting to false will
     /// remove any usage or modification of <see cref="IBookmarkManager"/>.
     /// </param>
+    /// <param name="transactionConfig">Transaction configuration.</param>
     public QueryConfig(
         RoutingControl routing = RoutingControl.Writers,
         string database = null,
@@ -91,6 +92,7 @@ public class QueryConfig<T> : QueryConfig
     /// Whether or not to use an <see cref="IBookmarkManager"/>, setting to false will
     /// remove any usage or modification of <see cref="IBookmarkManager"/>.
     /// </param>
+    /// <param name="transactionConfig">Transaction configuration.</param>
     /// <exception cref="ArgumentNullException"></exception>
     public QueryConfig(
         Func<IResultCursor, CancellationToken, Task<T>> cursorProcessor,

@@ -26,6 +26,7 @@ namespace Neo4j.Driver;
 [DataContract]
 public class ServiceUnavailableException : Neo4jException
 {
+    /// <inheritdoc />
     public override bool IsRetriable => true;
 
     /// <summary>

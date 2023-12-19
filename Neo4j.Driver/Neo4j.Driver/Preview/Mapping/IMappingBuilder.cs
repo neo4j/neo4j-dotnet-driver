@@ -25,7 +25,7 @@ namespace Neo4j.Driver.Preview.Mapping;
 public interface IMappingBuilder<TObject>
 {
     /// <summary>
-    /// Applies the default mapping for the object. Later calls to <see cref="Map{TProperty}"/> will override
+    /// Applies the default mapping for the object. Later calls to mapping configuration methods will override
     /// the default mapping.
     /// </summary>
     /// <returns>This instance for method chaining.</returns>

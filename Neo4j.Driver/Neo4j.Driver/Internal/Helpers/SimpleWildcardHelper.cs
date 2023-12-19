@@ -15,15 +15,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
-
 namespace Neo4j.Driver.Internal;
 
 internal class SimpleWildcardHelper
 {
     /// <summary>
-    /// Returns true if the two strings are the same, or, if <see cref="y"/> ends with an asterisk (*),
-    /// returns true if <see cref="x"/> starts with <see cref="y"/> (minus the asterisk).
+    /// Returns true if the two strings are the same, or, if <paramref name="y"/> ends with an asterisk (*),
+    /// returns true if <paramref name="x"/> starts with <paramref name="y"/> (minus the asterisk).
     /// </summary>
     /// <param name="x">The string to check.</param>
     /// <param name="y">The (potential) wildcard to compare with</param>

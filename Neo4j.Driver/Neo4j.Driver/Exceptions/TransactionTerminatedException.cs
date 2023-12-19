@@ -11,6 +11,7 @@ namespace Neo4j.Driver;
 [DataContract]
 public sealed class TransactionTerminatedException : ClientException
 {
+    /// <inheritdoc />
     public override bool IsRetriable => (InnerException as Neo4jException)?.IsRetriable ?? false;
 
     internal TransactionTerminatedException(Exception inner) :
