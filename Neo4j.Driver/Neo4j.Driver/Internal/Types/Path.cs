@@ -73,8 +73,6 @@ internal class Path : IPath
 
     public override string ToString()
     {
-        return
-            $"Path with {Relationships.Count} relationships and {Nodes.Count} nodes, starting at {Start}, " +
-            $"ending at {End}, segments: {string.Join(", ", _segments)}";
+        return $"Path with {_segments.Count} segments";
     }
 }

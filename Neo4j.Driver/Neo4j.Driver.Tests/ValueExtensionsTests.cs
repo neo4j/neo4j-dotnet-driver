@@ -351,7 +351,7 @@ namespace Neo4j.Driver.Tests
                 node.Properties["key1"].As<string>().Should().Be("value1");
                 node.Properties["key2"].As<string>().Should().Be("2");
 
-                obj.As<string>().Should().Be($"{obj.GetType()}");
+                obj.As<string>().Should().Be($"Path with 0 segments");
             }
         }
     }
