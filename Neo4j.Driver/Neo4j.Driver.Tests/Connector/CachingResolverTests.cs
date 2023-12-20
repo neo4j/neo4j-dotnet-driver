@@ -17,6 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Connector.Resolvers;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Connector

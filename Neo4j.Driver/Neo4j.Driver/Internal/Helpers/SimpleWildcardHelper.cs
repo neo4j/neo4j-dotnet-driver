@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Internal;
+namespace Neo4j.Driver.Internal.Helpers;
 
 internal class SimpleWildcardHelper
 {

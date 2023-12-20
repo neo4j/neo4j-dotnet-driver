@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
 namespace Neo4j.Driver.Tests

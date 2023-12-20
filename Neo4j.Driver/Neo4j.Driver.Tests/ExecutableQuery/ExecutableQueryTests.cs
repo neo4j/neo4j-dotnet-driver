@@ -23,6 +23,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Moq.AutoMock;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Result;
 using Xunit;
 

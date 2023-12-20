@@ -18,6 +18,7 @@ using System.IO;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Tests;
 using Xunit;
 

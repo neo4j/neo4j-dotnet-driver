@@ -24,7 +24,7 @@ internal static class MappingExtensions
     private static readonly MethodInfo AsGenericMethod =
         typeof(ValueExtensions).GetMethod(nameof(ValueExtensions.As), new[] { typeof(object) });
 
-    private static Dictionary<Type, MethodInfo> AsMethods = new();
+    private static readonly Dictionary<Type, MethodInfo> AsMethods = new();
 
     public static object AsType(this object obj, Type type)
     {

@@ -15,7 +15,7 @@
 
 using System;
 
-namespace Neo4j.Driver.Internal;
+namespace Neo4j.Driver.Internal.Protocol;
 
 //TODO: Consider converting to struct.
 internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>

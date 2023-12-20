@@ -19,9 +19,10 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol.Utility;
 using Neo4j.Driver.Internal.Result;
 
-namespace Neo4j.Driver.Internal;
+namespace Neo4j.Driver.Internal.Protocol;
 
 internal sealed class BoltProtocolV3 : IBoltProtocol
 {

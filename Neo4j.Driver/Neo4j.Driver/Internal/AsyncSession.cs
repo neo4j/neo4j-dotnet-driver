@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Telemetry;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 

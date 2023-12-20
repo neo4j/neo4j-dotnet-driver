@@ -16,6 +16,7 @@
 using System;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Xunit;
 

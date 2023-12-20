@@ -19,7 +19,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver;
+namespace Neo4j.Driver.Internal;
 
 internal class ExecutableQuery<TIn, TOut> : IExecutableQuery<TIn, TOut>, IQueryRowSource<TOut>
 {

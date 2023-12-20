@@ -20,6 +20,7 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Logging;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Telemetry;
 using Xunit;
 using static Neo4j.Driver.Tests.AsyncSessionTests;

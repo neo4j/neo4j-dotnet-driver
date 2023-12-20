@@ -18,7 +18,7 @@ using System.Linq;
 using System.Threading;
 using Neo4j.Driver.Internal.IO;
 
-namespace Neo4j.Driver.Internal;
+namespace Neo4j.Driver.Internal.Protocol;
 
 internal interface IBoltProtocolFactory
 {

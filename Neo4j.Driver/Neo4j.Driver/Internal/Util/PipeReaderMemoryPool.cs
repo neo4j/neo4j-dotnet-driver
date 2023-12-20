@@ -16,7 +16,7 @@
 using System;
 using System.Buffers;
 
-namespace Neo4j.Driver.Internal;
+namespace Neo4j.Driver.Internal.Util;
 
 /// <summary>
 /// Simple memory pool based on the .NET's Pool.

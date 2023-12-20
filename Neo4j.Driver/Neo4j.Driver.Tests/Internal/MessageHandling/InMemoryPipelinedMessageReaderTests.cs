@@ -23,6 +23,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Moq;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Tests;
 using Xunit;
 

@@ -18,7 +18,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver;
+namespace Neo4j.Driver.Internal;
 
 internal class StreamProcessorExecutableQuery<TSource, TResult> : IReducedExecutableQuery<TResult>
 {

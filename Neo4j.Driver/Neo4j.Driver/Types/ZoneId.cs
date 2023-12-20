@@ -14,7 +14,7 @@
 // limitations under the License.
 
 using System;
-using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Helpers;
 
 namespace Neo4j.Driver;
 

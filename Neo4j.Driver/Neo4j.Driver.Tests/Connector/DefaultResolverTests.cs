@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Connector.Resolvers;
 using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
 

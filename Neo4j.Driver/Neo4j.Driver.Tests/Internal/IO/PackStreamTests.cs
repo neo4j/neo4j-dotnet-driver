@@ -20,6 +20,7 @@ using System.Linq;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.IO.Utils;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Tests;
 using Xunit;
 

@@ -21,7 +21,7 @@ using Neo4j.Driver.Internal.MessageHandling.V3;
 using Neo4j.Driver.Internal.MessageHandling.V4;
 using Neo4j.Driver.Internal.Result;
 
-namespace Neo4j.Driver.Internal;
+namespace Neo4j.Driver.Internal.Protocol;
 
 internal interface IBoltProtocolHandlerFactory
 {

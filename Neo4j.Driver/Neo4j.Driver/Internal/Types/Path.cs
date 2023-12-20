@@ -70,4 +70,11 @@ internal class Path : IPath
             return hashCode;
         }
     }
+
+    public override string ToString()
+    {
+        return
+            $"Path with {Relationships.Count} relationships and {Nodes.Count} nodes, starting at {Start}, " +
+            $"ending at {End}, segments: {string.Join(", ", _segments)}";
+    }
 }

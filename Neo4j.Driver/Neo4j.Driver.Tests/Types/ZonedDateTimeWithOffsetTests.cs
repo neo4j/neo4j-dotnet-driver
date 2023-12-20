@@ -17,6 +17,7 @@ using System;
 using System.Collections;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Helpers;
 using Xunit;
 
 #pragma warning disable CS0618 // Type or member is obsolete - but we still test obsolete members

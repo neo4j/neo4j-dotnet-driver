@@ -19,6 +19,7 @@ using FluentAssertions;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.MessageHandling.Messages
