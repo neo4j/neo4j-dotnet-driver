@@ -16,7 +16,7 @@
 using System;
 using Xunit.Abstractions;
 
-namespace Neo4j.Driver.TestUtil;
+namespace Neo4j.Driver.Tests.TestUtil;
 
 public class TestLogger : ILogger
 {

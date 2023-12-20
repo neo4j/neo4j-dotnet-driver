@@ -14,9 +14,10 @@
 // limitations under the License.
 
 using System.Threading.Tasks;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Driver;
 using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.SupportFunctions;
 
 internal class CheckDriverIsEncrypted : ProtocolObject
 {

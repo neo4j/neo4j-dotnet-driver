@@ -16,13 +16,12 @@
 using System;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector.Trust;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Util;
 using Xunit;
 
-namespace Neo4j.Driver.Tests;
+namespace Neo4j.Driver.Tests.TestUtil;
 
 public class Neo4jUriTests
 {

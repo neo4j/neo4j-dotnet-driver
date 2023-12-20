@@ -15,9 +15,12 @@
 
 using System;
 using System.Threading.Tasks;
+using Neo4j.Driver.Tests.TestBackend.Exceptions;
+using Neo4j.Driver.Tests.TestBackend.Protocol.JsonConverters;
+using Neo4j.Driver.Tests.TestBackend.Transaction;
 using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Session;
 
 internal class SessionReadTransaction : ProtocolObject
 {
@@ -39,7 +42,7 @@ internal class SessionReadTransaction : ProtocolObject
                         tx as IAsyncTransaction,
                         async cursor =>
                         {
-                            var result = ProtocolObjectFactory.CreateObject<Result>();
+                            var result = ProtocolObjectFactory.CreateObject<Result.Result>();
                             await result.PopulateRecords(cursor).ConfigureAwait(false);
                             return result.uniqueId;
                         }));

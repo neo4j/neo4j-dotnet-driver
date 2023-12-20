@@ -19,7 +19,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Connector.Resolvers;
-using Neo4j.Driver.Tests.TestUtil;
+using Neo4j.Driver.Tests.Filters;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Connector;

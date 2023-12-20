@@ -20,9 +20,9 @@ using System.Linq.Expressions;
 using FluentAssertions;
 using FluentAssertions.Equivalency;
 using Neo4j.Driver.Internal;
-using static Neo4j.Driver.Tests.Assertions;
+using static Neo4j.Driver.Tests.TestUtil.Assertions;
 
-namespace Neo4j.Driver.Reactive;
+namespace Neo4j.Driver.Tests.Reactive.Utils;
 
 public static class Utils
 {

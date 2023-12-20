@@ -19,10 +19,11 @@ using System.Reactive;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Tests;
+using Neo4j.Driver.Tests.Reactive.Utils;
+using Neo4j.Driver.Tests.Result;
 using Xunit;
 
-namespace Neo4j.Driver.Reactive.Internal;
+namespace Neo4j.Driver.Tests.Reactive.Internal;
 
 public static class InternalRxTransactionTests
 {

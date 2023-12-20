@@ -19,7 +19,7 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Xunit;
 
-namespace Neo4j.Driver.Reactive;
+namespace Neo4j.Driver.Tests.Reactive;
 
 public class DriverExtensionsTests
 {

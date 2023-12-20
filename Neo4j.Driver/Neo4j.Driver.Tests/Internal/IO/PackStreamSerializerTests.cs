@@ -17,11 +17,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.IO.Utils;
+using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Protocol;
-using Neo4j.Driver.Tests;
+using Neo4j.Driver.Tests.Internal.IO.Utils;
 
-namespace Neo4j.Driver.Internal.IO;
+namespace Neo4j.Driver.Tests.Internal.IO;
 
 public abstract class PackStreamSerializerTests
 {

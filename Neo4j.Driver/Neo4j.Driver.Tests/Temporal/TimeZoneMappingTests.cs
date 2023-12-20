@@ -17,7 +17,7 @@ using System;
 using System.Globalization;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Temporal;
-using Neo4j.Driver.Tests.TestUtil;
+using Neo4j.Driver.Tests.Filters;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Temporal;

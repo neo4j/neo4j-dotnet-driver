@@ -23,7 +23,7 @@ using Neo4j.Driver.Internal;
 using Xunit;
 using Record = Neo4j.Driver.Internal.Result.Record;
 
-namespace Neo4j.Driver.Tests;
+namespace Neo4j.Driver.Tests.Result;
 
 internal class ListBasedRecordCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
 {

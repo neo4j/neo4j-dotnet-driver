@@ -15,9 +15,10 @@
 
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Tests.TestBackend.Types;
 using Newtonsoft.Json.Linq;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Session;
 
 internal class JsonCypherParameterParser
 {

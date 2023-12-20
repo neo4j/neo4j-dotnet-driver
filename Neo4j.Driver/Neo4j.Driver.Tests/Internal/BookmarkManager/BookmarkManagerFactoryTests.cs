@@ -16,9 +16,10 @@
 using System;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.Internal;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.BookmarkManager;
+namespace Neo4j.Driver.Tests.Internal.BookmarkManager;
 
 public class BookmarkManagerFactoryTests
 {

@@ -18,7 +18,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal.Helpers;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.MessageHandling;

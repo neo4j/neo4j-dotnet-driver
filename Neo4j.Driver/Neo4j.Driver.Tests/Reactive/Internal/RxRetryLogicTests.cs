@@ -20,10 +20,11 @@ using FluentAssertions;
 using Microsoft.Reactive.Testing;
 using Moq;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Tests.Reactive.Utils;
 using Xunit;
-using static Neo4j.Driver.Tests.Assertions;
+using static Neo4j.Driver.Tests.TestUtil.Assertions;
 
-namespace Neo4j.Driver.Reactive.Internal;
+namespace Neo4j.Driver.Tests.Reactive.Internal;
 
 public class RxRetryLogicTests : AbstractRxTest
 {

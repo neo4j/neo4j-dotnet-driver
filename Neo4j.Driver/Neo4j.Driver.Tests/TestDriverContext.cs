@@ -15,7 +15,6 @@
 
 using System;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Auth;
 
 namespace Neo4j.Driver.Tests;
 

@@ -15,10 +15,12 @@
 
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Session;
+using Neo4j.Driver.Tests.TestBackend.Types;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.JsonConverters;
 
 internal class QueryParameterConverter : JsonConverter<Dictionary<string, CypherToNativeObject>>
 {

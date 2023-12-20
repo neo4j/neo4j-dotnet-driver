@@ -24,15 +24,16 @@ using Microsoft.Reactive.Testing;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver.Tests;
+using Neo4j.Driver.Tests.Reactive.Utils;
+using Neo4j.Driver.Tests.Result;
 using Xunit;
 using Xunit.Abstractions;
 using static Microsoft.Reactive.Testing.ReactiveTest;
-using static Neo4j.Driver.Reactive.Internal.InternalRxResultTests.RxResultUtil;
-using static Neo4j.Driver.Reactive.Utils;
+using static Neo4j.Driver.Tests.Reactive.Internal.InternalRxResultTests.RxResultUtil;
+using static Neo4j.Driver.Tests.Reactive.Utils.Utils;
 using Record = Neo4j.Driver.Internal.Result.Record;
 
-namespace Neo4j.Driver.Reactive.Internal;
+namespace Neo4j.Driver.Tests.Reactive.Internal;
 
 public static class InternalRxResultTests
 {

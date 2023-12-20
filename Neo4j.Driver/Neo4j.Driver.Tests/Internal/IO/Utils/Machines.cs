@@ -15,8 +15,9 @@
 
 using System;
 using System.IO;
+using Neo4j.Driver.Internal.IO;
 
-namespace Neo4j.Driver.Internal.IO.Utils;
+namespace Neo4j.Driver.Tests.Internal.IO.Utils;
 
 public class PackStreamWriterMachine
 {

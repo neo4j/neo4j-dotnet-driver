@@ -21,7 +21,7 @@ using Moq;
 using Moq.AutoMock;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.Util;
+namespace Neo4j.Driver.Tests.Internal.Util;
 
 public class TransactionTimeoutTests
 {

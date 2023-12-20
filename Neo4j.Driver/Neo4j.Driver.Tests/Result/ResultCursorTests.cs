@@ -26,7 +26,7 @@ using Xunit;
 using Xunit.Abstractions;
 using Record = Neo4j.Driver.Internal.Result.Record;
 
-namespace Neo4j.Driver.Tests;
+namespace Neo4j.Driver.Tests.Result;
 
 public class ResultCursorTests
 {

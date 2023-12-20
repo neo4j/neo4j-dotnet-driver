@@ -19,11 +19,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Tests;
+using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO;
+namespace Neo4j.Driver.Tests.Internal.IO;
 
 public class ChunkWriterTests
 {

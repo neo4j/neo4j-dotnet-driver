@@ -18,9 +18,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.BookmarkManager;
+namespace Neo4j.Driver.Tests.Internal.BookmarkManager;
 
 public class DefaultBookmarkManagerTests
 {

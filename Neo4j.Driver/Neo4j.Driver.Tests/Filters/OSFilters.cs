@@ -18,7 +18,7 @@ using System.Runtime.InteropServices;
 using Neo4j.Driver.Internal;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.TestUtil;
+namespace Neo4j.Driver.Tests.Filters;
 
 public class OSFactAttribute : FactAttribute
 {

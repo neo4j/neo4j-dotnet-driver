@@ -14,9 +14,11 @@
 // limitations under the License.
 
 using FluentAssertions;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
+namespace Neo4j.Driver.Tests.Internal.IO.ValueSerializers.Temporal;
 
 public class LocalDateTimeSerializerTests : PackStreamSerializerTests
 {

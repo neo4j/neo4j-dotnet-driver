@@ -14,7 +14,6 @@
 // limitations under the License.
 
 using System;
-using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Routing;
 using Neo4j.Driver.Internal.Util;

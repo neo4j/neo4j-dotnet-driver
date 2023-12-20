@@ -22,7 +22,7 @@ using Neo4j.Driver.Internal.Result;
 using Xunit;
 using Record = Xunit.Record;
 
-namespace Neo4j.Driver.Tests;
+namespace Neo4j.Driver.Tests.Result;
 
 public class ConsumedException
 {

@@ -18,9 +18,11 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Types;
+using Neo4j.Driver.Tests.TestBackend.Exceptions;
+using Neo4j.Driver.Tests.TestBackend.Types;
 using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Result;
 
 internal class CypherTypeField : ProtocolObject
 {

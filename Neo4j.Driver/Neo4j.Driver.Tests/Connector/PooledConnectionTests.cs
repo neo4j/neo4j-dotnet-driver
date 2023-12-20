@@ -23,7 +23,7 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
-namespace Neo4j.Driver.Tests;
+namespace Neo4j.Driver.Tests.Connector;
 
 public class PooledConnectionTests
 {

@@ -16,7 +16,7 @@
 using Microsoft.Reactive.Testing;
 using Xunit.Abstractions;
 
-namespace Neo4j.Driver.Reactive;
+namespace Neo4j.Driver.Tests.Reactive;
 
 public abstract class AbstractRxTest : ReactiveTest
 {

@@ -15,11 +15,13 @@
 
 using System.Collections.Generic;
 using FluentAssertions;
+using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.MessageHandling.Metadata;
 using Neo4j.Driver.Internal.Result;
 using Xunit;
 using Record = Xunit.Record;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
+namespace Neo4j.Driver.Tests.Internal.MessageHandling.Metadata;
 
 public class DatabaseInfoCollectorTests
 {

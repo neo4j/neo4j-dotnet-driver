@@ -25,7 +25,6 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Util;
-using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Tests.TestUtil;
 using Xunit;

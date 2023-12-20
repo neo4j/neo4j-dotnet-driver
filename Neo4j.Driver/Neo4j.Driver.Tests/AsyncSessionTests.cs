@@ -21,7 +21,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Logging;
@@ -390,9 +389,9 @@ public class AsyncSessionTests
             bookmarks[0].Values[0].Should().Be("bookmark1");
         }
 
-        private static Internal.Driver NewDriver()
+        private static Driver.Internal.Driver NewDriver()
         {
-            var driver = new Internal.Driver(
+            var driver = new Driver.Internal.Driver(
                 new Uri("neo4j://myTest.org"),
                 new TestConnectionProvider(Mock.Of<IConnection>()),
                 null,

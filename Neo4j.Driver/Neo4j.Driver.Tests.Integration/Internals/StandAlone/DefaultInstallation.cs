@@ -15,7 +15,7 @@
 
 using System;
 using System.Diagnostics;
-using Neo4j.Driver.TestUtil;
+using Neo4j.Driver.Tests.TestUtil;
 
 namespace Neo4j.Driver.IntegrationTests.Internals;
 

@@ -20,7 +20,7 @@ using System.Reactive;
 using System.Reactive.Linq;
 using Microsoft.Reactive.Testing;
 
-namespace Neo4j.Driver.Reactive;
+namespace Neo4j.Driver.Tests.Reactive.Utils;
 
 public static class Extensions
 {

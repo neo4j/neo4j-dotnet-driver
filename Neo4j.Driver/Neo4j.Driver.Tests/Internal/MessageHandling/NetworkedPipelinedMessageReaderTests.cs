@@ -24,11 +24,11 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Protocol;
-using Neo4j.Driver.Tests;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling;
+namespace Neo4j.Driver.Tests.Internal.MessageHandling;
 
 /// <summary>
 /// These are close to integration tests as they used tcp, but they are not integration tests as they do not

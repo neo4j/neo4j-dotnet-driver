@@ -16,12 +16,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using FluentAssertions;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.ValueSerializers;
 using Neo4j.Driver.Internal.Types;
 using Xunit;
 
 #pragma warning disable CS0618
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers;
+namespace Neo4j.Driver.Tests.Internal.IO.ValueSerializers;
 
 public class PathSerializerTests : PackStreamSerializerTests
 {

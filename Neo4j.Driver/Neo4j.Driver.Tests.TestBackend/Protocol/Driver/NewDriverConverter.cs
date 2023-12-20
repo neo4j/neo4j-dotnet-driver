@@ -17,7 +17,7 @@ using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Driver;
 
 internal class NewDriverConverter : JsonConverter<NewDriver.NewDriverType>
 {

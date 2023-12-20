@@ -17,7 +17,7 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.TestUtil;
+namespace Neo4j.Driver.Tests.Filters;
 
 public class MonoFactAttribute : FactAttribute
 {

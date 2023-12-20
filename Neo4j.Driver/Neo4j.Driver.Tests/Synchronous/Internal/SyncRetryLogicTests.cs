@@ -22,7 +22,7 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Xunit;
 
-namespace Neo4j.Driver.Synchronous.Internal;
+namespace Neo4j.Driver.Tests.Synchronous.Internal;
 
 public class SyncRetryLogicTests
 {

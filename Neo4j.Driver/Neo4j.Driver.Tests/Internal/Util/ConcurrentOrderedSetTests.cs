@@ -15,9 +15,10 @@
 
 using System.Linq;
 using FluentAssertions;
+using Neo4j.Driver.Internal.Util;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.Util;
+namespace Neo4j.Driver.Tests.Internal.Util;
 
 public static class ConcurrentOrderedSetTests
 {

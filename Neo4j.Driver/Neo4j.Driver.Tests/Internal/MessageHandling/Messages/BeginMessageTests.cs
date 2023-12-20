@@ -16,13 +16,14 @@
 using System;
 using System.Collections.Generic;
 using FluentAssertions;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Types;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Messages;
+namespace Neo4j.Driver.Tests.Internal.MessageHandling.Messages;
 
 public class BeginMessageTests
 {

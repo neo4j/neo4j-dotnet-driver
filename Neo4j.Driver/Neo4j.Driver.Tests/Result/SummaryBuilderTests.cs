@@ -15,12 +15,11 @@
 
 using System;
 using FluentAssertions;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Xunit;
 
-namespace Neo4j.Driver.Tests;
+namespace Neo4j.Driver.Tests.Result;
 
 public class SummaryBuilderTests
 {

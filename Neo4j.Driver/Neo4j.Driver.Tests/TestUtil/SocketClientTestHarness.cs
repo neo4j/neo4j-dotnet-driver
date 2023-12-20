@@ -17,7 +17,7 @@ using System.IO;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
 
-namespace Neo4j.Driver.Tests;
+namespace Neo4j.Driver.Tests.TestUtil;
 
 internal static class TcpSocketClientTestSetup
 {

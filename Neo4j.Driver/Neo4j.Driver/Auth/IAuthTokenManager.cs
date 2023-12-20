@@ -16,7 +16,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Auth;
+namespace Neo4j.Driver;
 
 /// <summary>
 /// Common interface for components that can provide auth tokens. For pre-baked implementations

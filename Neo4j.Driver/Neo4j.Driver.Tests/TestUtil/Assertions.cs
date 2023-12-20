@@ -18,7 +18,7 @@ using FluentAssertions;
 using FluentAssertions.Execution;
 using FluentAssertions.Numeric;
 
-namespace Neo4j.Driver.Tests;
+namespace Neo4j.Driver.Tests.TestUtil;
 
 public static class Assertions
 {

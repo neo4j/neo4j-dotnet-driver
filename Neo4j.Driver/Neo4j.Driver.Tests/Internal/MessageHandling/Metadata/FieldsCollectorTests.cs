@@ -15,9 +15,11 @@
 
 using System.Collections.Generic;
 using FluentAssertions;
+using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.MessageHandling.Metadata;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
+namespace Neo4j.Driver.Tests.Internal.MessageHandling.Metadata;
 
 public class FieldsCollectorTests
 {

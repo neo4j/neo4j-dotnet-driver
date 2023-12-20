@@ -22,7 +22,7 @@ using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Messages;
+namespace Neo4j.Driver.Tests.Internal.MessageHandling.Messages;
 
 public class HelloMessageTests
 {

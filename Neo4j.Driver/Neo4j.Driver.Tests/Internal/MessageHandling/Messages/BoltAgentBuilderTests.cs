@@ -17,7 +17,7 @@ using FluentAssertions;
 using Neo4j.Driver.Internal.Messaging.Utils;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Messages;
+namespace Neo4j.Driver.Tests.Internal.MessageHandling.Messages;
 
 public class BoltAgentBuilderTests
 {

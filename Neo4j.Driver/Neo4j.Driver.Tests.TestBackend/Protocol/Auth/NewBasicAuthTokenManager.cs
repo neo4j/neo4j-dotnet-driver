@@ -18,11 +18,11 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Auth;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Time;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
 
 internal abstract class TestAuthTokenManager : ProtocolObject, IAuthTokenManager
 {

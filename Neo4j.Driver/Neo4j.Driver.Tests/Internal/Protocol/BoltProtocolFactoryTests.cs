@@ -15,9 +15,10 @@
 
 using System;
 using FluentAssertions;
+using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.Protocol;
+namespace Neo4j.Driver.Tests.Internal.Protocol;
 
 public class BoltProtocolFactoryTests
 {

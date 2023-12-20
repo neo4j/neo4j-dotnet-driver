@@ -15,12 +15,14 @@
 
 using System;
 using FluentAssertions;
-using Neo4j.Driver.Tests.TestUtil;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
+using Neo4j.Driver.Tests.Filters;
 using Xunit;
 
 #pragma warning disable CS0618 // Type or member is obsolete - but we still test obsolete members
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
+namespace Neo4j.Driver.Tests.Internal.IO.ValueSerializers.Temporal;
 
 public class UtcZonedDateTimeSerializerTests : PackStreamSerializerTests
 {

@@ -20,6 +20,8 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Xunit;
 
+using InternalDriver = Neo4j.Driver.Internal.Driver;
+
 #pragma warning disable CS0618
 
 namespace Neo4j.Driver.Tests;
@@ -29,7 +31,7 @@ public class DriverTests
     [Fact]
     public void ShouldUseDefaultPortWhenPortNotSet()
     {
-        using (var driver = (Internal.Driver)GraphDatabase.Driver("bolt://localhost"))
+        using (var driver = (InternalDriver)GraphDatabase.Driver("bolt://localhost"))
         {
             driver.Uri.Port.Should().Be(7687);
             driver.Uri.Scheme.Should().Be("bolt");
@@ -40,7 +42,7 @@ public class DriverTests
     [Fact]
     public void ShouldUseSpecifiedPortWhenPortSet()
     {
-        using (var driver = (Internal.Driver)GraphDatabase.Driver("bolt://localhost:8888"))
+        using (var driver = (InternalDriver)GraphDatabase.Driver("bolt://localhost:8888"))
         {
             driver.Uri.Port.Should().Be(8888);
             driver.Uri.Scheme.Should().Be("bolt");
@@ -51,7 +53,7 @@ public class DriverTests
     [Fact]
     public void ShouldSupportIPv6()
     {
-        using (var driver = (Internal.Driver)GraphDatabase.Driver("bolt://[::1]"))
+        using (var driver = (InternalDriver)GraphDatabase.Driver("bolt://[::1]"))
         {
             driver.Uri.Port.Should().Be(7687);
             driver.Uri.Scheme.Should().Be("bolt");
@@ -80,7 +82,7 @@ public class DriverTests
     public void ShouldAcceptIfRoutingSchemeWithRoutingContext()
     {
         using (var driver =
-               (Internal.Driver)GraphDatabase.Driver("neo4j://localhost/?name=molly&age=1&color=white"))
+               (InternalDriver)GraphDatabase.Driver("neo4j://localhost/?name=molly&age=1&color=white"))
         {
             driver.Uri.Port.Should().Be(7687);
             driver.Uri.Scheme.Should().Be("neo4j");
@@ -141,7 +143,7 @@ public class DriverTests
         mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
             .Returns(Task.FromResult(new Mock<IServerInfo>().Object));
 
-        var driver = new Internal.Driver(new Uri("bolt://localhost"), mock.Object, null, TestDriverContext.MockContext);
+        var driver = new InternalDriver(new Uri("bolt://localhost"), mock.Object, null, TestDriverContext.MockContext);
         await driver.VerifyConnectivityAsync();
 
         mock.Verify(x => x.VerifyConnectivityAndGetInfoAsync(), Times.Once);
@@ -154,12 +156,12 @@ public class DriverTests
         mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
             .Returns(Task.FromResult(new Mock<IServerInfo>().Object));
 
-        var driver = (IDriver)new Internal.Driver(new Uri("bolt://localhost"),
+        var driver = (IDriver)new InternalDriver(new Uri("bolt://localhost"),
             mock.Object,
             null,
             TestDriverContext.MockContext);
         var connects = await driver.TryVerifyConnectivityAsync();
-            
+
         connects.Should().BeTrue();
     }
 
@@ -170,7 +172,7 @@ public class DriverTests
         mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
             .ThrowsAsync(new Exception("broken"));
 
-        var driver = (IDriver)new Internal.Driver(new Uri("bolt://localhost"),
+        var driver = (IDriver)new InternalDriver(new Uri("bolt://localhost"),
             mock.Object,
             null,
             TestDriverContext.MockContext);
@@ -187,7 +189,7 @@ public class DriverTests
         mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
             .Returns(Task.FromResult(mockServerInfo));
 
-        var driver = new Internal.Driver(new Uri("bolt://localhost"),
+        var driver = new InternalDriver(new Uri("bolt://localhost"),
             mock.Object,
             null,
             TestDriverContext.MockContext);
@@ -203,7 +205,7 @@ public class DriverTests
     {
         var mock = new Mock<IConnectionProvider>();
         mock.Setup(x => x.SupportsMultiDbAsync()).Returns(Task.FromResult(true));
-        var driver = new Internal.Driver(new Uri("bolt://localhost"),
+        var driver = new InternalDriver(new Uri("bolt://localhost"),
             mock.Object,
             null,
             TestDriverContext.MockContext);

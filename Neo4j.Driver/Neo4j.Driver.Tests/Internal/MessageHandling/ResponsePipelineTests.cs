@@ -18,10 +18,11 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Logging;
+using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling;
+namespace Neo4j.Driver.Tests.Internal.MessageHandling;
 
 public class ResponsePipelineTests
 {

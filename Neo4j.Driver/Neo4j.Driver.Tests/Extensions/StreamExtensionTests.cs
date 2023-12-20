@@ -22,7 +22,7 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Xunit;
 
-namespace Neo4j.Driver.Tests;
+namespace Neo4j.Driver.Tests.Extensions;
 
 public class StreamExtensionTests
 {

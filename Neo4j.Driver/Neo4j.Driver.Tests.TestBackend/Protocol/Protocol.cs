@@ -20,7 +20,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol;
 
 public class TestKitProtocolException : Exception
 {

@@ -18,17 +18,19 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.MessageHandling.V4;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.Telemetry;
 using Neo4j.Driver.Internal.Types;
 using Xunit;
 using Record = Xunit.Record;
 
-namespace Neo4j.Driver.Internal.Protocol;
+namespace Neo4j.Driver.Tests.Internal.Protocol;
 
 public class BoltProtocolTests
 {

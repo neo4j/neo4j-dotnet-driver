@@ -17,9 +17,10 @@ using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal.MessageHandling;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling;
+namespace Neo4j.Driver.Tests.Internal.MessageHandling;
 
 public class MetadataCollectingResponseHandlerTests
 {

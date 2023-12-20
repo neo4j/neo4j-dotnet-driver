@@ -23,11 +23,11 @@ using System.Text;
 using System.Threading.Tasks;
 using Moq;
 using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Protocol;
-using Neo4j.Driver.Tests;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling;
+namespace Neo4j.Driver.Tests.Internal.MessageHandling;
 
 /// <summary>
 /// Similarly to <see cref="NetworkedPipelinedMessageReaderTests"/>, but this uses in-memory stream instead of

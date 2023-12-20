@@ -19,11 +19,13 @@ using System.IO;
 using System.Linq;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Auth;
-using Neo4j.Driver.Internal.IO.Utils;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Tests.Internal.IO.Utils;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO;
+namespace Neo4j.Driver.Tests.Internal.IO;
 
 [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
 public class ChunkReaderTests

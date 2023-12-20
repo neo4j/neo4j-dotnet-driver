@@ -15,9 +15,11 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Neo4j.Driver.Tests.TestBackend.Protocol.JsonConverters;
+using Neo4j.Driver.Tests.TestBackend.Types;
 using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Session;
 
 internal class SessionRun : ProtocolObject
 {
@@ -35,7 +37,7 @@ internal class SessionRun : ProtocolObject
                 data.TransactionConfig)
             .ConfigureAwait(false);
 
-        var result = ProtocolObjectFactory.CreateObject<Result>();
+        var result = ProtocolObjectFactory.CreateObject<Result.Result>();
         result.ResultCursor = cursor;
 
         ResultId = result.uniqueId;
@@ -43,7 +45,7 @@ internal class SessionRun : ProtocolObject
 
     public override string Respond()
     {
-        return ((Result)ObjManager.GetObject(ResultId)).Respond();
+        return ((Result.Result)ObjManager.GetObject(ResultId)).Respond();
     }
 
     [JsonConverter(typeof(SessionTypeJsonConverter))]

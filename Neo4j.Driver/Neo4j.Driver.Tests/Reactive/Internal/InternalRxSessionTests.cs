@@ -21,14 +21,15 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Tests;
+using Neo4j.Driver.Tests.Reactive.Utils;
+using Neo4j.Driver.Tests.Result;
 using Xunit;
 using static Microsoft.Reactive.Testing.ReactiveAssert;
-using static Neo4j.Driver.Tests.Assertions;
+using static Neo4j.Driver.Tests.TestUtil.Assertions;
 
 #pragma warning disable CS0618
 
-namespace Neo4j.Driver.Reactive.Internal;
+namespace Neo4j.Driver.Tests.Reactive.Internal;
 
 public static class InternalRxSessionTests
 {

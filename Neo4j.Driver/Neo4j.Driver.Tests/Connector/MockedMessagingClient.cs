@@ -19,14 +19,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
 
-namespace Neo4j.Driver.Tests.Routing;
+namespace Neo4j.Driver.Tests.Connector;
 
 /// <summary>
 /// If you want to create a connection with full control of what messages to send and what messages to receive,
