@@ -43,7 +43,6 @@ internal class RequestReader
 
         while (await ParseObjectData().ConfigureAwait(false))
         {
-            ;
         }
 
         Trace.WriteLine($"\nRequest received: {CurrentObjectData}");

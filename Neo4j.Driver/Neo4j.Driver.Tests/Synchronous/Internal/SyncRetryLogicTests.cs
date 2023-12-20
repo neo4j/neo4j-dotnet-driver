@@ -75,7 +75,7 @@ namespace Neo4j.Driver.Synchronous.Internal
             var retryLogic = new RetryLogic(TimeSpan.FromMinutes(1), logger.Object);
             var work = CreateFailingWork(
                 1,
-                Enumerable.Range(1, errorCount).Select(x => error).Cast<Exception>().ToArray());
+                Enumerable.Range(1, errorCount).Select(_ => error).Cast<Exception>().ToArray());
 
             var result = retryLogic.Retry(() => work.Work(null));
 

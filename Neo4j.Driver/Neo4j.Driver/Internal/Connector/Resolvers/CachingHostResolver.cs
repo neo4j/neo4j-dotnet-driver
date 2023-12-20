@@ -52,7 +52,8 @@ internal class CachingHostResolver : IHostResolver
                         Addresses = resolved
                     };
 
-                    entry = _cache.AddOrUpdate(hostname, entry, (key, existingEntry) => entry);
+                    var captured = entry;
+                    entry = _cache.AddOrUpdate(hostname, entry, (_, _) => captured);
                 }
             }
             finally
@@ -81,7 +82,8 @@ internal class CachingHostResolver : IHostResolver
                         Addresses = resolved
                     };
 
-                    entry = _cache.AddOrUpdate(hostname, entry, (key, existingEntry) => entry);
+                    var captured = entry;
+                    entry = _cache.AddOrUpdate(hostname, entry, (_, _) => captured);
                 }
             }
             finally

@@ -62,7 +62,7 @@ namespace Neo4j.Driver.Tests
 
             await ConsumedException.ThrowsResultConsumedException(async () => await result.SingleAsync());
             await ConsumedException.ThrowsResultConsumedException(async () => await result.ToListAsync());
-            await ConsumedException.ThrowsResultConsumedException(async () => await result.ForEachAsync(r => {}));
+            await ConsumedException.ThrowsResultConsumedException(async () => await result.ForEachAsync(_ => {}));
         }
 
         [Fact]

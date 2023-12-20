@@ -140,7 +140,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 var rxSession = CreateSession(mode, null, out var session, out var txc);
 
                 rxSession
-                    .RunTransaction(mode, t => Observable.Return(1), null)
+                    .RunTransaction(mode, _ => Observable.Return(1), null)
                     .WaitForCompletion()
                     .AssertEqual(
                         OnNext(0, 1),
@@ -162,7 +162,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 var rxSession = CreateSession(mode, null, out var session, out var txc);
 
                 rxSession
-                    .RunTransaction(mode, t => Observable.Throw<int>(error), null)
+                    .RunTransaction(mode, _ => Observable.Throw<int>(error), null)
                     .WaitForCompletion()
                     .AssertEqual(OnError<int>(0, error));
 
@@ -182,7 +182,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 var rxSession = CreateSession(mode, null, out var session, out var txc);
 
                 rxSession
-                    .RunTransaction<int>(mode, t => throw error, null)
+                    .RunTransaction<int>(mode, _ => throw error, null)
                     .WaitForCompletion()
                     .AssertEqual(OnError<int>(0, error));
 

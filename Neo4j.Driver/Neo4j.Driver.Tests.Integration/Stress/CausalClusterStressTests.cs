@@ -301,7 +301,7 @@ public sealed class CausalClusterStressTests : StressTest
             _readQueriesByServer.AddOrUpdate(
                 summary.Server.Address,
                 new AtomicLong(1),
-                (key, value) => value.Increment());
+                (_, value) => value.Increment());
         }
 
         public long GetReadQueries(string address)

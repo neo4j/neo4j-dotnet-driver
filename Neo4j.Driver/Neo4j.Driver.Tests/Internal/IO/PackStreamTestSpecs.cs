@@ -882,7 +882,7 @@ namespace Neo4j.Driver.Internal.IO
 
             // When
             var writer = writerMachine.Writer;
-            writer.Write(Enumerable.Range(0, size).Select(i => value).ToList());
+            writer.Write(Enumerable.Range(0, size).Select(_ => value).ToList());
 
             // When
             var readerMachine = CreateReaderMachine(writerMachine.GetOutput());

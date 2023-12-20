@@ -114,7 +114,7 @@ namespace Neo4j.Driver.Tests
             public async Task ShouldThrowExceptionIfNullResult()
             {
                 IResultCursor result = null;
-                var exception = await Record.ExceptionAsync(() => result.ForEachAsync(r => {}));
+                var exception = await Record.ExceptionAsync(() => result.ForEachAsync(_ => {}));
                 exception.Should().BeOfType<ArgumentNullException>();
             }
 

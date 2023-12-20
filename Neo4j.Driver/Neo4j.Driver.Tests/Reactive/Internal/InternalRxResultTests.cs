@@ -25,7 +25,6 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Tests;
-using Neo4j.Driver.TestUtil;
 using Xunit;
 using Xunit.Abstractions;
 using static Microsoft.Reactive.Testing.ReactiveTest;
@@ -224,7 +223,7 @@ namespace Neo4j.Driver.Reactive.Internal
             {
                 var exc = new ClientException("some error");
                 var cursor = CreateFailingResultCursor(exc);
-                var result = new RxResult(Observable.Return(cursor), new TestLogger(Output.WriteLine));
+                var result = new RxResult(Observable.Return(cursor));
 
                 VerifyError(result.Records(), exc);
 

@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -379,6 +380,7 @@ namespace Neo4j.Driver.Tests
             }
         }
 
+        [SuppressMessage("ReSharper", "UnassignedGetOnlyAutoProperty")]
         private class FakeSummary : IResultSummary
         {
             public Query Query { get; }

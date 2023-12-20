@@ -38,7 +38,7 @@ public abstract class Bookmark
     internal static readonly Bookmark Empty = new InternalBookmarks();
 
     /// <summary>Returns a list of bookmark strings that this bookmark instance identifies.</summary>
-    public string[] Values { get; protected set; }
+    public string[] Values { get; protected init; }
 
     /// <summary>Returns a new bookmark instance constructed from the provided list of bookmark strings.</summary>
     /// <param name="values">The bookmark strings to construct from</param>

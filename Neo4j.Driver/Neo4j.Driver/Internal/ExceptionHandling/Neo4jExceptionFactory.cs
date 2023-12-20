@@ -78,6 +78,7 @@ internal class Neo4jExceptionFactory
             return 1;
         }
 
+        // otherwise, just compare the codes
         return string.Compare(x.code, y.code, StringComparison.InvariantCultureIgnoreCase);
     }
 

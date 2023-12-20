@@ -95,7 +95,7 @@ namespace Neo4j.Driver.Reactive.Internal
                 .Retry(
                     CreateFailingObservable(
                         1,
-                        Enumerable.Range(1, errorCount).Select(x => error).Cast<Exception>().ToArray()))
+                        Enumerable.Range(1, errorCount).Select(_ => error).Cast<Exception>().ToArray()))
                 .WaitForCompletion()
                 .AssertEqual(
                     OnNext(0, 1),

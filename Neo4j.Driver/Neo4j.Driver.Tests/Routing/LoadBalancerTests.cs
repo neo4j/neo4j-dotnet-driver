@@ -185,10 +185,10 @@ namespace Neo4j.Driver.Tests.Routing
                     .ReturnsAsync(routingTableMock.Object);
 
                 mock.Setup(x => x.ForgetServer(It.IsAny<Uri>(), It.IsAny<string>()))
-                    .Callback((Uri u, string database) => routingTableMock.Object.Remove(u));
+                    .Callback((Uri u, string _) => routingTableMock.Object.Remove(u));
 
                 mock.Setup(x => x.ForgetWriter(It.IsAny<Uri>(), It.IsAny<string>()))
-                    .Callback((Uri u, string database) => routingTableMock.Object.RemoveWriter(u));
+                    .Callback((Uri u, string _) => routingTableMock.Object.RemoveWriter(u));
 
                 var clusterConnPoolMock = new Mock<IClusterConnectionPool>();
                 clusterConnPoolMock.Setup(
@@ -303,7 +303,7 @@ namespace Neo4j.Driver.Tests.Routing
                             Bookmarks.Empty,
                             false))
                     .ReturnsAsync(
-                        (Uri uri, AccessMode m, string d, string u, Bookmarks b, bool f) => NewConnectionMock(uri, m));
+                        (Uri uri, AccessMode m, string _, string _, Bookmarks _, bool _) => NewConnectionMock(uri, m));
 
                 var balancer = new LoadBalancer(clusterPoolMock.Object, routingTableManager.Object);
 

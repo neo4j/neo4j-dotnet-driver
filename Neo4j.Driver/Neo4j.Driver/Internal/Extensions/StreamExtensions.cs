@@ -102,7 +102,7 @@ internal static class StreamExtensions
 
     public static int Read(this Stream stream, byte[] bytes)
     {
-        var hasRead = 0;
+        int hasRead;
         var offset = 0;
         var toRead = bytes.Length;
 

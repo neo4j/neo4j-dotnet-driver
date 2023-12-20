@@ -23,9 +23,9 @@ public static class DefaultInstallation
 {
     public static readonly string User = "neo4j";
     public static readonly string Password = "neo4j";
-    public static readonly string HttpUri = "http://127.0.0.1:7474";
+    public const string HttpUri = "http://127.0.0.1:7474";
 
-    public static readonly string BoltHeader = "bolt://";
+    public const string BoltHeader = "bolt://";
     private static readonly string BoltHost = "127.0.0.1";
     public static readonly string BoltPort = "7687";
 

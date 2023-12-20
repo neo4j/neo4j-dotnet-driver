@@ -39,7 +39,7 @@ public sealed class RxFailingCommandInTx: RxCommand
                     .Run("UNWIND [10, 5, 0] AS x RETURN 10 / x")
                     .Records()
                     .Select(r => r[0].As<int>())
-                    .CatchAndThrow(exc => txc.Rollback<int>())
+                    .CatchAndThrow(_ => txc.Rollback<int>())
                     .Concat(txc.Commit<int>()))
             .CatchAndThrow(_ => session.Close<int>())
             .Concat(session.Close<int>())

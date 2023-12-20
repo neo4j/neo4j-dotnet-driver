@@ -43,7 +43,7 @@ internal class InternalRxSession : IRxSession
         return Observable.FromAsync(
                 () =>
                     _session.CloseAsync())
-            .SelectMany(x => Observable.Empty<T>());
+            .SelectMany(_ => Observable.Empty<T>());
     }
 
 #endregion
@@ -182,7 +182,7 @@ internal class InternalRxSession : IRxSession
                                         return Observable.Throw<T>(exc);
                                     }
                                 })
-                            .CatchAndThrow(exc => txc.IsOpen ? txc.Rollback<T>() : Observable.Empty<T>())
+                            .CatchAndThrow(_ => txc.IsOpen ? txc.Rollback<T>() : Observable.Empty<T>())
                             .Concat(txc.IsOpen ? txc.Commit<T>() : Observable.Empty<T>())));
     }
 

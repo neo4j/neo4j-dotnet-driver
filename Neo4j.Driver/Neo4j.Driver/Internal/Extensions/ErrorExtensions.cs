@@ -47,7 +47,7 @@ internal static class ErrorExtensions
 
     public static bool HasErrorCode(this Exception error, string errorCode)
     {
-        return error is Neo4jException neo4jException && neo4jException.Code == errorCode;
+        return error is Neo4jException ne && ne.Code == errorCode;
     }
 
     public static bool IsDatabaseUnavailableError(this Exception error)

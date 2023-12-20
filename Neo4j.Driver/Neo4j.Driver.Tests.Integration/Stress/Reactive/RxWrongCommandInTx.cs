@@ -39,7 +39,7 @@ public sealed class RxWrongCommandInTx : RxCommand
                     txc => txc
                         .Run("RETURN")
                         .Records()
-                        .CatchAndThrow(exc => txc.Rollback<IRecord>())
+                        .CatchAndThrow(_ => txc.Rollback<IRecord>())
                         .Concat(txc.Commit<IRecord>()))
                 .CatchAndThrow(_ => session.Close<IRecord>())
                 .Concat(session.Close<IRecord>())

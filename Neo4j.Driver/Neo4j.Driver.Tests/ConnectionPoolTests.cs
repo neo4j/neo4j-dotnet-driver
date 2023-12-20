@@ -1196,7 +1196,7 @@ namespace Neo4j.Driver.Tests
 
                 var acquireTasks = Enumerable.Range(0, 100)
                     .Select(
-                        i => Task.Run(
+                        _ => Task.Run(
                             async () =>
                             {
                                 var conn = await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
@@ -1283,7 +1283,7 @@ namespace Neo4j.Driver.Tests
 
                 var acquireTasks = Enumerable.Range(0, 100)
                     .Select(
-                        i => Task.Run(
+                        _ => Task.Run(
                             async () =>
                             {
                                 var conn = await pool.AcquireAsync(AccessMode.Read, null, null, Bookmarks.Empty);
@@ -1311,7 +1311,7 @@ namespace Neo4j.Driver.Tests
 
                 var tasks = acquireTasks as Task[] ?? acquireTasks.ToArray();
 
-                await Task.WhenAll(tasks).ContinueWith(t => Interlocked.CompareExchange(ref stopMarker, 1, 0));
+                await Task.WhenAll(tasks).ContinueWith(_ => Interlocked.CompareExchange(ref stopMarker, 1, 0));
 
                 await reportTask;
 

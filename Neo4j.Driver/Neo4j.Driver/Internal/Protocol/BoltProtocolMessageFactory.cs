@@ -148,7 +148,7 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
 
     public LogonMessage NewLogonMessage(IConnection connection, IAuthToken authToken)
     {
-        return new LogonMessage(connection.Version, authToken);
+        return new LogonMessage(authToken);
     }
 
     public BeginMessage NewBeginMessage(

@@ -354,7 +354,7 @@ namespace Neo4j.Driver.Tests
                             It.IsAny<IRequestMessage>(),
                             It.IsAny<IResponseHandler>()))
                     .Callback<IRequestMessage, IResponseHandler>(
-                        (m1, h1) => { h1.OnSuccess(new Dictionary<string, object>()); });
+                        (_, h1) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
                 var session = NewSession(mockConn.Object);
                 await session.RunAsync("lalal");

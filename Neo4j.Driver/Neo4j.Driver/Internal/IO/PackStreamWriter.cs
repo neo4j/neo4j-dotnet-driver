@@ -143,29 +143,32 @@ internal sealed class PackStreamWriter
 
     public void WriteLong(long value)
     {
-        if (value >= Minus2ToThe4 && value < Plus2ToThe7)
+        switch (value)
         {
-            _stream.WriteByte((byte)value);
-        }
-        else if (value is >= Minus2ToThe7 and < Minus2ToThe4)
-        {
-            _stream.WriteByte(Int8);
-            _stream.Write(PackStreamBitConverter.GetBytes((byte)value));
-        }
-        else if (value >= Minus2ToThe15 && value < Plus2ToThe15)
-        {
-            _stream.WriteByte(PackStream.Int16);
-            _stream.Write(PackStreamBitConverter.GetBytes((short)value));
-        }
-        else if (value >= Minus2ToThe31 && value < Plus2ToThe31)
-        {
-            _stream.WriteByte(PackStream.Int32);
-            _stream.Write(PackStreamBitConverter.GetBytes((int)value));
-        }
-        else
-        {
-            _stream.WriteByte(PackStream.Int64);
-            _stream.Write(PackStreamBitConverter.GetBytes(value));
+            case >= Minus2ToThe4 and < Plus2ToThe7: _stream.WriteByte((byte)value);
+                break;
+
+            case >= Minus2ToThe7 and < Minus2ToThe4:
+                _stream.WriteByte(Int8);
+                // we will discard the first 56 bits
+                // ReSharper disable once IntVariableOverflowInUncheckedContext
+                _stream.Write(PackStreamBitConverter.GetBytes((byte)value));
+                break;
+
+            case >= Minus2ToThe15 and < Plus2ToThe15:
+                _stream.WriteByte(PackStream.Int16);
+                _stream.Write(PackStreamBitConverter.GetBytes((short)value));
+                break;
+
+            case >= Minus2ToThe31 and < Plus2ToThe31:
+                _stream.WriteByte(PackStream.Int32);
+                _stream.Write(PackStreamBitConverter.GetBytes((int)value));
+                break;
+
+            default:
+                _stream.WriteByte(PackStream.Int64);
+                _stream.Write(PackStreamBitConverter.GetBytes(value));
+                break;
         }
     }
 

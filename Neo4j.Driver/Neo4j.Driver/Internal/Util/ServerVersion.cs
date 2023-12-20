@@ -21,9 +21,9 @@ namespace Neo4j.Driver.Internal.Util;
 
 internal class ServerVersion : IComparable<ServerVersion>
 {
-    public const string Neo4jProduct = "Neo4j";
+    private const string Neo4jProduct = "Neo4j";
     private const string InDevVersionString = "Neo4j/dev";
-    public static readonly ServerVersion VInDev = new(int.MaxValue, int.MaxValue, int.MaxValue, InDevVersionString);
+    private static readonly ServerVersion VInDev = new(int.MaxValue, int.MaxValue, int.MaxValue, InDevVersionString);
 
     private static readonly Regex VersionRegex =
         new(

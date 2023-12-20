@@ -413,11 +413,6 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 
-    private string ImpersonatedUser()
-    {
-        return SessionConfig is not null ? SessionConfig.ImpersonatedUser : string.Empty;
-    }
-
     public async Task<bool> VerifyConnectivityAsync()
     {
         var authCodeExceptions = new[]

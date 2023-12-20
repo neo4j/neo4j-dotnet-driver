@@ -271,7 +271,7 @@ namespace Neo4j.Driver.Tests
 
         private static Func<IResultStreamBuilder, long, long, Task> CreateMoreTaskQueue(Queue<Action> actions)
         {
-            return (b, id, n) =>
+            return (_, _, _) =>
             {
                 if (actions.TryDequeue(out var action))
                 {
@@ -500,7 +500,7 @@ namespace Neo4j.Driver.Tests
 
             private Func<IResultStreamBuilder, long, long, Task> MoreFunction()
             {
-                return (cursorBuilder, id, n) =>
+                return (_, _, _) =>
                 {
                     Interlocked.Increment(ref moreCallCount);
                     return Task.CompletedTask;
@@ -509,7 +509,7 @@ namespace Neo4j.Driver.Tests
 
             private Func<IResultStreamBuilder, long, Task> CancelFunction()
             {
-                return (cursorBuilder, id) =>
+                return (_, _) =>
                 {
                     Interlocked.Increment(ref cancelCallCount);
                     return Task.CompletedTask;

@@ -78,7 +78,7 @@ namespace Neo4j.Driver.Tests
             var retryLogic = new AsyncRetryLogic(TimeSpan.FromMinutes(1), logger.Object);
             var work = CreateFailingWork(
                 1,
-                Enumerable.Range(1, errorCount).Select(x => error).Cast<Exception>().ToArray());
+                Enumerable.Range(1, errorCount).Select(_ => error).Cast<Exception>().ToArray());
 
             var result = await retryLogic.RetryAsync(() => work.Work(null));
 

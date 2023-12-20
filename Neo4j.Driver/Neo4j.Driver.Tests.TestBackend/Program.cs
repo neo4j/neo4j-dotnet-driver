@@ -40,7 +40,7 @@ public class Program
 
                 try
                 {
-                    controller.Process(true, e => { return true; }).Wait();
+                    controller.Process(true, _ => { return true; }).Wait();
                 }
                 catch (Exception ex)
                 {

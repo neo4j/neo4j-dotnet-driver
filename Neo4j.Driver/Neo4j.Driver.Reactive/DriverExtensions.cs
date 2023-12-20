@@ -29,7 +29,7 @@ public static class DriverExtensions
     /// <returns>A reactive session instance</returns>
     public static IRxSession RxSession(this IDriver driver)
     {
-        return RxSession(driver, o => {});
+        return RxSession(driver, _ => {});
     }
 
     /// <summary>

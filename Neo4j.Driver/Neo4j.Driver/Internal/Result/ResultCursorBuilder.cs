@@ -57,8 +57,8 @@ internal class ResultCursorBuilder : IResultCursorBuilder
         _advanceFunction =
             WrapAdvanceFunc(advanceFunction ?? throw new ArgumentNullException(nameof(advanceFunction)));
 
-        _moreFunction = moreFunction ?? ((s, id, n) => Task.CompletedTask);
-        _cancelFunction = cancelFunction ?? ((s, id) => Task.CompletedTask);
+        _moreFunction = moreFunction ?? ((_, _, _) => Task.CompletedTask);
+        _cancelFunction = cancelFunction ?? ((_, _) => Task.CompletedTask);
         _cancellationSource = new CancellationTokenSource();
         _resourceHandler = resourceHandler;
         _transaction = transaction;
