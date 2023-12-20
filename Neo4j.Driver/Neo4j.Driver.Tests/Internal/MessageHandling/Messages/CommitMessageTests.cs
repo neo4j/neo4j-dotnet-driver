@@ -18,20 +18,19 @@ using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Messages
-{
-    public class CommitMessageTests
-    {
-        [Fact]
-        public void ShouldHaveCorrectSerializer()
-        {
-            CommitMessage.Instance.Serializer.Should().BeOfType<CommitMessageSerializer>();
-        }
+namespace Neo4j.Driver.Internal.MessageHandling.Messages;
 
-        [Fact]
-        public void ShouldHaveMessage()
-        {
-            CommitMessage.Instance.ToString().Should().Be("COMMIT");
-        }
+public class CommitMessageTests
+{
+    [Fact]
+    public void ShouldHaveCorrectSerializer()
+    {
+        CommitMessage.Instance.Serializer.Should().BeOfType<CommitMessageSerializer>();
+    }
+
+    [Fact]
+    public void ShouldHaveMessage()
+    {
+        CommitMessage.Instance.ToString().Should().Be("COMMIT");
     }
 }

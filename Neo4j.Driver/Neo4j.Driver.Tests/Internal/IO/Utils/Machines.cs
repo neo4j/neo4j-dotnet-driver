@@ -16,45 +16,44 @@
 using System;
 using System.IO;
 
-namespace Neo4j.Driver.Internal.IO.Utils
+namespace Neo4j.Driver.Internal.IO.Utils;
+
+public class PackStreamWriterMachine
 {
-    public class PackStreamWriterMachine
+    private readonly MemoryStream _output;
+
+    internal PackStreamWriterMachine(Func<Stream, PackStreamWriter> writerFactory)
     {
-        private readonly MemoryStream _output;
-
-        internal PackStreamWriterMachine(Func<Stream, PackStreamWriter> writerFactory)
-        {
-            _output = new MemoryStream();
-            Writer = writerFactory(_output);
-        }
-
-        internal PackStreamWriter Writer { get; }
-
-        public void Reset()
-        {
-            _output.SetLength(0);
-        }
-
-        public byte[] GetOutput()
-        {
-            return _output.ToArray();
-        }
+        _output = new MemoryStream();
+        Writer = writerFactory(_output);
     }
 
-    public class PackStreamReaderMachine
+    internal PackStreamWriter Writer { get; }
+
+    public void Reset()
     {
-        private readonly MemoryStream _input;
-        private readonly PackStreamReader _reader;
+        _output.SetLength(0);
+    }
 
-        internal PackStreamReaderMachine(byte[] bytes, Func<MemoryStream, PackStreamReader> readerFactory)
-        {
-            _input = new MemoryStream(bytes);
-            _reader = readerFactory(_input);
-        }
+    public byte[] GetOutput()
+    {
+        return _output.ToArray();
+    }
+}
 
-        internal PackStreamReader Reader()
-        {
-            return _reader;
-        }
+public class PackStreamReaderMachine
+{
+    private readonly MemoryStream _input;
+    private readonly PackStreamReader _reader;
+
+    internal PackStreamReaderMachine(byte[] bytes, Func<MemoryStream, PackStreamReader> readerFactory)
+    {
+        _input = new MemoryStream(bytes);
+        _reader = readerFactory(_input);
+    }
+
+    internal PackStreamReader Reader()
+    {
+        return _reader;
     }
 }

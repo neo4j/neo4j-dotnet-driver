@@ -21,224 +21,223 @@ using Xunit;
 
 #pragma warning disable CS0618
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers
+namespace Neo4j.Driver.Internal.IO.ValueSerializers;
+
+public class ElementPathSerializerTests : PackStreamSerializerTests
 {
-    public class ElementPathSerializerTests : PackStreamSerializerTests
+    internal override IPackStreamSerializer SerializerUnderTest => new PathSerializer();
+
+    internal override IEnumerable<IPackStreamSerializer> SerializersNeeded =>
+        new IPackStreamSerializer[] { new ElementNodeSerializer(), new ElementUnboundRelationshipSerializer() };
+
+    [Fact]
+    public void ShouldDeserializeAddingElementIds()
     {
-        internal override IPackStreamSerializer SerializerUnderTest => new PathSerializer();
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer;
 
-        internal override IEnumerable<IPackStreamSerializer> SerializersNeeded =>
-            new IPackStreamSerializer[] { new ElementNodeSerializer(), new ElementUnboundRelationshipSerializer() };
-
-        [Fact]
-        public void ShouldDeserializeAddingElementIds()
-        {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer;
-
-            SerializeElementPath(
-                writer,
-                new List<Node>
-                {
-                    new(1, new List<string> { "a" }, new Dictionary<string, object>()),
-                    new(2, new List<string> { "a" }, new Dictionary<string, object>())
-                },
-                new List<Relationship>
-                {
-                    new(1, -1, -1, "LIKES", new Dictionary<string, object>())
-                },
-                new List<int>
-                {
-                    1, 1
-                });
-
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var value = readerMachine.Reader().Read();
-
-            ValidateAdding(value);
-        }
-
-        [Fact]
-        public void ShouldDeserializeWithElementIds()
-        {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer;
-
-            SerializeElementPath(
-                writer,
-                new List<Node>
-                {
-                    new(1, "n1", new List<string> { "a" }, new Dictionary<string, object>()),
-                    new(2, "n2", new List<string> { "a" }, new Dictionary<string, object>())
-                },
-                new List<Relationship>
-                {
-                    new(1, "r1", -1, -1, "-1", "-1", "LIKES", new Dictionary<string, object>())
-                },
-                new List<int>
-                {
-                    1, 1
-                });
-
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var value = readerMachine.Reader().Read();
-
-            var path = value.Should().BeOfType<Path>();
-            ValidatePath(path);
-        }
-
-        [Fact]
-        public void ShouldDeserializeSpanAddingElementIds()
-        {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer;
-
-            SerializeElementPath(
-                writer,
-                new List<Node>
-                {
-                    new(1, new List<string> { "a" }, new Dictionary<string, object>()),
-                    new(2, new List<string> { "a" }, new Dictionary<string, object>())
-                },
-                new List<Relationship>
-                {
-                    new(1, -1, -1, "LIKES", new Dictionary<string, object>())
-                },
-                new List<int>
-                {
-                    1, 1
-                });
-
-            var data = writerMachine.GetOutput();
-
-            var reader = CreateSpanReader(data);
-            var value = reader.Read();
-
-            ValidateAdding(value);
-        }
-
-        [Fact]
-        public void ShouldDeserializeSpanWithElementIds()
-        {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer;
-
-            SerializeElementPath(
-                writer,
-                new List<Node>
-                {
-                    new(1, "n1", new List<string> { "a" }, new Dictionary<string, object>()),
-                    new(2, "n2", new List<string> { "a" }, new Dictionary<string, object>())
-                },
-                new List<Relationship>
-                {
-                    new(1, "r1", -1, -1, "-1", "-1", "LIKES", new Dictionary<string, object>())
-                },
-                new List<int>
-                {
-                    1, 1
-                });
-
-            var reader = CreateSpanReader(writerMachine.GetOutput());
-            var value = reader.Read();
-
-            var path = value.Should().BeOfType<Path>();
-            ValidatePath(path);
-        }
-
-        private static void ValidateAdding(object value)
-        {
-            var path = value.Should().BeOfType<Path>();
-
-            path.Which.Nodes.Should().AllBeOfType<Node>();
-            path.Which.Relationships.Should().AllBeOfType<Relationship>();
-
-            var nodes = path.Which.Nodes;
-            var relationships = path.Which.Relationships;
-
-            nodes[0].Id.Should().Be(1L);
-            nodes[0].ElementId.Should().Be("1");
-            nodes[1].Id.Should().Be(2L);
-            nodes[1].ElementId.Should().Be("2");
-
-            relationships[0].Id.Should().Be(1);
-            relationships[0].ElementId.Should().Be("1");
-            relationships[0].StartNodeId.Should().Be(1L);
-            relationships[0].StartNodeElementId.Should().Be("1");
-            relationships[0].EndNodeId.Should().Be(2L);
-            relationships[0].EndNodeElementId.Should().Be("2");
-        }
-
-
-        private static void ValidatePath(AndWhichConstraint<ObjectAssertions, Path> path)
-        {
-            path.Which.Nodes.Should().AllBeOfType<Node>();
-            path.Which.Relationships.Should().AllBeOfType<Relationship>();
-
-            var nodes = path.Which.Nodes;
-            var relationships = path.Which.Relationships;
-
-            nodes[0].Id.Should().Be(1L);
-            nodes[0].ElementId.Should().Be("n1");
-            nodes[1].Id.Should().Be(2L);
-            nodes[1].ElementId.Should().Be("n2");
-
-            relationships[0].Id.Should().Be(1);
-            relationships[0].ElementId.Should().Be("r1");
-            relationships[0].StartNodeId.Should().Be(1L);
-            relationships[0].StartNodeElementId.Should().Be("n1");
-            relationships[0].EndNodeId.Should().Be(2L);
-            relationships[0].EndNodeElementId.Should().Be("n2");
-        }
-
-        private static void SerializeElementPath(
-            PackStreamWriter writer,
-            List<Node> nodes,
-            List<Relationship> rels,
-            List<int> indicies)
-        {
-            writer.WriteStructHeader(3, PathSerializer.Path);
-            writer.WriteListHeader(nodes.Count);
-
-            foreach (var node in nodes)
+        SerializeElementPath(
+            writer,
+            new List<Node>
             {
-                writer.WriteStructHeader(4, ElementNodeSerializer.Node);
+                new(1, new List<string> { "a" }, new Dictionary<string, object>()),
+                new(2, new List<string> { "a" }, new Dictionary<string, object>())
+            },
+            new List<Relationship>
+            {
+                new(1, -1, -1, "LIKES", new Dictionary<string, object>())
+            },
+            new List<int>
+            {
+                1, 1
+            });
 
-                if (node.Id == -1)
-                {
-                    writer.WriteNull();
-                }
-                else
-                {
-                    writer.Write(node.Id);
-                }
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var value = readerMachine.Reader().Read();
 
-                writer.Write(node.Labels);
-                writer.Write(node.Properties);
-                writer.Write(node.ElementId);
+        ValidateAdding(value);
+    }
+
+    [Fact]
+    public void ShouldDeserializeWithElementIds()
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer;
+
+        SerializeElementPath(
+            writer,
+            new List<Node>
+            {
+                new(1, "n1", new List<string> { "a" }, new Dictionary<string, object>()),
+                new(2, "n2", new List<string> { "a" }, new Dictionary<string, object>())
+            },
+            new List<Relationship>
+            {
+                new(1, "r1", -1, -1, "-1", "-1", "LIKES", new Dictionary<string, object>())
+            },
+            new List<int>
+            {
+                1, 1
+            });
+
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var value = readerMachine.Reader().Read();
+
+        var path = value.Should().BeOfType<Path>();
+        ValidatePath(path);
+    }
+
+    [Fact]
+    public void ShouldDeserializeSpanAddingElementIds()
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer;
+
+        SerializeElementPath(
+            writer,
+            new List<Node>
+            {
+                new(1, new List<string> { "a" }, new Dictionary<string, object>()),
+                new(2, new List<string> { "a" }, new Dictionary<string, object>())
+            },
+            new List<Relationship>
+            {
+                new(1, -1, -1, "LIKES", new Dictionary<string, object>())
+            },
+            new List<int>
+            {
+                1, 1
+            });
+
+        var data = writerMachine.GetOutput();
+
+        var reader = CreateSpanReader(data);
+        var value = reader.Read();
+
+        ValidateAdding(value);
+    }
+
+    [Fact]
+    public void ShouldDeserializeSpanWithElementIds()
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer;
+
+        SerializeElementPath(
+            writer,
+            new List<Node>
+            {
+                new(1, "n1", new List<string> { "a" }, new Dictionary<string, object>()),
+                new(2, "n2", new List<string> { "a" }, new Dictionary<string, object>())
+            },
+            new List<Relationship>
+            {
+                new(1, "r1", -1, -1, "-1", "-1", "LIKES", new Dictionary<string, object>())
+            },
+            new List<int>
+            {
+                1, 1
+            });
+
+        var reader = CreateSpanReader(writerMachine.GetOutput());
+        var value = reader.Read();
+
+        var path = value.Should().BeOfType<Path>();
+        ValidatePath(path);
+    }
+
+    private static void ValidateAdding(object value)
+    {
+        var path = value.Should().BeOfType<Path>();
+
+        path.Which.Nodes.Should().AllBeOfType<Node>();
+        path.Which.Relationships.Should().AllBeOfType<Relationship>();
+
+        var nodes = path.Which.Nodes;
+        var relationships = path.Which.Relationships;
+
+        nodes[0].Id.Should().Be(1L);
+        nodes[0].ElementId.Should().Be("1");
+        nodes[1].Id.Should().Be(2L);
+        nodes[1].ElementId.Should().Be("2");
+
+        relationships[0].Id.Should().Be(1);
+        relationships[0].ElementId.Should().Be("1");
+        relationships[0].StartNodeId.Should().Be(1L);
+        relationships[0].StartNodeElementId.Should().Be("1");
+        relationships[0].EndNodeId.Should().Be(2L);
+        relationships[0].EndNodeElementId.Should().Be("2");
+    }
+
+
+    private static void ValidatePath(AndWhichConstraint<ObjectAssertions, Path> path)
+    {
+        path.Which.Nodes.Should().AllBeOfType<Node>();
+        path.Which.Relationships.Should().AllBeOfType<Relationship>();
+
+        var nodes = path.Which.Nodes;
+        var relationships = path.Which.Relationships;
+
+        nodes[0].Id.Should().Be(1L);
+        nodes[0].ElementId.Should().Be("n1");
+        nodes[1].Id.Should().Be(2L);
+        nodes[1].ElementId.Should().Be("n2");
+
+        relationships[0].Id.Should().Be(1);
+        relationships[0].ElementId.Should().Be("r1");
+        relationships[0].StartNodeId.Should().Be(1L);
+        relationships[0].StartNodeElementId.Should().Be("n1");
+        relationships[0].EndNodeId.Should().Be(2L);
+        relationships[0].EndNodeElementId.Should().Be("n2");
+    }
+
+    private static void SerializeElementPath(
+        PackStreamWriter writer,
+        List<Node> nodes,
+        List<Relationship> rels,
+        List<int> indicies)
+    {
+        writer.WriteStructHeader(3, PathSerializer.Path);
+        writer.WriteListHeader(nodes.Count);
+
+        foreach (var node in nodes)
+        {
+            writer.WriteStructHeader(4, ElementNodeSerializer.Node);
+
+            if (node.Id == -1)
+            {
+                writer.WriteNull();
+            }
+            else
+            {
+                writer.Write(node.Id);
             }
 
-            writer.WriteListHeader(rels.Count);
+            writer.Write(node.Labels);
+            writer.Write(node.Properties);
+            writer.Write(node.ElementId);
+        }
 
-            foreach (var rel in rels)
+        writer.WriteListHeader(rels.Count);
+
+        foreach (var rel in rels)
+        {
+            writer.WriteStructHeader(4, UnboundRelationshipSerializer.UnboundRelationship);
+
+            if (rel.Id == -1)
             {
-                writer.WriteStructHeader(4, UnboundRelationshipSerializer.UnboundRelationship);
-
-                if (rel.Id == -1)
-                {
-                    writer.WriteNull();
-                }
-                else
-                {
-                    writer.Write(rel.Id);
-                }
-
-                writer.Write(rel.Type);
-                writer.Write(rel.Properties);
-                writer.Write(rel.ElementId);
+                writer.WriteNull();
+            }
+            else
+            {
+                writer.Write(rel.Id);
             }
 
-            writer.Write(indicies);
+            writer.Write(rel.Type);
+            writer.Write(rel.Properties);
+            writer.Write(rel.ElementId);
         }
+
+        writer.Write(indicies);
     }
 }

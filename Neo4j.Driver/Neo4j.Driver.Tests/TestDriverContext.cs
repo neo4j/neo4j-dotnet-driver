@@ -17,28 +17,27 @@ using System;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Auth;
 
-namespace Neo4j.Driver.Tests
+namespace Neo4j.Driver.Tests;
+
+internal static class TestDriverContext
 {
-    internal static class TestDriverContext
+    static TestDriverContext()
     {
-        static TestDriverContext()
-        {
-            MockContext = new DriverContext(new Uri("bolt://localhost:7687"), AuthTokenManagers.None, new Config());
-        }
+        MockContext = new DriverContext(new Uri("bolt://localhost:7687"), AuthTokenManagers.None, new Config());
+    }
 
-        public static DriverContext MockContext { get; }
+    public static DriverContext MockContext { get; }
 
-        public static DriverContext With(
-            Uri uri = null,
-            IAuthTokenManager authTokenManagers = null,
-            Action<ConfigBuilder> config = null)
-        {
-            var cb = new ConfigBuilder(new Config());
-            config?.Invoke(cb);
-            return new DriverContext(
-                uri ?? MockContext.InitialUri,
-                authTokenManagers ?? MockContext.AuthTokenManager,
-                cb.Build());
-        }
+    public static DriverContext With(
+        Uri uri = null,
+        IAuthTokenManager authTokenManagers = null,
+        Action<ConfigBuilder> config = null)
+    {
+        var cb = new ConfigBuilder(new Config());
+        config?.Invoke(cb);
+        return new DriverContext(
+            uri ?? MockContext.InitialUri,
+            authTokenManagers ?? MockContext.AuthTokenManager,
+            cb.Build());
     }
 }

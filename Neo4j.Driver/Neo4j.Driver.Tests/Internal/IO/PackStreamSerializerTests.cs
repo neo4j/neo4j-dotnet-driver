@@ -21,63 +21,62 @@ using Neo4j.Driver.Internal.IO.Utils;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Tests;
 
-namespace Neo4j.Driver.Internal.IO
+namespace Neo4j.Driver.Internal.IO;
+
+public abstract class PackStreamSerializerTests
 {
-    public abstract class PackStreamSerializerTests
+    internal abstract IPackStreamSerializer SerializerUnderTest { get; }
+
+    internal virtual IEnumerable<IPackStreamSerializer> SerializersNeeded =>
+        Enumerable.Empty<IPackStreamSerializer>();
+
+    internal virtual PackStreamWriterMachine CreateWriterMachine()
     {
-        internal abstract IPackStreamSerializer SerializerUnderTest { get; }
+        var writerHandlersDict = SerializersNeeded.Union(new[] { SerializerUnderTest })
+            .SelectMany(
+                h => h.WritableTypes,
+                (handler, type) => new KeyValuePair<Type, IPackStreamSerializer>(type, handler))
+            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
-        internal virtual IEnumerable<IPackStreamSerializer> SerializersNeeded =>
-            Enumerable.Empty<IPackStreamSerializer>();
+        var format = new MessageFormat(writerHandlersDict);
 
-        internal virtual PackStreamWriterMachine CreateWriterMachine()
-        {
-            var writerHandlersDict = SerializersNeeded.Union(new[] { SerializerUnderTest })
-                .SelectMany(
-                    h => h.WritableTypes,
-                    (handler, type) => new KeyValuePair<Type, IPackStreamSerializer>(type, handler))
-                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        return new PackStreamWriterMachine(stream => new PackStreamWriter(format, stream));
+    }
 
-            var format = new MessageFormat(writerHandlersDict);
+    internal virtual PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
+    {
+        var readerHandlersDict = SerializersNeeded.Union(new[] { SerializerUnderTest })
+            .SelectMany(
+                h => h.ReadableStructs,
+                (handler, signature) => new KeyValuePair<byte, IPackStreamSerializer>(signature, handler))
+            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
-            return new PackStreamWriterMachine(stream => new PackStreamWriter(format, stream));
-        }
+        var format = new MessageFormat(null, readerHandlersDict);
 
-        internal virtual PackStreamReaderMachine CreateReaderMachine(byte[] bytes)
-        {
-            var readerHandlersDict = SerializersNeeded.Union(new[] { SerializerUnderTest })
-                .SelectMany(
-                    h => h.ReadableStructs,
-                    (handler, signature) => new KeyValuePair<byte, IPackStreamSerializer>(signature, handler))
-                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        return new PackStreamReaderMachine(
+            bytes,
+            stream => new PackStreamReader(format, stream, new ByteBuffers()));
+    }
 
-            var format = new MessageFormat(null, readerHandlersDict);
+    internal SpanPackStreamReader CreateSpanReader(byte[] bytes)
+    {
+        var data = new Span<byte>(bytes);
+        var messageFormat = new MessageFormat(new[] { SerializerUnderTest }.Concat(SerializersNeeded));
+        return new SpanPackStreamReader(messageFormat, data);
+    }
 
-            return new PackStreamReaderMachine(
-                bytes,
-                stream => new PackStreamReader(format, stream, new ByteBuffers()));
-        }
+    internal PackStreamWriterMachine CreateWriterMachine(BoltProtocolVersion version)
+    {
+        var format = new MessageFormat(version, TestDriverContext.MockContext);
 
-        internal SpanPackStreamReader CreateSpanReader(byte[] bytes)
-        {
-            var data = new Span<byte>(bytes);
-            var messageFormat = new MessageFormat(new[] { SerializerUnderTest }.Concat(SerializersNeeded));
-            return new SpanPackStreamReader(messageFormat, data);
-        }
+        return new PackStreamWriterMachine(stream => new PackStreamWriter(format, stream));
+    }
 
-        internal PackStreamWriterMachine CreateWriterMachine(BoltProtocolVersion version)
-        {
-            var format = new MessageFormat(version, TestDriverContext.MockContext);
-
-            return new PackStreamWriterMachine(stream => new PackStreamWriter(format, stream));
-        }
-
-        internal PackStreamReaderMachine CreateReaderMachine(BoltProtocolVersion version, byte[] bytes)
-        {
-            var format = new MessageFormat(version, TestDriverContext.MockContext);
-            return new PackStreamReaderMachine(
-                bytes,
-                stream => new PackStreamReader(format, stream, new ByteBuffers()));
-        }
+    internal PackStreamReaderMachine CreateReaderMachine(BoltProtocolVersion version, byte[] bytes)
+    {
+        var format = new MessageFormat(version, TestDriverContext.MockContext);
+        return new PackStreamReaderMachine(
+            bytes,
+            stream => new PackStreamReader(format, stream, new ByteBuffers()));
     }
 }

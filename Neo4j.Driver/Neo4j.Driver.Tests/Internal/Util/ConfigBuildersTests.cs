@@ -16,32 +16,31 @@
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.Util
+namespace Neo4j.Driver.Internal.Util;
+
+public class ConfigBuildersTests
 {
-    public class ConfigBuildersTests
+    public class BuildSessionOptions
     {
-        public class BuildSessionOptions
+        [Fact]
+        public void ShouldReturnEmptySessionOptionsWhenBuilderIsNull()
         {
-            [Fact]
-            public void ShouldReturnEmptySessionOptionsWhenBuilderIsNull()
-            {
-                var options = ConfigBuilders.BuildSessionConfig(null);
-                options.Should().Be(SessionConfig.Default);
-            }
+            var options = ConfigBuilders.BuildSessionConfig(null);
+            options.Should().Be(SessionConfig.Default);
+        }
 
-            [Fact]
-            public void ShouldReturnNewSessionOptions()
-            {
-                var options1 = ConfigBuilders.BuildSessionConfig(o => o.WithDatabase("neo4j"));
-                var options2 = ConfigBuilders.BuildSessionConfig(o => o.WithDatabase("system"));
-                options1.Database.Should().Be("neo4j");
-                options2.Database.Should().Be("system");
+        [Fact]
+        public void ShouldReturnNewSessionOptions()
+        {
+            var options1 = ConfigBuilders.BuildSessionConfig(o => o.WithDatabase("neo4j"));
+            var options2 = ConfigBuilders.BuildSessionConfig(o => o.WithDatabase("system"));
+            options1.Database.Should().Be("neo4j");
+            options2.Database.Should().Be("system");
 
-                // When I reset to another value
-                options1.Database = "foo";
-                options1.Database.Should().Be("foo");
-                options2.Database.Should().Be("system");
-            }
+            // When I reset to another value
+            options1.Database = "foo";
+            options1.Database.Should().Be("foo");
+            options2.Database.Should().Be("system");
         }
     }
 }

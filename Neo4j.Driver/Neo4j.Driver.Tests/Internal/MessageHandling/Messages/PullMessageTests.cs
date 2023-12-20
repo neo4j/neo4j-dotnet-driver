@@ -18,34 +18,33 @@ using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Messages
+namespace Neo4j.Driver.Internal.MessageHandling.Messages;
+
+public class PullMessageTests
 {
-    public class PullMessageTests
+    [Fact]
+    public void ShouldHaveCorrectSerializer()
     {
-        [Fact]
-        public void ShouldHaveCorrectSerializer()
-        {
-            var message = new PullMessage(10);
-            message.Serializer.Should().BeOfType<PullMessageSerializer>();
-        }
+        var message = new PullMessage(10);
+        message.Serializer.Should().BeOfType<PullMessageSerializer>();
+    }
 
-        [Fact]
-        public void ShouldHandleNullValue()
-        {
-            var message = new PullMessage(10);
+    [Fact]
+    public void ShouldHandleNullValue()
+    {
+        var message = new PullMessage(10);
 
-            message.Metadata.Should().ContainKey("n").WhichValue.Should().Be(10);
-            message.Metadata.Should().NotContainKey("qid");
-            message.ToString().Should().Be("PULL [{n, 10}]");
-        }
+        message.Metadata.Should().ContainKey("n").WhichValue.Should().Be(10);
+        message.Metadata.Should().NotContainKey("qid");
+        message.ToString().Should().Be("PULL [{n, 10}]");
+    }
 
-        [Fact]
-        public void ShouldHandleQueryId()
-        {
-            var message = new PullMessage(42, 10);
-            message.Metadata.Should().ContainKey("n").WhichValue.Should().Be(10);
-            message.Metadata.Should().ContainKey("qid").WhichValue.Should().Be(42);
-            message.ToString().Should().Be("PULL [{n, 10}, {qid, 42}]");
-        }
+    [Fact]
+    public void ShouldHandleQueryId()
+    {
+        var message = new PullMessage(42, 10);
+        message.Metadata.Should().ContainKey("n").WhichValue.Should().Be(10);
+        message.Metadata.Should().ContainKey("qid").WhichValue.Should().Be(42);
+        message.ToString().Should().Be("PULL [{n, 10}, {qid, 42}]");
     }
 }

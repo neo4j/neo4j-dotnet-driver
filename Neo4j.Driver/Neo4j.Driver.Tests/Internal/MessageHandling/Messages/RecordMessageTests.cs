@@ -19,33 +19,32 @@ using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Messages
+namespace Neo4j.Driver.Internal.MessageHandling.Messages;
+
+public class RecordMessageTests
 {
-    public class RecordMessageTests
+    [Fact]
+    public void ShouldHaveCorrectSerializer()
     {
-        [Fact]
-        public void ShouldHaveCorrectSerializer()
-        {
-            var message = new RecordMessage(new object[] {});
-            message.Serializer.Should().BeOfType<RecordMessageSerializer>();
-        }
+        var message = new RecordMessage(new object[] {});
+        message.Serializer.Should().BeOfType<RecordMessageSerializer>();
+    }
 
-        [Fact]
-        public void ShouldDispatchToPipelineOnRecord()
-        {
-            var pipeline = new Mock<IResponsePipeline>();
-            var fields = new object[] { 1, "hello" };
-            var message = new RecordMessage(fields);
+    [Fact]
+    public void ShouldDispatchToPipelineOnRecord()
+    {
+        var pipeline = new Mock<IResponsePipeline>();
+        var fields = new object[] { 1, "hello" };
+        var message = new RecordMessage(fields);
 
-            message.Dispatch(pipeline.Object);
+        message.Dispatch(pipeline.Object);
 
-            pipeline.Verify(x => x.OnRecord(fields));
-        }
+        pipeline.Verify(x => x.OnRecord(fields));
+    }
 
-        [Fact]
-        public void ShouldHaveRecordMessage()
-        {
-            new RecordMessage(new object[] { 1, "hello" }).ToString().Should().Be("RECORD [1, hello]");
-        }
+    [Fact]
+    public void ShouldHaveRecordMessage()
+    {
+        new RecordMessage(new object[] { 1, "hello" }).ToString().Should().Be("RECORD [1, hello]");
     }
 }

@@ -18,21 +18,20 @@ using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers
-{
-    public class IgnoredMessageSerializerTests
-    {
-        [Fact]
-        public void StructTagsAreSuccess()
-        {
-            IgnoredMessageSerializer.Instance.ReadableStructs.Should().ContainEquivalentOf(MessageFormat.MsgIgnored);
-        }
+namespace Neo4j.Driver.Internal.IO.MessageSerializers;
 
-        [Fact]
-        public void ShouldReturnIgnoredMessage()
-        {
-            var message = IgnoredMessageSerializer.Instance.Deserialize(null);
-            message.Should().Be(IgnoredMessage.Instance);
-        }
+public class IgnoredMessageSerializerTests
+{
+    [Fact]
+    public void StructTagsAreSuccess()
+    {
+        IgnoredMessageSerializer.Instance.ReadableStructs.Should().ContainEquivalentOf(MessageFormat.MsgIgnored);
+    }
+
+    [Fact]
+    public void ShouldReturnIgnoredMessage()
+    {
+        var message = IgnoredMessageSerializer.Instance.Deserialize(null);
+        message.Should().Be(IgnoredMessage.Instance);
     }
 }

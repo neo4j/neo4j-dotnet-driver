@@ -20,360 +20,359 @@ using Xunit;
 
 #pragma warning disable CS0618 // Type or member is obsolete - but we still test obsolete members
 
-namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal
+namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
+
+public class UtcZonedDateTimeSerializerTests : PackStreamSerializerTests
 {
-    public class UtcZonedDateTimeSerializerTests : PackStreamSerializerTests
+    public static object[][] IdPairs =
     {
-        public static object[][] IdPairs =
+        new object[]
         {
-            new object[]
-            {
-                new ZonedDateTime(2022, 6, 14, 15, 21, 18, 183_000_000, Zone.Of("Europe/Berlin")),
-                (seconds: 1655212878L, nanos: 183_000_000L, zoneId: "Europe/Berlin")
-            },
-            new object[]
-            {
-                new ZonedDateTime(2022, 6, 14, 22, 6, 18, 183_000_000, Zone.Of("Australia/Eucla")),
-                (seconds: 1655212878L, nanos: 183_000_000L, zoneId: "Australia/Eucla")
-            },
-            new object[]
-            {
-                new ZonedDateTime(2020, 6, 15, 4, 30, 0, 183_000_000, Zone.Of("Pacific/Honolulu")),
-                (seconds: 1592231400L, nanos: 183_000_000L, zoneId: "Pacific/Honolulu")
-            }
-        };
-
-        public static object[][] OffsetPairs =
+            new ZonedDateTime(2022, 6, 14, 15, 21, 18, 183_000_000, Zone.Of("Europe/Berlin")),
+            (seconds: 1655212878L, nanos: 183_000_000L, zoneId: "Europe/Berlin")
+        },
+        new object[]
         {
-            new object[]
-            {
-                new ZonedDateTime(1978, 12, 16, 10, 05, 59, 128000987, new ZoneOffset(-150 * 60)),
-                (seconds: 282659759L, nanos: 128000987L, offset: new ZoneOffset(-150 * 60))
-            },
-            new object[]
-            {
-                new ZonedDateTime(2022, 6, 14, 15, 21, 18, 183_000_000, new ZoneOffset(120 * 60)),
-                (seconds: 1655212878L, nanos: 183_000_000L, offset: new ZoneOffset(120 * 60))
-            },
-            new object[]
-            {
-                new ZonedDateTime(2020, 6, 15, 12, 30, 0, 42, new ZoneOffset(-2 * 60 * 60)),
-                (seconds: 1592231400L, nanos: 42L, offset: new ZoneOffset(-2 * 60 * 60))
-            }
-        };
-
-        internal override IPackStreamSerializer SerializerUnderTest => new UtcZonedDateTimeSerializer();
-
-        [Theory]
-        [MemberData(nameof(OffsetPairs))]
-        public void ShouldSerializeDateTimeWithOffset(
-            ZonedDateTime inDate,
-            (long seconds, long nanos, ZoneOffset offset) expected)
+            new ZonedDateTime(2022, 6, 14, 22, 6, 18, 183_000_000, Zone.Of("Australia/Eucla")),
+            (seconds: 1655212878L, nanos: 183_000_000L, zoneId: "Australia/Eucla")
+        },
+        new object[]
         {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer;
-
-            writer.Write(inDate);
-
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var reader = readerMachine.Reader();
-
-            reader.PeekNextType().Should().Be(PackStreamType.Struct);
-            reader.ReadStructHeader().Should().Be(3);
-            reader.ReadStructSignature().Should().Be((byte)'I');
-            writer.Write(expected.seconds);
-            writer.Write(expected.nanos);
-            writer.Write(expected.offset.OffsetSeconds);
+            new ZonedDateTime(2020, 6, 15, 4, 30, 0, 183_000_000, Zone.Of("Pacific/Honolulu")),
+            (seconds: 1592231400L, nanos: 183_000_000L, zoneId: "Pacific/Honolulu")
         }
+    };
 
-        [Theory]
-        [MemberData(nameof(OffsetPairs))]
-        public void ShouldDeserializeDateTimeWithOffset(
-            ZonedDateTime expected,
-            (long seconds, long nanos, ZoneOffset offset) inDate)
+    public static object[][] OffsetPairs =
+    {
+        new object[]
         {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer;
-
-            writer.WriteStructHeader(
-                UtcZonedDateTimeSerializer.StructSize,
-                UtcZonedDateTimeSerializer.StructTypeWithOffset);
-
-            writer.Write(inDate.seconds);
-            writer.Write(inDate.nanos);
-            writer.Write(inDate.offset.OffsetSeconds);
-
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var reader = readerMachine.Reader();
-            var value = reader.Read();
-
-            var dateTime = value.Should().BeOfType<ZonedDateTime>();
-            dateTime.Which.Should().Be(expected);
-
-            dateTime.Which.Zone.Should()
-                .BeOfType<ZoneOffset>()
-                .Which.Should()
-                .Be(inDate.offset);
-        }
-
-        [Theory]
-        [MemberData(nameof(OffsetPairs))]
-        public void ShouldDeserializeSpanDateTimeWithOffset(
-            ZonedDateTime expected,
-            (long seconds, long nanos, ZoneOffset offset) inDate)
+            new ZonedDateTime(1978, 12, 16, 10, 05, 59, 128000987, new ZoneOffset(-150 * 60)),
+            (seconds: 282659759L, nanos: 128000987L, offset: new ZoneOffset(-150 * 60))
+        },
+        new object[]
         {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer;
-
-            writer.WriteStructHeader(
-                UtcZonedDateTimeSerializer.StructSize,
-                UtcZonedDateTimeSerializer.StructTypeWithOffset);
-
-            writer.Write(inDate.seconds);
-            writer.Write(inDate.nanos);
-            writer.Write(inDate.offset.OffsetSeconds);
-
-            var reader = CreateSpanReader(writerMachine.GetOutput());
-            var value = reader.Read();
-
-            var dateTime = value.Should().BeOfType<ZonedDateTime>();
-            dateTime.Which.Should().Be(expected);
-
-            dateTime.Which.Zone.Should()
-                .BeOfType<ZoneOffset>()
-                .Which.Should()
-                .Be(inDate.offset);
-        }
-
-        [WindowsFact]
-        public void ShouldSerializeDateTimeWithZoneId_Windows_Istanbul()
+            new ZonedDateTime(2022, 6, 14, 15, 21, 18, 183_000_000, new ZoneOffset(120 * 60)),
+            (seconds: 1655212878L, nanos: 183_000_000L, offset: new ZoneOffset(120 * 60))
+        },
+        new object[]
         {
-            var inDate = new ZonedDateTime(1978, 12, 16, 12, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
-            var expected = (seconds: 282648959, nanos: 128000987L, zoneId: "Europe/Istanbul");
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer;
-            writer.Write(inDate);
-
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var reader = readerMachine.Reader();
-
-            reader.PeekNextType().Should().Be(PackStreamType.Struct);
-            reader.ReadStructHeader().Should().Be(3);
-            reader.ReadStructSignature().Should().Be((byte)'i');
-            reader.Read().Should().Be(expected.seconds);
-            reader.Read().Should().Be(expected.nanos);
-            reader.Read().Should().Be(expected.zoneId);
+            new ZonedDateTime(2020, 6, 15, 12, 30, 0, 42, new ZoneOffset(-2 * 60 * 60)),
+            (seconds: 1592231400L, nanos: 42L, offset: new ZoneOffset(-2 * 60 * 60))
         }
+    };
 
-        [WindowsFact]
-        public void ShouldDeserializeDateTimeWithZoneId_Windows_Istanbul()
-        {
-            var expected = new ZonedDateTime(1978, 12, 16, 12, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
-            var inDate = (seconds: 282648959, nanos: 128000987L, zoneId: "Europe/Istanbul");
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer;
+    internal override IPackStreamSerializer SerializerUnderTest => new UtcZonedDateTimeSerializer();
 
-            writer.WriteStructHeader(
-                UtcZonedDateTimeSerializer.StructSize,
-                UtcZonedDateTimeSerializer.StructTypeWithId);
+    [Theory]
+    [MemberData(nameof(OffsetPairs))]
+    public void ShouldSerializeDateTimeWithOffset(
+        ZonedDateTime inDate,
+        (long seconds, long nanos, ZoneOffset offset) expected)
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer;
 
-            writer.Write(inDate.seconds);
-            writer.Write(inDate.nanos);
-            writer.Write(inDate.zoneId);
+        writer.Write(inDate);
 
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var reader = readerMachine.Reader();
-            var value = reader.Read();
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
 
-            value.Should().NotBeNull().And.Be(expected);
-        }
+        reader.PeekNextType().Should().Be(PackStreamType.Struct);
+        reader.ReadStructHeader().Should().Be(3);
+        reader.ReadStructSignature().Should().Be((byte)'I');
+        writer.Write(expected.seconds);
+        writer.Write(expected.nanos);
+        writer.Write(expected.offset.OffsetSeconds);
+    }
 
-        [WindowsFact]
-        public void ShouldDeserializeSpanDateTimeWithZoneId_Windows_Istanbul()
-        {
-            var expected = new ZonedDateTime(1978, 12, 16, 12, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
-            var inDate = (seconds: 282648959, nanos: 128000987L, zoneId: "Europe/Istanbul");
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer;
+    [Theory]
+    [MemberData(nameof(OffsetPairs))]
+    public void ShouldDeserializeDateTimeWithOffset(
+        ZonedDateTime expected,
+        (long seconds, long nanos, ZoneOffset offset) inDate)
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer;
 
-            writer.WriteStructHeader(
-                UtcZonedDateTimeSerializer.StructSize,
-                UtcZonedDateTimeSerializer.StructTypeWithId);
+        writer.WriteStructHeader(
+            UtcZonedDateTimeSerializer.StructSize,
+            UtcZonedDateTimeSerializer.StructTypeWithOffset);
 
-            writer.Write(inDate.seconds);
-            writer.Write(inDate.nanos);
-            writer.Write(inDate.zoneId);
+        writer.Write(inDate.seconds);
+        writer.Write(inDate.nanos);
+        writer.Write(inDate.offset.OffsetSeconds);
 
-            var reader = CreateSpanReader(writerMachine.GetOutput());
-            var value = reader.Read();
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
+        var value = reader.Read();
 
-            value.Should().NotBeNull().And.Be(expected);
-        }
+        var dateTime = value.Should().BeOfType<ZonedDateTime>();
+        dateTime.Which.Should().Be(expected);
 
-        [UnixFact]
-        public void ShouldSerializeDateTimeWithZoneId_Unix_Istanbul()
-        {
-            var inDate = new ZonedDateTime(1978, 12, 16, 13, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
-            var expected = (seconds: 282652559L, nanos: 128000987L, zoneId: "Europe/Istanbul");
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer;
-            writer.Write(inDate);
+        dateTime.Which.Zone.Should()
+            .BeOfType<ZoneOffset>()
+            .Which.Should()
+            .Be(inDate.offset);
+    }
 
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var reader = readerMachine.Reader();
+    [Theory]
+    [MemberData(nameof(OffsetPairs))]
+    public void ShouldDeserializeSpanDateTimeWithOffset(
+        ZonedDateTime expected,
+        (long seconds, long nanos, ZoneOffset offset) inDate)
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer;
 
-            reader.PeekNextType().Should().Be(PackStreamType.Struct);
-            reader.ReadStructHeader().Should().Be(3);
-            reader.ReadStructSignature().Should().Be((byte)'i');
-            reader.Read().Should().Be(expected.seconds);
-            reader.Read().Should().Be(expected.nanos);
-            reader.Read().Should().Be(expected.zoneId);
-        }
+        writer.WriteStructHeader(
+            UtcZonedDateTimeSerializer.StructSize,
+            UtcZonedDateTimeSerializer.StructTypeWithOffset);
 
-        [UnixFact]
-        public void ShouldDeserializeDateTimeWithZoneId_Unix_Istanbul()
-        {
-            var expected = new ZonedDateTime(1978, 12, 16, 13, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
-            var inDate = (seconds: 282652559L, nanos: 128000987L, zoneId: "Europe/Istanbul");
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer;
+        writer.Write(inDate.seconds);
+        writer.Write(inDate.nanos);
+        writer.Write(inDate.offset.OffsetSeconds);
 
-            writer.WriteStructHeader(
-                UtcZonedDateTimeSerializer.StructSize,
-                UtcZonedDateTimeSerializer.StructTypeWithId);
+        var reader = CreateSpanReader(writerMachine.GetOutput());
+        var value = reader.Read();
 
-            writer.Write(inDate.seconds);
-            writer.Write(inDate.nanos);
-            writer.Write(inDate.zoneId);
+        var dateTime = value.Should().BeOfType<ZonedDateTime>();
+        dateTime.Which.Should().Be(expected);
 
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var reader = readerMachine.Reader();
-            var value = reader.Read();
+        dateTime.Which.Zone.Should()
+            .BeOfType<ZoneOffset>()
+            .Which.Should()
+            .Be(inDate.offset);
+    }
 
-            value.Should().NotBeNull().And.Be(expected);
-        }
+    [WindowsFact]
+    public void ShouldSerializeDateTimeWithZoneId_Windows_Istanbul()
+    {
+        var inDate = new ZonedDateTime(1978, 12, 16, 12, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
+        var expected = (seconds: 282648959, nanos: 128000987L, zoneId: "Europe/Istanbul");
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer;
+        writer.Write(inDate);
 
-        [UnixFact]
-        public void ShouldDeserializesSpanDateTimeWithZoneId_Unix_Istanbul()
-        {
-            var expected = new ZonedDateTime(1978, 12, 16, 13, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
-            var inDate = (seconds: 282652559L, nanos: 128000987L, zoneId: "Europe/Istanbul");
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer;
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
 
-            writer.WriteStructHeader(
-                UtcZonedDateTimeSerializer.StructSize,
-                UtcZonedDateTimeSerializer.StructTypeWithId);
+        reader.PeekNextType().Should().Be(PackStreamType.Struct);
+        reader.ReadStructHeader().Should().Be(3);
+        reader.ReadStructSignature().Should().Be((byte)'i');
+        reader.Read().Should().Be(expected.seconds);
+        reader.Read().Should().Be(expected.nanos);
+        reader.Read().Should().Be(expected.zoneId);
+    }
 
-            writer.Write(inDate.seconds);
-            writer.Write(inDate.nanos);
-            writer.Write(inDate.zoneId);
+    [WindowsFact]
+    public void ShouldDeserializeDateTimeWithZoneId_Windows_Istanbul()
+    {
+        var expected = new ZonedDateTime(1978, 12, 16, 12, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
+        var inDate = (seconds: 282648959, nanos: 128000987L, zoneId: "Europe/Istanbul");
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer;
 
-            var reader = CreateSpanReader(writerMachine.GetOutput());
-            var value = reader.Read();
+        writer.WriteStructHeader(
+            UtcZonedDateTimeSerializer.StructSize,
+            UtcZonedDateTimeSerializer.StructTypeWithId);
 
-            value.Should().NotBeNull().And.Be(expected);
-        }
+        writer.Write(inDate.seconds);
+        writer.Write(inDate.nanos);
+        writer.Write(inDate.zoneId);
 
-        [Theory]
-        [MemberData(nameof(IdPairs))]
-        public void ShouldSerializeDateTimeWithZoneId(
-            ZonedDateTime inDate,
-            (long seconds, long nanos, string zoneId) expected)
-        {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer;
-            writer.Write(inDate);
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
+        var value = reader.Read();
 
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var reader = readerMachine.Reader();
+        value.Should().NotBeNull().And.Be(expected);
+    }
 
-            reader.PeekNextType().Should().Be(PackStreamType.Struct);
-            reader.ReadStructHeader().Should().Be(3);
-            reader.ReadStructSignature().Should().Be((byte)'i');
-            reader.Read().Should().Be(expected.seconds);
-            reader.Read().Should().Be(expected.nanos);
-            reader.Read().Should().Be(expected.zoneId);
-        }
+    [WindowsFact]
+    public void ShouldDeserializeSpanDateTimeWithZoneId_Windows_Istanbul()
+    {
+        var expected = new ZonedDateTime(1978, 12, 16, 12, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
+        var inDate = (seconds: 282648959, nanos: 128000987L, zoneId: "Europe/Istanbul");
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer;
 
-        [Theory]
-        [MemberData(nameof(IdPairs))]
-        public void ShouldDeserializeDateTimeWithZoneId(
-            ZonedDateTime expected,
-            (long seconds, long nanos, string zoneId) inDate)
-        {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer;
+        writer.WriteStructHeader(
+            UtcZonedDateTimeSerializer.StructSize,
+            UtcZonedDateTimeSerializer.StructTypeWithId);
 
-            writer.WriteStructHeader(
-                UtcZonedDateTimeSerializer.StructSize,
-                UtcZonedDateTimeSerializer.StructTypeWithId);
+        writer.Write(inDate.seconds);
+        writer.Write(inDate.nanos);
+        writer.Write(inDate.zoneId);
 
-            writer.Write(inDate.seconds);
-            writer.Write(inDate.nanos);
-            writer.Write(inDate.zoneId);
+        var reader = CreateSpanReader(writerMachine.GetOutput());
+        var value = reader.Read();
 
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var reader = readerMachine.Reader();
-            var value = reader.Read();
+        value.Should().NotBeNull().And.Be(expected);
+    }
 
-            value.Should().NotBeNull().And.Be(expected);
-        }
+    [UnixFact]
+    public void ShouldSerializeDateTimeWithZoneId_Unix_Istanbul()
+    {
+        var inDate = new ZonedDateTime(1978, 12, 16, 13, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
+        var expected = (seconds: 282652559L, nanos: 128000987L, zoneId: "Europe/Istanbul");
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer;
+        writer.Write(inDate);
 
-        [Theory]
-        [MemberData(nameof(IdPairs))]
-        public void ShouldDeserializeSpanDateTimeWithZoneId(
-            ZonedDateTime expected,
-            (long seconds, long nanos, string zoneId) inDate)
-        {
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer;
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
 
-            writer.WriteStructHeader(
-                UtcZonedDateTimeSerializer.StructSize,
-                UtcZonedDateTimeSerializer.StructTypeWithId);
+        reader.PeekNextType().Should().Be(PackStreamType.Struct);
+        reader.ReadStructHeader().Should().Be(3);
+        reader.ReadStructSignature().Should().Be((byte)'i');
+        reader.Read().Should().Be(expected.seconds);
+        reader.Read().Should().Be(expected.nanos);
+        reader.Read().Should().Be(expected.zoneId);
+    }
 
-            writer.Write(inDate.seconds);
-            writer.Write(inDate.nanos);
-            writer.Write(inDate.zoneId);
+    [UnixFact]
+    public void ShouldDeserializeDateTimeWithZoneId_Unix_Istanbul()
+    {
+        var expected = new ZonedDateTime(1978, 12, 16, 13, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
+        var inDate = (seconds: 282652559L, nanos: 128000987L, zoneId: "Europe/Istanbul");
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer;
 
-            var reader = CreateSpanReader(writerMachine.GetOutput());
-            var value = reader.Read();
+        writer.WriteStructHeader(
+            UtcZonedDateTimeSerializer.StructSize,
+            UtcZonedDateTimeSerializer.StructTypeWithId);
 
-            value.Should().NotBeNull().And.Be(expected);
-        }
+        writer.Write(inDate.seconds);
+        writer.Write(inDate.nanos);
+        writer.Write(inDate.zoneId);
 
-        [Fact]
-        public void ShouldSerializeUtcAndNonUtcSecondsToSameValue()
-        {
-            var bstValue = DateTimeOffset.Parse("2022-06-16T11:12:06.3668289+01:00");
-            var zoned = new ZonedDateTime(bstValue);
-            var utc = DateTimeOffset.Parse("2022-06-16T10:12:06.3668289+00:00");
-            var zonedUtc = new ZonedDateTime(utc);
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
+        var value = reader.Read();
 
-            var writerMachine = CreateWriterMachine();
-            var writer = writerMachine.Writer;
-            writer.Write(zoned);
-            writer.Write(zonedUtc);
+        value.Should().NotBeNull().And.Be(expected);
+    }
 
-            var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
-            var reader = readerMachine.Reader();
+    [UnixFact]
+    public void ShouldDeserializesSpanDateTimeWithZoneId_Unix_Istanbul()
+    {
+        var expected = new ZonedDateTime(1978, 12, 16, 13, 35, 59, 128000987, Zone.Of("Europe/Istanbul"));
+        var inDate = (seconds: 282652559L, nanos: 128000987L, zoneId: "Europe/Istanbul");
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer;
 
-            reader.PeekNextType().Should().Be(PackStreamType.Struct);
-            reader.ReadStructHeader().Should().Be(3);
-            reader.ReadStructSignature().Should().Be((byte)'I');
-            var bstSecs = reader.Read();
-            reader.Read();
-            reader.Read().Should().Be(3600);
+        writer.WriteStructHeader(
+            UtcZonedDateTimeSerializer.StructSize,
+            UtcZonedDateTimeSerializer.StructTypeWithId);
 
-            reader.PeekNextType().Should().Be(PackStreamType.Struct);
-            reader.ReadStructHeader().Should().Be(3);
-            reader.ReadStructSignature().Should().Be((byte)'I');
-            var utcSecs = reader.Read();
-            reader.Read();
-            reader.Read().Should().Be(0);
+        writer.Write(inDate.seconds);
+        writer.Write(inDate.nanos);
+        writer.Write(inDate.zoneId);
 
-            bstSecs.Should().Equals(utcSecs);
-        }
+        var reader = CreateSpanReader(writerMachine.GetOutput());
+        var value = reader.Read();
+
+        value.Should().NotBeNull().And.Be(expected);
+    }
+
+    [Theory]
+    [MemberData(nameof(IdPairs))]
+    public void ShouldSerializeDateTimeWithZoneId(
+        ZonedDateTime inDate,
+        (long seconds, long nanos, string zoneId) expected)
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer;
+        writer.Write(inDate);
+
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
+
+        reader.PeekNextType().Should().Be(PackStreamType.Struct);
+        reader.ReadStructHeader().Should().Be(3);
+        reader.ReadStructSignature().Should().Be((byte)'i');
+        reader.Read().Should().Be(expected.seconds);
+        reader.Read().Should().Be(expected.nanos);
+        reader.Read().Should().Be(expected.zoneId);
+    }
+
+    [Theory]
+    [MemberData(nameof(IdPairs))]
+    public void ShouldDeserializeDateTimeWithZoneId(
+        ZonedDateTime expected,
+        (long seconds, long nanos, string zoneId) inDate)
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer;
+
+        writer.WriteStructHeader(
+            UtcZonedDateTimeSerializer.StructSize,
+            UtcZonedDateTimeSerializer.StructTypeWithId);
+
+        writer.Write(inDate.seconds);
+        writer.Write(inDate.nanos);
+        writer.Write(inDate.zoneId);
+
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
+        var value = reader.Read();
+
+        value.Should().NotBeNull().And.Be(expected);
+    }
+
+    [Theory]
+    [MemberData(nameof(IdPairs))]
+    public void ShouldDeserializeSpanDateTimeWithZoneId(
+        ZonedDateTime expected,
+        (long seconds, long nanos, string zoneId) inDate)
+    {
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer;
+
+        writer.WriteStructHeader(
+            UtcZonedDateTimeSerializer.StructSize,
+            UtcZonedDateTimeSerializer.StructTypeWithId);
+
+        writer.Write(inDate.seconds);
+        writer.Write(inDate.nanos);
+        writer.Write(inDate.zoneId);
+
+        var reader = CreateSpanReader(writerMachine.GetOutput());
+        var value = reader.Read();
+
+        value.Should().NotBeNull().And.Be(expected);
+    }
+
+    [Fact]
+    public void ShouldSerializeUtcAndNonUtcSecondsToSameValue()
+    {
+        var bstValue = DateTimeOffset.Parse("2022-06-16T11:12:06.3668289+01:00");
+        var zoned = new ZonedDateTime(bstValue);
+        var utc = DateTimeOffset.Parse("2022-06-16T10:12:06.3668289+00:00");
+        var zonedUtc = new ZonedDateTime(utc);
+
+        var writerMachine = CreateWriterMachine();
+        var writer = writerMachine.Writer;
+        writer.Write(zoned);
+        writer.Write(zonedUtc);
+
+        var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
+        var reader = readerMachine.Reader();
+
+        reader.PeekNextType().Should().Be(PackStreamType.Struct);
+        reader.ReadStructHeader().Should().Be(3);
+        reader.ReadStructSignature().Should().Be((byte)'I');
+        var bstSecs = reader.Read();
+        reader.Read();
+        reader.Read().Should().Be(3600);
+
+        reader.PeekNextType().Should().Be(PackStreamType.Struct);
+        reader.ReadStructHeader().Should().Be(3);
+        reader.ReadStructSignature().Should().Be((byte)'I');
+        var utcSecs = reader.Read();
+        reader.Read();
+        reader.Read().Should().Be(0);
+
+        bstSecs.Should().Equals(utcSecs);
     }
 }

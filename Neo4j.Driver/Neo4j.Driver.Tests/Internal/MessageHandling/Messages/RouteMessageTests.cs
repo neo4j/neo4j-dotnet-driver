@@ -19,50 +19,49 @@ using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Messages
+namespace Neo4j.Driver.Internal.MessageHandling.Messages;
+
+public class RouteMessageTests
 {
-    public class RouteMessageTests
+    [Fact]
+    public void ShouldHaveCorrectSerializer()
     {
-        [Fact]
-        public void ShouldHaveCorrectSerializer()
+        var rm = new RouteMessage(null, null, null, null);
+
+        rm.Serializer.Should().BeOfType<RouteMessageSerializer>();
+    }
+
+    [Fact]
+    public void ShouldHandleNullValues()
+    {
+        var rm = new RouteMessage(null, null, null, null);
+
+        rm.Routing.Should().NotBeNull();
+        rm.Bookmarks.Should().NotBeNull();
+        rm.DatabaseContext.Should().NotBeNull();
+
+        rm.ToString().Should().Be("ROUTE { } [] { }");
+    }
+
+    [Fact]
+    public void ShouldHandleSetValues()
+    {
+        var routingContext = new Dictionary<string, string>
         {
-            var rm = new RouteMessage(null, null, null, null);
+            ["a"] = "b"
+        };
 
-            rm.Serializer.Should().BeOfType<RouteMessageSerializer>();
-        }
+        var bookmarks = new InternalBookmarks("bm:a");
+        var databaseName = "neo4j";
+        var impersonatedUser = "Douglas Fir";
 
-        [Fact]
-        public void ShouldHandleNullValues()
-        {
-            var rm = new RouteMessage(null, null, null, null);
+        var rm = new RouteMessage(routingContext, bookmarks, databaseName, impersonatedUser);
 
-            rm.Routing.Should().NotBeNull();
-            rm.Bookmarks.Should().NotBeNull();
-            rm.DatabaseContext.Should().NotBeNull();
+        rm.Routing.Should().BeEquivalentTo(routingContext);
+        rm.Bookmarks.Values.Should().BeEquivalentTo(bookmarks.Values);
 
-            rm.ToString().Should().Be("ROUTE { } [] { }");
-        }
-
-        [Fact]
-        public void ShouldHandleSetValues()
-        {
-            var routingContext = new Dictionary<string, string>
-            {
-                ["a"] = "b"
-            };
-
-            var bookmarks = new InternalBookmarks("bm:a");
-            var databaseName = "neo4j";
-            var impersonatedUser = "Douglas Fir";
-
-            var rm = new RouteMessage(routingContext, bookmarks, databaseName, impersonatedUser);
-
-            rm.Routing.Should().BeEquivalentTo(routingContext);
-            rm.Bookmarks.Values.Should().BeEquivalentTo(bookmarks.Values);
-
-            rm.ToString()
-                .Should()
-                .Be("ROUTE { 'a':'b' } { bookmarks, [bm:a] } { 'db':'neo4j' 'imp_user':'Douglas Fir' }");
-        }
+        rm.ToString()
+            .Should()
+            .Be("ROUTE { 'a':'b' } { bookmarks, [bm:a] } { 'db':'neo4j' 'imp_user':'Douglas Fir' }");
     }
 }

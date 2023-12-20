@@ -22,194 +22,193 @@ using Xunit;
 
 #pragma warning disable CS0618
 
-namespace Neo4j.Driver.Tests
+namespace Neo4j.Driver.Tests;
+
+public class DriverTests
 {
-    public class DriverTests
+    [Fact]
+    public void ShouldUseDefaultPortWhenPortNotSet()
     {
-        [Fact]
-        public void ShouldUseDefaultPortWhenPortNotSet()
+        using (var driver = (Internal.Driver)GraphDatabase.Driver("bolt://localhost"))
         {
-            using (var driver = (Internal.Driver)GraphDatabase.Driver("bolt://localhost"))
-            {
-                driver.Uri.Port.Should().Be(7687);
-                driver.Uri.Scheme.Should().Be("bolt");
-                driver.Uri.Host.Should().Be("localhost");
-            }
+            driver.Uri.Port.Should().Be(7687);
+            driver.Uri.Scheme.Should().Be("bolt");
+            driver.Uri.Host.Should().Be("localhost");
         }
+    }
 
-        [Fact]
-        public void ShouldUseSpecifiedPortWhenPortSet()
+    [Fact]
+    public void ShouldUseSpecifiedPortWhenPortSet()
+    {
+        using (var driver = (Internal.Driver)GraphDatabase.Driver("bolt://localhost:8888"))
         {
-            using (var driver = (Internal.Driver)GraphDatabase.Driver("bolt://localhost:8888"))
-            {
-                driver.Uri.Port.Should().Be(8888);
-                driver.Uri.Scheme.Should().Be("bolt");
-                driver.Uri.Host.Should().Be("localhost");
-            }
+            driver.Uri.Port.Should().Be(8888);
+            driver.Uri.Scheme.Should().Be("bolt");
+            driver.Uri.Host.Should().Be("localhost");
         }
+    }
 
-        [Fact]
-        public void ShouldSupportIPv6()
+    [Fact]
+    public void ShouldSupportIPv6()
+    {
+        using (var driver = (Internal.Driver)GraphDatabase.Driver("bolt://[::1]"))
         {
-            using (var driver = (Internal.Driver)GraphDatabase.Driver("bolt://[::1]"))
-            {
-                driver.Uri.Port.Should().Be(7687);
-                driver.Uri.Scheme.Should().Be("bolt");
-                driver.Uri.Host.Should().Be("[::1]");
-            }
+            driver.Uri.Port.Should().Be(7687);
+            driver.Uri.Scheme.Should().Be("bolt");
+            driver.Uri.Host.Should().Be("[::1]");
         }
+    }
 
-        [Fact]
-        public void ShouldErrorIfUriWrongFormat()
+    [Fact]
+    public void ShouldErrorIfUriWrongFormat()
+    {
+        var exception = Record.Exception(() => GraphDatabase.Driver("bolt://*"));
+        exception.Should().BeOfType<UriFormatException>();
+    }
+
+    [Fact]
+    public void ShouldErrorIfBoltSchemeWithRoutingContext()
+    {
+        var exception = Record.Exception(
+            () => GraphDatabase.Driver("bolt://localhost/?name=molly&age=1&color=white"));
+
+        exception.Should().BeOfType<ArgumentException>();
+        exception.Message.Should().Contain("Routing context are not supported with scheme 'bolt'");
+    }
+
+    [Fact]
+    public void ShouldAcceptIfRoutingSchemeWithRoutingContext()
+    {
+        using (var driver =
+               (Internal.Driver)GraphDatabase.Driver("neo4j://localhost/?name=molly&age=1&color=white"))
         {
-            var exception = Record.Exception(() => GraphDatabase.Driver("bolt://*"));
-            exception.Should().BeOfType<UriFormatException>();
+            driver.Uri.Port.Should().Be(7687);
+            driver.Uri.Scheme.Should().Be("neo4j");
+            driver.Uri.Host.Should().Be("localhost");
         }
+    }
 
-        [Fact]
-        public void ShouldErrorIfBoltSchemeWithRoutingContext()
-        {
-            var exception = Record.Exception(
-                () => GraphDatabase.Driver("bolt://localhost/?name=molly&age=1&color=white"));
+    [Fact]
+    public void DisposeClosesDriver()
+    {
+        var driver = GraphDatabase.Driver("bolt://localhost");
+        driver.Dispose();
 
-            exception.Should().BeOfType<ArgumentException>();
-            exception.Message.Should().Contain("Routing context are not supported with scheme 'bolt'");
-        }
+        var ex = Record.Exception(() => driver.AsyncSession());
+        ex.Should().NotBeNull();
+        ex.Should().BeOfType<ObjectDisposedException>();
+    }
 
-        [Fact]
-        public void ShouldAcceptIfRoutingSchemeWithRoutingContext()
-        {
-            using (var driver =
-                   (Internal.Driver)GraphDatabase.Driver("neo4j://localhost/?name=molly&age=1&color=white"))
-            {
-                driver.Uri.Port.Should().Be(7687);
-                driver.Uri.Scheme.Should().Be("neo4j");
-                driver.Uri.Host.Should().Be("localhost");
-            }
-        }
+    [Fact]
+    public async Task CloseClosesDriver()
+    {
+        var driver = GraphDatabase.Driver("bolt://localhost");
+        await driver.CloseAsync();
 
-        [Fact]
-        public void DisposeClosesDriver()
-        {
-            var driver = GraphDatabase.Driver("bolt://localhost");
-            driver.Dispose();
+        var ex = Record.Exception(() => driver.AsyncSession());
+        ex.Should().NotBeNull();
+        ex.Should().BeOfType<ObjectDisposedException>();
+    }
 
-            var ex = Record.Exception(() => driver.AsyncSession());
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ObjectDisposedException>();
-        }
+    [Fact]
+    public async void CloseAsyncClosesDriver()
+    {
+        var driver = GraphDatabase.Driver("bolt://localhost");
+        await driver.CloseAsync();
 
-        [Fact]
-        public async Task CloseClosesDriver()
-        {
-            var driver = GraphDatabase.Driver("bolt://localhost");
-            await driver.CloseAsync();
+        var ex = Record.Exception(() => driver.AsyncSession());
+        ex.Should().NotBeNull();
+        ex.Should().BeOfType<ObjectDisposedException>();
+    }
 
-            var ex = Record.Exception(() => driver.AsyncSession());
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ObjectDisposedException>();
-        }
+    [Fact]
+    public async void MultipleCloseAndDisposeIsValidOnDriver()
+    {
+        var driver = GraphDatabase.Driver("bolt://localhost");
+        await driver.CloseAsync();
+        driver.Dispose();
+        await driver.CloseAsync();
 
-        [Fact]
-        public async void CloseAsyncClosesDriver()
-        {
-            var driver = GraphDatabase.Driver("bolt://localhost");
-            await driver.CloseAsync();
+        var ex = Record.Exception(() => driver.AsyncSession());
+        ex.Should().NotBeNull();
+        ex.Should().BeOfType<ObjectDisposedException>();
+    }
 
-            var ex = Record.Exception(() => driver.AsyncSession());
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ObjectDisposedException>();
-        }
+    [Fact]
+    public async void ShouldVerifyConnection()
+    {
+        var mock = new Mock<IConnectionProvider>();
+        mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
+            .Returns(Task.FromResult(new Mock<IServerInfo>().Object));
 
-        [Fact]
-        public async void MultipleCloseAndDisposeIsValidOnDriver()
-        {
-            var driver = GraphDatabase.Driver("bolt://localhost");
-            await driver.CloseAsync();
-            driver.Dispose();
-            await driver.CloseAsync();
+        var driver = new Internal.Driver(new Uri("bolt://localhost"), mock.Object, null, TestDriverContext.MockContext);
+        await driver.VerifyConnectivityAsync();
 
-            var ex = Record.Exception(() => driver.AsyncSession());
-            ex.Should().NotBeNull();
-            ex.Should().BeOfType<ObjectDisposedException>();
-        }
+        mock.Verify(x => x.VerifyConnectivityAndGetInfoAsync(), Times.Once);
+    }
 
-        [Fact]
-        public async void ShouldVerifyConnection()
-        {
-            var mock = new Mock<IConnectionProvider>();
-            mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
-                .Returns(Task.FromResult(new Mock<IServerInfo>().Object));
+    [Fact]
+    public async void ShouldTryVerifyConnection()
+    {
+        var mock = new Mock<IConnectionProvider>();
+        mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
+            .Returns(Task.FromResult(new Mock<IServerInfo>().Object));
 
-            var driver = new Internal.Driver(new Uri("bolt://localhost"), mock.Object, null, TestDriverContext.MockContext);
-            await driver.VerifyConnectivityAsync();
-
-            mock.Verify(x => x.VerifyConnectivityAndGetInfoAsync(), Times.Once);
-        }
-
-        [Fact]
-        public async void ShouldTryVerifyConnection()
-        {
-            var mock = new Mock<IConnectionProvider>();
-            mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
-                .Returns(Task.FromResult(new Mock<IServerInfo>().Object));
-
-            var driver = (IDriver)new Internal.Driver(new Uri("bolt://localhost"),
-                mock.Object,
-                null,
-                TestDriverContext.MockContext);
-            var connects = await driver.TryVerifyConnectivityAsync();
+        var driver = (IDriver)new Internal.Driver(new Uri("bolt://localhost"),
+            mock.Object,
+            null,
+            TestDriverContext.MockContext);
+        var connects = await driver.TryVerifyConnectivityAsync();
             
-            connects.Should().BeTrue();
-        }
+        connects.Should().BeTrue();
+    }
 
-        [Fact]
-        public async void ShouldCatchInTryVerifyConnection()
-        {
-            var mock = new Mock<IConnectionProvider>();
-            mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
-                .ThrowsAsync(new Exception("broken"));
+    [Fact]
+    public async void ShouldCatchInTryVerifyConnection()
+    {
+        var mock = new Mock<IConnectionProvider>();
+        mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
+            .ThrowsAsync(new Exception("broken"));
 
-            var driver = (IDriver)new Internal.Driver(new Uri("bolt://localhost"),
-                mock.Object,
-                null,
-                TestDriverContext.MockContext);
-            var connects = await driver.TryVerifyConnectivityAsync();
+        var driver = (IDriver)new Internal.Driver(new Uri("bolt://localhost"),
+            mock.Object,
+            null,
+            TestDriverContext.MockContext);
+        var connects = await driver.TryVerifyConnectivityAsync();
 
-            connects.Should().BeFalse();
-        }
+        connects.Should().BeFalse();
+    }
 
-        [Fact]
-        public async void ShouldGetInfoConnection()
-        {
-            var mockServerInfo = new Mock<IServerInfo>().Object;
-            var mock = new Mock<IConnectionProvider>();
-            mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
-                .Returns(Task.FromResult(mockServerInfo));
+    [Fact]
+    public async void ShouldGetInfoConnection()
+    {
+        var mockServerInfo = new Mock<IServerInfo>().Object;
+        var mock = new Mock<IConnectionProvider>();
+        mock.Setup(x => x.VerifyConnectivityAndGetInfoAsync())
+            .Returns(Task.FromResult(mockServerInfo));
 
-            var driver = new Internal.Driver(new Uri("bolt://localhost"),
-                mock.Object,
-                null,
-                TestDriverContext.MockContext);
+        var driver = new Internal.Driver(new Uri("bolt://localhost"),
+            mock.Object,
+            null,
+            TestDriverContext.MockContext);
 
-            var info = await driver.GetServerInfoAsync();
+        var info = await driver.GetServerInfoAsync();
 
-            mock.Verify(x => x.VerifyConnectivityAndGetInfoAsync(), Times.Once);
-            info.Should().Be(mockServerInfo);
-        }
+        mock.Verify(x => x.VerifyConnectivityAndGetInfoAsync(), Times.Once);
+        info.Should().Be(mockServerInfo);
+    }
 
-        [Fact]
-        public async void ShouldTestSupportMultiDb()
-        {
-            var mock = new Mock<IConnectionProvider>();
-            mock.Setup(x => x.SupportsMultiDbAsync()).Returns(Task.FromResult(true));
-            var driver = new Internal.Driver(new Uri("bolt://localhost"),
-                mock.Object,
-                null,
-                TestDriverContext.MockContext);
-            await driver.SupportsMultiDbAsync();
+    [Fact]
+    public async void ShouldTestSupportMultiDb()
+    {
+        var mock = new Mock<IConnectionProvider>();
+        mock.Setup(x => x.SupportsMultiDbAsync()).Returns(Task.FromResult(true));
+        var driver = new Internal.Driver(new Uri("bolt://localhost"),
+            mock.Object,
+            null,
+            TestDriverContext.MockContext);
+        await driver.SupportsMultiDbAsync();
 
-            mock.Verify(x => x.SupportsMultiDbAsync(), Times.Once);
-        }
+        mock.Verify(x => x.SupportsMultiDbAsync(), Times.Once);
     }
 }

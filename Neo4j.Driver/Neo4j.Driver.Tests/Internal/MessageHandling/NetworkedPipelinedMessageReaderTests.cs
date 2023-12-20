@@ -28,369 +28,368 @@ using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Tests;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling
+namespace Neo4j.Driver.Internal.MessageHandling;
+
+/// <summary>
+/// These are close to integration tests as they used tcp, but they are not integration tests as they do not
+/// integrate against another process. 
+/// </summary>
+public class NetworkedPipelinedMessageReaderTests
 {
-    /// <summary>
-    /// These are close to integration tests as they used tcp, but they are not integration tests as they do not
-    /// integrate against another process. 
-    /// </summary>
-    public class NetworkedPipelinedMessageReaderTests
+    const int Port = 9111;
+        
+    [Fact]
+    public async Task ShouldReadSimpleMessage()
     {
-        const int Port = 9111;
-        
-        [Fact]
-        public async Task ShouldReadSimpleMessage()
-        {
-            var pipeline = MockPipeline();
-            using var cts = new CancellationTokenSource(5000);
+        var pipeline = MockPipeline();
+        using var cts = new CancellationTokenSource(5000);
             
-            await Task.WhenAll(
-                Task.Run(async () =>
+        await Task.WhenAll(
+            Task.Run(async () =>
+            {
+                var tcp = new TcpListener(IPAddress.Loopback, Port);
+                TcpClient stream = null;
+                try
                 {
-                    var tcp = new TcpListener(IPAddress.Loopback, Port);
-                    TcpClient stream = null;
-                    try
-                    {
-                        tcp.Start();
-                        stream = await tcp.AcceptTcpClientAsync(cts.Token);
-                        stream.GetStream()
-                            .Write(
-                                new byte[]
-                                {
-                                    0x00, 0x03,
-                                    PackStream.TinyStruct, MessageFormat.MsgSuccess, PackStream.TinyMap,
-                                    0x00, 0x00
-                                }.AsSpan());
-
-                        try
-                        {
-                            await Task.Delay(1000, cts.Token);
-                        }
-                        catch (OperationCanceledException)
-                        {
-                        }
-                    }
-                    finally
-                    {
-                        stream?.Close();
-                        tcp.Stop();
-                    }
-                }),
-                Task.Run(async () =>
-                {
-                    await Task.Delay(100);
-                    var client = new TcpClient();
-                    try
-                    {
-                        await client.ConnectAsync(IPAddress.Loopback, Port, cts.Token);
-                        var pipereader = new PipelinedMessageReader(client.GetStream(), TestDriverContext.MockContext);
-                        await pipereader.ReadAsync(
-                            pipeline.Object,
-                            new MessageFormat(BoltProtocolVersion.V5_0, TestDriverContext.MockContext));
-                    }
-                    finally
-                    {
-                        client.Close();
-                        cts.Cancel();
-
-                    }
-                }));
-        
-            pipeline.Verify(x => x.OnSuccess(It.IsAny<Dictionary<string, object>>()), Times.Once);
-        }
-
-        [Fact]
-        public async Task ShouldTimeoutWaitingForSize()
-        {
-            var pipeline = MockPipeline();
-            using var cts = new CancellationTokenSource(5000);
-            
-            await Task.WhenAll(
-                Task.Run(async () =>
-                {
-                    var tcp = new TcpListener(IPAddress.Loopback, Port);
-                    TcpClient stream = null;
-                    try
-                    {
-                        tcp.Start();
-                        stream = await tcp.AcceptTcpClientAsync(cts.Token);
-                        stream.GetStream()
-                            .Write(
-                                new byte[]
-                                {
-                                    0x00
-                                }.AsSpan());
-                        try
-                        {
-                            await Task.Delay(-1, cts.Token);
-                        }
-                        catch (OperationCanceledException)
-                        {
-                        }
-                    }
-                    finally
-                    {
-                        stream?.Close();
-                        tcp.Stop();
-                    }
-                }),
-                Task.Run(async () =>
-                {
-     
-                    await Task.Delay(100);
-                    var client = new TcpClient();
-                    try
-                    {
-                        await client.ConnectAsync(IPAddress.Loopback, Port, cts.Token);
-                        var pipereader = new PipelinedMessageReader(client.GetStream(), TestDriverContext.MockContext);
-                        pipereader.SetReadTimeoutInMs(250);
-                        var exc = await Record.ExceptionAsync(
-                            async () =>
+                    tcp.Start();
+                    stream = await tcp.AcceptTcpClientAsync(cts.Token);
+                    stream.GetStream()
+                        .Write(
+                            new byte[]
                             {
-                                await pipereader.ReadAsync(
-                                    pipeline.Object,
-                                    new MessageFormat(BoltProtocolVersion.V5_0, TestDriverContext.MockContext));
-                            });
-                        
-                        exc.Should().BeOfType<ConnectionReadTimeoutException>();
-                    }
-                    finally
-                    {
-                        client.Close();
-                        cts.Cancel();
+                                0x00, 0x03,
+                                PackStream.TinyStruct, MessageFormat.MsgSuccess, PackStream.TinyMap,
+                                0x00, 0x00
+                            }.AsSpan());
 
+                    try
+                    {
+                        await Task.Delay(1000, cts.Token);
                     }
-                }));
+                    catch (OperationCanceledException)
+                    {
+                    }
+                }
+                finally
+                {
+                    stream?.Close();
+                    tcp.Stop();
+                }
+            }),
+            Task.Run(async () =>
+            {
+                await Task.Delay(100);
+                var client = new TcpClient();
+                try
+                {
+                    await client.ConnectAsync(IPAddress.Loopback, Port, cts.Token);
+                    var pipereader = new PipelinedMessageReader(client.GetStream(), TestDriverContext.MockContext);
+                    await pipereader.ReadAsync(
+                        pipeline.Object,
+                        new MessageFormat(BoltProtocolVersion.V5_0, TestDriverContext.MockContext));
+                }
+                finally
+                {
+                    client.Close();
+                    cts.Cancel();
+
+                }
+            }));
         
-            pipeline.Verify(x => x.OnSuccess(It.IsAny<Dictionary<string, object>>()), Times.Never);
-        }
-        
-        [Fact]
-        public async Task ShouldReadSimpleMessageWithDelays()
-        {
-            var pipeline = MockPipeline();
-            using var cts = new CancellationTokenSource(5000);
+        pipeline.Verify(x => x.OnSuccess(It.IsAny<Dictionary<string, object>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ShouldTimeoutWaitingForSize()
+    {
+        var pipeline = MockPipeline();
+        using var cts = new CancellationTokenSource(5000);
             
-            await Task.WhenAll(
-                Task.Run(async () =>
+        await Task.WhenAll(
+            Task.Run(async () =>
+            {
+                var tcp = new TcpListener(IPAddress.Loopback, Port);
+                TcpClient stream = null;
+                try
                 {
-                    var tcp = new TcpListener(IPAddress.Loopback, Port);
-                    TcpClient stream = null;
-                    try
-                    {
-                        tcp.Start();
-                        stream = await tcp.AcceptTcpClientAsync(cts.Token);
-                        stream.GetStream()
-                            .Write(
-                                new byte[]
-                                {
-                                    0x00
-                                }.AsSpan());
-
-                        await Task.Delay(500);
-                        
-                        stream.GetStream()
-                            .Write(
-                                new byte[]
-                                {
-                                    0x03,
-                                    PackStream.TinyStruct, MessageFormat.MsgSuccess, PackStream.TinyMap,
-                                }.AsSpan());
-
-                        await Task.Delay(500);
-                        stream.GetStream()
-                            .Write(
-                                new byte[]
-                                {
-                                    0x00, 0x00
-                                }.AsSpan());
-                        try
-                        {
-                            await Task.Delay(1000, cts.Token);
-                        }
-                        catch (OperationCanceledException)
-                        {
-                        }
-                    }
-                    finally
-                    {
-                        stream?.Close();
-                        tcp.Stop();
-                    }
-                }),
-                Task.Run(async () =>
-                {
-                    await Task.Delay(100);
-                    var client = new TcpClient();
-                    try
-                    {
-                        await client.ConnectAsync(IPAddress.Loopback, Port, cts.Token);
-                        var pipereader = new PipelinedMessageReader(client.GetStream(), TestDriverContext.MockContext);
-                        pipereader.SetReadTimeoutInMs(1000);
-                        await pipereader.ReadAsync(
-                            pipeline.Object,
-                            new MessageFormat(BoltProtocolVersion.V5_0, TestDriverContext.MockContext));
-                    }
-                    finally
-                    {
-                        client.Close();
-                        cts.Cancel();
-
-                    }
-                }));
-        
-            pipeline.Verify(x => x.OnSuccess(It.IsAny<Dictionary<string, object>>()), Times.Once);
-        }
-        
-        [Fact]
-        public async Task ShouldTimeoutWaitingAfterSize()
-        {
-            var pipeline = MockPipeline();
-            using var cts = new CancellationTokenSource(5000);
-            
-            await Task.WhenAll(
-                Task.Run(async () =>
-                {
-                    var tcp = new TcpListener(IPAddress.Loopback, Port);
-                    TcpClient stream = null;
-                    try
-                    {
-                        tcp.Start();
-                        stream = await tcp.AcceptTcpClientAsync(cts.Token);
-                        stream.GetStream()
-                            .Write(
-                                new byte[]
-                                {
-                                    0x00,0x03
-                                }.AsSpan());
-
-                        try
-                        {
-                            await Task.Delay(-1, cts.Token);
-                        }
-                        catch (OperationCanceledException)
-                        {
-                        }
-                    }
-                    finally
-                    {
-                        stream?.Close();
-                        tcp.Stop();
-                    }
-                }),
-                Task.Run(async () =>
-                {
-     
-                    await Task.Delay(100);
-                    var client = new TcpClient();
-                    try
-                    {
-                        await client.ConnectAsync(IPAddress.Loopback, Port, cts.Token);
-                        var pipereader = new PipelinedMessageReader(client.GetStream(), TestDriverContext.MockContext);
-                        pipereader.SetReadTimeoutInMs(2000);
-                        var exc = await Record.ExceptionAsync(
-                            async () =>
+                    tcp.Start();
+                    stream = await tcp.AcceptTcpClientAsync(cts.Token);
+                    stream.GetStream()
+                        .Write(
+                            new byte[]
                             {
-                                await pipereader.ReadAsync(
-                                    pipeline.Object,
-                                    new MessageFormat(BoltProtocolVersion.V5_0, TestDriverContext.MockContext));
-                            });
-                        
-                        exc.Should().BeOfType<ConnectionReadTimeoutException>();
-                    }
-                    finally
-                    {
-                        client.Close();
-                        cts.Cancel();
-
-                    }
-                }));
-        
-            pipeline.Verify(x => x.OnSuccess(It.IsAny<Dictionary<string, object>>()), Times.Never);
-        }
-        
-        [Fact]
-        public async Task ShouldTimeoutWaitingForData()
-        {
-            var pipeline = MockPipeline();
-            using var cts = new CancellationTokenSource(5000);
-            
-            await Task.WhenAll(
-                Task.Run(async () =>
-                {
-                    var tcp = new TcpListener(IPAddress.Loopback, Port);
-                    TcpClient stream = null;
+                                0x00
+                            }.AsSpan());
                     try
                     {
-                        tcp.Start();
-                        stream = await tcp.AcceptTcpClientAsync(cts.Token);
-                        stream.GetStream()
-                            .Write(
-                                new byte[]
-                                {
-                                    0x00,0x03
-                                }.AsSpan());
-
-                        await Task.Delay(1000);
-                        stream.GetStream()
-                            .Write(
-                                new byte[]
-                                {
-                                    0x00
-                                }.AsSpan());
-                        
-                        try
-                        {
-                            await Task.Delay(-1, cts.Token);
-                        }
-                        catch (OperationCanceledException)
-                        {
-                        }
+                        await Task.Delay(-1, cts.Token);
                     }
-                    finally
+                    catch (OperationCanceledException)
                     {
-                        stream?.Close();
-                        tcp.Stop();
                     }
-                }),
-                Task.Run(async () =>
+                }
+                finally
                 {
+                    stream?.Close();
+                    tcp.Stop();
+                }
+            }),
+            Task.Run(async () =>
+            {
      
-                    await Task.Delay(100);
-                    var client = new TcpClient();
+                await Task.Delay(100);
+                var client = new TcpClient();
+                try
+                {
+                    await client.ConnectAsync(IPAddress.Loopback, Port, cts.Token);
+                    var pipereader = new PipelinedMessageReader(client.GetStream(), TestDriverContext.MockContext);
+                    pipereader.SetReadTimeoutInMs(250);
+                    var exc = await Record.ExceptionAsync(
+                        async () =>
+                        {
+                            await pipereader.ReadAsync(
+                                pipeline.Object,
+                                new MessageFormat(BoltProtocolVersion.V5_0, TestDriverContext.MockContext));
+                        });
+                        
+                    exc.Should().BeOfType<ConnectionReadTimeoutException>();
+                }
+                finally
+                {
+                    client.Close();
+                    cts.Cancel();
+
+                }
+            }));
+        
+        pipeline.Verify(x => x.OnSuccess(It.IsAny<Dictionary<string, object>>()), Times.Never);
+    }
+        
+    [Fact]
+    public async Task ShouldReadSimpleMessageWithDelays()
+    {
+        var pipeline = MockPipeline();
+        using var cts = new CancellationTokenSource(5000);
+            
+        await Task.WhenAll(
+            Task.Run(async () =>
+            {
+                var tcp = new TcpListener(IPAddress.Loopback, Port);
+                TcpClient stream = null;
+                try
+                {
+                    tcp.Start();
+                    stream = await tcp.AcceptTcpClientAsync(cts.Token);
+                    stream.GetStream()
+                        .Write(
+                            new byte[]
+                            {
+                                0x00
+                            }.AsSpan());
+
+                    await Task.Delay(500);
+                        
+                    stream.GetStream()
+                        .Write(
+                            new byte[]
+                            {
+                                0x03,
+                                PackStream.TinyStruct, MessageFormat.MsgSuccess, PackStream.TinyMap,
+                            }.AsSpan());
+
+                    await Task.Delay(500);
+                    stream.GetStream()
+                        .Write(
+                            new byte[]
+                            {
+                                0x00, 0x00
+                            }.AsSpan());
                     try
                     {
-                        await client.ConnectAsync(IPAddress.Loopback, Port, cts.Token);
-                        var pipereader = new PipelinedMessageReader(client.GetStream(), TestDriverContext.MockContext);
-                        pipereader.SetReadTimeoutInMs(2000);
-                        var exc = await Record.ExceptionAsync(
-                            async () =>
-                            {
-                                await pipereader.ReadAsync(
-                                    pipeline.Object,
-                                    new MessageFormat(BoltProtocolVersion.V5_0, TestDriverContext.MockContext));
-                            });
-                        
-                        exc.Should().BeOfType<ConnectionReadTimeoutException>();
+                        await Task.Delay(1000, cts.Token);
                     }
-                    finally
+                    catch (OperationCanceledException)
                     {
-                        client.Close();
-                        cts.Cancel();
-
                     }
-                }));
+                }
+                finally
+                {
+                    stream?.Close();
+                    tcp.Stop();
+                }
+            }),
+            Task.Run(async () =>
+            {
+                await Task.Delay(100);
+                var client = new TcpClient();
+                try
+                {
+                    await client.ConnectAsync(IPAddress.Loopback, Port, cts.Token);
+                    var pipereader = new PipelinedMessageReader(client.GetStream(), TestDriverContext.MockContext);
+                    pipereader.SetReadTimeoutInMs(1000);
+                    await pipereader.ReadAsync(
+                        pipeline.Object,
+                        new MessageFormat(BoltProtocolVersion.V5_0, TestDriverContext.MockContext));
+                }
+                finally
+                {
+                    client.Close();
+                    cts.Cancel();
+
+                }
+            }));
         
-            pipeline.Verify(x => x.OnSuccess(It.IsAny<Dictionary<string, object>>()), Times.Never);
-        }
+        pipeline.Verify(x => x.OnSuccess(It.IsAny<Dictionary<string, object>>()), Times.Once);
+    }
         
-        private static Mock<IResponsePipeline> MockPipeline()
-        {
-            var done = (object)false;
-            var pipeline = new Mock<IResponsePipeline>();
-            pipeline.Setup(x => x.OnSuccess(It.IsAny<Dictionary<string, object>>())).Callback(() => done = true);
-            pipeline.SetupGet(x => x.HasNoPendingMessages).Returns(() => (bool)done);
-            return pipeline;
-        }
+    [Fact]
+    public async Task ShouldTimeoutWaitingAfterSize()
+    {
+        var pipeline = MockPipeline();
+        using var cts = new CancellationTokenSource(5000);
+            
+        await Task.WhenAll(
+            Task.Run(async () =>
+            {
+                var tcp = new TcpListener(IPAddress.Loopback, Port);
+                TcpClient stream = null;
+                try
+                {
+                    tcp.Start();
+                    stream = await tcp.AcceptTcpClientAsync(cts.Token);
+                    stream.GetStream()
+                        .Write(
+                            new byte[]
+                            {
+                                0x00,0x03
+                            }.AsSpan());
+
+                    try
+                    {
+                        await Task.Delay(-1, cts.Token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+                }
+                finally
+                {
+                    stream?.Close();
+                    tcp.Stop();
+                }
+            }),
+            Task.Run(async () =>
+            {
+     
+                await Task.Delay(100);
+                var client = new TcpClient();
+                try
+                {
+                    await client.ConnectAsync(IPAddress.Loopback, Port, cts.Token);
+                    var pipereader = new PipelinedMessageReader(client.GetStream(), TestDriverContext.MockContext);
+                    pipereader.SetReadTimeoutInMs(2000);
+                    var exc = await Record.ExceptionAsync(
+                        async () =>
+                        {
+                            await pipereader.ReadAsync(
+                                pipeline.Object,
+                                new MessageFormat(BoltProtocolVersion.V5_0, TestDriverContext.MockContext));
+                        });
+                        
+                    exc.Should().BeOfType<ConnectionReadTimeoutException>();
+                }
+                finally
+                {
+                    client.Close();
+                    cts.Cancel();
+
+                }
+            }));
+        
+        pipeline.Verify(x => x.OnSuccess(It.IsAny<Dictionary<string, object>>()), Times.Never);
+    }
+        
+    [Fact]
+    public async Task ShouldTimeoutWaitingForData()
+    {
+        var pipeline = MockPipeline();
+        using var cts = new CancellationTokenSource(5000);
+            
+        await Task.WhenAll(
+            Task.Run(async () =>
+            {
+                var tcp = new TcpListener(IPAddress.Loopback, Port);
+                TcpClient stream = null;
+                try
+                {
+                    tcp.Start();
+                    stream = await tcp.AcceptTcpClientAsync(cts.Token);
+                    stream.GetStream()
+                        .Write(
+                            new byte[]
+                            {
+                                0x00,0x03
+                            }.AsSpan());
+
+                    await Task.Delay(1000);
+                    stream.GetStream()
+                        .Write(
+                            new byte[]
+                            {
+                                0x00
+                            }.AsSpan());
+                        
+                    try
+                    {
+                        await Task.Delay(-1, cts.Token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+                }
+                finally
+                {
+                    stream?.Close();
+                    tcp.Stop();
+                }
+            }),
+            Task.Run(async () =>
+            {
+     
+                await Task.Delay(100);
+                var client = new TcpClient();
+                try
+                {
+                    await client.ConnectAsync(IPAddress.Loopback, Port, cts.Token);
+                    var pipereader = new PipelinedMessageReader(client.GetStream(), TestDriverContext.MockContext);
+                    pipereader.SetReadTimeoutInMs(2000);
+                    var exc = await Record.ExceptionAsync(
+                        async () =>
+                        {
+                            await pipereader.ReadAsync(
+                                pipeline.Object,
+                                new MessageFormat(BoltProtocolVersion.V5_0, TestDriverContext.MockContext));
+                        });
+                        
+                    exc.Should().BeOfType<ConnectionReadTimeoutException>();
+                }
+                finally
+                {
+                    client.Close();
+                    cts.Cancel();
+
+                }
+            }));
+        
+        pipeline.Verify(x => x.OnSuccess(It.IsAny<Dictionary<string, object>>()), Times.Never);
+    }
+        
+    private static Mock<IResponsePipeline> MockPipeline()
+    {
+        var done = (object)false;
+        var pipeline = new Mock<IResponsePipeline>();
+        pipeline.Setup(x => x.OnSuccess(It.IsAny<Dictionary<string, object>>())).Callback(() => done = true);
+        pipeline.SetupGet(x => x.HasNoPendingMessages).Returns(() => (bool)done);
+        return pipeline;
     }
 }

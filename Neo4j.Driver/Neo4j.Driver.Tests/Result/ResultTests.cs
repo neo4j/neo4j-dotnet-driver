@@ -25,376 +25,375 @@ using Xunit;
 using Xunit.Abstractions;
 using Record = Neo4j.Driver.Internal.Result.Record;
 
-namespace Neo4j.Driver.Tests
+namespace Neo4j.Driver.Tests;
+
+public static class ResultTests
 {
-    public static class ResultTests
+    private static class ResultCreator
     {
-        private static class ResultCreator
+        public static InternalResult CreateResult(
+            int keySize,
+            int recordSize = 1,
+            Func<IResultSummary> getSummaryFunc = null)
         {
-            public static InternalResult CreateResult(
-                int keySize,
-                int recordSize = 1,
-                Func<IResultSummary> getSummaryFunc = null)
-            {
-                var keys = RecordCreator.CreateKeys(keySize);
-                var records = RecordCreator.CreateRecords(recordSize, keys);
+            var keys = RecordCreator.CreateKeys(keySize);
+            var records = RecordCreator.CreateRecords(recordSize, keys);
 
-                return new InternalResult(
-                    new ListBasedRecordCursor(keys, () => records, getSummaryFunc),
+            return new InternalResult(
+                new ListBasedRecordCursor(keys, () => records, getSummaryFunc),
+                new BlockingExecutor());
+        }
+    }
+
+    public class Constructor
+    {
+        [Fact]
+        public void ShouldThrowArgumentNullExceptionIfCursorIsNull()
+        {
+            var ex = Xunit.Record.Exception(() => new InternalResult(null, new BlockingExecutor()));
+            ex.Should().NotBeNull();
+            ex.Should().BeOfType<ArgumentNullException>();
+        }
+    }
+
+    public class ConsumeMethod
+    {
+        // INFO: Rewritten because Result no longer takes IPeekingEnumerator in constructor
+        [Fact]
+        public void ShouldConsumeAllRecords()
+        {
+            var result = ResultCreator.CreateResult(0, 3);
+            result.Consume();
+            result.Count().Should().Be(0);
+            result.Peek().Should().BeNull();
+        }
+
+        [Fact]
+        public void ShouldConsumeSummaryCorrectly()
+        {
+            var getSummaryCalled = 0;
+            var result = ResultCreator.CreateResult(
+                1,
+                0,
+                () =>
+                {
+                    getSummaryCalled++;
+                    return new FakeSummary();
+                });
+
+            result.Consume();
+            getSummaryCalled.Should().Be(1);
+
+            // the same if we call it multiple times
+            result.Consume();
+            getSummaryCalled.Should().Be(1);
+        }
+
+        [Fact]
+        public void ShouldThrowNoExceptionWhenCallingMultipleTimes()
+        {
+            var result = ResultCreator.CreateResult(1);
+
+            result.Consume();
+            var ex = Xunit.Record.Exception(() => result.Consume());
+            ex.Should().BeNull();
+        }
+
+        [Fact]
+        public void ShouldConsumeRecordCorrectly()
+        {
+            var result = ResultCreator.CreateResult(1, 3);
+
+            result.Consume();
+            result.Count().Should().Be(0); // the records left after consume
+
+            result.GetEnumerator().Current.Should().BeNull();
+            result.GetEnumerator().MoveNext().Should().BeFalse();
+        }
+    }
+
+    public class StreamingRecords
+    {
+        private readonly ITestOutputHelper _output;
+
+        public StreamingRecords(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
+        [Fact]
+        public void ShouldReturnRecords()
+        {
+            var recordYielder = new TestRecordYielder(5, 10, _output);
+            var cursor =
+                new InternalResult(
+                    new ListBasedRecordCursor(
+                        TestRecordYielder.Keys,
+                        () => recordYielder.RecordsWithAutoLoad),
                     new BlockingExecutor());
-            }
+
+            var records = cursor.ToList();
+            records.Count.Should().Be(10);
         }
 
-        public class Constructor
+        [Fact]
+        public void ShouldWaitForAllRecordsToArrive()
         {
-            [Fact]
-            public void ShouldThrowArgumentNullExceptionIfCursorIsNull()
-            {
-                var ex = Xunit.Record.Exception(() => new InternalResult(null, new BlockingExecutor()));
-                ex.Should().NotBeNull();
-                ex.Should().BeOfType<ArgumentNullException>();
-            }
-        }
+            var recordYielder = new TestRecordYielder(5, 10, _output);
 
-        public class ConsumeMethod
-        {
-            // INFO: Rewritten because Result no longer takes IPeekingEnumerator in constructor
-            [Fact]
-            public void ShouldConsumeAllRecords()
-            {
-                var result = ResultCreator.CreateResult(0, 3);
-                result.Consume();
-                result.Count().Should().Be(0);
-                result.Peek().Should().BeNull();
-            }
+            var count = 0;
+            var cursor =
+                new InternalResult(
+                    new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
+                    new BlockingExecutor());
 
-            [Fact]
-            public void ShouldConsumeSummaryCorrectly()
-            {
-                var getSummaryCalled = 0;
-                var result = ResultCreator.CreateResult(
-                    1,
-                    0,
-                    () =>
+            var t = Task.Factory.StartNew(
+                () =>
+                {
+                    // ReSharper disable once LoopCanBeConvertedToQuery
+                    foreach (var item in cursor)
                     {
-                        getSummaryCalled++;
-                        return new FakeSummary();
-                    });
+                        count++;
+                    }
 
-                result.Consume();
-                getSummaryCalled.Should().Be(1);
+                    count.Should().Be(10);
+                });
 
-                // the same if we call it multiple times
-                result.Consume();
-                getSummaryCalled.Should().Be(1);
-            }
-
-            [Fact]
-            public void ShouldThrowNoExceptionWhenCallingMultipleTimes()
+            while (count < 5)
             {
-                var result = ResultCreator.CreateResult(1);
-
-                result.Consume();
-                var ex = Xunit.Record.Exception(() => result.Consume());
-                ex.Should().BeNull();
+                Thread.Sleep(10);
             }
 
-            [Fact]
-            public void ShouldConsumeRecordCorrectly()
-            {
-                var result = ResultCreator.CreateResult(1, 3);
-
-                result.Consume();
-                result.Count().Should().Be(0); // the records left after consume
-
-                result.GetEnumerator().Current.Should().BeNull();
-                result.GetEnumerator().MoveNext().Should().BeFalse();
-            }
+            recordYielder.AddNew(5);
+            t.Wait();
         }
 
-        public class StreamingRecords
+        [Fact]
+        public void ShouldReturnRecordsImmediatelyWhenReady()
+        {
+            var recordYielder = new TestRecordYielder(5, 10, _output);
+            var result =
+                new InternalResult(
+                    new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
+                    new BlockingExecutor());
+
+            var temp = result.Take(5);
+            var records = temp.ToList();
+            records.Count.Should().Be(5);
+        }
+
+        private class TestRecordYielder
         {
             private readonly ITestOutputHelper _output;
+            private readonly IList<Record> _records = new List<Record>();
+            private readonly int _total;
 
-            public StreamingRecords(ITestOutputHelper output)
+            public TestRecordYielder(int count, int total, ITestOutputHelper output)
             {
+                Add(count);
+                _total = total;
                 _output = output;
             }
 
-            [Fact]
-            public void ShouldReturnRecords()
+            public static string[] Keys => new[] { "Test", "Keys" };
+
+            public IEnumerable<Record> Records
             {
-                var recordYielder = new TestRecordYielder(5, 10, _output);
-                var cursor =
-                    new InternalResult(
-                        new ListBasedRecordCursor(
-                            TestRecordYielder.Keys,
-                            () => recordYielder.RecordsWithAutoLoad),
-                        new BlockingExecutor());
-
-                var records = cursor.ToList();
-                records.Count.Should().Be(10);
-            }
-
-            [Fact]
-            public void ShouldWaitForAllRecordsToArrive()
-            {
-                var recordYielder = new TestRecordYielder(5, 10, _output);
-
-                var count = 0;
-                var cursor =
-                    new InternalResult(
-                        new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
-                        new BlockingExecutor());
-
-                var t = Task.Factory.StartNew(
-                    () =>
+                get
+                {
+                    var i = 0;
+                    while (i < _total)
                     {
-                        // ReSharper disable once LoopCanBeConvertedToQuery
-                        foreach (var item in cursor)
+                        while (i == _records.Count)
                         {
-                            count++;
+                            _output.WriteLine(
+                                $"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
+
+                            Thread.Sleep(50);
                         }
 
-                        count.Should().Be(10);
-                    });
+                        yield return _records[i];
 
-                while (count < 5)
-                {
-                    Thread.Sleep(10);
-                }
-
-                recordYielder.AddNew(5);
-                t.Wait();
-            }
-
-            [Fact]
-            public void ShouldReturnRecordsImmediatelyWhenReady()
-            {
-                var recordYielder = new TestRecordYielder(5, 10, _output);
-                var result =
-                    new InternalResult(
-                        new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
-                        new BlockingExecutor());
-
-                var temp = result.Take(5);
-                var records = temp.ToList();
-                records.Count.Should().Be(5);
-            }
-
-            private class TestRecordYielder
-            {
-                private readonly ITestOutputHelper _output;
-                private readonly IList<Record> _records = new List<Record>();
-                private readonly int _total;
-
-                public TestRecordYielder(int count, int total, ITestOutputHelper output)
-                {
-                    Add(count);
-                    _total = total;
-                    _output = output;
-                }
-
-                public static string[] Keys => new[] { "Test", "Keys" };
-
-                public IEnumerable<Record> Records
-                {
-                    get
-                    {
-                        var i = 0;
-                        while (i < _total)
-                        {
-                            while (i == _records.Count)
-                            {
-                                _output.WriteLine(
-                                    $"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
-
-                                Thread.Sleep(50);
-                            }
-
-                            yield return _records[i];
-
-                            i++;
-                        }
-                    }
-                }
-
-                public IEnumerable<Record> RecordsWithAutoLoad
-                {
-                    get
-                    {
-                        var i = 0;
-                        while (i < _total)
-                        {
-                            while (i == _records.Count)
-                            {
-                                _output.WriteLine(
-                                    $"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
-
-                                Thread.Sleep(500);
-                                AddNew(1);
-                                _output.WriteLine($"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Record arrived");
-                            }
-
-                            yield return _records[i];
-
-                            i++;
-                        }
-                    }
-                }
-
-                public void AddNew(int count)
-                {
-                    Add(count);
-                }
-
-                private void Add(int count)
-                {
-                    for (var i = 0; i < count; i++)
-                    {
-                        _records.Add(new Record(Keys, new object[] { "Test", 123 }));
+                        i++;
                     }
                 }
             }
 
-            private class FuncBasedRecordSet : IRecordSet
+            public IEnumerable<Record> RecordsWithAutoLoad
             {
-                private readonly Func<IEnumerable<IRecord>> _getRecords;
-
-                public FuncBasedRecordSet(Func<IEnumerable<IRecord>> getRecords)
+                get
                 {
-                    _getRecords = getRecords;
-                }
-
-                public bool AtEnd => throw new NotImplementedException();
-
-                public IRecord Peek()
-                {
-                    throw new NotImplementedException();
-                }
-
-                public IEnumerable<IRecord> Records()
-                {
-                    return _getRecords();
-                }
-            }
-        }
-
-        public class ResultNavigation
-        {
-            [Fact]
-            public void ShouldGetTheFirstRecordAndMoveToNextPosition()
-            {
-                var result = ResultCreator.CreateResult(1, 3);
-                var record = result.First();
-                record[0].As<string>().Should().Be("record0:key0");
-
-                record = result.First();
-                record[0].As<string>().Should().Be("record1:key0");
-            }
-
-            [Fact]
-            public void ShouldAlwaysAdvanceRecordPosition()
-            {
-                var result = ResultCreator.CreateResult(1, 3);
-                var enumerable = result.Take(1);
-                var records = result.Take(2).ToList();
-
-                records[0][0].As<string>().Should().Be("record0:key0");
-                records[1][0].As<string>().Should().Be("record1:key0");
-
-                records = enumerable.ToList();
-                records[0][0].As<string>().Should().Be("record2:key0");
-            }
-        }
-
-        public class SummaryProperty
-        {
-            [Fact]
-            public void ShouldCallGetSummaryWhenGetSummaryIsNotNull()
-            {
-                var getSummaryCalled = false;
-                var result = ResultCreator.CreateResult(
-                    1,
-                    0,
-                    () =>
+                    var i = 0;
+                    while (i < _total)
                     {
-                        getSummaryCalled = true;
-                        return null;
-                    });
+                        while (i == _records.Count)
+                        {
+                            _output.WriteLine(
+                                $"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
 
-                // ReSharper disable once UnusedVariable
-                var summary = result.Consume();
+                            Thread.Sleep(500);
+                            AddNew(1);
+                            _output.WriteLine($"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Record arrived");
+                        }
 
-                getSummaryCalled.Should().BeTrue();
+                        yield return _records[i];
+
+                        i++;
+                    }
+                }
             }
 
-            [Fact]
-            public void ShouldReturnNullWhenGetSummaryIsNull()
+            public void AddNew(int count)
             {
-                var result = ResultCreator.CreateResult(1, 0);
-
-                result.Consume().Should().BeNull();
+                Add(count);
             }
 
-            [Fact]
-            public void ShouldReturnExistingSummaryWhenSummaryHasBeenRetrieved()
+            private void Add(int count)
             {
-                var getSummaryCalled = 0;
-                var result = ResultCreator.CreateResult(
-                    1,
-                    0,
-                    () =>
-                    {
-                        getSummaryCalled++;
-                        return new FakeSummary();
-                    });
-
-                // ReSharper disable once NotAccessedVariable
-                var summary = result.Consume();
-                // ReSharper disable once RedundantAssignment
-                summary = result.Consume();
-                getSummaryCalled.Should().Be(1);
+                for (var i = 0; i < count; i++)
+                {
+                    _records.Add(new Record(Keys, new object[] { "Test", 123 }));
+                }
             }
         }
 
-        public class PeekMethod
+        private class FuncBasedRecordSet : IRecordSet
         {
-            [Fact]
-            public void ShouldReturnNextRecordWithoutMovingCurrentRecord()
-            {
-                var result = ResultCreator.CreateResult(1);
-                var record = result.Peek();
-                record.Should().NotBeNull();
+            private readonly Func<IEnumerable<IRecord>> _getRecords;
 
-                result.GetEnumerator().Current.Should().BeNull();
+            public FuncBasedRecordSet(Func<IEnumerable<IRecord>> getRecords)
+            {
+                _getRecords = getRecords;
             }
 
-            [Fact]
-            public void ShouldReturnNullIfAtEnd()
+            public bool AtEnd => throw new NotImplementedException();
+
+            public IRecord Peek()
             {
-                var result = ResultCreator.CreateResult(1);
-                result.Take(1).ToList();
-                var record = result.Peek();
-                record.Should().BeNull();
+                throw new NotImplementedException();
+            }
+
+            public IEnumerable<IRecord> Records()
+            {
+                return _getRecords();
             }
         }
+    }
 
-        [SuppressMessage("ReSharper", "UnassignedGetOnlyAutoProperty")]
-        private class FakeSummary : IResultSummary
+    public class ResultNavigation
+    {
+        [Fact]
+        public void ShouldGetTheFirstRecordAndMoveToNextPosition()
         {
-            public Query Query { get; }
-            public ICounters Counters { get; }
-            public QueryType QueryType { get; }
-            public bool HasPlan { get; }
-            public bool HasProfile { get; }
-            public IPlan Plan { get; }
-            public IProfiledPlan Profile { get; }
-            public IList<INotification> Notifications { get; }
-            public TimeSpan ResultAvailableAfter { get; }
-            public TimeSpan ResultConsumedAfter { get; }
-            public IServerInfo Server { get; }
-            public IDatabaseInfo Database { get; }
+            var result = ResultCreator.CreateResult(1, 3);
+            var record = result.First();
+            record[0].As<string>().Should().Be("record0:key0");
+
+            record = result.First();
+            record[0].As<string>().Should().Be("record1:key0");
         }
+
+        [Fact]
+        public void ShouldAlwaysAdvanceRecordPosition()
+        {
+            var result = ResultCreator.CreateResult(1, 3);
+            var enumerable = result.Take(1);
+            var records = result.Take(2).ToList();
+
+            records[0][0].As<string>().Should().Be("record0:key0");
+            records[1][0].As<string>().Should().Be("record1:key0");
+
+            records = enumerable.ToList();
+            records[0][0].As<string>().Should().Be("record2:key0");
+        }
+    }
+
+    public class SummaryProperty
+    {
+        [Fact]
+        public void ShouldCallGetSummaryWhenGetSummaryIsNotNull()
+        {
+            var getSummaryCalled = false;
+            var result = ResultCreator.CreateResult(
+                1,
+                0,
+                () =>
+                {
+                    getSummaryCalled = true;
+                    return null;
+                });
+
+            // ReSharper disable once UnusedVariable
+            var summary = result.Consume();
+
+            getSummaryCalled.Should().BeTrue();
+        }
+
+        [Fact]
+        public void ShouldReturnNullWhenGetSummaryIsNull()
+        {
+            var result = ResultCreator.CreateResult(1, 0);
+
+            result.Consume().Should().BeNull();
+        }
+
+        [Fact]
+        public void ShouldReturnExistingSummaryWhenSummaryHasBeenRetrieved()
+        {
+            var getSummaryCalled = 0;
+            var result = ResultCreator.CreateResult(
+                1,
+                0,
+                () =>
+                {
+                    getSummaryCalled++;
+                    return new FakeSummary();
+                });
+
+            // ReSharper disable once NotAccessedVariable
+            var summary = result.Consume();
+            // ReSharper disable once RedundantAssignment
+            summary = result.Consume();
+            getSummaryCalled.Should().Be(1);
+        }
+    }
+
+    public class PeekMethod
+    {
+        [Fact]
+        public void ShouldReturnNextRecordWithoutMovingCurrentRecord()
+        {
+            var result = ResultCreator.CreateResult(1);
+            var record = result.Peek();
+            record.Should().NotBeNull();
+
+            result.GetEnumerator().Current.Should().BeNull();
+        }
+
+        [Fact]
+        public void ShouldReturnNullIfAtEnd()
+        {
+            var result = ResultCreator.CreateResult(1);
+            result.Take(1).ToList();
+            var record = result.Peek();
+            record.Should().BeNull();
+        }
+    }
+
+    [SuppressMessage("ReSharper", "UnassignedGetOnlyAutoProperty")]
+    private class FakeSummary : IResultSummary
+    {
+        public Query Query { get; }
+        public ICounters Counters { get; }
+        public QueryType QueryType { get; }
+        public bool HasPlan { get; }
+        public bool HasProfile { get; }
+        public IPlan Plan { get; }
+        public IProfiledPlan Profile { get; }
+        public IList<INotification> Notifications { get; }
+        public TimeSpan ResultAvailableAfter { get; }
+        public TimeSpan ResultConsumedAfter { get; }
+        public IServerInfo Server { get; }
+        public IDatabaseInfo Database { get; }
     }
 }

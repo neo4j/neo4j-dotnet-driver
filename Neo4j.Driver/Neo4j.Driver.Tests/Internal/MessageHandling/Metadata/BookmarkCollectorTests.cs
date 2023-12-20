@@ -17,73 +17,72 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata
+namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
+
+public class BookmarkCollectorTests
 {
-    public class BookmarkCollectorTests
+    private const string Key = BookmarksCollector.BookmarkKey;
+
+    internal static KeyValuePair<string, object> TestMetadata => new(Key, "bookmark-455");
+
+    internal static Bookmarks TestMetadataCollected => Bookmarks.From((string)TestMetadata.Value);
+
+    [Fact]
+    public void ShouldNotCollectIfMetadataIsNull()
     {
-        private const string Key = BookmarksCollector.BookmarkKey;
+        var collector = new BookmarksCollector();
 
-        internal static KeyValuePair<string, object> TestMetadata => new(Key, "bookmark-455");
+        collector.Collect(null);
 
-        internal static Bookmarks TestMetadataCollected => Bookmarks.From((string)TestMetadata.Value);
+        collector.Collected.Should().BeNull();
+    }
 
-        [Fact]
-        public void ShouldNotCollectIfMetadataIsNull()
-        {
-            var collector = new BookmarksCollector();
+    [Fact]
+    public void ShouldNotCollectIfNoValueIsGiven()
+    {
+        var collector = new BookmarksCollector();
 
-            collector.Collect(null);
+        collector.Collect(new Dictionary<string, object>());
 
-            collector.Collected.Should().BeNull();
-        }
+        collector.Collected.Should().BeNull();
+    }
 
-        [Fact]
-        public void ShouldNotCollectIfNoValueIsGiven()
-        {
-            var collector = new BookmarksCollector();
+    [Fact]
+    public void ShouldThrowIfValueIsOfWrongType()
+    {
+        var metadata = new Dictionary<string, object> { { Key, true } };
+        var collector = new BookmarksCollector();
 
-            collector.Collect(new Dictionary<string, object>());
+        var ex = Record.Exception(() => collector.Collect(metadata));
 
-            collector.Collected.Should().BeNull();
-        }
+        ex.Should()
+            .BeOfType<ProtocolException>()
+            .Which
+            .Message.Should()
+            .Contain($"Expected '{Key}' metadata to be of type 'String', but got 'Boolean'.");
+    }
 
-        [Fact]
-        public void ShouldThrowIfValueIsOfWrongType()
-        {
-            var metadata = new Dictionary<string, object> { { Key, true } };
-            var collector = new BookmarksCollector();
+    [Fact]
+    public void ShouldCollect()
+    {
+        var bookmarkStr = "bookmark-455";
+        var metadata = new Dictionary<string, object> { { Key, bookmarkStr } };
+        var collector = new BookmarksCollector();
 
-            var ex = Record.Exception(() => collector.Collect(metadata));
+        collector.Collect(metadata);
 
-            ex.Should()
-                .BeOfType<ProtocolException>()
-                .Which
-                .Message.Should()
-                .Contain($"Expected '{Key}' metadata to be of type 'String', but got 'Boolean'.");
-        }
+        collector.Collected.Should().BeEquivalentTo(Bookmarks.From(bookmarkStr));
+    }
 
-        [Fact]
-        public void ShouldCollect()
-        {
-            var bookmarkStr = "bookmark-455";
-            var metadata = new Dictionary<string, object> { { Key, bookmarkStr } };
-            var collector = new BookmarksCollector();
+    [Fact]
+    public void ShouldReturnSameCollected()
+    {
+        var bookmarkStr = "bookmark-455";
+        var metadata = new Dictionary<string, object> { { Key, bookmarkStr } };
+        var collector = new BookmarksCollector();
 
-            collector.Collect(metadata);
+        collector.Collect(metadata);
 
-            collector.Collected.Should().BeEquivalentTo(Bookmarks.From(bookmarkStr));
-        }
-
-        [Fact]
-        public void ShouldReturnSameCollected()
-        {
-            var bookmarkStr = "bookmark-455";
-            var metadata = new Dictionary<string, object> { { Key, bookmarkStr } };
-            var collector = new BookmarksCollector();
-
-            collector.Collect(metadata);
-
-            ((IMetadataCollector)collector).Collected.Should().BeSameAs(collector.Collected);
-        }
+        ((IMetadataCollector)collector).Collected.Should().BeSameAs(collector.Collected);
     }
 }

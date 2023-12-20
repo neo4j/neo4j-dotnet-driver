@@ -18,20 +18,19 @@ using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Messages
-{
-    public class ResetMessageTests
-    {
-        [Fact]
-        public void ShouldHaveCorrectSerializer()
-        {
-            ResetMessage.Instance.Serializer.Should().BeOfType<ResetMessageSerializer>();
-        }
+namespace Neo4j.Driver.Internal.MessageHandling.Messages;
 
-        [Fact]
-        public void ShouldHaveResetMessage()
-        {
-            ResetMessage.Instance.ToString().Should().Be("RESET");
-        }
+public class ResetMessageTests
+{
+    [Fact]
+    public void ShouldHaveCorrectSerializer()
+    {
+        ResetMessage.Instance.Serializer.Should().BeOfType<ResetMessageSerializer>();
+    }
+
+    [Fact]
+    public void ShouldHaveResetMessage()
+    {
+        ResetMessage.Instance.ToString().Should().Be("RESET");
     }
 }

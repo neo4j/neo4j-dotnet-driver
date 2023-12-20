@@ -22,65 +22,64 @@ using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Tests;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers
+namespace Neo4j.Driver.Internal.IO.MessageSerializers;
+
+public class BeginMessageSerializerTests
 {
-    public class BeginMessageSerializerTests
+    [Fact]
+    public void ShouldHaveWriteableTypesAsCommitMessage()
     {
-        [Fact]
-        public void ShouldHaveWriteableTypesAsCommitMessage()
-        {
-            BeginMessageSerializer.Instance.WritableTypes.Should().BeEquivalentTo(typeof(BeginMessage));
-        }
+        BeginMessageSerializer.Instance.WritableTypes.Should().BeEquivalentTo(typeof(BeginMessage));
+    }
 
-        [Fact]
-        public void ShouldThrowWhenNotCommitMessage()
-        {
-            Record.Exception(() => BeginMessageSerializer.Instance.Serialize(null, RollbackMessage.Instance))
-                .Should()
-                .BeOfType<ArgumentOutOfRangeException>();
-        }
+    [Fact]
+    public void ShouldThrowWhenNotCommitMessage()
+    {
+        Record.Exception(() => BeginMessageSerializer.Instance.Serialize(null, RollbackMessage.Instance))
+            .Should()
+            .BeOfType<ArgumentOutOfRangeException>();
+    }
 
-        [Theory]
-        [InlineData(3, 0)]
-        [InlineData(4, 0)]
-        [InlineData(4, 1)]
-        [InlineData(4, 2)]
-        [InlineData(4, 3)]
-        [InlineData(4, 4)]
-        [InlineData(5, 0)]
-        [InlineData(5, 2)]
-        [InlineData(6, 0)]
-        public void ShouldSerialize(int major, int minor)
-        {
-            using var memory = new MemoryStream();
+    [Theory]
+    [InlineData(3, 0)]
+    [InlineData(4, 0)]
+    [InlineData(4, 1)]
+    [InlineData(4, 2)]
+    [InlineData(4, 3)]
+    [InlineData(4, 4)]
+    [InlineData(5, 0)]
+    [InlineData(5, 2)]
+    [InlineData(6, 0)]
+    public void ShouldSerialize(int major, int minor)
+    {
+        using var memory = new MemoryStream();
 
-            var boltProtocolVersion = new BoltProtocolVersion(major, minor);
-            var format = new MessageFormat(boltProtocolVersion, TestDriverContext.MockContext);
-            var psw = new PackStreamWriter(format, memory);
+        var boltProtocolVersion = new BoltProtocolVersion(major, minor);
+        var format = new MessageFormat(boltProtocolVersion, TestDriverContext.MockContext);
+        var psw = new PackStreamWriter(format, memory);
 
-            var message = new BeginMessage(
-                boltProtocolVersion,
-                "neo4j",
-                new InternalBookmarks("a"),
-                null,
-                AccessMode.Read,
-                null,
-                null);
+        var message = new BeginMessage(
+            boltProtocolVersion,
+            "neo4j",
+            new InternalBookmarks("a"),
+            null,
+            AccessMode.Read,
+            null,
+            null);
 
-            BeginMessageSerializer.Instance.Serialize(psw, message);
-            memory.Position = 0;
+        BeginMessageSerializer.Instance.Serialize(psw, message);
+        memory.Position = 0;
 
-            var reader = new PackStreamReader(format, memory, new ByteBuffers());
+        var reader = new PackStreamReader(format, memory, new ByteBuffers());
 
-            var headerBytes = reader.ReadBytes(2);
-            // size 
-            headerBytes[0].Should().Be(0xB1);
-            // message tag
-            headerBytes[1].Should().Be(0x11);
+        var headerBytes = reader.ReadBytes(2);
+        // size 
+        headerBytes[0].Should().Be(0xB1);
+        // message tag
+        headerBytes[1].Should().Be(0x11);
 
-            var meta = reader.ReadMap();
-            meta.Should().ContainKey("db").WhichValue.Should().Be("neo4j");
-            meta.Should().ContainKey("bookmarks").WhichValue.Should().BeEquivalentTo(new[] { "a" });
-        }
+        var meta = reader.ReadMap();
+        meta.Should().ContainKey("db").WhichValue.Should().Be("neo4j");
+        meta.Should().ContainKey("bookmarks").WhichValue.Should().BeEquivalentTo(new[] { "a" });
     }
 }

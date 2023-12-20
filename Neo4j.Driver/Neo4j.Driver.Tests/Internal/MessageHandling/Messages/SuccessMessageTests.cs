@@ -20,42 +20,41 @@ using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Messages
+namespace Neo4j.Driver.Internal.MessageHandling.Messages;
+
+public class SuccessMessageTests
 {
-    public class SuccessMessageTests
+    [Fact]
+    public void ShouldHaveCorrectSerializer()
     {
-        [Fact]
-        public void ShouldHaveCorrectSerializer()
+        var message = new SuccessMessage(null);
+        message.Serializer.Should().BeOfType<SuccessMessageSerializer>();
+    }
+
+    [Fact]
+    public void ShouldDispatchToPipelineOnSuccess()
+    {
+        var pipeline = new Mock<IResponsePipeline>();
+        var meta = new Dictionary<string, object>
         {
-            var message = new SuccessMessage(null);
-            message.Serializer.Should().BeOfType<SuccessMessageSerializer>();
-        }
+            ["a"] = "b"
+        };
 
-        [Fact]
-        public void ShouldDispatchToPipelineOnSuccess()
+        var message = new SuccessMessage(meta);
+
+        message.Dispatch(pipeline.Object);
+
+        pipeline.Verify(x => x.OnSuccess(meta));
+    }
+
+    [Fact]
+    public void ShouldHaveIgnoredMessage()
+    {
+        var meta = new Dictionary<string, object>
         {
-            var pipeline = new Mock<IResponsePipeline>();
-            var meta = new Dictionary<string, object>
-            {
-                ["a"] = "b"
-            };
+            ["a"] = "b"
+        };
 
-            var message = new SuccessMessage(meta);
-
-            message.Dispatch(pipeline.Object);
-
-            pipeline.Verify(x => x.OnSuccess(meta));
-        }
-
-        [Fact]
-        public void ShouldHaveIgnoredMessage()
-        {
-            var meta = new Dictionary<string, object>
-            {
-                ["a"] = "b"
-            };
-
-            new SuccessMessage(meta).ToString().Should().Be("SUCCESS [{a, b}]");
-        }
+        new SuccessMessage(meta).ToString().Should().Be("SUCCESS [{a, b}]");
     }
 }

@@ -23,69 +23,68 @@ using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
-namespace Neo4j.Driver.Tests
+namespace Neo4j.Driver.Tests;
+
+public class PooledConnectionTests
 {
-    public class PooledConnectionTests
+    [Theory]
+    [InlineData(typeof(Neo4jException))]
+    [InlineData(typeof(DatabaseException))]
+    [InlineData(typeof(ServiceUnavailableException))]
+    [InlineData(typeof(SessionExpiredException))]
+    [InlineData(typeof(ProtocolException))]
+    [InlineData(typeof(SecurityException))]
+    [InlineData(typeof(AuthenticationException))]
+    [InlineData(typeof(AuthorizationException))]
+    [InlineData(typeof(TokenExpiredException))]
+    public async Task ShouldHaveUnrecoverableErrorOnErrorAsync(Type exceptionType)
     {
-        [Theory]
-        [InlineData(typeof(Neo4jException))]
-        [InlineData(typeof(DatabaseException))]
-        [InlineData(typeof(ServiceUnavailableException))]
-        [InlineData(typeof(SessionExpiredException))]
-        [InlineData(typeof(ProtocolException))]
-        [InlineData(typeof(SecurityException))]
-        [InlineData(typeof(AuthenticationException))]
-        [InlineData(typeof(AuthorizationException))]
-        [InlineData(typeof(TokenExpiredException))]
-        public async Task ShouldHaveUnrecoverableErrorOnErrorAsync(Type exceptionType)
-        {
-            var connectionMock = new Mock<IConnection>();
-            connectionMock.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V5_0);
-            var connection = connectionMock.Object;
+        var connectionMock = new Mock<IConnection>();
+        connectionMock.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V5_0);
+        var connection = connectionMock.Object;
 
-            var releaseManager = new Mock<IConnectionReleaseManager>().Object;
-            var pooledConnection = new PooledConnection(connection, releaseManager);
-            var exception = (Exception)Activator.CreateInstance(exceptionType, "Testing exception");
+        var releaseManager = new Mock<IConnectionReleaseManager>().Object;
+        var pooledConnection = new PooledConnection(connection, releaseManager);
+        var exception = (Exception)Activator.CreateInstance(exceptionType, "Testing exception");
 
-            var resultingException = await Record.ExceptionAsync(() => pooledConnection.OnErrorAsync(exception));
-            Assert.Equal(resultingException.GetType(), exceptionType);
-            Assert.True(pooledConnection.HasUnrecoverableError);
-        }
+        var resultingException = await Record.ExceptionAsync(() => pooledConnection.OnErrorAsync(exception));
+        Assert.Equal(resultingException.GetType(), exceptionType);
+        Assert.True(pooledConnection.HasUnrecoverableError);
+    }
 
-        [Theory]
-        [InlineData(typeof(IOException))]
-        [InlineData(typeof(SocketException))]
-        public async Task ShouldReturnConnectionErrorOnErrorAsync(Type exceptionType)
-        {
-            var connectionMock = new Mock<IConnection>();
-            connectionMock.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V5_0);
-            var connection = connectionMock.Object;
-            
-            var releaseManager = new Mock<IConnectionReleaseManager>().Object;
-            var pooledConnection = new PooledConnection(connection, releaseManager);
-            var exception = (Exception)Activator.CreateInstance(exceptionType);
+    [Theory]
+    [InlineData(typeof(IOException))]
+    [InlineData(typeof(SocketException))]
+    public async Task ShouldReturnConnectionErrorOnErrorAsync(Type exceptionType)
+    {
+        var connectionMock = new Mock<IConnection>();
+        connectionMock.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V5_0);
+        var connection = connectionMock.Object;
 
-            var resultingException = await Record.ExceptionAsync(() => pooledConnection.OnErrorAsync(exception));
-            Assert.Equal(resultingException.GetType(), typeof(ServiceUnavailableException));
-        }
+        var releaseManager = new Mock<IConnectionReleaseManager>().Object;
+        var pooledConnection = new PooledConnection(connection, releaseManager);
+        var exception = (Exception)Activator.CreateInstance(exceptionType);
 
-        [Fact]
-        public async Task ShouldCloseConnectionOnAuthorizationException()
-        {
-            var connectionMock = new Mock<IConnection>();
-            connectionMock.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V5_0);
-            var connection = connectionMock.Object;
+        var resultingException = await Record.ExceptionAsync(() => pooledConnection.OnErrorAsync(exception));
+        Assert.Equal(resultingException.GetType(), typeof(ServiceUnavailableException));
+    }
 
-            var releaseManager = new Mock<IConnectionReleaseManager>();
-            var pooledConnection = new PooledConnection(
-                connection,
-                releaseManager.Object);
+    [Fact]
+    public async Task ShouldCloseConnectionOnAuthorizationException()
+    {
+        var connectionMock = new Mock<IConnection>();
+        connectionMock.SetupGet(x => x.Version).Returns(BoltProtocolVersion.V5_0);
+        var connection = connectionMock.Object;
 
-            var resultException = await Record.ExceptionAsync(
-                () =>
-                    pooledConnection.OnErrorAsync(new AuthorizationException("Authorization error")));
+        var releaseManager = new Mock<IConnectionReleaseManager>();
+        var pooledConnection = new PooledConnection(
+            connection,
+            releaseManager.Object);
 
-            releaseManager.Verify(rm => rm.OnPoolMemberException(pooledConnection, It.IsAny<Exception>()), Times.Once());
-        }
+        var resultException = await Record.ExceptionAsync(
+            () =>
+                pooledConnection.OnErrorAsync(new AuthorizationException("Authorization error")));
+
+        releaseManager.Verify(rm => rm.OnPoolMemberException(pooledConnection, It.IsAny<Exception>()), Times.Once());
     }
 }

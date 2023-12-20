@@ -22,50 +22,49 @@ using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Tests;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers
+namespace Neo4j.Driver.Internal.IO.MessageSerializers;
+
+public class PullAllMessageSerializerTests
 {
-    public class PullAllMessageSerializerTests
+    [Fact]
+    public void ShouldHaveWritableTypesAsPullAllMessage()
     {
-        [Fact]
-        public void ShouldHaveWritableTypesAsPullAllMessage()
-        {
-            PullAllMessageSerializer.Instance.WritableTypes.Should().ContainEquivalentOf(typeof(PullAllMessage));
-        }
+        PullAllMessageSerializer.Instance.WritableTypes.Should().ContainEquivalentOf(typeof(PullAllMessage));
+    }
 
-        [Fact]
-        public void ShouldThrowIfPassedWrongMessage()
-        {
-            Record.Exception(() => PullAllMessageSerializer.Instance.Serialize(null, RollbackMessage.Instance))
-                .Should()
-                .BeOfType<ArgumentOutOfRangeException>();
-        }
+    [Fact]
+    public void ShouldThrowIfPassedWrongMessage()
+    {
+        Record.Exception(() => PullAllMessageSerializer.Instance.Serialize(null, RollbackMessage.Instance))
+            .Should()
+            .BeOfType<ArgumentOutOfRangeException>();
+    }
 
-        [Theory]
-        [InlineData(3, 0)]
-        [InlineData(4, 0)]
-        [InlineData(4, 1)]
-        [InlineData(4, 2)]
-        [InlineData(4, 3)]
-        [InlineData(4, 4)]
-        [InlineData(5, 0)]
-        [InlineData(6, 0)]
-        public void ShouldSerialize(int major, int minor)
-        {
-            using var memory = new MemoryStream();
+    [Theory]
+    [InlineData(3, 0)]
+    [InlineData(4, 0)]
+    [InlineData(4, 1)]
+    [InlineData(4, 2)]
+    [InlineData(4, 3)]
+    [InlineData(4, 4)]
+    [InlineData(5, 0)]
+    [InlineData(6, 0)]
+    public void ShouldSerialize(int major, int minor)
+    {
+        using var memory = new MemoryStream();
 
-            var boltProtocolVersion = new BoltProtocolVersion(major, minor);
-            var format = new MessageFormat(boltProtocolVersion, TestDriverContext.MockContext);
+        var boltProtocolVersion = new BoltProtocolVersion(major, minor);
+        var format = new MessageFormat(boltProtocolVersion, TestDriverContext.MockContext);
 
-            var psw = new PackStreamWriter(format, memory);
+        var psw = new PackStreamWriter(format, memory);
 
-            PullAllMessageSerializer.Instance.Serialize(psw, PullAllMessage.Instance);
-            memory.Position = 0;
+        PullAllMessageSerializer.Instance.Serialize(psw, PullAllMessage.Instance);
+        memory.Position = 0;
 
-            var reader = new PackStreamReader(format, memory, new ByteBuffers());
+        var reader = new PackStreamReader(format, memory, new ByteBuffers());
 
-            var bytes = reader.ReadBytes(2);
-            bytes[0].Should().Be(0xB0);
-            bytes[1].Should().Be(0x3F);
-        }
+        var bytes = reader.ReadBytes(2);
+        bytes[0].Should().Be(0xB0);
+        bytes[1].Should().Be(0x3F);
     }
 }

@@ -18,109 +18,108 @@ using FluentAssertions;
 using Neo4j.Driver.Internal.Auth;
 using Xunit;
 
-namespace Neo4j.Driver.Tests
+namespace Neo4j.Driver.Tests;
+
+public class AuthTokenTests
 {
-    public class AuthTokenTests
+    public class BasicAuthToken
     {
-        public class BasicAuthToken
+        [Fact]
+        public void ShouldCreateBasicAuthTokenWithoutRealm()
         {
-            [Fact]
-            public void ShouldCreateBasicAuthTokenWithoutRealm()
-            {
-                var authToken = AuthTokens.Basic("zhenli", "toufu");
-                var dict = authToken.AsDictionary();
-                dict.Count.Should().Be(3);
-                dict["scheme"].Should().Be(AuthSchemes.Basic);
-                dict["principal"].Should().Be("zhenli");
-                dict["credentials"].Should().Be("toufu");
-                dict.ContainsKey("realm").Should().BeFalse();
-            }
-
-            [Fact]
-            public void ShouldCreateBasicAuthTokenWithRealm()
-            {
-                var authToken = AuthTokens.Basic("zhenli", "toufu", "foo");
-                var dict = authToken.AsDictionary();
-                dict.Count.Should().Be(4);
-                dict["scheme"].Should().Be(AuthSchemes.Basic);
-                dict["principal"].Should().Be("zhenli");
-                dict["credentials"].Should().Be("toufu");
-                dict["realm"].Should().Be("foo");
-            }
+            var authToken = AuthTokens.Basic("zhenli", "toufu");
+            var dict = authToken.AsDictionary();
+            dict.Count.Should().Be(3);
+            dict["scheme"].Should().Be(AuthSchemes.Basic);
+            dict["principal"].Should().Be("zhenli");
+            dict["credentials"].Should().Be("toufu");
+            dict.ContainsKey("realm").Should().BeFalse();
         }
 
-        public class KerberosAuthToken
+        [Fact]
+        public void ShouldCreateBasicAuthTokenWithRealm()
         {
-            [Fact]
-            public void ShouldCreateKerberosAuthToken()
-            {
-                var authToken = AuthTokens.Kerberos("aBase64Str");
-                var dict = authToken.AsDictionary();
-                dict.Count.Should().Be(3);
-                dict["scheme"].Should().Be(AuthSchemes.Kerberos);
-                dict["principal"].Should().Be("");
-                dict["credentials"].Should().Be("aBase64Str");
-            }
+            var authToken = AuthTokens.Basic("zhenli", "toufu", "foo");
+            var dict = authToken.AsDictionary();
+            dict.Count.Should().Be(4);
+            dict["scheme"].Should().Be(AuthSchemes.Basic);
+            dict["principal"].Should().Be("zhenli");
+            dict["credentials"].Should().Be("toufu");
+            dict["realm"].Should().Be("foo");
+        }
+    }
+
+    public class KerberosAuthToken
+    {
+        [Fact]
+        public void ShouldCreateKerberosAuthToken()
+        {
+            var authToken = AuthTokens.Kerberos("aBase64Str");
+            var dict = authToken.AsDictionary();
+            dict.Count.Should().Be(3);
+            dict["scheme"].Should().Be(AuthSchemes.Kerberos);
+            dict["principal"].Should().Be("");
+            dict["credentials"].Should().Be("aBase64Str");
+        }
+    }
+
+    public class CustomAuthToken
+    {
+        [Fact]
+        public void ShouldCreateCustomAuthTokenWithoutParameters()
+        {
+            var authToken = AuthTokens.Custom("zhenli", "toufu", "foo", "custom");
+            var dict = authToken.AsDictionary();
+            dict.Count.Should().Be(4);
+            dict["scheme"].Should().Be("custom");
+            dict["principal"].Should().Be("zhenli");
+            dict["credentials"].Should().Be("toufu");
+            dict["realm"].Should().Be("foo");
+            dict.ContainsKey("parameters").Should().BeFalse();
         }
 
-        public class CustomAuthToken
+        [Fact]
+        public void ShouldCreateCustomAuthTokenWithParameters()
         {
-            [Fact]
-            public void ShouldCreateCustomAuthTokenWithoutParameters()
-            {
-                var authToken = AuthTokens.Custom("zhenli", "toufu", "foo", "custom");
-                var dict = authToken.AsDictionary();
-                dict.Count.Should().Be(4);
-                dict["scheme"].Should().Be("custom");
-                dict["principal"].Should().Be("zhenli");
-                dict["credentials"].Should().Be("toufu");
-                dict["realm"].Should().Be("foo");
-                dict.ContainsKey("parameters").Should().BeFalse();
-            }
+            var authToken = AuthTokens.Custom(
+                "zhenli",
+                "toufu",
+                "foo",
+                "custom",
+                new Dictionary<string, object>
+                {
+                    { "One", 1 },
+                    { "Two", 2 },
+                    { "Three", 3 }
+                });
 
-            [Fact]
-            public void ShouldCreateCustomAuthTokenWithParameters()
-            {
-                var authToken = AuthTokens.Custom(
-                    "zhenli",
-                    "toufu",
-                    "foo",
-                    "custom",
-                    new Dictionary<string, object>
-                    {
-                        { "One", 1 },
-                        { "Two", 2 },
-                        { "Three", 3 }
-                    });
+            var dict = authToken.AsDictionary();
 
-                var dict = authToken.AsDictionary();
+            dict.Count.Should().Be(5);
+            dict["scheme"].Should().Be("custom");
+            dict["principal"].Should().Be("zhenli");
+            dict["credentials"].Should().Be("toufu");
+            dict["realm"].Should().Be("foo");
 
-                dict.Count.Should().Be(5);
-                dict["scheme"].Should().Be("custom");
-                dict["principal"].Should().Be("zhenli");
-                dict["credentials"].Should().Be("toufu");
-                dict["realm"].Should().Be("foo");
+            var nums = dict["parameters"].As<Dictionary<string, object>>();
+            nums["One"].Should().Be(1);
+            nums["Two"].Should().Be(2);
+            nums["Three"].Should().Be(3);
+        }
 
-                var nums = dict["parameters"].As<Dictionary<string, object>>();
-                nums["One"].Should().Be(1);
-                nums["Two"].Should().Be(2);
-                nums["Three"].Should().Be(3);
-            }
+        [Fact]
+        public void ShouldNotAddPrincipalIfNull()
+        {
+            var authToken = AuthTokens.Custom(null, "toufu", "foo", "custom");
+            var dict = authToken.AsDictionary();
 
-            [Fact]
-            public void ShouldNotAddPrincipalIfNull()
-            {
-                var authToken = AuthTokens.Custom(null, "toufu", "foo", "custom");
-                var dict = authToken.AsDictionary();
+            dict.Count.Should().Be(3);
+            dict["scheme"].Should().Be("custom");
+            dict["credentials"].Should().Be("toufu");
+            dict["realm"].Should().Be("foo");
 
-                dict.Count.Should().Be(3);
-                dict["scheme"].Should().Be("custom");
-                dict["credentials"].Should().Be("toufu");
-                dict["realm"].Should().Be("foo");
-
-                dict.ContainsKey("parameters").Should().BeFalse();
-                dict.ContainsKey("principal").Should().BeFalse();
-            }
+            dict.ContainsKey("parameters").Should().BeFalse();
+            dict.ContainsKey("principal").Should().BeFalse();
         }
     }
 }
