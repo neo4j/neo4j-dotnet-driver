@@ -29,7 +29,7 @@ internal sealed class PipeReaderMemoryPool : MemoryPool<byte>
     public PipeReaderMemoryPool(int defaultSize)
     {
         _defaultSize = defaultSize;
-        _pool = ArrayPool<byte>.Create();
+        _pool = ArrayPool<byte>.Create(2146435071, 64);
     }
 
     public override int MaxBufferSize => int.MaxValue;
