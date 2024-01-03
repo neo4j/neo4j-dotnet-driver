@@ -285,6 +285,7 @@ public sealed class MessageReaderConfig
     internal MessageReaderConfig(Config config)
     {
         DisablePipelinedMessageReader = false;
+        MinBufferSize = config.DefaultReadBufferSize;
         MemoryPool = new PipeReaderMemoryPool(config.MaxReadBufferSize);
         StreamPipeReaderOptions = new(MemoryPool, config.DefaultReadBufferSize, leaveOpen: true);
     }
