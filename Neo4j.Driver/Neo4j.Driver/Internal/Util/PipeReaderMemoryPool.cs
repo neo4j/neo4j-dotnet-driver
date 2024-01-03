@@ -15,6 +15,7 @@
 
 using System;
 using System.Buffers;
+using Neo4j.Driver.Internal.IO;
 
 namespace Neo4j.Driver.Internal;
 
@@ -25,11 +26,11 @@ internal sealed class PipeReaderMemoryPool : MemoryPool<byte>
 {
     private readonly int _defaultSize;
     private readonly ArrayPool<byte> _pool;
-
+    
     public PipeReaderMemoryPool(int defaultSize)
     {
         _defaultSize = defaultSize;
-        _pool = ArrayPool<byte>.Create(2146435071, 64);
+        _pool = ArrayPool<byte>.Create(Constants.MaxReadBufferSize, 64);
     }
 
     public override int MaxBufferSize => int.MaxValue;

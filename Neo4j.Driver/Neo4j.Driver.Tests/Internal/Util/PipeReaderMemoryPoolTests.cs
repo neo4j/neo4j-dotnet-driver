@@ -36,7 +36,15 @@ public class PipeReaderMemoryPoolTests
         using var memory = pool.Rent(size);
         memory.Memory.Length.Should().Be(expectedSize);
     }
-
+    
+    [Fact]
+    public void ShouldRentMemoryInPowerWithDefaultSize()
+    {
+        var pool = new PipeReaderMemoryPool(1024);
+        using var memory = pool.Rent();
+        memory.Memory.Length.Should().Be(1024);
+    }
+    
     [Fact]
     public void ShouldReusePooledObjects()
     {
@@ -96,8 +104,11 @@ public class PipeReaderMemoryPoolTests
     public void CanBorrowMaxLengthArray()
     {
         var data = new PipeReaderMemoryPool(1024);
+        
+        // 2146435071 is the max length of an array in .NET
         using (var rental = data.Rent(2146435071))
         {
+            // when returned to the pool, as it exceeds the max size of the pool, it will be discarded
             rental.Memory.Length.Should().Be(2146435071);
         }
     }

@@ -37,6 +37,9 @@ public sealed class ConfigBuilder
     /// <returns>A <see cref="Config"/> instance.</returns>
     internal Config Build()
     {
+        // Initialize the message reader config with internal constructor, it can read the default and max read buffer
+        // sizes. if users have configured a message reader config we will use that instead.
+        _config.MessageReaderConfig ??= new MessageReaderConfig(_config);
         return _config;
     }
 

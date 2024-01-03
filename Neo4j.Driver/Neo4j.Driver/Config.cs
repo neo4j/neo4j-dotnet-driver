@@ -236,7 +236,7 @@ public class Config
     /// <summary>
     /// The configuration for the driver's underlying message reading from the network.
     /// </summary>
-    public MessageReaderConfig MessageReaderConfig { get; internal set; } = new();
+    public MessageReaderConfig MessageReaderConfig { get; internal set; }
 }
 
 /// <summary>
@@ -253,7 +253,7 @@ public sealed class MessageReaderConfig
     /// host an entire message. User code can provide an implementation for monitoring; by default, the driver will
     /// allocate a new array pool that does not take advantage of shared memory pools.</param>
     /// <param name="minBufferSize">The minimum buffer size to use when renting memory from the pool. The default value
-    /// is 65,539.</param>
+    /// is 32,768.</param>
     /// <seealso cref="PipeReader"/>
     /// <seealso cref="MemoryPool{T}"/>
     /// <seealso cref="StreamPipeReaderOptions"/>
@@ -262,18 +262,31 @@ public sealed class MessageReaderConfig
     /// the <paramref name="memoryPool"/>, this should only be used when there is complete trust over the usage of
     /// shared memory buffers in the application as other components may be using the same memory pool.
     /// </remarks>
-    /// <exception cref="ArgumentOutOfRangeException">If <paramref name="minBufferSize"/>is less than 1.</exception>
+    /// <remarks>
+    /// Note using a small value for <paramref name="minBufferSize"/> could cause a degradation in performance.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// If <paramref name="minBufferSize"/>is less than 1 or greater than 2146435071
+    /// </exception>
     public MessageReaderConfig(MemoryPool<byte> memoryPool = null, int minBufferSize = -1)
     {
-        if (minBufferSize is < -1 or 0)
+        if (minBufferSize is < -1 or 0 or > 2146435071)
         {
-            throw new ArgumentOutOfRangeException(nameof(minBufferSize));
+            throw new ArgumentOutOfRangeException(nameof(minBufferSize), minBufferSize,
+                "Minimum buffer size must be between 1 and 2146435071, leave as -1 to use default.");
         }
 
         DisablePipelinedMessageReader = false;
-        MinBufferSize = minBufferSize == -1 ? 65_535 + 4 : minBufferSize;
+        MinBufferSize = minBufferSize == -1 ? Constants.DefaultReadBufferSize : MinBufferSize;
         MemoryPool = memoryPool ?? new PipeReaderMemoryPool(MinBufferSize);
         StreamPipeReaderOptions = new(MemoryPool, MinBufferSize, leaveOpen: true);
+    }
+
+    internal MessageReaderConfig(Config config)
+    {
+        DisablePipelinedMessageReader = false;
+        MemoryPool = new PipeReaderMemoryPool(config.MaxReadBufferSize);
+        StreamPipeReaderOptions = new(MemoryPool, config.DefaultReadBufferSize, leaveOpen: true);
     }
 
     /// <summary>
