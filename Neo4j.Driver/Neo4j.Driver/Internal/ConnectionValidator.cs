@@ -37,6 +37,7 @@ internal class ConnectionValidator : IConnectionValidator
     private readonly long _connIdleTimeout;
     private readonly long _livenessTimeout;
     private readonly long _maxConnLifetime;
+    private readonly bool _idleTimerActive;
 
     public ConnectionValidator(
         TimeSpan connIdleTimeout,
@@ -48,6 +49,8 @@ internal class ConnectionValidator : IConnectionValidator
         _livenessTimeout = livenessCheckTimeout.HasValue
             ? (long)livenessCheckTimeout.Value.TotalMilliseconds
             : long.MaxValue;
+
+        _idleTimerActive = _connIdleTimeout < long.MaxValue || _livenessTimeout < long.MaxValue;
     }
 
     public async Task<bool> OnReleaseAsync(IPooledConnection connection)
@@ -110,7 +113,7 @@ internal class ConnectionValidator : IConnectionValidator
 
     private void RestartIdleTimer(IPooledConnection connection)
     {
-        if (_connIdleTimeout < long.MaxValue)
+        if (_idleTimerActive)
         {
             connection.IdleTimer.Start();
         }
@@ -118,7 +121,7 @@ internal class ConnectionValidator : IConnectionValidator
 
     private void ResetIdleTimer(IPooledConnection connection)
     {
-        if (_connIdleTimeout < long.MaxValue)
+        if (_idleTimerActive)
         {
             connection.IdleTimer.Reset();
         }
