@@ -15,6 +15,7 @@
 
 using System.Buffers;
 using FluentAssertions;
+using Neo4j.Driver.Internal.IO;
 using Xunit;
 
 namespace Neo4j.Driver.Internal.Util;
@@ -32,7 +33,7 @@ public class PipeReaderMemoryPoolTests
     [InlineData(65539, 131072)]
     public void ShouldRentMemoryInPower(int size, int expectedSize)
     {
-        var pool = new PipeReaderMemoryPool(1024);
+        var pool = new PipeReaderMemoryPool(1024, Constants.MaxReadBufferSize);
         using var memory = pool.Rent(size);
         memory.Memory.Length.Should().Be(expectedSize);
     }
@@ -40,7 +41,7 @@ public class PipeReaderMemoryPoolTests
     [Fact]
     public void ShouldRentMemoryInPowerWithDefaultSize()
     {
-        var pool = new PipeReaderMemoryPool(1024);
+        var pool = new PipeReaderMemoryPool(1024, Constants.MaxReadBufferSize);
         using var memory = pool.Rent();
         memory.Memory.Length.Should().Be(1024);
     }
@@ -48,7 +49,7 @@ public class PipeReaderMemoryPoolTests
     [Fact]
     public void ShouldReusePooledObjects()
     {
-        var pool = new PipeReaderMemoryPool(1024);
+        var pool = new PipeReaderMemoryPool(1024, Constants.MaxReadBufferSize);
 
         int length;
         using (var memory = pool.Rent(4321))
@@ -103,7 +104,7 @@ public class PipeReaderMemoryPoolTests
     [Fact]
     public void CanBorrowMaxLengthArray()
     {
-        var data = new PipeReaderMemoryPool(1024);
+        var data = new PipeReaderMemoryPool(1024, Constants.MaxReadBufferSize);
         
         // 2146435071 is the max length of an array in .NET
         using (var rental = data.Rent(2146435071))
