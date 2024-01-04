@@ -16,7 +16,7 @@
 using System.Threading;
 using Neo4j.Driver.Internal.Telemetry;
 
-namespace Neo4j.Driver.Internal;
+namespace Neo4j.Driver.Internal.Protocol;
 
 internal sealed record BeginTransactionParams(
     string Database,

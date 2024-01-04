@@ -18,7 +18,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Microsoft.Reactive.Testing;
 using Neo4j.Driver.Internal;
-using static Neo4j.Driver.Reactive.Utils;
+using static Neo4j.Driver.Tests.Reactive.Utils.Utils;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
@@ -39,7 +39,7 @@ public sealed class RxWrongCommandInTx : RxCommand
                     txc => txc
                         .Run("RETURN")
                         .Records()
-                        .CatchAndThrow(exc => txc.Rollback<IRecord>())
+                        .CatchAndThrow(_ => txc.Rollback<IRecord>())
                         .Concat(txc.Commit<IRecord>()))
                 .CatchAndThrow(_ => session.Close<IRecord>())
                 .Concat(session.Close<IRecord>())

@@ -17,7 +17,9 @@ using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Metrics;
-using Neo4j.Driver.Auth;
+using Neo4j.Driver.Internal.Connector.Resolvers;
+using Neo4j.Driver.Internal.Helpers;
+using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver.Internal;
 

@@ -18,20 +18,19 @@ using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Messages
-{
-    public class PullAllMessageTests
-    {
-        [Fact]
-        public void ShouldHaveCorrectSerializer()
-        {
-            PullAllMessage.Instance.Serializer.Should().BeOfType<PullAllMessageSerializer>();
-        }
+namespace Neo4j.Driver.Tests.Internal.MessageHandling.Messages;
 
-        [Fact]
-        public void ShouldHavePullAllMessage()
-        {
-            PullAllMessage.Instance.ToString().Should().Be("PULLALL");
-        }
+public class PullAllMessageTests
+{
+    [Fact]
+    public void ShouldHaveCorrectSerializer()
+    {
+        PullAllMessage.Instance.Serializer.Should().BeOfType<PullAllMessageSerializer>();
+    }
+
+    [Fact]
+    public void ShouldHavePullAllMessage()
+    {
+        PullAllMessage.Instance.ToString().Should().Be("PULLALL");
     }
 }

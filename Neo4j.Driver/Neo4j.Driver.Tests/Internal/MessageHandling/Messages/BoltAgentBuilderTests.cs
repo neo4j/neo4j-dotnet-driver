@@ -17,21 +17,20 @@ using FluentAssertions;
 using Neo4j.Driver.Internal.Messaging.Utils;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Messages
+namespace Neo4j.Driver.Tests.Internal.MessageHandling.Messages;
+
+public class BoltAgentBuilderTests
 {
-    public class BoltAgentBuilderTests
+    [Fact]
+    public void ShouldReturnBoltAgent()
     {
-        [Fact]
-        public void ShouldReturnBoltAgent()
-        {
-            var agent = BoltAgentBuilder.Agent;
-            agent.Should()
-                .HaveCount(3)
-                .And.ContainKey("platform")
-                .And.ContainKey("language_details")
-                .And.ContainKey("product")
-                .WhichValue.Should()
-                .MatchRegex(@"^neo4j-dotnet/\d\.\d+\.\d+$");
-        }
+        var agent = BoltAgentBuilder.Agent;
+        agent.Should()
+            .HaveCount(3)
+            .And.ContainKey("platform")
+            .And.ContainKey("language_details")
+            .And.ContainKey("product")
+            .WhichValue.Should()
+            .MatchRegex(@"^neo4j-dotnet/\d\.\d+\.\d+$");
     }
 }

@@ -17,9 +17,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Neo4j.Driver.Tests.TestBackend.Protocol.BookmarkManager;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Driver;
+using Neo4j.Driver.Tests.TestBackend.Protocol.JsonConverters;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Result;
+using Neo4j.Driver.Tests.TestBackend.Types;
 using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.DriverQuery;
 
 internal class ExecuteQuery : ProtocolObject
 {

@@ -17,7 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal;
+namespace Neo4j.Driver.Internal.Protocol.Utility;
 
 /// <summary>
 /// Supports cursors on auto commit functions so we don't need to null check and check error.

@@ -17,7 +17,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver;
+namespace Neo4j.Driver.Internal;
 
 internal class ReducedExecutableQuery<TSource, TAccumulate, TResult> : IReducedExecutableQuery<TResult>
 {

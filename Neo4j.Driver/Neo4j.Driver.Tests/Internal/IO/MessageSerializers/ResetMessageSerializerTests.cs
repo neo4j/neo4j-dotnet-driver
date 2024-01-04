@@ -17,57 +17,58 @@ using System;
 using System.IO;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Tests;
+using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers
+namespace Neo4j.Driver.Tests.Internal.IO.MessageSerializers;
+
+public class ResetMessageSerializerTests
 {
-    public class ResetMessageSerializerTests
+    [Fact]
+    public void ShouldBeAbleToWriteRunWithMetadataMessage()
     {
-        [Fact]
-        public void ShouldBeAbleToWriteRunWithMetadataMessage()
-        {
-            ResetMessageSerializer.Instance.WritableTypes
-                .Should()
-                .BeEquivalentTo(typeof(ResetMessage));
-        }
+        ResetMessageSerializer.Instance.WritableTypes
+            .Should()
+            .BeEquivalentTo(typeof(ResetMessage));
+    }
 
-        [Fact]
-        public void ShouldThrowIfPassedWrongMessage()
-        {
-            Record.Exception(() => ResetMessageSerializer.Instance.Serialize(null, RollbackMessage.Instance))
-                .Should()
-                .BeOfType<ArgumentOutOfRangeException>();
-        }
+    [Fact]
+    public void ShouldThrowIfPassedWrongMessage()
+    {
+        Record.Exception(() => ResetMessageSerializer.Instance.Serialize(null, RollbackMessage.Instance))
+            .Should()
+            .BeOfType<ArgumentOutOfRangeException>();
+    }
 
-        [Theory]
-        [InlineData(3, 0)]
-        [InlineData(4, 0)]
-        [InlineData(4, 1)]
-        [InlineData(4, 2)]
-        [InlineData(4, 3)]
-        [InlineData(4, 4)]
-        [InlineData(5, 0)]
-        [InlineData(6, 0)]
-        public void ShouldSerialize(int major, int minor)
-        {
-            using var memory = new MemoryStream();
+    [Theory]
+    [InlineData(3, 0)]
+    [InlineData(4, 0)]
+    [InlineData(4, 1)]
+    [InlineData(4, 2)]
+    [InlineData(4, 3)]
+    [InlineData(4, 4)]
+    [InlineData(5, 0)]
+    [InlineData(6, 0)]
+    public void ShouldSerialize(int major, int minor)
+    {
+        using var memory = new MemoryStream();
 
-            var boltProtocolVersion = new BoltProtocolVersion(major, minor);
-            var format = new MessageFormat(boltProtocolVersion, TestDriverContext.MockContext);
-            var psw = new PackStreamWriter(format, memory);
+        var boltProtocolVersion = new BoltProtocolVersion(major, minor);
+        var format = new MessageFormat(boltProtocolVersion, TestDriverContext.MockContext);
+        var psw = new PackStreamWriter(format, memory);
 
-            ResetMessageSerializer.Instance.Serialize(psw, ResetMessage.Instance);
-            memory.Position = 0;
+        ResetMessageSerializer.Instance.Serialize(psw, ResetMessage.Instance);
+        memory.Position = 0;
 
-            var reader = new PackStreamReader(format, memory, new ByteBuffers());
+        var reader = new PackStreamReader(format, memory, new ByteBuffers());
 
-            var headerBytes = reader.ReadBytes(2);
-            // size 
-            headerBytes[0].Should().Be(0xB0);
-            // message tag
-            headerBytes[1].Should().Be(0x0F);
-        }
+        var headerBytes = reader.ReadBytes(2);
+        // size 
+        headerBytes[0].Should().Be(0xB0);
+        // message tag
+        headerBytes[1].Should().Be(0x0F);
     }
 }

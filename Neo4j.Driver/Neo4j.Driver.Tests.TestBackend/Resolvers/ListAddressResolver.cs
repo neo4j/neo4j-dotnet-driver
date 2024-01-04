@@ -16,8 +16,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Neo4j.Driver.Tests.TestBackend.Protocol;
+using Neo4j.Driver.Tests.TestBackend.Protocol.SupportFunctions;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Resolvers;
 
 internal class ListAddressResolver : IServerAddressResolver
 {

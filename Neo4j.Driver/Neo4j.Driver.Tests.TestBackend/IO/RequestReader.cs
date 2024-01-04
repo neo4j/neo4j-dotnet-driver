@@ -17,8 +17,9 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using Neo4j.Driver.Tests.TestBackend.Protocol;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.IO;
 
 internal class RequestReader
 {
@@ -43,7 +44,6 @@ internal class RequestReader
 
         while (await ParseObjectData().ConfigureAwait(false))
         {
-            ;
         }
 
         Trace.WriteLine($"\nRequest received: {CurrentObjectData}");

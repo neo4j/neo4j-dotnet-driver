@@ -19,143 +19,141 @@ using System;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Services;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.Auth
+namespace Neo4j.Driver.Tests.Auth;
+
+public class Neo4jAuthTokenManagerTests
 {
-    public class Neo4jAuthTokenManagerTests
+    [Fact]
+    public async Task ShouldRequestToken()
     {
-        [Fact]
-        public async Task ShouldRequestToken()
+        var basicToken = AuthTokens.Basic("uid", "pwd");
+        var authData = new AuthTokenAndExpiration(basicToken, new DateTime(2023, 02, 28));
+        var subject = new Neo4jAuthTokenManager(() => ValueTask.FromResult(authData));
+
+        var returnedToken = await subject.GetTokenAsync();
+
+        returnedToken.Should().Be(basicToken);
+    }
+
+    [Fact]
+    public async Task ShouldCacheToken()
+    {
+        var (authData, _) = GetTwoAuthTokens();
+
+        int callCount = 0;
+        ValueTask<AuthTokenAndExpiration> TokenProvider()
         {
-            var basicToken = AuthTokens.Basic("uid", "pwd");
-            var authData = new AuthTokenAndExpiration(basicToken, new DateTime(2023, 02, 28));
-            var subject = new Neo4jAuthTokenManager(() => ValueTask.FromResult(authData));
-
-            var returnedToken = await subject.GetTokenAsync();
-
-            returnedToken.Should().Be(basicToken);
+            callCount++;
+            return ValueTask.FromResult(authData);
         }
 
-        [Fact]
-        public async Task ShouldCacheToken()
-        {
-            var (authData, _) = GetTwoAuthTokens();
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        dateTimeProvider.Setup(x => x.Now())
+            .Returns(new DateTime(2023, 02, 28, 10, 0, 0)); // it is currently 10am
 
-            int callCount = 0;
-            ValueTask<AuthTokenAndExpiration> TokenProvider()
-            {
-                callCount++;
-                return ValueTask.FromResult(authData);
-            }
+        var subject = new Neo4jAuthTokenManager(dateTimeProvider.Object, TokenProvider);
 
-            var dateTimeProvider = new Mock<IDateTimeProvider>();
-            dateTimeProvider.Setup(x => x.Now())
-                .Returns(new DateTime(2023, 02, 28, 10, 0, 0)); // it is currently 10am
+        // call twice
+        var _ = await subject.GetTokenAsync();
+        var returnedToken = await subject.GetTokenAsync();
 
-            var subject = new Neo4jAuthTokenManager(dateTimeProvider.Object, TokenProvider);
+        returnedToken.Should().Be(authData.Token);
+        callCount.Should().Be(1); // only called once
+    }
 
-            // call twice
-            var _ = await subject.GetTokenAsync();
-            var returnedToken = await subject.GetTokenAsync();
+    [Fact]
+    public async Task ShouldRenewTokenAfterExpiryTime()
+    {
+        var (firstAuthData, secondAuthData) = GetTwoAuthTokens();
+        var tokenProvider = SequenceTokenProvider(firstAuthData, secondAuthData);
 
-            returnedToken.Should().Be(authData.Token);
-            callCount.Should().Be(1); // only called once
-        }
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        dateTimeProvider
+            .SetupSequence(x => x.Now())
+            .Returns(new DateTime(2023, 02, 28, 10, 0, 0)) // first time, 10am
+            .Returns(new DateTime(2023, 02, 28, 16, 0, 0)); // after that, 4pm (expired)
 
-        [Fact]
-        public async Task ShouldRenewTokenAfterExpiryTime()
-        {
-            var (firstAuthData, secondAuthData) = GetTwoAuthTokens();
-            var tokenProvider = SequenceTokenProvider(firstAuthData, secondAuthData);
+        var subject = new Neo4jAuthTokenManager(dateTimeProvider.Object, tokenProvider);
 
-            var dateTimeProvider = new Mock<IDateTimeProvider>();
-            dateTimeProvider
-                .SetupSequence(x => x.Now())
-                .Returns(new DateTime(2023, 02, 28, 10, 0, 0)) // first time, 10am
-                .Returns(new DateTime(2023, 02, 28, 16, 0, 0)); // after that, 4pm (expired)
+        var firstReturnedToken = await subject.GetTokenAsync();
+        await subject.GetTokenAsync(); // do a couple more times so that a new one should be requested
+        await subject.GetTokenAsync();
+        var secondReturnedToken = await subject.GetTokenAsync();
 
-            var subject = new Neo4jAuthTokenManager(dateTimeProvider.Object, tokenProvider);
+        firstReturnedToken.Should().Be(firstAuthData.Token);
+        secondReturnedToken.Should().Be(secondAuthData.Token);
+    }
 
-            var firstReturnedToken = await subject.GetTokenAsync();
-            await subject.GetTokenAsync(); // do a couple more times so that a new one should be requested
-            await subject.GetTokenAsync();
-            var secondReturnedToken = await subject.GetTokenAsync();
+    [Fact]
+    public async Task ShouldRefreshTokenOnExpiry()
+    {
+        var (firstAuthData, secondAuthData) = GetTwoAuthTokens();
+        var tokenProvider = SequenceTokenProvider(firstAuthData, secondAuthData);
 
-            firstReturnedToken.Should().Be(firstAuthData.Token);
-            secondReturnedToken.Should().Be(secondAuthData.Token);
-        }
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        dateTimeProvider
+            .Setup(x => x.Now())
+            .Returns(new DateTime(2023, 01, 01, 09, 00, 00)); // before expiry of first token
 
-        [Fact]
-        public async Task ShouldRefreshTokenOnExpiry()
-        {
-            var (firstAuthData, secondAuthData) = GetTwoAuthTokens();
-            var tokenProvider = SequenceTokenProvider(firstAuthData, secondAuthData);
+        var subject = new Neo4jAuthTokenManager(
+            dateTimeProvider.Object,
+            tokenProvider,
+            typeof(TokenExpiredException));
 
-            var dateTimeProvider = new Mock<IDateTimeProvider>();
-            dateTimeProvider
-                .Setup(x => x.Now())
-                .Returns(new DateTime(2023, 01, 01, 09, 00, 00)); // before expiry of first token
+        var firstReturnedToken = await subject.GetTokenAsync();
+        await subject.HandleSecurityExceptionAsync(firstReturnedToken, new TokenExpiredException("token expired"));
+        var secondReturnedToken = await subject.GetTokenAsync();
 
-            var subject = new Neo4jAuthTokenManager(
-                dateTimeProvider.Object,
-                tokenProvider,
-                typeof(TokenExpiredException));
+        secondReturnedToken.Should().Be(secondAuthData.Token);
+    }
 
-            var firstReturnedToken = await subject.GetTokenAsync();
-            await subject.HandleSecurityExceptionAsync(firstReturnedToken, new TokenExpiredException("token expired"));
-            var secondReturnedToken = await subject.GetTokenAsync();
+    [Fact]
+    public async Task ShouldIgnoreUnhandledSecurityExceptions()
+    {
+        var (firstAuthData, secondAuthData) = GetTwoAuthTokens();
+        var tokenProvider = SequenceTokenProvider(firstAuthData, secondAuthData);
 
-            secondReturnedToken.Should().Be(secondAuthData.Token);
-        }
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        dateTimeProvider
+            .Setup(x => x.Now())
+            .Returns(new DateTime(2023, 01, 01, 09, 00, 00)); // before expiry of first token
 
-        [Fact]
-        public async Task ShouldIgnoreUnhandledSecurityExceptions()
-        {
-            var (firstAuthData, secondAuthData) = GetTwoAuthTokens();
-            var tokenProvider = SequenceTokenProvider(firstAuthData, secondAuthData);
+        var subject = new Neo4jAuthTokenManager(
+            dateTimeProvider.Object,
+            tokenProvider,
+            typeof(AuthenticationException));
 
-            var dateTimeProvider = new Mock<IDateTimeProvider>();
-            dateTimeProvider
-                .Setup(x => x.Now())
-                .Returns(new DateTime(2023, 01, 01, 09, 00, 00)); // before expiry of first token
+        var firstReturnedToken = await subject.GetTokenAsync();
 
-            var subject = new Neo4jAuthTokenManager(
-                dateTimeProvider.Object,
-                tokenProvider,
-                typeof(AuthenticationException));
+        // ask to handle an exception that is not in the list of exceptions the token manager should handle
+        await subject.HandleSecurityExceptionAsync(firstReturnedToken, new TokenExpiredException("token expired"));
 
-            var firstReturnedToken = await subject.GetTokenAsync();
+        var secondReturnedToken = await subject.GetTokenAsync();
+        secondReturnedToken.Should().Be(firstAuthData.Token); // should not have changed
+    }
 
-            // ask to handle an exception that is not in the list of exceptions the token manager should handle
-            await subject.HandleSecurityExceptionAsync(firstReturnedToken, new TokenExpiredException("token expired"));
+    private static (AuthTokenAndExpiration, AuthTokenAndExpiration) GetTwoAuthTokens()
+    {
+        var firstToken = AuthTokens.Basic("first", "token");
+        var firstAuthData = new AuthTokenAndExpiration(
+            firstToken,
+            new DateTime(2023, 02, 28, 15, 0, 0)); // expires at 3pm
 
-            var secondReturnedToken = await subject.GetTokenAsync();
-            secondReturnedToken.Should().Be(firstAuthData.Token); // should not have changed
-        }
+        var secondToken = AuthTokens.Basic("second", "token");
+        var secondAuthData = new AuthTokenAndExpiration(
+            secondToken,
+            new DateTime(2023, 02, 28, 16, 0, 0));
 
-        private static (AuthTokenAndExpiration, AuthTokenAndExpiration) GetTwoAuthTokens()
-        {
-            var firstToken = AuthTokens.Basic("first", "token");
-            var firstAuthData = new AuthTokenAndExpiration(
-                firstToken,
-                new DateTime(2023, 02, 28, 15, 0, 0)); // expires at 3pm
+        return (firstAuthData, secondAuthData);
+    }
 
-            var secondToken = AuthTokens.Basic("second", "token");
-            var secondAuthData = new AuthTokenAndExpiration(
-                secondToken,
-                new DateTime(2023, 02, 28, 16, 0, 0));
-
-            return (firstAuthData, secondAuthData);
-        }
-
-        private Func<ValueTask<AuthTokenAndExpiration>> SequenceTokenProvider(params AuthTokenAndExpiration[] authData)
-        {
-            var index = 0;
-            return () => ValueTask.FromResult(authData[index++] ?? throw new InvalidOperationException());
-        }
+    private Func<ValueTask<AuthTokenAndExpiration>> SequenceTokenProvider(params AuthTokenAndExpiration[] authData)
+    {
+        var index = 0;
+        return () => ValueTask.FromResult(authData[index++] ?? throw new InvalidOperationException());
     }
 }

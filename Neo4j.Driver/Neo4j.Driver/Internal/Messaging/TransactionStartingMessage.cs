@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Messaging.Utils;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.Messaging;
 

@@ -18,70 +18,69 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace Neo4j.Driver
+namespace Neo4j.Driver;
+
+/// <summary>
+/// The base class for all Neo4j exceptions.
+/// </summary>
+[DataContract]
+public class Neo4jException : Exception
 {
     /// <summary>
-    /// The base class for all Neo4j exceptions.
+    /// Create a new <see cref="Neo4jException"/>
     /// </summary>
-    [DataContract]
-    public class Neo4jException : Exception
+    public Neo4jException()
     {
-        /// <summary>
-        /// Create a new <see cref="Neo4jException"/>
-        /// </summary>
-        public Neo4jException()
-        {
-        }
-
-        /// <summary>
-        /// Create a new <see cref="Neo4jException"/> with an error message
-        /// </summary>
-        /// <param name="message">The error message.</param>
-        public Neo4jException(string message) : this(null, message)
-        {
-        }
-
-        /// <summary>
-        /// Create a new <see cref="Neo4jException"/> with an error code and an error message
-        /// </summary>
-        /// <param name="code">The error code.</param>
-        /// <param name="message">The error message</param>
-        public Neo4jException(string code, string message)
-            : base(message)
-        {
-            Code = code;
-        }
-
-        /// <summary>
-        /// Create a new <see cref="Neo4jException"/> with an error message and an exception.
-        /// </summary>
-        /// <param name="message">The error message.</param>
-        /// <param name="innerException">The inner exception</param>
-        public Neo4jException(string message, Exception innerException)
-            : this(null, message, innerException)
-        {
-        }
-
-        /// <summary>
-        /// Create a new <see cref="Neo4jException"/> with an error code, an error message and an exception.
-        /// </summary>
-        /// <param name="code">The error code.</param>
-        /// <param name="message">The error message.</param>
-        /// <param name="innerException">The inner exception.</param>
-        public Neo4jException(string code, string message, Exception innerException)
-            : base(message, innerException)
-        {
-            Code = code;
-        }
-
-        /// <summary>
-        /// Gets whether the exception retriable or not.
-        /// </summary>
-        public virtual bool IsRetriable => false;
-
-        /// <summary>
-        /// Gets or sets the code of a Neo4j exception.
-        /// </summary>
-        public string Code { get; set; }
     }
+
+    /// <summary>
+    /// Create a new <see cref="Neo4jException"/> with an error message
+    /// </summary>
+    /// <param name="message">The error message.</param>
+    public Neo4jException(string message) : this(null, message)
+    {
+    }
+
+    /// <summary>
+    /// Create a new <see cref="Neo4jException"/> with an error code and an error message
+    /// </summary>
+    /// <param name="code">The error code.</param>
+    /// <param name="message">The error message</param>
+    public Neo4jException(string code, string message)
+        : base(message)
+    {
+        Code = code;
+    }
+
+    /// <summary>
+    /// Create a new <see cref="Neo4jException"/> with an error message and an exception.
+    /// </summary>
+    /// <param name="message">The error message.</param>
+    /// <param name="innerException">The inner exception</param>
+    public Neo4jException(string message, Exception innerException)
+        : this(null, message, innerException)
+    {
+    }
+
+    /// <summary>
+    /// Create a new <see cref="Neo4jException"/> with an error code, an error message and an exception.
+    /// </summary>
+    /// <param name="code">The error code.</param>
+    /// <param name="message">The error message.</param>
+    /// <param name="innerException">The inner exception.</param>
+    public Neo4jException(string code, string message, Exception innerException)
+        : base(message, innerException)
+    {
+        Code = code;
+    }
+
+    /// <summary>
+    /// Gets whether the exception retriable or not.
+    /// </summary>
+    public virtual bool IsRetriable => false;
+
+    /// <summary>
+    /// Gets or sets the code of a Neo4j exception.
+    /// </summary>
+    public string Code { get; set; }
 }

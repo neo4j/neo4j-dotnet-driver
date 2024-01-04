@@ -16,33 +16,33 @@
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
+using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Messages
+namespace Neo4j.Driver.Tests.Internal.MessageHandling.Messages;
+
+public class IgnoredMessageTests
 {
-    public class IgnoredMessageTests
+    [Fact]
+    public void ShouldHaveCorrectSerializer()
     {
-        [Fact]
-        public void ShouldHaveCorrectSerializer()
-        {
-            IgnoredMessage.Instance.Serializer.Should().BeOfType<IgnoredMessageSerializer>();
-        }
+        IgnoredMessage.Instance.Serializer.Should().BeOfType<IgnoredMessageSerializer>();
+    }
 
-        [Fact]
-        public void ShouldCallPipelineOnIgnored()
-        {
-            var pipeline = new Mock<IResponsePipeline>();
+    [Fact]
+    public void ShouldCallPipelineOnIgnored()
+    {
+        var pipeline = new Mock<IResponsePipeline>();
 
-            IgnoredMessage.Instance.Dispatch(pipeline.Object);
+        IgnoredMessage.Instance.Dispatch(pipeline.Object);
 
-            pipeline.Verify(x => x.OnIgnored());
-        }
+        pipeline.Verify(x => x.OnIgnored());
+    }
 
-        [Fact]
-        public void ShouldHaveIgnoredMessage()
-        {
-            IgnoredMessage.Instance.ToString().Should().Be("IGNORED");
-        }
+    [Fact]
+    public void ShouldHaveIgnoredMessage()
+    {
+        IgnoredMessage.Instance.ToString().Should().Be("IGNORED");
     }
 }

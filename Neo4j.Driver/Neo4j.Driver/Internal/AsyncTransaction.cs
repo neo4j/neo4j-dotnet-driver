@@ -19,6 +19,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal;
 

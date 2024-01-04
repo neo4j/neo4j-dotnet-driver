@@ -15,7 +15,7 @@
 
 using System;
 
-namespace Neo4j.Driver.Internal;
+namespace Neo4j.Driver.Internal.Protocol;
 
 //TODO: Consider converting to struct.
 internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
@@ -28,6 +28,7 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
 
     public static readonly BoltProtocolVersion Unknown = new(1, 0);
 
+    // ReSharper disable InconsistentNaming
     public static readonly BoltProtocolVersion V3_0 = new(3, 0);
     public static readonly BoltProtocolVersion V4_0 = new(4, 0);
     public static readonly BoltProtocolVersion V4_1 = new(4, 1);
@@ -39,6 +40,7 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
     public static readonly BoltProtocolVersion V5_2 = new(5, 2);
     public static readonly BoltProtocolVersion V5_3 = new(5, 3);
     public static readonly BoltProtocolVersion V5_4 = new(5, 4);
+    // ReSharper restore InconsistentNaming
 
     private readonly int _compValue;
 
@@ -148,7 +150,7 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
 
     public static bool operator ==(BoltProtocolVersion lhs, BoltProtocolVersion rhs)
     {
-        return lhs._compValue == rhs._compValue;
+        return lhs?._compValue == rhs?._compValue;
     }
 
     public static bool operator !=(BoltProtocolVersion lhs, BoltProtocolVersion rhs)

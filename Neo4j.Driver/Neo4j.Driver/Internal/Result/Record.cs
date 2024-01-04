@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.Helpers;
 
 namespace Neo4j.Driver.Internal.Result;
 

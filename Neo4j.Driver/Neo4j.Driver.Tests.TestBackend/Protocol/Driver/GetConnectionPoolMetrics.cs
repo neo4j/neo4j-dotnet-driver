@@ -16,7 +16,7 @@
 using System;
 using System.Linq;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Driver;
 
 internal class GetConnectionPoolMetrics : ProtocolObject
 {

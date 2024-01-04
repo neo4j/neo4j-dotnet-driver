@@ -51,10 +51,10 @@ internal class AsyncRetryLogic : IAsyncRetryLogic
     {
         var exceptions = new List<Exception>();
         var timer = new Stopwatch();
-        var delay = TimeSpan.Zero;
+        TimeSpan delay;
         var delayMs = _initialRetryDelayMs;
         var retryCount = 0;
-        var shouldRetry = false;
+        bool shouldRetry;
 
         timer.Start();
         do

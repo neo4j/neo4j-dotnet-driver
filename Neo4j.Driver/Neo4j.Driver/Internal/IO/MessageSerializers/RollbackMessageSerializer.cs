@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers;
 

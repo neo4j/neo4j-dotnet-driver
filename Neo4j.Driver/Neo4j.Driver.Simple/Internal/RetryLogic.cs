@@ -47,10 +47,9 @@ internal class RetryLogic : IRetryLogic
     public T Retry<T>(Func<T> work)
     {
         var exceptions = new List<Exception>();
-        var delay = TimeSpan.Zero;
         var delayMs = _initialDelay;
         var retryCount = 0;
-        var shouldRetry = false;
+        bool shouldRetry;
 
         var timer = Stopwatch.StartNew();
         do
@@ -69,7 +68,7 @@ internal class RetryLogic : IRetryLogic
 
                 if (shouldRetry)
                 {
-                    delay = TimeSpan.FromMilliseconds(ComputeNextDelay(delayMs));
+                    var delay = TimeSpan.FromMilliseconds(ComputeNextDelay(delayMs));
                     _logger?.Warn(e, $"Transaction failed and will be retried in {delay}ms.");
                     Thread.Sleep(delay);
                     delayMs *= _delayMultiplier;

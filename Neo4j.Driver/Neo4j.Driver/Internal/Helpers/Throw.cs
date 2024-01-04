@@ -15,7 +15,7 @@
 
 using System;
 
-namespace Neo4j.Driver.Internal;
+namespace Neo4j.Driver.Internal.Helpers;
 
 internal static class Throw
 {

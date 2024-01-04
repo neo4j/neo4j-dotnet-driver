@@ -16,7 +16,7 @@
 using System;
 using Neo4j.Driver.Internal.Services;
 
-namespace Neo4j.Driver.Auth;
+namespace Neo4j.Driver;
 
 /// <summary>
 /// Represents an auth token and its expiration.
@@ -54,11 +54,11 @@ public record AuthTokenAndExpiration
     /// <summary>
     /// Deconstructs the <see cref="AuthTokenAndExpiration"/> into its components.
     /// </summary>
-    /// <param name="Token">The auth token.</param>
-    /// <param name="Expiry">The date and time when the token expires.</param>
-    public void Deconstruct(out IAuthToken Token, out DateTime? Expiry)
+    /// <param name="token">The auth token.</param>
+    /// <param name="expiry">The date and time when the token expires.</param>
+    public void Deconstruct(out IAuthToken token, out DateTime? expiry)
     {
-        Token = this.Token;
-        Expiry = this.Expiry;
+        token = this.Token;
+        expiry = this.Expiry;
     }
 }

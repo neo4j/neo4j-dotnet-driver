@@ -38,7 +38,7 @@ public abstract class ShellCommandRunner : IShellCommandRunner
     }
 }
 
-public sealed class ShellCommandRunnerFactory
+public static class ShellCommandRunnerFactory
 {
     public static IShellCommandRunner Create()
     {

@@ -16,6 +16,7 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Helpers;
 
 namespace Neo4j.Driver.Internal.IO;
 

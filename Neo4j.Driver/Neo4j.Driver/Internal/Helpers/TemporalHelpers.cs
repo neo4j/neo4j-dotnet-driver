@@ -17,7 +17,7 @@ using System;
 using Neo4j.Driver.Internal.Temporal;
 using Neo4j.Driver.Internal.Types;
 
-namespace Neo4j.Driver.Internal;
+namespace Neo4j.Driver.Internal.Helpers;
 
 internal static class TemporalHelpers
 {

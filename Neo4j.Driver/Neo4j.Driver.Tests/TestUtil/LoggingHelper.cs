@@ -15,16 +15,15 @@
 
 using Moq;
 
-namespace Neo4j.Driver.Tests.TestUtil
+namespace Neo4j.Driver.Tests.TestUtil;
+
+public static class LoggingHelper
 {
-    public static class LoggingHelper
+    public static Mock<ILogger> GetTraceEnabledLogger()
     {
-        public static Mock<ILogger> GetTraceEnabledLogger()
-        {
-            var mockLogger = new Mock<ILogger>();
-            mockLogger.Setup(x => x.IsTraceEnabled()).Returns(true);
-            mockLogger.Setup(x => x.IsDebugEnabled()).Returns(true);
-            return mockLogger;
-        }
+        var mockLogger = new Mock<ILogger>();
+        mockLogger.Setup(x => x.IsTraceEnabled()).Returns(true);
+        mockLogger.Setup(x => x.IsDebugEnabled()).Returns(true);
+        return mockLogger;
     }
 }

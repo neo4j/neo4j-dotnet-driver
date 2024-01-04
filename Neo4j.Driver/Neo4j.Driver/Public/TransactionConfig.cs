@@ -26,8 +26,8 @@ namespace Neo4j.Driver;
 public sealed class TransactionConfig
 {
     internal static readonly TransactionConfig Default = new();
-    internal IDictionary<string, object> _metadata = new Dictionary<string, object>();
-    internal TimeSpan? _timeout = null;
+    private IDictionary<string, object> _metadata = new Dictionary<string, object>();
+    private TimeSpan? _timeout;
 
     /// <summary>
     /// Transaction timeout. Transactions that execute longer than the configured timeout will be terminated by the
@@ -47,7 +47,7 @@ public sealed class TransactionConfig
     public TimeSpan? Timeout
     {
         get => _timeout;
-        init
+        internal set
         {
             if (!value.HasValue || value.Value == TimeSpan.MaxValue)
             {
@@ -84,7 +84,7 @@ public sealed class TransactionConfig
     public IDictionary<string, object> Metadata
     {
         get => _metadata;
-        init => _metadata =
+        internal set => _metadata =
             value ?? throw new ArgumentNullException(nameof(value), "Transaction metadata should not be null");
     }
 
@@ -131,7 +131,7 @@ public sealed class TransactionConfigBuilder
     {
         if (!timeout.HasValue || timeout.Value == TimeSpan.MaxValue)
         {
-            _config._timeout = timeout;
+            _config.Timeout = timeout;
             return this;
         }
 
@@ -144,13 +144,14 @@ public sealed class TransactionConfigBuilder
         
         if (timeout.Value.Ticks % TimeSpan.TicksPerMillisecond == 0)
         {
-            _config._timeout = timeout;
+            _config.Timeout = timeout;
         }
         else
         {
-            _config._timeout = TimeSpan.FromMilliseconds(Math.Ceiling(timeout.Value.TotalMilliseconds));
+            var timeSpan = TimeSpan.FromMilliseconds(Math.Ceiling(timeout.Value.TotalMilliseconds));
+            _config.Timeout = timeSpan;
             _logger.Info(
-                $"Transaction timeout {timeout} contains sub-millisecond precision and will be rounded up to {_config._timeout}.");
+                $"Transaction timeout {timeout} contains sub-millisecond precision and will be rounded up to {timeSpan}.");
         }
         
         return this;
@@ -167,7 +168,7 @@ public sealed class TransactionConfigBuilder
     /// <returns>this <see cref="TransactionConfigBuilder"/> instance</returns>
     public TransactionConfigBuilder WithMetadata(IDictionary<string, object> metadata)
     {
-        _config._metadata = metadata ??
+        _config.Metadata = metadata ??
             throw new ArgumentNullException(nameof(metadata), "Transaction metadata should not be null");
 
         return this;

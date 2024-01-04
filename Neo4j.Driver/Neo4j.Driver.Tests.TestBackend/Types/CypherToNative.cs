@@ -17,11 +17,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Session;
 using Newtonsoft.Json.Linq;
 
 #pragma warning disable CS0618 // Type or member is obsolete - but still needs to be handled
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Types;
 
 internal class CypherToNativeObject
 {

@@ -55,7 +55,9 @@ internal class RoutingTable : IRoutingTable
         }
         catch
         {
-            throw new ArgumentOutOfRangeException("Trying to set a TTL value for the routing table that is too large");
+            throw new ArgumentOutOfRangeException(
+                nameof(expireAfterSeconds),
+                "Trying to set a TTL value for the routing table that is too large");
         }
     }
 
