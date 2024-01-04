@@ -20,7 +20,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.Extensions;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Metrics;
 using Neo4j.Driver.Internal.Routing;
@@ -217,18 +216,13 @@ internal sealed class ConnectionPool : IConnectionPool
         var connection = await AcquireAsync(AccessMode.Read, null, null, CancellationToken.None)
             .ConfigureAwait(false);
 
-        if (connection is not IPooledConnection pooledConnection)
-        {
-            throw new Exception("AcquireAsync returned wrong connection type");
-        }
-
         try
         {
-            await pooledConnection.ResetAsync().ConfigureAwait(false);
+            await connection.ResetAsync().ConfigureAwait(false);
         }
         finally
         {
-            await ReleaseAsync(pooledConnection).ConfigureAwait(false);
+            await ReleaseAsync(connection).ConfigureAwait(false);
         }
 
         return connection.Server;

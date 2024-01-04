@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Services;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Time;
 
 internal class FakeTimeHolder
 {

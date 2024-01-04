@@ -22,7 +22,7 @@ namespace Neo4j.Driver.Internal.Messaging;
 
 internal sealed class LogonMessage : IRequestMessage
 {
-    public LogonMessage(BoltProtocolVersion _, IAuthToken authToken)
+    public LogonMessage(IAuthToken authToken)
     {
         Auth = authToken.AsDictionary();
     }

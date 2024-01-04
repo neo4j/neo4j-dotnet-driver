@@ -16,8 +16,10 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Neo4j.Driver.Tests.TestBackend.Exceptions;
+using Neo4j.Driver.Tests.TestBackend.Types;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Result;
 
 internal class ResultSingle : ProtocolObject
 {

@@ -15,7 +15,7 @@
 
 using System;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Driver;
 
 internal class SimpleLogger : ILogger
 {

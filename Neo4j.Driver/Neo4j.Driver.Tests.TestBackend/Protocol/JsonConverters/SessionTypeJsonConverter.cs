@@ -14,10 +14,11 @@
 // limitations under the License.
 
 using System;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Session;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.JsonConverters;
 
 internal class SessionTypeJsonConverter : BaseSessionTypeJsonConverter<SessionRun.SessionRunType>
 {

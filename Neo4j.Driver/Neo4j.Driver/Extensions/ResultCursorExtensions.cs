@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+// ReSharper disable NotDisposedResource
 
 namespace Neo4j.Driver;
 
@@ -32,7 +33,11 @@ public static class ResultCursorExtensions
     /// </remarks>
     public static async Task<IRecord> SingleAsync(this IResultCursor result)
     {
-        result = result ?? throw new ArgumentNullException(nameof(result));
+        if (result == null)
+        {
+            throw new ArgumentNullException(nameof(result));
+        }
+
         var enumerator = result.GetAsyncEnumerator();
         await using (enumerator.ConfigureAwait(false))
         {
@@ -62,7 +67,11 @@ public static class ResultCursorExtensions
     /// </remarks>
     public static async Task<T> SingleAsync<T>(this IResultCursor result, Func<IRecord, T> operation)
     {
-        result = result ?? throw new ArgumentNullException(nameof(result));
+        if (result == null)
+        {
+            throw new ArgumentNullException(nameof(result));
+        }
+
         var enumerator = result.GetAsyncEnumerator();
         await using (enumerator.ConfigureAwait(false))
         {
@@ -90,14 +99,18 @@ public static class ResultCursorExtensions
     /// <returns>A list with all records in the result stream.</returns>
     public static async Task<List<IRecord>> ToListAsync(this IResultCursor result, int initialCapacity = 0, CancellationToken cancellationToken = default)
     {
-        result = result ?? throw new ArgumentNullException(nameof(result));
+        if (result == null)
+        {
+            throw new ArgumentNullException(nameof(result));
+        }
+
         var list = initialCapacity <= 0 ? new List<IRecord>() : new List<IRecord>(initialCapacity);
         var enumerator = result.GetAsyncEnumerator(cancellationToken);
         await using (enumerator.ConfigureAwait(false))
         {
             while (await enumerator.MoveNextAsync().ConfigureAwait(false))
             {
-                list.Add(result.Current);
+                list.Add(enumerator.Current);
             }
         }
 
@@ -123,14 +136,18 @@ public static class ResultCursorExtensions
     public static async Task<List<T>> ToListAsync<T>(this IResultCursor result, Func<IRecord, T> operation,
         int initialCapacity = 0)
     {
-        result = result ?? throw new ArgumentNullException(nameof(result));
+        if (result == null)
+        {
+            throw new ArgumentNullException(nameof(result));
+        }
+
         var list = initialCapacity <= 0 ? new List<T>() : new List<T>(initialCapacity);
         var enumerator = result.GetAsyncEnumerator();
         await using (enumerator.ConfigureAwait(false))
         {
             while (await enumerator.MoveNextAsync().ConfigureAwait(false))
             {
-                var record = result.Current;
+                var record = enumerator.Current;
                 list.Add(operation(record));
             }
 
@@ -146,13 +163,17 @@ public static class ResultCursorExtensions
         this IResultCursor result,
         Action<IRecord> operation)
     {
-        result = result ?? throw new ArgumentNullException(nameof(result));
+        if (result == null)
+        {
+            throw new ArgumentNullException(nameof(result));
+        }
+
         var enumerator = result.GetAsyncEnumerator();
         await using (enumerator.ConfigureAwait(false))
         {
             while (await enumerator.MoveNextAsync().ConfigureAwait(false))
             {
-                var record = result.Current;
+                var record = enumerator.Current;
                 operation(record);
             }
 

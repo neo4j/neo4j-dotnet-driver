@@ -20,7 +20,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.Connector;
+namespace Neo4j.Driver.Internal.Connector.Resolvers;
 
 internal class DefaultHostResolver : IHostResolver
 {

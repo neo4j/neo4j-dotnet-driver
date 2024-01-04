@@ -15,9 +15,12 @@
 
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Tests.TestBackend.Exceptions;
+using Neo4j.Driver.Tests.TestBackend.Protocol.JsonConverters;
+using Neo4j.Driver.Tests.TestBackend.Types;
 using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Session;
 
 internal abstract class BaseSessionType
 {

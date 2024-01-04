@@ -17,45 +17,46 @@ using System.Collections.Generic;
 using System.IO;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.IO;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Tests;
+using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers
+namespace Neo4j.Driver.Tests.Internal.IO.MessageSerializers;
+
+public class RecordMessageSerializerTests
 {
-    public class RecordMessageSerializerTests
+    [Fact]
+    public void StructTagsAreSuccess()
     {
-        [Fact]
-        public void StructTagsAreSuccess()
-        {
-            RecordMessageSerializer.Instance.ReadableStructs.Should().ContainEquivalentOf(MessageFormat.MsgRecord);
-        }
+        RecordMessageSerializer.Instance.ReadableStructs.Should().ContainEquivalentOf(MessageFormat.MsgRecord);
+    }
 
-        [Theory]
-        [InlineData(3, 0)]
-        [InlineData(4, 0)]
-        [InlineData(4, 1)]
-        [InlineData(4, 2)]
-        [InlineData(4, 3)]
-        [InlineData(4, 4)]
-        [InlineData(5, 0)]
-        [InlineData(6, 0)]
-        public void ShouldDeserialize(int major, int minor)
-        {
-            using var memory = new MemoryStream();
+    [Theory]
+    [InlineData(3, 0)]
+    [InlineData(4, 0)]
+    [InlineData(4, 1)]
+    [InlineData(4, 2)]
+    [InlineData(4, 3)]
+    [InlineData(4, 4)]
+    [InlineData(5, 0)]
+    [InlineData(6, 0)]
+    public void ShouldDeserialize(int major, int minor)
+    {
+        using var memory = new MemoryStream();
 
-            var boltProtocolVersion = new BoltProtocolVersion(major, minor);
-            var format = new MessageFormat(boltProtocolVersion, TestDriverContext.MockContext);
+        var boltProtocolVersion = new BoltProtocolVersion(major, minor);
+        var format = new MessageFormat(boltProtocolVersion, TestDriverContext.MockContext);
 
-            var psw = new PackStreamWriter(format, memory);
-            psw.WriteList(new List<object> { 0, "a" });
-            memory.Position = 0;
+        var psw = new PackStreamWriter(format, memory);
+        psw.WriteList(new List<object> { 0, "a" });
+        memory.Position = 0;
 
-            var reader = new PackStreamReader(format, memory, new ByteBuffers());
+        var reader = new PackStreamReader(format, memory, new ByteBuffers());
 
-            var message = RecordMessageSerializer.Instance.Deserialize(reader);
+        var message = RecordMessageSerializer.Instance.Deserialize(reader);
 
-            message.Should().BeOfType<RecordMessage>().Which.Fields.Should().BeEquivalentTo(0L, "a");
-        }
+        message.Should().BeOfType<RecordMessage>().Which.Fields.Should().BeEquivalentTo(0L, "a");
     }
 }

@@ -14,9 +14,12 @@
 // limitations under the License.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Neo4j.Driver.Internal.MessageHandling;
 
+// we sometimes access the _thrown field without locking, but it's fine because it's only a volatile bool
+[SuppressMessage("ReSharper", "InconsistentlySynchronizedField")]
 internal sealed class ResponsePipelineError : IResponsePipelineError
 {
     private volatile bool _thrown;

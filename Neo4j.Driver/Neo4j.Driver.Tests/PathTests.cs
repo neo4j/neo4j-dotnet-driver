@@ -18,37 +18,36 @@ using Moq;
 using Neo4j.Driver.Internal.Types;
 using Xunit;
 
-namespace Neo4j.Driver.Tests
+namespace Neo4j.Driver.Tests;
+
+public class PathTests
 {
-    public class PathTests
+    [Fact]
+    public void ShouldEqualIfIdEquals()
     {
-        [Fact]
-        public void ShouldEqualIfIdEquals()
-        {
-            var path1 = new Path(
-                null,
-                new[] { new Node(123, new[] { "buibui" }, null) },
-                new[] { new Relationship(1, 000, 111, "buibui", null) });
+        var path1 = new Path(
+            null,
+            new[] { new Node(123, new[] { "buibui" }, null) },
+            new[] { new Relationship(1, 000, 111, "buibui", null) });
 
-            var path2 = new Path(
-                null,
-                new[] { new Node(123, new[] { "lala" }, null) },
-                new[] { new Relationship(1, 222, 333, "lala", null) });
+        var path2 = new Path(
+            null,
+            new[] { new Node(123, new[] { "lala" }, null) },
+            new[] { new Relationship(1, 222, 333, "lala", null) });
 
-            path1.Equals(path2).Should().BeTrue();
-            Equals(path1, path2).Should().BeTrue();
-            path1.GetHashCode().Should().Be(path2.GetHashCode());
+        path1.Equals(path2).Should().BeTrue();
+        Equals(path1, path2).Should().BeTrue();
+        path1.GetHashCode().Should().Be(path2.GetHashCode());
 
-            var path3Mock = new Mock<IPath>();
-            path3Mock.Setup(f => f.Start)
-                .Returns(new Node(123, new[] { "same interface, different implementation" }, null));
+        var path3Mock = new Mock<IPath>();
+        path3Mock.Setup(f => f.Start)
+            .Returns(new Node(123, new[] { "same interface, different implementation" }, null));
 
-            path3Mock.Setup(f => f.Relationships)
-                .Returns(new[] { new Relationship(1, 222, 333, "same interface --- different implementation", null) });
+        path3Mock.Setup(f => f.Relationships)
+            .Returns(new[] { new Relationship(1, 222, 333, "same interface --- different implementation", null) });
 
-            var path3 = path3Mock.Object;
-            path1.Equals(path3).Should().BeTrue();
-            Equals(path1, path3).Should().BeTrue();
-        }
+        var path3 = path3Mock.Object;
+        path1.Equals(path3).Should().BeTrue();
+        Equals(path1, path3).Should().BeTrue();
     }
 }

@@ -17,35 +17,34 @@ using System.IO;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
 
-namespace Neo4j.Driver.Tests
+namespace Neo4j.Driver.Tests.TestUtil;
+
+internal static class TcpSocketClientTestSetup
 {
-    internal static class TcpSocketClientTestSetup
+    public static void CreateReadStreamMock(Mock<ITcpSocketClient> mock, byte[] response)
     {
-        public static void CreateReadStreamMock(Mock<ITcpSocketClient> mock, byte[] response)
-        {
-            var memoryStream = new MemoryStream();
-            memoryStream.Write(response);
-            memoryStream.Flush();
-            memoryStream.Position = 0;
+        var memoryStream = new MemoryStream();
+        memoryStream.Write(response);
+        memoryStream.Flush();
+        memoryStream.Position = 0;
 
-            mock.Setup(c => c.ReaderStream).Returns(memoryStream);
-        }
+        mock.Setup(c => c.ReaderStream).Returns(memoryStream);
+    }
 
-        public static Mock<Stream> CreateReadStreamMock(Mock<ITcpSocketClient> mock)
-        {
-            var mockedStream = new Mock<Stream>();
-            mockedStream.Setup(x => x.CanRead).Returns(true);
-            mock.Setup(c => c.ReaderStream).Returns(mockedStream.Object);
-            return mockedStream;
-        }
+    public static Mock<Stream> CreateReadStreamMock(Mock<ITcpSocketClient> mock)
+    {
+        var mockedStream = new Mock<Stream>();
+        mockedStream.Setup(x => x.CanRead).Returns(true);
+        mock.Setup(c => c.ReaderStream).Returns(mockedStream.Object);
+        return mockedStream;
+    }
 
-        public static Mock<Stream> CreateWriteStreamMock(Mock<ITcpSocketClient> mock)
-        {
-            var mockedStream = new Mock<Stream>();
-            mockedStream.Setup(x => x.CanWrite).Returns(true);
-            mock.Setup(c => c.WriterStream).Returns(mockedStream.Object);
+    public static Mock<Stream> CreateWriteStreamMock(Mock<ITcpSocketClient> mock)
+    {
+        var mockedStream = new Mock<Stream>();
+        mockedStream.Setup(x => x.CanWrite).Returns(true);
+        mock.Setup(c => c.WriterStream).Returns(mockedStream.Object);
 
-            return mockedStream;
-        }
+        return mockedStream;
     }
 }

@@ -63,7 +63,7 @@ public class MappingProviderTests
                                 Number = r.GetValue<int>("intValue") + 1,
                                 Text = r.GetValue<string>("stringValue").ToLower()
                             }))
-                .RegisterMapping<ThirdTestObject>(b => {})
+                .RegisterMapping<ThirdTestObject>(_ => {})
                 .RegisterMapping<PersonWithAge>(
                     b => b
                         .UseDefaultMapping()

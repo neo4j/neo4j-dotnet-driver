@@ -19,7 +19,7 @@ using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.Connector;
+namespace Neo4j.Driver.Internal.Connector.Resolvers;
 
 internal class SystemNetCoreHostResolver : IHostResolver
 {

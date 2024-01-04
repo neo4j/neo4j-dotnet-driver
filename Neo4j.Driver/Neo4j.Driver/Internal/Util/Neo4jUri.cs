@@ -16,7 +16,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Internal;
+namespace Neo4j.Driver.Internal.Util;
 
 internal static class Neo4jUri
 {

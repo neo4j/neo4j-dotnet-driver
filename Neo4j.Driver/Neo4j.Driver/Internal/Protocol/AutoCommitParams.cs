@@ -15,7 +15,7 @@
 
 using Neo4j.Driver.Internal.MessageHandling;
 
-namespace Neo4j.Driver.Internal;
+namespace Neo4j.Driver.Internal.Protocol;
 
 internal sealed record AutoCommitParams
 {

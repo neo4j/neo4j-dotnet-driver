@@ -48,6 +48,7 @@
     </ItemGroup>
     <ItemGroup>
         <None Remove="Internal\Temporal\windowsZones.xml" />
+        <None Remove="Neo4j.Driver.csproj.DotSettings" />
     </ItemGroup>
     <ItemGroup>
         <EmbeddedResource Include="Internal\Temporal\windowsZones.xml" />

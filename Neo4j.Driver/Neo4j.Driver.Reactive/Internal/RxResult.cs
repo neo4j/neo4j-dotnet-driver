@@ -26,7 +26,6 @@ namespace Neo4j.Driver.Internal;
 internal class RxResult : IRxResult
 {
     private readonly IObservable<string[]> _keys;
-    private readonly ILogger _logger;
     private readonly Subject<IRecord> _records;
 
     private readonly IObservable<IInternalResultCursor> _resultCursor;
@@ -35,17 +34,13 @@ internal class RxResult : IRxResult
     private volatile int _streaming = (int)StreamingState.Ready;
 
     public RxResult(
-        IObservable<IInternalResultCursor> resultCursor,
-        ILogger logger = null)
+        IObservable<IInternalResultCursor> resultCursor)
     {
         _resultCursor = resultCursor.Replay().AutoConnect();
         _keys = _resultCursor.SelectMany(x => x.KeysAsync().ToObservable()).Replay().AutoConnect();
         _records = new Subject<IRecord>();
         _summary = new ReplaySubject<IResultSummary>();
-        _logger = logger;
     }
-
-    private StreamingState State => (StreamingState)_streaming;
 
     public IObservable<string[]> Keys()
     {

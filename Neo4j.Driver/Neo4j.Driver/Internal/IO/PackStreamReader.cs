@@ -15,11 +15,16 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO;
+
+// we don't use the return value of Read() in most cases, so suppress the warning
+[SuppressMessage("ReSharper", "MustUseReturnValue")]
 
 internal sealed class PackStreamReader
 {

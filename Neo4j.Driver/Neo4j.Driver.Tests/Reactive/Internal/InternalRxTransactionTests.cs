@@ -19,121 +19,121 @@ using System.Reactive;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Tests;
+using Neo4j.Driver.Tests.Reactive.Utils;
+using Neo4j.Driver.Tests.Result;
 using Xunit;
 
-namespace Neo4j.Driver.Reactive.Internal
+namespace Neo4j.Driver.Tests.Reactive.Internal;
+
+public static class InternalRxTransactionTests
 {
-    public static class InternalRxTransactionTests
+    public class Run : AbstractRxTest
     {
-        public class Run : AbstractRxTest
+        [Fact]
+        public void ShouldReturnInternalRxResult()
         {
-            [Fact]
-            public void ShouldReturnInternalRxResult()
-            {
-                var rxTxc = new InternalRxTransaction(Mock.Of<IInternalAsyncTransaction>());
+            var rxTxc = new InternalRxTransaction(Mock.Of<IInternalAsyncTransaction>());
 
-                rxTxc.Run("RETURN 1").Should().BeOfType<RxResult>();
-            }
-
-            [Fact]
-            public void ShouldInvokeTxcRunAsyncOnKeys()
-            {
-                VerifyLazyRunAsync(r => r.Keys().WaitForCompletion());
-            }
-
-            [Fact]
-            public void ShouldInvokeTxcRunAsyncOnRecords()
-            {
-                VerifyLazyRunAsync(r => r.Records().WaitForCompletion());
-            }
-
-            [Fact]
-            public void ShouldInvokeTxcRunAsyncOnSummary()
-            {
-                VerifyLazyRunAsync(r => r.Consume().WaitForCompletion());
-            }
-
-            [Fact]
-            public void ShouldInvokeTxcRunAsyncOnlyOnce()
-            {
-                VerifyLazyRunAsync(
-                    r =>
-                    {
-                        r.Keys().WaitForCompletion();
-                        r.Records().WaitForCompletion();
-                        r.Consume().WaitForCompletion();
-                    });
-            }
-
-            private static void VerifyLazyRunAsync(Action<IRxResult> action)
-            {
-                var asyncTxc = new Mock<IInternalAsyncTransaction>();
-                asyncTxc.Setup(x => x.RunAsync(It.IsAny<Query>()))
-                    .ReturnsAsync(
-                        new ListBasedRecordCursor(
-                            new[] { "x" },
-                            Enumerable.Empty<IRecord>,
-                            Mock.Of<IResultSummary>));
-
-                var txc = new InternalRxTransaction(asyncTxc.Object);
-                var result = txc.Run("RETURN 1");
-
-                asyncTxc.Verify(x => x.RunAsync(It.IsAny<Query>()), Times.Never);
-
-                action(result);
-
-                asyncTxc.Verify(x => x.RunAsync(It.IsAny<Query>()), Times.Once);
-            }
+            rxTxc.Run("RETURN 1").Should().BeOfType<RxResult>();
         }
 
-        public class Commit : AbstractRxTest
+        [Fact]
+        public void ShouldInvokeTxcRunAsyncOnKeys()
         {
-            [Fact]
-            public void ShouldInvokeTxcCommitAsync()
-            {
-                var asyncTxc = new Mock<IInternalAsyncTransaction>();
-                var rxTxc = new InternalRxTransaction(asyncTxc.Object);
-
-                var commit = rxTxc.Commit<Unit>();
-
-                asyncTxc.Verify(x => x.CommitAsync(), Times.Never);
-
-                commit.WaitForCompletion();
-
-                asyncTxc.Verify(x => x.CommitAsync(), Times.Once);
-            }
+            VerifyLazyRunAsync(r => r.Keys().WaitForCompletion());
         }
 
-        public class Rollback : AbstractRxTest
+        [Fact]
+        public void ShouldInvokeTxcRunAsyncOnRecords()
         {
-            [Fact]
-            public void ShouldInvokeTxcRollbackAsync()
-            {
-                var asyncTxc = new Mock<IInternalAsyncTransaction>();
-                var rxTxc = new InternalRxTransaction(asyncTxc.Object);
-
-                var rollback = rxTxc.Rollback<Unit>();
-
-                asyncTxc.Verify(x => x.RollbackAsync(), Times.Never);
-
-                rollback.WaitForCompletion();
-
-                asyncTxc.Verify(x => x.RollbackAsync(), Times.Once);
-            }
+            VerifyLazyRunAsync(r => r.Records().WaitForCompletion());
         }
 
-        public class TransactionConfig
+        [Fact]
+        public void ShouldInvokeTxcRunAsyncOnSummary()
         {
-            [Fact]
-            public void ShouldDelegateToAsyncTransaction()
-            {
-                var asyncTxc = new Mock<IInternalAsyncTransaction>();
-                var rxTxc = new InternalRxTransaction(asyncTxc.Object);
+            VerifyLazyRunAsync(r => r.Consume().WaitForCompletion());
+        }
 
-                var config = rxTxc.TransactionConfig;
-                asyncTxc.Verify(x => x.TransactionConfig, Times.Once);
-            }
+        [Fact]
+        public void ShouldInvokeTxcRunAsyncOnlyOnce()
+        {
+            VerifyLazyRunAsync(
+                r =>
+                {
+                    r.Keys().WaitForCompletion();
+                    r.Records().WaitForCompletion();
+                    r.Consume().WaitForCompletion();
+                });
+        }
+
+        private static void VerifyLazyRunAsync(Action<IRxResult> action)
+        {
+            var asyncTxc = new Mock<IInternalAsyncTransaction>();
+            asyncTxc.Setup(x => x.RunAsync(It.IsAny<Query>()))
+                .ReturnsAsync(
+                    new ListBasedRecordCursor(
+                        new[] { "x" },
+                        Enumerable.Empty<IRecord>,
+                        Mock.Of<IResultSummary>));
+
+            var txc = new InternalRxTransaction(asyncTxc.Object);
+            var result = txc.Run("RETURN 1");
+
+            asyncTxc.Verify(x => x.RunAsync(It.IsAny<Query>()), Times.Never);
+
+            action(result);
+
+            asyncTxc.Verify(x => x.RunAsync(It.IsAny<Query>()), Times.Once);
+        }
+    }
+
+    public class Commit : AbstractRxTest
+    {
+        [Fact]
+        public void ShouldInvokeTxcCommitAsync()
+        {
+            var asyncTxc = new Mock<IInternalAsyncTransaction>();
+            var rxTxc = new InternalRxTransaction(asyncTxc.Object);
+
+            var commit = rxTxc.Commit<Unit>();
+
+            asyncTxc.Verify(x => x.CommitAsync(), Times.Never);
+
+            commit.WaitForCompletion();
+
+            asyncTxc.Verify(x => x.CommitAsync(), Times.Once);
+        }
+    }
+
+    public class Rollback : AbstractRxTest
+    {
+        [Fact]
+        public void ShouldInvokeTxcRollbackAsync()
+        {
+            var asyncTxc = new Mock<IInternalAsyncTransaction>();
+            var rxTxc = new InternalRxTransaction(asyncTxc.Object);
+
+            var rollback = rxTxc.Rollback<Unit>();
+
+            asyncTxc.Verify(x => x.RollbackAsync(), Times.Never);
+
+            rollback.WaitForCompletion();
+
+            asyncTxc.Verify(x => x.RollbackAsync(), Times.Once);
+        }
+    }
+
+    public class TransactionConfig
+    {
+        [Fact]
+        public void ShouldDelegateToAsyncTransaction()
+        {
+            var asyncTxc = new Mock<IInternalAsyncTransaction>();
+            var rxTxc = new InternalRxTransaction(asyncTxc.Object);
+
+            var config = rxTxc.TransactionConfig;
+            asyncTxc.Verify(x => x.TransactionConfig, Times.Once);
         }
     }
 }

@@ -17,7 +17,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
-using static Neo4j.Driver.Tests.Assertions;
+using static Neo4j.Driver.Tests.TestUtil.Assertions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 

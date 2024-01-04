@@ -16,6 +16,7 @@
 using System;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
+using Neo4j.Driver.Internal.Helpers;
 
 namespace Neo4j.Driver.Internal.Connector.Trust;
 

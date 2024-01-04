@@ -17,7 +17,8 @@ using System;
 using System.Collections.Generic;
 using System.Reactive;
 using Neo4j.Driver.IntegrationTests.Internals;
-using Neo4j.Driver.Reactive;
+using Neo4j.Driver.Tests.Reactive;
+using Neo4j.Driver.Tests.Reactive.Utils;
 using Xunit;
 using Xunit.Abstractions;
 

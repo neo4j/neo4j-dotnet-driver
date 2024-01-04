@@ -15,9 +15,10 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Neo4j.Driver.Tests.TestBackend.Resolvers;
 using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.SupportFunctions;
 
 internal class ResolverResolutionCompleted : ProtocolObject
 {

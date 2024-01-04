@@ -15,12 +15,13 @@
 
 using System;
 using System.Linq;
+using Neo4j.Driver.Tests.TestBackend.Types;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 #pragma warning disable CS0618 // Type or member is obsolete - but still needs to be handled
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Result;
 
 internal static class SummaryJsonSerializer
 {

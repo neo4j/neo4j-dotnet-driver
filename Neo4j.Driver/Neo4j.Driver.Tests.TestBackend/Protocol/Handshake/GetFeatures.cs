@@ -15,7 +15,7 @@
 
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Handshake;
 
 internal class GetFeatures : ProtocolObject
 {

@@ -15,6 +15,8 @@
 
 using System;
 
+namespace Neo4j.Driver.Tests.TestBackend.Exceptions;
+
 public class DriverExceptionWrapper : Exception
 {
     public DriverExceptionWrapper()

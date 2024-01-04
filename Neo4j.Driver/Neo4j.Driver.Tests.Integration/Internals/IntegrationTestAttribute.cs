@@ -18,6 +18,9 @@ using System.Text;
 using Neo4j.Driver.Internal.Util;
 using Xunit;
 
+// disable this warning for the Skip property which comes from Xunit
+// ReSharper disable VirtualMemberCallInConstructor
+
 namespace Neo4j.Driver.IntegrationTests.Internals;
 
 public sealed class RequireBoltStubServerFactAttribute : FactAttribute
