@@ -22,7 +22,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class NewDriver : IProtocolObject
+internal class NewDriver : ProtocolObject
 {
     public NewDriverType data { get; set; } = new();
 

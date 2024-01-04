@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class StartTest : IProtocolObject
+internal class StartTest : ProtocolObject
 {
     public StartTestType data { get; set; } = new();
 

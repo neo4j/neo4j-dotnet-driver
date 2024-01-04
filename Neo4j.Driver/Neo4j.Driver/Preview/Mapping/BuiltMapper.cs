@@ -45,18 +45,18 @@ internal class BuiltMapper<T> : IRecordMapper<T>
         return obj;
     }
 
-    private static T CreateObject<T>()
+    private static TObject CreateObject<TObject>()
     {
         // check for parameterless constructor
-        var constructor = typeof(T).GetConstructor(Type.EmptyTypes);
+        var constructor = typeof(TObject).GetConstructor(Type.EmptyTypes);
         if (constructor is null)
         {
             throw new InvalidOperationException(
-                $"Cannot create an instance of type {typeof(T).Name} " +
+                $"Cannot create an instance of type {typeof(TObject).Name} " +
                 $"because it does not have a parameterless constructor.");
         }
 
-        return (T)constructor.Invoke(Array.Empty<object>());
+        return (TObject)constructor.Invoke(Array.Empty<object>());
     }
 
     public void AddWholeObjectMapping(Func<IRecord, T> mappingFunction)

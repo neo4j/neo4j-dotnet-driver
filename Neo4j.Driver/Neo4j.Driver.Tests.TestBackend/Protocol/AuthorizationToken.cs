@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class AuthorizationToken : IProtocolObject
+internal class AuthorizationToken : ProtocolObject
 {
     public AuthorizationTokenType data { get; set; } = new();
 

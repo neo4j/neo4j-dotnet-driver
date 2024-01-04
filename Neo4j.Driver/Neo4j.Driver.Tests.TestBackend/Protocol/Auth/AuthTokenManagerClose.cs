@@ -15,7 +15,7 @@
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class AuthTokenManagerClose : IProtocolObject
+internal class AuthTokenManagerClose : ProtocolObject
 {
     public AuthTokenManagerCloseType data { get; set; } = new();
 

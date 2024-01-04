@@ -23,24 +23,24 @@ internal static class ProtocolObjectFactory
 {
     public static ProtocolObjectManager ObjManager { get; set; }
 
-    public static IProtocolObject CreateObject(string jsonString)
+    public static ProtocolObject CreateObject(string jsonString)
     {
         var type = GetObjectType(jsonString);
         Protocol.ValidateType(type);
         return CreateObject(type, jsonString);
     }
 
-    public static T CreateObject<T>() where T : IProtocolObject
+    public static T CreateObject<T>() where T : ProtocolObject
     {
         Protocol.ValidateType(typeof(T));
         return (T)CreateObject(typeof(T));
     }
 
-    private static IProtocolObject CreateObject(Type type, string jsonString = null)
+    private static ProtocolObject CreateObject(Type type, string jsonString = null)
     {
         try
         {
-            var newObject = (IProtocolObject)CreateNewObjectOfType(
+            var newObject = (ProtocolObject)CreateNewObjectOfType(
                 type,
                 jsonString,
                 new JsonSerializerSettings
@@ -72,7 +72,7 @@ internal static class ProtocolObjectFactory
         return (string)jsonObject["name"];
     }
 
-    public static T CreateObject<T>(string jsonString = null) where T : IProtocolObject, new()
+    public static T CreateObject<T>(string jsonString = null) where T : ProtocolObject, new()
     {
         return (T)CreateObject(jsonString);
     }
@@ -95,7 +95,7 @@ internal static class ProtocolObjectFactory
         return string.IsNullOrEmpty(jsonString) ? new T() : JsonConvert.DeserializeObject<T>(jsonString, settings);
     }
 
-    private static void ProcessNewObject(IProtocolObject newObject)
+    private static void ProcessNewObject(ProtocolObject newObject)
     {
         newObject.SetObjectManager(ObjManager);
         ObjManager.AddProtocolObject(newObject);

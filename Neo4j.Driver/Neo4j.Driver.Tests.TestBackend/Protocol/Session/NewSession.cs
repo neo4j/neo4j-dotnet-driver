@@ -23,7 +23,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class NewSession : IProtocolObject
+internal class NewSession : ProtocolObject
 {
     public enum SessionState
     {

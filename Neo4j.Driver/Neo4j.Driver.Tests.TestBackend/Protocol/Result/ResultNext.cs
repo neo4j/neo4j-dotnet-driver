@@ -20,7 +20,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class ResultNext : IProtocolObject
+internal class ResultNext : ProtocolObject
 {
     public ResultNextType data { get; set; } = new();
 

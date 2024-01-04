@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class DriverClose : IProtocolObject
+internal class DriverClose : ProtocolObject
 {
     public DriverCloseType data { get; set; } = new();
 

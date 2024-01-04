@@ -21,7 +21,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class ExecuteQuery : IProtocolObject
+internal class ExecuteQuery : ProtocolObject
 {
     public ExecuteQueryDto data { get; set; }
 

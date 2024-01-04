@@ -15,9 +15,11 @@
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class BookmarksSupplierCompleted : IProtocolObject
+internal class BookmarksSupplierCompleted : ProtocolObject
 {
+#pragma warning disable CS0649 // field will only be assigned to during deserialization from JSON message
     public BookmarksSupplierCompletedDto data;
+#pragma warning restore CS0649
 
     public class BookmarksSupplierCompletedDto
     {

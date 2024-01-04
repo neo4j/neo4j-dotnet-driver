@@ -19,7 +19,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class SessionReadTransaction : IProtocolObject
+internal class SessionReadTransaction : ProtocolObject
 {
     public SessionReadTransactionType data { get; set; } = new();
 

@@ -26,7 +26,7 @@ internal class FakeTimeHolder
     internal static IDateTimeProvider OriginalTimeProvider;
 }
 
-internal class FakeTimeInstall : IProtocolObject
+internal class FakeTimeInstall : ProtocolObject
 {
     public object data { get; set; }
 
@@ -44,7 +44,7 @@ internal class FakeTimeInstall : IProtocolObject
     }
 }
 
-internal class FakeTimeTick : IProtocolObject
+internal class FakeTimeTick : ProtocolObject
 {
     public FakeTimeTickDto data { get; set; }
 
@@ -62,7 +62,7 @@ internal class FakeTimeTick : IProtocolObject
     public record FakeTimeTickDto(int incrementMs);
 }
 
-internal class FakeTimeUninstall : IProtocolObject
+internal class FakeTimeUninstall : ProtocolObject
 {
     public object data { get; set; }
 

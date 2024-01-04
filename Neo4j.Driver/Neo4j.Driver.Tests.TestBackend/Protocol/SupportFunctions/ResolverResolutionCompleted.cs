@@ -19,7 +19,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class ResolverResolutionCompleted : IProtocolObject
+internal class ResolverResolutionCompleted : ProtocolObject
 {
     public ResolverResolutionCompletedType data { get; set; } = new();
 

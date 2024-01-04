@@ -24,6 +24,8 @@ using Neo4j.Driver.Internal;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
 
+#pragma warning disable CS0618 // Type or member is obsolete - but we still test obsolete members
+
 namespace Neo4j.Driver.IntegrationTests.Types;
 
 public sealed class TemporalTypesIT : DirectDriverTestBase

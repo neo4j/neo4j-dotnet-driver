@@ -14,7 +14,6 @@
 // limitations under the License.
 
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers;

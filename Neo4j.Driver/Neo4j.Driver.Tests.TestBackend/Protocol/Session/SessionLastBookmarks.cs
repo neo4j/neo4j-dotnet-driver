@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class SessionLastBookmarks : IProtocolObject
+internal class SessionLastBookmarks : ProtocolObject
 {
     private string[] Bookmarks { get; set; }
     public SessionLastBookmarksType data { get; set; } = new();

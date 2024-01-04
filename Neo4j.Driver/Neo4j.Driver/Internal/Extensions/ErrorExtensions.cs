@@ -16,104 +16,38 @@
 using System;
 using System.IO;
 using System.Net.Sockets;
+using Neo4j.Driver.Internal.ExceptionHandling;
 
 namespace Neo4j.Driver.Internal;
 
 internal static class ErrorExtensions
 {
+    private static Neo4jExceptionFactory _exceptionFactory = new();
+
     public static Neo4jException ParseServerException(string code, string message)
     {
-        Neo4jException error;
-        var parts = code.Split('.');
-        var classification = parts[1].ToLowerInvariant();
-        switch (classification)
-        {
-            case "clienterror":
-                if (AuthenticationException.IsAuthenticationError(code))
-                {
-                    error = new AuthenticationException(message);
-                }
-                else if (AuthorizationException.IsAuthorizationError(code))
-                {
-                    error = new AuthorizationException(message);
-                }
-                else if (ProtocolException.IsProtocolError(code))
-                {
-                    error = new ProtocolException(code, message);
-                }
-                else if (FatalDiscoveryException.IsFatalDiscoveryError(code))
-                {
-                    error = new FatalDiscoveryException(message);
-                }
-                else if (TokenExpiredException.IsTokenExpiredError(code))
-                {
-                    error = new TokenExpiredException(message);
-                }
-                else if (InvalidBookmarkException.IsInvalidBookmarkException(code))
-                {
-                    error = new InvalidBookmarkException(message);
-                }
-                else if (InvalidBookmarkMixtureException.IsInvalidBookmarkMixtureException(code))
-                {
-                    error = new InvalidBookmarkMixtureException(message);
-                }
-                else if (ArgumentErrorException.IsArgumentErrorException(code))
-                {
-                    error = new ArgumentErrorException(message);
-                }
-                else if (TypeException.IsTypeException(code))
-                {
-                    error = new TypeException(message);
-                }
-                else if (ForbiddenException.IsForbiddenException(code))
-                {
-                    error = new ForbiddenException(message);
-                }
-                // this one needs to come after it has checked all other possibilities
-                else if (UnknownSecurityException.IsUnknownSecurityException(code))
-                {
-                    return new UnknownSecurityException(message, code);
-                }
-                else
-                {
-                    error = new ClientException(code, message);
-                }
-
-                break;
-
-            case "transienterror":
-                error = new TransientException(code, message);
-                break;
-
-            default:
-                error = new DatabaseException(code, message);
-                break;
-        }
-
-        return error;
+        return _exceptionFactory.GetException(code, message);
     }
 
     public static bool CanBeRetried(this Exception error)
     {
-        return error is Neo4jException neo4JException && neo4JException.IsRetriable;
+        return error is Neo4jException { IsRetriable: true };
     }
 
     public static bool IsRecoverableError(this Exception error)
     {
-        return error is ClientException || error is TransientException;
+        return error is ClientException or TransientException;
     }
 
     public static bool IsConnectionError(this Exception error)
     {
-        return error is IOException ||
-            error is SocketException ||
-            error.GetBaseException() is IOException ||
-            error.GetBaseException() is SocketException;
+        return error is IOException or SocketException ||
+            error.GetBaseException() is IOException or SocketException;
     }
 
-    public static bool IsAuthorizationError(this Exception error)
+    public static bool HasErrorCode(this Exception error, string errorCode)
     {
-        return error is AuthorizationException;
+        return error is Neo4jException neo4jException && neo4jException.Code == errorCode;
     }
 
     public static bool IsDatabaseUnavailableError(this Exception error)
@@ -134,12 +68,6 @@ internal static class ErrorExtensions
     private static bool IsForbiddenOnReadOnlyDatabaseError(this Exception error)
     {
         return error.HasErrorCode("Neo.ClientError.General.ForbiddenOnReadOnlyDatabase");
-    }
-
-    private static bool HasErrorCode(this Exception error, string code)
-    {
-        var exception = error as Neo4jException;
-        return exception?.Code != null && exception.Code.Equals(code);
     }
 
     public static ResultConsumedException NewResultConsumedException()

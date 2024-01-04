@@ -15,9 +15,11 @@
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class BookmarkManagerClose : IProtocolObject
+internal class BookmarkManagerClose : ProtocolObject
 {
+#pragma warning disable CS0649 // field will only be assigned to during deserialization from JSON message
     public BookmarkManagerCloseDto data;
+#pragma warning restore CS0649
 
     public override string Respond()
     {

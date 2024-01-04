@@ -18,7 +18,7 @@ using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
-internal class ResultConsume : IProtocolObject
+internal class ResultConsume : ProtocolObject
 {
     public ResultConsumeType data { get; set; } = new();
 
