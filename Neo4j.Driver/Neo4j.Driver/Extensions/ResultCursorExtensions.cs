@@ -34,18 +34,21 @@ public static class ResultCursorExtensions
     {
         result = result ?? throw new ArgumentNullException(nameof(result));
         var enumerator = result.GetAsyncEnumerator();
-        if (!await enumerator.MoveNextAsync().ConfigureAwait(false))
+        await using (enumerator.ConfigureAwait(false))
         {
-            throw new InvalidOperationException("The result is empty.");
-        }
+            if (!await enumerator.MoveNextAsync().ConfigureAwait(false))
+            {
+                throw new InvalidOperationException("The result is empty.");
+            }
 
-        var record = enumerator.Current;
-        if (await enumerator.MoveNextAsync().ConfigureAwait(false))
-        {
-            throw new InvalidOperationException("The result contains more than one element.");
-        }
+            var record = enumerator.Current;
+            if (await enumerator.MoveNextAsync().ConfigureAwait(false))
+            {
+                throw new InvalidOperationException("The result contains more than one element.");
+            }
 
-        return record;
+            return record;
+        }
     }
 
     /// <summary>Return the only record in the result stream.</summary>
@@ -61,18 +64,21 @@ public static class ResultCursorExtensions
     {
         result = result ?? throw new ArgumentNullException(nameof(result));
         var enumerator = result.GetAsyncEnumerator();
-        if (!await enumerator.MoveNextAsync().ConfigureAwait(false))
+        await using (enumerator.ConfigureAwait(false))
         {
-            throw new InvalidOperationException("The result is empty.");
-        }
+            if (!await enumerator.MoveNextAsync().ConfigureAwait(false))
+            {
+                throw new InvalidOperationException("The result is empty.");
+            }
 
-        var record = enumerator.Current;
-        if (await enumerator.MoveNextAsync().ConfigureAwait(false))
-        {
-            throw new InvalidOperationException("The result contains more than one element.");
-        }
+            var record = enumerator.Current;
+            if (await enumerator.MoveNextAsync().ConfigureAwait(false))
+            {
+                throw new InvalidOperationException("The result contains more than one element.");
+            }
 
-        return operation(record);
+            return operation(record);
+        }
     }
 
     /// <summary>Pull all records in the result stream into memory and return in a list.</summary>
@@ -80,37 +86,30 @@ public static class ResultCursorExtensions
     /// <param name="initialCapacity">Optional, the driver has no knowledge of the expected result size so use the
     /// default <see cref="List{T}"/> constructor: <see cref="List{T}()"/>. a capacity can be provided to cost of
     /// extending this list.</param>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// <returns>A list with all records in the result stream.</returns>
-    public static async Task<List<IRecord>> ToListAsync(this IResultCursor result, int initialCapacity = 0)
+    public static async Task<List<IRecord>> ToListAsync(this IResultCursor result, int initialCapacity = 0, CancellationToken cancellationToken = default)
     {
         result = result ?? throw new ArgumentNullException(nameof(result));
         var list = initialCapacity <= 0 ? new List<IRecord>() : new List<IRecord>(initialCapacity);
-        await foreach (var record in result.ConfigureAwait(false))
+        var enumerator = result.GetAsyncEnumerator(cancellationToken);
+        await using (enumerator.ConfigureAwait(false))
         {
-            list.Add(record);
+            while (await enumerator.MoveNextAsync().ConfigureAwait(false))
+            {
+                list.Add(result.Current);
+            }
         }
+
         return list;
     }
 
     /// <summary>Pull all records in the result stream into memory and return in a list.</summary>
     /// <param name="result"> The result stream.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
-    /// <param name="initialCapacity">Optional, the driver has no knowledge of the expected result size so use the
-    /// default <see cref="List{T}"/> constructor: <see cref="List{T}()"/>. a capacity can be provided to cost of
-    /// extending this list.</param>
-    public static async Task<List<IRecord>> ToListAsync(this IResultCursor result, CancellationToken cancellationToken,
-        int initialCapacity = 0)
+    public static Task<List<IRecord>> ToListAsync(this IResultCursor result, CancellationToken cancellationToken)
     {
-        result = result ?? throw new ArgumentNullException(nameof(result));
-        var list = initialCapacity <= 0 ? new List<IRecord>() : new List<IRecord>(initialCapacity);
-        var enumerator = result.GetAsyncEnumerator();
-        while (await enumerator.MoveNextAsync().ConfigureAwait(false))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            list.Add(result.Current);
-        }
-
-        return list;
+        return ToListAsync(result, 0, cancellationToken);
     }
 
     /// <summary>Apply the operation on each record in the result stream and return the operation results in a list.</summary>
@@ -127,13 +126,16 @@ public static class ResultCursorExtensions
         result = result ?? throw new ArgumentNullException(nameof(result));
         var list = initialCapacity <= 0 ? new List<T>() : new List<T>(initialCapacity);
         var enumerator = result.GetAsyncEnumerator();
-        while (await enumerator.MoveNextAsync().ConfigureAwait(false))
+        await using (enumerator.ConfigureAwait(false))
         {
-            var record = result.Current;
-            list.Add(operation(record));
-        }
+            while (await enumerator.MoveNextAsync().ConfigureAwait(false))
+            {
+                var record = result.Current;
+                list.Add(operation(record));
+            }
 
-        return list;
+            return list;
+        }
     }
 
     /// <summary>Read each record in the result stream and apply the operation on each record.</summary>
@@ -146,12 +148,15 @@ public static class ResultCursorExtensions
     {
         result = result ?? throw new ArgumentNullException(nameof(result));
         var enumerator = result.GetAsyncEnumerator();
-        while (await enumerator.MoveNextAsync().ConfigureAwait(false))
+        await using (enumerator.ConfigureAwait(false))
         {
-            var record = enumerator.Current;
-            operation(record);
-        }
+            while (await enumerator.MoveNextAsync().ConfigureAwait(false))
+            {
+                var record = result.Current;
+                operation(record);
+            }
 
-        return await result.ConsumeAsync().ConfigureAwait(false);
+            return await result.ConsumeAsync().ConfigureAwait(false);
+        }
     }
 }
