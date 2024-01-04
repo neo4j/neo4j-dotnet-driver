@@ -20,6 +20,7 @@ using System.Reflection;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Logging;
+using Neo4j.Driver.Internal.Util;
 
 namespace Neo4j.Driver;
 

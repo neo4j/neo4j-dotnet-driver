@@ -17,7 +17,7 @@ using System;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol;
 
 internal class ProtocolException : ProtocolObject
 {

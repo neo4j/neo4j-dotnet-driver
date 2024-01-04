@@ -18,20 +18,19 @@ using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Messages
-{
-    public class GoodbyeMessageTests
-    {
-        [Fact]
-        public void ShouldHaveCorrectSerializer()
-        {
-            GoodbyeMessage.Instance.Serializer.Should().BeOfType<GoodbyeMessageSerializer>();
-        }
+namespace Neo4j.Driver.Internal.MessageHandling.Messages;
 
-        [Fact]
-        public void ShouldIncludeValuesInToString()
-        {
-            GoodbyeMessage.Instance.ToString().Should().Be("GOODBYE");
-        }
+public class GoodbyeMessageTests
+{
+    [Fact]
+    public void ShouldHaveCorrectSerializer()
+    {
+        GoodbyeMessage.Instance.Serializer.Should().BeOfType<GoodbyeMessageSerializer>();
+    }
+
+    [Fact]
+    public void ShouldIncludeValuesInToString()
+    {
+        GoodbyeMessage.Instance.ToString().Should().Be("GOODBYE");
     }
 }

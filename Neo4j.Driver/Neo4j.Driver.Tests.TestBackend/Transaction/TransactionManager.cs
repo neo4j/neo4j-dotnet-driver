@@ -16,8 +16,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Neo4j.Driver.Tests.TestBackend.Protocol;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Transaction;
 
 internal class TransactionWrapper
 {

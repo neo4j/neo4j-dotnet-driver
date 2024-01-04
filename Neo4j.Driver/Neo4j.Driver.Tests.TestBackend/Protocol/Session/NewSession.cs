@@ -19,9 +19,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Auth;
+using Neo4j.Driver.Tests.TestBackend.Protocol.BookmarkManager;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Driver;
 using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Session;
 
 internal class NewSession : ProtocolObject
 {

@@ -17,8 +17,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Tests.TestBackend.Protocol;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Exceptions;
 //TransientException = DriverError
 //ClientException = ClientError
 //All others = BackendError
@@ -83,7 +84,7 @@ internal static class ExceptionManager
         //if (ex is Neo4jException || ex is NotSupportedException)
         if (type is not null)
         {
-            var newError = ProtocolObjectFactory.CreateObject<ProtocolException>();
+            var newError = ProtocolObjectFactory.CreateObject<Protocol.ProtocolException>();
             newError.ExceptionObj = ex;
             var errorCode = ex is Neo4jException ? ((Neo4jException)ex).Code : type;
             return new ProtocolResponse(
@@ -99,7 +100,7 @@ internal static class ExceptionManager
 
         if (ex is DriverExceptionWrapper)
         {
-            var newError = ProtocolObjectFactory.CreateObject<ProtocolException>();
+            var newError = ProtocolObjectFactory.CreateObject<Protocol.ProtocolException>();
             return new ProtocolResponse(
                 "DriverError",
                 new

@@ -18,6 +18,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Neo4j.Driver.Tests.TestBackend.Exceptions;
+using Neo4j.Driver.Tests.TestBackend.IO;
+using Neo4j.Driver.Tests.TestBackend.Protocol;
+using Neo4j.Driver.Tests.TestBackend.Transaction;
 using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;

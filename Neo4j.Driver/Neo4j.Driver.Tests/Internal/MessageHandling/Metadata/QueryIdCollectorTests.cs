@@ -15,73 +15,74 @@
 
 using System.Collections.Generic;
 using FluentAssertions;
+using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.MessageHandling.Metadata;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata
+namespace Neo4j.Driver.Tests.Internal.MessageHandling.Metadata;
+
+public class QueryIdCollectorTests
 {
-    public class QueryIdCollectorTests
+    private const string Key = QueryIdCollector.QueryIdKey;
+
+    internal static KeyValuePair<string, object> TestMetadata => new(Key, 45L);
+
+    internal static long TestMetadataCollected => 45L;
+
+    [Fact]
+    public void ShouldNotCollectIfMetadataIsNull()
     {
-        private const string Key = QueryIdCollector.QueryIdKey;
+        var collector = new QueryIdCollector();
 
-        internal static KeyValuePair<string, object> TestMetadata => new(Key, 45L);
+        collector.Collect(null);
 
-        internal static long TestMetadataCollected => 45L;
+        collector.Collected.Should().Be(-1);
+    }
 
-        [Fact]
-        public void ShouldNotCollectIfMetadataIsNull()
-        {
-            var collector = new QueryIdCollector();
+    [Fact]
+    public void ShouldNotCollectIfNoValueIsGiven()
+    {
+        var collector = new QueryIdCollector();
 
-            collector.Collect(null);
+        collector.Collect(new Dictionary<string, object>());
 
-            collector.Collected.Should().Be(-1);
-        }
+        collector.Collected.Should().Be(-1);
+    }
 
-        [Fact]
-        public void ShouldNotCollectIfNoValueIsGiven()
-        {
-            var collector = new QueryIdCollector();
+    [Fact]
+    public void ShouldThrowIfValueIsOfWrongType()
+    {
+        var metadata = new Dictionary<string, object> { { Key, false } };
+        var collector = new QueryIdCollector();
 
-            collector.Collect(new Dictionary<string, object>());
+        var ex = Record.Exception(() => collector.Collect(metadata));
 
-            collector.Collected.Should().Be(-1);
-        }
+        ex.Should()
+            .BeOfType<ProtocolException>()
+            .Which
+            .Message.Should()
+            .Contain($"Expected '{Key}' metadata to be of type 'Int64', but got 'Boolean'.");
+    }
 
-        [Fact]
-        public void ShouldThrowIfValueIsOfWrongType()
-        {
-            var metadata = new Dictionary<string, object> { { Key, false } };
-            var collector = new QueryIdCollector();
+    [Fact]
+    public void ShouldCollect()
+    {
+        var metadata = new Dictionary<string, object> { { Key, 5L } };
+        var collector = new QueryIdCollector();
 
-            var ex = Record.Exception(() => collector.Collect(metadata));
+        collector.Collect(metadata);
 
-            ex.Should()
-                .BeOfType<ProtocolException>()
-                .Which
-                .Message.Should()
-                .Contain($"Expected '{Key}' metadata to be of type 'Int64', but got 'Boolean'.");
-        }
+        collector.Collected.Should().Be(5L);
+    }
 
-        [Fact]
-        public void ShouldCollect()
-        {
-            var metadata = new Dictionary<string, object> { { Key, 5L } };
-            var collector = new QueryIdCollector();
+    [Fact]
+    public void ShouldReturnSameCollected()
+    {
+        var metadata = new Dictionary<string, object> { { Key, 5L } };
+        var collector = new QueryIdCollector();
 
-            collector.Collect(metadata);
+        collector.Collect(metadata);
 
-            collector.Collected.Should().Be(5L);
-        }
-
-        [Fact]
-        public void ShouldReturnSameCollected()
-        {
-            var metadata = new Dictionary<string, object> { { Key, 5L } };
-            var collector = new QueryIdCollector();
-
-            collector.Collect(metadata);
-
-            ((IMetadataCollector)collector).Collected.Should().Be(collector.Collected);
-        }
+        ((IMetadataCollector)collector).Collected.Should().Be(collector.Collected);
     }
 }

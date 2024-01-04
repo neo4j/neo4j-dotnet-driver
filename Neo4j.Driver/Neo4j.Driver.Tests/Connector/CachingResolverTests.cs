@@ -17,110 +17,110 @@ using System.Threading;
 using System.Threading.Tasks;
 using Moq;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Connector.Resolvers;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.Connector
+namespace Neo4j.Driver.Tests.Connector;
+
+public class CachingResolverTests
 {
-    public class CachingResolverTests
+    [Fact]
+    public void ShouldResolve()
     {
-        [Fact]
-        public void ShouldResolve()
-        {
-            var resolverMock = new Mock<IHostResolver>();
-            var resolver = new CachingHostResolver(resolverMock.Object, 1000);
+        var resolverMock = new Mock<IHostResolver>();
+        var resolver = new CachingHostResolver(resolverMock.Object, 1000);
 
-            resolver.Resolve("localhost");
+        resolver.Resolve("localhost");
 
-            resolverMock.Verify(x => x.Resolve("localhost"));
-        }
+        resolverMock.Verify(x => x.Resolve("localhost"));
+    }
 
-        [Fact]
-        public async void ShouldResolveAsync()
-        {
-            var resolverMock = new Mock<IHostResolver>();
-            var resolver = new CachingHostResolver(resolverMock.Object, 1000);
+    [Fact]
+    public async void ShouldResolveAsync()
+    {
+        var resolverMock = new Mock<IHostResolver>();
+        var resolver = new CachingHostResolver(resolverMock.Object, 1000);
 
-            await resolver.ResolveAsync("localhost");
+        await resolver.ResolveAsync("localhost");
 
-            resolverMock.Verify(x => x.ResolveAsync("localhost"));
-        }
+        resolverMock.Verify(x => x.ResolveAsync("localhost"));
+    }
 
-        [Fact]
-        public void ShouldResolveOnce()
-        {
-            var resolverMock = new Mock<IHostResolver>();
-            var resolver = new CachingHostResolver(resolverMock.Object, 5000);
+    [Fact]
+    public void ShouldResolveOnce()
+    {
+        var resolverMock = new Mock<IHostResolver>();
+        var resolver = new CachingHostResolver(resolverMock.Object, 5000);
 
-            resolver.Resolve("localhost");
-            resolver.Resolve("localhost");
+        resolver.Resolve("localhost");
+        resolver.Resolve("localhost");
 
-            resolverMock.Verify(x => x.Resolve("localhost"), Times.Once);
-        }
+        resolverMock.Verify(x => x.Resolve("localhost"), Times.Once);
+    }
 
-        [Fact]
-        public async void ShouldResolveOnceAsync()
-        {
-            var resolverMock = new Mock<IHostResolver>();
-            var resolver = new CachingHostResolver(resolverMock.Object, 5000);
+    [Fact]
+    public async void ShouldResolveOnceAsync()
+    {
+        var resolverMock = new Mock<IHostResolver>();
+        var resolver = new CachingHostResolver(resolverMock.Object, 5000);
 
-            await resolver.ResolveAsync("localhost");
-            await resolver.ResolveAsync("localhost");
+        await resolver.ResolveAsync("localhost");
+        await resolver.ResolveAsync("localhost");
 
-            resolverMock.Verify(x => x.ResolveAsync("localhost"), Times.Once);
-        }
+        resolverMock.Verify(x => x.ResolveAsync("localhost"), Times.Once);
+    }
 
-        [Fact]
-        public async void ShouldResolveOnceMixedAsyncFirst()
-        {
-            var resolverMock = new Mock<IHostResolver>();
-            var resolver = new CachingHostResolver(resolverMock.Object, 5000);
+    [Fact]
+    public async void ShouldResolveOnceMixedAsyncFirst()
+    {
+        var resolverMock = new Mock<IHostResolver>();
+        var resolver = new CachingHostResolver(resolverMock.Object, 5000);
 
-            await resolver.ResolveAsync("localhost");
-            resolver.Resolve("localhost");
-            await resolver.ResolveAsync("localhost");
-            resolver.Resolve("localhost");
+        await resolver.ResolveAsync("localhost");
+        resolver.Resolve("localhost");
+        await resolver.ResolveAsync("localhost");
+        resolver.Resolve("localhost");
 
-            resolverMock.Verify(x => x.ResolveAsync("localhost"), Times.Once);
-        }
+        resolverMock.Verify(x => x.ResolveAsync("localhost"), Times.Once);
+    }
 
-        [Fact]
-        public async void ShouldResolveOnceMixedSyncFirst()
-        {
-            var resolverMock = new Mock<IHostResolver>();
-            var resolver = new CachingHostResolver(resolverMock.Object, 5000);
+    [Fact]
+    public async void ShouldResolveOnceMixedSyncFirst()
+    {
+        var resolverMock = new Mock<IHostResolver>();
+        var resolver = new CachingHostResolver(resolverMock.Object, 5000);
 
-            resolver.Resolve("localhost");
-            await resolver.ResolveAsync("localhost");
-            resolver.Resolve("localhost");
-            await resolver.ResolveAsync("localhost");
+        resolver.Resolve("localhost");
+        await resolver.ResolveAsync("localhost");
+        resolver.Resolve("localhost");
+        await resolver.ResolveAsync("localhost");
 
-            resolverMock.Verify(x => x.Resolve("localhost"), Times.Once);
-        }
+        resolverMock.Verify(x => x.Resolve("localhost"), Times.Once);
+    }
 
-        [Fact]
-        public void ShouldExpireCached()
-        {
-            var resolverMock = new Mock<IHostResolver>();
-            var resolver = new CachingHostResolver(resolverMock.Object, 1000);
+    [Fact]
+    public void ShouldExpireCached()
+    {
+        var resolverMock = new Mock<IHostResolver>();
+        var resolver = new CachingHostResolver(resolverMock.Object, 1000);
 
-            resolver.Resolve("localhost");
-            Thread.Sleep(1500);
-            resolver.Resolve("localhost");
+        resolver.Resolve("localhost");
+        Thread.Sleep(1500);
+        resolver.Resolve("localhost");
 
-            resolverMock.Verify(x => x.Resolve("localhost"), Times.Exactly(2));
-        }
+        resolverMock.Verify(x => x.Resolve("localhost"), Times.Exactly(2));
+    }
 
-        [Fact]
-        public async void ShouldExpireCachedAsync()
-        {
-            var resolverMock = new Mock<IHostResolver>();
-            var resolver = new CachingHostResolver(resolverMock.Object, 1000);
+    [Fact]
+    public async void ShouldExpireCachedAsync()
+    {
+        var resolverMock = new Mock<IHostResolver>();
+        var resolver = new CachingHostResolver(resolverMock.Object, 1000);
 
-            await resolver.ResolveAsync("localhost");
-            await Task.Delay(1500);
-            await resolver.ResolveAsync("localhost");
+        await resolver.ResolveAsync("localhost");
+        await Task.Delay(1500);
+        await resolver.ResolveAsync("localhost");
 
-            resolverMock.Verify(x => x.ResolveAsync("localhost"), Times.Exactly(2));
-        }
+        resolverMock.Verify(x => x.ResolveAsync("localhost"), Times.Exactly(2));
     }
 }

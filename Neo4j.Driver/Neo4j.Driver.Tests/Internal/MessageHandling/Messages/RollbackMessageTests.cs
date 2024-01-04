@@ -18,20 +18,19 @@ using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Messages
-{
-    public class RollbackMessageTests
-    {
-        [Fact]
-        public void ShouldHaveCorrectSerializer()
-        {
-            RollbackMessage.Instance.Serializer.Should().BeOfType<RollbackMessageSerializer>();
-        }
+namespace Neo4j.Driver.Tests.Internal.MessageHandling.Messages;
 
-        [Fact]
-        public void ShouldHaveRollbackMessage()
-        {
-            RollbackMessage.Instance.ToString().Should().Be("ROLLBACK");
-        }
+public class RollbackMessageTests
+{
+    [Fact]
+    public void ShouldHaveCorrectSerializer()
+    {
+        RollbackMessage.Instance.Serializer.Should().BeOfType<RollbackMessageSerializer>();
+    }
+
+    [Fact]
+    public void ShouldHaveRollbackMessage()
+    {
+        RollbackMessage.Instance.ToString().Should().Be("ROLLBACK");
     }
 }

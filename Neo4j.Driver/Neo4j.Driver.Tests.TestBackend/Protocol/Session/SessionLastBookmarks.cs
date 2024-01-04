@@ -16,7 +16,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Session;
 
 internal class SessionLastBookmarks : ProtocolObject
 {

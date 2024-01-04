@@ -15,51 +15,51 @@
 
 using System.Collections.Generic;
 using FluentAssertions;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Messages
+namespace Neo4j.Driver.Tests.Internal.MessageHandling.Messages;
+
+public class RouteMessageV43Tests
 {
-    public class RouteMessageV43Tests
+    [Fact]
+    public void ShouldHaveCorrectSerializer()
     {
-        [Fact]
-        public void ShouldHaveCorrectSerializer()
+        var rm = new RouteMessageV43(null, null, null);
+
+        rm.Serializer.Should().BeOfType<RouteMessageSerializerV43>();
+    }
+
+    [Fact]
+    public void ShouldHandleNullValues()
+    {
+        var rm = new RouteMessageV43(null, null, null);
+
+        rm.Routing.Should().NotBeNull();
+        rm.Bookmarks.Should().NotBeNull();
+        rm.DatabaseParam.Should().BeNull();
+        rm.ToString().Should().Be("ROUTE { } [] None");
+    }
+
+    [Fact]
+    public void ShouldHandleSetValues()
+    {
+        var rc = new Dictionary<string, string>
         {
-            var rm = new RouteMessageV43(null, null, null);
+            ["a"] = "b"
+        };
 
-            rm.Serializer.Should().BeOfType<RouteMessageSerializerV43>();
-        }
+        var bm = new InternalBookmarks("bm:a");
+        var db = "neo4j";
 
-        [Fact]
-        public void ShouldHandleNullValues()
-        {
-            var rm = new RouteMessageV43(null, null, null);
+        var rm = new RouteMessageV43(rc, bm, db);
 
-            rm.Routing.Should().NotBeNull();
-            rm.Bookmarks.Should().NotBeNull();
-            rm.DatabaseParam.Should().BeNull();
-            rm.ToString().Should().Be("ROUTE { } [] None");
-        }
+        rm.Routing.Should().BeEquivalentTo(rc);
+        rm.Bookmarks.Values.Should().BeEquivalentTo(bm.Values);
+        rm.DatabaseParam.Should().Be("neo4j");
 
-        [Fact]
-        public void ShouldHandleSetValues()
-        {
-            var rc = new Dictionary<string, string>
-            {
-                ["a"] = "b"
-            };
-
-            var bm = new InternalBookmarks("bm:a");
-            var db = "neo4j";
-
-            var rm = new RouteMessageV43(rc, bm, db);
-
-            rm.Routing.Should().BeEquivalentTo(rc);
-            rm.Bookmarks.Values.Should().BeEquivalentTo(bm.Values);
-            rm.DatabaseParam.Should().Be("neo4j");
-
-            rm.ToString().Should().Be("ROUTE { 'a':'b' } { bookmarks, [bm:a] } 'neo4j'");
-        }
+        rm.ToString().Should().Be("ROUTE { 'a':'b' } { bookmarks, [bm:a] } 'neo4j'");
     }
 }

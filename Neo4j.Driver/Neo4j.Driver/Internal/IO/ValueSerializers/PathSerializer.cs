@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System.Linq;
+using Neo4j.Driver.Internal.Helpers;
 using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers;

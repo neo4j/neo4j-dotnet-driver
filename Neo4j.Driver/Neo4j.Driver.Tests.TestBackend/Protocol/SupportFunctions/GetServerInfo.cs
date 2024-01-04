@@ -14,8 +14,9 @@
 // limitations under the License.
 
 using System.Threading.Tasks;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Driver;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.SupportFunctions;
 
 internal class GetServerInfo : ProtocolObject
 {

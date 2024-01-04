@@ -16,8 +16,9 @@
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using Neo4j.Driver.Tests.TestBackend.Protocol;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.IO;
 
 internal class ResponseWriter
 {

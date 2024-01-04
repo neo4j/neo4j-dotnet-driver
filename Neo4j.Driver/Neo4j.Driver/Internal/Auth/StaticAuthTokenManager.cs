@@ -15,7 +15,6 @@
 
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Auth;
 
 namespace Neo4j.Driver.Internal.Auth;
 

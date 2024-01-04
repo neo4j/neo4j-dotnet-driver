@@ -70,4 +70,9 @@ internal class Path : IPath
             return hashCode;
         }
     }
+
+    public override string ToString()
+    {
+        return $"Path with {_segments.Count} segments";
+    }
 }

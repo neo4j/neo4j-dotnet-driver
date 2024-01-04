@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Neo4j.Driver.Internal.Helpers;
 
 namespace Neo4j.Driver.Internal.ExceptionHandling;
 
@@ -38,9 +39,9 @@ internal class Neo4jExceptionFactory
 
     private static List<(string code, Type exceptionType)> GetCodesAndExceptions()
     {
-        var exceptionTypes = GetAllNeo4jExceptions();
-
-        return exceptionTypes
+        return typeof(Neo4jException).Assembly
+            .GetExportedTypes()
+            .Where(t => typeof(Neo4jException).IsAssignableFrom(t))
             .Select(
                 exceptionType => new
                 {
@@ -50,14 +51,6 @@ internal class Neo4jExceptionFactory
             .Where(t => t.attr is not null)
             .Select(t => (t.attr.Code, t.exceptionType))
             .ToList();
-    }
-
-    private static IEnumerable<Type> GetAllNeo4jExceptions()
-    {
-        var type = typeof(Neo4jException);
-        var assembly = type.Assembly;
-        var types = assembly.GetExportedTypes().Where(t => type.IsAssignableFrom(t));
-        return types;
     }
 
     private int CompareByCode((string code, Type exceptionType) x, (string code, Type exceptionType) y)
@@ -78,6 +71,7 @@ internal class Neo4jExceptionFactory
             return 1;
         }
 
+        // otherwise, just compare the codes
         return string.Compare(x.code, y.code, StringComparison.InvariantCultureIgnoreCase);
     }
 

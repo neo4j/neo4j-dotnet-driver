@@ -17,7 +17,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.Extensions;
+namespace Neo4j.Driver.Internal;
 
 internal static class TaskExtensions
 {

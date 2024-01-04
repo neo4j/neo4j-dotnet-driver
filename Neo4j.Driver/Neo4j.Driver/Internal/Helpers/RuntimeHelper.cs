@@ -16,7 +16,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace Neo4j.Driver.Internal;
+namespace Neo4j.Driver.Internal.Helpers;
 
 internal static class RuntimeHelper
 {

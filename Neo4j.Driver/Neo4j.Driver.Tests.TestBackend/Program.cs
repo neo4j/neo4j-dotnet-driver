@@ -17,6 +17,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using Neo4j.Driver.Tests.TestBackend.IO;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
@@ -40,7 +41,7 @@ public class Program
 
                 try
                 {
-                    controller.Process(true, e => { return true; }).Wait();
+                    controller.Process(true, _ => { return true; }).Wait();
                 }
                 catch (Exception ex)
                 {

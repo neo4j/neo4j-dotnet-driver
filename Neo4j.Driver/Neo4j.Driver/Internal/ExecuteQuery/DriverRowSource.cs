@@ -17,9 +17,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal;
 
-namespace Neo4j.Driver;
+namespace Neo4j.Driver.Internal;
 
 internal interface IDriverRowSource<T> : IQueryRowSource<T>
 {

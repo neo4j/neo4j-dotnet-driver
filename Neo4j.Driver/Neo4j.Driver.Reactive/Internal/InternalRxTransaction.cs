@@ -32,12 +32,12 @@ internal class InternalRxTransaction : IRxTransaction
 
     public IObservable<T> Commit<T>()
     {
-        return Observable.FromAsync(() => _transaction.CommitAsync()).SelectMany(x => Observable.Empty<T>());
+        return Observable.FromAsync(() => _transaction.CommitAsync()).SelectMany(_ => Observable.Empty<T>());
     }
 
     public IObservable<T> Rollback<T>()
     {
-        return Observable.FromAsync(() => _transaction.RollbackAsync()).SelectMany(x => Observable.Empty<T>());
+        return Observable.FromAsync(() => _transaction.RollbackAsync()).SelectMany(_ => Observable.Empty<T>());
     }
 
 #region Run Methods

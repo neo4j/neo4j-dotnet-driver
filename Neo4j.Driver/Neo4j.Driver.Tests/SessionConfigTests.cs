@@ -17,26 +17,25 @@ using System;
 using FluentAssertions;
 using Xunit;
 
-namespace Neo4j.Driver.Tests
-{
-    public class SessionConfigTests
-    {
-        [Theory]
-        [InlineData((string)null)]
-        [InlineData("")]
-        public void ShouldThrowExceptionForInvalidDatabaseOnBuilder(string name)
-        {
-            this.Invoking(_ => SessionConfig.Builder.WithDatabase(name)).Should().Throw<ArgumentNullException>();
-        }
+namespace Neo4j.Driver.Tests;
 
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        public void ShouldThrowWithInvalidImpersoantedUser(string impUser)
-        {
-            this.Invoking(_ => SessionConfig.Builder.WithImpersonatedUser(impUser))
-                .Should()
-                .Throw<ArgumentNullException>();
-        }
+public class SessionConfigTests
+{
+    [Theory]
+    [InlineData((string)null)]
+    [InlineData("")]
+    public void ShouldThrowExceptionForInvalidDatabaseOnBuilder(string name)
+    {
+        this.Invoking(_ => SessionConfig.Builder.WithDatabase(name)).Should().Throw<ArgumentNullException>();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void ShouldThrowWithInvalidImpersoantedUser(string impUser)
+    {
+        this.Invoking(_ => SessionConfig.Builder.WithImpersonatedUser(impUser))
+            .Should()
+            .Throw<ArgumentNullException>();
     }
 }

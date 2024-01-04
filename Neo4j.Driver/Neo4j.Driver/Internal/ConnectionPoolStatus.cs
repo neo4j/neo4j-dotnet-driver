@@ -27,4 +27,9 @@ internal sealed class ConnectionPoolStatus
     {
         _code = code;
     }
+
+    public override string ToString()
+    {
+        return $"{nameof(ConnectionPoolStatus)} {{{_code}}}";
+    }
 }

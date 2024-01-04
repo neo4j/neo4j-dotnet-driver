@@ -14,7 +14,6 @@
 // limitations under the License.
 
 #if !NET6_0_OR_GREATER
-using Neo4j.Driver.Internal.Extensions;
 #endif
 using System;
 using System.Collections.Generic;

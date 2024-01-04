@@ -16,6 +16,7 @@
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Services;
 
 namespace Neo4j.Driver.Internal.Connector;

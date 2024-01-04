@@ -42,7 +42,7 @@ internal static class CollectionExtensions
 
     public static T GetValue<T>(this IDictionary<string, object> dict, string key, T defaultValue)
     {
-        return dict.ContainsKey(key) ? (T)dict[key] : defaultValue;
+        return dict.TryGetValue(key, out var value) ? (T)value : defaultValue;
     }
 
     public static bool TryGetValue<T>(this IDictionary<string, object> dict, string key, T defaultValue, out T value)
