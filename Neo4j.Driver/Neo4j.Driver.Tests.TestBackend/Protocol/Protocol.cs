@@ -44,17 +44,16 @@ public static class Protocol
             .DefinedTypes
             .Where(t => t.IsAssignableTo(typeof(ProtocolObject))));
 
-    public static void ValidateType(string typeName)
+    public static Type GetValidProtocolType(string typeName)
     {
-        try
-        {
-            var objectType = Type.GetType(typeof(Protocol).Namespace + "." + typeName, true);
-            ValidateType(objectType);
-        }
-        catch
+        var type = ProtocolTypes.FirstOrDefault(t => t.Name == typeName);
+
+        if (type == null)
         {
             throw new TestKitProtocolException($"Attempting to use an unrecognized protocol type: {typeName}");
         }
+
+        return type;
     }
 
     public static void ValidateType(Type objectType)

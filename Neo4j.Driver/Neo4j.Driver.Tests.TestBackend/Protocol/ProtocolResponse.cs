@@ -19,6 +19,9 @@ namespace Neo4j.Driver.Tests.TestBackend.Protocol;
 
 internal class ProtocolResponse
 {
+    public string name { get; }
+    public object data { get; set; }
+
     public ProtocolResponse(string newName, string newId)
     {
         data = new ResponseType();
@@ -37,9 +40,6 @@ internal class ProtocolResponse
         name = newName;
         data = null;
     }
-
-    public string name { get; }
-    public object data { get; set; }
 
     public string Encode()
     {

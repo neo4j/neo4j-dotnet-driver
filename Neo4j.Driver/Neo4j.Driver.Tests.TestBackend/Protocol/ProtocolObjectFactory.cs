@@ -62,19 +62,13 @@ internal static class ProtocolObjectFactory
     public static Type GetObjectType(string jsonString)
     {
         var objectTypeName = GetObjectTypeName(jsonString);
-        Protocol.ValidateType(objectTypeName);
-        return Type.GetType(typeof(ProtocolObjectFactory).Namespace + "." + objectTypeName, true);
+        return Protocol.GetValidProtocolType(objectTypeName);
     }
 
     private static string GetObjectTypeName(string jsonString)
     {
         var jsonObject = JObject.Parse(jsonString);
         return (string)jsonObject["name"];
-    }
-
-    public static T CreateObject<T>(string jsonString = null) where T : ProtocolObject, new()
-    {
-        return (T)CreateObject(jsonString);
     }
 
     private static object CreateNewObjectOfType(
