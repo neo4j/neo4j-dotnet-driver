@@ -23,27 +23,28 @@ namespace Neo4j.Driver.Internal.Util;
 public class PipeReaderMemoryPoolTests
 {
     [Theory]
-    [InlineData(512, 512)]
-    [InlineData(1024, 1024)]
-    [InlineData(1025, 2048)]
-    [InlineData(2049, 4096)]
-    [InlineData(4096, 4096)]
-    [InlineData(4097, 8192)]
-    [InlineData(65535, 65536)]
-    [InlineData(65539, 131072)]
-    public void ShouldRentMemoryInPower(int size, int expectedSize)
+    [InlineData(512, 512, Constants.MaxReadBufferSize)]
+    [InlineData(1024, 1024, Constants.MaxReadBufferSize)]
+    [InlineData(1025, 2048, Constants.MaxReadBufferSize)]
+    [InlineData(2049, 4096, Constants.MaxReadBufferSize)]
+    [InlineData(4096, 4096, Constants.MaxReadBufferSize)]
+    [InlineData(4097, 8192, Constants.MaxReadBufferSize)]
+    [InlineData(65535, 65536, Constants.MaxReadBufferSize)]
+    [InlineData(65539, 131072, Constants.MaxReadBufferSize)]
+    [InlineData(1025, 1025, 1024)]
+    public void ShouldRentMemoryInPower(int size, int expectedSize, int maxReadBufferSize)
     {
-        var pool = new PipeReaderMemoryPool(1024, Constants.MaxReadBufferSize);
-        using var memory = pool.Rent(size);
-        memory.Memory.Length.Should().Be(expectedSize);
+        var pool = new PipeReaderMemoryPool(1024, maxReadBufferSize);
+        using var memoryOwner = pool.Rent(size);
+        memoryOwner.Memory.Length.Should().Be(expectedSize);
     }
     
     [Fact]
     public void ShouldRentMemoryInPowerWithDefaultSize()
     {
         var pool = new PipeReaderMemoryPool(1024, Constants.MaxReadBufferSize);
-        using var memory = pool.Rent();
-        memory.Memory.Length.Should().Be(1024);
+        using var memoryOwner = pool.Rent();
+        memoryOwner.Memory.Length.Should().Be(1024);
     }
     
     [Fact]
@@ -52,16 +53,16 @@ public class PipeReaderMemoryPoolTests
         var pool = new PipeReaderMemoryPool(1024, Constants.MaxReadBufferSize);
 
         int length;
-        using (var memory = pool.Rent(4321))
+        using (var memoryOwner = pool.Rent(4321))
         {
-            length = memory.Memory.Length;
-            memory.Memory.Span[0] = 1;
+            length = memoryOwner.Memory.Length;
+            memoryOwner.Memory.Span[0] = 1;
         }
         
-        using (var memory = pool.Rent(4321))
+        using (var memoryOwner = pool.Rent(4321))
         {
-            memory.Memory.Length.Should().Be(length);
-            memory.Memory.Span[0].Should().Be(1);
+            memoryOwner.Memory.Length.Should().Be(length);
+            memoryOwner.Memory.Span[0].Should().Be(1);
         }
     }
     
@@ -74,16 +75,16 @@ public class PipeReaderMemoryPoolTests
     {
         var pool = MemoryPool<byte>.Shared;
         int length;
-        using (var memory = pool.Rent(1024))
+        using (var memoryOwner = pool.Rent(1024))
         {
-            length = memory.Memory.Length;
-            memory.Memory.Span[0] = 1;
+            length = memoryOwner.Memory.Length;
+            memoryOwner.Memory.Span[0] = 1;
         }
 
-        using (var memory = pool.Rent(1024))
+        using (var memoryOwner = pool.Rent(1024))
         {
-            memory.Memory.Length.Should().Be(length);
-            memory.Memory.Span[0].Should().Be(1);
+            memoryOwner.Memory.Length.Should().Be(length);
+            memoryOwner.Memory.Span[0].Should().Be(1);
         }
     }
 
@@ -91,30 +92,48 @@ public class PipeReaderMemoryPoolTests
     public void ShouldNotReturnSharedPoolObjects()
     {
         var pool = MemoryPool<byte>.Shared;
-        using (var memory = pool.Rent(1024))
+        using (var memoryOwner = pool.Rent(1024))
         {
-            memory.Memory.Length.Should().Be(1024);
-            memory.Memory.Span[0] = 1;
+            memoryOwner.Memory.Length.Should().Be(1024);
+            memoryOwner.Memory.Span[0] = 1;
         }
         
         pool = new PipeReaderMemoryPool(1024, 2048);
-        using (var memory = pool.Rent(1024))
+        using (var memoryOwner = pool.Rent(1024))
         {
-            memory.Memory.Length.Should().Be(1024);
-            memory.Memory.Span[0].Should().Be(0);
+            memoryOwner.Memory.Length.Should().Be(1024);
+            memoryOwner.Memory.Span[0].Should().Be(0);
         }
     }
 
     [Fact]
     public void CanBorrowMaxLengthArray()
     {
-        var data = new PipeReaderMemoryPool(1024, Constants.MaxReadBufferSize);
+        var pool = new PipeReaderMemoryPool(1024, Constants.MaxReadBufferSize);
         
         // 2146435071 is the max length of an array in .NET
-        using (var rental = data.Rent(2146435071))
+        using (var memoryOwner = pool.Rent(2146435071))
         {
             // when returned to the pool, as it exceeds the max size of the pool, it will be discarded
-            rental.Memory.Length.Should().Be(2146435071);
+            memoryOwner.Memory.Length.Should().Be(2146435071);
+        }
+    }
+
+    [Fact]
+    public void ShouldNotStoreLargerThanMaxReadBufferSize()
+    {
+        var pool = new PipeReaderMemoryPool(1024, 1024);
+
+        using (var memory = pool.Rent(1025))
+        {
+            memory.Memory.Length.Should().Be(1025);
+            memory.Memory.Span[0] = 1;
+        }
+
+        using (var memory = pool.Rent(1025))
+        {
+            memory.Memory.Length.Should().Be(1025);
+            memory.Memory.Span[0].Should().Be(0);
         }
     }
 }
