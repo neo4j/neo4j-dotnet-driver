@@ -15,7 +15,7 @@
 
 using System.Collections.Generic;
 
-namespace Neo4j.Driver;
+namespace Neo4j.Driver.Internal;
 
 /// <summary>A collection of miscellaneous utility extensions.</summary>
 internal static class UtilityExtensions
