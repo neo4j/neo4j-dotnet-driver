@@ -13,7 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Buffers;
 using FluentAssertions;
+using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Util;
 using Xunit;
 
@@ -42,6 +44,35 @@ public class ConfigBuildersTests
             options1.Database = "foo";
             options1.Database.Should().Be("foo");
             options2.Database.Should().Be("system");
+        }
+
+        [Fact]
+        public void ShouldConfigureReaderConfig()
+        {
+            var cb = new ConfigBuilder(new Config());
+            cb.WithDefaultReadBufferSize(128);
+            var config = cb.Build();
+            config.MessageReaderConfig.Should().NotBeNull();
+            config.MessageReaderConfig.MinBufferSize.Should().Be(128);
+        }
+
+        [Fact]
+        public void ShouldDefaultReaderConfig()
+        {
+            var cb = new ConfigBuilder(new Config());
+            var config = cb.Build();
+            config.MessageReaderConfig.Should().NotBeNull();
+            config.MessageReaderConfig.MinBufferSize.Should().Be(Constants.DefaultReadBufferSize);
+        }
+
+        [Fact]
+        public void ShouldUseSpecifiedConfigObject()
+        {
+            var cb = new ConfigBuilder(new Config());
+            cb.WithMessageReaderConfig(new MessageReaderConfig(MemoryPool<byte>.Shared));
+            var config = cb.Build();
+            config.MessageReaderConfig.Should().NotBeNull();
+            config.MessageReaderConfig.MemoryPool.Should().Be(MemoryPool<byte>.Shared);
         }
     }
 }

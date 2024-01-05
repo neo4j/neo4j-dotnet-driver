@@ -237,7 +237,7 @@ public class Config
     /// <summary>
     /// The configuration for the driver's underlying message reading from the network.
     /// </summary>
-    public MessageReaderConfig MessageReaderConfig { get; internal set; } = new();
+    public MessageReaderConfig MessageReaderConfig { get; internal set; }
 }
 
 /// <summary>
@@ -247,14 +247,17 @@ public sealed class MessageReaderConfig
 {
     /// <summary>
     /// Constructs a new instance of <see cref="MessageReaderConfig"/>.<br/>
-    /// The configuration for the driver's underlying message reading from the network.
+    /// The configuration for the driver's underlying message reading from the network.<br/>
+    /// Using this constructor overrides the <see cref="Config.DefaultReadBufferSize"/> and <see cref="Config.MaxReadBufferSize"/>.
     /// </summary>
     /// <param name="memoryPool">The memory pool for creating buffers when reading messages. The PipeReader will borrow
     /// memory from the pool of at least ReadBufferSize size. The message reader can request larger memory blocks to
     /// host an entire message. User code can provide an implementation for monitoring; by default, the driver will
     /// allocate a new array pool that does not take advantage of shared memory pools.</param>
-    /// <param name="minBufferSize">The minimum buffer size to use when renting memory from the pool. The default value
-    /// is 65,539.</param>
+    /// <param name="minBufferSize">The minimum buffer size to use when renting memory from the pool.
+    /// <br/>The default value is 32,768.</param>
+    /// <param name="maxPooledBufferSize">The maximum buffer size to use when renting memory from neo4j's default pool.
+    /// <br/>The default is 131,072.</param>
     /// <seealso cref="PipeReader"/>
     /// <seealso cref="MemoryPool{T}"/>
     /// <seealso cref="StreamPipeReaderOptions"/>
@@ -263,18 +266,49 @@ public sealed class MessageReaderConfig
     /// the <paramref name="memoryPool"/>, this should only be used when there is complete trust over the usage of
     /// shared memory buffers in the application as other components may be using the same memory pool.
     /// </remarks>
-    /// <exception cref="ArgumentOutOfRangeException">If <paramref name="minBufferSize"/>is less than 1.</exception>
-    public MessageReaderConfig(MemoryPool<byte> memoryPool = null, int minBufferSize = -1)
+    /// <remarks>
+    /// The <paramref name="memoryPool"/> will define it's own maximum pooled buffer size, but must be able to provide
+    /// an memory object upto the limit 2146435071 bytes. The <paramref name="maxPooledBufferSize"/> will not be observed
+    /// when the <paramref name="memoryPool"/> is passed..
+    /// </remarks>
+    /// <remarks>
+    /// Note using a small value for <paramref name="minBufferSize"/> could cause a degradation in performance.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// If <paramref name="minBufferSize"/>is less than 1 or greater than 2146435071
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// If <paramref name="maxPooledBufferSize"/> is less than <paramref name="minBufferSize"/> or greater than 2146435071
+    /// </exception>
+    public MessageReaderConfig(MemoryPool<byte> memoryPool = null, int minBufferSize = -1, int maxPooledBufferSize = -1)
     {
-        if (minBufferSize is < -1 or 0)
+        const int maxArrayLength = 2146435071;
+        if (minBufferSize is < -1 or 0 or > maxArrayLength)
         {
-            throw new ArgumentOutOfRangeException(nameof(minBufferSize));
+            throw new ArgumentOutOfRangeException(nameof(minBufferSize), minBufferSize,
+                "Minimum buffer size must be between 1 and 2146435071, leave as -1 to use default.");
         }
-
+        MinBufferSize = minBufferSize == -1 ? Constants.DefaultReadBufferSize : MinBufferSize;
+        if (maxPooledBufferSize != -1 && (maxPooledBufferSize < MinBufferSize || maxPooledBufferSize > maxArrayLength))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(maxPooledBufferSize),
+                maxPooledBufferSize,
+                $"Max pooled buffer size buffer size must be greater than minBufferSize({MinBufferSize}), leave as -1 to use default.");
+        }
+        
         DisablePipelinedMessageReader = false;
-        MinBufferSize = minBufferSize == -1 ? 65_535 + 4 : minBufferSize;
-        MemoryPool = memoryPool ?? new PipeReaderMemoryPool(MinBufferSize);
+        MemoryPool = memoryPool ?? new PipeReaderMemoryPool(MinBufferSize,
+            maxPooledBufferSize == -1 ? Constants.MaxReadBufferSize : maxPooledBufferSize);
         StreamPipeReaderOptions = new(MemoryPool, MinBufferSize, leaveOpen: true);
+    }
+
+    internal MessageReaderConfig(Config config)
+    {
+        DisablePipelinedMessageReader = false;
+        MinBufferSize = config.DefaultReadBufferSize;
+        MemoryPool = new PipeReaderMemoryPool(config.DefaultReadBufferSize, config.MaxReadBufferSize);
+        StreamPipeReaderOptions = new(MemoryPool, config.DefaultReadBufferSize, leaveOpen: true);
     }
 
     /// <summary>
