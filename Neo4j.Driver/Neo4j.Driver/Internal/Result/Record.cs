@@ -14,7 +14,6 @@
 // limitations under the License.
 
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.Helpers;
 
 namespace Neo4j.Driver.Internal.Result;
 
@@ -22,9 +21,13 @@ internal class Record : IRecord
 {
     public Record(string[] keys, object[] values)
     {
-        Throw.ProtocolException.IfNotEqual(keys.Length, values.Length, nameof(keys), nameof(values));
-
-        var valueKeys = new Dictionary<string, object>();
+        if (keys.Length != values.Length)
+        {
+            throw new ProtocolException(
+                $"{nameof(keys)} length ({keys.Length}) does not equal to {nameof(values)} length ({values.Length})");
+        }
+        
+        var valueKeys = new Dictionary<string, object>(keys.Length);
 
         for (var i = 0; i < keys.Length; i++)
         {
