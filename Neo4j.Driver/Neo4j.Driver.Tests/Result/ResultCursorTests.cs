@@ -15,7 +15,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,19 +24,20 @@ using Neo4j.Driver.Internal.Result;
 using Xunit;
 using Xunit.Abstractions;
 using Record = Neo4j.Driver.Internal.Result.Record;
+using ExceptionRecord = Xunit.Record;
 
 namespace Neo4j.Driver.Tests.Result;
 
 public class ResultCursorTests
 {
-    private static Task<IRecord> NextRecordFromEnum(IEnumerator<IRecord> resultEnum)
+    private static ValueTask<IRecord> NextRecordFromEnum(IEnumerator<IRecord> resultEnum)
     {
         if (resultEnum.MoveNext())
         {
-            return Task.FromResult(resultEnum.Current);
+            return ValueTask.FromResult(resultEnum.Current);
         }
 
-        return Task.FromResult((IRecord)null);
+        return ValueTask.FromResult((IRecord)null);
     }
 
     public class Constructor
@@ -47,10 +47,9 @@ public class ResultCursorTests
         {
             var stream = new Mock<IResultStream>();
             stream.Setup(x => x.NextRecordAsync()).Returns(NextRecordFromEnum(new List<IRecord>().GetEnumerator()));
-            stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(new[] { "test" }));
+            stream.Setup(x => x.GetKeysAsync()).Returns(() => ValueTask.FromResult(new[] { "test" }));
 
-            var result =
-                new ResultCursor(stream.Object);
+            var result = new ResultCursor(stream.Object);
 
             var keys = await result.KeysAsync();
 
@@ -87,7 +86,7 @@ public class ResultCursorTests
 
             var stream = new Mock<IResultStream>();
             stream.Setup(x => x.NextRecordAsync()).Returns(() => NextRecordFromEnum(recordYielderEnum));
-            stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(TestRecordYielder.Keys.ToArray()));
+            stream.Setup(x => x.GetKeysAsync()).Returns(() => ValueTask.FromResult(TestRecordYielder.Keys.ToArray()));
 
             var cursor = new ResultCursor(stream.Object);
             var records = new List<IRecord>();
@@ -107,7 +106,7 @@ public class ResultCursorTests
 
             var stream = new Mock<IResultStream>();
             stream.Setup(x => x.NextRecordAsync()).Returns(() => NextRecordFromEnum(recordYielderEnum));
-            stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(TestRecordYielder.Keys.ToArray()));
+            stream.Setup(x => x.GetKeysAsync()).Returns(() => ValueTask.FromResult(TestRecordYielder.Keys.ToArray()));
 
             var count = 0;
             var cursor = new ResultCursor(stream.Object);
@@ -141,7 +140,7 @@ public class ResultCursorTests
 
             var stream = new Mock<IResultStream>();
             stream.Setup(x => x.NextRecordAsync()).Returns(() => NextRecordFromEnum(recordYielderEnum));
-            stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(TestRecordYielder.Keys.ToArray()));
+            stream.Setup(x => x.GetKeysAsync()).Returns(() => ValueTask.FromResult(TestRecordYielder.Keys.ToArray()));
 
             var result = new ResultCursor(stream.Object);
             var records = new List<IRecord>();
@@ -179,8 +178,7 @@ public class ResultCursorTests
                     {
                         while (i == _records.Count)
                         {
-                            _output.WriteLine(
-                                $"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
+                            _output.WriteLine($"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
 
                             Thread.Sleep(50);
                         }
@@ -201,8 +199,7 @@ public class ResultCursorTests
                     {
                         while (i == _records.Count)
                         {
-                            _output.WriteLine(
-                                $"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
+                            _output.WriteLine($"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
 
                             Thread.Sleep(500);
                             AddNew(1);
@@ -261,7 +258,7 @@ public class ResultCursorTests
                 () =>
                 {
                     getSummaryCalled = true;
-                    return Task.FromResult((IResultSummary)null);
+                    return ValueTask.FromResult((IResultSummary)null);
                 });
 
             // ReSharper disable once UnusedVariable
@@ -278,10 +275,10 @@ public class ResultCursorTests
                 1,
                 0,
                 () => getSummaryCalled++ == 0
-                    ? Task.FromException<IResultSummary>(new Exception("error!"))
-                    : Task.FromResult((IResultSummary)new FakeSummary()));
+                    ? ValueTask.FromException<IResultSummary>(new Exception("error!"))
+                    : ValueTask.FromResult((IResultSummary)new FakeSummary()));
 
-            var ex = await Xunit.Record.ExceptionAsync(async () => await result.ConsumeAsync());
+            var ex = await ExceptionRecord.ExceptionAsync(async () => await result.ConsumeAsync());
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<Exception>();
@@ -298,7 +295,7 @@ public class ResultCursorTests
                 () =>
                 {
                     getSummaryCalled++;
-                    return Task.FromResult((IResultSummary)new FakeSummary());
+                    return ValueTask.FromResult((IResultSummary)new FakeSummary());
                 });
 
             // ReSharper disable once NotAccessedVariable
@@ -378,7 +375,7 @@ public class ResultCursorTests
         {
             var result = ResultCursorCreator.CreateResultCursor(1);
 
-            var ex = Xunit.Record.Exception(() => result.Current);
+            var ex = ExceptionRecord.Exception(() => result.Current);
 
             ex.Should().NotBeNull();
             ex.Should().BeOfType<InvalidOperationException>();
@@ -426,7 +423,66 @@ public class ResultCursorTests
         }
     }
 
-    [SuppressMessage("ReSharper", "UnassignedGetOnlyAutoProperty")]
+    public class ConsumedException
+    {
+        public static void ThrowsResultConsumedException(Func<object> func)
+        {
+            var ex = ExceptionRecord.Exception(func);
+            ex.Should().NotBeNull();
+            ex.Should().BeOfType<ResultConsumedException>();
+        }
+
+        public static async Task ThrowsResultConsumedException<T>(Func<Task<T>> func)
+        {
+            var ex = await ExceptionRecord.ExceptionAsync(func);
+            ex.Should().NotBeNull();
+            ex.Should().BeOfType<ResultConsumedException>();
+        }
+    }
+
+    public class ConsumableCursorTests
+    {
+        [Fact]
+        public async void ShouldErrorWhenAccessRecordsAfterConsume()
+        {
+            var result = ResultCursorCreator.CreateResultCursor(1, 3);
+            await result.ConsumeAsync();
+
+            await ConsumedException.ThrowsResultConsumedException(async () => await result.FetchAsync());
+            await ConsumedException.ThrowsResultConsumedException(async () => await result.PeekAsync());
+            ConsumedException.ThrowsResultConsumedException(() => result.Current);
+        }
+
+        [Fact]
+        public async void ShouldErrorWhenAccessRecordsViaExtensionMethodsAfterConsume()
+        {
+            var result = ResultCursorCreator.CreateResultCursor(1, 3);
+            await result.ConsumeAsync();
+
+            await ConsumedException.ThrowsResultConsumedException(async () => await result.SingleAsync());
+            await ConsumedException.ThrowsResultConsumedException(async () => await result.ToListAsync());
+            await ConsumedException.ThrowsResultConsumedException(async () => await result.ForEachAsync(r => {}));
+        }
+
+        [Fact]
+        public async void ShouldAllowKeysAndConsumeAfterConsume()
+        {
+            var result = ResultCursorCreator.CreateResultCursor(1, 3);
+            var summary0 = await result.ConsumeAsync();
+
+            var keys1 = await result.KeysAsync();
+            var summary1 = await result.ConsumeAsync();
+
+            var keys2 = await result.KeysAsync();
+            var summary2 = await result.ConsumeAsync();
+
+            summary1.Should().Be(summary0);
+            summary2.Should().Be(summary0);
+
+            keys1.Should().BeEquivalentTo(keys2);
+        }
+    }
+
     private class FakeSummary : IResultSummary
     {
         public Query Query { get; }
@@ -448,7 +504,7 @@ public class ResultCursorTests
         public static ResultCursor CreateResultCursor(
             int keySize,
             int recordSize = 1,
-            Func<Task<IResultSummary>> getSummaryFunc = null,
+            Func<ValueTask<IResultSummary>> getSummaryFunc = null,
             CancellationTokenSource cancellationTokenSource = null)
         {
             var keys = RecordCreator.CreateKeys(keySize);
@@ -458,10 +514,10 @@ public class ResultCursorTests
             var stream = new Mock<IResultStream>();
             if (getSummaryFunc == null)
             {
-                getSummaryFunc = () => Task.FromResult((IResultSummary)new FakeSummary());
+                getSummaryFunc = () => ValueTask.FromResult((IResultSummary)new FakeSummary());
             }
 
-            stream.Setup(x => x.GetKeysAsync()).Returns(() => Task.FromResult(keys.ToArray()));
+            stream.Setup(x => x.GetKeysAsync()).Returns(() => ValueTask.FromResult(keys.ToArray()));
             stream.Setup(x => x.NextRecordAsync()).Returns(() => NextRecordFromEnum(recordsEnum));
             stream.Setup(x => x.ConsumeAsync()).Returns(getSummaryFunc);
             stream.Setup(x => x.Cancel()).Callback(() => cancellationTokenSource?.Cancel());

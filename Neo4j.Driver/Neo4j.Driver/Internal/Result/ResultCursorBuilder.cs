@@ -24,7 +24,7 @@ namespace Neo4j.Driver.Internal.Result;
 
 internal class ResultCursorBuilder : IResultCursorBuilder
 {
-    private readonly Func<Task> _advanceFunction;
+    private readonly Func<Task> _advanceAsync;
     private readonly IAutoPullHandler _autoPullHandler;
     private readonly Func<IResultStreamBuilder, long, Task> _cancelFunction;
     private readonly CancellationTokenSource _cancellationSource;
@@ -38,14 +38,13 @@ internal class ResultCursorBuilder : IResultCursorBuilder
     private string[] _fields;
 
     private IResponsePipelineError _pendingError;
-    public ResponsePipelineError PendingError => _pendingError as ResponsePipelineError;
     private long _queryId;
 
     private volatile int _state;
 
     public ResultCursorBuilder(
         SummaryBuilder summaryBuilder,
-        Func<Task> advanceFunction,
+        Func<Task> advancedAsync,
         Func<IResultStreamBuilder, long, long, Task> moreFunction,
         Func<IResultStreamBuilder, long, Task> cancelFunction,
         IResultResourceHandler resourceHandler,
@@ -54,8 +53,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
         IInternalAsyncTransaction transaction)
     {
         _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
-        _advanceFunction =
-            WrapAdvanceFunc(advanceFunction ?? throw new ArgumentNullException(nameof(advanceFunction)));
+        _advanceAsync = advancedAsync ?? throw new ArgumentNullException(nameof(advancedAsync));
 
         _moreFunction = moreFunction ?? ((_, _, _) => Task.CompletedTask);
         _cancelFunction = cancelFunction ?? ((_, _) => Task.CompletedTask);
@@ -78,17 +76,17 @@ internal class ResultCursorBuilder : IResultCursorBuilder
         set => _state = (int)value;
     }
 
-    public async Task<string[]> GetKeysAsync()
+    public async ValueTask<string[]> GetKeysAsync()
     {
         while (CurrentState < State.RunCompleted)
         {
-            await _advanceFunction().ConfigureAwait(false);
+            await AdvanceAsync().ConfigureAwait(false);
         }
 
-        return _fields ?? new string[0];
+        return _fields ?? Array.Empty<string>();
     }
 
-    public async Task<IRecord> NextRecordAsync()
+    public async ValueTask<IRecord> NextRecordAsync()
     {
         if (_cancellationSource.IsCancellationRequested)
         {
@@ -101,7 +99,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
             _autoPullHandler.TryEnableAutoPull(_records.Count);
             if (CurrentState < State.Completed && _autoPullHandler.AutoPull)
             {
-                await _advanceFunction().ConfigureAwait(false);
+                await AdvanceAsync().ConfigureAwait(false);
             }
 
             return record;
@@ -109,7 +107,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
 
         while (CurrentState < State.Completed && _records.IsEmpty)
         {
-            await _advanceFunction().ConfigureAwait(false);
+            await AdvanceAsync().ConfigureAwait(false);
         }
 
         if (_records.TryDequeue(out record))
@@ -127,11 +125,11 @@ internal class ResultCursorBuilder : IResultCursorBuilder
         _cancellationSource.Cancel();
     }
 
-    public async Task<IResultSummary> ConsumeAsync()
+    public async ValueTask<IResultSummary> ConsumeAsync()
     {
         while (CurrentState < State.Completed)
         {
-            await _advanceFunction().ConfigureAwait(false);
+            await AdvanceAsync().ConfigureAwait(false);
         }
 
         _pendingError?.EnsureThrown();
@@ -161,7 +159,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
 
     public IInternalResultCursor CreateCursor()
     {
-        return new ConsumableResultCursor(new ResultCursor(this));
+        return new ResultCursor(this);
     }
 
     private void ClearRecords()
@@ -179,50 +177,47 @@ internal class ResultCursorBuilder : IResultCursorBuilder
             throw new TransactionTerminatedException(error);
         }
     }
-    
-    private Func<Task> WrapAdvanceFunc(Func<Task> advanceFunc)
+
+    private async Task AdvanceAsync()
     {
-        return async () =>
+        AssertTransactionValid();
+
+        if (CheckAndUpdateState(State.RecordsRequested, State.RunCompleted))
         {
-            AssertTransactionValid();
-            
-            if (CheckAndUpdateState(State.RecordsRequested, State.RunCompleted))
+            if (_cancellationSource.IsCancellationRequested)
             {
-                if (_cancellationSource.IsCancellationRequested)
-                {
-                    await _cancelFunction(this, _queryId).ConfigureAwait(false);
-                }
-                else
-                {
-                    await _moreFunction(this, _queryId, _fetchSize).ConfigureAwait(false);
-                }
+                await _cancelFunction(this, _queryId).ConfigureAwait(false);
             }
-
-            if (CurrentState < State.Completed)
+            else
             {
-                try
-                {
-                    await advanceFunc().ConfigureAwait(false);
-                }
-                catch (ProtocolException)
-                {
-                    UpdateState(State.Completed);
-                    throw;
-                }
-                catch (Exception exc)
-                {
-                    _pendingError = new ResponsePipelineError(exc);
-
-                    // Ensure that current state is updated and is recognized as Completed
-                    UpdateState(State.Completed);
-                }
+                await _moreFunction(this, _queryId, _fetchSize).ConfigureAwait(false);
             }
+        }
 
-            if (CurrentState == State.Completed && _resourceHandler != null)
+        if (CurrentState < State.Completed)
+        {
+            try
             {
-                await _resourceHandler.OnResultConsumedAsync().ConfigureAwait(false);
+                await _advanceAsync().ConfigureAwait(false);
             }
-        };
+            catch (ProtocolException)
+            {
+                UpdateState(State.Completed);
+                throw;
+            }
+            catch (Exception exc)
+            {
+                _pendingError = new ResponsePipelineError(exc);
+
+                // Ensure that current state is updated and is recognized as Completed
+                UpdateState(State.Completed);
+            }
+        }
+
+        if (CurrentState == State.Completed && _resourceHandler != null)
+        {
+            await _resourceHandler.OnResultConsumedAsync().ConfigureAwait(false);
+        }
     }
 
     private bool CheckAndUpdateState(State desired, State current)

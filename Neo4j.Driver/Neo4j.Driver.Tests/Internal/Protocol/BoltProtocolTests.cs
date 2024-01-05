@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -51,7 +52,9 @@ public class BoltProtocolTests
             await protocol.AuthenticateAsync(mockConn.Object, ua, auth, null);
 
             mockV3.Verify(x => x.AuthenticateAsync(mockConn.Object, ua, auth, null), Times.Once);
-            mockConn.Verify(x => x.LoginAsync(It.IsAny<string>(), It.IsAny<IAuthToken>(), It.IsAny<INotificationsConfig>()), Times.Never());
+            mockConn.Verify(
+                x => x.LoginAsync(It.IsAny<string>(), It.IsAny<IAuthToken>(), It.IsAny<INotificationsConfig>()),
+                Times.Never());
         }
 
         [Theory]
@@ -94,6 +97,7 @@ public class BoltProtocolTests
 
             mockV3.VerifyNoOtherCalls();
         }
+
         [Theory]
         [InlineData(5, 2)]
         public async Task ShouldAcceptNotificationsConfig(int major, int minor)
@@ -107,7 +111,10 @@ public class BoltProtocolTests
 
             await protocol.AuthenticateAsync(mockConn.Object, ua, auth, new NotificationsDisabledConfig());
             mockConn.Verify(
-                x => x.LoginAsync(It.IsAny<string>(), It.IsAny<IAuthToken>(), It.IsNotNull<NotificationsDisabledConfig>()),
+                x => x.LoginAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<IAuthToken>(),
+                    It.IsNotNull<NotificationsDisabledConfig>()),
                 Times.Never());
 
             mockV3.VerifyNoOtherCalls();
@@ -168,7 +175,11 @@ public class BoltProtocolTests
             mockConn.SetupGet(x => x.Version).Returns(new BoltProtocolVersion(major, minor));
             mockConn.SetupProperty(x => x.SessionConfig);
             var exception = await Record.ExceptionAsync(
-                () => BoltProtocol.Instance.GetRoutingTableAsync(mockConn.Object, null, new SessionConfig("douglas fir"), null));
+                () => BoltProtocol.Instance.GetRoutingTableAsync(
+                    mockConn.Object,
+                    null,
+                    new SessionConfig("douglas fir"),
+                    null));
 
             exception.Should().BeOfType<ArgumentException>();
         }
@@ -184,7 +195,11 @@ public class BoltProtocolTests
             mockConn.SetupGet(x => x.Mode).Returns(AccessMode.Read);
 
             var exception = await Record.ExceptionAsync(
-                () => BoltProtocol.Instance.GetRoutingTableAsync(mockConn.Object, null, new SessionConfig("douglas fir"), null));
+                () => BoltProtocol.Instance.GetRoutingTableAsync(
+                    mockConn.Object,
+                    null,
+                    new SessionConfig("douglas fir"),
+                    null));
 
             exception.Should().BeNull();
         }
@@ -214,7 +229,11 @@ public class BoltProtocolTests
             var mockV3 = new Mock<IBoltProtocol>();
             var protocol = new BoltProtocol(mockV3.Object, msgFactory.Object, handlerFactory.Object);
 
-            await protocol.GetRoutingTableAsync(mockConn.Object, "db", new SessionConfig("dougy"), new InternalBookmarks());
+            await protocol.GetRoutingTableAsync(
+                mockConn.Object,
+                "db",
+                new SessionConfig("dougy"),
+                new InternalBookmarks());
 
             msgFactory.Verify(
                 x => x.NewRouteMessage(
@@ -346,8 +365,20 @@ public class BoltProtocolTests
             mockRtResult.SetupGet(x => x.Values).Returns(new Dictionary<string, object>());
 
             var mockCursor = new Mock<IInternalResultCursor>();
-            mockCursor.SetupSequence(x => x.FetchAsync()).ReturnsAsync(true).ReturnsAsync(false);
-            mockCursor.SetupGet(x => x.Current).Returns(mockRtResult.Object);
+            var enumerator = new Mock<IAsyncEnumerator<IRecord>>();
+            enumerator
+                .SetupSequence(x => x.MoveNextAsync())
+                .ReturnsAsync(true)
+                .ReturnsAsync(false);
+
+            enumerator
+                .SetupSequence(x => x.Current)
+                .Returns(mockRtResult.Object)
+                .Returns(default(IRecord));
+
+            mockCursor
+                .Setup(x => x.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
+                .Returns(enumerator.Object);
 
             var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
             resultCursorBuilderMock.Setup(x => x.CreateCursor()).Returns(mockCursor.Object);
@@ -355,7 +386,11 @@ public class BoltProtocolTests
             var msgFactory = new Mock<IBoltProtocolMessageFactory>();
 
             AutoCommitParams queryParams = null;
-            msgFactory.Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, It.IsAny<AutoCommitParams>(), It.IsAny<INotificationsConfig>()))
+            msgFactory.Setup(
+                    x => x.NewRunWithMetadataMessage(
+                        mockConn.Object,
+                        It.IsAny<AutoCommitParams>(),
+                        It.IsAny<INotificationsConfig>()))
                 .Callback<IConnection, AutoCommitParams, INotificationsConfig>((_, y, _) => queryParams = y);
 
             var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
@@ -429,10 +464,11 @@ public class BoltProtocolTests
 
             var mockRtResult = new Mock<IRecord>();
             mockRtResult.SetupGet(x => x.Values).Returns(new Dictionary<string, object>());
-
+            var enumerator = new Mock<IAsyncEnumerator<IRecord>>();
+            enumerator.SetupSequence(x => x.MoveNextAsync()).ReturnsAsync(true).ReturnsAsync(false);
+            enumerator.SetupSequence(x => x.Current).Returns(mockRtResult.Object).Returns(default(IRecord));
             var mockCursor = new Mock<IInternalResultCursor>();
-            mockCursor.SetupSequence(x => x.FetchAsync()).ReturnsAsync(true).ReturnsAsync(false);
-            mockCursor.SetupGet(x => x.Current).Returns(mockRtResult.Object);
+            mockCursor.Setup(x => x.GetAsyncEnumerator(It.IsAny<CancellationToken>())).Returns(enumerator.Object);
 
             var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
             resultCursorBuilderMock.Setup(x => x.CreateCursor()).Returns(mockCursor.Object);
@@ -440,7 +476,11 @@ public class BoltProtocolTests
             var msgFactory = new Mock<IBoltProtocolMessageFactory>();
 
             AutoCommitParams queryParams = null;
-            msgFactory.Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, It.IsAny<AutoCommitParams>(), It.IsAny<INotificationsConfig>()))
+            msgFactory.Setup(
+                    x => x.NewRunWithMetadataMessage(
+                        mockConn.Object,
+                        It.IsAny<AutoCommitParams>(),
+                        It.IsAny<INotificationsConfig>()))
                 .Callback<IConnection, AutoCommitParams, INotificationsConfig>((_, y, _) => queryParams = y);
 
             var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
@@ -617,7 +657,10 @@ public class BoltProtocolTests
             };
 
             var exception = await Record.ExceptionAsync(
-                () => BoltProtocol.Instance.RunInAutoCommitTransactionAsync(mockConn.Object, acp, new NotificationsDisabledConfig()));
+                () => BoltProtocol.Instance.RunInAutoCommitTransactionAsync(
+                    mockConn.Object,
+                    acp,
+                    new NotificationsDisabledConfig()));
 
             exception.Should().BeNull();
         }
@@ -857,7 +900,6 @@ public class BoltProtocolTests
             exception.Should().BeOfType<ArgumentException>();
         }
 
-
         [Theory]
         [InlineData(3, 0)]
         [InlineData(4, 0)]
@@ -953,8 +995,14 @@ public class BoltProtocolTests
                     new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)));
 
             mockV3.Verify(
-                x => x.BeginTransactionAsync(mockConn.Object, 
-                    new BeginTransactionParams("db", bookmarks, config, sessionConfig, null,
+                x => x.BeginTransactionAsync(
+                    mockConn.Object,
+                    new BeginTransactionParams(
+                        "db",
+                        bookmarks,
+                        config,
+                        sessionConfig,
+                        null,
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))),
                 Times.Once);
 
@@ -1008,7 +1056,12 @@ public class BoltProtocolTests
 
             var protocol = new BoltProtocol(mockV3.Object, msgFactory.Object, handlerFactory.Object);
 
-            await protocol.RunInExplicitTransactionAsync(mockConn.Object, query, true, 10, new Mock<IInternalAsyncTransaction>().Object);
+            await protocol.RunInExplicitTransactionAsync(
+                mockConn.Object,
+                query,
+                true,
+                10,
+                new Mock<IInternalAsyncTransaction>().Object);
 
             msgFactory.Verify(
                 x => x.NewRunWithMetadataMessage(mockConn.Object, query, null),
@@ -1105,7 +1158,12 @@ public class BoltProtocolTests
 
             var protocol = new BoltProtocol(mockV3.Object, msgFactory.Object, handlerFactory.Object);
 
-            await protocol.RunInExplicitTransactionAsync(mockConn.Object, query, false, 10, new Mock<IInternalAsyncTransaction>().Object);
+            await protocol.RunInExplicitTransactionAsync(
+                mockConn.Object,
+                query,
+                false,
+                10,
+                new Mock<IInternalAsyncTransaction>().Object);
 
             msgFactory.Verify(
                 x => x.NewRunWithMetadataMessage(mockConn.Object, query, null),

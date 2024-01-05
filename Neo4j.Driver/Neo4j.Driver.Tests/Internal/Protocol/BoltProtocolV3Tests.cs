@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -130,7 +131,11 @@ public class BoltProtocolV3Tests
             mockConn.SetupProperty(x => x.SessionConfig);
 
             var ex = await Record.ExceptionAsync(
-                () => BoltProtocolV3.Instance.GetRoutingTableAsync(mockConn.Object, "db", new("Douglas Fir"), null));
+                () => BoltProtocolV3.Instance.GetRoutingTableAsync(
+                    mockConn.Object,
+                    "db",
+                    new SessionConfig("Douglas Fir"),
+                    null));
 
             ex.Should().BeOfType<ArgumentException>();
         }
@@ -147,8 +152,20 @@ public class BoltProtocolV3Tests
             mockRtResult.SetupGet(x => x.Values).Returns(new Dictionary<string, object>());
 
             var mockCursor = new Mock<IInternalResultCursor>();
-            mockCursor.SetupSequence(x => x.FetchAsync()).ReturnsAsync(true).ReturnsAsync(false);
-            mockCursor.SetupGet(x => x.Current).Returns(mockRtResult.Object);
+            var enumerator = new Mock<IAsyncEnumerator<IRecord>>();
+            enumerator
+                .SetupSequence(x => x.MoveNextAsync())
+                .ReturnsAsync(true)
+                .ReturnsAsync(false);
+
+            enumerator
+                .SetupSequence(x => x.Current)
+                .Returns(mockRtResult.Object)
+                .Returns(default(IRecord));
+
+            mockCursor
+                .Setup(x => x.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
+                .Returns(enumerator.Object);
 
             var resultCursorBuilderMock = new Mock<IResultCursorBuilder>();
             resultCursorBuilderMock.Setup(x => x.CreateCursor()).Returns(mockCursor.Object);
@@ -156,7 +173,11 @@ public class BoltProtocolV3Tests
             var msgFactory = new Mock<IBoltProtocolMessageFactory>();
 
             AutoCommitParams queryParams = null;
-            msgFactory.Setup(x => x.NewRunWithMetadataMessage(mockConn.Object, It.IsAny<AutoCommitParams>(), It.IsAny<INotificationsConfig>()))
+            msgFactory.Setup(
+                    x => x.NewRunWithMetadataMessage(
+                        mockConn.Object,
+                        It.IsAny<AutoCommitParams>(),
+                        It.IsAny<INotificationsConfig>()))
                 .Callback<IConnection, AutoCommitParams, INotificationsConfig>((_, y, _) => queryParams = y);
 
             var handlerFactory = new Mock<IBoltProtocolHandlerFactory>();
@@ -247,7 +268,7 @@ public class BoltProtocolV3Tests
 
             var acp = new AutoCommitParams
             {
-                Query = new Query("..."),
+                Query = new Query("...")
             };
 
             var exception = await Record.ExceptionAsync(
@@ -270,7 +291,7 @@ public class BoltProtocolV3Tests
 
             var acp = new AutoCommitParams
             {
-                Query = new Query("..."),
+                Query = new Query("...")
             };
 
             var exception = await Record.ExceptionAsync(

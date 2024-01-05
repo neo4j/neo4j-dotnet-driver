@@ -14,15 +14,13 @@
 // limitations under the License.
 
 using System.Threading.Tasks;
-using Neo4j.Driver.Internal.MessageHandling;
 
 namespace Neo4j.Driver.Internal.Result;
 
 internal interface IResultStream
 {
-    Task<string[]> GetKeysAsync();
-    Task<IRecord> NextRecordAsync();
+    ValueTask<string[]> GetKeysAsync();
+    ValueTask<IRecord> NextRecordAsync();
     void Cancel();
-    Task<IResultSummary> ConsumeAsync();
-    ResponsePipelineError PendingError { get; }
+    ValueTask<IResultSummary> ConsumeAsync();
 }
