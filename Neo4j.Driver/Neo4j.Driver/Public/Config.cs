@@ -282,13 +282,14 @@ public sealed class MessageReaderConfig
     /// </exception>
     public MessageReaderConfig(MemoryPool<byte> memoryPool = null, int minBufferSize = -1, int maxPooledBufferSize = -1)
     {
-        if (minBufferSize is < -1 or 0 or > 2146435071)
+        const int maxArrayLength = 2146435071;
+        if (minBufferSize is < -1 or 0 or > maxArrayLength)
         {
             throw new ArgumentOutOfRangeException(nameof(minBufferSize), minBufferSize,
                 "Minimum buffer size must be between 1 and 2146435071, leave as -1 to use default.");
         }
         MinBufferSize = minBufferSize == -1 ? Constants.DefaultReadBufferSize : MinBufferSize;
-        if (maxPooledBufferSize != -1 && maxPooledBufferSize < MinBufferSize || maxPooledBufferSize> 2146435071)
+        if (maxPooledBufferSize != -1 && (maxPooledBufferSize < MinBufferSize || maxPooledBufferSize > maxArrayLength))
         {
             throw new ArgumentOutOfRangeException(
                 nameof(maxPooledBufferSize),
