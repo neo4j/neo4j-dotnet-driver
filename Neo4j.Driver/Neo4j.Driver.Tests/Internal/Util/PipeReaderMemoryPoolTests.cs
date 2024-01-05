@@ -65,18 +65,22 @@ public class PipeReaderMemoryPoolTests
         }
     }
     
+    /// <summary>
+    /// This test is to verify the behaviour of the shared pool.
+    /// It is an unnecessary test but it proves the behaviour to validate <see cref="ShouldNotReturnSharedPoolObjects"/>
+    /// </summary>
     [Fact]
     public void SharedPoolShouldReturnSameValue()
     {
         var pool = MemoryPool<byte>.Shared;
         int length;
-        using (var memory = pool.Rent(4321))
+        using (var memory = pool.Rent(1024))
         {
             length = memory.Memory.Length;
             memory.Memory.Span[0] = 1;
         }
 
-        using (var memory = pool.Rent(4321))
+        using (var memory = pool.Rent(1024))
         {
             memory.Memory.Length.Should().Be(length);
             memory.Memory.Span[0].Should().Be(1);
@@ -84,16 +88,16 @@ public class PipeReaderMemoryPoolTests
     }
 
     [Fact]
-    public void SharedPoolShouldReturnValueFromBucket()
+    public void ShouldNotReturnSharedPoolObjects()
     {
         var pool = MemoryPool<byte>.Shared;
-        int length;
-        using (var memory = pool.Rent(4321))
+        using (var memory = pool.Rent(1024))
         {
-            length = memory.Memory.Length;
+            memory.Memory.Length.Should().Be(1024);
             memory.Memory.Span[0] = 1;
         }
-
+        
+        pool = new PipeReaderMemoryPool(1024, 2048);
         using (var memory = pool.Rent(1024))
         {
             memory.Memory.Length.Should().Be(1024);
