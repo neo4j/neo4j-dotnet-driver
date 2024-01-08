@@ -22,7 +22,6 @@ namespace Neo4j.Driver.Internal.Result;
 
 internal sealed class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
 {
-    private readonly IInternalResultCursor _cursor;
     private bool _isConsumed;
     
     private readonly IResultStream _resultStream;
