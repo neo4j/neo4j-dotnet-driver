@@ -19,6 +19,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Protocol;
+using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.Telemetry;
 using static Neo4j.Driver.Internal.Logging.DriverLoggerUtil;
 
@@ -323,6 +324,12 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                         if (tx.IsOpen)
                         {
                             await tx.CommitAsync().ConfigureAwait(false);
+                        }
+
+                        if(result is ResultCursor or IAsyncEnumerator<IRecord>)
+                        {
+                           throw new InvalidOperationException(
+                               "The result of the transaction function cannot be a cursor.");
                         }
 
                         return result;

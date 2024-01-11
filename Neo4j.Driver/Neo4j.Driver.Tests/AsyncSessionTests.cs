@@ -27,8 +27,10 @@ using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
+using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.Routing;
 using Xunit;
+using Record = Xunit.Record;
 
 namespace Neo4j.Driver.Tests;
 
@@ -307,6 +309,38 @@ public class AsyncSessionTests
                         It.IsAny<IConnection>(),
                         It.Is<BeginTransactionParams>(y => y.TransactionInfo.AwaitBegin == false)),
                 Times.Once);
+        }
+    }
+
+    public class ThrowWhenReturningCursor
+    {
+        [Fact]
+        public async void ShouldThrowWhenReturningResultCursor()
+        {
+            var mockProtocol = new Mock<IBoltProtocol>();
+            var mockConn = new Mock<IConnection>();
+            mockConn.Setup(x => x.IsOpen).Returns(true);
+
+            mockConn
+                .SetupGet(x => x.BoltProtocol)
+                .Returns(mockProtocol.Object);
+
+            var session = new AsyncSession(
+                new TestConnectionProvider(mockConn.Object),
+                null,
+                new AsyncRetryLogic(TimeSpan.Zero, null),
+                0,
+                new Driver.SessionConfig(),
+                false,
+                false);
+
+            var stream = new Mock<IResultStream>();
+            stream.Setup(x => x.NextRecordAsync()).ReturnsAsync(
+                new Neo4j.Driver.Internal.Result.Record(new[] { "test" }, new object[] { "test" }));
+            stream.Setup(x => x.GetKeysAsync()).Returns(() => ValueTask.FromResult(new[] { "test" }));
+
+            var act = async () => await session.ExecuteReadAsync(_ => Task.FromResult(new ResultCursor(stream.Object)));
+            act.Should().Throw<InvalidOperationException>();
         }
     }
 
