@@ -327,8 +327,8 @@ public class AsyncSessionTests
 
             var session = new AsyncSession(
                 new TestConnectionProvider(mockConn.Object),
-                null,
-                new AsyncRetryLogic(TimeSpan.Zero, null),
+                NullLogger.Instance,
+                new AsyncRetryLogic(TimeSpan.Zero, NullLogger.Instance),
                 0,
                 new Driver.SessionConfig(),
                 false,
@@ -340,7 +340,39 @@ public class AsyncSessionTests
             stream.Setup(x => x.GetKeysAsync()).Returns(() => ValueTask.FromResult(new[] { "test" }));
 
             var act = async () => await session.ExecuteReadAsync(_ => Task.FromResult(new ResultCursor(stream.Object)));
-            act.Should().Throw<InvalidOperationException>();
+            await act.Should().ThrowAsync<InvalidOperationException>();
+        }
+
+        [Fact]
+        public async void ShouldThrowWhenReturningResultCursorEnumerator()
+        {
+            var mockProtocol = new Mock<IBoltProtocol>();
+            var mockConn = new Mock<IConnection>();
+            mockConn.Setup(x => x.IsOpen).Returns(true);
+
+            mockConn
+                .SetupGet(x => x.BoltProtocol)
+                .Returns(mockProtocol.Object);
+
+            var session = new AsyncSession(
+                new TestConnectionProvider(mockConn.Object),
+                NullLogger.Instance,
+                new AsyncRetryLogic(TimeSpan.Zero, NullLogger.Instance),
+                0,
+                new Driver.SessionConfig(),
+                false,
+                false);
+
+            var stream = new Mock<IResultStream>();
+            stream.Setup(x => x.NextRecordAsync())
+                .ReturnsAsync(new Neo4j.Driver.Internal.Result.Record(new[] { "test" }, new object[] { "test" }));
+
+            stream.Setup(x => x.GetKeysAsync()).Returns(() => ValueTask.FromResult(new[] { "test" }));
+
+            var act = async () =>
+                await session.ExecuteReadAsync(
+                    _ => Task.FromResult(new ResultCursor(stream.Object).GetAsyncEnumerator()));
+            await act.Should().ThrowAsync<InvalidOperationException>();
         }
     }
 
