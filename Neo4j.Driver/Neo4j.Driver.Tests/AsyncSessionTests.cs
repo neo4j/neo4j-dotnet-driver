@@ -315,7 +315,7 @@ public class AsyncSessionTests
     public class ThrowWhenReturningCursor
     {
         [Fact]
-        public async void ShouldThrowWhenReturningResultCursor()
+        public async Task ShouldThrowWhenReturningResultCursor()
         {
             var mockProtocol = new Mock<IBoltProtocol>();
             var mockConn = new Mock<IConnection>();
@@ -344,7 +344,7 @@ public class AsyncSessionTests
         }
 
         [Fact]
-        public async void ShouldThrowWhenReturningResultCursorEnumerator()
+        public async Task ShouldThrowWhenReturningResultCursorEnumerator()
         {
             var mockProtocol = new Mock<IBoltProtocol>();
             var mockConn = new Mock<IConnection>();
