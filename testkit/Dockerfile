@@ -10,6 +10,10 @@ RUN apt update \
 	&& apt install -y python3 \
 	&& rm -rf /var/lib/apt/lists/*
 
+# install .NET runtime 6.0.0
+RUN wget https://dot.net/v1/dotnet-install.sh
+RUN bash dotnet-install.sh --channel 6.0 --install-dir /usr/share/dotnet
+
 ENV PYTHON=python3
 ENV DOTNET_DRIVER_USING_LOCAL_SERVER=true
 ENV TEST_NEO4J_USING_TESTKIT=true
