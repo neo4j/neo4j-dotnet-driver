@@ -156,7 +156,7 @@ internal sealed class Driver : IInternalDriver
     {
         async Task<int> Process(IAsyncEnumerable<IRecord> records)
         {
-            await foreach (var record in records.ConfigureAwait(false))
+            await foreach (var record in records.ConfigureAwait(false).WithCancellation(cancellationToken))
             {
                 streamProcessor(record);
             }
