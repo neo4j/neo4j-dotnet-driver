@@ -14,16 +14,17 @@
 // limitations under the License.
 
 using Neo4j.Driver.Tests.BenchkitBackend.Abstractions;
+using Neo4j.Driver.Tests.BenchkitBackend.Types;
 
 namespace Neo4j.Driver.Tests.BenchkitBackend.Implementations;
 
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
-internal class DriverExecuteQueryMethod(
+internal class ExecuteQueryWorkloadExecutor(
         IDriver driver,
         IRecordConsumer recordConsumer,
         ILogger logger)
-    : IWorkloadExecutionMethod
+    : IWorkloadExecutor
 {
     /// <inheritdoc />
     public async Task ExecuteWorkloadAsync(Workload workload)
@@ -52,7 +53,7 @@ internal class DriverExecuteQueryMethod(
         logger.LogDebug("All parallel tasks completed");
     }
 
-    private async Task ExecuteQueryRunAndConsume(Query query)
+    private async Task ExecuteQueryRunAndConsume(Types.Query query)
     {
         logger.LogDebug("Starting query {Query}", query.Text);
         var (results, _) = await driver

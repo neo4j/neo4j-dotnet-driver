@@ -15,7 +15,7 @@
 
 using Microsoft.AspNetCore.Mvc;
 using Neo4j.Driver.Tests.BenchkitBackend.Abstractions;
-using Neo4j.Driver.Tests.BenchkitBackend.Implementations;
+using Neo4j.Driver.Tests.BenchkitBackend.Types;
 
 namespace Neo4j.Driver.Tests.BenchkitBackend.Controllers;
 
@@ -24,9 +24,9 @@ namespace Neo4j.Driver.Tests.BenchkitBackend.Controllers;
 /// </summary>
 [ApiController]
 [Route("[controller]")]
-public class WorkloadController(
+internal class WorkloadController(
         IWorkloadStore workloadStore,
-        IWorkloadExecutor workloadExecutor,
+        IWorkloadExecutorSelector workloadExecutorSelector,
         LinkGenerator linkGenerator)
     : ControllerBase
 {
@@ -42,7 +42,7 @@ public class WorkloadController(
         try
         {
             var workload = workloadStore.GetWorkload(id);
-            await workloadExecutor.ExecuteWorkloadAsync(workload);
+            await workloadExecutorSelector.ExecuteWorkloadAsync(workload);
             return NoContent();
         }
         catch (KeyNotFoundException)
@@ -71,7 +71,7 @@ public class WorkloadController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Workload>> ExecuteEphemeral([FromBody] Workload workload)
     {
-        await workloadExecutor.ExecuteWorkloadAsync(workload);
+        await workloadExecutorSelector.ExecuteWorkloadAsync(workload);
         return NoContent();
     }
 

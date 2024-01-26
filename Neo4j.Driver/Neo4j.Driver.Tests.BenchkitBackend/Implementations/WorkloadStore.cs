@@ -13,17 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Neo4j.Driver.Tests.BenchkitBackend.Abstractions;
+using Neo4j.Driver.Tests.BenchkitBackend.Types;
+
 namespace Neo4j.Driver.Tests.BenchkitBackend.Implementations;
 
-public interface IWorkloadStore
-{
-    string  CreateWorkload(Workload workload);
-    Workload GetWorkload(string id);
-    Workload UpdateWorkload(string id, Workload workload);
-    void DeleteWorkload(string id);
-}
-
-public class WorkloadStore : IWorkloadStore
+internal class WorkloadStore : IWorkloadStore
 {
     private readonly Dictionary<string, Workload> _workloads = new();
 

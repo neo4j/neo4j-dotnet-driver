@@ -15,7 +15,7 @@
 
 using Autofac.Features.Indexed;
 using Neo4j.Driver.Tests.BenchkitBackend.Abstractions;
-using Neo4j.Driver.Tests.BenchkitBackend.Configuration;
+using Neo4j.Driver.Tests.BenchkitBackend.Types;
 
 namespace Neo4j.Driver.Tests.BenchkitBackend.Implementations;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
@@ -23,10 +23,10 @@ using ILogger = Microsoft.Extensions.Logging.ILogger;
 /// <summary>
 /// A workload executor that does nothing.
 /// </summary>
-internal class WorkloadExecutor(
-        IIndex<Method, IWorkloadExecutionMethod> workloadExecutionMethods,
+internal class WorkloadExecutorSelector(
+        IIndex<Method, IWorkloadExecutor> workloadExecutionMethods,
         ILogger logger)
-    : IWorkloadExecutor
+    : IWorkloadExecutorSelector
 {
     /// <inheritdoc />
     public async Task ExecuteWorkloadAsync(Workload workload)

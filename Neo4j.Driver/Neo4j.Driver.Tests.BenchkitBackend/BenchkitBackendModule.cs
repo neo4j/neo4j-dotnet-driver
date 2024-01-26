@@ -20,6 +20,7 @@ using Autofac.Core.Resolving.Pipeline;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Neo4j.Driver.Tests.BenchkitBackend.Abstractions;
 using Neo4j.Driver.Tests.BenchkitBackend.Implementations;
+using Neo4j.Driver.Tests.BenchkitBackend.Types;
 
 namespace Neo4j.Driver.Tests.BenchkitBackend;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
@@ -29,10 +30,10 @@ internal class BenchkitBackendModule : Module
     protected override void Load(ContainerBuilder builder)
     {
         builder.RegisterType<WorkloadStore>().As<IWorkloadStore>().SingleInstance();
-        builder.RegisterType<WorkloadExecutor>().As<IWorkloadExecutor>().InstancePerDependency();
+        builder.RegisterType<WorkloadExecutorSelector>().As<IWorkloadExecutorSelector>().InstancePerDependency();
         builder.RegisterType<ActionContextAccessor>().As<IActionContextAccessor>().SingleInstance();
         builder.RegisterType<RecordConsumer>().As<IRecordConsumer>().SingleInstance();
-        builder.RegisterType<DriverExecuteQueryMethod>().As<IWorkloadExecutionMethod>().Keyed<IWorkloadExecutionMethod>(Method.ExecuteQuery);//.InstancePerLifetimeScope();
+        builder.RegisterType<ExecuteQueryWorkloadExecutor>().As<IWorkloadExecutor>().Keyed<IWorkloadExecutor>(Method.ExecuteQuery);//.InstancePerLifetimeScope();
     }
 
     /// <inheritdoc />
