@@ -20,24 +20,14 @@ using Neo4j.Driver.Tests.BenchkitBackend.Types;
 namespace Neo4j.Driver.Tests.BenchkitBackend.Implementations;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
-/// <summary>
-/// A workload executor that does nothing.
-/// </summary>
 internal class WorkloadExecutorSelector(
-        IIndex<Method, IWorkloadExecutor> workloadExecutionMethods,
+        IIndex<Method, IWorkloadExecutor> workloadExecutors,
         ILogger logger)
     : IWorkloadExecutorSelector
 {
-    /// <inheritdoc />
-    public async Task ExecuteWorkloadAsync(Workload workload)
+    public IWorkloadExecutor GetExecutor(Workload workload)
     {
-        logger.LogInformation(
-            "Executing workload with {QueryCount} queries, method {Method} and mode {Mode}",
-            workload.Queries.Count,
-            workload.Method,
-            workload.Mode);
-
-        var execMethod = workloadExecutionMethods[workload.Method];
-        await execMethod.ExecuteWorkloadAsync(workload);
+        logger.LogTrace("Selecting executor for method {Method}", workload.Method);
+        return workloadExecutors[workload.Method];
     }
 }

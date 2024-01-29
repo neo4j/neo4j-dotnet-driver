@@ -18,15 +18,17 @@ using Neo4j.Driver.Tests.BenchkitBackend.Abstractions;
 using Neo4j.Driver.Tests.BenchkitBackend.Types;
 
 namespace Neo4j.Driver.Tests.BenchkitBackend.Controllers;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 /// <summary>
 /// Define and run workloads in the Neo4j driver.
 /// </summary>
 [ApiController]
 [Route("[controller]")]
-internal class WorkloadController(
+public class WorkloadController(
         IWorkloadStore workloadStore,
         IWorkloadExecutorSelector workloadExecutorSelector,
+        ILogger<WorkloadController> logger,
         LinkGenerator linkGenerator)
     : ControllerBase
 {
@@ -42,7 +44,14 @@ internal class WorkloadController(
         try
         {
             var workload = workloadStore.GetWorkload(id);
-            await workloadExecutorSelector.ExecuteWorkloadAsync(workload);
+            logger.LogInformation(
+                "Executing workload with {QueryCount} queries, method {Method} and mode {Mode}",
+                workload.Queries.Count,
+                workload.Method,
+                workload.Mode);
+
+            var executor = workloadExecutorSelector.GetExecutor(workload);
+            await executor.ExecuteWorkloadAsync(workload);
             return NoContent();
         }
         catch (KeyNotFoundException)
@@ -71,7 +80,14 @@ internal class WorkloadController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Workload>> ExecuteEphemeral([FromBody] Workload workload)
     {
-        await workloadExecutorSelector.ExecuteWorkloadAsync(workload);
+        logger.LogInformation(
+            "Executing workload with {QueryCount} queries, method {Method} and mode {Mode}",
+            workload.Queries.Count,
+            workload.Method,
+            workload.Mode);
+
+        var executor = workloadExecutorSelector.GetExecutor(workload);
+        await executor.ExecuteWorkloadAsync(workload);
         return NoContent();
     }
 

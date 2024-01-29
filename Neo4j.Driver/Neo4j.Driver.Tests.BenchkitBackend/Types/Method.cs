@@ -13,18 +13,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Neo4j.Driver.Tests.BenchkitBackend.Types;
-
-namespace Neo4j.Driver.Tests.BenchkitBackend.Abstractions;
+namespace Neo4j.Driver.Tests.BenchkitBackend.Types;
 
 /// <summary>
-/// Methods for forwarding a workload to the correct executor.
+/// Different methods in the driver that can be used to execute a query.
 /// </summary>
-public interface IWorkloadExecutorSelector
+public enum Method
 {
     /// <summary>
-    /// Gets the correct executor for the workload.
+    /// Use the driver-level ExecuteQuery method.
     /// </summary>
-    /// <param name="workload">The workload to execute.</param>
-    public IWorkloadExecutor GetExecutor(Workload workload);
+    ExecuteQuery,
+
+    /// <summary>
+    /// Use Session.Run to execute the query.
+    /// </summary>
+    SessionRun,
+
+    ExecuteRead,
+    ExecuteWrite
 }

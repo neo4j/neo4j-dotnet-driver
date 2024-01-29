@@ -26,40 +26,50 @@ internal class ExecuteQueryWorkloadExecutor(
         ILogger logger)
     : IWorkloadExecutor
 {
-    /// <inheritdoc />
     public async Task ExecuteWorkloadAsync(Workload workload)
     {
-        var tasks = new List<Task>();
+        if (workload.Mode == Mode.ParallelSessions)
+        {
+            await ExecuteInParallel(workload);
+        }
+        else
+        {
+            await ExecuteInSeries(workload);
+        }
+    }
+
+    private async Task ExecuteInSeries(Workload workload)
+    {
+        logger.LogDebug("Executing workload in series");
         foreach (var query in workload.Queries)
         {
-            if (workload.Mode == Mode.ParallelSessions)
-            {
-                tasks.Add(ExecuteQueryRunAndConsume(query));
-            }
-            else
-            {
-                await ExecuteQueryRunAndConsume(query);
-                logger.LogDebug("Query completed");
-            }
+            await ExecuteQueryRunAndConsume(query, workload)
+                .ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext);
         }
 
-        if (!tasks.Any())
-        {
-            return;
-        }
+        logger.LogDebug("Workload completed");
+    }
 
+    private async Task ExecuteInParallel(Workload workload)
+    {
+        logger.LogDebug("Executing workload in parallel");
+        var tasks = workload.Queries.Select(query => ExecuteQueryRunAndConsume(query, workload)).ToList();
         logger.LogDebug("Waiting for {N} parallel tasks to complete", tasks.Count);
         await Task.WhenAll(tasks);
         logger.LogDebug("All parallel tasks completed");
     }
 
-    private async Task ExecuteQueryRunAndConsume(Types.Query query)
+    private async Task ExecuteQueryRunAndConsume(WorkloadQuery workloadQuery, Workload workload)
     {
-        logger.LogDebug("Starting query {Query}", query.Text);
+        var config = new QueryConfig(workload.Routing.ToRoutingControl(), workload.Database);
+
+        logger.LogDebug("Starting query {Query}", workloadQuery.Text);
         var (results, _) = await driver
-            .ExecutableQuery(query.Text)
-            .WithParameters(query.Parameters)
+            .ExecutableQuery(workloadQuery.Text)
+            .WithParameters(workloadQuery.Parameters)
+            .WithConfig(config)
             .ExecuteAsync();
+
         logger.LogDebug("Consuming {N} results", results.Count);
         recordConsumer.ConsumeRecords(results);
     }

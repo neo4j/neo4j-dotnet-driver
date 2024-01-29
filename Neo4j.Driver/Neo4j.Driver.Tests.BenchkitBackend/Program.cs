@@ -29,7 +29,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration
     .AddJsonFile("appsettings.json")
-    .AddBenchkitBackendConfiguration();
+    .OverrideFromBenchkitEnvironmentVars();
 
 var benchkitBackendConfiguration = new BenchkitBackendConfiguration();
 builder.Configuration.GetSection("BenchkitBackend").Bind(benchkitBackendConfiguration);
@@ -37,6 +37,7 @@ builder.Configuration.GetSection("BenchkitBackend").Bind(benchkitBackendConfigur
 // override port we're listening on from configuration
 builder.WebHost.UseKestrel(k => k.ListenAnyIP(benchkitBackendConfiguration.BackendPort));
 
+// wire up autofac
 builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory())
     .ConfigureContainer<ContainerBuilder>(b =>
     {
@@ -45,7 +46,7 @@ builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory())
     });
 
 builder.Services
-    .AddDriver(benchkitBackendConfiguration)
+    .AddNeo4jDriver(benchkitBackendConfiguration)
     .AddEndpointsApiExplorer()
     .AddSwaggerGen(
         c =>

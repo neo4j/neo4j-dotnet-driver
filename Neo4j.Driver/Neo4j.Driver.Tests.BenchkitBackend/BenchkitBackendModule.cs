@@ -23,43 +23,60 @@ using Neo4j.Driver.Tests.BenchkitBackend.Implementations;
 using Neo4j.Driver.Tests.BenchkitBackend.Types;
 
 namespace Neo4j.Driver.Tests.BenchkitBackend;
+
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 internal class BenchkitBackendModule : Module
 {
+    // register the services used by the controllers
     protected override void Load(ContainerBuilder builder)
     {
         builder.RegisterType<WorkloadStore>().As<IWorkloadStore>().SingleInstance();
-        builder.RegisterType<WorkloadExecutorSelector>().As<IWorkloadExecutorSelector>().InstancePerDependency();
         builder.RegisterType<ActionContextAccessor>().As<IActionContextAccessor>().SingleInstance();
-        builder.RegisterType<RecordConsumer>().As<IRecordConsumer>().SingleInstance();
-        builder.RegisterType<ExecuteQueryWorkloadExecutor>().As<IWorkloadExecutor>().Keyed<IWorkloadExecutor>(Method.ExecuteQuery);//.InstancePerLifetimeScope();
+
+        builder.RegisterType<WorkloadExecutorSelector>().As<IWorkloadExecutorSelector>().InstancePerDependency();
+        builder.RegisterType<RecordConsumer>().As<IRecordConsumer>().InstancePerDependency();
+
+        builder.RegisterType<ExecuteQueryWorkloadExecutor>()
+            .As<IWorkloadExecutor>()
+            .Keyed<IWorkloadExecutor>(Method.ExecuteQuery)
+            .InstancePerDependency();
+
+        builder.RegisterType<SessionRunWorkloadExecutor>()
+            .As<IWorkloadExecutor>()
+            .Keyed<IWorkloadExecutor>(Method.SessionRun)
+            .InstancePerDependency();
     }
 
-    /// <inheritdoc />
-    protected override void AttachToComponentRegistration(IComponentRegistryBuilder componentRegistry, IComponentRegistration registration)
+    // allow all classes to just take a dependency on ILogger, and get a logger with the correct category name
+    protected override void AttachToComponentRegistration(
+        IComponentRegistryBuilder componentRegistry,
+        IComponentRegistration registration)
     {
         registration.PipelineBuilding += (_, pipeline) =>
         {
-            // intercept injections of ILogger, and replace with a logger that has the correct category name
-            pipeline.Use(PipelinePhase.ParameterSelection, MiddlewareInsertionMode.EndOfPhase, (context, next) =>
-            {
-                context.ChangeParameters(
-                    context.Parameters.Union(
-                        new[]
-                        {
-                            new ResolvedParameter(
-                                (p, _) => p.ParameterType == typeof(ILogger),
-                                (p, _) =>
-                                {
-                                    var type = typeof(ILogger<>).MakeGenericType(p.Member.DeclaringType!);
-                                    var logger = context.Resolve(type);
-                                    return logger;
-                                })
-                        }));
+            pipeline.Use(
+                PipelinePhase.ParameterSelection,
+                MiddlewareInsertionMode.EndOfPhase,
+                (context, next) =>
+                {
+                    context.ChangeParameters(
+                        context.Parameters.Union(
+                            new[]
+                            {
+                                new ResolvedParameter(
+                                    (p, _) => p.ParameterType == typeof(ILogger),
+                                    (p, _) =>
+                                    {
+                                        // replace ILogger with ILogger<T> where T is the type asking for the logger
+                                        var type = typeof(ILogger<>).MakeGenericType(p.Member.DeclaringType!);
+                                        var logger = context.Resolve(type);
+                                        return logger;
+                                    })
+                            }));
 
-                next(context);
-            });
+                    next(context);
+                });
         };
     }
 }

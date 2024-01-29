@@ -15,7 +15,7 @@
 
 namespace Neo4j.Driver.Tests.BenchkitBackend.InfrastructureExtensions;
 
-public static class ConfigurationBuilderExtensions
+internal static class ConfigurationBuilderExtensions
 {
     private static IConfigurationBuilder OverrideSettingFromEnvironmentVariable(
         this IConfigurationBuilder builder,
@@ -37,7 +37,7 @@ public static class ConfigurationBuilderExtensions
     /// </summary>
     /// <param name="builder">The configuration builder.</param>
     /// <returns>The configuration builder for method chaining.</returns>
-    public static IConfigurationBuilder AddBenchkitBackendConfiguration(this IConfigurationBuilder builder)
+    public static IConfigurationBuilder OverrideFromBenchkitEnvironmentVars(this IConfigurationBuilder builder)
     {
         builder
             .OverrideSettingFromEnvironmentVariable("BenchkitBackend:BackendPort", "TEST_BACKEND_PORT")

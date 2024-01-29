@@ -17,7 +17,15 @@ using Neo4j.Driver.Tests.BenchkitBackend.Types;
 
 namespace Neo4j.Driver.Tests.BenchkitBackend.Abstractions;
 
-internal interface IWorkloadExecutor
+/// <summary>
+/// Defines methods for executing a workload.
+/// </summary>
+public interface IWorkloadExecutor
 {
+    /// <summary>
+    /// Execute a workload.
+    /// </summary>
+    /// <param name="workload">The workload to execute.</param>
+    /// <returns>A task that completes when the workload has been executed.</returns>
     Task ExecuteWorkloadAsync(Workload workload);
 }

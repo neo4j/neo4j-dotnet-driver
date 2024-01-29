@@ -15,7 +15,7 @@
 
 namespace Neo4j.Driver.Tests.BenchkitBackend.Configuration;
 
-public class BenchkitBackendConfiguration
+internal class BenchkitBackendConfiguration
 {
     public int BackendPort { get; set; }
     public string Neo4jScheme { get; set; }

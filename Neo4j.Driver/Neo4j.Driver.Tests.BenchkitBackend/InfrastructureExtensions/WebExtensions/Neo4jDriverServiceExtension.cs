@@ -17,9 +17,9 @@ using Neo4j.Driver.Tests.BenchkitBackend.Configuration;
 
 namespace Neo4j.Driver.Tests.BenchkitBackend.InfrastructureExtensions;
 
-public static class Neo4jDriverServiceExtension
+internal static class Neo4jDriverServiceExtension
 {
-    public static IServiceCollection AddDriver(
+    public static IServiceCollection AddNeo4jDriver(
         this IServiceCollection services,
         BenchkitBackendConfiguration configuration)
     {

@@ -17,10 +17,36 @@ using Neo4j.Driver.Tests.BenchkitBackend.Types;
 
 namespace Neo4j.Driver.Tests.BenchkitBackend.Abstractions;
 
-internal interface IWorkloadStore
+/// <summary>
+/// Represents a store for managing workloads.
+/// </summary>
+public interface IWorkloadStore
 {
-    string  CreateWorkload(Workload workload);
+    /// <summary>
+    /// Creates a new workload in the store.
+    /// </summary>
+    /// <param name="workload">The workload to create.</param>
+    /// <returns>The ID of the created workload.</returns>
+    string CreateWorkload(Workload workload);
+
+    /// <summary>
+    /// Retrieves a workload from the store.
+    /// </summary>
+    /// <param name="id">The ID of the workload to retrieve.</param>
+    /// <returns>The retrieved workload.</returns>
     Workload GetWorkload(string id);
+
+    /// <summary>
+    /// Updates a workload in the store.
+    /// </summary>
+    /// <param name="id">The ID of the workload to update.</param>
+    /// <param name="workload">The updated workload.</param>
+    /// <returns>The updated workload.</returns>
     Workload UpdateWorkload(string id, Workload workload);
+
+    /// <summary>
+    /// Deletes a workload from the store.
+    /// </summary>
+    /// <param name="id">The ID of the workload to delete.</param>
     void DeleteWorkload(string id);
 }

@@ -15,42 +15,33 @@
 
 namespace Neo4j.Driver.Tests.BenchkitBackend.Types;
 
-public enum Method
-{
-    ExecuteQuery,
-    SessionRun,
-    ExecuteRead,
-    ExecuteWrite
-}
-
-public enum Routing
-{
-    Write,
-    Read
-}
-
-public enum Mode
-{
-    SequentialQueries,
-    SequentialTransactions,
-    SequentialSessions,
-    ParallelSessions
-}
-
-public class Query
-{
-    public string Text { get; set; } = "";
-    public Dictionary<string, object> Parameters { get; set; } = new();
-}
-
 /// <summary>
 /// Describes a driver workload.
 /// </summary>
 public class Workload
 {
+    /// <summary>
+    /// The method to use for executing the workload.
+    /// </summary>
     public Method Method { get; set; }
+
+    /// <summary>
+    /// The database to use for the workload.
+    /// </summary>
     public string Database { get; set; } = "";
+
+    /// <summary>
+    /// The routing method to use for the workload.
+    /// </summary>
     public Routing Routing { get; set; } = Routing.Write;
+
+    /// <summary>
+    /// The series/parallel mode to use for the workload.
+    /// </summary>
     public Mode Mode { get; set; } = Mode.SequentialSessions;
-    public List<Query> Queries { get; set; } = new();
+
+    /// <summary>
+    /// A list of individual queries to execute as part of the workload.
+    /// </summary>
+    public List<WorkloadQuery> Queries { get; set; } = new();
 }
