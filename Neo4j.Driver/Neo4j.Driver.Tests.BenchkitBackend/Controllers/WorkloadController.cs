@@ -28,7 +28,7 @@ using ILogger = Microsoft.Extensions.Logging.ILogger;
 public class WorkloadController(
         IWorkloadStore workloadStore,
         IWorkloadExecutorSelector workloadExecutorSelector,
-        ILogger<WorkloadController> logger,
+        ILogger logger,
         LinkGenerator linkGenerator)
     : ControllerBase
 {
@@ -64,7 +64,7 @@ public class WorkloadController(
     /// <summary>Creates a driver workload.</summary>
     /// <remarks>This endpoint saves the workload in memory for future execution.</remarks>
     [HttpPost]
-    [ProducesResponseType(typeof(Workload), StatusCodes.Status201Created)]
+    [ProducesResponseType<Workload>(StatusCodes.Status201Created)]
     public ActionResult<string> Create([FromBody] Workload workload)
     {
         var id = workloadStore.CreateWorkload(workload);
@@ -76,7 +76,7 @@ public class WorkloadController(
     // PUT
     /// <summary>Execute supplied drivers workload.</summary>
     [HttpPut]
-    [ProducesResponseType(typeof(Workload), StatusCodes.Status200OK)]
+    [ProducesResponseType<Workload>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Workload>> ExecuteEphemeral([FromBody] Workload workload)
     {
@@ -114,7 +114,7 @@ public class WorkloadController(
     // PATCH
     /// <summary>Patches a driver workload.</summary>
     [HttpPatch("{id}")]
-    [ProducesResponseType(typeof(Workload), StatusCodes.Status200OK)]
+    [ProducesResponseType<Workload>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public ActionResult<Workload> Patch(string id, [FromBody] Workload workload)
     {
@@ -127,5 +127,14 @@ public class WorkloadController(
         {
             return NotFound();
         }
+    }
+
+    // GET /workloadStore
+    /// <summary>Retrieves the entire workload store.</summary>
+    [HttpGet("workloadStore")]
+    [ProducesResponseType<IDictionary<string, Workload>>(StatusCodes.Status200OK)]
+    public ActionResult<IDictionary<string, Workload>> GetWorkloadStore()
+    {
+        return Ok(workloadStore.GetAllWorkloads());
     }
 }

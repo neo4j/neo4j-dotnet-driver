@@ -46,9 +46,15 @@ internal class BenchkitBackendModule : Module
             .As<IWorkloadExecutor>()
             .Keyed<IWorkloadExecutor>(Method.SessionRun)
             .InstancePerDependency();
+
+        builder.RegisterType<ExecuteReadWriteWorkloadExecutor>()
+            .As<IWorkloadExecutor>()
+            .Keyed<IWorkloadExecutor>(Method.ExecuteRead)
+            .Keyed<IWorkloadExecutor>(Method.ExecuteWrite)
+            .InstancePerDependency();
     }
 
-    // allow all classes to just take a dependency on ILogger, and get a logger with the correct category name
+    // allow all classes to just take a dependency on ILogger, and receive a logger with the correct category name
     protected override void AttachToComponentRegistration(
         IComponentRegistryBuilder componentRegistry,
         IComponentRegistration registration)

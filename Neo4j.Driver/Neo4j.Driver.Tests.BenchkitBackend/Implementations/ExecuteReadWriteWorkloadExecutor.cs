@@ -1,12 +1,12 @@
 ﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
-//
+// 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-//
+// 
 //     http://www.apache.org/licenses/LICENSE-2.0
-//
+// 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,7 @@ namespace Neo4j.Driver.Tests.BenchkitBackend.Implementations;
 
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
-internal class SessionRunWorkloadExecutor(
+internal class ExecuteReadWriteWorkloadExecutor(
         IDriver driver,
         IRecordConsumer recordConsumer,
         ILogger logger)
@@ -46,25 +46,24 @@ internal class SessionRunWorkloadExecutor(
         {
             var queryToRun = new Query(query.Text, query.Parameters);
             logger.LogDebug("Starting query {Query} in parallel session", queryToRun.Text);
-            tasks.Add(Task.Run(
-                async () =>
-                {
-                    // create a new session in parallel for each query
-                    await using var session = driver.AsyncSession(
-                        x => x
-                            .WithDatabase(workload.Database)
-                            .WithDefaultAccessMode(workload.Routing.ToAccessMode()));
+            tasks.Add(
+                Task.Run(
+                    async () =>
+                    {
+                        // create a new session in parallel for each query
+                        await using var session = driver.AsyncSession(
+                            x => x
+                                .WithDatabase(workload.Database)
+                                .WithDefaultAccessMode(workload.Routing.ToAccessMode()));
 
-                    var resultCursor = await session.RunAsync(queryToRun);
-                    var records = await resultCursor.ToListAsync();
-                    logger.LogDebug("Received {RecordCount} records", records.Count);
-                    recordConsumer.ConsumeRecords(records);
-                }));
+                        var records = await ExecuteReadOrWriteAsync(queryToRun, workload.Method, session);
+                        logger.LogDebug("Received {RecordCount} records", records.Count);
+                        recordConsumer.ConsumeRecords(records);
+                    }));
         }
 
         logger.LogDebug("Waiting for {TaskCount} parallel tasks to complete", tasks.Count);
         await Task.WhenAll(tasks);
-
         logger.LogDebug("Workload completed");
     }
 
@@ -74,17 +73,15 @@ internal class SessionRunWorkloadExecutor(
         foreach (var query in workload.Queries)
         {
             var queryToRun = new Query(query.Text, query.Parameters);
+            logger.LogDebug("Starting query {Query} in new session", queryToRun.Text);
 
             // create a new session for each query
-            logger.LogDebug("Running query {Query} in new session", queryToRun.Text);
             await using var session = driver.AsyncSession(
                 x => x
                     .WithDatabase(workload.Database)
                     .WithDefaultAccessMode(workload.Routing.ToAccessMode()));
 
-            var results = await session.RunAsync(queryToRun);
-
-            var records = await results.ToListAsync();
+            var records = await ExecuteReadOrWriteAsync(queryToRun, workload.Method, session);
             logger.LogDebug("Received {RecordCount} records", records.Count);
             recordConsumer.ConsumeRecords(records);
         }
@@ -94,8 +91,9 @@ internal class SessionRunWorkloadExecutor(
 
     private async Task ExecuteSequentialTransactionsAsync(Workload workload)
     {
-        // create one session for the entire workload
         logger.LogDebug("Executing workload in sequential transactions");
+
+        // create one session to use for all queries
         await using var session = driver.AsyncSession(
             x => x
                 .WithDatabase(workload.Database)
@@ -104,11 +102,9 @@ internal class SessionRunWorkloadExecutor(
         foreach (var query in workload.Queries)
         {
             var queryToRun = new Query(query.Text, query.Parameters);
+            logger.LogDebug("Starting query {Query} in new transaction", queryToRun.Text);
 
-            logger.LogDebug("Running query {Query} in the same session", queryToRun.Text);
-            var results = await session.RunAsync(queryToRun);
-
-            var records = await results.ToListAsync();
+            var records = await ExecuteReadOrWriteAsync(queryToRun, workload.Method, session);
             logger.LogDebug("Received {RecordCount} records", records.Count);
             recordConsumer.ConsumeRecords(records);
         }
@@ -116,30 +112,59 @@ internal class SessionRunWorkloadExecutor(
         logger.LogDebug("Workload completed");
     }
 
+    private static Task<List<IRecord>> ExecuteReadOrWriteAsync(Query query, Method method, IAsyncSession session)
+    {
+        return method switch
+        {
+            Method.ExecuteRead => session.ExecuteReadAsync(t => RunQuery(query, t)),
+            Method.ExecuteWrite => session.ExecuteWriteAsync(t => RunQuery(query, t)),
+            _ => throw new ArgumentOutOfRangeException(nameof(method), "Invalid value for method")
+        };
+    }
+
     private async Task ExecuteSequentialQueriesAsync(Workload workload)
     {
-        logger.LogDebug("Executing workload in a single transaction");
+        logger.LogDebug("Executing workload in sequential queries");
+
+        // create one session to use for all queries
         await using var session = driver.AsyncSession(
             x => x
                 .WithDatabase(workload.Database)
                 .WithDefaultAccessMode(workload.Routing.ToAccessMode()));
 
-        // create a single transaction for the entire workload
-        await using var transaction = await session.BeginTransactionAsync();
+        // decide which session method we're going to call
+        Func<Func<IAsyncQueryRunner, Task<int>>, Action<TransactionConfigBuilder>, Task<int>>
+            execute = workload.Method switch
+            {
+                Method.ExecuteRead => session.ExecuteReadAsync,
+                Method.ExecuteWrite => session.ExecuteWriteAsync,
+                _ => throw new ArgumentOutOfRangeException(nameof(workload), "Invalid value for workload method")
+            };
 
-        foreach (var query in workload.Queries)
-        {
-            var queryToRun = new Query(query.Text, query.Parameters);
+        await execute(
+            async tx =>
+            {
+                // loop through each query in the workload in the same transaction
+                foreach (var query in workload.Queries)
+                {
+                    var queryToRun = new Query(query.Text, query.Parameters);
+                    logger.LogDebug("Starting query {Query} in same transaction", queryToRun.Text);
+                    var records = await RunQuery(queryToRun, tx);
+                    logger.LogDebug("Received {RecordCount} records", records.Count);
+                    recordConsumer.ConsumeRecords(records);
+                }
 
-            logger.LogDebug("Running query {Query} in the same transaction", queryToRun.Text);
-            var results = await transaction.RunAsync(queryToRun);
+                return 0;
+            },
+            _ => { });
 
-            var records = await results.ToListAsync();
-            logger.LogDebug("Received {RecordCount} records", records.Count);
-            recordConsumer.ConsumeRecords(records);
-        }
-
-        await transaction.CommitAsync();
         logger.LogDebug("Workload completed");
+    }
+
+    private static async Task<List<IRecord>> RunQuery(Query query, IAsyncQueryRunner transaction)
+    {
+        var cursor = await transaction.RunAsync(query.Text, query.Parameters);
+        var records = await cursor.ToListAsync();
+        return records;
     }
 }

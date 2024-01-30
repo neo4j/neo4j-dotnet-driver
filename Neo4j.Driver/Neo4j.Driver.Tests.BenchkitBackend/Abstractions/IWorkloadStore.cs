@@ -49,4 +49,9 @@ public interface IWorkloadStore
     /// </summary>
     /// <param name="id">The ID of the workload to delete.</param>
     void DeleteWorkload(string id);
+
+    /// <summary>
+    /// Retrieves the full list of workloads from the store.
+    /// </summary>
+    IDictionary<string, Workload> GetAllWorkloads();
 }

@@ -18,6 +18,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using Autofac.Integration.Mvc;
+using Autofac.Integration.WebApi;
 using Microsoft.OpenApi.Models;
 using Neo4j.Driver.Tests.BenchkitBackend;
 using Neo4j.Driver.Tests.BenchkitBackend.Configuration;
@@ -43,6 +45,7 @@ builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory())
     {
         b.RegisterInstance(benchkitBackendConfiguration).SingleInstance();
         b.RegisterModule<BenchkitBackendModule>();
+        b.RegisterApiControllers(Assembly.GetExecutingAssembly());
     });
 
 builder.Services
@@ -56,8 +59,8 @@ builder.Services
             var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
             c.IncludeXmlComments(xmlPath);
         })
-    .AddRouting()
     .AddControllers()
+    .AddControllersAsServices()
     .AddJsonOptions(
         options =>
         {

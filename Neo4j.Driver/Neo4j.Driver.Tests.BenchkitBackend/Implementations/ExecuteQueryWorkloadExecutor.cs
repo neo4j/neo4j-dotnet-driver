@@ -56,7 +56,7 @@ internal class ExecuteQueryWorkloadExecutor(
         var tasks = workload.Queries.Select(query => ExecuteQueryRunAndConsume(query, workload)).ToList();
         logger.LogDebug("Waiting for {N} parallel tasks to complete", tasks.Count);
         await Task.WhenAll(tasks);
-        logger.LogDebug("All parallel tasks completed");
+        logger.LogDebug("Workload completed");
     }
 
     private async Task ExecuteQueryRunAndConsume(WorkloadQuery workloadQuery, Workload workload)

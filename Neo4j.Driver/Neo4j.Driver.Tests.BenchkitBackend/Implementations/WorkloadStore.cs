@@ -57,4 +57,9 @@ internal class WorkloadStore : IWorkloadStore
             throw new KeyNotFoundException($"Workload with id {id} not found.");
         }
     }
+
+    public IDictionary<string, Workload> GetAllWorkloads()
+    {
+        return _workloads;
+    }
 }
