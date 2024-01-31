@@ -18,6 +18,11 @@ using System.Text.Json.Serialization;
 
 namespace Neo4j.Driver.Tests.BenchkitBackend.InfrastructureExtensions;
 
+/// <summary>
+/// The purpose of this class is to ensure that when the destination type is "object" that we don't
+/// deserialize a string into a JsonElement, which causes issues when trying to write the value
+/// to a PackStream, but instead deserialize it into a string.
+/// </summary>
 internal class ObjectToStringConverter : JsonConverter<object>
 {
     public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

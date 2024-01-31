@@ -94,13 +94,6 @@ public class WorkloadController(
         return NoContent();
     }
 
-    // [HttpPut]
-    // public async Task<ActionResult<Workload>> ExecuteEphemeral(JsonElement json)
-    // {
-    //     logger.LogInformation("Request body: {Json} ", json.ToString());
-    //     return NoContent();
-    // }
-
     // DELETE
     /// <summary>Deletes a driver workload.</summary>
     /// <remarks>This endpoint deletes the workload from memory. Ongoing executions will not be
