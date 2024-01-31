@@ -28,7 +28,7 @@ public class Workload
     /// <summary>
     /// The database to use for the workload.
     /// </summary>
-    public string Database { get; set; } = "";
+    public string? Database { get; set; } = "";
 
     /// <summary>
     /// The routing method to use for the workload.

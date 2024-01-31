@@ -13,11 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Neo4j.Driver.Tests.BenchkitBackend.Abstractions;
 using Neo4j.Driver.Tests.BenchkitBackend.Types;
 
 namespace Neo4j.Driver.Tests.BenchkitBackend.Controllers;
+
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 /// <summary>
@@ -45,7 +47,8 @@ public class WorkloadController(
         {
             var workload = workloadStore.GetWorkload(id);
             logger.LogInformation(
-                "Executing workload with {QueryCount} queries, method {Method} and mode {Mode}",
+                "Executing workload {Id} with {QueryCount} queries, method {Method} and mode {Mode}",
+                id,
                 workload.Queries.Count,
                 workload.Method,
                 workload.Mode);
@@ -90,6 +93,13 @@ public class WorkloadController(
         await executor.ExecuteWorkloadAsync(workload);
         return NoContent();
     }
+
+    // [HttpPut]
+    // public async Task<ActionResult<Workload>> ExecuteEphemeral(JsonElement json)
+    // {
+    //     logger.LogInformation("Request body: {Json} ", json.ToString());
+    //     return NoContent();
+    // }
 
     // DELETE
     /// <summary>Deletes a driver workload.</summary>

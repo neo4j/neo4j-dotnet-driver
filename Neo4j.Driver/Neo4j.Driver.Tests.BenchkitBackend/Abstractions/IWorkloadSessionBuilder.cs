@@ -13,20 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Serilog.Core;
-using Serilog.Events;
+using Neo4j.Driver.Tests.BenchkitBackend.Types;
 
-namespace Neo4j.Driver.Tests.BenchkitBackend.InfrastructureExtensions;
+namespace Neo4j.Driver.Tests.BenchkitBackend.Abstractions;
 
-internal class ClassNameEnricher : ILogEventEnricher
+internal interface IWorkloadSessionBuilder
 {
-    public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
-    {
-        if (logEvent.Properties.TryGetValue("SourceContext", out LogEventPropertyValue? value) &&
-            value is ScalarValue { Value: string sourceContext })
-        {
-            var className = sourceContext.Split('.').Last();
-            logEvent.AddOrUpdateProperty(new LogEventProperty("ClassName", new ScalarValue(className)));
-        }
-    }
+    IAsyncSession BuildSession(IDriver driver, Workload workload);
 }

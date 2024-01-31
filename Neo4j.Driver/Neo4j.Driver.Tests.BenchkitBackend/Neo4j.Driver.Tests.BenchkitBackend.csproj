@@ -12,9 +12,8 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Autofac" Version="8.0.0" />
         <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="9.0.0" />
-        <PackageReference Include="Autofac.Mvc5" Version="6.1.0" />
-        <PackageReference Include="Autofac.WebApi2" Version="6.1.1" />
         <PackageReference Include="Serilog" Version="3.1.1"/>
         <PackageReference Include="Serilog.Enrichers.Thread" Version="3.1.0" />
         <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0"/>
@@ -24,11 +23,14 @@
     </ItemGroup>
 
     <ItemGroup>
+      <None Remove="Neo4j.Driver.Tests.BenchkitBackend.csproj.DotSettings" />
+    </ItemGroup>
+
+
+    <ItemGroup>
       <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <None Remove="Neo4j.Driver.Tests.BenchkitBackend.csproj.DotSettings" />
-    </ItemGroup>
+
 
 </Project>

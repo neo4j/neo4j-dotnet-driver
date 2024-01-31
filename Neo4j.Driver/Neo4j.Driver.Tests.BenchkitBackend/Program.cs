@@ -18,8 +18,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
-using Autofac.Integration.Mvc;
-using Autofac.Integration.WebApi;
 using Microsoft.OpenApi.Models;
 using Neo4j.Driver.Tests.BenchkitBackend;
 using Neo4j.Driver.Tests.BenchkitBackend.Configuration;
@@ -31,6 +29,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration
     .AddJsonFile("appsettings.json")
+    .AddEnvironmentVariables()
     .OverrideFromBenchkitEnvironmentVars();
 
 var benchkitBackendConfiguration = new BenchkitBackendConfiguration();
@@ -45,7 +44,6 @@ builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory())
     {
         b.RegisterInstance(benchkitBackendConfiguration).SingleInstance();
         b.RegisterModule<BenchkitBackendModule>();
-        b.RegisterApiControllers(Assembly.GetExecutingAssembly());
     });
 
 builder.Services
@@ -64,8 +62,8 @@ builder.Services
     .AddJsonOptions(
         options =>
         {
-            // setup JSON serialization so that camelCase is used for deserializing enums
             options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+            options.JsonSerializerOptions.Converters.Add(new ObjectToStringConverter());
         });
 
 // setup Serilog
@@ -76,7 +74,7 @@ Log.Logger = new LoggerConfiguration()
     .Enrich.With<ClassNameEnricher>()
     .WriteTo.Console(
         outputTemplate:
-        "[{Timestamp:HH:mm:ss} {Level:u3}] <{SourceContext}:{ThreadId}> {Message:lj} {NewLine}{Exception}")
+        "[{Timestamp:HH:mm:ss} {Level:u3}] <{ClassName}:{ThreadId}> {Message:lj} {NewLine}{Exception}")
     .CreateLogger();
 
 builder.Logging.ClearProviders();

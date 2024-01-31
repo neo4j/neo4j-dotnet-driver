@@ -43,8 +43,7 @@ internal class ExecuteQueryWorkloadExecutor(
         logger.LogDebug("Executing workload in series");
         foreach (var query in workload.Queries)
         {
-            await ExecuteQueryRunAndConsume(query, workload)
-                .ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext);
+            await ExecuteQueryRunAndConsume(query, workload);
         }
 
         logger.LogDebug("Workload completed");
@@ -54,7 +53,7 @@ internal class ExecuteQueryWorkloadExecutor(
     {
         logger.LogDebug("Executing workload in parallel");
         var tasks = workload.Queries.Select(query => ExecuteQueryRunAndConsume(query, workload)).ToList();
-        logger.LogDebug("Waiting for {N} parallel tasks to complete", tasks.Count);
+        logger.LogDebug("Waiting for {TaskCount} parallel tasks to complete", tasks.Count);
         await Task.WhenAll(tasks);
         logger.LogDebug("Workload completed");
     }

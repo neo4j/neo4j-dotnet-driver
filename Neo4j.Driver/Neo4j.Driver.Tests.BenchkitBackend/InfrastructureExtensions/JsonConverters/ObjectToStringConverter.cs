@@ -13,20 +13,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Serilog.Core;
-using Serilog.Events;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Neo4j.Driver.Tests.BenchkitBackend.InfrastructureExtensions;
 
-internal class ClassNameEnricher : ILogEventEnricher
+internal class ObjectToStringConverter : JsonConverter<object>
 {
-    public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
+    public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        if (logEvent.Properties.TryGetValue("SourceContext", out LogEventPropertyValue? value) &&
-            value is ScalarValue { Value: string sourceContext })
+        if (reader.TokenType == JsonTokenType.String)
         {
-            var className = sourceContext.Split('.').Last();
-            logEvent.AddOrUpdateProperty(new LogEventProperty("ClassName", new ScalarValue(className)));
+            return reader.GetString() ?? string.Empty;
         }
+
+        using var jsonDoc = JsonDocument.ParseValue(ref reader);
+        return jsonDoc.RootElement.Clone();
+    }
+
+    public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
+    {
+        JsonSerializer.Serialize(writer, value, options);
     }
 }

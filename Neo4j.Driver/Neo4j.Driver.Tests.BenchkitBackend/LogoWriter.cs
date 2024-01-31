@@ -13,23 +13,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Reflection;
+
 namespace Neo4j.Driver.Tests.BenchkitBackend;
 
 internal static class LogoWriter
 {
+    private const string Logo =
+        """
+           ___               __   __    _ __
+          / _ )___ ___  ____/ /  / /__ (_) /_
+         / _  / -_) _ \/ __/ _ \/  '_// / __/
+        /____/\__/_//_/\__/_//_/_/\_\/_/\__/ __
+             / _ )___ _____/ /_____ ___  ___/ /
+            / _  / _ `/ __/  '_/ -_) _ \/ _  /
+           /____/\_,_/\__/_/\_\\__/_//_/\_,_/
+        """;
+
     public static void WriteLogo()
     {
-        Console.WriteLine(
-            """
-               ___               __   __    _ __   
-              / _ )___ ___  ____/ /  / /__ (_) /_  
-             / _  / -_) _ \/ __/ _ \/  '_// / __/  
-            /____/\__/_//_/\__/_//_/_/\_\/_/\__/ __
-                 / _ )___ _____/ /_____ ___  ___/ /
-                / _  / _ `/ __/  '_/ -_) _ \/ _  / 
-               /____/\_,_/\__/_/\_\\__/_//_/\_,_/ 
-                                                  v1.0.0
-                 
-            """);
+        var version = Assembly.GetExecutingAssembly().GetName().Version!;
+        var versionString = $"v{version.Major}.{version.Minor}";
+        Console.WriteLine(Logo + " " + versionString);
+        Console.WriteLine();
     }
 }

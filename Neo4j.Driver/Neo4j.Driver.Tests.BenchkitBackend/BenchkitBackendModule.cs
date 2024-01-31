@@ -34,24 +34,22 @@ internal class BenchkitBackendModule : Module
         builder.RegisterType<WorkloadStore>().As<IWorkloadStore>().SingleInstance();
         builder.RegisterType<ActionContextAccessor>().As<IActionContextAccessor>().SingleInstance();
 
-        builder.RegisterType<WorkloadExecutorSelector>().As<IWorkloadExecutorSelector>().InstancePerDependency();
-        builder.RegisterType<RecordConsumer>().As<IRecordConsumer>().InstancePerDependency();
+        builder.RegisterType<WorkloadExecutorSelector>().As<IWorkloadExecutorSelector>();
+        builder.RegisterType<RecordConsumer>().As<IRecordConsumer>();
+        builder.RegisterType<WorkloadSessionBuilder>().As<IWorkloadSessionBuilder>();
 
         builder.RegisterType<ExecuteQueryWorkloadExecutor>()
             .As<IWorkloadExecutor>()
-            .Keyed<IWorkloadExecutor>(Method.ExecuteQuery)
-            .InstancePerDependency();
+            .Keyed<IWorkloadExecutor>(Method.ExecuteQuery);
 
         builder.RegisterType<SessionRunWorkloadExecutor>()
             .As<IWorkloadExecutor>()
-            .Keyed<IWorkloadExecutor>(Method.SessionRun)
-            .InstancePerDependency();
+            .Keyed<IWorkloadExecutor>(Method.SessionRun);
 
         builder.RegisterType<ExecuteReadWriteWorkloadExecutor>()
             .As<IWorkloadExecutor>()
             .Keyed<IWorkloadExecutor>(Method.ExecuteRead)
-            .Keyed<IWorkloadExecutor>(Method.ExecuteWrite)
-            .InstancePerDependency();
+            .Keyed<IWorkloadExecutor>(Method.ExecuteWrite);
     }
 
     // allow all classes to just take a dependency on ILogger, and receive a logger with the correct category name
@@ -76,8 +74,7 @@ internal class BenchkitBackendModule : Module
                                     {
                                         // replace ILogger with ILogger<T> where T is the type asking for the logger
                                         var type = typeof(ILogger<>).MakeGenericType(p.Member.DeclaringType!);
-                                        var logger = context.Resolve(type);
-                                        return logger;
+                                        return context.Resolve(type);
                                     })
                             }));
 

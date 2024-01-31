@@ -23,6 +23,7 @@ using ILogger = Microsoft.Extensions.Logging.ILogger;
 internal class ExecuteReadWriteWorkloadExecutor(
         IDriver driver,
         IRecordConsumer recordConsumer,
+        IWorkloadSessionBuilder sessionBuilder,
         ILogger logger)
     : IWorkloadExecutor
 {
@@ -51,10 +52,7 @@ internal class ExecuteReadWriteWorkloadExecutor(
                     async () =>
                     {
                         // create a new session in parallel for each query
-                        await using var session = driver.AsyncSession(
-                            x => x
-                                .WithDatabase(workload.Database)
-                                .WithDefaultAccessMode(workload.Routing.ToAccessMode()));
+                        await using var session = sessionBuilder.BuildSession(driver, workload);
 
                         var records = await ExecuteReadOrWriteAsync(queryToRun, workload.Method, session);
                         logger.LogDebug("Received {RecordCount} records", records.Count);
@@ -76,10 +74,7 @@ internal class ExecuteReadWriteWorkloadExecutor(
             logger.LogDebug("Starting query {Query} in new session", queryToRun.Text);
 
             // create a new session for each query
-            await using var session = driver.AsyncSession(
-                x => x
-                    .WithDatabase(workload.Database)
-                    .WithDefaultAccessMode(workload.Routing.ToAccessMode()));
+            await using var session = sessionBuilder.BuildSession(driver, workload);
 
             var records = await ExecuteReadOrWriteAsync(queryToRun, workload.Method, session);
             logger.LogDebug("Received {RecordCount} records", records.Count);
@@ -94,10 +89,7 @@ internal class ExecuteReadWriteWorkloadExecutor(
         logger.LogDebug("Executing workload in sequential transactions");
 
         // create one session to use for all queries
-        await using var session = driver.AsyncSession(
-            x => x
-                .WithDatabase(workload.Database)
-                .WithDefaultAccessMode(workload.Routing.ToAccessMode()));
+        await using var session = sessionBuilder.BuildSession(driver, workload);
 
         foreach (var query in workload.Queries)
         {
@@ -127,10 +119,7 @@ internal class ExecuteReadWriteWorkloadExecutor(
         logger.LogDebug("Executing workload in sequential queries");
 
         // create one session to use for all queries
-        await using var session = driver.AsyncSession(
-            x => x
-                .WithDatabase(workload.Database)
-                .WithDefaultAccessMode(workload.Routing.ToAccessMode()));
+        await using var session = sessionBuilder.BuildSession(driver, workload);
 
         // decide which session method we're going to call
         Func<Func<IAsyncQueryRunner, Task<int>>, Action<TransactionConfigBuilder>, Task<int>>
