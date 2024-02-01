@@ -41,7 +41,7 @@ public class WorkloadController(
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Workload>> Execute(string id)
+    public async Task<ActionResult> Execute(string id)
     {
         try
         {
@@ -81,7 +81,7 @@ public class WorkloadController(
     [HttpPut]
     [ProducesResponseType<Workload>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Workload>> ExecuteEphemeral([FromBody] Workload workload)
+    public async Task<ActionResult> ExecuteEphemeral([FromBody] Workload workload)
     {
         logger.LogInformation(
             "Executing workload with {QueryCount} queries, method {Method} and mode {Mode}",
