@@ -63,7 +63,7 @@ builder.Services
         options =>
         {
             options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
-            options.JsonSerializerOptions.Converters.Add(new ObjectToStringConverter());
+            options.JsonSerializerOptions.Converters.Add(new ObjectToPrimitiveConverter());
         });
 
 // setup Serilog
