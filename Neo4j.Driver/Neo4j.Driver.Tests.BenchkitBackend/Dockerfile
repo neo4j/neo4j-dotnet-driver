@@ -1,4 +1,6 @@
-﻿# Stage 1: Build
+﻿# The build context for building this dockerfile needs to be {repo-root}/Neo4j.Driver
+
+# Stage 1: Build
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
