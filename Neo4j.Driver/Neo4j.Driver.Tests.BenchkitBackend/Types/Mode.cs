@@ -36,7 +36,7 @@ public enum Mode
     SequentialSessions,
 
     /// <summary>
-    /// Execute the queries in parallel in q session per query.
+    /// Execute the queries in parallel in a session per query.
     /// </summary>
     ParallelSessions
 }
