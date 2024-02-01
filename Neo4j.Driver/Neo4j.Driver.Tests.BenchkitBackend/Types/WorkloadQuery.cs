@@ -15,8 +15,18 @@
 
 namespace Neo4j.Driver.Tests.BenchkitBackend.Types;
 
+/// <summary>
+/// A query that is part of a workload.
+/// </summary>
 public class WorkloadQuery
 {
+    /// <summary>
+    /// The query text.
+    /// </summary>
     public string Text { get; set; } = "";
+
+    /// <summary>
+    /// The parameters to use when executing the query.
+    /// </summary>
     public Dictionary<string, object> Parameters { get; set; } = new();
 }

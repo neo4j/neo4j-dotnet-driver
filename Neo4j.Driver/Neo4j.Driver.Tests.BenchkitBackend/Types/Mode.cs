@@ -15,10 +15,28 @@
 
 namespace Neo4j.Driver.Tests.BenchkitBackend.Types;
 
+/// <summary>
+/// Defines the parallel/sequential mode in which the queries should be executed.
+/// </summary>
 public enum Mode
 {
+    /// <summary>
+    /// Execute the queries sequentially in a single transaction.
+    /// </summary>
     SequentialQueries,
+
+    /// <summary>
+    /// Execute each query in a separate transaction sequentially in the same session.
+    /// </summary>
     SequentialTransactions,
+
+    /// <summary>
+    /// Execute each query in a separate session sequentially.
+    /// </summary>
     SequentialSessions,
+
+    /// <summary>
+    /// Execute the queries in parallel in q session per query.
+    /// </summary>
     ParallelSessions
 }

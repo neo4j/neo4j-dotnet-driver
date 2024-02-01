@@ -30,6 +30,13 @@ public enum Method
     /// </summary>
     SessionRun,
 
+    /// <summary>
+    /// Use Session.ExecuteRead to execute the query.
+    /// </summary>
     ExecuteRead,
+
+    /// <summary>
+    /// Use Session.ExecuteWrite to execute the query.
+    /// </summary>
     ExecuteWrite
 }

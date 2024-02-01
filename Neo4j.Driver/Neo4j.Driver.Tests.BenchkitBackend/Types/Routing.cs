@@ -15,9 +15,19 @@
 
 namespace Neo4j.Driver.Tests.BenchkitBackend.Types;
 
+/// <summary>
+/// Defines the routing mode in which the queries should be executed.
+/// </summary>
 public enum Routing
 {
+    /// <summary>
+    /// Write routing.
+    /// </summary>
     Write,
+
+    /// <summary>
+    /// Read routing.
+    /// </summary>
     Read
 }
 
