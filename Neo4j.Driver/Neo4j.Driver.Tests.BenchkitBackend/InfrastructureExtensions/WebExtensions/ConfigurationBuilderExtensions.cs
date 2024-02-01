@@ -17,21 +17,6 @@ namespace Neo4j.Driver.Tests.BenchkitBackend.InfrastructureExtensions;
 
 internal static class ConfigurationBuilderExtensions
 {
-    private static IConfigurationBuilder OverrideSettingFromEnvironmentVariable(
-        this IConfigurationBuilder builder,
-        string configurationKey,
-        string environmentVariableName)
-    {
-        var env = Environment.GetEnvironmentVariables();
-        var value = env[environmentVariableName]?.ToString();
-        if (value != null)
-        {
-            builder.AddInMemoryCollection(new Dictionary<string, string?> { { configurationKey, value } });
-        }
-
-        return builder;
-    }
-
     /// <summary>
     /// Override the configuration with values from environment variables.
     /// </summary>
@@ -46,6 +31,21 @@ internal static class ConfigurationBuilderExtensions
             .OverrideSettingFromEnvironmentVariable("BenchkitBackend:Neo4jPort", "TEST_NEO4J_PORT")
             .OverrideSettingFromEnvironmentVariable("BenchkitBackend:Neo4jUser", "TEST_NEO4J_USER")
             .OverrideSettingFromEnvironmentVariable("BenchkitBackend:Neo4jPassword", "TEST_NEO4J_PASSWORD");
+
+        return builder;
+    }
+
+    private static IConfigurationBuilder OverrideSettingFromEnvironmentVariable(
+        this IConfigurationBuilder builder,
+        string configurationKey,
+        string environmentVariableName)
+    {
+        var env = Environment.GetEnvironmentVariables();
+        var value = env[environmentVariableName]?.ToString();
+        if (value != null)
+        {
+            builder.AddInMemoryCollection(new Dictionary<string, string?> { { configurationKey, value } });
+        }
 
         return builder;
     }

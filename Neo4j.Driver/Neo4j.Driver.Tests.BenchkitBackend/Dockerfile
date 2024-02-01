@@ -3,7 +3,7 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # copy the Neo4j.Driver and Neo4j.Driver.Tests.BenchkitBackend source code
-COPY common.props /src/common.props
+COPY ./common.props /src/common.props
 COPY ./Neo4j.Driver /src/Neo4j.Driver
 COPY ./Neo4j.Driver.Tests.BenchkitBackend /src/Neo4j.Driver.Tests.BenchkitBackend
 
