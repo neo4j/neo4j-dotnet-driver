@@ -80,13 +80,20 @@ internal class ExecuteQuery : ProtocolObject
             Metadata = data.config.txMeta != null ? CypherToNativeObject.ConvertDictionaryToNative(data.config.txMeta) : new Dictionary<string, object>()
         };
 
+        var authToken = data.config.authorizationToken switch
+        {
+            null => null,
+            not null => data.config.authorizationToken.AsToken()
+        };
+
         return new QueryConfig(
             routingControl,
             data.config.database,
             data.config.impersonatedUser,
             bookmarkManager,
             enableBookmarkManager,
-            transactionConfig);
+            transactionConfig,
+            authToken);
     }
 
     public override string Respond()
@@ -132,5 +139,6 @@ internal class ExecuteQuery : ProtocolObject
         public int? timeout { get; set; }
         [JsonConverter(typeof(QueryParameterConverter))]
         public Dictionary<string, CypherToNativeObject> txMeta { get; set; }
+        public AuthorizationToken authorizationToken { get; set; }
     }
 }

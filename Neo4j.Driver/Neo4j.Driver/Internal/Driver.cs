@@ -277,6 +277,11 @@ internal sealed class Driver : IInternalDriver
             sessionConfigBuilder.WithBookmarkManager(config.BookmarkManager ?? _bookmarkManager);
         }
 
+        if(config.AuthToken != null)
+        {
+            sessionConfigBuilder.WithAuthToken(config.AuthToken);
+        }
+
         sessionConfigBuilder.WithDefaultAccessMode(
             config.Routing switch
             {
