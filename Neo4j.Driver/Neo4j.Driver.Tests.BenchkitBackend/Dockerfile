@@ -15,6 +15,9 @@ RUN dotnet publish -c Release -o /app
 
 # Stage 2: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
+
+RUN apt update
+RUN apt install wget -y
 WORKDIR /app
 
 # Copy from build stage
