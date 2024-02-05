@@ -24,7 +24,7 @@ using ILogger = Microsoft.Extensions.Logging.ILogger;
 /// </summary>
 [ApiController]
 [Route("[controller]")]
-public class HealthController(
+public class ReadyController(
     IDriver driver,
     ILogger logger)
     : ControllerBase
@@ -37,7 +37,7 @@ public class HealthController(
     /// This endpoint can be used to check if the service is ready to receive requests. This obviously includes
     /// the web server, but also whether the backend can successfully connect to the DBMS.
     /// </remarks>
-    [HttpGet("ready")]
+    [HttpGet]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<ActionResult> Get()
     {
