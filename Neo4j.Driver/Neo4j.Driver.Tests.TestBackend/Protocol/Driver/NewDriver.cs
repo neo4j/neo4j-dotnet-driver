@@ -67,7 +67,7 @@ internal class NewDriver : ProtocolObject
 
     private void DriverConfig(ConfigBuilder configBuilder)
     {
-        configBuilder.WithMetricsEnabled(true);
+        configBuilder.WithMetricsEnabled(true).WithIpv6Enabled(true);
 
         if (!string.IsNullOrEmpty(data.userAgent))
         {
