@@ -57,10 +57,14 @@ internal static class DefaultMapper
                 continue;
             }
 
+            // lower-case the first letter of the property name to be more likely to
+            // match the exact case of the property name in the record
+            var propertyName = char.ToLowerInvariant(property.Name[0]) + property.Name.Substring(1);
+
             // check if there is a MappingSourceAttribute: if there is, use the specified mapping source;
             // if not, look for a property on the entity with the same name as the property on the object
             var mappingSource = property.GetCustomAttribute<MappingSourceAttribute>()?.EntityMappingInfo ??
-                new EntityMappingInfo(property.Name, EntityMappingSource.Property);
+                new EntityMappingInfo(propertyName, EntityMappingSource.Property);
 
             // don't re-map any fields that were already mapped by the constructor
             if (!usedEntitySources.Contains(mappingSource.Path.ToLowerInvariant()))
