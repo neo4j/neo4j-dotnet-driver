@@ -35,6 +35,12 @@ internal class RecordPathFinder : IRecordPathFinder
     {
         value = null;
 
+        // check if we can find the value directly
+        if (TryGetValueFast(record, path, out value))
+        {
+            return true;
+        }
+
         foreach (var field in record.Keys)
         {
             if (PathCompare(path, field))
@@ -71,6 +77,42 @@ internal class RecordPathFinder : IRecordPathFinder
                     return true;
                 }
             }
+        }
+
+        return false;
+    }
+
+    private bool TryGetValueFast(IRecord record, string path, out object value)
+    {
+        value = null;
+
+        // if the path matches a field name, we can return the value directly
+        if (record.Values.TryGetValue(path, out value))
+        {
+            return true;
+        }
+
+        // if there's a dot in the path, we can try to split it and check if the first part
+        // matches a field name and the second part matches a property name
+        var dotIndex = path.IndexOf('.');
+        if (dotIndex <= 0)
+        {
+            return false;
+        }
+
+        var field = path.Substring(0, dotIndex);
+        var property = path.Substring(dotIndex + 1);
+
+        if (!record.Values.TryGetValue(field, out var fieldValue))
+        {
+            return false;
+        }
+
+        switch (fieldValue)
+        {
+            case IEntity entity when entity.Properties.TryGetValue(property, out value):
+            case IReadOnlyDictionary<string, object> dict when dict.TryGetValue(property, out value):
+                return true;
         }
 
         return false;
