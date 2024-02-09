@@ -40,8 +40,9 @@ internal sealed class DriverContext
             config.NullableEncryptionLevel,
             config.TrustManager,
             config.Logger);
+
         DriverBookmarkManager = new DefaultBookmarkManager(new BookmarkManagerConfig());
-        
+
         HostResolver = customHostResolver ??
             (RuntimeHelper.IsDotNetCore
                 ? new SystemNetCoreHostResolver(new SystemHostResolver())
@@ -54,16 +55,14 @@ internal sealed class DriverContext
 
     public DefaultBookmarkManager DriverBookmarkManager { get; }
 
-    /// <summary>
-    /// The root uri configured on the driver.
-    /// This is not a uri for a connection.
-    /// </summary>
+    /// <summary>The root uri configured on the driver. This is not a uri for a connection.</summary>
     public Uri InitialUri { get; }
+
     public Config Config { get; }
-    /// <summary>
-    /// Shortcut to Config.Logger.
-    /// </summary>
+
+    /// <summary>Shortcut to Config.Logger.</summary>
     public ILogger Logger => Config.Logger;
+
     public IAuthTokenManager AuthTokenManager { get; }
     public EncryptionManager EncryptionManager { get; }
     public IHostResolver HostResolver { get; }

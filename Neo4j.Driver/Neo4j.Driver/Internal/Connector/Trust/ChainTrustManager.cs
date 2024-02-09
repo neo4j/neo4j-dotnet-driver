@@ -53,7 +53,7 @@ internal class ChainTrustManager : TrustManager
             {
                 Logger.Error(
                     null,
-                    $"{GetType().Name}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
+                    $"{nameof(CertificateTrustManager)}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
 
                 return false;
             }
@@ -69,7 +69,7 @@ internal class ChainTrustManager : TrustManager
             {
                 Logger.Error(
                     null,
-                    $"{GetType().Name}: Certificate '{certificate.Subject}' failed validation. Reason: {CertHelper.ChainStatusToText(newChain.ChainStatus)}");
+                    $"{nameof(CertificateTrustManager)}: Certificate '{certificate.Subject}' failed validation. Reason: {CertHelper.ChainStatusToText(newChain.ChainStatus)}");
             }
         }
 

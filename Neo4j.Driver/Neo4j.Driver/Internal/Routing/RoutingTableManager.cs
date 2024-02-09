@@ -31,7 +31,7 @@ internal class RoutingTableManager : IRoutingTableManager
     private readonly IClusterConnectionPoolManager _poolManager;
 
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _routingTableLocks = new();
-    
+
     private readonly TimeSpan _routingTablePurgeDelay;
     private readonly ConcurrentDictionary<string, IRoutingTable> _routingTables = new();
 
@@ -47,7 +47,7 @@ internal class RoutingTableManager : IRoutingTableManager
         // Default value.
         _routingTablePurgeDelay = TimeSpan.FromSeconds(30);
     }
-    
+
     //Test Method
     public RoutingTableManager(
         IInitialServerAddressProvider initialServerAddressProvider,
@@ -322,10 +322,13 @@ internal class RoutingTableManager : IRoutingTableManager
                             return newRoutingTable;
                         }
 
-                        _logger.Debug(
-                            "Skipping stale routing table received from server '{0}' for database '{1}'",
-                            router,
-                            database);
+                        if (_logger.IsDebugEnabled())
+                        {
+                            _logger.Debug(
+                                "Skipping stale routing table received from server '{0}' for database '{1}'",
+                                router,
+                                database);
+                        }
                     }
                     finally
                     {

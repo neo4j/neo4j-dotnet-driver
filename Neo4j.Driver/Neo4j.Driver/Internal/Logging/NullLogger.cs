@@ -17,7 +17,7 @@ using System;
 
 namespace Neo4j.Driver.Internal.Logging;
 
-internal class NullLogger : ILogger
+internal sealed class NullLogger : ILogger
 {
     public static readonly NullLogger Instance = new();
 

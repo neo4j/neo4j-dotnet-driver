@@ -45,7 +45,7 @@ internal sealed class PeerTrustManager : TrustManager
             {
                 Logger.Error(
                     null,
-                    $"{GetType().Name}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
+                    $"{nameof(PeerTrustManager)}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
 
                 return false;
             }
@@ -55,7 +55,7 @@ internal sealed class PeerTrustManager : TrustManager
         {
             Logger.Error(
                 null,
-                $"{GetType().Name}: Certificate '{certificate.Subject}' is not valid at the time of validity check '{now}'.");
+                $"{nameof(PeerTrustManager)}: Certificate '{certificate.Subject}' is not valid at the time of validity check '{now}'.");
 
             return false;
         }
@@ -66,18 +66,18 @@ internal sealed class PeerTrustManager : TrustManager
             {
                 Logger.Error(
                     null,
-                    $"{GetType().Name}: Certificate '{certificate.Subject}' is found in '{_location}\\Disallowed` store.");
+                    $"{nameof(PeerTrustManager)}: Certificate '{certificate.Subject}' is found in '{_location}\\Disallowed` store.");
 
                 return false;
             }
 
-            Logger.Info($"{GetType().Name}: Trusting {uri} with certificate '{certificate.Subject}'.");
+            Logger.Info($"{nameof(PeerTrustManager)}: Trusting {uri} with certificate '{certificate.Subject}'.");
             return true;
         }
 
         Logger.Error(
             null,
-            $"{GetType().Name}: Unable to locate a certificate for {uri} in '{_location}\\TrustedPeople` store.");
+            $"{nameof(PeerTrustManager)}: Unable to locate a certificate for {uri} in '{_location}\\TrustedPeople` store.");
 
         return false;
     }

@@ -50,7 +50,10 @@ internal class LeastConnectedLoadBalancingStrategy : ILoadBalancingStrategy
         var count = addresses.Count;
         if (count == 0)
         {
-            LogDebug($"Unable to select {addressType} for database '{forDatabase}', no known addresses given");
+            if (_logger.IsDebugEnabled())
+            {
+                _logger.Debug($"Unable to select {addressType} for database '{forDatabase}', no known addresses given");
+            }
             return null;
         }
 
@@ -84,17 +87,11 @@ internal class LeastConnectedLoadBalancingStrategy : ILoadBalancingStrategy
             }
         } while (index != startIndex);
 
-        LogDebug(
-            $"Selected {addressType} for database '{forDatabase}' with least connected address: '{leastConnectedAddress}' and active connections: {leastActiveConnections}");
-
+        if (_logger.IsDebugEnabled())
+        {
+            _logger.Debug($"Selected {addressType} for database '{forDatabase}' with least connected address: '{leastConnectedAddress}' and active connections: {leastActiveConnections}");   
+        }
         return leastConnectedAddress;
     }
 
-    private void LogDebug(string message)
-    {
-        if (_logger.IsDebugEnabled())
-        {
-            _logger.Debug(message);
-        }
-    }
 }

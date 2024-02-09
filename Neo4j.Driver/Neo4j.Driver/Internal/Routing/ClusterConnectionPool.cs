@@ -91,7 +91,7 @@ internal class ClusterConnectionPool : IClusterConnectionPool
             // Anything added after dispose should be directly cleaned.
             await ClearAsync().ConfigureAwait(false);
             throw new ObjectDisposedException(
-                GetType().Name,
+                nameof(ClusterConnectionPool),
                 $"Failed to create connections with servers {servers.ToContentString()} as the driver has already started to dispose.");
         }
     }

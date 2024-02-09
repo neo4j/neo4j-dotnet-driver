@@ -92,7 +92,7 @@ public sealed class TransactionConfig
     /// <returns>The content of the transaction config in a string.</returns>
     public override string ToString()
     {
-        return $"{GetType().Name}{{{nameof(Metadata)}={Metadata.ToContentString()}, {nameof(Timeout)}={Timeout}}}";
+        return $"{nameof(TransactionConfig)}{{{nameof(Metadata)}={Metadata.ToContentString()}, {nameof(Timeout)}={Timeout}}}";
     }
 }
 

@@ -40,13 +40,13 @@ internal sealed class InsecureTrustManager : TrustManager
             {
                 Logger.Error(
                     null,
-                    $"{GetType().Name}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
+                    $"{nameof(InsecureTrustManager)}: Certificate '{certificate.Subject}' does not match with host name '{uri.Host}'.");
 
                 return false;
             }
         }
 
-        Logger.Info($"{GetType().Name}: Trusting {uri} with provided certificate '{certificate.Subject}'.");
+        Logger.Info($"{nameof(InsecureTrustManager)}: Trusting {uri} with provided certificate '{certificate.Subject}'.");
         return true;
     }
 }

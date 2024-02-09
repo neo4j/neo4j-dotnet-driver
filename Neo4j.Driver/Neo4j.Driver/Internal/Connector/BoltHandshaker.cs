@@ -45,7 +45,10 @@ internal sealed class BoltHandshaker : IBoltHandshaker
         await socketClient.WriterStream.WriteAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(false);
         await socketClient.WriterStream.FlushAsync(cancellationToken).ConfigureAwait(false);
 
-        logger.Debug("C: [HANDSHAKE] {0}", data.ToHexString());
+        if (logger.IsDebugEnabled())
+        {
+            logger.Debug("C: [HANDSHAKE] {0}", data.ToHexString());
+        }
 
         var responseBytes = new byte[4];
         var read = await socketClient.ReaderStream
@@ -59,8 +62,11 @@ internal sealed class BoltHandshaker : IBoltHandshaker
         }
 
         var agreedVersion = BoltProtocolFactory.UnpackAgreedVersion(responseBytes);
-
-        logger.Debug("S: [HANDSHAKE] {0}.{1}", agreedVersion.MajorVersion, agreedVersion.MinorVersion);
+        
+        if (logger.IsDebugEnabled())
+        {
+            logger.Debug($"S: [HANDSHAKE] {agreedVersion.MajorVersion.ToString()}.{agreedVersion.MinorVersion.ToString()}");
+        }
 
         return agreedVersion;
     }

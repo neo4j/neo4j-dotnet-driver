@@ -49,10 +49,9 @@ internal sealed class SocketConnection : IConnection
         DriverContext context,
         IAuthToken authToken)
     {
-        _idPrefix = $"conn-{uri.Host}:{uri.Port}-";
-        _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
+        _idPrefix = $"[[conn-{uri.Host}:{uri.Port}-{UniqueIdGenerator.GetId()}]";
         _logger = context.Logger != NullLogger.Instance
-            ? new PrefixLogger(context.Logger, FormatPrefix(_id))
+            ? new PrefixLogger(context.Logger, _idPrefix)
             : context.Logger;
 
         _client = new SocketClient(uri, context, _logger, null);
@@ -73,21 +72,22 @@ internal sealed class SocketConnection : IConnection
         ServerInfo server,
         IResponsePipeline responsePipeline = null,
         IAuthTokenManager authTokenManager = null,
-        IBoltProtocolFactory protocolFactory = null, 
+        IBoltProtocolFactory protocolFactory = null,
         DriverContext context = null)
     {
         _client = socketClient ?? throw new ArgumentNullException(nameof(socketClient));
         AuthToken = authToken ?? throw new ArgumentNullException(nameof(authToken));
         _serverInfo = server ?? throw new ArgumentNullException(nameof(server));
         AuthTokenManager = authTokenManager;
-        _id = $"{_idPrefix}{UniqueIdGenerator.GetId()}";
-        _logger = new PrefixLogger(logger, FormatPrefix(_id));
+        _id = $"[{UniqueIdGenerator.GetId()}]";
+        _logger = new PrefixLogger(logger, _id);
         _responsePipeline = responsePipeline ?? new ResponsePipeline(logger);
         _protocolFactory = protocolFactory ?? BoltProtocolFactory.Default;
         Context = context;
     }
 
     internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
+    public DriverContext Context { get; }
 
     public AccessMode? Mode { get; private set; }
 
@@ -138,7 +138,11 @@ internal sealed class SocketConnection : IConnection
 
         try
         {
-            await BoltProtocol.AuthenticateAsync(this, Context.Config.UserAgent, authToken, Context.Config.NotificationsConfig)
+            await BoltProtocol.AuthenticateAsync(
+                    this,
+                    Context.Config.UserAgent,
+                    authToken,
+                    Context.Config.NotificationsConfig)
                 .ConfigureAwait(false);
         }
         catch (Exception ex)
@@ -251,22 +255,24 @@ internal sealed class SocketConnection : IConnection
     public IServerInfo Server => _serverInfo;
 
     public bool UtcEncodedDateTime { get; private set; }
-    public DriverContext Context { get; }
     public IAuthToken AuthToken { get; private set; }
     public bool TelemetryEnabled { get; set; }
 
     public void UpdateId(string newConnId)
     {
-        _logger.Debug(
-            "Connection '{0}' renamed to '{1}'. The new name identifies the connection uniquely both on the client side and the server side.",
-            _id,
-            newConnId);
+        if (_logger.IsDebugEnabled())
+        {
+            _logger.Debug(
+                "Connection '{0}' renamed to '{1}'. The new name identifies the connection uniquely both on the client side and the server side.",
+                _id,
+                newConnId);
+        }
 
         _id = newConnId;
-        
+
         if (_logger is PrefixLogger logger)
         {
-            logger.Prefix = FormatPrefix(_id);
+            logger.Prefix = $"[{_id}]";
         }
     }
 
@@ -301,7 +307,10 @@ internal sealed class SocketConnection : IConnection
             }
             catch (Exception e)
             {
-                _logger.Debug($"Failed to logout user before closing connection due to error: {e.Message}");
+                if (_logger.IsDebugEnabled())
+                {
+                    _logger.Debug($"Failed to logout user before closing connection due to error: {e.Message}");
+                }
             }
 
             await _client.DisposeAsync().ConfigureAwait(false);
@@ -417,7 +426,10 @@ internal sealed class SocketConnection : IConnection
         return BoltProtocol.BeginTransactionAsync(this, beginParams);
     }
 
-    public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize,
+    public Task<IResultCursor> RunInExplicitTransactionAsync(
+        Query query,
+        bool reactive,
+        long fetchSize,
         IInternalAsyncTransaction transaction)
     {
         return BoltProtocol.RunInExplicitTransactionAsync(this, query, reactive, fetchSize, transaction);
@@ -481,11 +493,6 @@ internal sealed class SocketConnection : IConnection
     public override string ToString()
     {
         return _id;
-    }
-
-    private static string FormatPrefix(string id)
-    {
-        return $"[{id}]";
     }
 }
 

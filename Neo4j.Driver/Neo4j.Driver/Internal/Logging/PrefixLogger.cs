@@ -12,20 +12,58 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+using System;
 
 namespace Neo4j.Driver.Internal.Logging;
 
-internal class PrefixLogger : ReformattedLogger
+internal sealed class PrefixLogger : ILogger
 {
-    public PrefixLogger(ILogger logger, string prefix = null) : base(logger)
+    public PrefixLogger(ILogger logger, string prefix)
     {
-        Prefix = prefix;
+        Prefix = prefix ?? throw new ArgumentNullException(nameof(prefix));
+        _delegate = logger;
     }
 
-    public string Prefix { private get; set; }
+    public string Prefix { get; set; }
+    private readonly ILogger _delegate;
 
-    protected override string Reformat(string message)
+    private string Reformat(string message)
     {
-        return Prefix == null ? message : $"{Prefix} {message}";
+        return $"{Prefix} {message}";
+    }
+
+    public void Error(Exception cause, string message, params object[] args)
+    {
+        _delegate.Error(cause, Reformat(message), args);
+    }
+
+    public void Warn(Exception cause, string message, params object[] args)
+    {
+        _delegate.Warn(cause, Reformat(message), args);
+    }
+
+    public void Info(string message, params object[] args)
+    {
+        _delegate.Info(Reformat(message), args);
+    }
+
+    public void Debug(string message, params object[] args)
+    {
+        _delegate.Debug(Reformat(message), args);
+    }
+
+    public void Trace(string message, params object[] args)
+    {
+        _delegate.Trace(Reformat(message), args);
+    }
+
+    public bool IsTraceEnabled()
+    {
+        return _delegate.IsTraceEnabled();
+    }
+
+    public bool IsDebugEnabled()
+    {
+        return _delegate.IsDebugEnabled();
     }
 }

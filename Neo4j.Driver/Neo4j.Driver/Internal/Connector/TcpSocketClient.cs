@@ -171,7 +171,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
         catch (Exception e)
         {
             var timeoutValue = DriverContext.Config.ConnectionTimeout;
-            _logger?.Error(
+            _logger.Error(
                 e,
                 $"Failed to close connect to the server {address}:{port}" +
                 $" after connection timed out {timeoutValue.TotalMilliseconds}ms.");
@@ -207,7 +207,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
             {
                 if (errors.HasFlag(SslPolicyErrors.RemoteCertificateNotAvailable))
                 {
-                    _logger?.Error(null, $"{GetType().Name}: Certificate not available.");
+                    _logger.Error(null, $"{GetType().Name}: Certificate not available.");
                     return false;
                 }
 
@@ -219,11 +219,14 @@ internal sealed class TcpSocketClient : ITcpSocketClient
 
                 if (trust)
                 {
-                    _logger?.Debug("Trust is established, resuming connection.");
+                    if (_logger.IsDebugEnabled())
+                    {
+                        _logger.Debug("Trust is established, resuming connection.");
+                    }
                 }
                 else
                 {
-                    _logger?.Error(null, "Trust not established, aborting communication.");
+                    _logger.Error(null, "Trust not established, aborting communication.");
                 }
 
                 return trust;

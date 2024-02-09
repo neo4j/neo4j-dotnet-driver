@@ -35,9 +35,9 @@ internal interface IConnectionValidator
 internal class ConnectionValidator : IConnectionValidator
 {
     private readonly long _connIdleTimeout;
+    private readonly bool _idleTimerActive;
     private readonly long _livenessTimeout;
     private readonly long _maxConnLifetime;
-    private readonly bool _idleTimerActive;
 
     public ConnectionValidator(
         TimeSpan connIdleTimeout,

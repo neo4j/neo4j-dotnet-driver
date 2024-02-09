@@ -61,7 +61,10 @@ internal sealed class ConnectionPool : IConnectionPool
     {
         _uri = uri;
         _id = $"pool-{_uri.Host}:{_uri.Port}";
-        _logger = new PrefixLogger(driverContext.Logger, $"[{_id}]");
+
+        _logger = driverContext.Logger != NullLogger.Instance
+            ? new PrefixLogger(driverContext.Logger, $"[{_id}]")
+            : driverContext.Logger;
 
         _connectionFactory = connectionFactory;
         DriverContext = driverContext;
@@ -152,7 +155,11 @@ internal sealed class ConnectionPool : IConnectionPool
                 }
                 catch (ReauthException ex)
                 {
-                    _logger.Debug(ex.ToString());
+                    if (_logger.IsDebugEnabled())
+                    {
+                        _logger.Debug(ex.ToString());
+                    }
+
                     if (ex.IsUserSwitching)
                     {
                         throw;
@@ -577,7 +584,11 @@ internal sealed class ConnectionPool : IConnectionPool
         var allCloseTasks = new List<Task>();
         while (_idleConnections.TryTake(out var connection))
         {
-            _logger.Debug($"Disposing Available Connection {connection}");
+            if (_logger.IsDebugEnabled())
+            {
+                _logger.Debug($"Disposing Available Connection {connection}");
+            }
+
             allCloseTasks.Add(DestroyConnectionAsync(connection));
         }
 

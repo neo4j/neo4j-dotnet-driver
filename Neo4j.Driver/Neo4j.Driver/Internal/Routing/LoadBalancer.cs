@@ -54,10 +54,8 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             _clusterConnectionPool,
             _logger);
     }
-    
-    /// <summary>
-    /// TEST ONLY.
-    /// </summary>
+
+    /// <summary>TEST ONLY.</summary>
     /// <param name="clusterConnPool"></param>
     /// <param name="routingTableManager"></param>
     internal LoadBalancer(

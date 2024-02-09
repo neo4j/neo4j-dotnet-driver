@@ -173,11 +173,13 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
 
     private void LogStream(MemoryStream stream)
     {
-        if (_logger.IsTraceEnabled())
+        if (!_logger.IsTraceEnabled())
         {
-            var buffer = stream.ToArray();
-            _logger.Trace("C: {0}", buffer.ToHexString(0, buffer.Length));
+            return;
         }
+
+        var buffer = stream.ToArray();
+        _logger.Trace("C: {0}", buffer.ToHexString(0, buffer.Length));
     }
 
 #region Stream Forwarders

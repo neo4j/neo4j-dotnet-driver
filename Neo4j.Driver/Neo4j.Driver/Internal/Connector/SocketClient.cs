@@ -69,8 +69,11 @@ internal sealed class SocketClient : ISocketClient
         CancellationToken cancellationToken = default)
     {
         await _tcpSocketClient.ConnectAsync(_uri, cancellationToken).ConfigureAwait(false);
-
-        _logger.Debug($"~~ [CONNECT] {_uri}");
+        
+        if (_logger.IsDebugEnabled())
+        {
+            _logger.Debug($"~~ [CONNECT] {_uri}");
+        }
 
         Version = await _handshaker
             .DoHandshakeAsync(_tcpSocketClient, _logger, cancellationToken)
@@ -92,7 +95,10 @@ internal sealed class SocketClient : ISocketClient
             foreach (var message in messages)
             {
                 _messageWriter.Write(message, writer);
-                _logger.Debug(MessagePattern, message);
+                if (_logger.IsDebugEnabled())
+                {
+                    _logger.Debug(MessagePattern, message);
+                }
             }
 
             await _chunkWriter.SendAsync().ConfigureAwait(false);

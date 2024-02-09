@@ -19,6 +19,8 @@ namespace Neo4j.Driver.Internal.Result;
 
 internal class Record : IRecord
 {
+    private readonly Dictionary<string,object> _values;
+
     public Record(string[] keys, object[] values)
     {
         if (keys.Length != values.Length)
@@ -27,20 +29,19 @@ internal class Record : IRecord
                 $"{nameof(keys)} length ({keys.Length}) does not equal to {nameof(values)} length ({values.Length})");
         }
         
-        var valueKeys = new Dictionary<string, object>(keys.Length);
+        _values = new Dictionary<string, object>(keys.Length);
 
         for (var i = 0; i < keys.Length; i++)
         {
-            valueKeys.Add(keys[i], values[i]);
+            _values.Add(keys[i], values[i]); 
         }
 
-        Values = valueKeys;
         Keys = keys;
     }
 
     public object this[int index] => Values[Keys[index]];
     public object this[string key] => Values[key];
 
-    public IReadOnlyDictionary<string, object> Values { get; }
+    public IReadOnlyDictionary<string, object> Values => _values;
     public IReadOnlyList<string> Keys { get; }
 }

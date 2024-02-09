@@ -76,7 +76,7 @@ internal class SummaryBuilder
 
         public override string ToString()
         {
-            return $"{GetType().Name}{{{nameof(Query)}={Query}, " +
+            return $"{nameof(ResultSummary)}{{{nameof(Query)}={Query}, " +
                 $"{nameof(Counters)}={Counters}, " +
                 $"{nameof(QueryType)}={QueryType}, " +
                 $"{nameof(Plan)}={Plan}, " +
@@ -113,7 +113,7 @@ internal class ServerInfo : IServerInfo, IUpdateableInfo
 
     public override string ToString()
     {
-        return $"{GetType().Name}{{{nameof(Address)}={Address}, " +
+        return $"{nameof(ServerInfo)}{{{nameof(Address)}={Address}, " +
             $"{nameof(Agent)}={Agent}, " +
             $"{nameof(ProtocolVersion)}={ProtocolVersion}}}";
     }
@@ -145,7 +145,7 @@ internal class Plan : IPlan
 
     public override string ToString()
     {
-        return $"{GetType().Name}{{{nameof(OperatorType)}={OperatorType}, " +
+        return $"{nameof(Plan)}{{{nameof(OperatorType)}={OperatorType}, " +
             $"{nameof(Arguments)}={Arguments.ToContentString()}, " +
             $"{nameof(Identifiers)}={Identifiers.ToContentString()}, " +
             $"{nameof(Children)}={Children.ToContentString()}}}";
@@ -201,7 +201,7 @@ internal class ProfiledPlan : IProfiledPlan
 
     public override string ToString()
     {
-        return $"{GetType().Name}{{{nameof(OperatorType)}={OperatorType}, " +
+        return $"{nameof(ProfiledPlan)}{{{nameof(OperatorType)}={OperatorType}, " +
             $"{nameof(Arguments)}={Arguments.ToContentString()}, " +
             $"{nameof(Identifiers)}={Identifiers.ToContentString()}, " +
             $"{nameof(DbHits)}={DbHits}, " +
@@ -290,7 +290,7 @@ internal class Counters : ICounters
 
     public override string ToString()
     {
-        return $"{GetType().Name}{{{nameof(NodesCreated)}={NodesCreated}, " +
+        return $"{nameof(Counters)}{{{nameof(NodesCreated)}={NodesCreated}, " +
             $"{nameof(NodesDeleted)}={NodesDeleted}, " +
             $"{nameof(RelationshipsCreated)}={RelationshipsCreated}, " +
             $"{nameof(RelationshipsDeleted)}={RelationshipsDeleted}, " +
@@ -426,7 +426,7 @@ internal class InputPosition : IInputPosition
 
     public override string ToString()
     {
-        return $"{GetType().Name}{{{nameof(Offset)}={Offset}, " +
+        return $"{nameof(InputPosition)}{{{nameof(Offset)}={Offset}, " +
             $"{nameof(Line)}={Line}, " +
             $"{nameof(Column)}={Column}}}";
     }
