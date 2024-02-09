@@ -82,7 +82,7 @@ internal class RecordPathFinder : IRecordPathFinder
         return false;
     }
 
-    private bool TryGetValueFast(IRecord record, string path, out object value)
+    public bool TryGetValueFast(IRecord record, string path, out object value)
     {
         value = null;
 
