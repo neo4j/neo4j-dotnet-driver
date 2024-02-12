@@ -20,6 +20,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
 using Record = Neo4j.Driver.Internal.Result.Record;
 
@@ -146,7 +147,7 @@ internal static class RecordCreator
     public static IList<IRecord> CreateRecords(int recordSize, string[] keys)
     {
         return Enumerable.Range(0, recordSize)
-            .Select(i => new Record(keys, keys.Select(k => $"record{i}:{k}").Cast<object>().ToArray()))
+            .Select(i => TestRecord.Create(keys, keys.Select(k => $"record{i}:{k}").Cast<object>().ToArray()))
             .Cast<IRecord>()
             .ToList();
     }
@@ -179,7 +180,7 @@ public class RecordSetTests
             var cursor = new ListBasedRecordCursor(keys, () => records);
 
             // I add a new record after RecordSet is created
-            var newRecord = new Record(keys, new object[] { "record5:key0" });
+            var newRecord = TestRecord.Create(keys, new object[] { "record5:key0" });
             records.Add(newRecord);
 
             var i = 0;

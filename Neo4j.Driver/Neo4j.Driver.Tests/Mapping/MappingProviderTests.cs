@@ -15,8 +15,8 @@
 
 using FluentAssertions;
 using Neo4j.Driver.Preview.Mapping;
+using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
-using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests.Mapping;
 
@@ -79,7 +79,7 @@ public class MappingProviderTests
     [Fact]
     public void ShouldOverrideDefaultMapping()
     {
-        var record = new Record(new[] { "stringValue", "intValue" }, new object[] { "test", 69 });
+        var record = TestRecord.Create(new[] { "stringValue", "intValue" }, new object[] { "test", 69 });
         RecordObjectMapping.RegisterProvider<TestMappingProvider>();
 
         var obj = record.AsObject<TestObject>();
@@ -91,7 +91,7 @@ public class MappingProviderTests
     [Fact]
     public void ShouldUseWholeObjectMapping()
     {
-        var record = new Record(new[] { "stringValue", "intValue" }, new object[] { "TEST", 100 });
+        var record = TestRecord.Create(new[] { "stringValue", "intValue" }, new object[] { "TEST", 100 });
         RecordObjectMapping.RegisterProvider<TestMappingProvider>();
 
         var obj = record.AsObject<SecondTestObject>();
@@ -103,7 +103,7 @@ public class MappingProviderTests
     [Fact]
     public void ShouldNotUseDefaultMapperIfEmptyMappingConfigInProvider()
     {
-        var record = new Record(new[] { "stringValue", "intValue" }, new object[] { "TEST", 100 });
+        var record = TestRecord.Create(new[] { "stringValue", "intValue" }, new object[] { "TEST", 100 });
         RecordObjectMapping.RegisterProvider<TestMappingProvider>();
 
         var obj = record.AsObject<ThirdTestObject>();
@@ -115,7 +115,7 @@ public class MappingProviderTests
     [Fact]
     public void ShouldMapPropertiesFromRecordIfRequired()
     {
-        var record = new Record(new[] { "name", "born", "active" }, new object[] { "Bob", 1977, 2000 });
+        var record = TestRecord.Create(new[] { "name", "born", "active" }, new object[] { "Bob", 1977, 2000 });
         RecordObjectMapping.RegisterProvider<TestMappingProvider>();
 
         var obj = record.AsObject<PersonWithAge>();

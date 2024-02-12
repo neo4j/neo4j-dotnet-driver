@@ -17,8 +17,8 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Types;
 using Neo4j.Driver.Preview.Mapping;
+using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
-using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests.Mapping;
 
@@ -27,42 +27,42 @@ public class RecordNodeExtensionsTests
     [Fact]
     public void ShouldGetTypedValueFromRecord_string()
     {
-        var record = new Record(new[] { "key" }, new object[] { "value" });
+        var record = TestRecord.Create(new[] { "key" }, new object[] { "value" });
         record.GetString("key").Should().Be("value");
     }
 
     [Fact]
     public void ShouldGetTypedValueFromRecord_int()
     {
-        var record = new Record(new[] { "key" }, new object[] { 1L });
+        var record = TestRecord.Create(new[] { "key" }, new object[] { 1L });
         record.GetInt("key").Should().Be(1);
     }
 
     [Fact]
     public void ShouldGetTypedValueFromRecord_long()
     {
-        var record = new Record(new[] { "key" }, new object[] { 1L });
+        var record = TestRecord.Create(new[] { "key" }, new object[] { 1L });
         record.GetLong("key").Should().Be(1L);
     }
 
     [Fact]
     public void ShouldGetTypedValueFromRecord_double()
     {
-        var record = new Record(new[] { "key" }, new object[] { 1.0 });
+        var record = TestRecord.Create(new[] { "key" }, new object[] { 1.0 });
         record.GetDouble("key").Should().Be(1.0);
     }
 
     [Fact]
     public void ShouldGetTypedValueFromRecord_float()
     {
-        var record = new Record(new[] { "key" }, new object[] { 1.0 });
+        var record = TestRecord.Create(new[] { "key" }, new object[] { 1.0 });
         record.GetFloat("key").Should().Be(1.0f);
     }
 
     [Fact]
     public void ShouldGetTypedValueFromRecord_bool()
     {
-        var record = new Record(new[] { "key" }, new object[] { true });
+        var record = TestRecord.Create(new[] { "key" }, new object[] { true });
         record.GetBool("key").Should().Be(true);
     }
 
@@ -70,7 +70,7 @@ public class RecordNodeExtensionsTests
     public void ShouldGetTypedValueFromRecord_entity()
     {
         var node = new Node(1, new[] { "Node" }, new Dictionary<string, object> { { "key", "value" } });
-        var record = new Record(new[] { "key" }, new object[] { node });
+        var record = TestRecord.Create(new[] { "key" }, new object[] { node });
         record.GetEntity("key").Should().Be(node);
     }
 

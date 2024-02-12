@@ -26,6 +26,7 @@ using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Tests.Reactive.Utils;
 using Neo4j.Driver.Tests.Result;
+using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
 using Xunit.Abstractions;
 using static Microsoft.Reactive.Testing.ReactiveTest;
@@ -405,7 +406,7 @@ public static class InternalRxResultTests
                     Thread.Sleep(delayMs);
                 }
 
-                yield return new Record(
+                yield return TestRecord.Create(
                     fields,
                     Enumerable.Range(1, fields.Length).Select(f => $"{i:D3}_{f:D2}").Cast<object>().ToArray());
             }
@@ -538,7 +539,7 @@ public static class InternalRxResultTests
             {
                 for (var r = 1; r <= recordCount; r++)
                 {
-                    yield return new Record(
+                    yield return TestRecord.Create(
                         keys,
                         Enumerable.Range(1, keyCount).Select(f => $"{r:D3}_{f:D2}").Cast<object>().ToArray());
                 }

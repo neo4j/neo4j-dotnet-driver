@@ -27,12 +27,18 @@ internal class DictAsRecord : IRecord
 
     public DictAsRecord(object dict, IRecord record)
     {
-        _dict = dict switch
+        var readOnlyDictionary = dict switch
         {
             IEntity entity => entity.Properties,
             IReadOnlyDictionary<string, object> dictionary => dictionary,
             _ => throw new InvalidOperationException($"Cannot create a DictAsRecord from a {dict.GetType().Name}")
         };
+
+        // this is only used by the default mapper so make it case insensitive
+        _dict = readOnlyDictionary.ToDictionary(
+            kvp => kvp.Key,
+            kvp => kvp.Value,
+            StringComparer.OrdinalIgnoreCase);
 
         Record = record;
     }
@@ -41,6 +47,12 @@ internal class DictAsRecord : IRecord
 
     public object this[int index] => _dict.TryGetValue(_dict.Keys.ElementAt(index), out var obj) ? obj : null;
     public object this[string key] => _dict.TryGetValue(key, out var obj) ? obj : null;
+
+    public bool TryGetValueByCaseInsensitiveKey(string key, out object value)
+    {
+        return _dict.TryGetValue(key, out value);
+    }
+
     public IReadOnlyDictionary<string, object> Values => _dict;
     public IReadOnlyList<string> Keys => _dict.Keys.ToList();
 }

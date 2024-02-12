@@ -21,6 +21,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
 using Xunit.Abstractions;
 using Record = Neo4j.Driver.Internal.Result.Record;
@@ -124,11 +125,11 @@ public static class ResultTests
         [Fact]
         public void ShouldReturnRecords()
         {
-            var recordYielder = new TestRecordYielder(5, 10, _output);
+            var recordYielder = new RecordYielder(5, 10, _output);
             var cursor =
                 new InternalResult(
                     new ListBasedRecordCursor(
-                        TestRecordYielder.Keys,
+                        RecordYielder.Keys,
                         () => recordYielder.RecordsWithAutoLoad),
                     new BlockingExecutor());
 
@@ -139,12 +140,12 @@ public static class ResultTests
         [Fact]
         public void ShouldWaitForAllRecordsToArrive()
         {
-            var recordYielder = new TestRecordYielder(5, 10, _output);
+            var recordYielder = new RecordYielder(5, 10, _output);
 
             var count = 0;
             var cursor =
                 new InternalResult(
-                    new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
+                    new ListBasedRecordCursor(RecordYielder.Keys, () => recordYielder.Records),
                     new BlockingExecutor());
 
             var t = Task.Factory.StartNew(
@@ -171,10 +172,10 @@ public static class ResultTests
         [Fact]
         public void ShouldReturnRecordsImmediatelyWhenReady()
         {
-            var recordYielder = new TestRecordYielder(5, 10, _output);
+            var recordYielder = new RecordYielder(5, 10, _output);
             var result =
                 new InternalResult(
-                    new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
+                    new ListBasedRecordCursor(RecordYielder.Keys, () => recordYielder.Records),
                     new BlockingExecutor());
 
             var temp = result.Take(5);
@@ -182,13 +183,13 @@ public static class ResultTests
             records.Count.Should().Be(5);
         }
 
-        private class TestRecordYielder
+        private class RecordYielder
         {
             private readonly ITestOutputHelper _output;
             private readonly IList<Record> _records = new List<Record>();
             private readonly int _total;
 
-            public TestRecordYielder(int count, int total, ITestOutputHelper output)
+            public RecordYielder(int count, int total, ITestOutputHelper output)
             {
                 Add(count);
                 _total = total;
@@ -197,7 +198,7 @@ public static class ResultTests
 
             public static string[] Keys => new[] { "Test", "Keys" };
 
-            public IEnumerable<Record> Records
+            public IEnumerable<IRecord> Records
             {
                 get
                 {
@@ -219,7 +220,7 @@ public static class ResultTests
                 }
             }
 
-            public IEnumerable<Record> RecordsWithAutoLoad
+            public IEnumerable<IRecord> RecordsWithAutoLoad
             {
                 get
                 {
@@ -252,7 +253,7 @@ public static class ResultTests
             {
                 for (var i = 0; i < count; i++)
                 {
-                    _records.Add(new Record(Keys, new object[] { "Test", 123 }));
+                    _records.Add(TestRecord.Create(Keys, new object[] { "Test", 123 }));
                 }
             }
         }

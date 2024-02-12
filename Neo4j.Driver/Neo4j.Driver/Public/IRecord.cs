@@ -30,6 +30,14 @@ public interface IRecord
     /// <returns>the value specified with the given key.</returns>
     object this[string key] { get; }
 
+    /// <summary>
+    /// Tries to get the value specified by the given key in a case-insensitive manner.
+    /// </summary>
+    /// <param name="key">The key</param>
+    /// <param name="value">The value specified with the given key.</param>
+    /// <returns><c>true</c> if the value is found; <c>false</c> otherwise.</returns>
+    bool TryGetValueByCaseInsensitiveKey(string key, out object value);
+
     /// <summary>Gets the key and value pairs in a <see cref="IReadOnlyDictionary{TKey,TValue}"/>.</summary>
     IReadOnlyDictionary<string, object> Values { get; }
 

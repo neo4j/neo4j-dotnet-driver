@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Result;
+using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
 using Xunit.Abstractions;
 using Record = Neo4j.Driver.Internal.Result.Record;
@@ -169,7 +170,7 @@ public class ResultCursorTests
 
             public static string[] Keys => new[] { "Test", "Keys" };
 
-            public IEnumerable<Record> Records
+            public IEnumerable<IRecord> Records
             {
                 get
                 {
@@ -190,7 +191,7 @@ public class ResultCursorTests
                 }
             }
 
-            public IEnumerable<Record> RecordsWithAutoLoad
+            public IEnumerable<IRecord> RecordsWithAutoLoad
             {
                 get
                 {
@@ -222,7 +223,7 @@ public class ResultCursorTests
             {
                 for (var i = 0; i < count; i++)
                 {
-                    _records.Add(new Record(Keys, new object[] { "Test", 123 }));
+                    _records.Add(TestRecord.Create(Keys, new object[] { "Test", 123 }));
                 }
             }
         }

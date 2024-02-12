@@ -16,9 +16,8 @@
 using System;
 using FluentAssertions;
 using Neo4j.Driver.Preview.Mapping;
+using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
-
-using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests.Mapping;
 
@@ -49,7 +48,7 @@ public class BuiltMapperTests
 
         var constructor = typeof(NoParameterlessConstructor).GetConstructors()[0];
         mapper.AddConstructorMapping(constructor);
-        var result = mapper.Map(new Record(new[] { "value" }, new object[] { 48 }));
+        var result = mapper.Map(TestRecord.Create(new[] { "value" }, new object[] { 48 }));
         result.Value.Should().Be(48);
     }
 }

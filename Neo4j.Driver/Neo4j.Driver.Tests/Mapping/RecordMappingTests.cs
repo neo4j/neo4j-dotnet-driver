@@ -19,8 +19,8 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Types;
 using Neo4j.Driver.Preview.Mapping;
+using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
-using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests.Mapping;
 
@@ -36,7 +36,7 @@ public class RecordMappingTests
     [Fact]
     public void ShouldMapPrimitives()
     {
-        var record = new Record(new[] { "name", "born" }, new object[] { "Bob", 1977 });
+        var record = TestRecord.Create(new[] { "name", "born" }, new object[] { "Bob", 1977 });
         var person = record.AsObject<TestPerson>();
         person.Name.Should().Be("Bob");
         person.Born.Should().Be(1977);
@@ -45,7 +45,7 @@ public class RecordMappingTests
     [Fact]
     public void ShouldMapList()
     {
-        var record = new Record(new[] { "hobbies" }, new object[] { new List<string> { "Coding", "Swimming" } });
+        var record = TestRecord.Create(new[] { "hobbies" }, new object[] { new List<string> { "Coding", "Swimming" } });
         var person = record.AsObject<TestPerson>();
         person.Hobbies.Should().BeEquivalentTo("Coding", "Swimming");
     }
@@ -63,7 +63,7 @@ public class RecordMappingTests
     public void ShouldMapFromInsideDictionaries()
     {
         var dict = new Dictionary<string, object> { { "name", "Dani" }, { "born", 1977 } };
-        var record = new Record(new[] { "Person" }, new object[] { dict });
+        var record = TestRecord.Create(new[] { "Person" }, new object[] { dict });
         var person = record.AsObject<PersonInDict>();
         person.Name.Should().Be("Dani");
         person.Born.Should().Be(1977);
@@ -72,7 +72,7 @@ public class RecordMappingTests
     [Fact]
     public void ShouldLeaveDefaultsIfFieldAbsent()
     {
-        var record = new Record(new[] { "born" }, new object[] { 1977 });
+        var record = TestRecord.Create(new[] { "born" }, new object[] { 1977 });
         var person = RecordObjectMapping.Map(record, typeof(TestPerson)) as TestPerson;
         person.Should().NotBeNull();
         person!.Name.Should().Be("A. Test Name");
@@ -165,7 +165,7 @@ public class RecordMappingTests
 
         var moviesDict = new List<IReadOnlyDictionary<string, object>> { movie4, movie5 };
 
-        var record = new Record(
+        var record = TestRecord.Create(
             new[] { "person", "movies", "titles", "moviesDict" },
             new object[] { person, movieNodes, stringList, moviesDict });
 
@@ -203,9 +203,9 @@ public class RecordMappingTests
     {
         Task<EagerResult<IReadOnlyList<IRecord>>> GetRecordsAsync()
         {
-            var record1 = new Record(new[] { "name", }, new object[] { "Bob", });
-            var record2 = new Record(new[] { "name", "born" }, new object[] { "Alice", 1988 });
-            var record3 = new Record(new[] { "name", "born" }, new object[] { "Eve", 1999 });
+            var record1 = TestRecord.Create(new[] { "name", }, new object[] { "Bob", });
+            var record2 = TestRecord.Create(new[] { "name", "born" }, new object[] { "Alice", 1988 });
+            var record3 = TestRecord.Create(new[] { "name", "born" }, new object[] { "Eve", 1999 });
 
             var result = new EagerResult<IReadOnlyList<IRecord>>(
                 new List<IRecord> { record1, record2, record3 },
@@ -229,9 +229,9 @@ public class RecordMappingTests
     {
         async IAsyncEnumerable<IRecord> GetRecordsAsync()
         {
-            var record1 = new Record(new[] { "name", }, new object[] { "Bob", });
-            var record2 = new Record(new[] { "name", "born" }, new object[] { "Alice", 1988 });
-            var record3 = new Record(new[] { "name", "born" }, new object[] { "Eve", 1999 });
+            var record1 = TestRecord.Create(new[] { "name", }, new object[] { "Bob", });
+            var record2 = TestRecord.Create(new[] { "name", "born" }, new object[] { "Alice", 1988 });
+            var record3 = TestRecord.Create(new[] { "name", "born" }, new object[] { "Eve", 1999 });
 
             var result = new List<IRecord> { record1, record2, record3 };
 
@@ -255,9 +255,9 @@ public class RecordMappingTests
     {
         async IAsyncEnumerable<IRecord> GetRecordsAsync()
         {
-            var record1 = new Record(new[] { "name", }, new object[] { "Bob", });
-            var record2 = new Record(new[] { "name", "born" }, new object[] { "Alice", 1988 });
-            var record3 = new Record(new[] { "name", "born" }, new object[] { "Eve", 1999 });
+            var record1 = TestRecord.Create(new[] { "name", }, new object[] { "Bob", });
+            var record2 = TestRecord.Create(new[] { "name", "born" }, new object[] { "Alice", 1988 });
+            var record3 = TestRecord.Create(new[] { "name", "born" }, new object[] { "Eve", 1999 });
 
             var result = new List<IRecord> { record1, record2, record3 };
 
@@ -326,7 +326,7 @@ public class RecordMappingTests
                 { "title", "Mona Lisa" }
             });
 
-        var carAndPaintingRecord = new Record(new[] { "car", "painting" }, new object[] { carNode, paintingNode });
+        var carAndPaintingRecord = TestRecord.Create(new[] { "car", "painting" }, new object[] { carNode, paintingNode });
 
         var mappedObject = carAndPaintingRecord.AsObject<CarAndPainting>();
 
@@ -346,7 +346,7 @@ public class RecordMappingTests
     [Fact]
     public void DefaultMapperShouldIgnorePropertiesWithoutSetter()
     {
-        var record = new Record(new[] { "name", "born" }, new object[] { "Bob", 1977 });
+        var record = TestRecord.Create(new[] { "name", "born" }, new object[] { "Bob", 1977 });
         var person = record.AsObject<PersonWithoutBornSetter>();
         person.Name.Should().Be("Bob");
         person.Born.Should().Be(1999);
@@ -363,7 +363,7 @@ public class RecordMappingTests
     [Fact]
     public void ShouldIgnorePropertiesWithDoNotMapAttribute()
     {
-        var record = new Record(new[] { "name", "born" }, new object[] { "Bob", 1977 });
+        var record = TestRecord.Create(new[] { "name", "born" }, new object[] { "Bob", 1977 });
         var person = record.AsObject<TestPersonWithoutBornMapped>();
         person.Name.Should().Be("Bob");
         person.Born.Should().Be(9999);
@@ -385,8 +385,8 @@ public class RecordMappingTests
     {
         var bookNodeList = new List<Node>
         {
-            new Node(0, new[] { "Book" }, new Dictionary<string, object> { { "title", "The Green Man" } }),
-            new Node(0, new[] { "Book" }, new Dictionary<string, object> { { "title", "The Thin End" } })
+            new(0, new[] { "Book" }, new Dictionary<string, object> { { "title", "The Green Man" } }),
+            new(0, new[] { "Book" }, new Dictionary<string, object> { { "title", "The Thin End" } })
         };
 
         var authorNode = new Node(
@@ -394,7 +394,7 @@ public class RecordMappingTests
             new[] { "Author" },
             new Dictionary<string, object> { { "name", "Kate Grenville" }, { "books", bookNodeList } });
 
-        var record = new Record(new[] { "author" }, new object[] { authorNode });
+        var record = TestRecord.Create(new[] { "author" }, new object[] { authorNode });
 
         var mappedObject = record.AsObject<Author>();
 
@@ -412,7 +412,7 @@ public class RecordMappingTests
     [Fact]
     public void ShouldMapToRecords()
     {
-        var record = new Record(
+        var record = TestRecord.Create(
             new[] { "recordingArtist", "title", "year" },
             new object[] { "The Beatles", "Yellow Submarine", 1966 });
 
@@ -425,7 +425,7 @@ public class RecordMappingTests
     [Fact]
     public void ShouldFailMappingToRecordsWithNulls()
     {
-        var record = new Record(
+        var record = TestRecord.Create(
             new[] { "recordingArtist", "title", "year" },
             new object[] { "The Beatles", null, 1966 });
 
@@ -437,7 +437,7 @@ public class RecordMappingTests
     [Fact]
     public void ShouldFailMappingToRecordsWithMissingFields()
     {
-        var record = new Record(
+        var record = TestRecord.Create(
             new[] { "recordingArtist", "year" },
             new object[] { "The Beatles", 1966 });
 
@@ -455,7 +455,7 @@ public class RecordMappingTests
     [Fact]
     public void ShouldMapToInitProperties()
     {
-        var record = new Record(new[] { "name", "age" }, new object[] { "Bob", 1977 });
+        var record = TestRecord.Create(new[] { "name", "age" }, new object[] { "Bob", 1977 });
         var person = record.AsObject<ClassWithInitProperties>();
         person.Name.Should().Be("Bob");
         person.Age.Should().Be(1977);
@@ -470,7 +470,7 @@ public class RecordMappingTests
     [Fact]
     public void ShouldMapToDefaultConstructorParameters()
     {
-        var record = new Record(new[] { "forename", "age" }, new object[] { "Bob", 1977 });
+        var record = TestRecord.Create(new[] { "forename", "age" }, new object[] { "Bob", 1977 });
         var person = record.AsObject<ClassWithDefaultConstructor>();
         person.Name.Should().Be("Bob");
         person.Age.Should().Be(1977);
@@ -485,9 +485,33 @@ public class RecordMappingTests
     [Fact]
     public void ShouldMapToDefaultConstructorParametersWithAttributes()
     {
-        var record = new Record(new[] { "forename", "age" }, new object[] { "Bob", 1977 });
+        var record = TestRecord.Create(new[] { "forename", "age" }, new object[] { "Bob", 1977 });
         var person = record.AsObject<ClassWithDefaultConstructorWithAttributes>();
         person.Name.Should().Be("Bob");
         person.Age.Should().Be(1977);
+    }
+
+    [Fact]
+    public void ShouldFindPropertiesInNodes()
+    {
+        var node = new Node(
+            0,
+            new[] { "Person" },
+            new Dictionary<string, object> { { "name", "Bob" }, { "born", 1977 } });
+
+        var record = TestRecord.Create(new[] { "person" }, new object[] { node });
+        var person = record.AsObject<TestPerson>();
+        person.Name.Should().Be("Bob");
+        person.Born.Should().Be(1977);
+    }
+
+    [Fact]
+    public void ShouldFindPropertiesInDictionaries()
+    {
+        var dict = new Dictionary<string, object> { { "name", "Bob" }, { "born", 1977 } };
+        var record = TestRecord.Create(new[] { "person" }, new object[] { dict });
+        var person = record.AsObject<TestPerson>();
+        person.Name.Should().Be("Bob");
+        person.Born.Should().Be(1977);
     }
 }

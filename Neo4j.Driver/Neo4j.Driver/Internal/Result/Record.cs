@@ -19,28 +19,50 @@ namespace Neo4j.Driver.Internal.Result;
 
 internal class Record : IRecord
 {
-    public Record(string[] keys, object[] values)
+    private readonly IReadOnlyDictionary<string, int> _fieldLookup;
+    private readonly IReadOnlyDictionary<string, int> _invariantFieldLookup;
+    private readonly object[] _fieldValues;
+    private IndirectDictionary<string, object> _valuesDictionary;
+
+    public Record(
+        IReadOnlyDictionary<string, int> fieldLookup,
+        IReadOnlyDictionary<string, int> invariantFieldLookup,
+        object[] values)
     {
-        if (keys.Length != values.Length)
-        {
-            throw new ProtocolException(
-                $"{nameof(keys)} length ({keys.Length}) does not equal to {nameof(values)} length ({values.Length})");
-        }
-        
-        var valueKeys = new Dictionary<string, object>(keys.Length);
-
-        for (var i = 0; i < keys.Length; i++)
-        {
-            valueKeys.Add(keys[i], values[i]);
-        }
-
-        Values = valueKeys;
-        Keys = keys;
+        _fieldLookup = fieldLookup;
+        _invariantFieldLookup = invariantFieldLookup;
+        _fieldValues = values;
+        Keys = new List<string>(_fieldLookup.Keys);
     }
 
-    public object this[int index] => Values[Keys[index]];
-    public object this[string key] => Values[key];
+    /// <inheritdoc />
+    public object this[int index] => _fieldValues[index];
 
-    public IReadOnlyDictionary<string, object> Values { get; }
+    /// <inheritdoc />
+    public object this[string key] => _fieldValues[_fieldLookup[key]];
+
+    /// <inheritdoc />
+    public object GetValueByCaseInsensitiveKey(string key)
+    {
+        return _fieldValues[_invariantFieldLookup[key]];
+    }
+
+    public bool TryGetValueByCaseInsensitiveKey(string key, out object value)
+    {
+        if (_invariantFieldLookup.TryGetValue(key, out var index))
+        {
+            value = _fieldValues[index];
+            return true;
+        }
+
+        value = null;
+        return false;
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyDictionary<string, object> Values =>
+        _valuesDictionary ??= new IndirectDictionary<string, object>(_fieldLookup, _fieldValues);
+
+    /// <inheritdoc />
     public IReadOnlyList<string> Keys { get; }
 }
