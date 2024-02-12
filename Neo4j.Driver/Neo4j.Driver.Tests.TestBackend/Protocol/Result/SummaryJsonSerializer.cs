@@ -91,7 +91,8 @@ internal static class SummaryJsonSerializer
             : new
             {
                 protocolVersion = summary.Server.ProtocolVersion,
-                agent = summary.Server.Agent
+                agent = summary.Server.Agent,
+                address = summary.Server.Address.ToString()
             };
     }
 
