@@ -58,6 +58,13 @@ public class RecordTests
     }
 
     [Fact]
+    public void Indexer_StringParameter_IsCaseSensitive()
+    {
+        var act = () => _record["KEY1"];
+        act.Should().Throw<KeyNotFoundException>();
+    }
+
+    [Fact]
     public void Values_ReturnsCorrectDictionary()
     {
         var expectedDictionary = new Dictionary<string, object> { { "Key1", "Value1" }, { "Key2", "Value2" } };

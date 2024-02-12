@@ -148,7 +148,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
         _fieldLookup = fields.Select((field, index) => (field, index))
             .ToDictionary(pair => pair.field, pair => pair.index);
 
-        _invariantFieldLookup = new Dictionary<string, int>(_fieldLookup , StringComparer.InvariantCultureIgnoreCase);
+        _invariantFieldLookup = new Dictionary<string, int>(_fieldLookup, StringComparer.InvariantCultureIgnoreCase);
 
         CheckAndUpdateState(State.RunCompleted, State.RunRequested);
     }
@@ -181,7 +181,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
     private void AssertTransactionValid()
     {
         _pendingError?.EnsureThrown();
-        if (_transaction.IsErrored(out var error) )
+        if (_transaction.IsErrored(out var error))
         {
             throw new TransactionTerminatedException(error);
         }
