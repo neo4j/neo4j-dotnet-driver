@@ -460,4 +460,34 @@ public class RecordMappingTests
         person.Name.Should().Be("Bob");
         person.Age.Should().Be(1977);
     }
+
+    private class ClassWithDefaultConstructor(string forename, int age)
+    {
+        public string Name => forename;
+        public int Age => age;
+    }
+
+    [Fact]
+    public void ShouldMapToDefaultConstructorParameters()
+    {
+        var record = new Record(new[] { "forename", "age" }, new object[] { "Bob", 1977 });
+        var person = record.AsObject<ClassWithDefaultConstructor>();
+        person.Name.Should().Be("Bob");
+        person.Age.Should().Be(1977);
+    }
+
+    private class ClassWithDefaultConstructorWithAttributes([MappingSource("forename")] string name, int age)
+    {
+        public string Name => name;
+        public int Age => age;
+    }
+
+    [Fact]
+    public void ShouldMapToDefaultConstructorParametersWithAttributes()
+    {
+        var record = new Record(new[] { "forename", "age" }, new object[] { "Bob", 1977 });
+        var person = record.AsObject<ClassWithDefaultConstructorWithAttributes>();
+        person.Name.Should().Be("Bob");
+        person.Age.Should().Be(1977);
+    }
 }

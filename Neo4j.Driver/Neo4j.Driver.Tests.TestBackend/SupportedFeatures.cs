@@ -31,6 +31,7 @@ internal static class SupportedFeatures
             "Feature:API:BookmarkManager",
             "Feature:API:ConnectionAcquisitionTimeout",
             "Feature:API:Driver.ExecuteQuery",
+            "Feature:API:Driver.ExecuteQuery:WithAuth",
             "Feature:API:Driver:GetServerInfo",
             "Feature:API:Driver.IsEncrypted",
             "Feature:API:Driver:NotificationsConfig",

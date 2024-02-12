@@ -13,6 +13,7 @@
         <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
         <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
         <TargetFramework>net6.0</TargetFramework>
+        <LangVersion>preview</LangVersion>
     </PropertyGroup>
     <ItemGroup>
         <Content Include="App.config" />

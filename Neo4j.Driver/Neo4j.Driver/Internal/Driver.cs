@@ -156,7 +156,7 @@ internal sealed class Driver : IInternalDriver
     {
         async Task<int> Process(IAsyncEnumerable<IRecord> records)
         {
-            await foreach (var record in records.ConfigureAwait(false))
+            await foreach (var record in records.ConfigureAwait(false).WithCancellation(cancellationToken))
             {
                 streamProcessor(record);
             }
@@ -275,6 +275,11 @@ internal sealed class Driver : IInternalDriver
         if (config.EnableBookmarkManager)
         {
             sessionConfigBuilder.WithBookmarkManager(config.BookmarkManager ?? _bookmarkManager);
+        }
+
+        if(config.AuthToken != null)
+        {
+            sessionConfigBuilder.WithAuthToken(config.AuthToken);
         }
 
         sessionConfigBuilder.WithDefaultAccessMode(

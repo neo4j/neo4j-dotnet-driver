@@ -16,6 +16,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Auth;
 
 namespace Neo4j.Driver;
 
@@ -36,13 +37,15 @@ public class QueryConfig
     /// remove any usage or modification of <see cref="IBookmarkManager"/>.
     /// </param>
     /// <param name="transactionConfig">Transaction configuration.</param>
+    /// <param name="authToken">Auth token to use for the session executing the query.</param>
     public QueryConfig(
         RoutingControl routing = RoutingControl.Writers,
         string database = null,
         string impersonatedUser = null,
         IBookmarkManager bookmarkManager = null,
         bool enableBookmarkManager = true,
-        TransactionConfig transactionConfig = null)
+        TransactionConfig transactionConfig = null,
+        IAuthToken authToken = null)
     {
         Routing = routing;
         Database = database;
@@ -50,7 +53,9 @@ public class QueryConfig
         BookmarkManager = bookmarkManager;
         EnableBookmarkManager = enableBookmarkManager;
         TransactionConfig = transactionConfig ?? TransactionConfig.Default;
+        AuthToken = authToken;
     }
+
     /// <summary>Config for the transaction that will be used to execute the query.</summary>
     public TransactionConfig TransactionConfig { get; }
 
@@ -71,6 +76,11 @@ public class QueryConfig
 
     /// <summary>Enables or disables the use of an <see cref="IBookmarkManager"/> for causal chaining.</summary>
     public bool EnableBookmarkManager { get; }
+
+    /// <summary>
+    /// Auth token to use for the session executing the query.
+    /// </summary>
+    public IAuthToken AuthToken { get; }
 }
 
 /// <summary>Configuration for running queries using the simplified API.</summary>
@@ -93,6 +103,7 @@ public class QueryConfig<T> : QueryConfig
     /// remove any usage or modification of <see cref="IBookmarkManager"/>.
     /// </param>
     /// <param name="transactionConfig">Transaction configuration.</param>
+    /// <param name="authToken">Auth token to use for the session executing the query.</param>
     /// <exception cref="ArgumentNullException"></exception>
     public QueryConfig(
         Func<IResultCursor, CancellationToken, Task<T>> cursorProcessor,
@@ -101,8 +112,16 @@ public class QueryConfig<T> : QueryConfig
         string impersonatedUser = null,
         IBookmarkManager bookmarkManager = null,
         bool enableBookmarkManager = true,
-        TransactionConfig transactionConfig = null)
-        : base(routing, database, impersonatedUser, bookmarkManager, enableBookmarkManager, transactionConfig)
+        TransactionConfig transactionConfig = null,
+        IAuthToken authToken = null)
+        : base(
+            routing,
+            database,
+            impersonatedUser,
+            bookmarkManager,
+            enableBookmarkManager,
+            transactionConfig,
+            authToken)
     {
         CursorProcessor = cursorProcessor ?? throw new ArgumentNullException(nameof(cursorProcessor));
     }
