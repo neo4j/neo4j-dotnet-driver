@@ -208,7 +208,7 @@ public static class ResultTests
                         while (i == _records.Count)
                         {
                             _output.WriteLine(
-                                $"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
+                                $"{DateTime.Now:HH:mm:ss.fff} -> Waiting for more Records");
 
                             Thread.Sleep(50);
                         }
@@ -230,11 +230,11 @@ public static class ResultTests
                         while (i == _records.Count)
                         {
                             _output.WriteLine(
-                                $"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
+                                $"{DateTime.Now:HH:mm:ss.fff} -> Waiting for more Records");
 
                             Thread.Sleep(500);
                             AddNew(1);
-                            _output.WriteLine($"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Record arrived");
+                            _output.WriteLine($"{DateTime.Now:HH:mm:ss.fff} -> Record arrived");
                         }
 
                         yield return _records[i];
