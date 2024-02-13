@@ -24,6 +24,7 @@ internal class Record : IRecord
     private readonly IReadOnlyDictionary<string, int> _invariantFieldLookup;
     private readonly object[] _fieldValues;
     private IndirectDictionary<string, object> _valuesDictionary;
+    private IReadOnlyList<string> _keys;
 
     public Record(
         IReadOnlyDictionary<string, int> fieldLookup,
@@ -33,7 +34,6 @@ internal class Record : IRecord
         _fieldLookup = fieldLookup;
         _invariantFieldLookup = invariantFieldLookup;
         _fieldValues = values;
-        Keys = new ArrayToReadOnlyListWrapper<string>(_fieldLookup.Keys.ToArray());
     }
 
     /// <inheritdoc />
@@ -61,9 +61,9 @@ internal class Record : IRecord
     }
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<string, object> Values =>
-        _valuesDictionary ??= new IndirectDictionary<string, object>(_fieldLookup, _fieldValues);
+    public IReadOnlyList<string> Keys => _keys ??= _fieldLookup.Keys.ToList();
 
     /// <inheritdoc />
-    public IReadOnlyList<string> Keys { get; }
+    public IReadOnlyDictionary<string, object> Values =>
+        _valuesDictionary ??= new IndirectDictionary<string, object>(_fieldLookup, _fieldValues);
 }
