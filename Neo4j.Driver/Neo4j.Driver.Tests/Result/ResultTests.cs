@@ -198,7 +198,7 @@ public static class ResultTests
 
             public static string[] Keys => new[] { "Test", "Keys" };
 
-            public IEnumerable<IRecord> Records
+            public IEnumerable<Record> Records
             {
                 get
                 {
@@ -220,7 +220,7 @@ public static class ResultTests
                 }
             }
 
-            public IEnumerable<IRecord> RecordsWithAutoLoad
+            public IEnumerable<Record> RecordsWithAutoLoad
             {
                 get
                 {
