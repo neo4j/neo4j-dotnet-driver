@@ -79,6 +79,25 @@ internal sealed class Relationship : IRelationship
     public IReadOnlyDictionary<string, object> Properties { get; }
     public object this[string key] => Properties[key];
 
+    /// <inheritdoc />
+    public T Get<T>(string key)
+    {
+        return Properties[key].As<T>();
+    }
+
+    /// <inheritdoc />
+    public bool TryGet<T>(string key, out T value)
+    {
+        if (Properties.TryGetValue(key, out var obj))
+        {
+            value = obj.As<T>();
+            return true;
+        }
+
+        value = default;
+        return false;
+    }
+
     public bool Equals(IRelationship other)
     {
         if (other == null)
