@@ -18,7 +18,7 @@ using System.Collections.Generic;
 namespace Neo4j.Driver;
 
 /// <summary>A record contains ordered key and value pairs</summary>
-public interface IRecord
+public interface IRecord : IReadOnlyDictionary<string, object>
 {
     /// <summary>Gets the value at the given index.</summary>
     /// <param name="index">The index</param>
@@ -28,7 +28,7 @@ public interface IRecord
     /// <summary>Gets the value specified by the given key.</summary>
     /// <param name="key">The key</param>
     /// <returns>the value specified with the given key.</returns>
-    object this[string key] { get; }
+    new object this[string key] { get; }
 
     /// <summary>
     /// Tries to get the value specified by the given key in a case-insensitive manner.
@@ -39,8 +39,8 @@ public interface IRecord
     bool TryGetValueByCaseInsensitiveKey(string key, out object value);
 
     /// <summary>Gets the key and value pairs in a <see cref="IReadOnlyDictionary{TKey,TValue}"/>.</summary>
-    IReadOnlyDictionary<string, object> Values { get; }
+    new IReadOnlyDictionary<string, object> Values { get; }
 
     /// <summary>Gets the keys in a <see cref="IReadOnlyList{T}"/>.</summary>
-    IReadOnlyList<string> Keys { get; }
+    new IReadOnlyList<string> Keys { get; }
 }

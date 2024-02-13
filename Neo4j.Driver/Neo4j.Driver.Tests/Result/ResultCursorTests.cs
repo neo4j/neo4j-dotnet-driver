@@ -349,7 +349,7 @@ public class ResultCursorTests
             peeked1.Should().NotBeNull();
             var peeked2 = await result.PeekAsync();
             peeked2.Should().NotBeNull();
-            peeked2.Should().Be(peeked1);
+            peeked2.Should().BeSameAs(peeked1);
         }
     }
 
@@ -365,7 +365,7 @@ public class ResultCursorTests
             read.Should().BeTrue();
             var record = result.Current;
             record.Should().NotBeNull();
-            record.Should().Be(peeked);
+            record.Should().BeSameAs(peeked);
         }
     }
 

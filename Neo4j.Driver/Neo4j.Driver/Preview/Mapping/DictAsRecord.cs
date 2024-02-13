@@ -16,6 +16,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -55,4 +56,32 @@ internal class DictAsRecord : IRecord
 
     public IReadOnlyDictionary<string, object> Values => _dict;
     public IReadOnlyList<string> Keys => _dict.Keys.ToList();
+
+    /// <inheritdoc />
+    IEnumerator<KeyValuePair<string, object>> IEnumerable<KeyValuePair<string, object>>.GetEnumerator()
+    {
+        return _dict.GetEnumerator();
+    }
+
+    /// <inheritdoc />
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return _dict.GetEnumerator();
+    }
+
+    /// <inheritdoc />
+    bool IReadOnlyDictionary<string, object>.ContainsKey(string key) => _dict.ContainsKey(key);
+
+    /// <inheritdoc />
+    bool IReadOnlyDictionary<string, object>.TryGetValue(string key, out object value) =>
+        _dict.TryGetValue(key, out value);
+
+    /// <inheritdoc />
+    int IReadOnlyCollection<KeyValuePair<string, object>>.Count => _dict.Count;
+
+    /// <inheritdoc />
+    IEnumerable<string> IReadOnlyDictionary<string, object>.Keys => _dict.Keys;
+
+    /// <inheritdoc />
+    IEnumerable<object> IReadOnlyDictionary<string, object>.Values => _dict.Values;
 }

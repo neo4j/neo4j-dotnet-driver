@@ -34,10 +34,16 @@ public class RecordTests
     }
 
     [Fact]
-    public void GetValueByCaseInsensitiveKey_ReturnsCorrectValue()
+    public void TryGetValueByCaseInsensitiveKey_ReturnsCorrectValue()
     {
-        _record.GetValueByCaseInsensitiveKey("KEY1").Should().Be("Value1");
-        _record.GetValueByCaseInsensitiveKey("KEY2").Should().Be("Value2");
+        _record.TryGetValueByCaseInsensitiveKey("KEY1", out var value).Should().BeTrue();
+        value.Should().Be("Value1");
+
+        _record.TryGetValueByCaseInsensitiveKey("KEY2", out value).Should().BeTrue();
+        value.Should().Be("Value2");
+
+        _record.TryGetValueByCaseInsensitiveKey("KEY3", out value).Should().BeFalse();
+        value.Should().BeNull();
     }
 
     [Fact]

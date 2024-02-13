@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -23,7 +24,6 @@ internal class Record : IRecord
     private readonly IReadOnlyDictionary<string, int> _fieldLookup;
     private readonly IReadOnlyDictionary<string, int> _invariantFieldLookup;
     private readonly object[] _fieldValues;
-    private IndirectDictionary<string, object> _valuesDictionary;
     private IReadOnlyList<string> _keys;
 
     public Record(
@@ -39,15 +39,10 @@ internal class Record : IRecord
     /// <inheritdoc />
     public object this[int index] => _fieldValues[index];
 
-    /// <inheritdoc />
+    /// <inheritdoc cref="IRecord"/>
     public object this[string key] => _fieldValues[_fieldLookup[key]];
 
-    /// <inheritdoc />
-    public object GetValueByCaseInsensitiveKey(string key)
-    {
-        return _fieldValues[_invariantFieldLookup[key]];
-    }
-
+    /// <inheritdoc/>
     public bool TryGetValueByCaseInsensitiveKey(string key, out object value)
     {
         if (_invariantFieldLookup.TryGetValue(key, out var index))
@@ -64,6 +59,34 @@ internal class Record : IRecord
     public IReadOnlyList<string> Keys => _keys ??= _fieldLookup.Keys.ToList();
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<string, object> Values =>
-        _valuesDictionary ??= new IndirectDictionary<string, object>(_fieldLookup, _fieldValues);
+    public IReadOnlyDictionary<string, object> Values => this;
+
+    /// <inheritdoc />
+    bool IReadOnlyDictionary<string, object>.ContainsKey(string key) => _fieldLookup.ContainsKey(key);
+
+    /// <inheritdoc />
+    bool IReadOnlyDictionary<string, object>.TryGetValue(string key, out object value)
+    {
+        var found = _fieldLookup.TryGetValue(key, out var index);
+        value = found ? _fieldValues[index] : null;
+        return found;
+    }
+
+    /// <inheritdoc />
+    IEnumerable<string> IReadOnlyDictionary<string, object>.Keys => Keys;
+
+    /// <inheritdoc />
+    IEnumerable<object> IReadOnlyDictionary<string, object>.Values => _fieldValues;
+
+    /// <inheritdoc />
+    IEnumerator<KeyValuePair<string, object>> IEnumerable<KeyValuePair<string, object>>.GetEnumerator()
+    {
+        return Keys.Select(key => new KeyValuePair<string, object>(key, this[key])).GetEnumerator();
+    }
+
+    /// <inheritdoc />
+    IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<KeyValuePair<string, object>>)this).GetEnumerator();
+
+    /// <inheritdoc />
+    int IReadOnlyCollection<KeyValuePair<string, object>>.Count => _fieldLookup.Count;
 }

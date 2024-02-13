@@ -51,7 +51,11 @@ public static class Utils
 
     public static Func<IRecord, bool> MatchesRecord(string[] keys, params object[] fields)
     {
-        return r => Matches(() => r.Should().BeEquivalentTo(Record(keys, fields)));
+        return r => Matches(
+            () => r.Should()
+                .Match(
+                    rec => ((IRecord)rec).Keys.SequenceEqual(keys) &&
+                        ((IRecord)rec).Values.Values.SequenceEqual(fields)));
     }
 
     public static Func<IResultSummary, bool> MatchesSummary(
