@@ -29,7 +29,7 @@ internal class DictAsRecord : IRecord
     {
         var readOnlyDictionary = dict switch
         {
-            IEntity entity => entity.Properties,
+            IEntity entity => entity.Properties ?? new Dictionary<string, object>(),
             IReadOnlyDictionary<string, object> dictionary => dictionary,
             _ => throw new InvalidOperationException($"Cannot create a DictAsRecord from a {dict.GetType().Name}")
         };

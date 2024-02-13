@@ -145,10 +145,19 @@ internal class ResultCursorBuilder : IResultCursorBuilder
     {
         _queryId = queryId;
 
-        _fieldLookup = fields.Select((field, index) => (field, index))
-            .ToDictionary(pair => pair.field, pair => pair.index);
+        if (fields is not null)
+        {
+            _invariantFieldLookup = new Dictionary<string, int>(
+                fields.Length,
+                StringComparer.InvariantCultureIgnoreCase);
 
-        _invariantFieldLookup = new Dictionary<string, int>(_fieldLookup, StringComparer.InvariantCultureIgnoreCase);
+            _fieldLookup = new Dictionary<string, int>(fields.Length);
+            for (var i = 0; i < fields.Length; i++)
+            {
+                _invariantFieldLookup.Add(fields[i], i);
+                _fieldLookup.Add(fields[i], i);
+            }
+        }
 
         CheckAndUpdateState(State.RunCompleted, State.RunRequested);
     }
