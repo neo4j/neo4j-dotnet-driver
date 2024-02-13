@@ -20,6 +20,7 @@ using System.Linq.Expressions;
 using FluentAssertions;
 using FluentAssertions.Equivalency;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Tests.TestUtil;
 using static Neo4j.Driver.Tests.TestUtil.Assertions;
 
 namespace Neo4j.Driver.Tests.Reactive.Utils;
@@ -40,13 +41,7 @@ public static class Utils
             throw new ArgumentOutOfRangeException(nameof(keys), $"{nameof(keys)} should contain at least 1 item.");
         }
 
-        return new
-        {
-            Keys = keys,
-            Values = Enumerable.Range(0, keys.Length)
-                .Select(i => new KeyValuePair<string, object>(keys[i], fields[i]))
-                .ToDictionary()
-        };
+        return TestRecord.Create(keys, fields);
     }
 
     public static Func<string[], bool> MatchesKeys(params string[] keys)

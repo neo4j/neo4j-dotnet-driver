@@ -23,17 +23,14 @@ namespace Neo4j.Driver.Tests.Result;
 
 public class RecordTests
 {
-    private Record _record;
-    private Dictionary<string, int> _fieldLookup;
-    private Dictionary<string, int> _invariantFieldLookup;
-    private object[] _fieldValues;
+    private readonly Record _record;
 
     public RecordTests()
     {
-        _fieldLookup = new Dictionary<string, int> { { "Key1", 0 }, { "Key2", 1 } };
-        _invariantFieldLookup = new Dictionary<string, int>(_fieldLookup, StringComparer.InvariantCultureIgnoreCase);
-        _fieldValues = new object[] { "Value1", "Value2" };
-        _record = new Record(_fieldLookup, _invariantFieldLookup, _fieldValues);
+        var fieldLookup = new Dictionary<string, int> { { "Key1", 0 }, { "Key2", 1 } };
+        var invariantFieldLookup = new Dictionary<string, int>(fieldLookup, StringComparer.InvariantCultureIgnoreCase);
+        var fieldValues = new object[] { "Value1", "Value2" };
+        _record = new Record(fieldLookup, invariantFieldLookup, fieldValues);
     }
 
     [Fact]

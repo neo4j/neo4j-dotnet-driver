@@ -25,11 +25,6 @@ internal interface IRecordPathFinder
 
 internal class RecordPathFinder : IRecordPathFinder
 {
-    private bool PathCompare(string path, string field)
-    {
-        return string.Equals(path, field, StringComparison.InvariantCultureIgnoreCase);
-    }
-
     /// <inheritdoc />
     public bool TryGetValueByPath(IRecord record, string path, out object value)
     {
@@ -67,25 +62,20 @@ internal class RecordPathFinder : IRecordPathFinder
             }
         }
 
-        // loop through any values on the record that are entities or dictionaries
+        // check any values on the record that are entities or dictionaries, in case
+        // the path is a property on one of those
         foreach (var key in record.Keys)
         {
-            // create a DictAsRecord from the value and try to get the property from it
-            if (record[key] is IEntity entity)
+            var dictAsRecord = record[key] switch
             {
-                var dictAsRecord = new DictAsRecord(entity.Properties, record);
-                if (TryGetValueByPath(dictAsRecord, path, out value))
-                {
-                    return true;
-                }
-            }
-            else if (record[key] is IReadOnlyDictionary<string, object> dict)
+                IEntity entity => new DictAsRecord(entity.Properties, record),
+                IReadOnlyDictionary<string, object> dict => new DictAsRecord(dict, record),
+                _ => null
+            };
+
+            if(dictAsRecord is not null && TryGetValueByPath(dictAsRecord, path, out value))
             {
-                var dictAsRecord = new DictAsRecord(dict, record);
-                if (TryGetValueByPath(dictAsRecord, path, out value))
-                {
-                    return true;
-                }
+                return true;
             }
         }
 

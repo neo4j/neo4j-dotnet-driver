@@ -57,7 +57,8 @@ public class MappingSourceDelegateBuilderTests
         var node = new Node(1, new[] { "Actor", "Director" }, new Dictionary<string, object>());
         var record = TestRecord.Create(new[] { "a" }, new object[] { node });
         var getter = new MappingSourceDelegateBuilder();
-        var mappingSource = new EntityMappingInfo("a", EntityMappingSource.NodeLabel);
+        var mappingSource = new EntityMappingInfo("zzz", EntityMappingSource.NodeLabel);
+        mappingSource = mappingSource with { Path = "a" };
 
         var mappingDelegate = getter.GetMappingDelegate(mappingSource);
         var found = mappingDelegate(record, out var value);

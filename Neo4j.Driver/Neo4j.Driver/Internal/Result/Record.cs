@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Neo4j.Driver.Internal.Result;
 
@@ -32,7 +33,7 @@ internal class Record : IRecord
         _fieldLookup = fieldLookup;
         _invariantFieldLookup = invariantFieldLookup;
         _fieldValues = values;
-        Keys = new List<string>(_fieldLookup.Keys);
+        Keys = new ArrayToReadOnlyListWrapper<string>(_fieldLookup.Keys.ToArray());
     }
 
     /// <inheritdoc />

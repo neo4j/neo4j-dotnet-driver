@@ -130,4 +130,18 @@ public class RecordPathFinderTests
         result.Should().BeFalse();
         value.Should().BeNull();
     }
+
+    [Fact]
+    public void TryGetValueByPath_PathContainsDotMatchesFieldButNotEntity_ReturnsFalse_CaseInsensitive()
+    {
+        var recordPathFinder = new RecordPathFinder();
+        var record = TestRecord.Create(
+            new[] { "testField" },
+            new[] { "testValue" });
+
+        var result = recordPathFinder.TryGetValueByPath(record, "testField.nonExistentProperty", out var value);
+
+        result.Should().BeFalse();
+        value.Should().BeNull();
+    }
 }
