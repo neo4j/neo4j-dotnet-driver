@@ -35,29 +35,6 @@ public static class RecordEntityExtensions
     }
 
     /// <summary>
-    /// Gets the value of the given key from the record, converting it to the given type.
-    /// </summary>
-    /// <param name="record">The record to get the value from.</param>
-    /// <param name="key">The key of the value.</param>
-    /// <typeparam name="T">The type to convert to.</typeparam>
-    /// <returns>The converted value.</returns>
-    public static T GetValue<T>(this IRecord record, string key)
-    {
-        return record.Values.TryGetValue(key, out var value) ? value.As<T>() : default;
-    }
-
-    /// <summary>
-    /// Gets the <see cref="IEntity"/> identified by the given key from the record.
-    /// </summary>
-    /// <param name="record">The record to get the entity from.</param>
-    /// <param name="key">The key of the entity.</param>
-    /// <returns>The entity.</returns>
-    public static IEntity GetEntity(this IRecord record, string key)
-    {
-        return record.GetValue<IEntity>(key);
-    }
-
-    /// <summary>
     /// Gets the value of the given key from the entity, converting it to the given type.
     /// </summary>
     /// <param name="entity">The entity to get the value from.</param>
@@ -68,54 +45,6 @@ public static class RecordEntityExtensions
     {
         return entity.Properties.TryGetValue(key, out var value) ? value.As<T>() : default;
     }
-
-    /// <summary>
-    /// Gets the value of the given key from the entity, converting it to a string.
-    /// </summary>
-    /// <param name="record">The record to get the value from.</param>
-    /// <param name="key">The key of the value.</param>
-    /// <returns>The converted value.</returns>
-    public static string GetString(this IRecord record, string key) => record.GetValue<string>(key);
-
-    /// <summary>
-    /// Gets the value of the given key from the entity, converting it to an int.
-    /// </summary>
-    /// <param name="record">The record to get the value from.</param>
-    /// <param name="key">The key of the value.</param>
-    /// <returns>The converted value.</returns>
-    public static int GetInt(this IRecord record, string key) => record.GetValue<int>(key);
-
-    /// <summary>
-    /// Gets the value of the given key from the entity, converting it to a long.
-    /// </summary>
-    /// <param name="record">The record to get the value from.</param>
-    /// <param name="key">The key of the value.</param>
-    /// <returns>The converted value.</returns>
-    public static long GetLong(this IRecord record, string key) => record.GetValue<long>(key);
-
-    /// <summary>
-    /// Gets the value of the given key from the entity, converting it to a double.
-    /// </summary>
-    /// <param name="record">The record to get the value from.</param>
-    /// <param name="key">The key of the value.</param>
-    /// <returns>The converted value.</returns>
-    public static double GetDouble(this IRecord record, string key) => record.GetValue<double>(key);
-
-    /// <summary>
-    /// Gets the value of the given key from the entity, converting it to a float.
-    /// </summary>
-    /// <param name="record">The record to get the value from.</param>
-    /// <param name="key">The key of the value.</param>
-    /// <returns>The converted value.</returns>
-    public static float GetFloat(this IRecord record, string key) => record.GetValue<float>(key);
-
-    /// <summary>
-    /// Gets the value of the given key from the entity, converting it to a bool.
-    /// </summary>
-    /// <param name="record">The record to get the value from.</param>
-    /// <param name="key">The key of the value.</param>
-    /// <returns>The converted value.</returns>
-    public static bool GetBool(this IRecord record, string key) => record.GetValue<bool>(key);
 
     /// <summary>
     /// Gets the value of the given key from the entity, converting it to a string.

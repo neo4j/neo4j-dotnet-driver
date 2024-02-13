@@ -42,6 +42,44 @@ internal class Record : IRecord
     /// <inheritdoc cref="IRecord"/>
     public object this[string key] => _fieldValues[_fieldLookup[key]];
 
+    /// <inheritdoc />
+    public T Get<T>(string key)
+    {
+        return _fieldValues[_fieldLookup[key]].As<T>();
+    }
+
+    /// <inheritdoc />
+    public bool TryGet<T>(string key, out T value)
+    {
+        if (_fieldLookup.TryGetValue(key, out var index))
+        {
+            value = _fieldValues[index].As<T>();
+            return true;
+        }
+
+        value = default;
+        return false;
+    }
+
+    /// <inheritdoc />
+    public T GetCaseInsensitive<T>(string key)
+    {
+        return _fieldValues[_invariantFieldLookup[key]].As<T>();
+    }
+
+    /// <inheritdoc />
+    public bool TryGetCaseInsensitive<T>(string key, out T value)
+    {
+        if (_invariantFieldLookup.TryGetValue(key, out var index))
+        {
+            value = _fieldValues[index].As<T>();
+            return true;
+        }
+
+        value = default;
+        return false;
+    }
+
     /// <inheritdoc/>
     public bool TryGetValueByCaseInsensitiveKey(string key, out object value)
     {

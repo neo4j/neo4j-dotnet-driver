@@ -49,6 +49,37 @@ internal class DictAsRecord : IRecord
     public object this[int index] => _dict.TryGetValue(_dict.Keys.ElementAt(index), out var obj) ? obj : null;
     public object this[string key] => _dict.TryGetValue(key, out var obj) ? obj : null;
 
+    /// <inheritdoc />
+    public T Get<T>(string key)
+    {
+        return GetCaseInsensitive<T>(key);
+    }
+
+    /// <inheritdoc />
+    public bool TryGet<T>(string key, out T value)
+    {
+        return TryGetCaseInsensitive(key, out value);
+    }
+
+    /// <inheritdoc />
+    public T GetCaseInsensitive<T>(string key)
+    {
+        return _dict[key].As<T>();
+    }
+
+    /// <inheritdoc />
+    public bool TryGetCaseInsensitive<T>(string key, out T value)
+    {
+        if (_dict.TryGetValue(key, out var obj))
+        {
+            value = obj.As<T>();
+            return true;
+        }
+
+        value = default;
+        return false;
+    }
+
     public bool TryGetValueByCaseInsensitiveKey(string key, out object value)
     {
         return _dict.TryGetValue(key, out value);

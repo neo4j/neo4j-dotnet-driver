@@ -60,14 +60,14 @@ public class MappingProviderTests
                         .MapWholeObject(
                             r => new SecondTestObject
                             {
-                                Number = r.GetValue<int>("intValue") + 1,
-                                Text = r.GetValue<string>("stringValue").ToLower()
+                                Number = r.Get<int>("intValue") + 1,
+                                Text = r.Get<string>("stringValue").ToLower()
                             }))
                 .RegisterMapping<ThirdTestObject>(_ => {})
                 .RegisterMapping<PersonWithAge>(
                     b => b
                         .UseDefaultMapping()
-                        .Map(x => x.Age, r => r.GetValue<int>("active") - r.GetValue<int>("born")));
+                        .Map(x => x.Age, r => r.Get<int>("active") - r.Get<int>("born")));
         }
     }
 

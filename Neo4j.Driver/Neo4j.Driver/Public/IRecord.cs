@@ -30,6 +30,36 @@ public interface IRecord : IReadOnlyDictionary<string, object>
     /// <returns>the value specified with the given key.</returns>
     new object this[string key] { get; }
 
+    /// <summary>Gets the value specified by the given key and converts it to the given type.</summary>
+    /// <param name="key">The key</param>
+    /// <typeparam name="T">The type to convert to.</typeparam>
+    /// <returns>The converted value.</returns>
+    T Get<T>(string key);
+
+    /// <summary>
+    /// Tries to get the value specified by the given key and converts it to the given type.
+    /// </summary>
+    /// <param name="key">The key</param>
+    /// <param name="value">The value, if the key was found.</param>
+    /// <typeparam name="T">The type to convert to.</typeparam>
+    /// <returns><c>true</c> if the value is found; <c>false</c> otherwise.</returns>
+    bool TryGet<T> (string key, out T value);
+
+    /// <summary>Gets the value specified by the given key and converts it to the given type.</summary>
+    /// <param name="key">The key</param>
+    /// <typeparam name="T">The type to convert to.</typeparam>
+    /// <returns>The converted value.</returns>
+    T GetCaseInsensitive<T>(string key);
+
+    /// <summary>
+    /// Tries to get the value specified by the given key and converts it to the given type.
+    /// </summary>
+    /// <param name="key">The key</param>
+    /// <param name="value">The value, if the key was found.</param>
+    /// <typeparam name="T">The type to convert to.</typeparam>
+    /// <returns><c>true</c> if the value is found; <c>false</c> otherwise.</returns>
+    bool TryGetCaseInsensitive<T>(string key, out T value);
+
     /// <summary>
     /// Tries to get the value specified by the given key in a case-insensitive manner.
     /// </summary>

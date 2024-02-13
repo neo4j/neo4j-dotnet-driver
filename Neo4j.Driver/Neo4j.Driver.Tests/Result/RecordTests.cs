@@ -80,4 +80,58 @@ public class RecordTests
         var expectedKeys = new List<string> { "Key1", "Key2" };
         _record.Keys.Should().Equal(expectedKeys);
     }
+
+    [Fact]
+    public void Get_IsCaseSensitive()
+    {
+        _record.Get<string>("Key1").Should().Be("Value1");
+        _record.Invoking(r => r.Get<string>("KEY1")).Should().Throw<KeyNotFoundException>();
+        _record.Get<string>("Key2").Should().Be("Value2");
+        _record.Invoking(r => r.Get<string>("KEY2")).Should().Throw<KeyNotFoundException>();
+    }
+
+    [Fact]
+    public void TryGet_IsCaseSensitive()
+    {
+        _record.TryGet<string>("Key1", out var value).Should().BeTrue();
+        value.Should().Be("Value1");
+        _record.TryGet<string>("KEY1", out _).Should().BeFalse();
+        _record.TryGet("Key2", out value).Should().BeTrue();
+        value.Should().Be("Value2");
+        _record.TryGet<string>("KEY2", out _).Should().BeFalse();
+    }
+
+    [Fact]
+    public void GetCaseInsensitive_IsCaseInsensitive()
+    {
+        _record.GetCaseInsensitive<string>("Key1").Should().Be("Value1");
+        _record.GetCaseInsensitive<string>("KEY1").Should().Be("Value1");
+        _record.GetCaseInsensitive<string>("Key2").Should().Be("Value2");
+        _record.GetCaseInsensitive<string>("KEY2").Should().Be("Value2");
+    }
+
+    [Fact]
+    public void TryGetCaseInsensitive_IsCaseInsensitive()
+    {
+        _record.TryGetCaseInsensitive<string>("Key1", out var value).Should().BeTrue();
+        value.Should().Be("Value1");
+        _record.TryGetCaseInsensitive("KEY1", out value).Should().BeTrue();
+        value.Should().Be("Value1");
+        _record.TryGetCaseInsensitive("Key2", out value).Should().BeTrue();
+        value.Should().Be("Value2");
+        _record.TryGetCaseInsensitive("KEY2", out value).Should().BeTrue();
+        value.Should().Be("Value2");
+    }
+
+    [Fact]
+    public void TryGet_WithNonExistentKey_ReturnsFalse()
+    {
+        _record.TryGet<string>("nonexistent", out var _).Should().BeFalse();
+    }
+
+    [Fact]
+    public void TryGetCaseInsensitive_WithNonExistentKey_ReturnsFalse()
+    {
+        _record.TryGetCaseInsensitive<string>("nonexistent", out var _).Should().BeFalse();
+    }
 }
