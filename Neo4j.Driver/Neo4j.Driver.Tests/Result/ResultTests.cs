@@ -125,11 +125,11 @@ public static class ResultTests
         [Fact]
         public void ShouldReturnRecords()
         {
-            var recordYielder = new RecordYielder(5, 10, _output);
+            var recordYielder = new TestRecordYielder(5, 10, _output);
             var cursor =
                 new InternalResult(
                     new ListBasedRecordCursor(
-                        RecordYielder.Keys,
+                        TestRecordYielder.Keys,
                         () => recordYielder.RecordsWithAutoLoad),
                     new BlockingExecutor());
 
@@ -140,12 +140,12 @@ public static class ResultTests
         [Fact]
         public void ShouldWaitForAllRecordsToArrive()
         {
-            var recordYielder = new RecordYielder(5, 10, _output);
+            var recordYielder = new TestRecordYielder(5, 10, _output);
 
             var count = 0;
             var cursor =
                 new InternalResult(
-                    new ListBasedRecordCursor(RecordYielder.Keys, () => recordYielder.Records),
+                    new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
                     new BlockingExecutor());
 
             var t = Task.Factory.StartNew(
@@ -172,10 +172,10 @@ public static class ResultTests
         [Fact]
         public void ShouldReturnRecordsImmediatelyWhenReady()
         {
-            var recordYielder = new RecordYielder(5, 10, _output);
+            var recordYielder = new TestRecordYielder(5, 10, _output);
             var result =
                 new InternalResult(
-                    new ListBasedRecordCursor(RecordYielder.Keys, () => recordYielder.Records),
+                    new ListBasedRecordCursor(TestRecordYielder.Keys, () => recordYielder.Records),
                     new BlockingExecutor());
 
             var temp = result.Take(5);
@@ -183,13 +183,13 @@ public static class ResultTests
             records.Count.Should().Be(5);
         }
 
-        private class RecordYielder
+        private class TestRecordYielder
         {
             private readonly ITestOutputHelper _output;
             private readonly IList<Record> _records = new List<Record>();
             private readonly int _total;
 
-            public RecordYielder(int count, int total, ITestOutputHelper output)
+            public TestRecordYielder(int count, int total, ITestOutputHelper output)
             {
                 Add(count);
                 _total = total;
