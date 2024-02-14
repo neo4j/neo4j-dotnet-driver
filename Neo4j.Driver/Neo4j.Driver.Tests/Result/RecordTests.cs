@@ -34,19 +34,6 @@ public class RecordTests
     }
 
     [Fact]
-    public void TryGetValueByCaseInsensitiveKey_ReturnsCorrectValue()
-    {
-        _record.TryGetValueByCaseInsensitiveKey("KEY1", out var value).Should().BeTrue();
-        value.Should().Be("Value1");
-
-        _record.TryGetValueByCaseInsensitiveKey("KEY2", out value).Should().BeTrue();
-        value.Should().Be("Value2");
-
-        _record.TryGetValueByCaseInsensitiveKey("KEY3", out value).Should().BeFalse();
-        value.Should().BeNull();
-    }
-
-    [Fact]
     public void Indexer_IntParameter_ReturnsCorrectValue()
     {
         _record[0].Should().Be("Value1");

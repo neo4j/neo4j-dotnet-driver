@@ -80,19 +80,6 @@ internal class Record : IRecord
         return false;
     }
 
-    /// <inheritdoc/>
-    public bool TryGetValueByCaseInsensitiveKey(string key, out object value)
-    {
-        if (_invariantFieldLookup.TryGetValue(key, out var index))
-        {
-            value = _fieldValues[index];
-            return true;
-        }
-
-        value = null;
-        return false;
-    }
-
     /// <inheritdoc />
     public IReadOnlyList<string> Keys => _keys ??= _fieldLookup.Keys.ToList();
 
@@ -119,7 +106,7 @@ internal class Record : IRecord
     /// <inheritdoc />
     IEnumerator<KeyValuePair<string, object>> IEnumerable<KeyValuePair<string, object>>.GetEnumerator()
     {
-        return Keys.Select(key => new KeyValuePair<string, object>(key, this[key])).GetEnumerator();
+        return Keys.Select((key, i) => new KeyValuePair<string, object>(key, _fieldValues[i])).GetEnumerator();
     }
 
     /// <inheritdoc />

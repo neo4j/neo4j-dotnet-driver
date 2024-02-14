@@ -31,7 +31,7 @@ internal class RecordPathFinder : IRecordPathFinder
         value = null;
 
         // if the path matches a field name, we can return the value directly
-        if (record.TryGetValueByCaseInsensitiveKey(path, out value))
+        if (record.TryGetCaseInsensitive(path, out value))
         {
             return true;
         }
@@ -44,7 +44,7 @@ internal class RecordPathFinder : IRecordPathFinder
             var field = path.Substring(0, dotIndex);
             var property = path.Substring(dotIndex + 1);
 
-            if (!record.TryGetValueByCaseInsensitiveKey(field, out var fieldValue))
+            if (!record.TryGetCaseInsensitive(field, out object fieldValue))
             {
                 return false;
             }

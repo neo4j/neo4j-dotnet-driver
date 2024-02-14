@@ -25,11 +25,6 @@ public interface IRecord : IReadOnlyDictionary<string, object>
     /// <returns>The value specified with the given index.</returns>
     object this[int index] { get; }
 
-    /// <summary>Gets the value specified by the given key.</summary>
-    /// <param name="key">The key</param>
-    /// <returns>the value specified with the given key.</returns>
-    new object this[string key] { get; }
-
     /// <summary>Gets the value specified by the given key and converts it to the given type.</summary>
     /// <param name="key">The key</param>
     /// <typeparam name="T">The type to convert to.</typeparam>
@@ -59,14 +54,6 @@ public interface IRecord : IReadOnlyDictionary<string, object>
     /// <typeparam name="T">The type to convert to.</typeparam>
     /// <returns><c>true</c> if the value is found; <c>false</c> otherwise.</returns>
     bool TryGetCaseInsensitive<T>(string key, out T value);
-
-    /// <summary>
-    /// Tries to get the value specified by the given key in a case-insensitive manner.
-    /// </summary>
-    /// <param name="key">The key</param>
-    /// <param name="value">The value specified with the given key.</param>
-    /// <returns><c>true</c> if the value is found; <c>false</c> otherwise.</returns>
-    bool TryGetValueByCaseInsensitiveKey(string key, out object value);
 
     /// <summary>Gets the key and value pairs in a <see cref="IReadOnlyDictionary{TKey,TValue}"/>.</summary>
     new IReadOnlyDictionary<string, object> Values { get; }
