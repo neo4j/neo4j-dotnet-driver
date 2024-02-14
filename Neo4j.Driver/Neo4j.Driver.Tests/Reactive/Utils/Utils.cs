@@ -14,12 +14,9 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using FluentAssertions;
 using FluentAssertions.Equivalency;
-using Neo4j.Driver.Internal;
 using Neo4j.Driver.Tests.TestUtil;
 using static Neo4j.Driver.Tests.TestUtil.Assertions;
 
@@ -51,11 +48,11 @@ public static class Utils
 
     public static Func<IRecord, bool> MatchesRecord(string[] keys, params object[] fields)
     {
-        return r => Matches(
-            () => r.Should()
-                .Match(
-                    rec => ((IRecord)rec).Keys.SequenceEqual(keys) &&
-                        ((IRecord)rec).Values.Values.SequenceEqual(fields)));
+        return Matches<IRecord>(rec =>
+        {
+            rec.Keys.Should().BeEquivalentTo(keys);
+            rec.Values.Values.Should().BeEquivalentTo(fields);
+        });
     }
 
     public static Func<IResultSummary, bool> MatchesSummary(
