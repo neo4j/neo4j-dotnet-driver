@@ -90,12 +90,7 @@ internal class Record : IRecord
     bool IReadOnlyDictionary<string, object>.ContainsKey(string key) => _fieldLookup.ContainsKey(key);
 
     /// <inheritdoc />
-    bool IReadOnlyDictionary<string, object>.TryGetValue(string key, out object value)
-    {
-        var found = _fieldLookup.TryGetValue(key, out var index);
-        value = found ? _fieldValues[index] : null;
-        return found;
-    }
+    bool IReadOnlyDictionary<string, object>.TryGetValue(string key, out object value) => TryGet(key, out value);
 
     /// <inheritdoc />
     IEnumerable<string> IReadOnlyDictionary<string, object>.Keys => Keys;

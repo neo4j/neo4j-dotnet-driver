@@ -121,4 +121,68 @@ public class RecordTests
     {
         _record.TryGetCaseInsensitive<string>("nonexistent", out var _).Should().BeFalse();
     }
+
+    [Fact]
+    public void GetEnumerator_ReturnsCorrectEnumerator()
+    {
+        var enumerable = _record as IEnumerable<KeyValuePair<string, object>>;
+        using var enumerator = enumerable.GetEnumerator();
+        enumerator.MoveNext();
+        enumerator.Current.Should().Be(new KeyValuePair<string, object>("Key1", "Value1"));
+        enumerator.MoveNext();
+        enumerator.Current.Should().Be(new KeyValuePair<string, object>("Key2", "Value2"));
+        enumerator.MoveNext().Should().BeFalse();
+    }
+
+    [Fact]
+    public void GetEnumerator_EnumeratesCorrectly()
+    {
+        var enumerable = _record as IEnumerable<KeyValuePair<string, object>>;
+        var expected = new List<KeyValuePair<string, object>>
+        {
+            new("Key1", "Value1"),
+            new("Key2", "Value2")
+        };
+
+        enumerable.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void ContainsKey_ReturnsCorrectResult()
+    {
+        var dictionary = _record as IReadOnlyDictionary<string, object>;
+        dictionary.ContainsKey("Key1").Should().BeTrue();
+        dictionary.ContainsKey("NonExistentKey").Should().BeFalse();
+    }
+
+    [Fact]
+    public void TryGetValue_ReturnsCorrectResult()
+    {
+        var dictionary = _record as IReadOnlyDictionary<string, object>;
+        dictionary.TryGetValue("Key1", out var value).Should().BeTrue();
+        value.Should().Be("Value1");
+        dictionary.TryGetValue("NonExistentKey", out _).Should().BeFalse();
+    }
+
+    [Fact]
+    public void Keys_ReturnsCorrectKeys()
+    {
+        var dictionary = _record as IReadOnlyDictionary<string, object>;
+        var expectedKeys = new List<string> { "Key1", "Key2" };
+        dictionary.Keys.Should().Equal(expectedKeys);
+    }
+
+    [Fact]
+    public void Values_ReturnsCorrectValues()
+    {
+        var dictionary = _record as IReadOnlyDictionary<string, object>;
+        dictionary.Values.Should().Equal("Value1", "Value2");
+    }
+
+    [Fact]
+    public void Count_ReturnsCorrectCount()
+    {
+        var dictionary = _record as IReadOnlyDictionary<string, object>;
+        dictionary.Count.Should().Be(2);
+    }
 }
