@@ -22,7 +22,7 @@ using System.Linq;
 
 namespace Neo4j.Driver.Preview.Mapping;
 
-internal class DictAsRecord : IRecord
+internal sealed class DictAsRecord : IRecord
 {
     private readonly IReadOnlyDictionary<string, object> _dict;
 
@@ -39,7 +39,7 @@ internal class DictAsRecord : IRecord
         _dict = readOnlyDictionary.ToDictionary(
             kvp => kvp.Key,
             kvp => kvp.Value,
-            StringComparer.OrdinalIgnoreCase);
+            StringComparer.InvariantCultureIgnoreCase);
 
         Record = record;
     }

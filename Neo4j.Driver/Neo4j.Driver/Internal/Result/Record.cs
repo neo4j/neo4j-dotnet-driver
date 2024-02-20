@@ -19,7 +19,7 @@ using System.Linq;
 
 namespace Neo4j.Driver.Internal.Result;
 
-internal class Record : IRecord
+internal sealed class Record : IRecord
 {
     private readonly IReadOnlyDictionary<string, int> _fieldLookup;
     private readonly IReadOnlyDictionary<string, int> _invariantFieldLookup;

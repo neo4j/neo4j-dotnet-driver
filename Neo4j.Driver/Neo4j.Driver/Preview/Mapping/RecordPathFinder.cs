@@ -30,6 +30,11 @@ internal class RecordPathFinder : IRecordPathFinder
     {
         value = null;
 
+        if(record is null)
+        {
+            return false;
+        }
+
         // if the path matches a field name, we can return the value directly
         if (record.TryGetCaseInsensitive(path, out value))
         {

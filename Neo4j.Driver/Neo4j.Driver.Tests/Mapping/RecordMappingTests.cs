@@ -514,4 +514,19 @@ public class RecordMappingTests
         person.Name.Should().Be("Bob");
         person.Born.Should().Be(1977);
     }
+
+    [Fact]
+    public void ShouldMapEntityToObjectThroughAsRecord()
+    {
+        var node = new Node(
+            0,
+            new[] { "Person" },
+            new Dictionary<string, object> { { "name", "Bob" }, { "born", 1977 } });
+
+        var record = node.AsRecord();
+
+        var person = record.AsObject<TestPerson>();
+        person.Name.Should().Be("Bob");
+        person.Born.Should().Be(1977);
+    }
 }
