@@ -18,8 +18,8 @@ using System.Linq;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Types;
 using Neo4j.Driver.Preview.Mapping;
+using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
-using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests.Mapping;
 
@@ -46,7 +46,7 @@ public class LabelCaptureTests
     public void ShouldCaptureSingleNodeLabel()
     {
         var node = new Node(1, new[] { "Test" }, new Dictionary<string, object>());
-        var record = new Record(new[] { "Person" }, new object[] { node });
+        var record = TestRecord.Create(new[] { "Person" }, new object[] { node });
 
         var mapped = record.AsObject<TestMappedClass>();
 
@@ -57,7 +57,7 @@ public class LabelCaptureTests
     public void ShouldCaptureMultipleNodeLabelsIntoString()
     {
         var node = new Node(1, new[] { "Alpha", "Bravo", "Charlie" }, new Dictionary<string, object>());
-        var record = new Record(new[] { "Person" }, new object[] { node });
+        var record = TestRecord.Create(new[] { "Person" }, new object[] { node });
 
         var mapped = record.AsObject<TestMappedClass>();
 
@@ -68,7 +68,7 @@ public class LabelCaptureTests
     public void ShouldCaptureRelationshipType()
     {
         var node = new Relationship(1, 2, 3, "ACTED_IN", new Dictionary<string, object>());
-        var record = new Record(new[] { "Relationship" }, new object[] { node });
+        var record = TestRecord.Create(new[] { "Relationship" }, new object[] { node });
 
         var mapped = record.AsObject<TestMappedClass>();
 
@@ -105,7 +105,7 @@ public class LabelCaptureTests
     {
         RecordObjectMapping.RegisterProvider<CustomMapper>();
         var node = new Node(1, new[] { "Alpha", "Bravo", "Charlie" }, new Dictionary<string, object>());
-        var record = new Record(new[] { "Person" }, new object[] { node });
+        var record = TestRecord.Create(new[] { "Person" }, new object[] { node });
 
         var mapped = record.AsObject<TestMappedClass>();
 
@@ -118,7 +118,7 @@ public class LabelCaptureTests
     {
         RecordObjectMapping.RegisterProvider<CustomMapper>();
         var node = new Relationship(1, 2, 3, "ACTED_IN", new Dictionary<string, object>());
-        var record = new Record(new[] { "Relationship" }, new object[] { node });
+        var record = TestRecord.Create(new[] { "Relationship" }, new object[] { node });
 
         var mapped = record.AsObject<TestMappedClass>();
 

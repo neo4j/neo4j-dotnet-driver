@@ -29,6 +29,21 @@ public interface IEntity
     /// <returns>The value specified by the given key in <see cref="Properties"/>.</returns>
     object this[string key] { get; }
 
+    /// <summary>Gets the value that has the specified key in <see cref="Properties"/> and casts it to
+    /// the specified type.</summary>
+    /// <param name="key">The key.</param>
+    /// <typeparam name="T">The type to cast the value to.</typeparam>
+    /// <returns>The value specified by the given key in <see cref="Properties"/>.</returns>
+    T Get<T>(string key);
+
+    /// <summary>Tries to get the value that has the specified key in <see cref="Properties"/> and casts it to
+    /// the specified type.</summary>
+    /// <param name="key">The key.</param>
+    /// <param name="value">The value if it exists.</param>
+    /// <typeparam name="T">The type to cast the value to.</typeparam>
+    /// <returns><c>true</c> if the value exists, <c>false</c> otherwise.</returns>
+    bool TryGet<T>(string key, out T value);
+
     /// <summary>Gets the properties of the entity.</summary>
     IReadOnlyDictionary<string, object> Properties { get; }
 

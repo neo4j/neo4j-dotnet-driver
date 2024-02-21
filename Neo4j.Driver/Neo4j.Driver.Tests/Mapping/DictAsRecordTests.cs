@@ -18,8 +18,8 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Types;
 using Neo4j.Driver.Preview.Mapping;
+using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
-using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests.Mapping;
 
@@ -28,7 +28,7 @@ public class DictAsRecordTests
     [Fact]
     public void ShouldUsePropertiesOfDict()
     {
-        var originalRecord = new Record(new[] { "name", "age" }, new object[] { "Bob", 42 });
+        var originalRecord = TestRecord.Create(new[] { "name", "age" }, new object[] { "Bob", 42 });
         var dict = new Dictionary<string, object>
         {
             { "key1", "value1" },
@@ -43,13 +43,13 @@ public class DictAsRecordTests
         subject[0].Should().Be("value1");
         subject[1].Should().Be("value2");
         subject["key1"].Should().Be("value1");
-        subject["key2"].Should().Be("value2");
+        subject["KEY2"].Should().Be("value2");
     }
 
     [Fact]
     public void ShouldUsePropertiesOfEntity()
     {
-        var originalRecord = new Record(new[] { "name", "age" }, new object[] { "Bob", 42 });
+        var originalRecord = TestRecord.Create(new[] { "name", "age" }, new object[] { "Bob", 42 });
         var entity = new Node(
             1,
             new[] { "Person" },
@@ -63,7 +63,7 @@ public class DictAsRecordTests
         subject[0].Should().Be("value1");
         subject[1].Should().Be("value2");
         subject["key1"].Should().Be("value1");
-        subject["key2"].Should().Be("value2");
+        subject["KEY2"].Should().Be("value2");
     }
 
     [Fact]

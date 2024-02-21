@@ -17,8 +17,8 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Types;
 using Neo4j.Driver.Preview.Mapping;
+using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
-using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests.Mapping;
 
@@ -27,7 +27,7 @@ public class MappingSourceDelegateBuilderTests
     [Fact]
     public void ShouldGetSimplePaths()
     {
-        var record = new Record(new[] { "a" }, new object[] { "b" });
+        var record = TestRecord.Create(new[] { "a" }, new object[] { "b" });
         var getter = new MappingSourceDelegateBuilder();
         var mappingSource = new EntityMappingInfo("a", EntityMappingSource.Property);
 
@@ -41,7 +41,7 @@ public class MappingSourceDelegateBuilderTests
     [Fact]
     public void ShouldReturnFalseWhenPathNotFound()
     {
-        var record = new Record(new[] { "a" }, new object[] { "b" });
+        var record = TestRecord.Create(new[] { "a" }, new object[] { "b" });
         var getter = new MappingSourceDelegateBuilder();
         var mappingSource = new EntityMappingInfo("c", EntityMappingSource.Property);
 
@@ -55,9 +55,10 @@ public class MappingSourceDelegateBuilderTests
     public void ShouldGetNodeLabels()
     {
         var node = new Node(1, new[] { "Actor", "Director" }, new Dictionary<string, object>());
-        var record = new Record(new[] { "a" }, new object[] { node });
+        var record = TestRecord.Create(new[] { "a" }, new object[] { node });
         var getter = new MappingSourceDelegateBuilder();
-        var mappingSource = new EntityMappingInfo("a", EntityMappingSource.NodeLabel);
+        var mappingSource = new EntityMappingInfo("zzz", EntityMappingSource.NodeLabel);
+        mappingSource = mappingSource with { Path = "a" };
 
         var mappingDelegate = getter.GetMappingDelegate(mappingSource);
         var found = mappingDelegate(record, out var value);
@@ -70,7 +71,7 @@ public class MappingSourceDelegateBuilderTests
     public void ShouldGetRelationshipType()
     {
         var rel = new Relationship(1, 2, 3, "ACTED_IN", new Dictionary<string, object>());
-        var record = new Record(new[] { "a" }, new object[] { rel });
+        var record = TestRecord.Create(new[] { "a" }, new object[] { rel });
         var getter = new MappingSourceDelegateBuilder();
         var mappingSource = new EntityMappingInfo("a", EntityMappingSource.RelationshipType);
 

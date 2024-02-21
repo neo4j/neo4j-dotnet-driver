@@ -21,6 +21,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
 using Xunit.Abstractions;
 using Record = Neo4j.Driver.Internal.Result.Record;
@@ -207,7 +208,7 @@ public static class ResultTests
                         while (i == _records.Count)
                         {
                             _output.WriteLine(
-                                $"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
+                                $"{DateTime.Now:HH:mm:ss.fff} -> Waiting for more Records");
 
                             Thread.Sleep(50);
                         }
@@ -229,11 +230,11 @@ public static class ResultTests
                         while (i == _records.Count)
                         {
                             _output.WriteLine(
-                                $"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Waiting for more Records");
+                                $"{DateTime.Now:HH:mm:ss.fff} -> Waiting for more Records");
 
                             Thread.Sleep(500);
                             AddNew(1);
-                            _output.WriteLine($"{DateTime.Now.ToString("HH:mm:ss.fff")} -> Record arrived");
+                            _output.WriteLine($"{DateTime.Now:HH:mm:ss.fff} -> Record arrived");
                         }
 
                         yield return _records[i];
@@ -252,7 +253,7 @@ public static class ResultTests
             {
                 for (var i = 0; i < count; i++)
                 {
-                    _records.Add(new Record(Keys, new object[] { "Test", 123 }));
+                    _records.Add(TestRecord.Create(Keys, new object[] { "Test", 123 }));
                 }
             }
         }

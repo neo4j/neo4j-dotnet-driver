@@ -72,7 +72,9 @@ public class MappedListCreatorTests
     [Fact]
     public void ShouldCreateListOfMappedObjectsFromNodes()
     {
-        var list = new List<IEntity> { Mock.Of<IEntity>(), Mock.Of<IEntity>(), Mock.Of<IEntity>() };
+        var mockEntity = new Mock<IEntity>();
+        mockEntity.Setup(x => x.Properties).Returns(new Dictionary<string, object>());
+        var list = new List<IEntity> { mockEntity.Object, mockEntity.Object, mockEntity.Object };
         var record = Mock.Of<IRecord>();
         var people = new List<Person> { new("Alan", 99), new("Basil", 999), new("David", 9999) };
 

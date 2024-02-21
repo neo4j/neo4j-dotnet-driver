@@ -25,51 +25,62 @@ internal interface IRecordPathFinder
 
 internal class RecordPathFinder : IRecordPathFinder
 {
-    private bool PathCompare(string path, string field)
-    {
-        return string.Equals(path, field, StringComparison.InvariantCultureIgnoreCase);
-    }
-
     /// <inheritdoc />
     public bool TryGetValueByPath(IRecord record, string path, out object value)
     {
         value = null;
 
-        foreach (var field in record.Keys)
+        if(record is null)
         {
-            if (PathCompare(path, field))
+            return false;
+        }
+
+        // if the path matches a field name, we can return the value directly
+        if (record.TryGetCaseInsensitive(path, out value))
+        {
+            return true;
+        }
+
+        // if there's a dot in the path, we can try to split it and check if the first part
+        // matches a field name and the second part matches a property name
+        var dotIndex = path.IndexOf('.');
+        if (dotIndex > 0)
+        {
+            var field = path.Substring(0, dotIndex);
+            var property = path.Substring(dotIndex + 1);
+
+            if (!record.TryGetCaseInsensitive(field, out object fieldValue))
             {
-                // we can return the value directly if the field name matches the path
-                value = record[field];
-                return true;
+                return false;
             }
 
-            // if the field contains an entity or dictionary we can drill down and
-            // check if the path matches any of the properties
-            var properties = record[field] switch
+            var dictAsRecord = fieldValue switch
             {
-                IEntity entity => entity.Properties,
-                IReadOnlyDictionary<string, object> dict => dict,
+                IEntity entity => new DictAsRecord(entity.Properties, record),
+                IReadOnlyDictionary<string, object> dict => new DictAsRecord(dict, record),
                 _ => null
             };
 
-            if (properties is null)
+            if (dictAsRecord is not null)
             {
-                // if the field is not an entity or dictionary we can't drill down further
-                continue;
+                return dictAsRecord.TryGetValueByCaseInsensitiveKey(property, out value);
             }
+        }
 
-            foreach (var property in properties)
+        // check any values on the record that are entities or dictionaries, in case
+        // the path is a property on one of those
+        foreach (var key in record.Keys)
+        {
+            var dictAsRecord = record[key] switch
             {
-                // if there is a property that matches the path in the dictionary, or if the path
-                // matches the field name + property name, we can return the value
-                if (
-                    PathCompare(path, property.Key) ||
-                    PathCompare(path, $"{field}.{property.Key}"))
-                {
-                    value = property.Value;
-                    return true;
-                }
+                IEntity entity => new DictAsRecord(entity.Properties, record),
+                IReadOnlyDictionary<string, object> dict => new DictAsRecord(dict, record),
+                _ => null
+            };
+
+            if(dictAsRecord is not null && TryGetValueByPath(dictAsRecord, path, out value))
+            {
+                return true;
             }
         }
 

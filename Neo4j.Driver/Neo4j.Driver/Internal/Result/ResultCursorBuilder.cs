@@ -15,6 +15,8 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -35,7 +37,9 @@ internal class ResultCursorBuilder : IResultCursorBuilder
     private readonly IResultResourceHandler _resourceHandler;
     private readonly IInternalAsyncTransaction _transaction;
     private readonly SummaryBuilder _summaryBuilder;
-    private string[] _fields;
+
+    private Dictionary<string, int> _fieldLookup;
+    private Dictionary<string, int> _invariantFieldLookup;
 
     private IResponsePipelineError _pendingError;
     private long _queryId;
@@ -65,7 +69,8 @@ internal class ResultCursorBuilder : IResultCursorBuilder
 
         _state = (int)(reactive ? State.RunRequested : State.RunAndRecordsRequested);
         _queryId = NoQueryId;
-        _fields = null;
+        _fieldLookup = null;
+        _invariantFieldLookup = null;
         _fetchSize = fetchSize;
         _autoPullHandler = new AutoPullHandler(_fetchSize);
     }
@@ -83,7 +88,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
             await AdvanceAsync().ConfigureAwait(false);
         }
 
-        return _fields ?? Array.Empty<string>();
+        return _fieldLookup?.Keys.ToArray() ?? Array.Empty<string>();
     }
 
     public async ValueTask<IRecord> NextRecordAsync()
@@ -139,7 +144,20 @@ internal class ResultCursorBuilder : IResultCursorBuilder
     public void RunCompleted(long queryId, string[] fields, IResponsePipelineError error)
     {
         _queryId = queryId;
-        _fields = fields;
+
+        if (fields is not null)
+        {
+            _invariantFieldLookup = new Dictionary<string, int>(
+                fields.Length,
+                StringComparer.InvariantCultureIgnoreCase);
+
+            _fieldLookup = new Dictionary<string, int>(fields.Length);
+            for (var i = 0; i < fields.Length; i++)
+            {
+                _invariantFieldLookup.Add(fields[i], i);
+                _fieldLookup.Add(fields[i], i);
+            }
+        }
 
         CheckAndUpdateState(State.RunCompleted, State.RunRequested);
     }
@@ -151,7 +169,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
 
     public void PushRecord(object[] fieldValues)
     {
-        _records.Enqueue(new Record(_fields, fieldValues));
+        _records.Enqueue(new Record(_fieldLookup, _invariantFieldLookup, fieldValues));
         _autoPullHandler.TryDisableAutoPull(_records.Count);
 
         UpdateState(State.RecordsStreaming);
@@ -172,7 +190,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
     private void AssertTransactionValid()
     {
         _pendingError?.EnsureThrown();
-        if (_transaction.IsErrored(out var error) )
+        if (_transaction.IsErrored(out var error))
         {
             throw new TransactionTerminatedException(error);
         }
