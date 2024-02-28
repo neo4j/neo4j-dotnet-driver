@@ -232,7 +232,7 @@ public class DictAsRecordTests
 
         var subject = new DictAsRecord(dict, originalRecord);
 
-        ((IReadOnlyDictionary<string, object>)subject).TryGetValue("KEY1", out var value).Should().BeTrue();
+        ((IReadOnlyDictionary<string, object>)subject).TryGetValue("key1", out var value).Should().BeTrue();
         value.Should().Be("value1");
     }
 

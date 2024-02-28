@@ -97,34 +97,34 @@ internal sealed class DictAsRecord : IRecord
         return _caseInsensitiveDict.TryGetValue(key, out value);
     }
 
-    public IReadOnlyDictionary<string, object> Values => _caseInsensitiveDict;
-    public IReadOnlyList<string> Keys => _caseInsensitiveDict.Keys.ToList();
+    public IReadOnlyDictionary<string, object> Values => _caseSensitiveDict;
+    public IReadOnlyList<string> Keys => _caseSensitiveDict.Keys.ToList();
 
     /// <inheritdoc />
     IEnumerator<KeyValuePair<string, object>> IEnumerable<KeyValuePair<string, object>>.GetEnumerator()
     {
-        return _caseInsensitiveDict.GetEnumerator();
+        return _caseSensitiveDict.GetEnumerator();
     }
 
     /// <inheritdoc />
     IEnumerator IEnumerable.GetEnumerator()
     {
-        return _caseInsensitiveDict.GetEnumerator();
+        return _caseSensitiveDict.GetEnumerator();
     }
 
     /// <inheritdoc />
-    bool IReadOnlyDictionary<string, object>.ContainsKey(string key) => _caseInsensitiveDict.ContainsKey(key);
+    bool IReadOnlyDictionary<string, object>.ContainsKey(string key) => _caseSensitiveDict.ContainsKey(key);
 
     /// <inheritdoc />
     bool IReadOnlyDictionary<string, object>.TryGetValue(string key, out object value) =>
-        _caseInsensitiveDict.TryGetValue(key, out value);
+        _caseSensitiveDict.TryGetValue(key, out value);
 
     /// <inheritdoc />
-    int IReadOnlyCollection<KeyValuePair<string, object>>.Count => _caseInsensitiveDict.Count;
+    int IReadOnlyCollection<KeyValuePair<string, object>>.Count => _caseSensitiveDict.Count;
 
     /// <inheritdoc />
-    IEnumerable<string> IReadOnlyDictionary<string, object>.Keys => _caseInsensitiveDict.Keys;
+    IEnumerable<string> IReadOnlyDictionary<string, object>.Keys => _caseSensitiveDict.Keys;
 
     /// <inheritdoc />
-    IEnumerable<object> IReadOnlyDictionary<string, object>.Values => _caseInsensitiveDict.Values;
+    IEnumerable<object> IReadOnlyDictionary<string, object>.Values => _caseSensitiveDict.Values;
 }
