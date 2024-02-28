@@ -24,7 +24,8 @@ namespace Neo4j.Driver.Preview.Mapping;
 
 internal sealed class DictAsRecord : IRecord
 {
-    private readonly IReadOnlyDictionary<string, object> _dict;
+    private readonly IReadOnlyDictionary<string, object> _caseSensitiveDict;
+    private readonly IReadOnlyDictionary<string, object> _caseInsensitiveDict;
 
     public DictAsRecord(object dict, IRecord record)
     {
@@ -35,8 +36,12 @@ internal sealed class DictAsRecord : IRecord
             _ => throw new InvalidOperationException($"Cannot create a DictAsRecord from a {dict.GetType().Name}")
         };
 
-        // this is only used by the default mapper so make it case insensitive
-        _dict = readOnlyDictionary.ToDictionary(
+        // fill the case-sensitive dictionary
+        _caseSensitiveDict = readOnlyDictionary.ToDictionary(
+            kvp => kvp.Key,
+            kvp => kvp.Value);
+
+        _caseInsensitiveDict = readOnlyDictionary.ToDictionary(
             kvp => kvp.Key,
             kvp => kvp.Value,
             StringComparer.InvariantCultureIgnoreCase);
@@ -46,31 +51,38 @@ internal sealed class DictAsRecord : IRecord
 
     public IRecord Record { get; }
 
-    public object this[int index] => _dict.TryGetValue(_dict.Keys.ElementAt(index), out var obj) ? obj : null;
-    public object this[string key] => _dict.TryGetValue(key, out var obj) ? obj : null;
+    public object this[int index] => _caseSensitiveDict.TryGetValue(_caseInsensitiveDict.Keys.ElementAt(index), out var obj) ? obj : null;
+    public object this[string key] => _caseSensitiveDict.TryGetValue(key, out var obj) ? obj : null;
 
     /// <inheritdoc />
     public T Get<T>(string key)
     {
-        return GetCaseInsensitive<T>(key);
+        return _caseSensitiveDict[key].As<T>();
     }
 
     /// <inheritdoc />
     public bool TryGet<T>(string key, out T value)
     {
-        return TryGetCaseInsensitive(key, out value);
+        if (_caseSensitiveDict.TryGetValue(key, out var obj))
+        {
+            value = obj.As<T>();
+            return true;
+        }
+
+        value = default;
+        return false;
     }
 
     /// <inheritdoc />
     public T GetCaseInsensitive<T>(string key)
     {
-        return _dict[key].As<T>();
+        return _caseInsensitiveDict[key].As<T>();
     }
 
     /// <inheritdoc />
     public bool TryGetCaseInsensitive<T>(string key, out T value)
     {
-        if (_dict.TryGetValue(key, out var obj))
+        if (_caseInsensitiveDict.TryGetValue(key, out var obj))
         {
             value = obj.As<T>();
             return true;
@@ -82,37 +94,37 @@ internal sealed class DictAsRecord : IRecord
 
     public bool TryGetValueByCaseInsensitiveKey(string key, out object value)
     {
-        return _dict.TryGetValue(key, out value);
+        return _caseInsensitiveDict.TryGetValue(key, out value);
     }
 
-    public IReadOnlyDictionary<string, object> Values => _dict;
-    public IReadOnlyList<string> Keys => _dict.Keys.ToList();
+    public IReadOnlyDictionary<string, object> Values => _caseInsensitiveDict;
+    public IReadOnlyList<string> Keys => _caseInsensitiveDict.Keys.ToList();
 
     /// <inheritdoc />
     IEnumerator<KeyValuePair<string, object>> IEnumerable<KeyValuePair<string, object>>.GetEnumerator()
     {
-        return _dict.GetEnumerator();
+        return _caseInsensitiveDict.GetEnumerator();
     }
 
     /// <inheritdoc />
     IEnumerator IEnumerable.GetEnumerator()
     {
-        return _dict.GetEnumerator();
+        return _caseInsensitiveDict.GetEnumerator();
     }
 
     /// <inheritdoc />
-    bool IReadOnlyDictionary<string, object>.ContainsKey(string key) => _dict.ContainsKey(key);
+    bool IReadOnlyDictionary<string, object>.ContainsKey(string key) => _caseInsensitiveDict.ContainsKey(key);
 
     /// <inheritdoc />
     bool IReadOnlyDictionary<string, object>.TryGetValue(string key, out object value) =>
-        _dict.TryGetValue(key, out value);
+        _caseInsensitiveDict.TryGetValue(key, out value);
 
     /// <inheritdoc />
-    int IReadOnlyCollection<KeyValuePair<string, object>>.Count => _dict.Count;
+    int IReadOnlyCollection<KeyValuePair<string, object>>.Count => _caseInsensitiveDict.Count;
 
     /// <inheritdoc />
-    IEnumerable<string> IReadOnlyDictionary<string, object>.Keys => _dict.Keys;
+    IEnumerable<string> IReadOnlyDictionary<string, object>.Keys => _caseInsensitiveDict.Keys;
 
     /// <inheritdoc />
-    IEnumerable<object> IReadOnlyDictionary<string, object>.Values => _dict.Values;
+    IEnumerable<object> IReadOnlyDictionary<string, object>.Values => _caseInsensitiveDict.Values;
 }
