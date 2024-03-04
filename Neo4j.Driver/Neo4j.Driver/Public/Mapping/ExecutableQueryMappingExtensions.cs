@@ -18,7 +18,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal;
 
-namespace Neo4j.Driver.Preview.Mapping;
+namespace Neo4j.Driver.Mapping;
 
 /// <summary>
 /// Contains extensions for using the global mapping system with the driver's <see cref="ExecutableQuery{TIn,TOut}"/>

@@ -18,7 +18,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Preview.Mapping;
+namespace Neo4j.Driver.Mapping;
 
 /// <summary>
 /// Contains extension methods for <see cref="IAsyncEnumerable{T}"/>.

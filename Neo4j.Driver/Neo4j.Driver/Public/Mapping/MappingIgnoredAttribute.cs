@@ -13,20 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Preview.Mapping;
+using System;
+
+namespace Neo4j.Driver.Mapping;
 
 /// <summary>
-/// Contains extensions for entities such as nodes and relationships.
+/// Instructs the default object mapper not to attempt to map any value to this property.
+/// This attribute does not affect custom-defined mappers.
 /// </summary>
-public static class EntityExtensions
+[AttributeUsage(AttributeTargets.Property)]
+public class MappingIgnoredAttribute : Attribute
 {
-    /// <summary>
-    /// Converts the entity to a record.
-    /// </summary>
-    /// <param name="entity">The entity to convert.</param>
-    /// <returns>The record.</returns>
-    public static IRecord AsRecord(this IEntity entity)
-    {
-        return new DictAsRecord(entity, null);
-    }
+    
 }
