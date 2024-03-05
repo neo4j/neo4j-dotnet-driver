@@ -134,6 +134,22 @@ internal abstract class DelegatedConnection : IConnection
         }
     }
 
+    public async ValueTask EnqueueAsync(
+        IRequestMessage message1,
+        IResponseHandler handler1,
+        IRequestMessage message2,
+        IResponseHandler handler2)
+    {
+        try
+        {
+            await Delegate.EnqueueAsync(message1, handler1, message2, handler2).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            await OnErrorAsync(e).ConfigureAwait(false);
+        }
+    }
+
     public virtual bool IsOpen => Delegate.IsOpen;
 
     public IServerInfo Server => Delegate.Server;
@@ -190,7 +206,7 @@ internal abstract class DelegatedConnection : IConnection
         return Delegate.ValidateCredsAsync();
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public bool TelemetryEnabled
     {
         get => Delegate.TelemetryEnabled;
@@ -232,7 +248,10 @@ internal abstract class DelegatedConnection : IConnection
         return BoltProtocol.BeginTransactionAsync(this, beginTransactionParams);
     }
 
-    public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize,
+    public Task<IResultCursor> RunInExplicitTransactionAsync(
+        Query query,
+        bool reactive,
+        long fetchSize,
         IInternalAsyncTransaction transaction)
     {
         return BoltProtocol.RunInExplicitTransactionAsync(this, query, reactive, fetchSize, transaction);

@@ -60,6 +60,7 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
     IAuthTokenManager AuthTokenManager { get; }
 
     public SessionConfig SessionConfig { get; set; }
+    bool TelemetryEnabled { get; set; }
 
     void ConfigureMode(AccessMode? mode);
     void Configure(string database, AccessMode? mode);
@@ -83,6 +84,13 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
 
     Task EnqueueAsync(IRequestMessage message, IResponseHandler handler);
 
+    ValueTask EnqueueAsync(
+        IRequestMessage message1,
+        IResponseHandler handler1,
+        IRequestMessage message2,
+        IResponseHandler handler2
+    );
+
     // Enqueue a reset message
     Task ResetAsync();
 
@@ -100,7 +108,6 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
 
     void SetUseUtcEncodedDateTime();
     ValueTask ValidateCredsAsync();
-    bool TelemetryEnabled { get; set; }
 }
 
 internal interface IConnectionRunner
@@ -123,8 +130,12 @@ internal interface IConnectionRunner
 
     Task BeginTransactionAsync(BeginTransactionParams beginParams);
 
-    Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize,
+    Task<IResultCursor> RunInExplicitTransactionAsync(
+        Query query,
+        bool reactive,
+        long fetchSize,
         IInternalAsyncTransaction transaction);
+
     Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker);
     Task RollbackTransactionAsync();
 }
