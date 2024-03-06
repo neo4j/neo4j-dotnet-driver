@@ -238,6 +238,12 @@ public class Config
     /// The configuration for the driver's underlying message reading from the network.
     /// </summary>
     public MessageReaderConfig MessageReaderConfig { get; internal set; }
+
+    /// <summary>
+    /// A certificate provider that will be used to provide the client certificate when
+    /// a new connection is established.
+    /// </summary>
+    public IClientCertificateProvider ClientCertificateProvider { get; internal set; }
 }
 
 /// <summary>

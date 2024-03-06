@@ -435,7 +435,7 @@ public sealed class ConfigBuilder
     /// Telemetry metrics are sent via Bolt to the uri provided when creating a driver instance or servers that make up
     /// the cluster members and Neo4j makes no attempt to collect these usage metrics from outside of AuraDB
     /// (Neo4j's cloud offering).<br/>
-    /// Users can configure Neo4j server's collection collection behavior of client drivers telemetry data and log the
+    /// Users can configure Neo4j server's collection behavior of client drivers telemetry data and log the
     /// telemetry data for diagnostics purposes.<br/>
     /// By default the driver allows the collection of this telemetry.
     /// </summary>
@@ -486,6 +486,18 @@ public sealed class ConfigBuilder
                 "must be >= 0");
         }
         _config.ConnectionLivenessThreshold = timeout;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the <see cref="IClientCertificateProvider"/> to use if mTLS authentication is required. The provider will
+    /// be called to provide the client certificate when establishing a new connection.
+    /// </summary>
+    /// <param name="clientCertificateProvider"></param>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    public ConfigBuilder WithClientCertificateProvider(IClientCertificateProvider clientCertificateProvider)
+    {
+        _config.ClientCertificateProvider = clientCertificateProvider;
         return this;
     }
 }
