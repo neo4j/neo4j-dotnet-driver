@@ -21,7 +21,7 @@ namespace Neo4j.Driver.Internal.Auth;
 
 internal class RotatingClientCertificateProvider : IRotatingClientCertificateProvider
 {
-    private readonly ReaderWriterLock _lock = new();
+    private readonly ReaderWriterLockSlim _lock = new();
     private X509Certificate2 _certificate;
 
     public RotatingClientCertificateProvider(X509Certificate2 certificate)
@@ -31,27 +31,27 @@ internal class RotatingClientCertificateProvider : IRotatingClientCertificatePro
 
     public ValueTask<X509Certificate2> GetCertificateAsync()
     {
-        _lock.AcquireReaderLock(Timeout.Infinite);
+        _lock.EnterReadLock();
         try
         {
             return new ValueTask<X509Certificate2>(_certificate);
         }
         finally
         {
-            _lock.ReleaseReaderLock();
+            _lock.ExitReadLock();
         }
     }
 
     public void UpdateCertificate(X509Certificate2 certificate)
     {
-        _lock.AcquireWriterLock(Timeout.Infinite);
+        _lock.EnterWriteLock();
         try
         {
             _certificate = certificate;
         }
         finally
         {
-            _lock.ReleaseWriterLock();
+            _lock.ExitWriteLock();
         }
     }
 }
