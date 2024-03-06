@@ -44,6 +44,7 @@ internal static class SupportedFeatures
             "Feature:API:Result.Single",
             "Feature:API:Session:NotificationsConfig",
             "Feature:API:Session:AuthConfig",
+            "Feature:API:SSLClientCertificate",
             "Feature:API:SSLConfig",
             "Feature:API:SSLSchemes",
             "Feature:API:Type.Temporal",
