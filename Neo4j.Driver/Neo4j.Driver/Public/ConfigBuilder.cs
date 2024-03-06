@@ -19,6 +19,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Types;
+using Neo4j.Driver.Preview.Auth;
 
 namespace Neo4j.Driver;
 
@@ -499,13 +500,18 @@ public sealed class ConfigBuilder
         return this;
     }
 
+    // TODO
+    // This method is internal, and an extension method allows the user to call it,
+    // because the extension method is in the preview namespace allowing the interface to be
+    // changed before full release. This method should be made public in the future, and the
+    // extension method removed.
     /// <summary>
     /// Sets the <see cref="IClientCertificateProvider"/> to use if mTLS authentication is required. The provider will
     /// be called to provide the client certificate when establishing a new connection.
     /// </summary>
     /// <param name="clientCertificateProvider"></param>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
-    public ConfigBuilder WithClientCertificateProvider(IClientCertificateProvider clientCertificateProvider)
+    internal ConfigBuilder WithClientCertificateProvider(IClientCertificateProvider clientCertificateProvider)
     {
         _config.ClientCertificateProvider = clientCertificateProvider;
         return this;

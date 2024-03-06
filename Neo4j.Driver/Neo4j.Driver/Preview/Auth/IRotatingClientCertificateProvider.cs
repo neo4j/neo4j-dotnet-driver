@@ -14,19 +14,21 @@
 // limitations under the License.
 
 using System.Security.Cryptography.X509Certificates;
-using Neo4j.Driver.Internal.Auth;
 
-namespace Neo4j.Driver;
+namespace Neo4j.Driver.Preview.Auth;
 
-public static class ClientCertificateProviders
+/// <summary>
+/// This interface is in preview and is subject to change or removal in the future.
+/// </summary>
+public interface IRotatingClientCertificateProvider : IClientCertificateProvider
 {
-    public static IClientCertificateProvider Static(X509Certificate2 certificate)
-    {
-        return new StaticClientCertificateProvider(certificate);
-    }
-
-    public static IRotatingClientCertificateProvider Rotating(X509Certificate2 certificate)
-    {
-        return new RotatingClientCertificateProvider(certificate);
-    }
+    /// <summary>
+    /// This interface is in preview and is subject to change or removal in the future.
+    /// <para/>
+    /// Updates the certificate stored in the provider.
+    /// <para/>
+    /// To be called by user-code when a new client certificate is available. This method must be thread-safe.
+    /// </summary>
+    /// <param name="certificate">The new certificate.</param>
+    void UpdateCertificate(X509Certificate2 certificate);
 }
