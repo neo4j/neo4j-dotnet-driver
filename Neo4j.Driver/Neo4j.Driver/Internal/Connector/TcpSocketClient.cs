@@ -86,7 +86,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
         }
     }
 
-    private async Task<X509Certificate2Collection> GetClientCertificates()
+    private async ValueTask<X509Certificate2Collection> GetClientCertificates()
     {
         if (DriverContext.Config.ClientCertificateProvider == null)
         {

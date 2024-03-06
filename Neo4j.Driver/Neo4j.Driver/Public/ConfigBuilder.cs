@@ -103,6 +103,10 @@ public sealed class ConfigBuilder
     /// <summary>
     /// Sets the maximum connection acquisition timeout for waiting for a connection to become available in idle
     /// connection pool when <see cref="Config.MaxConnectionPoolSize"/> is reached.
+    /// <para/>
+    /// Note that if a client certificate is provided using <see cref="WithClientCertificateProvider"/>, the
+    /// the connection acquisition timeout will be running while the client certificate is being fetched, so
+    /// if the client certificate fetching is slow, it might be necessary to increase the timeout.
     /// </summary>
     /// <param name="timeSpan">The connection acquisition timeout.</param>
     /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>

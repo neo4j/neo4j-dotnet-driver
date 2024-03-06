@@ -115,6 +115,10 @@ public class Config
     /// <summary>
     /// The maximum waiting time to either acquire an idle connection from the pool when connection pool is full or
     /// create a new connection when pool is not full.
+    /// <para/>
+    /// Note that if there is a client certificate provider set, the time taken to fetch the certificate will be
+    /// included in the connection acquisition timeout, so if fetching the certificate is particularly slow, it might
+    /// be necessary to increase the timeout.
     /// </summary>
     public TimeSpan ConnectionAcquisitionTimeout { get; internal set; } = TimeSpan.FromMinutes(1);
     

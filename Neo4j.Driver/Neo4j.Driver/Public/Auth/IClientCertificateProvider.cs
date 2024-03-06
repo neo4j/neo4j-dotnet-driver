@@ -42,6 +42,9 @@ public interface IClientCertificateProvider
     /// <remarks>
     /// If a new certificate is returned, existing connections using the previous certificate will not be
     /// affected. The new certificate will only be used for new connections.
+    /// <para/>
+    /// The work done in this method counts towards the connectionAcquisitionTimeout. Should fetching the
+    /// certificate be particularly slow, it might be necessary to increase the timeout.
     /// </remarks>
-    Task<X509Certificate2> GetCertificateAsync();
+    ValueTask<X509Certificate2> GetCertificateAsync();
 }

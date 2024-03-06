@@ -14,13 +14,14 @@
 // limitations under the License.
 
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Internal.Auth;
 
 internal class RotatingClientCertificateProvider : IRotatingClientCertificateProvider
 {
-    private readonly object _lock = new();
+    private readonly ReaderWriterLock _lock = new();
     private X509Certificate2 _certificate;
 
     public RotatingClientCertificateProvider(X509Certificate2 certificate)
@@ -28,19 +29,29 @@ internal class RotatingClientCertificateProvider : IRotatingClientCertificatePro
         _certificate = certificate;
     }
 
-    public Task<X509Certificate2> GetCertificateAsync()
+    public ValueTask<X509Certificate2> GetCertificateAsync()
     {
-        lock (_lock)
+        _lock.AcquireReaderLock(Timeout.Infinite);
+        try
         {
-            return Task.FromResult(_certificate);
+            return new ValueTask<X509Certificate2>(_certificate);
+        }
+        finally
+        {
+            _lock.ReleaseReaderLock();
         }
     }
 
     public void UpdateCertificate(X509Certificate2 certificate)
     {
-        lock (_lock)
+        _lock.AcquireWriterLock(Timeout.Infinite);
+        try
         {
             _certificate = certificate;
+        }
+        finally
+        {
+            _lock.ReleaseWriterLock();
         }
     }
 }

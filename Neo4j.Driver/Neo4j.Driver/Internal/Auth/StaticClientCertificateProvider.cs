@@ -27,8 +27,8 @@ internal class StaticClientCertificateProvider : IClientCertificateProvider
         _certificate = certificate;
     }
 
-    public Task<X509Certificate2> GetCertificateAsync()
+    public ValueTask<X509Certificate2> GetCertificateAsync()
     {
-        return Task.FromResult(_certificate);
+        return new ValueTask<X509Certificate2>(_certificate);
     }
 }
