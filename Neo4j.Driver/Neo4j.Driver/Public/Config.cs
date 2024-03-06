@@ -17,6 +17,7 @@ using System;
 using System.Buffers;
 using System.IO.Pipelines;
 using System.Reflection;
+using System.Security.Authentication;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Logging;
@@ -248,6 +249,11 @@ public class Config
     /// a new connection is established.
     /// </summary>
     public IClientCertificateProvider ClientCertificateProvider { get; internal set; }
+
+    /// <summary>
+    /// The TLS version to use when establishing a connection.
+    /// </summary>
+    public SslProtocols TlsVersion { get; internal set; } = SslProtocols.Tls12;
 }
 
 /// <summary>

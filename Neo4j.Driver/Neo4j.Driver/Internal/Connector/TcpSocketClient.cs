@@ -24,7 +24,6 @@ using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using static System.Security.Authentication.SslProtocols;
 
 namespace Neo4j.Driver.Internal.Connector;
 
@@ -55,9 +54,10 @@ internal sealed class TcpSocketClient : ITcpSocketClient
             {
                 var sslStream = CreateSecureStream(uri);
                 var clientCertificates = await GetClientCertificates().ConfigureAwait(false);
+                var protocol = DriverContext.Config.TlsVersion;
 
                 await sslStream
-                    .AuthenticateAsClientAsync(uri.Host, clientCertificates, Tls12, false)
+                    .AuthenticateAsClientAsync(uri.Host, clientCertificates, protocol, false)
                     .ConfigureAwait(false);
 
                 ReaderStream = sslStream;

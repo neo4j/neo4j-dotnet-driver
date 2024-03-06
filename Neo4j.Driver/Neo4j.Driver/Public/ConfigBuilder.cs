@@ -216,6 +216,7 @@ public sealed class ConfigBuilder
                 defaultReadBufferSize,
                 "must be >= 0");
         }
+
         _config.DefaultReadBufferSize = defaultReadBufferSize;
         return this;
     }
@@ -236,6 +237,7 @@ public sealed class ConfigBuilder
                 maxReadBufferSize,
                 "must be >= 0");
         }
+
         _config.MaxReadBufferSize = maxReadBufferSize;
         return this;
     }
@@ -252,6 +254,7 @@ public sealed class ConfigBuilder
                 defaultWriteBufferSize,
                 "must be >= 0");
         }
+
         _config.DefaultWriteBufferSize = defaultWriteBufferSize;
         return this;
     }
@@ -272,6 +275,7 @@ public sealed class ConfigBuilder
                 maxWriteBufferSize,
                 "must be >= 0");
         }
+
         _config.MaxWriteBufferSize = maxWriteBufferSize;
         return this;
     }
@@ -291,6 +295,7 @@ public sealed class ConfigBuilder
                 nameof(size),
                 $"The record fetch size may not be 0 or negative. Illegal record fetch size: {size}.");
         }
+
         _config.FetchSize = size;
         return this;
     }
@@ -489,6 +494,7 @@ public sealed class ConfigBuilder
                 timeout,
                 "must be >= 0");
         }
+
         _config.ConnectionLivenessThreshold = timeout;
         return this;
     }
@@ -504,4 +510,17 @@ public sealed class ConfigBuilder
         _config.ClientCertificateProvider = clientCertificateProvider;
         return this;
     }
+
+#if NET5_0_OR_GREATER
+    /// <summary>
+    /// Enables TLS13 when establishing a connection. The default is
+    /// <see cref="System.Security.Authentication.SslProtocols.Tls12"/>.
+    /// </summary>
+    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    public ConfigBuilder WithTls13()
+    {
+        _config.TlsVersion = System.Security.Authentication.SslProtocols.Tls13;
+        return this;
+    }
+#endif
 }

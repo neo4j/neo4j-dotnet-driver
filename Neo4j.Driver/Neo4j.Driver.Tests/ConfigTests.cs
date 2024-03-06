@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System;
+using System.Security.Authentication;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector.Trust;
@@ -35,6 +36,7 @@ public class ConfigTests
             config.Logger.Should().BeOfType<NullLogger>();
             config.MaxIdleConnectionPoolSize.Should().Be(100);
             config.ConnectionTimeout.Should().Be(TimeSpan.FromSeconds(30));
+            config.TlsVersion.Should().Be(SslProtocols.Tls12);
         }
 
         [Fact]
@@ -177,5 +179,17 @@ public class ConfigTests
             config.Logger.Should().BeOfType<NullLogger>();
             config.MaxIdleConnectionPoolSize.Should().Be(100);
         }
+
+#if NET5_0_OR_GREATER
+        [Fact]
+        public void WithTlsVersionShouldModifyTheSingleValue()
+        {
+            var config = Config.Builder.WithTls13().Build();
+            config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+            config.TrustManager.Should().BeNull();
+            config.MaxIdleConnectionPoolSize.Should().Be(100);
+            config.TlsVersion.Should().Be(SslProtocols.Tls13);
+        }
+#endif
     }
 }
