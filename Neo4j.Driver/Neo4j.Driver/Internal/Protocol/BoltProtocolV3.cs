@@ -152,8 +152,8 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             autoCommitParams,
             notificationsConfig);
 
-        await connection.EnqueueAsync(autoCommitMessage, runHandler).ConfigureAwait(false);
-        await connection.EnqueueAsync(PullAllMessage.Instance, pullAllHandler).ConfigureAwait(false);
+        await connection.EnqueueAsync(autoCommitMessage, runHandler, PullAllMessage.Instance, pullAllHandler)
+            .ConfigureAwait(false);
 
         await connection.SendAsync().ConfigureAwait(false);
         return streamBuilder.CreateCursor();
@@ -208,8 +208,9 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
 
         var message = _protocolMessageFactory.NewRunWithMetadataMessage(connection, query, null);
 
-        await connection.EnqueueAsync(message, runHandler).ConfigureAwait(false);
-        await connection.EnqueueAsync(PullAllMessage.Instance, pullAllHandler).ConfigureAwait(false);
+        await connection.EnqueueAsync(message, runHandler, PullAllMessage.Instance, pullAllHandler)
+            .ConfigureAwait(false);
+        
         await connection.SendAsync().ConfigureAwait(false);
 
         return streamBuilder.CreateCursor();

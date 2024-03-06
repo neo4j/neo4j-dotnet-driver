@@ -216,6 +216,24 @@ public class SocketConnectionTests
             await con.EnqueueAsync(PullAllMessage.Instance, NoOpResponseHandler.Instance);
             pipeline.Verify(h => h.Enqueue(NoOpResponseHandler.Instance), Times.Exactly(2));
         }
+
+        [Fact]
+        public async Task ShouldEnqueueBoth()
+        {
+            var pipeline = new Mock<IResponsePipeline>();
+            var con = NewSocketConnection(pipeline: pipeline.Object);
+
+            var m1 = new Mock<IRequestMessage>();
+            var h1 = new Mock<IResponseHandler>();
+            var m2 = new Mock<IRequestMessage>();
+            var h2 = new Mock<IResponseHandler>();
+            
+            await con.EnqueueAsync(m1.Object, h1.Object, m2.Object, h2.Object);
+
+            con.Messages[0].Should().Be(m1.Object);
+            con.Messages[1].Should().Be(m2.Object);
+            pipeline.Verify(x => x.Enqueue(It.IsAny<IResponseHandler>()), Times.Exactly(2));
+        }
     }
 
     public class ResetMethod
