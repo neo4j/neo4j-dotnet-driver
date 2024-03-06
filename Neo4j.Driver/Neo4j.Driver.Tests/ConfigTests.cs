@@ -19,6 +19,7 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Connector.Trust;
 using Neo4j.Driver.Internal.Logging;
+using Neo4j.Driver.Preview.Auth;
 using Xunit;
 
 namespace Neo4j.Driver.Tests;
@@ -178,6 +179,18 @@ public class ConfigTests
             config.TrustManager.Should().BeNull();
             config.Logger.Should().BeOfType<NullLogger>();
             config.MaxIdleConnectionPoolSize.Should().Be(100);
+        }
+
+        [Fact]
+        public void WithClientCertificateShouldModifyTheSingleValue()
+        {
+            var provider = new Mock<IClientCertificateProvider>();
+            var config = Config.Builder.WithClientCertificateProvider(provider.Object).Build();
+            config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+            config.TrustManager.Should().BeNull();
+            config.Logger.Should().BeOfType<NullLogger>();
+            config.MaxIdleConnectionPoolSize.Should().Be(100);
+            config.ClientCertificateProvider.Should().Be(provider.Object);
         }
 
 #if NET5_0_OR_GREATER
