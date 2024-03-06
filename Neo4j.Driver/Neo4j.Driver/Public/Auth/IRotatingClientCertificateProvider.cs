@@ -22,7 +22,7 @@ public interface IRotatingClientCertificateProvider : IClientCertificateProvider
     /// <summary>
     /// Updates the certificate stored in the provider.
     /// <para/>
-    /// To be called by user-code when a new client certificate is available.
+    /// To be called by user-code when a new client certificate is available. This method must be thread-safe.
     /// </summary>
     /// <param name="certificate">The new certificate.</param>
     void UpdateCertificate(X509Certificate2 certificate);

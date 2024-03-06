@@ -45,6 +45,8 @@ public interface IClientCertificateProvider
     /// <para/>
     /// The work done in this method counts towards the connectionAcquisitionTimeout. Should fetching the
     /// certificate be particularly slow, it might be necessary to increase the timeout.
+    /// <para/>
+    /// This method must be thread safe.
     /// </remarks>
     ValueTask<X509Certificate2> GetCertificateAsync();
 }
