@@ -17,7 +17,7 @@
 
 using System;
 
-namespace Neo4j.Driver.Preview.Mapping;
+namespace Neo4j.Driver.Mapping;
 
 /// <summary>
 /// Represents a mapping from an entity itself rather than any of its properties.

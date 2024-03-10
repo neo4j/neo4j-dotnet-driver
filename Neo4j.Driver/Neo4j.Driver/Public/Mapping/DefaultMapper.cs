@@ -18,7 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace Neo4j.Driver.Preview.Mapping;
+namespace Neo4j.Driver.Mapping;
 
 internal static class DefaultMapper
 {
