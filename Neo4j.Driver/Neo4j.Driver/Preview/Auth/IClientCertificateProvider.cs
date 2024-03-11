@@ -52,5 +52,5 @@ public interface IClientCertificateProvider
     /// <para/>
     /// This method must be thread safe.
     /// </remarks>
-    ValueTask<X509Certificate2> GetCertificateAsync();
+    ValueTask<X509Certificate> GetCertificateAsync();
 }

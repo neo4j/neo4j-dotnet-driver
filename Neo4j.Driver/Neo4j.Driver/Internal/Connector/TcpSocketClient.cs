@@ -17,6 +17,7 @@
 #endif
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Security;
@@ -57,7 +58,7 @@ internal sealed class TcpSocketClient : ITcpSocketClient
                 var protocol = DriverContext.Config.TlsVersion;
 
                 await sslStream
-                    .AuthenticateAsClientAsync(uri.Host, clientCertificates, protocol, false)
+                    .AuthenticateAsClientAsync(uri.Host, null, protocol, false)
                     .ConfigureAwait(false);
 
                 ReaderStream = sslStream;
@@ -86,18 +87,20 @@ internal sealed class TcpSocketClient : ITcpSocketClient
         }
     }
 
-    private async ValueTask<X509Certificate2Collection> GetClientCertificates()
+    private async ValueTask<X509CertificateCollection> GetClientCertificates()
     {
         if (DriverContext.Config.ClientCertificateProvider == null)
         {
+            Trace.WriteLine("tkk ClientCertificateProvider is null");
             return null;
         }
 
+        Trace.WriteLine("tkk Getting client certificates from provider");
         var certificate = await DriverContext.Config.ClientCertificateProvider
             .GetCertificateAsync().ConfigureAwait(false);
 
-        return new X509Certificate2Collection(certificate);
-
+        Trace.WriteLine("tkk Got client certificates");
+        return new X509CertificateCollection(new[] { certificate });
     }
 
     //Marked as internal for testing purposes.

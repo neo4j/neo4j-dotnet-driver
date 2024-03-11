@@ -16,16 +16,11 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Tests.TestBackend.Protocol;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
 
 internal class AuthorizationToken : ProtocolObject
 {
     public AuthorizationTokenType data { get; set; } = new();
-
-    public override Task Process()
-    {
-        return Task.CompletedTask;
-    }
 
     public class AuthorizationTokenType
     {

@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -50,6 +51,8 @@ internal class NewDriverConverter : JsonConverter<NewDriver.NewDriverType>
         newDriverRequest.notificationsMinSeverity = jsonObj["notificationsMinSeverity"]?.Value<string>();
         newDriverRequest.telemetryDisabled = jsonObj["telemetryDisabled"]?.Value<bool?>();
         newDriverRequest.livenessCheckTimeoutMs = jsonObj["livenessCheckTimeoutMs"]?.Value<int?>();
+        newDriverRequest.clientCertificate = jsonObj["clientCertificate"]?.ToObject<ClientCertificate>();
+        newDriverRequest.clientCertificateProviderId = jsonObj["clientCertificateProviderId"]?.Value<string>();
 
         if (jsonObj.TryGetValue("trustedCertificates", out var token))
         {

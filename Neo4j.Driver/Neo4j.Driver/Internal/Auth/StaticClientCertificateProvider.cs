@@ -21,15 +21,15 @@ namespace Neo4j.Driver.Internal.Auth;
 
 internal class StaticClientCertificateProvider : IClientCertificateProvider
 {
-    private readonly X509Certificate2 _certificate;
+    private readonly X509Certificate _certificate;
 
-    public StaticClientCertificateProvider(X509Certificate2 certificate)
+    public StaticClientCertificateProvider(X509Certificate certificate)
     {
         _certificate = certificate;
     }
 
-    public ValueTask<X509Certificate2> GetCertificateAsync()
+    public ValueTask<X509Certificate> GetCertificateAsync()
     {
-        return new ValueTask<X509Certificate2>(_certificate);
+        return new ValueTask<X509Certificate>(_certificate);
     }
 }

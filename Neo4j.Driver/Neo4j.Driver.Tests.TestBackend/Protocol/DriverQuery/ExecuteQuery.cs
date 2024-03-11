@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
 using Neo4j.Driver.Tests.TestBackend.Protocol.BookmarkManager;
 using Neo4j.Driver.Tests.TestBackend.Protocol.Driver;
 using Neo4j.Driver.Tests.TestBackend.Protocol.JsonConverters;

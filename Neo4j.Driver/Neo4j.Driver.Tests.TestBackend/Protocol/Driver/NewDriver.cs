@@ -15,8 +15,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
 using Neo4j.Driver.Tests.TestBackend.Resolvers;
 using Newtonsoft.Json;
@@ -164,6 +167,18 @@ internal class NewDriver : ProtocolObject
             configBuilder.WithTelemetryDisabled();
         }
 
+        if (data.clientCertificate != null)
+        {
+            configBuilder.WithClientCertificateProvider(
+                ClientCertificateProviders.Static(data.clientCertificate.Certificate));
+        }
+
+        if(data.clientCertificateProviderId != null)
+        {
+            var provider = (NewClientCertificateProvider)ObjManager.GetObject(data.clientCertificateProviderId);
+            configBuilder.WithClientCertificateProvider(provider);
+        }
+
         if (data.livenessCheckTimeoutMs.HasValue)
         {
             configBuilder.WithConnectionLivenessCheckTimeout(
@@ -177,6 +192,9 @@ internal class NewDriver : ProtocolObject
     [JsonConverter(typeof(NewDriverConverter))]
     public class NewDriverType
     {
+        // * NOTE: this class is not automatically deserialized, it is done by the NewDriverConverter class
+        // so if you add a new property here, make sure to add it to the NewDriverConverter class as well
+
         private string[] _trustedCertificates = {};
 
         public long? fetchSize;
@@ -195,6 +213,8 @@ internal class NewDriver : ProtocolObject
         public int? maxConnectionPoolSize { get; set; }
         public int? connectionAcquisitionTimeoutMs { get; set; }
         public bool? telemetryDisabled { get; set; }
+        public ClientCertificate clientCertificate { get; set; }
+        public string clientCertificateProviderId { get; set; }
 
         public string[] trustedCertificates
         {

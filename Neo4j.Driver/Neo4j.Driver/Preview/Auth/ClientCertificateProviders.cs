@@ -30,7 +30,7 @@ public static class ClientCertificateProviders
     /// </summary>
     /// <param name="certificate">The certificate.</param>
     /// <returns>The new static client certificate provider.</returns>
-    public static IClientCertificateProvider Static(X509Certificate2 certificate)
+    public static IClientCertificateProvider Static(X509Certificate certificate)
     {
         return new StaticClientCertificateProvider(certificate);
     }
@@ -42,7 +42,7 @@ public static class ClientCertificateProviders
     /// </summary>
     /// <param name="certificate">The initial certificate.</param>
     /// <returns>The new rotating client certificate provider.</returns>
-    public static IRotatingClientCertificateProvider Rotating(X509Certificate2 certificate)
+    public static IRotatingClientCertificateProvider Rotating(X509Certificate certificate)
     {
         return new RotatingClientCertificateProvider(certificate);
     }
