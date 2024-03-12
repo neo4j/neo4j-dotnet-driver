@@ -14,7 +14,13 @@
 // limitations under the License.
 
 using System;
+using System.IO;
 using System.Security.Cryptography.X509Certificates;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.OpenSsl;
+using Org.BouncyCastle.Security;
+using Org.BouncyCastle.Pkcs;
+using X509Certificate = Org.BouncyCastle.X509.X509Certificate;
 
 namespace Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
 
@@ -44,8 +50,35 @@ internal static class ClientCertificateLoader
 {
     public static X509Certificate2 GetCertificate(string certfile, string keyfile, string password)
     {
-        return string.IsNullOrEmpty(password)
-            ? X509Certificate2.CreateFromPemFile(certfile, keyfile)
-            : X509Certificate2.CreateFromEncryptedPemFile(certfile, password, keyfile);
+        // Read the certificate
+        var certText = File.ReadAllText(certfile);
+        var certReader = new PemReader(new StringReader(certText));
+        var cert = (X509Certificate)certReader.ReadObject();
+
+        // Read the key
+        var keyText = File.ReadAllText(keyfile);
+        var keyReader = new PemReader(new StringReader(keyText), new PasswordProvider(password));
+        var key = (AsymmetricCipherKeyPair)keyReader.ReadObject();
+
+        // Create PKCS12 store
+        var store = new Pkcs12StoreBuilder().Build();
+        store.SetKeyEntry("key", new AsymmetricKeyEntry(key.Private), new[] { new X509CertificateEntry(cert) });
+
+        // Export to .NET X509Certificate2
+        using var pkcsStream = new MemoryStream();
+        store.Save(pkcsStream, password?.ToCharArray(), new SecureRandom());
+        return new X509Certificate2(pkcsStream.ToArray(), password, X509KeyStorageFlags.Exportable);
+    }
+
+    private class PasswordProvider : IPasswordFinder
+    {
+        private readonly string _password;
+
+        public PasswordProvider(string password)
+        {
+            _password = password;
+        }
+
+        public char[] GetPassword() => _password.ToCharArray();
     }
 }
