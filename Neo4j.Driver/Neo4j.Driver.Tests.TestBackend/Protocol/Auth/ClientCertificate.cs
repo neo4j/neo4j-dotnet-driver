@@ -54,9 +54,6 @@ internal static class ClientCertificateLoader
 {
     public static X509Certificate2 GetCertificate(string certfile, string keyfile, string password)
     {
-        Trace.WriteLine(
-            $"tkk {nameof(ClientCertificateLoader)} Loading certificate from {certfile} and key from {keyfile}");
-
         // Read the certificate
         var certText = File.ReadAllText(certfile);
         var certReader = new PemReader(new StringReader(certText));
@@ -64,7 +61,7 @@ internal static class ClientCertificateLoader
 
         // Read the key
         var keyText = File.ReadAllText(keyfile);
-        var keyReader = new PemReader(new StringReader(keyText));
+        var keyReader = new PemReader(new StringReader(keyText), new PasswordProvider(password));
         var key = (AsymmetricCipherKeyPair)keyReader.ReadObject();
 
         // Create PKCS12 store
@@ -75,5 +72,17 @@ internal static class ClientCertificateLoader
         using var pkcsStream = new MemoryStream();
         store.Save(pkcsStream, password?.ToCharArray(), new SecureRandom());
         return new X509Certificate2(pkcsStream.ToArray(), password, X509KeyStorageFlags.Exportable);
+    }
+
+    private class PasswordProvider : IPasswordFinder
+    {
+        private readonly string _password;
+
+        public PasswordProvider(string password)
+        {
+            _password = password;
+        }
+
+        public char[] GetPassword() => _password.ToCharArray();
     }
 }

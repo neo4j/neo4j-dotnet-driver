@@ -57,7 +57,6 @@ internal class NewClientCertificateProvider : ProtocolObject, IClientCertificate
 
     public override string Respond()
     {
-        Trace.WriteLine($"{nameof(NewClientCertificateProvider)}: Respond");
         return new ProtocolResponse("ClientCertificateProvider", uniqueId).Encode();
     }
 }
