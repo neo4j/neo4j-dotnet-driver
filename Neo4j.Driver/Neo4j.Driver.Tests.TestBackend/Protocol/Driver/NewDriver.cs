@@ -15,9 +15,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.Tests.TestBackend.Protocol.Auth;

@@ -15,7 +15,6 @@
 
 using System;
 using System.Buffers;
-using Neo4j.Driver.Internal.IO;
 
 namespace Neo4j.Driver.Internal.Util;
 
