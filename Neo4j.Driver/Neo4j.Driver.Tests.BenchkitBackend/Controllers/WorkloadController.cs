@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Neo4j.Driver.Tests.BenchkitBackend.Abstractions;
 using Neo4j.Driver.Tests.BenchkitBackend.Types;

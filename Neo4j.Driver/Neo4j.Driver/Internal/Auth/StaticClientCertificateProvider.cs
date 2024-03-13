@@ -13,19 +13,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
+using Neo4j.Driver.Preview.Auth;
 
-internal class AuthTokenManagerClose : ProtocolObject
+namespace Neo4j.Driver.Internal.Auth;
+
+internal class StaticClientCertificateProvider : IClientCertificateProvider
 {
-    public AuthTokenManagerCloseType data { get; set; } = new();
+    private readonly X509Certificate _certificate;
 
-    public override string Respond()
+    public StaticClientCertificateProvider(X509Certificate certificate)
     {
-        return new ProtocolResponse("AuthTokenManager", data.id).Encode();
+        _certificate = certificate;
     }
 
-    public class AuthTokenManagerCloseType
+    public ValueTask<X509Certificate> GetCertificateAsync()
     {
-        public string id { get; set; }
+        return new ValueTask<X509Certificate>(_certificate);
     }
 }

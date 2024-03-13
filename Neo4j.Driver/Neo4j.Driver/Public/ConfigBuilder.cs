@@ -19,6 +19,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Types;
+using Neo4j.Driver.Preview.Auth;
 
 namespace Neo4j.Driver;
 
@@ -103,6 +104,10 @@ public sealed class ConfigBuilder
     /// <summary>
     /// Sets the maximum connection acquisition timeout for waiting for a connection to become available in idle
     /// connection pool when <see cref="Config.MaxConnectionPoolSize"/> is reached.
+    /// <para/>
+    /// Note that if a client certificate is provided using <see cref="WithClientCertificateProvider"/>, the
+    /// the connection acquisition timeout will be running while the client certificate is being fetched, so
+    /// if the client certificate fetching is slow, it might be necessary to increase the timeout.
     /// </summary>
     /// <param name="timeSpan">The connection acquisition timeout.</param>
     /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
@@ -212,6 +217,7 @@ public sealed class ConfigBuilder
                 defaultReadBufferSize,
                 "must be >= 0");
         }
+
         _config.DefaultReadBufferSize = defaultReadBufferSize;
         return this;
     }
@@ -232,6 +238,7 @@ public sealed class ConfigBuilder
                 maxReadBufferSize,
                 "must be >= 0");
         }
+
         _config.MaxReadBufferSize = maxReadBufferSize;
         return this;
     }
@@ -248,6 +255,7 @@ public sealed class ConfigBuilder
                 defaultWriteBufferSize,
                 "must be >= 0");
         }
+
         _config.DefaultWriteBufferSize = defaultWriteBufferSize;
         return this;
     }
@@ -268,6 +276,7 @@ public sealed class ConfigBuilder
                 maxWriteBufferSize,
                 "must be >= 0");
         }
+
         _config.MaxWriteBufferSize = maxWriteBufferSize;
         return this;
     }
@@ -287,6 +296,7 @@ public sealed class ConfigBuilder
                 nameof(size),
                 $"The record fetch size may not be 0 or negative. Illegal record fetch size: {size}.");
         }
+
         _config.FetchSize = size;
         return this;
     }
@@ -435,7 +445,7 @@ public sealed class ConfigBuilder
     /// Telemetry metrics are sent via Bolt to the uri provided when creating a driver instance or servers that make up
     /// the cluster members and Neo4j makes no attempt to collect these usage metrics from outside of AuraDB
     /// (Neo4j's cloud offering).<br/>
-    /// Users can configure Neo4j server's collection collection behavior of client drivers telemetry data and log the
+    /// Users can configure Neo4j server's collection behavior of client drivers telemetry data and log the
     /// telemetry data for diagnostics purposes.<br/>
     /// By default the driver allows the collection of this telemetry.
     /// </summary>
@@ -485,7 +495,38 @@ public sealed class ConfigBuilder
                 timeout,
                 "must be >= 0");
         }
+
         _config.ConnectionLivenessThreshold = timeout;
         return this;
     }
+
+    // TODO
+    // This method is internal, and an extension method allows the user to call it,
+    // because the extension method is in the preview namespace allowing the interface to be
+    // changed before full release. This method should be made public in the future, and the
+    // extension method removed.
+    /// <summary>
+    /// Sets the <see cref="IClientCertificateProvider"/> to use if mTLS authentication is required. The provider will
+    /// be called to provide the client certificate when establishing a new connection.
+    /// </summary>
+    /// <param name="clientCertificateProvider"></param>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    internal ConfigBuilder WithClientCertificateProvider(IClientCertificateProvider clientCertificateProvider)
+    {
+        _config.ClientCertificateProvider = clientCertificateProvider;
+        return this;
+    }
+
+#if NET5_0_OR_GREATER
+    /// <summary>
+    /// Enables TLS13 when establishing a connection. The default is
+    /// <see cref="System.Security.Authentication.SslProtocols.Tls12"/>.
+    /// </summary>
+    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    public ConfigBuilder WithTls13()
+    {
+        _config.TlsVersion = System.Security.Authentication.SslProtocols.Tls13;
+        return this;
+    }
+#endif
 }

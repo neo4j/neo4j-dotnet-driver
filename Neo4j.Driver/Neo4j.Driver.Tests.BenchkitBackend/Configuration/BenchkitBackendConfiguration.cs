@@ -18,9 +18,9 @@ namespace Neo4j.Driver.Tests.BenchkitBackend.Configuration;
 internal class BenchkitBackendConfiguration
 {
     public int BackendPort { get; set; }
-    public string Neo4jScheme { get; set; }
-    public string Neo4jHost { get; set; }
+    public string Neo4jScheme { get; set; } = "";
+    public string Neo4jHost { get; set; } = "";
     public int Neo4jPort { get; set; }
-    public string Neo4jUser { get; set; }
-    public string Neo4jPassword { get; set; }
+    public string Neo4jUser { get; set; } = "";
+    public string Neo4jPassword { get; set; } = "";
 }

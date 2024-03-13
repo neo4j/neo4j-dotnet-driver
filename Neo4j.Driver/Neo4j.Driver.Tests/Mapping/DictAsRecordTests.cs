@@ -16,7 +16,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Types;
 using Neo4j.Driver.Preview.Mapping;

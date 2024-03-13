@@ -15,17 +15,14 @@
 
 namespace Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
 
-internal class AuthTokenManagerClose : ProtocolObject
+internal class ClientCertificateProviderCompleted : ProtocolObject
 {
-    public AuthTokenManagerCloseType data { get; set; } = new();
+    public ClientCertificateProviderCompletedDto data { get; set; } = new();
 
-    public override string Respond()
+    public class ClientCertificateProviderCompletedDto
     {
-        return new ProtocolResponse("AuthTokenManager", data.id).Encode();
-    }
-
-    public class AuthTokenManagerCloseType
-    {
-        public string id { get; set; }
+        public string requestId { get; set; }
+        public ClientCertificate clientCertificate { get; set; } = new();
+        public bool hasUpdate { get; set; }
     }
 }
