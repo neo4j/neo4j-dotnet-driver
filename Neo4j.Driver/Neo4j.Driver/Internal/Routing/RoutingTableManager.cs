@@ -180,6 +180,8 @@ internal class RoutingTableManager : IRoutingTableManager
             return newTable;
         }
 
+        PurgeAged();
+
         IEnumerable<Uri> addedServers = null, removedServers = null;
         _routingTables.AddOrUpdate(
             newRoutingTable.Database,
@@ -187,8 +189,6 @@ internal class RoutingTableManager : IRoutingTableManager
             (_, oldTable) => UpdateRoutingTable(oldTable, newRoutingTable, out addedServers, out removedServers));
 
         await _poolManager.UpdateConnectionPoolAsync(addedServers, removedServers).ConfigureAwait(false);
-
-        PurgeAged();
 
         _logger.Info("Routing table is updated => {0}", newRoutingTable);
     }
