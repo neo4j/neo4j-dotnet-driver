@@ -174,13 +174,12 @@ internal class RoutingTableManager : IRoutingTableManager
             out IEnumerable<Uri> removed)
         {
             var allNew = newTable.All().ToArray();
-            var allKnown = oldTable == null ? Array.Empty<Uri>() : oldTable.All().ToArray();
+            var allKnown = oldTable == null ? _initialServerAddressProvider.Get().ToArray() : oldTable.All().ToArray();
             added = allNew.Except(allKnown);
             removed = allKnown.Except(allNew);
             return newTable;
         }
 
-        PurgeAged();
 
         IEnumerable<Uri> addedServers = null, removedServers = null;
         _routingTables.AddOrUpdate(
@@ -188,6 +187,7 @@ internal class RoutingTableManager : IRoutingTableManager
             _ => UpdateRoutingTable(null, newRoutingTable, out addedServers, out removedServers),
             (_, oldTable) => UpdateRoutingTable(oldTable, newRoutingTable, out addedServers, out removedServers));
 
+        PurgeAged();
         await _poolManager.UpdateConnectionPoolAsync(addedServers, removedServers).ConfigureAwait(false);
 
         _logger.Info("Routing table is updated => {0}", newRoutingTable);
