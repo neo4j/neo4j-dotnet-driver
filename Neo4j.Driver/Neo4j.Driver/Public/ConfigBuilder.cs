@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Types;
 using Neo4j.Driver.Preview.Auth;
@@ -50,7 +51,7 @@ public sealed class ConfigBuilder
     /// <see cref="EncryptionLevel.None"/> otherwise. See <see cref="EncryptionLevel"/> for more info
     /// </param>
     /// .
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithEncryptionLevel(EncryptionLevel level)
     {
         _config.NullableEncryptionLevel = level;
@@ -62,7 +63,7 @@ public sealed class ConfigBuilder
     /// will not take effect if <see cref="Config.EncryptionLevel"/> decides to use no TLS encryption on the connections.
     /// </summary>
     /// <param name="manager">A <see cref="TrustManager"/> instance.</param>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     /// <remarks>We recommend using WithCertificateTrustPaths or WithCertificates</remarks>
     public ConfigBuilder WithTrustManager(TrustManager manager)
     {
@@ -72,7 +73,7 @@ public sealed class ConfigBuilder
 
     /// <summary>Sets the <see cref="Config"/> to use a given <see cref="ILogger"/> instance.</summary>
     /// <param name="logger">The <see cref="ILogger"/> instance to use, if <c>null</c> no logging will occur.</param>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithLogger(ILogger logger)
     {
         _config.Logger = logger ?? NullLogger.Instance;
@@ -85,7 +86,7 @@ public sealed class ConfigBuilder
     /// connection pooling.
     /// </param>
     /// .
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithMaxIdleConnectionPoolSize(int size)
     {
         _config.MaxIdleConnectionPoolSize = size;
@@ -94,7 +95,7 @@ public sealed class ConfigBuilder
 
     /// <summary>Sets the size of the connection pool.</summary>
     /// <param name="size">The size of the <see cref="Config.MaxConnectionPoolSize"/></param>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithMaxConnectionPoolSize(int size)
     {
         _config.MaxConnectionPoolSize = size;
@@ -110,7 +111,7 @@ public sealed class ConfigBuilder
     /// if the client certificate fetching is slow, it might be necessary to increase the timeout.
     /// </summary>
     /// <param name="timeSpan">The connection acquisition timeout.</param>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithConnectionAcquisitionTimeout(TimeSpan timeSpan)
     {
         _config.ConnectionAcquisitionTimeout = timeSpan;
@@ -125,7 +126,7 @@ public sealed class ConfigBuilder
     /// Represents the number of milliseconds to wait or <see cref="Config.InfiniteInterval"/> to wait
     /// indefinitely.
     /// </param>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithConnectionTimeout(TimeSpan timeSpan)
     {
         _config.ConnectionTimeout = timeSpan;
@@ -137,7 +138,7 @@ public sealed class ConfigBuilder
     /// after leaving client idle for a long time. The interval of keep alive pings are internal set via your OS system.
     /// </summary>
     /// <param name="enable"></param>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithSocketKeepAliveEnabled(bool enable)
     {
         _config.SocketKeepAlive = enable;
@@ -151,7 +152,7 @@ public sealed class ConfigBuilder
     /// seconds.
     /// </summary>
     /// <param name="time">Specify the maximum retry time. </param>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithMaxTransactionRetryTime(TimeSpan time)
     {
         _config.MaxTransactionRetryTime = time;
@@ -163,7 +164,7 @@ public sealed class ConfigBuilder
     /// timeout will not be reused but closed.
     /// </summary>
     /// <param name="timeSpan">The max timespan that a connection can be reused after has been idle for.</param>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithConnectionIdleTimeout(TimeSpan timeSpan)
     {
         _config.ConnectionIdleTimeout = timeSpan;
@@ -175,7 +176,7 @@ public sealed class ConfigBuilder
     /// will not be reused but closed.
     /// </summary>
     /// <param name="timeSpan">The max timespan that a connection can be reused after has been created for.</param>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithMaxConnectionLifetime(TimeSpan timeSpan)
     {
         _config.MaxConnectionLifetime = timeSpan;
@@ -184,7 +185,7 @@ public sealed class ConfigBuilder
 
     /// <summary>Setting this option to true will enable ipv6 on socket connections.</summary>
     /// <param name="enable">true to enable ipv6, false to only support ipv4 addresses.</param>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithIpv6Enabled(bool enable)
     {
         _config.Ipv6Enabled = enable;
@@ -198,7 +199,7 @@ public sealed class ConfigBuilder
     /// initial address.
     /// </summary>
     /// <param name="resolver">The resolver, default to a resolver that simply pass the initial server address as it is.</param>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithResolver(IServerAddressResolver resolver)
     {
         _config.Resolver = resolver;
@@ -207,7 +208,7 @@ public sealed class ConfigBuilder
 
     /// <summary>Specify the default read buffer size which the driver allocates for its internal buffers.</summary>
     /// <param name="defaultReadBufferSize">the buffer size</param>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithDefaultReadBufferSize(int defaultReadBufferSize)
     {
         if (defaultReadBufferSize < 0)
@@ -224,7 +225,7 @@ public sealed class ConfigBuilder
 
     /// <summary>Specify the size when internal read buffers reach, will be released for garbage collection.</summary>
     /// <param name="maxReadBufferSize">the buffer size</param>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     /// <remarks>
     /// If reading large records (nodes, relationships or paths) and experiencing too much garbage collection consider
     /// increasing this size to a reasonable amount depending on your data.
@@ -245,7 +246,7 @@ public sealed class ConfigBuilder
 
     /// <summary>Specify the default write buffer size which the driver allocates for its internal buffers.</summary>
     /// <param name="defaultWriteBufferSize">the buffer size</param>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithDefaultWriteBufferSize(int defaultWriteBufferSize)
     {
         if (defaultWriteBufferSize < 0)
@@ -262,7 +263,7 @@ public sealed class ConfigBuilder
 
     /// <summary>Specify the size when internal write buffers reach, will be released for garbage collection.</summary>
     /// <param name="maxWriteBufferSize">the buffer size</param>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     /// <remarks>
     /// If writing large values and experiencing too much garbage collection consider increasing this size to a
     /// reasonable amount depending on your data.
@@ -287,7 +288,7 @@ public sealed class ConfigBuilder
     /// disable batching and always pull all records in one batch instead.
     /// </summary>
     /// <param name="size">The fetch size.</param>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithFetchSize(long size)
     {
         if (size <= 0 && size != Config.Infinite)
@@ -312,7 +313,7 @@ public sealed class ConfigBuilder
     /// "neo4j-dotnet/x.y" where x is the major version and y is the minor version.
     /// </summary>
     /// <param name="userAgent">The user agent string</param>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithUserAgent(string userAgent)
     {
         _config.UserAgent = userAgent ?? throw new ArgumentNullException(nameof(userAgent));
@@ -328,7 +329,7 @@ public sealed class ConfigBuilder
     /// Optional list of certificates to use to validate a server certificate. should only
     /// be set when <paramref name="certificateTrustRule"/> is <c>CertificateTrustRule.TrustList</c>
     /// </param>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     /// <remarks>
     /// Used in conjunction with <see cref="WithEncryptionLevel"/>. Not to be used when using a non-basic Uri
     /// Scheme(+s, +ssc) on <see cref="GraphDatabase"/>
@@ -369,7 +370,7 @@ public sealed class ConfigBuilder
     /// Optional list of paths to certificates to use to validate a server
     /// certificate. should only be set when using <code>CertificateTrustRule.TrustList</code>
     /// </param>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     /// <remarks>
     /// Used in conjunction with <see cref="WithEncryptionLevel"/>. Not to be used when using a non-basic Uri
     /// Scheme(+s, +ssc) on <see cref="GraphDatabase"/>
@@ -407,7 +408,7 @@ public sealed class ConfigBuilder
     /// <seealso cref="WithNotificationsDisabled"/>
     /// <seealso cref="SessionConfigBuilder.WithNotifications"/>
     /// <seealso cref="SessionConfigBuilder.WithNotificationsDisabled"/>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithNotifications(
         Severity? minimumSeverity,
         Category[] disabledCategories)
@@ -449,7 +450,7 @@ public sealed class ConfigBuilder
     /// telemetry data for diagnostics purposes.<br/>
     /// By default the driver allows the collection of this telemetry.
     /// </summary>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithTelemetryDisabled()
     {
         _config.TelemetryDisabled = true;
@@ -459,7 +460,7 @@ public sealed class ConfigBuilder
     /// <summary>
     /// Sets the <see cref="MessageReaderConfig"/> config to use in the driver.
     /// </summary>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithMessageReaderConfig(MessageReaderConfig config)
     {
         _config.MessageReaderConfig = config ?? throw new ArgumentNullException(nameof(config));
@@ -485,7 +486,7 @@ public sealed class ConfigBuilder
     /// <exception cref="ArgumentOutOfRangeException">
     /// When <paramref name="timeout"/> is less than <see cref="TimeSpan.Zero"/>.
     /// </exception>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithConnectionLivenessCheckTimeout(TimeSpan timeout)
     {
         if (timeout < TimeSpan.Zero)
@@ -522,11 +523,56 @@ public sealed class ConfigBuilder
     /// Enables TLS13 when establishing a connection. The default is
     /// <see cref="System.Security.Authentication.SslProtocols.Tls12"/>.
     /// </summary>
-    /// <returns>An <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithTls13()
     {
         _config.TlsVersion = System.Security.Authentication.SslProtocols.Tls13;
         return this;
     }
 #endif
+
+    /// <summary>
+    /// Sets a custome <see cref="ITlsNegotiator"/> to use when establishing a TLS connection.
+    /// </summary>
+    /// <param name="tlsNegotiator">The <see cref="ITlsNegotiator"/> to use.</param>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <warning>
+    /// This option may compromise your application’s security if used improperly.
+    /// Its usage is strongly discouraged and comes without any guarantees.
+    /// </warning>
+    public ConfigBuilder WithTlsNegotiator(ITlsNegotiator tlsNegotiator)
+    {
+        _config.TlsNegotiator = tlsNegotiator;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the custom <see cref="NegotiateTlsDelegate"/> to call when establishing a TLS connection.
+    /// </summary>
+    /// <param name="negotiateTls">The <see cref="NegotiateTlsDelegate"/> to use.</param>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <warning>
+    /// This option may compromise your application’s security if used improperly.
+    /// Its usage is strongly discouraged and comes without any guarantees.
+    /// </warning>
+    public ConfigBuilder WithTlsNegotiator(NegotiateTlsDelegate negotiateTls)
+    {
+        _config.TlsNegotiator = new DelegateTlsNegotiator(negotiateTls);
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the type of custom <see cref="ITlsNegotiator"/> to use when establishing a TLS connection.
+    /// </summary>
+    /// <typeparam name="T">The <see cref="ITlsNegotiator"/> to use.</typeparam>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <warning>
+    /// This option may compromise your application’s security if used improperly.
+    /// Its usage is strongly discouraged and comes without any guarantees.
+    /// </warning>
+    public ConfigBuilder WithTlsNegotiator<T>() where T : ITlsNegotiator, new()
+    {
+        _config.TlsNegotiator = new T();
+        return this;
+    }
 }

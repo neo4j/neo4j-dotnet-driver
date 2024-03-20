@@ -255,6 +255,12 @@ public class Config
     /// The TLS version to use when establishing a connection.
     /// </summary>
     public SslProtocols TlsVersion { get; internal set; } = SslProtocols.Tls12;
+
+    /// <summary>
+    /// The negotiator to use when establishing a TLS connection. If this is null, the driver will use the default
+    /// negotiator.|
+    /// </summary>
+    public ITlsNegotiator TlsNegotiator { get; internal set; }
 }
 
 /// <summary>
