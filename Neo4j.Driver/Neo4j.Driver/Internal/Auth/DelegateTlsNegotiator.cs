@@ -19,7 +19,7 @@ using System.Net.Security;
 
 namespace Neo4j.Driver.Internal.Auth;
 
-internal class DelegateTlsNegotiator : ITlsNegotiator
+internal sealed class DelegateTlsNegotiator : ITlsNegotiator
 {
     private readonly NegotiateTlsDelegate _negotiateTlsDelegate;
 
@@ -28,8 +28,5 @@ internal class DelegateTlsNegotiator : ITlsNegotiator
         _negotiateTlsDelegate = negotiateTlsDelegate;
     }
 
-    public SslStream NegotiateTls(Uri uri, Stream stream)
-    {
-        return _negotiateTlsDelegate(uri, stream);
-    }
+    public SslStream NegotiateTls(Uri uri, Stream stream) => _negotiateTlsDelegate(uri, stream);
 }

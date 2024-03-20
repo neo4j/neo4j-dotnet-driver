@@ -532,10 +532,14 @@ public sealed class ConfigBuilder
 #endif
 
     /// <summary>
-    /// Sets the <see cref="ITlsNegotiator"/> to use when establishing a TLS connection.
+    /// Sets a custome <see cref="ITlsNegotiator"/> to use when establishing a TLS connection.
     /// </summary>
     /// <param name="tlsNegotiator">The <see cref="ITlsNegotiator"/> to use.</param>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <warning>
+    /// This option may compromise your application’s security if used improperly.
+    /// Its usage is strongly discouraged and comes without any guarantees.
+    /// </warning>
     public ConfigBuilder WithTlsNegotiator(ITlsNegotiator tlsNegotiator)
     {
         _config.TlsNegotiator = tlsNegotiator;
@@ -543,10 +547,14 @@ public sealed class ConfigBuilder
     }
 
     /// <summary>
-    /// Sets the <see cref="NegotiateTlsDelegate"/> to call when establishing a TLS connection.
+    /// Sets the custom <see cref="NegotiateTlsDelegate"/> to call when establishing a TLS connection.
     /// </summary>
     /// <param name="negotiateTls">The <see cref="NegotiateTlsDelegate"/> to use.</param>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <warning>
+    /// This option may compromise your application’s security if used improperly.
+    /// Its usage is strongly discouraged and comes without any guarantees.
+    /// </warning>
     public ConfigBuilder WithTlsNegotiator(NegotiateTlsDelegate negotiateTls)
     {
         _config.TlsNegotiator = new DelegateTlsNegotiator(negotiateTls);
@@ -554,10 +562,14 @@ public sealed class ConfigBuilder
     }
 
     /// <summary>
-    /// Sets the type of <see cref="ITlsNegotiator"/> to use when establishing a TLS connection.
+    /// Sets the type of custom <see cref="ITlsNegotiator"/> to use when establishing a TLS connection.
     /// </summary>
     /// <typeparam name="T">The <see cref="ITlsNegotiator"/> to use.</typeparam>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <warning>
+    /// This option may compromise your application’s security if used improperly.
+    /// Its usage is strongly discouraged and comes without any guarantees.
+    /// </warning>
     public ConfigBuilder WithTlsNegotiator<T>() where T : ITlsNegotiator, new()
     {
         _config.TlsNegotiator = new T();

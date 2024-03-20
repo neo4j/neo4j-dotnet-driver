@@ -14,9 +14,12 @@
 // limitations under the License.
 
 using System;
+using System.IO;
+using System.Net.Security;
 using System.Security.Authentication;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector.Trust;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Preview.Auth;
@@ -38,6 +41,7 @@ public class ConfigTests
             config.MaxIdleConnectionPoolSize.Should().Be(100);
             config.ConnectionTimeout.Should().Be(TimeSpan.FromSeconds(30));
             config.TlsVersion.Should().Be(SslProtocols.Tls12);
+            config.TlsNegotiator.Should().BeNull();
         }
 
         [Fact]
@@ -204,5 +208,45 @@ public class ConfigTests
             config.TlsVersion.Should().Be(SslProtocols.Tls13);
         }
 #endif
+
+        [Fact]
+        public void WithTlsNegotiator_ShouldSetTlsNegotiator()
+        {
+            var mockTlsNegotiator = new Mock<ITlsNegotiator>();
+            var configBuilder = new ConfigBuilder(new Config());
+
+            configBuilder.WithTlsNegotiator(mockTlsNegotiator.Object);
+
+            configBuilder.Build().TlsNegotiator.Should().Be(mockTlsNegotiator.Object);
+        }
+
+        [Fact]
+        public void WithTlsNegotiatorDelegate_ShouldSetTlsNegotiator()
+        {
+            var configBuilder = new ConfigBuilder(new Config());
+
+            configBuilder.WithTlsNegotiator((stream, host) => null);
+
+            configBuilder.Build().TlsNegotiator.Should().BeOfType<DelegateTlsNegotiator>();
+        }
+
+        [Fact]
+        public void WithTlsNegotiatorGeneric_ShouldSetTlsNegotiator()
+        {
+            var configBuilder = new ConfigBuilder(new Config());
+
+            configBuilder.WithTlsNegotiator<MockTlsNegotiator>();
+
+            configBuilder.Build().TlsNegotiator.Should().BeOfType<MockTlsNegotiator>();
+        }
+
+        private class MockTlsNegotiator : ITlsNegotiator
+        {
+            /// <inheritdoc />
+            public SslStream NegotiateTls(Uri uri, Stream stream)
+            {
+                return null;
+            }
+        }
     }
 }

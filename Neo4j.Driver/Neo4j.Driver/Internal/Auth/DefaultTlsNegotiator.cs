@@ -20,7 +20,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace Neo4j.Driver.Internal.Auth;
 
-internal class DefaultTlsNegotiator : ITlsNegotiator
+internal sealed class DefaultTlsNegotiator : ITlsNegotiator
 {
     private readonly ILogger _logger;
     private readonly EncryptionManager _encryptionManager;
