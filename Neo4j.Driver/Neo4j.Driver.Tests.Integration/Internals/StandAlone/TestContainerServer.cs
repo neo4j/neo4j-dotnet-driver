@@ -39,7 +39,6 @@ namespace Neo4j.Driver.IntegrationTests
             BoltRoutingUri = new Uri($"neo4j://{Neo4jDefaultInstallation.BoltHost}:{Neo4jDefaultInstallation.BoltPort}");
             AuthToken = AuthTokens.Basic(Neo4jDefaultInstallation.User, Neo4jDefaultInstallation.Password);
 
-            Driver = GraphDatabase.Driver(BoltUri, AuthToken);
             _dataPath = Path.Combine(Environment.CurrentDirectory, "data");
         
             _container = TestContainerBuilder
@@ -53,9 +52,9 @@ namespace Neo4j.Driver.IntegrationTests
                 .Build();
         }
 
-        public Uri HttpUri { get; }
-        public Uri BoltUri { get; }
-        public Uri BoltRoutingUri { get; }
+        public Uri HttpUri { get; private set;  }
+        public Uri BoltUri { get; private set;  }
+        public Uri BoltRoutingUri { get; private set;  }
         public IAuthToken AuthToken { get; }
 
         public Task InitializeAsync()
@@ -84,7 +83,7 @@ namespace Neo4j.Driver.IntegrationTests
             }
         }
 
-        public IDriver Driver { get; }
+        public IDriver Driver => GraphDatabase.Driver(BoltUri, AuthToken);
         public Pkcs12Store Pkcs12Store { get; private set; }
 
 
@@ -147,6 +146,10 @@ namespace Neo4j.Driver.IntegrationTests
             var instance = new TestContainerServer();
             instance.WriteCerts();
             await instance._container.StartAsync(cancellationTokenSource.Token);
+            var hostname = instance._container.Hostname;
+            instance.HttpUri = new Uri($"http://{hostname}:{instance.HttpUri.Port}");
+            instance.BoltRoutingUri = new Uri($"neo4j://{hostname}:{instance.BoltRoutingUri.Port}");
+            instance.BoltUri = new Uri($"bolt://{hostname}:{instance.BoltUri.Port}");
             return instance;
         }
 
@@ -156,6 +159,10 @@ namespace Neo4j.Driver.IntegrationTests
             var instance = new TestContainerServer();
             instance.WriteCerts();
             await instance._container.StartAsync(cancellationTokenSource.Token);
+            var hostname = instance._container.Hostname;
+            instance.HttpUri = new Uri($"http://{hostname}:{instance.HttpUri.Port}");
+            instance.BoltRoutingUri = new Uri($"neo4j://{hostname}:{instance.BoltRoutingUri.Port}");
+            instance.BoltUri = new Uri($"bolt://{hostname}:{instance.BoltUri.Port}");
             return instance;
         }
     }
