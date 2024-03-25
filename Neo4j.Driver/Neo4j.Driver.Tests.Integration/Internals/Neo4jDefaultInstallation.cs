@@ -24,11 +24,11 @@ namespace Neo4j.Driver.IntegrationTests.Internals
     {
         public static string User = "neo4j";
         public static string Password = "neo4j";
-        public static string HttpUri = "http://127.0.0.1:7474";
+        public static string HttpUri = "http://localhost:7474";
         public static string BoltUri => BoltHeader + BoltHost + ":" + BoltPort;
 
         public static string BoltHeader = "bolt://";
-        public static string BoltHost = "127.0.0.1";
+        public static string BoltHost = "localhost";
         public static string BoltPort = "7687"; 
 
         static Neo4jDefaultInstallation()
