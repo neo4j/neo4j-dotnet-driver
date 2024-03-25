@@ -30,7 +30,7 @@ namespace Neo4j.Driver.IntegrationTests
 {
     public class TestContainerCausalCluster : ICausalCluster
     {
-        public Uri BoltRoutingUri { get; }
+        public Uri BoltRoutingUri { get; private set;  }
         public IAuthToken AuthToken { get; }
 
         private readonly IContainer[] _containers;
@@ -96,6 +96,8 @@ namespace Neo4j.Driver.IntegrationTests
             await _network.CreateAsync();
             using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
             await Task.WhenAll(_containers.Select(x => x.StartAsync(cts.Token)));
+            
+            BoltRoutingUri = new UriBuilder("neo4j", _containers[0].Hostname, _containers[0].GetMappedPublicPort(Ports[0])).Uri;
         }
 
         public async Task DisposeAsync()
