@@ -734,13 +734,8 @@ public sealed class ZonedDateTime : TemporalValue, IEquatable<ZonedDateTime>, IC
     {
         unchecked
         {
-            var hashCode = Year;
-            hashCode = (hashCode * 397) ^ Month;
-            hashCode = (hashCode * 397) ^ Day;
-            hashCode = (hashCode * 397) ^ Hour;
-            hashCode = (hashCode * 397) ^ Second;
+            var hashCode = Zone.GetHashCode();
             hashCode = (hashCode * 397) ^ Nanosecond;
-            hashCode = (hashCode * 397) ^ Zone.GetHashCode();
             hashCode = (hashCode * 397) ^ UtcSeconds.GetHashCode();
             return hashCode;
         }
