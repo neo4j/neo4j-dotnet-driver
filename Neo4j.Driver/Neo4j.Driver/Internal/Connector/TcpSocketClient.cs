@@ -77,7 +77,7 @@ namespace Neo4j.Driver.Internal.Connector
                 }
                 catch (Exception e)
                 {
-                    throw new SecurityException($"Failed to establish encrypted connection with server {uri}.", e);
+                    throw new ServiceUnavailableException($"Failed to establish encrypted connection with server {uri}.", e);
                 }
             }
         }
