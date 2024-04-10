@@ -86,7 +86,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         public async Task ShouldNotConnectIPv6AddressIfDisabled()
         {
             using (var driver = GraphDatabase.Driver(
-                       Neo4jDefaultInstallation.BoltUri,
+                       "bolt://[::1]:7687",
                        AuthToken,
                        o => o.WithIpv6Enabled(false)))
             {
