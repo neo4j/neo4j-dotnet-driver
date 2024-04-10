@@ -45,9 +45,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
             try
             {
                 var cursor = await session.RunAsync(
-                    "CREATE (a {value: $value}) RETURN a.value",
-                    new Dictionary<string, object> { { "value", byteArray } });
-
+                    "CREATE (a {value: $value}) RETURN a.value", new Dictionary<string, object> {{"value", byteArray}});
                 var value = await cursor.SingleAsync(r => r["a.value"].As<byte[]>());
 
                 // Then
@@ -62,10 +60,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         [RequireServerWithIPv6Fact("3.1.0", VersionComparison.GreaterThanOrEqualTo)]
         public async Task ShouldConnectIPv6AddressIfEnabled()
         {
-            using (var driver = GraphDatabase.Driver(
-                       Neo4jDefaultInstallation.BoltUri,
-                       AuthToken,
-                       o => o.WithIpv6Enabled(true)))
+            using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken,
+                o => o.WithIpv6Enabled(true)))
             {
                 var session = driver.AsyncSession();
                 try
@@ -85,10 +81,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         [RequireServerFact("3.1.0", VersionComparison.GreaterThanOrEqualTo)]
         public async Task ShouldNotConnectIPv6AddressIfDisabled()
         {
-            using (var driver = GraphDatabase.Driver(
-                       Neo4jDefaultInstallation.BoltUri,
-                       AuthToken,
-                       o => o.WithIpv6Enabled(false)))
+            using (var driver = GraphDatabase.Driver("bolt://[::1]:7687", AuthToken,
+                o => o.WithIpv6Enabled(false)))
             {
                 var session = driver.AsyncSession();
                 try
@@ -125,10 +119,8 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         [RequireServerWithIPv6Fact]
         public async Task ShouldConnectIPv4AddressIfIpv6Enabled()
         {
-            using (var driver = GraphDatabase.Driver(
-                       Neo4jDefaultInstallation.BoltUri,
-                       AuthToken,
-                       o => o.WithIpv6Enabled(true)))
+            using (var driver = GraphDatabase.Driver(Neo4jDefaultInstallation.BoltUri, AuthToken,
+                o => o.WithIpv6Enabled(true)))
             {
                 var session = driver.AsyncSession();
                 try
@@ -151,14 +143,11 @@ namespace Neo4j.Driver.IntegrationTests.Direct
         public async Task ShouldCloseAgedIdleConnections(int sessionCount)
         {
             // Given
-            using (var driver = GraphDatabase.Driver(
-                       Neo4jDefaultInstallation.BoltUri,
-                       AuthToken,
-                       o =>
-                       {
-                           o.WithMetricsEnabled(true);
-                           o.WithConnectionIdleTimeout(TimeSpan.Zero); // enable but always timeout idle connections
-                       }))
+            using (var driver = GraphDatabase.Driver(Neo4jDefaultInstallation.BoltUri, AuthToken, o=>
+            {
+                o.WithMetricsEnabled(true);
+                o.WithConnectionIdleTimeout(TimeSpan.Zero); // enable but always timeout idle connections
+            }))
             {
                 // When
                 for (var i = 0; i < sessionCount; i++)
@@ -181,7 +170,7 @@ namespace Neo4j.Driver.IntegrationTests.Direct
                 }
 
                 // Then
-                var metrics = ((Internal.Driver)driver).GetMetrics();
+                var metrics = ((Internal.Driver) driver).GetMetrics();
                 var m = metrics.ConnectionPoolMetrics.Single().Value;
                 Output.WriteLine(m.ToString());
                 m.Created.Should().Be(sessionCount);
