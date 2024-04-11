@@ -54,7 +54,7 @@ public sealed class DriverIT : DirectDriverTestBase
     public async Task ShouldConnectIPv6AddressIfEnabled()
     {
         await using var driver = GraphDatabase.Driver(
-            "bolt://[::1]:7687",
+            DefaultInstallation.BoltUri,
             AuthToken,
             o => o.WithIpv6Enabled(true));
 
