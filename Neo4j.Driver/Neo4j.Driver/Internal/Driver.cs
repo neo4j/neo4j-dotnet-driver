@@ -151,8 +151,7 @@ internal sealed class Driver : IInternalDriver
         Query query,
         QueryConfig config,
         Action<IRecord> streamProcessor,
-        CancellationToken cancellationToken
-    )
+        CancellationToken cancellationToken)
     {
         async Task<int> Process(IAsyncEnumerable<IRecord> records)
         {

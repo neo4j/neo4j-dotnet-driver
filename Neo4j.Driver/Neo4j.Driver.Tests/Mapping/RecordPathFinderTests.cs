@@ -29,7 +29,7 @@ public class RecordPathFinderTests
         var recordPathFinder = new RecordPathFinder();
         var record = TestRecord.Create(new[] { "testField" }, new object[] { "testValue" });
 
-        var result = recordPathFinder.TryGetValueByPath(record, "TesTfIELd", out var value);
+        var result = recordPathFinder.TryGetValueByPath(record, "testField", out var value);
 
         result.Should().BeTrue();
         value.Should().Be("testValue");
