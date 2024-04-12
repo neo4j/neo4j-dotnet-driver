@@ -35,7 +35,7 @@ internal class RecordPathFinder : IRecordPathFinder
         }
 
         // if the path matches a field name, we can return the value directly
-        if (record.TryGetCaseInsensitive(path, out value))
+        if (record.TryGet(path, out value))
         {
             return true;
         }
@@ -63,23 +63,6 @@ internal class RecordPathFinder : IRecordPathFinder
             if (dictAsRecord is not null)
             {
                 return dictAsRecord.TryGetValueByCaseInsensitiveKey(property, out value);
-            }
-        }
-
-        // check any values on the record that are entities or dictionaries, in case
-        // the path is a property on one of those
-        foreach (var key in record.Keys)
-        {
-            var dictAsRecord = record[key] switch
-            {
-                IEntity entity => new DictAsRecord(entity.Properties, record),
-                IReadOnlyDictionary<string, object> dict => new DictAsRecord(dict, record),
-                _ => null
-            };
-
-            if(dictAsRecord is not null && TryGetValueByPath(dictAsRecord, path, out value))
-            {
-                return true;
             }
         }
 

@@ -28,8 +28,24 @@ public class RecordMappingTests
 {
     private class TestPerson
     {
+        [MappingSource("person.name")]
         public string Name { get; set; } = "A. Test Name";
+
+        [MappingSource("person.born")]
         public int? Born { get; set; }
+
+        [MappingSource("hobbies")]
+        public List<string> Hobbies { get; set; } = null!;
+    }
+
+    private class SimpleTestPerson
+    {
+        [MappingSource("name")]
+        public string Name { get; set; } = "A. Test Name";
+
+        [MappingSource("born")]
+        public int? Born { get; set; }
+
         public List<string> Hobbies { get; set; } = null!;
     }
 
@@ -37,7 +53,7 @@ public class RecordMappingTests
     public void ShouldMapPrimitives()
     {
         var record = TestRecord.Create(new[] { "name", "born" }, new object[] { "Bob", 1977 });
-        var person = record.AsObject<TestPerson>();
+        var person = record.AsObject<SimpleTestPerson>();
         person.Name.Should().Be("Bob");
         person.Born.Should().Be(1977);
     }
@@ -72,7 +88,8 @@ public class RecordMappingTests
     [Fact]
     public void ShouldLeaveDefaultsIfFieldAbsent()
     {
-        var record = TestRecord.Create(new[] { "born" }, new object[] { 1977 });
+        var dict = new Dictionary<string, object> { { "born", 1977 } };
+        var record = TestRecord.Create(new[] { "Person" }, new object[] { dict });
         var person = RecordObjectMapping.Map(record, typeof(TestPerson)) as TestPerson;
         person.Should().NotBeNull();
         person!.Name.Should().Be("A. Test Name");
@@ -81,14 +98,22 @@ public class RecordMappingTests
 
     private class Movie
     {
+        [MappingSource("title")]
         public string Title { get; set; } = "";
+
+        [MappingSource("released")]
         public int Released { get; set; }
+
+        [MappingSource("tagline")]
         public string Tagline { get; set; }
     }
 
     private class Person
     {
+        [MappingSource("name")]
         public string Name { get; set; } = "";
+
+        [MappingSource("born")]
         public int? Born { get; set; }
     }
 
@@ -216,7 +241,7 @@ public class RecordMappingTests
         }
 
         GetRecordsAsync()
-            .AsObjectsAsync<TestPerson>()
+            .AsObjectsAsync<SimpleTestPerson>()
             .Result.Should()
             .BeEquivalentTo(
                 new TestPerson { Name = "Bob" },
@@ -242,7 +267,7 @@ public class RecordMappingTests
             }
         }
 
-        var result = await GetRecordsAsync().ToListAsync<TestPerson>();
+        var result = await GetRecordsAsync().ToListAsync<SimpleTestPerson>();
         result.Should()
             .BeEquivalentTo(
                 new TestPerson { Name = "Bob" },
@@ -268,28 +293,34 @@ public class RecordMappingTests
             }
         }
 
-        var people = new List<TestPerson>();
-        await foreach (var person in GetRecordsAsync().AsObjectsAsync<TestPerson>())
+        var people = new List<SimpleTestPerson>();
+        await foreach (var person in GetRecordsAsync().AsObjectsAsync<SimpleTestPerson>())
         {
             people.Add(person);
         }
 
         people.Should()
             .BeEquivalentTo(
-                new TestPerson { Name = "Bob" },
-                new TestPerson { Name = "Alice", Born = 1988 },
-                new TestPerson { Name = "Eve", Born = 1999 });
+                new SimpleTestPerson { Name = "Bob" },
+                new SimpleTestPerson { Name = "Alice", Born = 1988 },
+                new SimpleTestPerson { Name = "Eve", Born = 1999 });
     }
 
     private class CarAndPainting
     {
+        [MappingSource("car")]
         public Car Car { get; set; } = null!;
+
+        [MappingSource("painting")]
         public Painting Painting { get; set; } = null!;
     }
 
     private class Painting
     {
+        [MappingSource("painting.artist")]
         public string Artist { get; set; } = "";
+
+        [MappingSource("painting.title")]
         public string Title { get; set; } = "";
     }
 
@@ -298,7 +329,7 @@ public class RecordMappingTests
         [MappingSource("car.make")]
         public string Make { get; set; } = "";
 
-        [MappingSource("model")]
+        [MappingSource("car.model")]
         public string Model { get; set; } = "";
 
         [MappingSource("car.madeup")]
@@ -339,7 +370,9 @@ public class RecordMappingTests
 
     private class PersonWithoutBornSetter
     {
+        [MappingSource("name")]
         public string Name { get; set; } = "";
+
         public int? Born { get; } = 1999; // no setter
     }
 
@@ -354,6 +387,7 @@ public class RecordMappingTests
 
     private class TestPersonWithoutBornMapped
     {
+        [MappingSource("name")]
         public string Name { get; set; } = "A. Test Name";
 
         [MappingIgnored]
@@ -371,12 +405,16 @@ public class RecordMappingTests
 
     private class Book
     {
+        [MappingSource("title")]
         public string Title { get; set; }
     }
 
     private class Author
     {
+        [MappingSource("author.name")]
         public string Name { get; set; }
+
+        [MappingSource("author.books")]
         public List<Book> Books { get; set; }
     }
 
@@ -406,8 +444,8 @@ public class RecordMappingTests
 
     private record Song(
         [MappingSource("recordingArtist")] string Artist,
-        string Title,
-        int Year);
+        [MappingSource("title")] string Title,
+        [MappingSource("year")] int Year);
 
     [Fact]
     public void ShouldMapToRecords()
@@ -448,7 +486,10 @@ public class RecordMappingTests
 
     private class ClassWithInitProperties
     {
+        [MappingSource("name")]
         public string Name { get; init; } = "";
+
+        [MappingSource("age")]
         public int Age { get; init; }
     }
 
@@ -525,7 +566,7 @@ public class RecordMappingTests
 
         var record = node.AsRecord();
 
-        var person = record.AsObject<TestPerson>();
+        var person = record.AsObject<SimpleTestPerson>();
         person.Name.Should().Be("Bob");
         person.Born.Should().Be(1977);
     }

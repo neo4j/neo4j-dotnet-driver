@@ -36,7 +36,7 @@ public class DefaultMapperTests
     {
         var mapper = DefaultMapper.Get<SimpleClass>();
 
-        var record = TestRecord.Create(new[] { "id", "name" }, new object[] { 1, "Foo" });
+        var record = TestRecord.Create(new[] { "Id", "Name" }, new object[] { 1, "Foo" });
         var result = mapper.Map(record);
 
         result.Id.Should().Be(1);
@@ -293,6 +293,8 @@ public class DefaultMapperTests
 
         public int Year { get; set; }
         public string Occurrence { get; set; }
+
+        [MappingSource("description")]
         public string Description { get; set; }
     }
 
