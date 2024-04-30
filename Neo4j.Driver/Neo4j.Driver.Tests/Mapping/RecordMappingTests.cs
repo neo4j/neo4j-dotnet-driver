@@ -28,24 +28,30 @@ public class RecordMappingTests
 {
     private class TestPerson
     {
+        [MappingDefaultValue("A. Test Name")]
         [MappingSource("person.name")]
-        public string Name { get; set; } = "A. Test Name";
+        public string Name { get; set; }
 
+        [MappingOptional]
         [MappingSource("person.born")]
         public int? Born { get; set; }
 
+        [MappingOptional]
         [MappingSource("hobbies")]
         public List<string> Hobbies { get; set; } = null!;
     }
 
     private class SimpleTestPerson
     {
+        [MappingOptional]
         [MappingSource("name")]
         public string Name { get; set; } = "A. Test Name";
 
+        [MappingOptional]
         [MappingSource("born")]
         public int? Born { get; set; }
 
+        [MappingOptional]
         public List<string> Hobbies { get; set; } = null!;
     }
 
@@ -104,6 +110,7 @@ public class RecordMappingTests
         [MappingSource("released")]
         public int Released { get; set; }
 
+        [MappingOptional]
         [MappingSource("tagline")]
         public string Tagline { get; set; }
     }
@@ -332,8 +339,9 @@ public class RecordMappingTests
         [MappingSource("car.model")]
         public string Model { get; set; } = "";
 
+        [MappingDefaultValue("unset")]
         [MappingSource("car.madeup")]
-        public string MadeUp { get; set; } = "unset";
+        public string MadeUp { get; set; }
     }
 
     [Fact]
@@ -469,7 +477,7 @@ public class RecordMappingTests
 
         var act = () => record.AsObject<Song>();
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<MappingFailedException>();
     }
 
     [Fact]
@@ -481,7 +489,7 @@ public class RecordMappingTests
 
         var act = () => record.AsObject<Song>();
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<MappingFailedException>();
     }
 
     private class ClassWithInitProperties

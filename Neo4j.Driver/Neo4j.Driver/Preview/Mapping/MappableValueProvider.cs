@@ -68,7 +68,7 @@ internal class MappableValueProvider : IMappableValueProvider
 
         switch (value)
         {
-            // if null is returned, leave the property as the default value: the record may not have the given field
+            // if null is returned, the record may not have the given field
             case null: return false;
 
             // if the value is an entity or dictionary, make it into a fake record and map that (indirectly recursive)

@@ -43,8 +43,6 @@ public enum EntityMappingSource
     NodeLabel
 }
 
-internal record EntityMappingInfo(string Path, EntityMappingSource EntityMappingSource);
-
 /// <summary>
 /// Instructs the default mapper to use a different field than the property name when mapping a value to the
 /// marked property. This attribute does not affect custom-defined mappers. A path may consist of the name of the
@@ -53,7 +51,7 @@ internal record EntityMappingInfo(string Path, EntityMappingSource EntityMapping
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public class MappingSourceAttribute : Attribute
 {
-    internal EntityMappingInfo EntityMappingInfo { get; }
+    internal EntityMappingInfo EntityMappingInfo { get; private set; }
 
     /// <summary>
     /// Instructs the default mapper to use a different field than the property name when mapping a value to the
