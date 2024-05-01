@@ -19,7 +19,7 @@ using System;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Neo4j.Driver.Preview.Mapping;
+namespace Neo4j.Driver.Mapping;
 
 /// <summary>
 /// This class wraps the <see cref="BuiltMapper{T}"/> and exposes a fluent API for building the mapper.

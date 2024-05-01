@@ -13,16 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-
-namespace Neo4j.Driver.Preview.Mapping;
+namespace Neo4j.Driver.Mapping;
 
 /// <summary>
-/// Instructs the default object mapper not to attempt to map any value to this property.
-/// This attribute does not affect custom-defined mappers.
+/// Interface to be implemented by a class that maps records to objects of type <typeparamref name="T"/>.
 /// </summary>
-[AttributeUsage(AttributeTargets.Property)]
-public class MappingIgnoredAttribute : Attribute
+/// <typeparam name="T">The type of object to which records will be mapped.</typeparam>
+public interface IRecordMapper<out T>
 {
-    
+    /// <summary>
+    /// Maps the given record to an object of type <typeparamref name="T"/>.
+    /// </summary>
+    /// <param name="record">The record to map.</param>
+    /// <returns>The mapped object.</returns>
+    T Map(IRecord record);
 }

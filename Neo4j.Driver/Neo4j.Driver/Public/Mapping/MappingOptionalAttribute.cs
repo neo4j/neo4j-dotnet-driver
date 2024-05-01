@@ -15,7 +15,7 @@
 
 using System;
 
-namespace Neo4j.Driver.Preview.Mapping;
+namespace Neo4j.Driver.Mapping;
 
 /// <summary>
 /// If a property or is decorated with this attribute, it will be considered optional. The

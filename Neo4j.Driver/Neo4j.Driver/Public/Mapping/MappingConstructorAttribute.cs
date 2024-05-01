@@ -15,7 +15,7 @@
 
 using System;
 
-namespace Neo4j.Driver.Preview.Mapping;
+namespace Neo4j.Driver.Mapping;
 
 /// <summary>
 /// Indicates that the constructor should be used when mapping a record to an object.
