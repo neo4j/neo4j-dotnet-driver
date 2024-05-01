@@ -34,8 +34,8 @@ internal class MappingSourceDelegateBuilder : IMappingSourceDelegateBuilder
         {
             if (!_pathFinder.TryGetValueByPath(record, entityMappingInfo.Path, out var foundValue))
             {
-                value = null;
-                return false;
+                value = entityMappingInfo.DefaultValue;
+                return entityMappingInfo.Optional;
             }
 
             switch (entityMappingInfo)

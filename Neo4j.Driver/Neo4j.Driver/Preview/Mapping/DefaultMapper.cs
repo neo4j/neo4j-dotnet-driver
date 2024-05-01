@@ -39,18 +39,14 @@ internal static class DefaultMapper
         var constructor = GetCorrectConstructor<T>();
         mappingBuilder.UseConstructor(constructor);
 
-        // keep a list of the entity sources that are used by the constructor so we don't re-map them later
-        var usedEntitySources = new HashSet<string>(
-            constructor.GetParameters()
-                .Select(
-                    p => p.GetCustomAttribute<MappingSourceAttribute>()?.EntityMappingInfo?.Path?.ToLowerInvariant() ??
-                        p.Name.ToLowerInvariant()));
+        // keep a list of the entity sources that are used by the constructor, so we don't re-map them later
+        var usedEntitySources = GetUsedEntitySources<T>(constructor);
 
         // after the constructor is used to create the object, map any remaining properties
         var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
         foreach (var property in properties)
         {
-            // ignore properties without a setter or with MappingIgnoredAttribute
+            // ignore properties without a setter or with MappingIgnoredAttribute, or compiler generated
             if (property.SetMethod is null ||
                 property.GetCustomAttribute<MappingIgnoredAttribute>() is not null)
             {
@@ -59,11 +55,10 @@ internal static class DefaultMapper
 
             // check if there is a MappingSourceAttribute: if there is, use the specified mapping source;
             // if not, look for a property on the entity with the same name as the property on the object
-            var mappingSource = property.GetCustomAttribute<MappingSourceAttribute>()?.EntityMappingInfo ??
-                new EntityMappingInfo(property.Name, EntityMappingSource.Property);
+            var mappingSource = property.GetEntityMappingInfo();
 
             // don't re-map any fields that were already mapped by the constructor
-            if (!usedEntitySources.Contains(mappingSource.Path.ToLowerInvariant()))
+            if (!usedEntitySources.Contains(mappingSource.Path))
             {
                 mappingBuilder.Map(property.SetMethod, mappingSource);
             }
@@ -74,6 +69,30 @@ internal static class DefaultMapper
         // cache the mapper for future use
         Mappers[type] = mapper;
         return (IRecordMapper<T>)mapper;
+    }
+
+    private static HashSet<string> GetUsedEntitySources<T>(ConstructorInfo constructor)
+    {
+        var isRecordType = IsRecord(typeof(T));
+        var usedEntitySources = new HashSet<string>();
+
+        foreach (var parameter in constructor.GetParameters())
+        {
+            var key = parameter.GetCustomAttribute<MappingSourceAttribute>()?.EntityMappingInfo?.Path;
+            if (key == null || isRecordType)
+            {
+                key = parameter.Name;
+            }
+
+            usedEntitySources.Add(key);
+        }
+
+        return usedEntitySources;
+    }
+
+    private static bool IsRecord(Type type)
+    {
+        return type.GetProperty("EqualityContract", BindingFlags.NonPublic | BindingFlags.Instance) != null;
     }
 
     private static ConstructorInfo GetCorrectConstructor<T>()

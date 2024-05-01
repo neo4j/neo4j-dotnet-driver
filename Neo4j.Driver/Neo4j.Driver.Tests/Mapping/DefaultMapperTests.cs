@@ -129,7 +129,7 @@ public class DefaultMapperTests
         var record = TestRecord.Create(new[] { "something" }, new object[] { 69 });
         var mapper = DefaultMapper.Get<Person>();
         var act = () => mapper.Map(record);
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<MappingFailedException>();
     }
 
     [Fact]
@@ -291,8 +291,8 @@ public class DefaultMapperTests
             Occurrence = occurrence.ToLowerInvariant();
         }
 
-        public int Year { get; set; }
-        public string Occurrence { get; set; }
+        public int Year { get; }
+        public string Occurrence { get; }
 
         [MappingSource("description")]
         public string Description { get; set; }
@@ -323,8 +323,8 @@ public class DefaultMapperTests
             Occurrence = occurrence.ToLowerInvariant();
         }
 
-        public int Year { get; set; }
-        public string Occurrence { get; set; }
+        public int Year { get; }
+        public string Occurrence { get; }
 
         [MappingSource("description")]
         public string OtherText { get; set; }

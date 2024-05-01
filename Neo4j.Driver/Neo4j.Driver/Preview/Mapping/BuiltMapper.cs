@@ -31,18 +31,29 @@ internal class BuiltMapper<T> : IRecordMapper<T>
 
     public T Map(IRecord record)
     {
+        T result;
         // if there's a whole-object mapping, use it, otherwise create a new object
-        var obj = _wholeObjectMapping is not null
-            ? _wholeObjectMapping(record)
-            : CreateObject<T>();
+        try
+        {
+            result = _wholeObjectMapping is not null
+                ? _wholeObjectMapping(record)
+                : CreateObject<T>();
+        }
+        catch (Exception ex)
+        {
+            throw new MappingFailedException(
+                $"Cannot map record to type {typeof(T).Name} " +
+                $"because the mapping function threw an exception.",
+                ex);
+        }
 
         // if there are individual mappings for the properties, apply them
         foreach (var mapping in _propertyMappings)
         {
-            mapping(obj, record);
+            mapping(result, record);
         }
 
-        return obj;
+        return result;
     }
 
     private static TObject CreateObject<TObject>()
@@ -56,7 +67,7 @@ internal class BuiltMapper<T> : IRecordMapper<T>
                 $"because it does not have a parameterless constructor.");
         }
 
-        return (TObject)constructor.Invoke(Array.Empty<object>());
+        return (TObject)constructor.Invoke([]);
     }
 
     public void AddWholeObjectMapping(Func<IRecord, T> mappingFunction)
@@ -72,8 +83,7 @@ internal class BuiltMapper<T> : IRecordMapper<T>
             parameter => new
             {
                 parameter,
-                mapping = parameter.GetCustomAttribute<MappingSourceAttribute>()?.EntityMappingInfo ??
-                    new EntityMappingInfo(parameter.Name, EntityMappingSource.Property)
+                mapping = parameter.GetEntityMappingInfo()
             });
 
         _wholeObjectMapping = MapFromRecord;
@@ -93,13 +103,12 @@ internal class BuiltMapper<T> : IRecordMapper<T>
 
                 if (!success)
                 {
-                    throw new InvalidOperationException(
-                        $"Cannot map record to type {typeof(T).Name} " +
-                        $"because the record does not contain a value for the parameter '{p.parameter.Name}'.");
+                    throw new MappingFailedException(
+                        $"Cannot map record to type {typeof(T).Name} because the record does not " +
+                        $"contain a value for the constructor parameter '{p.parameter.Name}'.");
                 }
 
                 args.Add(mappable);
-
             }
 
             return (T)constructorInfo.Invoke(args.ToArray());
@@ -113,7 +122,7 @@ internal class BuiltMapper<T> : IRecordMapper<T>
     {
         // this part only happens once, at the time of building the mapper
         var propertyType = propertySetter.GetParameters()[0].ParameterType;
-        AddMapping(propertySetter, GetValue);
+        AddMapping(propertySetter, GetValue, entityMappingInfo.Optional);
         return;
 
         // this part happens every time a record is mapped
@@ -125,7 +134,8 @@ internal class BuiltMapper<T> : IRecordMapper<T>
 
     public void AddMapping(
         MethodInfo propertySetter,
-        Func<IRecord, object> valueGetter)
+        Func<IRecord, object> valueGetter,
+        bool optional = false)
     {
         // this part only happens once, at the time of building the mapper
         _propertyMappings.Add(MapFromRecord);
@@ -143,6 +153,14 @@ internal class BuiltMapper<T> : IRecordMapper<T>
             if (mappableValueFound)
             {
                 propertySetter.Invoke(obj, new[] { mappableValue });
+            }
+            else if(!optional)
+            {
+                // throw because we couldn't find a value for the property
+                var propertyName = propertySetter.Name.Substring("set_".Length);
+                throw new MappingFailedException(
+                    $"Cannot map record to type {typeof(T).Name} " +
+                    $"because the record does not contain a value for the property '{propertyName}'.");
             }
         }
     }

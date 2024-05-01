@@ -27,7 +27,7 @@ public class MappingProviderTests
         [MappingSource("intValue")]
         public int IntValue { get; set; }
 
-        [MappingSource("texr")]
+        [MappingSource("stringValue")]
         public string Text { get; set; } = null!;
     }
 
@@ -48,6 +48,7 @@ public class MappingProviderTests
         [MappingSource("name")]
         public string Name { get; set; } = null!;
 
+        [MappingOptional]
         public int Age { get; set; }
     }
 

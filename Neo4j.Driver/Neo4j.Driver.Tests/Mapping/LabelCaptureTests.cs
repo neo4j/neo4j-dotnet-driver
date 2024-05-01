@@ -28,12 +28,15 @@ public class LabelCaptureTests
     public class TestMappedClass
     {
         [MappingSource("Person", EntityMappingSource.NodeLabel)]
+        [MappingOptional]
         public string Label { get; set; }
 
         [MappingSource("Person", EntityMappingSource.NodeLabel)]
+        [MappingOptional]
         public List<string> Labels { get; set; }
 
         [MappingSource("Relationship", EntityMappingSource.RelationshipType)]
+        [MappingOptional]
         public string RelationshipType { get; set; }
     }
 
@@ -86,17 +89,20 @@ public class LabelCaptureTests
                         x => x.Label,
                         "Person",
                         EntityMappingSource.NodeLabel,
-                        x => string.Join("|", ((string[])x).Select(y => y.ToUpper())))
+                        x => string.Join("|", ((string[])x).Select(y => y.ToUpper())),
+                        optional: true)
                     .Map(
                         x => x.Labels,
                         "Person",
                         EntityMappingSource.NodeLabel,
-                        x => ((string[])x).Select(y => y.Replace("a", "x")).ToList())
+                        x => ((string[])x).Select(y => y.Replace("a", "x")).ToList(),
+                        optional: true)
                     .Map(
                         x => x.RelationshipType,
                         "Relationship",
                         EntityMappingSource.RelationshipType,
-                        x => x?.ToString()?.ToLower()));
+                        x => x?.ToString()?.ToLower(),
+                        optional: true));
         }
     }
 

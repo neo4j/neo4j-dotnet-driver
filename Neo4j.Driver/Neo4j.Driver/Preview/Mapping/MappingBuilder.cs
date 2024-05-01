@@ -39,11 +39,12 @@ internal class MappingBuilder<T> : IMappingBuilder<T>
         Expression<Func<T, TProperty>> destination,
         string path,
         EntityMappingSource entityMappingSource = EntityMappingSource.Property,
-        Func<object, TProperty> converter = null)
+        Func<object, TProperty> converter = null,
+        bool optional = false)
     {
         _builtMapper.AddMappingBySetter(
             GetPropertySetter(destination),
-            new EntityMappingInfo(path, entityMappingSource),
+            new EntityMappingInfo(path, entityMappingSource, optional),
             converter is null ? null : o => converter.Invoke(o));
 
         return this;

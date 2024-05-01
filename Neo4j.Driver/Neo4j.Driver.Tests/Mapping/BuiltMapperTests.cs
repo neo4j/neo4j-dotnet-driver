@@ -38,7 +38,7 @@ public class BuiltMapperTests
     {
         var mapper = new BuiltMapper<NoParameterlessConstructor>();
         var act = () => mapper.Map(null);
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<MappingFailedException>();
     }
 
     [Fact]
@@ -50,5 +50,38 @@ public class BuiltMapperTests
         mapper.AddConstructorMapping(constructor);
         var result = mapper.Map(TestRecord.Create(new[] { "value" }, new object[] { 48 }));
         result.Value.Should().Be(48);
+    }
+
+    private class TwoPropertyClass
+    {
+        public int Value1 { get; set; }
+        public int Value2 { get; set; }
+    }
+
+    [Fact]
+    public void ShouldMapProperties()
+    {
+        var builder = new MappingBuilder<TwoPropertyClass>();
+        builder.Map(x => x.Value1, "value1");
+        builder.Map(x => x.Value2, "value2");
+
+        var record = TestRecord.Create(["value1", "value2"], [42, 43]);
+        var mapper = builder.Build();
+        var result = mapper.Map(record);
+        result.Value1.Should().Be(42);
+        result.Value2.Should().Be(43);
+    }
+
+    [Fact]
+    public void ShouldThrowWhenPropertyNotFoundInRecord()
+    {
+        var builder = new MappingBuilder<TwoPropertyClass>();
+        builder.Map(x => x.Value1, "value1");
+        builder.Map(x => x.Value2, "value2");
+
+        var record = TestRecord.Create(["value1"], [42]);
+        var mapper = builder.Build();
+        var act = () => mapper.Map(record);
+        act.Should().Throw<MappingFailedException>();
     }
 }

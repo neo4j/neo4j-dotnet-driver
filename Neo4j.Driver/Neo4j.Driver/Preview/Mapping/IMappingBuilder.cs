@@ -47,7 +47,8 @@ public interface IMappingBuilder<TObject>
         Expression<Func<TObject, TProperty>> destination,
         string path,
         EntityMappingSource entityMappingSource = EntityMappingSource.Property,
-        Func<object, TProperty> converter = null);
+        Func<object, TProperty> converter = null,
+        bool optional = false);
 
     /// <summary>
     /// Defines a mapping directly from the record to a property on the object.
