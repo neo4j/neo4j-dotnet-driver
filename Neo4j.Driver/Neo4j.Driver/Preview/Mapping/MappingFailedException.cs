@@ -17,7 +17,7 @@ using System;
 
 namespace Neo4j.Driver.Preview.Mapping;
 
-public class MappingFailedException : Exception
+public class MappingFailedException : Neo4jException
 {
     // the standard constructors for an exception
     public MappingFailedException(string message) : base(message)
