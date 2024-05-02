@@ -16,7 +16,7 @@
 using System;
 using System.Linq.Expressions;
 
-namespace Neo4j.Driver.Preview.Mapping;
+namespace Neo4j.Driver.Mapping;
 
 /// <summary>
 /// Defines a builder for mapping objects from <see cref="IRecord"/>s.

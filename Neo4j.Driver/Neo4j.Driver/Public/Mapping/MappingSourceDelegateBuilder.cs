@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Preview.Mapping;
+namespace Neo4j.Driver.Mapping;
 
 internal delegate bool MappingValueDelegate(IRecord record, out object value);
 

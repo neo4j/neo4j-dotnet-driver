@@ -15,7 +15,7 @@
 
 using System.Collections.Generic;
 
-namespace Neo4j.Driver.Preview.Mapping;
+namespace Neo4j.Driver.Mapping;
 
 internal interface IRecordPathFinder
 {

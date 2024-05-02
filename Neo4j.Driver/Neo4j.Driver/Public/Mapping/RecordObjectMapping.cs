@@ -19,7 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace Neo4j.Driver.Preview.Mapping;
+namespace Neo4j.Driver.Mapping;
 
 /// <summary>
 /// Contains methods for registering a mapping with the global mapping configuration.

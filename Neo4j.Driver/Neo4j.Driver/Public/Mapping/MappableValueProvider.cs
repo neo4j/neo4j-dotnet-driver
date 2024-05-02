@@ -18,7 +18,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Neo4j.Driver.Preview.Mapping;
+namespace Neo4j.Driver.Mapping;
 
 internal interface IMappableValueProvider
 {

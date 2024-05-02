@@ -13,18 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Preview.Mapping;
+using System;
 
-/// <summary>
-/// Interface to be implemented by a class that maps records to objects of type <typeparamref name="T"/>.
-/// </summary>
-/// <typeparam name="T">The type of object to which records will be mapped.</typeparam>
-public interface IRecordMapper<out T>
+namespace Neo4j.Driver.Mapping;
+
+public class MappingFailedException : Neo4jException
 {
-    /// <summary>
-    /// Maps the given record to an object of type <typeparamref name="T"/>.
-    /// </summary>
-    /// <param name="record">The record to map.</param>
-    /// <returns>The mapped object.</returns>
-    T Map(IRecord record);
+    // the standard constructors for an exception
+    public MappingFailedException(string message) : base(message)
+    {
+    }
+
+    public MappingFailedException(string message, Exception innerException) : base(message, innerException)
+    {
+    }
 }
