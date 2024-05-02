@@ -40,6 +40,8 @@ public interface IMappingBuilder<TObject>
     /// </param>
     /// <param name="converter">An optional converter function to convert the value from the field value
     /// to the type of the property.</param>
+    /// <param name="optional">A value indicating whether the mapping is optional. If true, the mapping will not
+    /// throw an exception if the field is not present in the record.</param>
     /// <typeparam name="TProperty">The type of the property being mapped. This type will be inferred from the
     /// <paramref name="destination"/> parameter.</typeparam>
     /// <returns>This instance for method chaining.</returns>
@@ -64,7 +66,7 @@ public interface IMappingBuilder<TObject>
         Func<IRecord, object> valueGetter);
 
     /// <summary>
-    /// Defines a mapping from a the record directly to the entire object.
+    /// Defines a mapping from a record directly to an entire object.
     /// </summary>
     /// <param name="mappingFunction">A function that accepts an <see cref="IRecord"/> and returns the mapped
     /// object.</param>
