@@ -33,4 +33,18 @@ public static class RecordExtensions
     {
         return RecordObjectMapping.Map<T>(record);
     }
+
+    /// <summary>
+    /// Converts the record to an object of the same type as the given blueprint according to the global
+    /// mapping configuration.
+    /// </summary>
+    /// <param name="record">The record to convert.</param>
+    /// <param name="blueprint">An object to be used as a blueprint for the mapping. This could be an object of an
+    /// anonymous type.</param>
+    /// <typeparam name="T">The type that will be mapped to.</typeparam>
+    /// <returns>The mapped object.</returns>
+    public static T AsObject<T>(this IRecord record, T blueprint)
+    {
+        return (T)RecordObjectMapping.Map(record, typeof(T));
+    }
 }

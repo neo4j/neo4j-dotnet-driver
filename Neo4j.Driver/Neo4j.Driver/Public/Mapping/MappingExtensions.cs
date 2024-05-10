@@ -22,7 +22,7 @@ namespace Neo4j.Driver.Mapping;
 internal static class MappingExtensions
 {
     private static readonly MethodInfo AsGenericMethod =
-        typeof(ValueExtensions).GetMethod(nameof(ValueExtensions.As), new[] { typeof(object) });
+        typeof(ValueExtensions).GetMethod(nameof(ValueExtensions.As), [typeof(object)]);
 
     private static readonly Dictionary<Type, MethodInfo> AsMethods = new();
 
@@ -34,6 +34,13 @@ internal static class MappingExtensions
             AsMethods[type] = asMethod;
         }
 
-        return asMethod.Invoke(null, new[] { obj });
+        try
+        {
+            return asMethod.Invoke(null, [obj]);
+        }
+        catch (TargetInvocationException tie)
+        {
+            throw tie.InnerException!;
+        }
     }
 }
