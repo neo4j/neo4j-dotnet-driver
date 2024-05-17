@@ -43,8 +43,8 @@ public static class RecordExtensions
     /// anonymous type.</param>
     /// <typeparam name="T">The type that will be mapped to.</typeparam>
     /// <returns>The mapped object.</returns>
-    public static T AsObject<T>(this IRecord record, T blueprint)
+    public static T AsObjectFromBlueprint<T>(this IRecord record, T blueprint)
     {
-        return (T)RecordObjectMapping.Map(record, typeof(T));
+        return RecordObjectMapping.MapFromBlueprint(record, blueprint);
     }
 }

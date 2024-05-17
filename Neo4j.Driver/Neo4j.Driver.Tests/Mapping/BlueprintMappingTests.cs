@@ -29,8 +29,7 @@ public class BlueprintMappingTests
     {
         var record = TestRecord.Create(("name", "Alice"), ("age", 69), ("isAdult", true));
 
-        var result = RecordObjectMapping.MapFromBlueprint(record, new { name = "", age = 0, isAdult = false });
-
+        var result = record.AsObjectFromBlueprint(new { name = "", age = 0, isAdult = false });
         result.name.Should().Be("Alice");
         result.age.Should().Be(69);
         result.isAdult.Should().Be(true);
@@ -42,7 +41,7 @@ public class BlueprintMappingTests
         var record = TestRecord.Create(("x", 69));
         var blueprint = new { x = 0 };
 
-        var result = RecordObjectMapping.MapFromBlueprint(record, blueprint);
+        var result = record.AsObjectFromBlueprint(blueprint);
 
         result.x.Should().Be(69);
     }
@@ -53,7 +52,7 @@ public class BlueprintMappingTests
         var record = TestRecord.Create(("x", 69), ("y", "test"));
         var blueprint = new { x = 0, y = string.Empty };
 
-        var result = RecordObjectMapping.MapFromBlueprint(record, blueprint);
+        var result = record.AsObjectFromBlueprint(blueprint);
 
         result.x.Should().Be(69);
         result.y.Should().Be("test");
@@ -65,7 +64,7 @@ public class BlueprintMappingTests
         var record = TestRecord.Create(("x", 69), ("y", "test"), ("z", true));
         var blueprint = new { x = 0, y = string.Empty, z = false };
 
-        var result = RecordObjectMapping.MapFromBlueprint(record, blueprint);
+        var result = record.AsObjectFromBlueprint(blueprint);
 
         result.x.Should().Be(69);
         result.y.Should().Be("test");
@@ -78,7 +77,7 @@ public class BlueprintMappingTests
         var record = TestRecord.Create(("x", 69), ("y", "test"), ("z", true), ("a", 3.14));
         var blueprint = new { x = 0, y = string.Empty, z = false, a = 0.0 };
 
-        var result = RecordObjectMapping.MapFromBlueprint(record, blueprint);
+        var result = record.AsObjectFromBlueprint(blueprint);
 
         result.x.Should().Be(69);
         result.y.Should().Be("test");
@@ -92,7 +91,7 @@ public class BlueprintMappingTests
         var record = TestRecord.Create(("x", 69));
         var blueprint = new { x = 0, y = string.Empty };
 
-        Action act = () => RecordObjectMapping.MapFromBlueprint(record, blueprint);
+        Action act = () => record.AsObjectFromBlueprint(blueprint);
 
         act.Should().Throw<MappingFailedException>();
     }
@@ -103,7 +102,7 @@ public class BlueprintMappingTests
         var record = TestRecord.Create(("x", "test"));
         var blueprint = new { x = 0 };
 
-        Action act = () => RecordObjectMapping.MapFromBlueprint(record, blueprint);
+        Action act = () => record.AsObjectFromBlueprint(blueprint);
 
         act.Should().Throw<MappingFailedException>();
     }
@@ -119,7 +118,7 @@ public class BlueprintMappingTests
         var record = TestRecord.Create(("point", pointDict), ("color", "red"));
         var blueprint = new { point = new Point(0, 0), color = string.Empty };
 
-        var result = RecordObjectMapping.MapFromBlueprint(record, blueprint);
+        var result = record.AsObjectFromBlueprint(blueprint);
 
         result.point.X.Should().Be(1);
         result.point.Y.Should().Be(2);
@@ -132,10 +131,10 @@ public class BlueprintMappingTests
         var record = TestRecord.Create(
             ("point", new Dictionary<string, object> { ["x"] = 1, ["y"] = 2 }),
             ("color", "red"));
-        
+
         var blueprint = new { point = new { x = 0, y = 0 }, color = string.Empty };
 
-        var result = RecordObjectMapping.MapFromBlueprint(record, blueprint);
+        var result = record.AsObjectFromBlueprint(blueprint);
 
         result.point.x.Should().Be(1);
         result.point.y.Should().Be(2);

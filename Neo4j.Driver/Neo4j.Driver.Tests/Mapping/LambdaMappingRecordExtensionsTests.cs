@@ -27,25 +27,17 @@ public class LambdaMappingRecordExtensionsTests
     [Fact]
     public void ShouldMapToAnonymousTypeWithOneProperty()
     {
-        var record = TestRecord.Create(["a"], [69]);
-        var result = record.AsObject(
-            a => new
-            {
-                A = a.As<int>()
-            });
+        var record = TestRecord.Create(("a", 69));
+        var result = record.AsObject((int a) => new { a });
 
-        result.A.Should().Be(69);
+        result.a.Should().Be(69);
     }
 
     [Fact]
     public void ShouldFailWithOnePropertyWhenPropertyMissing()
     {
-        var record = TestRecord.Create(["other"], [69]);
-        var act = () => record.AsObject(
-            a => new
-            {
-                A = a.As<int>()
-            });
+        var record = TestRecord.Create(("other", 69));
+        Action act = () => record.AsObject((int a) => new { a });
 
         act.Should().Throw<MappingFailedException>();
     }
@@ -53,12 +45,8 @@ public class LambdaMappingRecordExtensionsTests
     [Fact]
     public void ShouldFailWithOnePropertyWhenPropertyTypeMismatch()
     {
-        var record = TestRecord.Create(["a"], ["gettysburg"]);
-        var act = () => record.AsObject(
-            a => new
-            {
-                A = a.As<int>()
-            });
+        var record = TestRecord.Create(("a", "gettysburg"));
+        Action act = () => record.AsObject((int a) => new { a });
 
         act.Should().Throw<MappingFailedException>();
     }
@@ -66,28 +54,18 @@ public class LambdaMappingRecordExtensionsTests
     [Fact]
     public void ShouldMapToAnonymousTypeWithTwoProperties()
     {
-        var record = TestRecord.Create(["a", "b"], [69, "test"]);
-        var result = record.AsObject(
-            (a, b) => new
-            {
-                A = a.As<int>(),
-                B = b.As<string>()
-            });
+        var record = TestRecord.Create(("a", 69), ("b", "test"));
+        var result = record.AsObject((int a, string b) => new { a, b });
 
-        result.A.Should().Be(69);
-        result.B.Should().Be("test");
+        result.a.Should().Be(69);
+        result.b.Should().Be("test");
     }
 
     [Fact]
     public void ShouldFailWithTwoPropertiesWhenPropertyMissing()
     {
-        var record = TestRecord.Create(["other", "b"], [69, "test"]);
-        var act = () => record.AsObject(
-            (a, b) => new
-            {
-                A = a.As<int>(),
-                B = b.As<string>()
-            });
+        var record = TestRecord.Create(("a", 69));
+        Action act = () => record.AsObject((int a, string b) => new { a, b });
 
         act.Should().Throw<MappingFailedException>();
     }
@@ -95,13 +73,8 @@ public class LambdaMappingRecordExtensionsTests
     [Fact]
     public void ShouldFailWithTwoPropertiesWhenPropertyTypeMismatch()
     {
-        var record = TestRecord.Create(["a", "b"], ["gettysburg", "test"]);
-        var act = () => record.AsObject(
-            (a, b) => new
-            {
-                A = a.As<int>(),
-                B = b.As<string>()
-            });
+        var record = TestRecord.Create(("a", 69), ("b", "six"));
+        Action act = () => record.AsObject((int a, int b) => new { a, b });
 
         act.Should().Throw<MappingFailedException>();
     }
@@ -109,31 +82,19 @@ public class LambdaMappingRecordExtensionsTests
     [Fact]
     public void ShouldMapToAnonymousTypeWithThreeProperties()
     {
-        var record = TestRecord.Create(["a", "b", "c"], [69, "test", true]);
-        var result = record.AsObject(
-            (a, b, c) => new
-            {
-                A = a.As<int>(),
-                B = b.As<string>(),
-                C = c.As<bool>()
-            });
+        var record = TestRecord.Create(("a", 69), ("b", "test"), ("c", true));
+        var result = record.AsObject((int a, string b, bool c) => new { a, b, c });
 
-        result.A.Should().Be(69);
-        result.B.Should().Be("test");
-        result.C.Should().Be(true);
+        result.a.Should().Be(69);
+        result.b.Should().Be("test");
+        result.c.Should().Be(true);
     }
 
     [Fact]
     public void ShouldFailWithThreePropertiesWhenPropertyMissing()
     {
-        var record = TestRecord.Create(["other", "b", "c"], [69, "test", true]);
-        var act = () => record.AsObject(
-            (a, b, c) => new
-            {
-                A = a.As<int>(),
-                B = b.As<string>(),
-                C = c.As<bool>()
-            });
+        var record = TestRecord.Create(("a", 69), ("b", "test"));
+        Action act = () => record.AsObject((int a, string b, bool c) => new { a, b, c });
 
         act.Should().Throw<MappingFailedException>();
     }
@@ -141,14 +102,8 @@ public class LambdaMappingRecordExtensionsTests
     [Fact]
     public void ShouldFailWithThreePropertiesWhenPropertyTypeMismatch()
     {
-        var record = TestRecord.Create(["a", "b", "c"], ["gettysburg", "test", true]);
-        var act = () => record.AsObject(
-            (a, b, c) => new
-            {
-                A = a.As<int>(),
-                B = b.As<string>(),
-                C = c.As<bool>()
-            });
+        var record = TestRecord.Create(("a", 69), ("b", "test"), ("c", "not a bool"));
+        Action act = () => record.AsObject((int a, string b, bool c) => new { a, b, c });
 
         act.Should().Throw<MappingFailedException>();
     }
@@ -156,37 +111,20 @@ public class LambdaMappingRecordExtensionsTests
     [Fact]
     public void ShouldMapToAnonymousTypeWithFourProperties()
     {
-        var record = TestRecord.Create(["a", "b", "c", "d"], [69, "test", true, 3.14]);
-        var result = record.AsObject(
-            (a, b, c, d) => new
-            {
-                A = a.As<int>(),
-                B = b.As<string>(),
-                C = c.As<bool>(),
-                D = d.As<double>()
-            });
+        var record = TestRecord.Create(("a", 69), ("b", "test"), ("c", true), ("d", 1.23));
+        var result = record.AsObject((int a, string b, bool c, double d) => new { a, b, c, d });
 
-        result.A.Should().Be(69);
-        result.B.Should().Be("test");
-        result.C.Should().Be(true);
-        result.D.Should().Be(3.14);
+        result.a.Should().Be(69);
+        result.b.Should().Be("test");
+        result.c.Should().Be(true);
+        result.d.Should().Be(1.23);
     }
 
     [Fact]
     public void ShouldFailWithFourPropertiesWhenPropertyMissing()
     {
-        var record = TestRecord.Create(
-            ["other", "b", "c", "d"],
-            [69, "test", true, 3.14]);
-
-        var act = () => record.AsObject(
-            (a, b, c, d) => new
-            {
-                A = a.As<int>(),
-                B = b.As<string>(),
-                C = c.As<bool>(),
-                D = d.As<double>()
-            });
+        var record = TestRecord.Create(("a", 69), ("b", "test"), ("c", true));
+        Action act = () => record.AsObject((int a, string b, bool c, double d) => new { a, b, c, d });
 
         act.Should().Throw<MappingFailedException>();
     }
@@ -194,18 +132,8 @@ public class LambdaMappingRecordExtensionsTests
     [Fact]
     public void ShouldFailWithFourPropertiesWhenPropertyTypeMismatch()
     {
-        var record = TestRecord.Create(
-            ["a", "b", "c", "d"],
-            ["gettysburg", "test", true, "pi"]);
-
-        var act = () => record.AsObject(
-            (a, b, c, d) => new
-            {
-                A = a.As<int>(),
-                B = b.As<string>(),
-                C = c.As<bool>(),
-                D = d.As<double>()
-            });
+        var record = TestRecord.Create(("a", 69), ("b", "test"), ("c", true), ("d", "not a double"));
+        Action act = () => record.AsObject((int a, string b, bool c, double d) => new { a, b, c, d });
 
         act.Should().Throw<MappingFailedException>();
     }
@@ -213,43 +141,21 @@ public class LambdaMappingRecordExtensionsTests
     [Fact]
     public void ShouldMapToAnonymousTypeWithFiveProperties()
     {
-        var record = TestRecord.Create(
-            ["a", "b", "c", "d", "e"],
-            [69, "test", true, 3.14, new DateTime(1955, 11, 5, 6, 15, 0)]);
+        var record = TestRecord.Create(("a", 69), ("b", "test"), ("c", true), ("d", 1.23), ("e", 123L));
+        var result = record.AsObject((int a, string b, bool c, double d, long e) => new { a, b, c, d, e });
 
-        var result = record.AsObject(
-            (a, b, c, d, e) => new
-            {
-                A = a.As<int>(),
-                B = b.As<string>(),
-                C = c.As<bool>(),
-                D = d.As<double>(),
-                E = e.As<DateTime>()
-            });
-
-        result.A.Should().Be(69);
-        result.B.Should().Be("test");
-        result.C.Should().Be(true);
-        result.D.Should().Be(3.14);
-        result.E.Should().Be(new DateTime(1955, 11, 5, 6, 15, 0));
+        result.a.Should().Be(69);
+        result.b.Should().Be("test");
+        result.c.Should().Be(true);
+        result.d.Should().Be(1.23);
+        result.e.Should().Be(123L);
     }
 
     [Fact]
     public void ShouldFailWithFivePropertiesWhenPropertyMissing()
     {
-        var record = TestRecord.Create(
-            ["other", "b", "c", "d", "e"],
-            [69, "test", true, 3.14, new DateTime(1955, 11, 5, 6, 15, 0)]);
-
-        var act = () => record.AsObject(
-            (a, b, c, d, e) => new
-            {
-                A = a.As<int>(),
-                B = b.As<string>(),
-                C = c.As<bool>(),
-                D = d.As<double>(),
-                E = e.As<DateTime>()
-            });
+        var record = TestRecord.Create(("a", 69), ("b", "test"), ("c", true), ("d", 1.23));
+        Action act = () => record.AsObject((int a, string b, bool c, double d, long e) => new { a, b, c, d, e });
 
         act.Should().Throw<MappingFailedException>();
     }
@@ -257,19 +163,8 @@ public class LambdaMappingRecordExtensionsTests
     [Fact]
     public void ShouldFailWithFivePropertiesWhenPropertyTypeMismatch()
     {
-        var record = TestRecord.Create(
-            ["a", "b", "c", "d", "e"],
-            ["gettysburg", "test", true, "pi", "not a date"]);
-
-        var act = () => record.AsObject(
-            (a, b, c, d, e) => new
-            {
-                A = a.As<int>(),
-                B = b.As<string>(),
-                C = c.As<bool>(),
-                D = d.As<double>(),
-                E = e.As<DateTime>()
-            });
+        var record = TestRecord.Create(("a", 69), ("b", "test"), ("c", true), ("d", 1.23), ("e", "not a long"));
+        Action act = () => record.AsObject((int a, string b, bool c, double d, long e) => new { a, b, c, d, e });
 
         act.Should().Throw<MappingFailedException>();
     }
@@ -277,46 +172,23 @@ public class LambdaMappingRecordExtensionsTests
     [Fact]
     public void ShouldMapToAnonymousTypeWithSixProperties()
     {
-        var record = TestRecord.Create(
-            ["a", "b", "c", "d", "e", "f"],
-            [69, "test", true, 3.14, new DateTime(1955, 11, 5, 6, 15, 0), 42L]);
+        var record = TestRecord.Create(("a", 69), ("b", "test"), ("c", true), ("d", 1.23), ("e", 123L), ("f", 'x'));
+        var result = record.AsObject((int a, string b, bool c, double d, long e, char f) => new { a, b, c, d, e, f });
 
-        var result = record.AsObject(
-            (a, b, c, d, e, f) => new
-            {
-                A = a.As<int>(),
-                B = b.As<string>(),
-                C = c.As<bool>(),
-                D = d.As<double>(),
-                E = e.As<DateTime>(),
-                F = f.As<long>()
-            });
-
-        result.A.Should().Be(69);
-        result.B.Should().Be("test");
-        result.C.Should().Be(true);
-        result.D.Should().Be(3.14);
-        result.E.Should().Be(new DateTime(1955, 11, 5, 6, 15, 0));
-        result.F.Should().Be(42L);
+        result.a.Should().Be(69);
+        result.b.Should().Be("test");
+        result.c.Should().Be(true);
+        result.d.Should().Be(1.23);
+        result.e.Should().Be(123L);
+        result.f.Should().Be('x');
     }
 
     [Fact]
     public void ShouldFailWithSixPropertiesWhenPropertyMissing()
     {
-        var record = TestRecord.Create(
-            ["other", "b", "c", "d", "e", "f"],
-            [69, "test", true, 3.14, new DateTime(1955, 11, 5, 6, 15, 0), 42L]);
-
-        var act = () => record.AsObject(
-            (a, b, c, d, e, f) => new
-            {
-                A = a.As<int>(),
-                B = b.As<string>(),
-                C = c.As<bool>(),
-                D = d.As<double>(),
-                E = e.As<DateTime>(),
-                F = f.As<long>()
-            });
+        var record = TestRecord.Create(("a", 69), ("b", "test"), ("c", true), ("d", 1.23), ("e", 123L));
+        Action act = () =>
+            record.AsObject((int a, string b, bool c, double d, long e, char f) => new { a, b, c, d, e, f });
 
         act.Should().Throw<MappingFailedException>();
     }
@@ -325,19 +197,15 @@ public class LambdaMappingRecordExtensionsTests
     public void ShouldFailWithSixPropertiesWhenPropertyTypeMismatch()
     {
         var record = TestRecord.Create(
-            ["a", "b", "c", "d", "e", "f"],
-            ["gettysburg", "test", true, "pi", "not a date", "not a long"]);
+            ("a", 69),
+            ("b", "test"),
+            ("c", true),
+            ("d", 1.23),
+            ("e", 123L),
+            ("f", "not a char"));
 
-        var act = () => record.AsObject(
-            (a, b, c, d, e, f) => new
-            {
-                A = a.As<int>(),
-                B = b.As<string>(),
-                C = c.As<bool>(),
-                D = d.As<double>(),
-                E = e.As<DateTime>(),
-                F = f.As<long>()
-            });
+        Action act = () =>
+            record.AsObject((int a, string b, bool c, double d, long e, char f) => new { a, b, c, d, e, f });
 
         act.Should().Throw<MappingFailedException>();
     }
@@ -346,147 +214,235 @@ public class LambdaMappingRecordExtensionsTests
     public void ShouldMapToAnonymousTypeWithSevenProperties()
     {
         var record = TestRecord.Create(
-            ["a", "b", "c", "d", "e", "f", "g"],
-            [69, "test", true, 3.14, new DateTime(1955, 11, 5, 6, 15, 0), 42L, 1.23f]);
+            ("a", 69),
+            ("b", "test"),
+            ("c", true),
+            ("d", 1.23),
+            ("e", 123L),
+            ("f", 'x'),
+            ("g", 123.45m));
 
         var result = record.AsObject(
-            (a, b, c, d, e, f, g) => new
-            {
-                A = a.As<int>(),
-                B = b.As<string>(),
-                C = c.As<bool>(),
-                D = d.As<double>(),
-                E = e.As<DateTime>(),
-                F = f.As<long>(),
-                G = g.As<float>()
-            });
+            (int a, string b, bool c, double d, long e, char f, decimal g) => new { a, b, c, d, e, f, g });
 
-        result.A.Should().Be(69);
-        result.B.Should().Be("test");
-        result.C.Should().Be(true);
-        result.D.Should().Be(3.14);
-        result.E.Should().Be(new DateTime(1955, 11, 5, 6, 15, 0));
-        result.F.Should().Be(42L);
-        result.G.Should().Be(1.23f);
+        result.a.Should().Be(69);
+        result.b.Should().Be("test");
+        result.c.Should().Be(true);
+        result.d.Should().Be(1.23);
+        result.e.Should().Be(123L);
+        result.f.Should().Be('x');
+        result.g.Should().Be(123.45m);
+    }
+
+    [Fact]
+    public void ShouldFailWithSevenPropertiesWhenPropertyMissing()
+    {
+        var record = TestRecord.Create(("a", 69), ("b", "test"), ("c", true), ("d", 1.23), ("e", 123L), ("f", 'x'));
+        Action act = () => record.AsObject(
+            (int a, string b, bool c, double d, long e, char f, decimal g) => new { a, b, c, d, e, f, g });
+
+        act.Should().Throw<MappingFailedException>();
+    }
+
+    [Fact]
+    public void ShouldFailWithSevenPropertiesWhenPropertyTypeMismatch()
+    {
+        var record = TestRecord.Create(
+            ("a", 69),
+            ("b", "test"),
+            ("c", true),
+            ("d", 1.23),
+            ("e", 123L),
+            ("f", 'x'),
+            ("g", "not a decimal"));
+
+        Action act = () => record.AsObject(
+            (int a, string b, bool c, double d, long e, char f, decimal g) => new { a, b, c, d, e, f, g });
+
+        act.Should().Throw<MappingFailedException>();
     }
 
     [Fact]
     public void ShouldMapToAnonymousTypeWithEightProperties()
     {
         var record = TestRecord.Create(
-            ["a", "b", "c", "d", "e", "f", "g", "h"],
-            [69, "test", true, 3.14, new DateTime(1955, 11, 5, 6, 15, 0), 42L, 1.23f, 123.45m]);
+            ("a", 69),
+            ("b", "test"),
+            ("c", true),
+            ("d", 1.23),
+            ("e", 123L),
+            ("f", 'x'),
+            ("g", 123.45m),
+            ("h", (byte)123));
 
         var result = record.AsObject(
-            (a, b, c, d, e, f, g, h) => new
-            {
-                A = a.As<int>(),
-                B = b.As<string>(),
-                C = c.As<bool>(),
-                D = d.As<double>(),
-                E = e.As<DateTime>(),
-                F = f.As<long>(),
-                G = g.As<float>(),
-                H = h.As<decimal>()
-            });
+            (int a, string b, bool c, double d, long e, char f, decimal g, byte h) => new { a, b, c, d, e, f, g, h });
 
-        result.A.Should().Be(69);
-        result.B.Should().Be("test");
-        result.C.Should().Be(true);
-        result.D.Should().Be(3.14);
-        result.E.Should().Be(new DateTime(1955, 11, 5, 6, 15, 0));
-        result.F.Should().Be(42L);
-        result.G.Should().Be(1.23f);
-        result.H.Should().Be(123.45m);
+        result.a.Should().Be(69);
+        result.b.Should().Be("test");
+        result.c.Should().Be(true);
+        result.d.Should().Be(1.23);
+        result.e.Should().Be(123L);
+        result.f.Should().Be('x');
+        result.g.Should().Be(123.45m);
+        result.h.Should().Be((byte)123);
+    }
+
+    [Fact]
+    public void ShouldFailWithEightPropertiesWhenPropertyMissing()
+    {
+        var record = TestRecord.Create(
+            ("a", 69),
+            ("b", "test"),
+            ("c", true),
+            ("d", 1.23),
+            ("e", 123L),
+            ("f", 'x'),
+            ("g", 123.45m));
+
+        Action act = () => record.AsObject(
+            (int a, string b, bool c, double d, long e, char f, decimal g, byte h) => new { a, b, c, d, e, f, g, h });
+
+        act.Should().Throw<MappingFailedException>();
+    }
+
+    [Fact]
+    public void ShouldFailWithEightPropertiesWhenPropertyTypeMismatch()
+    {
+        var record = TestRecord.Create(
+            ("a", 69),
+            ("b", "test"),
+            ("c", true),
+            ("d", 1.23),
+            ("e", 123L),
+            ("f", 'x'),
+            ("g", 123.45m),
+            ("h", "not a byte"));
+
+        Action act = () => record.AsObject(
+            (int a, string b, bool c, double d, long e, char f, decimal g, byte h) => new { a, b, c, d, e, f, g, h });
+
+        act.Should().Throw<MappingFailedException>();
     }
 
     [Fact]
     public void ShouldMapToAnonymousTypeWithNineProperties()
     {
         var record = TestRecord.Create(
-            ["a", "b", "c", "d", "e", "f", "g", "h", "i"],
-            [69, "test", true, 3.14, new DateTime(1955, 11, 5, 6, 15, 0), 42L, 1.23f, 123.45m, 'x']);
+            ("a", 69),
+            ("b", "test"),
+            ("c", true),
+            ("d", 1.23),
+            ("e", 123L),
+            ("f", 'x'),
+            ("g", 123.45m),
+            ("h", (byte)123),
+            ("i", (short)12345));
 
         var result = record.AsObject(
-            (a, b, c, d, e, f, g, h, i) => new
-            {
-                A = a.As<int>(),
-                B = b.As<string>(),
-                C = c.As<bool>(),
-                D = d.As<double>(),
-                E = e.As<DateTime>(),
-                F = f.As<long>(),
-                G = g.As<float>(),
-                H = h.As<decimal>(),
-                I = i.As<char>()
-            });
+            (int a, string b, bool c, double d, long e, char f, decimal g, byte h, short i) =>
+                new { a, b, c, d, e, f, g, h, i });
 
-        result.A.Should().Be(69);
-        result.B.Should().Be("test");
-        result.C.Should().Be(true);
-        result.D.Should().Be(3.14);
-        result.E.Should().Be(new DateTime(1955, 11, 5, 6, 15, 0));
-        result.F.Should().Be(42L);
-        result.G.Should().Be(1.23f);
-        result.H.Should().Be(123.45m);
-        result.I.Should().Be('x');
+        result.a.Should().Be(69);
+        result.b.Should().Be("test");
+        result.c.Should().Be(true);
+        result.d.Should().Be(1.23);
+        result.e.Should().Be(123L);
+        result.f.Should().Be('x');
+        result.g.Should().Be(123.45m);
+        result.h.Should().Be((byte)123);
+        result.i.Should().Be((short)12345);
+    }
+
+    [Fact]
+    public void ShouldFailWithNinePropertiesWhenPropertyMissing()
+    {
+        var record = TestRecord.Create(
+            ("a", 69),
+            ("b", "test"),
+            ("c", true),
+            ("d", 1.23),
+            ("e", 123L),
+            ("f", 'x'),
+            ("g", 123.45m),
+            ("h", (byte)123));
+
+        Action act = () => record.AsObject(
+            (int a, string b, bool c, double d, long e, char f, decimal g, byte h, short i) =>
+                new { a, b, c, d, e, f, g, h, i });
+
+        act.Should().Throw<MappingFailedException>();
+    }
+
+    [Fact]
+    public void ShouldFailWithNinePropertiesWhenPropertyTypeMismatch()
+    {
+        var record = TestRecord.Create(
+            ("a", 69),
+            ("b", "test"),
+            ("c", true),
+            ("d", 1.23),
+            ("e", 123L),
+            ("f", 'x'),
+            ("g", 123.45m),
+            ("h", (byte)123),
+            ("i", "not a short"));
+
+        Action act = () => record.AsObject(
+            (int a, string b, bool c, double d, long e, char f, decimal g, byte h, short i) =>
+                new { a, b, c, d, e, f, g, h, i });
+
+        act.Should().Throw<MappingFailedException>();
     }
 
     [Fact]
     public void ShouldMapToAnonymousTypeWithTenProperties()
     {
         var record = TestRecord.Create(
-            ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
-            [69, "test", true, 3.14, new DateTime(1955, 11, 5, 6, 15, 0), 42L, 1.23f, 123.45m, 'x', (byte)7]);
+            ("a", 69),
+            ("b", "test"),
+            ("c", true),
+            ("d", 1.23),
+            ("e", 123L),
+            ("f", 'x'),
+            ("g", 123.45m),
+            ("h", (byte)123),
+            ("i", (short)12345),
+            ("j", (ushort)12345));
 
         var result = record.AsObject(
-            (a, b, c, d, e, f, g, h, i, j) => new
-            {
-                A = a.As<int>(),
-                B = b.As<string>(),
-                C = c.As<bool>(),
-                D = d.As<double>(),
-                E = e.As<DateTime>(),
-                F = f.As<long>(),
-                G = g.As<float>(),
-                H = h.As<decimal>(),
-                I = i.As<char>(),
-                J = j.As<byte>()
-            });
+            (int a, string b, bool c, double d, long e, char f, decimal g, byte h, short i, ushort j) =>
+                new { a, b, c, d, e, f, g, h, i, j });
 
-        result.A.Should().Be(69);
-        result.B.Should().Be("test");
-        result.C.Should().Be(true);
-        result.D.Should().Be(3.14);
-        result.E.Should().Be(new DateTime(1955, 11, 5, 6, 15, 0));
-        result.F.Should().Be(42L);
-        result.G.Should().Be(1.23f);
-        result.H.Should().Be(123.45m);
-        result.I.Should().Be('x');
-        result.J.Should().Be(7);
+        result.a.Should().Be(69);
+        result.b.Should().Be("test");
+        result.c.Should().Be(true);
+        result.d.Should().Be(1.23);
+        result.e.Should().Be(123L);
+        result.f.Should().Be('x');
+        result.g.Should().Be(123.45m);
+        result.h.Should().Be((byte)123);
+        result.i.Should().Be((short)12345);
+        result.j.Should().Be((ushort)12345);
     }
 
     [Fact]
     public void ShouldFailWithTenPropertiesWhenPropertyMissing()
     {
         var record = TestRecord.Create(
-            ["other", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
-            [69, "test", true, 3.14, new DateTime(1955, 11, 5, 6, 15, 0), 42L, 1.23f, 123.45m, 'x', (byte)7]);
+            ("a", 69),
+            ("b", "test"),
+            ("c", true),
+            ("d", 1.23),
+            ("e", 123L),
+            ("f", 'x'),
+            ("g", 123.45m),
+            ("h", (byte)123),
+            ("i", (short)12345));
 
-        var act = () => record.AsObject(
-            (a, b, c, d, e, f, g, h, i, j) => new
-            {
-                A = a.As<int>(),
-                B = b.As<string>(),
-                C = c.As<bool>(),
-                D = d.As<double>(),
-                E = e.As<DateTime>(),
-                F = f.As<long>(),
-                G = g.As<float>(),
-                H = h.As<decimal>(),
-                I = i.As<char>(),
-                J = j.As<byte>()
-            });
+        Action act = () => record.AsObject(
+            (int a, string b, bool c, double d, long e, char f, decimal g, byte h, short i, ushort j) =>
+                new { a, b, c, d, e, f, g, h, i, j });
 
         act.Should().Throw<MappingFailedException>();
     }
@@ -495,25 +451,20 @@ public class LambdaMappingRecordExtensionsTests
     public void ShouldFailWithTenPropertiesWhenPropertyTypeMismatch()
     {
         var record = TestRecord.Create(
-            ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
-            [
-                "gettysburg", "test", true, 3.14, new DateTime(1955, 11, 5, 6, 15, 0), 42L, 1.23f, 123.45m, 'x', (byte)7
-            ]);
+            ("a", 69),
+            ("b", "test"),
+            ("c", true),
+            ("d", 1.23),
+            ("e", 123L),
+            ("f", 'x'),
+            ("g", 123.45m),
+            ("h", (byte)123),
+            ("i", (short)12345),
+            ("j", "not a ushort"));
 
-        var act = () => record.AsObject(
-            (a, b, c, d, e, f, g, h, i, j) => new
-            {
-                A = a.As<int>(),
-                B = b.As<string>(),
-                C = c.As<bool>(),
-                D = d.As<double>(),
-                E = e.As<DateTime>(),
-                F = f.As<long>(),
-                G = g.As<float>(),
-                H = h.As<decimal>(),
-                I = i.As<char>(),
-                J = j.As<byte>()
-            });
+        Action act = () => record.AsObject(
+            (int a, string b, bool c, double d, long e, char f, decimal g, byte h, short i, ushort j) =>
+                new { a, b, c, d, e, f, g, h, i, j });
 
         act.Should().Throw<MappingFailedException>();
     }
