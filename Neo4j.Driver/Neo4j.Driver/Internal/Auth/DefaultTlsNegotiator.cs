@@ -41,7 +41,7 @@ internal sealed class DefaultTlsNegotiator : ITlsNegotiator
             {
                 if (errors.HasFlag(SslPolicyErrors.RemoteCertificateNotAvailable))
                 {
-                    _logger?.Error(null, $"{GetType().Name}: Certificate not available.");
+                    _logger.Error(null, $"{GetType().Name}: Certificate not available.");
                     return false;
                 }
 
@@ -53,11 +53,14 @@ internal sealed class DefaultTlsNegotiator : ITlsNegotiator
 
                 if (trust)
                 {
-                    _logger?.Debug("Trust is established, resuming connection.");
+                    if (_logger.IsDebugEnabled())
+                    {
+                        _logger.Debug("Trust is established, resuming connection.");
+                    }
                 }
                 else
                 {
-                    _logger?.Error(null, "Trust not established, aborting communication.");
+                    _logger.Error(null, "Trust not established, aborting communication.");
                 }
 
                 return trust;

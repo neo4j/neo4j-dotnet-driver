@@ -69,7 +69,7 @@ internal class RetryLogic : IRetryLogic
                 if (shouldRetry)
                 {
                     var delay = TimeSpan.FromMilliseconds(ComputeNextDelay(delayMs));
-                    _logger?.Warn(e, $"Transaction failed and will be retried in {delay}ms.");
+                    _logger.Warn(e, $"Transaction failed and will be retried in {delay}ms.");
                     Thread.Sleep(delay);
                     delayMs *= _delayMultiplier;
                 }

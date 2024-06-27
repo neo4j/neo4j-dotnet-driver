@@ -76,7 +76,7 @@ internal class RxRetryLogic : IRxRetryLogic
                         var delayDuration = TimeSpan.FromMilliseconds(ComputeNextDelay(delay));
                         delay *= _delayMultiplier;
                         retryCount++;
-                        _logger?.Warn(exc, $"Transaction failed and will be retried in {delay} ms.");
+                        _logger.Warn(exc, $"Transaction failed and will be retried in {delay} ms.");
                         return Observable.Return(1).Delay(delayDuration);
                     });
             });
