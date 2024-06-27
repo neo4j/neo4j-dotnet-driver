@@ -41,7 +41,7 @@ internal sealed class DefaultTlsNegotiator : ITlsNegotiator
             {
                 if (errors.HasFlag(SslPolicyErrors.RemoteCertificateNotAvailable))
                 {
-                    _logger.Error(null, $"{GetType().Name}: Certificate not available.");
+                    _logger.Error(null, $"{nameof(DefaultTlsNegotiator)}: Certificate not available.");
                     return false;
                 }
 
