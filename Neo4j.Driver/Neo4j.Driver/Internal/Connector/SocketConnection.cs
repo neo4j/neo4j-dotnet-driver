@@ -246,6 +246,27 @@ internal sealed class SocketConnection : IConnection
         }
     }
 
+    public async ValueTask EnqueueAsync(
+        IRequestMessage message1,
+        IResponseHandler handler1,
+        IRequestMessage message2,
+        IResponseHandler handler2)
+    {
+        await _sendLock.WaitAsync().ConfigureAwait(false);
+
+        try
+        {
+            _messages.Enqueue(message1);
+            _messages.Enqueue(message2);
+            _responsePipeline.Enqueue(handler1);
+            _responsePipeline.Enqueue(handler2);
+        }
+        finally
+        {
+            _sendLock.Release();
+        }
+    }
+
     public Task ResetAsync()
     {
         return BoltProtocol.ResetAsync(this);

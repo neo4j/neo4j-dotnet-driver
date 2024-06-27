@@ -14,12 +14,13 @@
 // limitations under the License.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Types;
-using Neo4j.Driver.Preview.Mapping;
+using Neo4j.Driver.Mapping;
+using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
-using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests.Mapping;
 
@@ -28,7 +29,7 @@ public class DictAsRecordTests
     [Fact]
     public void ShouldUsePropertiesOfDict()
     {
-        var originalRecord = new Record(new[] { "name", "age" }, new object[] { "Bob", 42 });
+        var originalRecord = TestRecord.Create(new[] { "name", "age" }, new object[] { "Bob", 42 });
         var dict = new Dictionary<string, object>
         {
             { "key1", "value1" },
@@ -44,12 +45,16 @@ public class DictAsRecordTests
         subject[1].Should().Be("value2");
         subject["key1"].Should().Be("value1");
         subject["key2"].Should().Be("value2");
+        subject.Get<string>("key1").Should().Be("value1");
+        subject.Get<string>("key2").Should().Be("value2");
+        subject.GetCaseInsensitive<string>("KEY1").Should().Be("value1");
+        subject.GetCaseInsensitive<string>("KEY2").Should().Be("value2");
     }
 
     [Fact]
     public void ShouldUsePropertiesOfEntity()
     {
-        var originalRecord = new Record(new[] { "name", "age" }, new object[] { "Bob", 42 });
+        var originalRecord = TestRecord.Create(new[] { "name", "age" }, new object[] { "Bob", 42 });
         var entity = new Node(
             1,
             new[] { "Person" },
@@ -64,6 +69,10 @@ public class DictAsRecordTests
         subject[1].Should().Be("value2");
         subject["key1"].Should().Be("value1");
         subject["key2"].Should().Be("value2");
+        subject.Get<string>("key1").Should().Be("value1");
+        subject.Get<string>("key2").Should().Be("value2");
+        subject.GetCaseInsensitive<string>("KEY1").Should().Be("value1");
+        subject.GetCaseInsensitive<string>("KEY2").Should().Be("value2");
     }
 
     [Fact]
@@ -71,5 +80,218 @@ public class DictAsRecordTests
     {
         var act = () => new DictAsRecord(42, null);
         act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void TryGetShouldReturnFalseIfKeyDoesNotExist()
+    {
+        var originalRecord = TestRecord.Create(new[] { "name", "age" }, new object[] { "Bob", 42 });
+        var dict = new Dictionary<string, object>
+        {
+            { "key1", "value1" },
+            { "key2", "value2" }
+        };
+
+        var subject = new DictAsRecord(dict, originalRecord);
+
+        subject.TryGet<string>("key3", out var value).Should().BeFalse();
+        value.Should().Be(null);
+    }
+
+    [Fact]
+    public void TryGetShouldReturnFalseIfKeyDoesNotExistCaseInsensitive()
+    {
+        var originalRecord = TestRecord.Create(new[] { "name", "age" }, new object[] { "Bob", 42 });
+        var dict = new Dictionary<string, object>
+        {
+            { "key1", "value1" },
+            { "key2", "value2" }
+        };
+
+        var subject = new DictAsRecord(dict, originalRecord);
+
+        subject.TryGetCaseInsensitive<string>("KEY3", out var value).Should().BeFalse();
+        value.Should().Be(null);
+        subject.TryGetValueByCaseInsensitiveKey("KEY3", out var _).Should().BeFalse();
+    }
+
+    [Fact]
+    public void TryGetShouldReturnTrueIfKeyExists()
+    {
+        var originalRecord = TestRecord.Create(new[] { "name", "age" }, new object[] { "Bob", 42 });
+        var dict = new Dictionary<string, object>
+        {
+            { "key1", "value1" },
+            { "key2", "value2" }
+        };
+
+        var subject = new DictAsRecord(dict, originalRecord);
+
+        subject.TryGet<string>("key1", out var value).Should().BeTrue();
+        value.Should().Be("value1");
+    }
+
+    [Fact]
+    public void TryGetShouldReturnTrueIfKeyExistsCaseInsensitive()
+    {
+        var originalRecord = TestRecord.Create(new[] { "name", "age" }, new object[] { "Bob", 42 });
+        var dict = new Dictionary<string, object>
+        {
+            { "key1", "value1" },
+            { "key2", "value2" }
+        };
+
+        var subject = new DictAsRecord(dict, originalRecord);
+
+        subject.TryGetCaseInsensitive<string>("KEY1", out var value).Should().BeTrue();
+        value.Should().Be("value1");
+        subject.TryGetValueByCaseInsensitiveKey("KEY1", out var obj).Should().BeTrue();
+        obj.Should().Be("value1");
+    }
+
+    [Fact]
+    public void EnumeratorShouldEnumerateThroughDict()
+    {
+        var originalRecord = TestRecord.Create(new[] { "name", "age" }, new object[] { "Bob", 42 });
+        var dict = new Dictionary<string, object>
+        {
+            { "key1", "value1" },
+            { "key2", "value2" }
+        };
+
+        var subject = new DictAsRecord(dict, originalRecord);
+        using var dictEnumerator = dict.GetEnumerator();
+        using var enumerator = ((IEnumerable<KeyValuePair<string, object>>)subject).GetEnumerator();
+        while (dictEnumerator.MoveNext() && enumerator.MoveNext())
+        {
+            dictEnumerator.Current.Key.Should().Be(enumerator.Current.Key);
+            dictEnumerator.Current.Value.Should().Be(enumerator.Current.Value);
+        }
+    }
+
+    [Fact]
+    public void EnumeratorShouldEnumerateThroughDict_UntypedEnumerable()
+    {
+        var originalRecord = TestRecord.Create(new[] { "name", "age" }, new object[] { "Bob", 42 });
+        var dict = new Dictionary<string, object>
+        {
+            { "key1", "value1" },
+            { "key2", "value2" }
+        };
+
+        var subject = new DictAsRecord(dict, originalRecord);
+        using var dictEnumerator = dict.GetEnumerator();
+        var enumerator = ((IEnumerable)subject).GetEnumerator();
+        while (dictEnumerator.MoveNext() && enumerator.MoveNext())
+        {
+            dictEnumerator.Current.Key.Should().Be(((KeyValuePair<string, object>)enumerator.Current).Key);
+            dictEnumerator.Current.Value.Should().Be(((KeyValuePair<string, object>)enumerator.Current).Value);
+        }
+    }
+
+    [Fact]
+    public void ContainsKeyShouldReturnTrueIfKeyExists()
+    {
+        var originalRecord = TestRecord.Create(new[] { "name", "age" }, new object[] { "Bob", 42 });
+        var dict = new Dictionary<string, object>
+        {
+            { "key1", "value1" },
+            { "key2", "value2" }
+        };
+
+        var subject = new DictAsRecord(dict, originalRecord);
+
+        ((IReadOnlyDictionary<string, object>)subject).ContainsKey("key1").Should().BeTrue();
+    }
+
+    [Fact]
+    public void ContainsKeyShouldReturnFalseIfKeyDoesNotExist()
+    {
+        var originalRecord = TestRecord.Create(new[] { "name", "age" }, new object[] { "Bob", 42 });
+        var dict = new Dictionary<string, object>
+        {
+            { "key1", "value1" },
+            { "key2", "value2" }
+        };
+
+        var subject = new DictAsRecord(dict, originalRecord);
+
+        ((IReadOnlyDictionary<string, object>)subject).ContainsKey("key3").Should().BeFalse();
+    }
+
+    [Fact]
+    public void IReadOnlyDict_TryGetValueShouldReturnTrueIfKeyExists()
+    {
+        var originalRecord = TestRecord.Create(new[] { "name", "age" }, new object[] { "Bob", 42 });
+        var dict = new Dictionary<string, object>
+        {
+            { "key1", "value1" },
+            { "key2", "value2" }
+        };
+
+        var subject = new DictAsRecord(dict, originalRecord);
+
+        ((IReadOnlyDictionary<string, object>)subject).TryGetValue("key1", out var value).Should().BeTrue();
+        value.Should().Be("value1");
+    }
+
+    [Fact]
+    public void IReadOnlyDict_TryGetValueShouldReturnFalseIfKeyDoesNotExist()
+    {
+        var originalRecord = TestRecord.Create(new[] { "name", "age" }, new object[] { "Bob", 42 });
+        var dict = new Dictionary<string, object>
+        {
+            { "key1", "value1" },
+            { "key2", "value2" }
+        };
+
+        var subject = new DictAsRecord(dict, originalRecord);
+
+        ((IReadOnlyDictionary<string, object>)subject).TryGetValue("KEY3", out var value).Should().BeFalse();
+        value.Should().Be(null);
+    }
+
+    [Fact]
+    public void IReadOnlyDict_CountShouldReturnCorrectCount()
+    {
+        var originalRecord = TestRecord.Create(new[] { "name", "age" }, new object[] { "Bob", 42 });
+        var dict = new Dictionary<string, object>
+        {
+            { "key1", "value1" },
+            { "key2", "value2" }
+        };
+
+        var subject = new DictAsRecord(dict, originalRecord);
+
+        ((IReadOnlyDictionary<string, object>)subject).Count.Should().Be(2);
+    }
+
+    [Fact]
+    public void IReadOnlyDict_KeysShouldReturnCorrectKeys()
+    {
+        var originalRecord = TestRecord.Create(new[] { "name", "age" }, new object[] { "Bob", 42 });
+        var dict = new Dictionary<string, object>
+        {
+            { "key1", "value1" },
+            { "key2", "value2" }
+        };
+
+        var subject = new DictAsRecord(dict, originalRecord);
+        ((IReadOnlyDictionary<string, object>)subject).Keys.Should().BeEquivalentTo(dict.Keys);
+    }
+
+    // cast to IReadOnlyDictionary<string, object> and check the Values property
+    [Fact]
+    public void IReadOnlyDict_ValuesShouldReturnCorrectValues()
+    {
+        var originalRecord = TestRecord.Create(new[] { "name", "age" }, new object[] { "Bob", 42 });
+        var dict = new Dictionary<string, object>
+        {
+            { "key1", "value1" },
+            { "key2", "value2" }
+        };
+
+        var subject = new DictAsRecord(dict, originalRecord);
+        ((IReadOnlyDictionary<string, object>)subject).Values.Should().BeEquivalentTo(dict.Values);
     }
 }

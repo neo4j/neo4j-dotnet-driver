@@ -15,74 +15,133 @@
 
 using System.Collections.Generic;
 using FluentAssertions;
-using Neo4j.Driver.Internal.Types;
-using Neo4j.Driver.Preview.Mapping;
+using Neo4j.Driver.Mapping;
+using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
-using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests.Mapping;
 
 public class RecordPathFinderTests
 {
     [Fact]
-    public void ShouldFindSimplePath()
+    public void TryGetValueByPath_PathMatchesFieldName_ReturnsTrue()
     {
-        var record = new Record(new[] { "a" }, new object[] { "b" });
-        var finder = new RecordPathFinder();
+        var recordPathFinder = new RecordPathFinder();
+        var record = TestRecord.Create(new[] { "testField" }, new object[] { "testValue" });
 
-        var found = finder.TryGetValueByPath(record, "a", out var value);
+        var result = recordPathFinder.TryGetValueByPath(record, "testField", out var value);
 
-        found.Should().BeTrue();
-        value.Should().Be("b");
+        result.Should().BeTrue();
+        value.Should().Be("testValue");
     }
 
     [Fact]
-    public void ShouldReturnFalseWhenPathNotFound()
+    public void TryGetValueByPath_PathDoesNotMatchFieldName_ReturnsFalse()
     {
-        var record = new Record(new[] { "a" }, new object[] { "b" });
-        var finder = new RecordPathFinder();
+        var recordPathFinder = new RecordPathFinder();
+        var record = TestRecord.Create(new[] { "testField" }, new object[] { "testValue" });
 
-        var found = finder.TryGetValueByPath(record, "c", out var value);
+        var result = recordPathFinder.TryGetValueByPath(record, "nonExistentField", out var value);
 
-        found.Should().BeFalse();
+        result.Should().BeFalse();
+        value.Should().BeNull();
     }
 
     [Fact]
-    public void ShouldFindSimplePathNestedInANode()
+    public void TryGetValueByPath_PathContainsDotAndMatchesFieldNameAndPropertyName_ReturnsTrue()
     {
-        var node = new Node(1, new[] { "Test" }, new Dictionary<string, object>() { { "name", "Bob" } });
-        var record = new Record(new[] { "person" }, new object[] { node });
-        var finder = new RecordPathFinder();
+        var recordPathFinder = new RecordPathFinder();
+        var record = TestRecord.Create(
+            new[] { "testField" },
+            new object[] { new Dictionary<string, object> { { "testProperty", "testValue" } } });
 
-        var found = finder.TryGetValueByPath(record, "name", out var value);
+        var result = recordPathFinder.TryGetValueByPath(record, "TESTfield.testProperty", out var value);
 
-        found.Should().BeTrue();
-        value.Should().Be("Bob");
+        result.Should().BeTrue();
+        value.Should().Be("testValue");
     }
 
     [Fact]
-    public void ShouldFindComplexPathNestedInANode()
+    public void TryGetValueByPath_PathContainsDotButDoesNotMatchFieldName_ReturnsFalse()
     {
-        var node = new Node(1, new[] { "Test" }, new Dictionary<string, object>() { { "name", "Bob" } });
-        var record = new Record(new[] { "person" }, new object[] { node });
-        var finder = new RecordPathFinder();
+        var recordPathFinder = new RecordPathFinder();
+        var record = TestRecord.Create(
+            new[] { "testField" },
+            new object[] { new Dictionary<string, object> { { "testProperty", "testValue" } } });
 
-        var found = finder.TryGetValueByPath(record, "person.name", out var value);
+        var result = recordPathFinder.TryGetValueByPath(record, "nonExistentField.testProperty", out var value);
 
-        found.Should().BeTrue();
-        value.Should().Be("Bob");
+        result.Should().BeFalse();
+        value.Should().BeNull();
     }
 
     [Fact]
-    public void ShouldFindComplexPathNestedInADictionary()
+    public void TryGetValueByPath_PathContainsDotMatchesFieldNameButNotPropertyName_ReturnsFalse()
     {
-        var dictionary = new Dictionary<string, object>() { { "name", "Bob" } };
-        var record = new Record(new[] { "person" }, new object[] { dictionary });
-        var finder = new RecordPathFinder();
+        var recordPathFinder = new RecordPathFinder();
+        var record = TestRecord.Create(
+            new[] { "testField" },
+            new object[] { new Dictionary<string, object> { { "testProperty", "testValue" } } });
 
-        var found = finder.TryGetValueByPath(record, "person.name", out var value);
+        var result = recordPathFinder.TryGetValueByPath(record, "testField.nonExistentProperty", out var value);
 
-        found.Should().BeTrue();
-        value.Should().Be("Bob");
+        result.Should().BeFalse();
+        value.Should().BeNull();
+    }
+
+    [Fact]
+    public void TryGetValueByPath_PathContainsDotAndMatchesFieldNameAndPropertyName_ReturnsTrue_CaseInsensitive()
+    {
+        var recordPathFinder = new RecordPathFinder();
+        var record = TestRecord.Create(
+            new[] { "testField" },
+            new object[] { new Dictionary<string, object> { { "testProperty", "testValue" } } });
+
+        var result = recordPathFinder.TryGetValueByPath(record, "testField.TESTproperty", out var value);
+
+        result.Should().BeTrue();
+        value.Should().Be("testValue");
+    }
+
+    [Fact]
+    public void TryGetValueByPath_PathContainsDotButDoesNotMatchFieldName_ReturnsFalse_CaseInsensitive()
+    {
+        var recordPathFinder = new RecordPathFinder();
+        var record = TestRecord.Create(
+            new[] { "testField" },
+            new object[] { new Dictionary<string, object> { { "testProperty", "testValue" } } });
+
+        var result = recordPathFinder.TryGetValueByPath(record, "nonExistentField.testProperty", out var value);
+
+        result.Should().BeFalse();
+        value.Should().BeNull();
+    }
+
+    [Fact]
+    public void TryGetValueByPath_PathContainsDotMatchesFieldNameButNotPropertyName_ReturnsFalse_CaseInsensitive()
+    {
+        var recordPathFinder = new RecordPathFinder();
+        var record = TestRecord.Create(
+            new[] { "testField" },
+            new object[] { new Dictionary<string, object> { { "testProperty", "testValue" } } });
+
+        var result = recordPathFinder.TryGetValueByPath(record, "testField.nonExistentProperty", out var value);
+
+        result.Should().BeFalse();
+        value.Should().BeNull();
+    }
+
+    [Fact]
+    public void TryGetValueByPath_PathContainsDotMatchesFieldButNotEntity_ReturnsFalse_CaseInsensitive()
+    {
+        var recordPathFinder = new RecordPathFinder();
+        var record = TestRecord.Create(
+            new[] { "testField" },
+            new[] { "testValue" });
+
+        var result = recordPathFinder.TryGetValueByPath(record, "testField.nonExistentProperty", out var value);
+
+        result.Should().BeFalse();
+        value.Should().BeNull();
     }
 }

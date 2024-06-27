@@ -13,35 +13,100 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Neo4j.Driver.Internal.Result;
 
-internal class Record : IRecord
+internal sealed class Record : IRecord
 {
-    private readonly Dictionary<string,object> _values;
+    private readonly IReadOnlyDictionary<string, int> _fieldLookup;
+    private readonly IReadOnlyDictionary<string, int> _invariantFieldLookup;
+    private readonly object[] _fieldValues;
+    private IReadOnlyList<string> _keys;
 
-    public Record(string[] keys, object[] values)
+    public Record(
+        IReadOnlyDictionary<string, int> fieldLookup,
+        IReadOnlyDictionary<string, int> invariantFieldLookup,
+        object[] values)
     {
-        if (keys.Length != values.Length)
-        {
-            throw new ProtocolException(
-                $"{nameof(keys)} length ({keys.Length}) does not equal to {nameof(values)} length ({values.Length})");
-        }
-        
-        _values = new Dictionary<string, object>(keys.Length);
-
-        for (var i = 0; i < keys.Length; i++)
-        {
-            _values.Add(keys[i], values[i]); 
-        }
-
-        Keys = keys;
+        _fieldLookup = fieldLookup;
+        _invariantFieldLookup = invariantFieldLookup;
+        _fieldValues = values;
     }
 
-    public object this[int index] => Values[Keys[index]];
-    public object this[string key] => Values[key];
+    /// <inheritdoc />
+    public object this[int index] => _fieldValues[index];
 
-    public IReadOnlyDictionary<string, object> Values => _values;
-    public IReadOnlyList<string> Keys { get; }
+    /// <inheritdoc cref="IRecord"/>
+    public object this[string key] => _fieldValues[_fieldLookup[key]];
+
+    /// <inheritdoc />
+    public T Get<T>(string key)
+    {
+        return _fieldValues[_fieldLookup[key]].As<T>();
+    }
+
+    /// <inheritdoc />
+    public bool TryGet<T>(string key, out T value)
+    {
+        if (_fieldLookup.TryGetValue(key, out var index))
+        {
+            value = _fieldValues[index].As<T>();
+            return true;
+        }
+
+        value = default;
+        return false;
+    }
+
+    /// <inheritdoc />
+    public T GetCaseInsensitive<T>(string key)
+    {
+        return _fieldValues[_invariantFieldLookup[key]].As<T>();
+    }
+
+    /// <inheritdoc />
+    public bool TryGetCaseInsensitive<T>(string key, out T value)
+    {
+        if (_invariantFieldLookup.TryGetValue(key, out var index))
+        {
+            value = _fieldValues[index].As<T>();
+            return true;
+        }
+
+        value = default;
+        return false;
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<string> Keys => _keys ??= _fieldLookup.Keys.ToList();
+
+    /// <inheritdoc />
+    public IReadOnlyDictionary<string, object> Values => this;
+
+    /// <inheritdoc />
+    bool IReadOnlyDictionary<string, object>.ContainsKey(string key) => _fieldLookup.ContainsKey(key);
+
+    /// <inheritdoc />
+    bool IReadOnlyDictionary<string, object>.TryGetValue(string key, out object value) => TryGet(key, out value);
+
+    /// <inheritdoc />
+    IEnumerable<string> IReadOnlyDictionary<string, object>.Keys => Keys;
+
+    /// <inheritdoc />
+    IEnumerable<object> IReadOnlyDictionary<string, object>.Values => _fieldValues;
+
+    /// <inheritdoc />
+    IEnumerator<KeyValuePair<string, object>> IEnumerable<KeyValuePair<string, object>>.GetEnumerator()
+    {
+        return Keys.Select((key, i) => new KeyValuePair<string, object>(key, _fieldValues[i])).GetEnumerator();
+    }
+
+    /// <inheritdoc />
+    IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<KeyValuePair<string, object>>)this).GetEnumerator();
+
+    /// <inheritdoc />
+    int IReadOnlyCollection<KeyValuePair<string, object>>.Count => _fieldLookup.Count;
 }

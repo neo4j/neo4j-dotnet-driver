@@ -17,9 +17,9 @@ using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Types;
-using Neo4j.Driver.Preview.Mapping;
+using Neo4j.Driver.Mapping;
+using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
-using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests.Mapping;
 
@@ -36,7 +36,7 @@ public class DefaultMapperTests
     {
         var mapper = DefaultMapper.Get<SimpleClass>();
 
-        var record = new Record(new[] { "id", "name" }, new object[] { 1, "Foo" });
+        var record = TestRecord.Create(new[] { "Id", "Name" }, new object[] { 1, "Foo" });
         var result = mapper.Map(record);
 
         result.Id.Should().Be(1);
@@ -60,7 +60,7 @@ public class DefaultMapperTests
     {
         var mapper = DefaultMapper.Get<ConstructorClass>();
 
-        var record = new Record(new[] { "id", "name" }, new object[] { 1, "Foo" });
+        var record = TestRecord.Create(new[] { "id", "name" }, new object[] { 1, "Foo" });
         var result = mapper.Map(record);
 
         result.Id.Should().Be(1);
@@ -91,7 +91,7 @@ public class DefaultMapperTests
     {
         var mapper = DefaultMapper.Get<NonDefaultConstructorClass>();
 
-        var record = new Record(new[] { "id", "name" }, new object[] { 1, "Foo" });
+        var record = TestRecord.Create(new[] { "id", "name" }, new object[] { 1, "Foo" });
         var result = mapper.Map(record);
 
         result.Id.Should().Be(1);
@@ -116,7 +116,7 @@ public class DefaultMapperTests
     public void ShouldMapFromInsideDictionaries()
     {
         var dict = new Dictionary<string, object> { { "name", "Dani" }, { "born", 1977 } };
-        var record = new Record(new[] { "Person" }, new object[] { dict });
+        var record = TestRecord.Create(new[] { "Person" }, new object[] { dict });
         var mapper = DefaultMapper.Get<Person>();
         var person = mapper.Map(record);
         person.Name.Should().Be("Dani");
@@ -126,16 +126,16 @@ public class DefaultMapperTests
     [Fact]
     public void ShouldThrowWhenConstructorParametersUnavailable()
     {
-        var record = new Record(new[] { "something" }, new object[] { 69 });
+        var record = TestRecord.Create(new[] { "something" }, new object[] { 69 });
         var mapper = DefaultMapper.Get<Person>();
         var act = () => mapper.Map(record);
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<MappingFailedException>();
     }
 
     [Fact]
     public void ShouldMapFromNodesInRecords()
     {
-        var record = new Record(
+        var record = TestRecord.Create(
             new[] { "person" },
             new object[]
             {
@@ -166,7 +166,7 @@ public class DefaultMapperTests
     [Fact]
     public void ShouldMapListsThroughConstructor()
     {
-        var record = new Record(
+        var record = TestRecord.Create(
             new[] { "name", "components" },
             new object[] { "Hurricane", new List<string> { "wind", "rain" } });
 
@@ -191,7 +191,7 @@ public class DefaultMapperTests
     [Fact]
     public void ShouldMapCommaSeparatedListsThroughConstructor()
     {
-        var record = new Record(
+        var record = TestRecord.Create(
             new[] { "name", "components" },
             new object[] { "Hurricane", new List<string> { "wind", "rain" } });
 
@@ -216,7 +216,7 @@ public class DefaultMapperTests
     [Fact]
     public void ShouldMapNestedObjectsThroughConstructor()
     {
-        var record = new Record(
+        var record = TestRecord.Create(
             new[] { "phenomenon", "year" },
             new object[]
             {
@@ -267,7 +267,7 @@ public class DefaultMapperTests
 
         var phenomena = new List<Node> { firstPhenomenon, secondPhenomenon, thirdPhenomenon };
 
-        var record = new Record(
+        var record = TestRecord.Create(
             new[] { "year", "phenomena" },
             new object[] { 2021, phenomena });
 
@@ -291,15 +291,17 @@ public class DefaultMapperTests
             Occurrence = occurrence.ToLowerInvariant();
         }
 
-        public int Year { get; set; }
-        public string Occurrence { get; set; }
+        public int Year { get; }
+        public string Occurrence { get; }
+
+        [MappingSource("description")]
         public string Description { get; set; }
     }
 
     [Fact]
     public void ShouldSetPropertiesNotSetInConstructor()
     {
-        var record = new Record(
+        var record = TestRecord.Create(
             new[] { "year", "occurrence", "description", "something" },
             new object[] { 2020, "PANDEMIC", "Covid-19", "something" });
 
@@ -321,8 +323,8 @@ public class DefaultMapperTests
             Occurrence = occurrence.ToLowerInvariant();
         }
 
-        public int Year { get; set; }
-        public string Occurrence { get; set; }
+        public int Year { get; }
+        public string Occurrence { get; }
 
         [MappingSource("description")]
         public string OtherText { get; set; }
@@ -331,7 +333,7 @@ public class DefaultMapperTests
     [Fact]
     public void ShouldSetPropertiesNotSetInConstructorWithMappingHints()
     {
-        var record = new Record(
+        var record = TestRecord.Create(
             new[] { "year", "occurrence", "description", "something" },
             new object[] { 2021, "PANDEMIC", "Covid-19", "something" });
 

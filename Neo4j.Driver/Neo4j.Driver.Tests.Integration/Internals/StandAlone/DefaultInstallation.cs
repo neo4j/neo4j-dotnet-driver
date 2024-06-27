@@ -26,7 +26,7 @@ public static class DefaultInstallation
     public const string HttpUri = "http://127.0.0.1:7474";
 
     public const string BoltHeader = "bolt://";
-    private static readonly string BoltHost = "127.0.0.1";
+    public static readonly string BoltHost = "127.0.0.1";
     public static readonly string BoltPort = "7687";
 
     static DefaultInstallation()

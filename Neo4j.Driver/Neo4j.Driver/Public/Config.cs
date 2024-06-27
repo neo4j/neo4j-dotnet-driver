@@ -17,10 +17,12 @@ using System;
 using System.Buffers;
 using System.IO.Pipelines;
 using System.Reflection;
+using System.Security.Authentication;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Util;
+using Neo4j.Driver.Preview.Auth;
 
 namespace Neo4j.Driver;
 
@@ -115,6 +117,10 @@ public class Config
     /// <summary>
     /// The maximum waiting time to either acquire an idle connection from the pool when connection pool is full or
     /// create a new connection when pool is not full.
+    /// <para/>
+    /// Note that if there is a client certificate provider set, the time taken to fetch the certificate will be
+    /// included in the connection acquisition timeout, so if fetching the certificate is particularly slow, it might
+    /// be necessary to increase the timeout.
     /// </summary>
     public TimeSpan ConnectionAcquisitionTimeout { get; internal set; } = TimeSpan.FromMinutes(1);
     
@@ -238,6 +244,23 @@ public class Config
     /// The configuration for the driver's underlying message reading from the network.
     /// </summary>
     public MessageReaderConfig MessageReaderConfig { get; internal set; }
+
+    /// <summary>
+    /// A certificate provider that will be used to provide the client certificate when
+    /// a new connection is established.
+    /// </summary>
+    public IClientCertificateProvider ClientCertificateProvider { get; internal set; }
+
+    /// <summary>
+    /// The TLS version to use when establishing a connection.
+    /// </summary>
+    public SslProtocols TlsVersion { get; internal set; } = SslProtocols.Tls12;
+
+    /// <summary>
+    /// The negotiator to use when establishing a TLS connection. If this is null, the driver will use the default
+    /// negotiator.|
+    /// </summary>
+    public ITlsNegotiator TlsNegotiator { get; internal set; }
 }
 
 /// <summary>

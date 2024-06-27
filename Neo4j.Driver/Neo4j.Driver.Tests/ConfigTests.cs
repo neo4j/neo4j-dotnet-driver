@@ -14,10 +14,15 @@
 // limitations under the License.
 
 using System;
+using System.IO;
+using System.Net.Security;
+using System.Security.Authentication;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector.Trust;
 using Neo4j.Driver.Internal.Logging;
+using Neo4j.Driver.Preview.Auth;
 using Xunit;
 
 namespace Neo4j.Driver.Tests;
@@ -35,6 +40,8 @@ public class ConfigTests
             config.Logger.Should().BeOfType<NullLogger>();
             config.MaxIdleConnectionPoolSize.Should().Be(100);
             config.ConnectionTimeout.Should().Be(TimeSpan.FromSeconds(30));
+            config.TlsVersion.Should().Be(SslProtocols.Tls12);
+            config.TlsNegotiator.Should().BeNull();
         }
 
         [Fact]
@@ -176,6 +183,70 @@ public class ConfigTests
             config.TrustManager.Should().BeNull();
             config.Logger.Should().BeOfType<NullLogger>();
             config.MaxIdleConnectionPoolSize.Should().Be(100);
+        }
+
+        [Fact]
+        public void WithClientCertificateShouldModifyTheSingleValue()
+        {
+            var provider = new Mock<IClientCertificateProvider>();
+            var config = Config.Builder.WithClientCertificateProvider(provider.Object).Build();
+            config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+            config.TrustManager.Should().BeNull();
+            config.Logger.Should().BeOfType<NullLogger>();
+            config.MaxIdleConnectionPoolSize.Should().Be(100);
+            config.ClientCertificateProvider.Should().Be(provider.Object);
+        }
+
+#if NET5_0_OR_GREATER
+        [Fact]
+        public void WithTlsVersionShouldModifyTheSingleValue()
+        {
+            var config = Config.Builder.WithTls13().Build();
+            config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+            config.TrustManager.Should().BeNull();
+            config.MaxIdleConnectionPoolSize.Should().Be(100);
+            config.TlsVersion.Should().Be(SslProtocols.Tls13);
+        }
+#endif
+
+        [Fact]
+        public void WithTlsNegotiator_ShouldSetTlsNegotiator()
+        {
+            var mockTlsNegotiator = new Mock<ITlsNegotiator>();
+            var configBuilder = new ConfigBuilder(new Config());
+
+            configBuilder.WithTlsNegotiator(mockTlsNegotiator.Object);
+
+            configBuilder.Build().TlsNegotiator.Should().Be(mockTlsNegotiator.Object);
+        }
+
+        [Fact]
+        public void WithTlsNegotiatorDelegate_ShouldSetTlsNegotiator()
+        {
+            var configBuilder = new ConfigBuilder(new Config());
+
+            configBuilder.WithTlsNegotiator((stream, host) => null);
+
+            configBuilder.Build().TlsNegotiator.Should().BeOfType<DelegateTlsNegotiator>();
+        }
+
+        [Fact]
+        public void WithTlsNegotiatorGeneric_ShouldSetTlsNegotiator()
+        {
+            var configBuilder = new ConfigBuilder(new Config());
+
+            configBuilder.WithTlsNegotiator<MockTlsNegotiator>();
+
+            configBuilder.Build().TlsNegotiator.Should().BeOfType<MockTlsNegotiator>();
+        }
+
+        private class MockTlsNegotiator : ITlsNegotiator
+        {
+            /// <inheritdoc />
+            public SslStream NegotiateTls(Uri uri, Stream stream)
+            {
+                return null;
+            }
         }
     }
 }

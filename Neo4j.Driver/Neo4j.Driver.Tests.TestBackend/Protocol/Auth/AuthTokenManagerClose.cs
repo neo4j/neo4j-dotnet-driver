@@ -21,7 +21,7 @@ internal class AuthTokenManagerClose : ProtocolObject
 
     public override string Respond()
     {
-        return new ProtocolResponse("AuthTokenManager", uniqueId).Encode();
+        return new ProtocolResponse("AuthTokenManager", data.id).Encode();
     }
 
     public class AuthTokenManagerCloseType

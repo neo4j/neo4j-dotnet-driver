@@ -17,9 +17,9 @@ using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using Neo4j.Driver.Internal.Types;
-using Neo4j.Driver.Preview.Mapping;
+using Neo4j.Driver.Mapping;
+using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
-using Record = Neo4j.Driver.Internal.Result.Record;
 
 namespace Neo4j.Driver.Tests.Mapping;
 
@@ -28,12 +28,15 @@ public class LabelCaptureTests
     public class TestMappedClass
     {
         [MappingSource("Person", EntityMappingSource.NodeLabel)]
+        [MappingOptional]
         public string Label { get; set; }
 
         [MappingSource("Person", EntityMappingSource.NodeLabel)]
+        [MappingOptional]
         public List<string> Labels { get; set; }
 
         [MappingSource("Relationship", EntityMappingSource.RelationshipType)]
+        [MappingOptional]
         public string RelationshipType { get; set; }
     }
 
@@ -46,7 +49,7 @@ public class LabelCaptureTests
     public void ShouldCaptureSingleNodeLabel()
     {
         var node = new Node(1, new[] { "Test" }, new Dictionary<string, object>());
-        var record = new Record(new[] { "Person" }, new object[] { node });
+        var record = TestRecord.Create(new[] { "Person" }, new object[] { node });
 
         var mapped = record.AsObject<TestMappedClass>();
 
@@ -57,7 +60,7 @@ public class LabelCaptureTests
     public void ShouldCaptureMultipleNodeLabelsIntoString()
     {
         var node = new Node(1, new[] { "Alpha", "Bravo", "Charlie" }, new Dictionary<string, object>());
-        var record = new Record(new[] { "Person" }, new object[] { node });
+        var record = TestRecord.Create(new[] { "Person" }, new object[] { node });
 
         var mapped = record.AsObject<TestMappedClass>();
 
@@ -68,7 +71,7 @@ public class LabelCaptureTests
     public void ShouldCaptureRelationshipType()
     {
         var node = new Relationship(1, 2, 3, "ACTED_IN", new Dictionary<string, object>());
-        var record = new Record(new[] { "Relationship" }, new object[] { node });
+        var record = TestRecord.Create(new[] { "Relationship" }, new object[] { node });
 
         var mapped = record.AsObject<TestMappedClass>();
 
@@ -86,17 +89,20 @@ public class LabelCaptureTests
                         x => x.Label,
                         "Person",
                         EntityMappingSource.NodeLabel,
-                        x => string.Join("|", ((string[])x).Select(y => y.ToUpper())))
+                        x => string.Join("|", ((string[])x).Select(y => y.ToUpper())),
+                        optional: true)
                     .Map(
                         x => x.Labels,
                         "Person",
                         EntityMappingSource.NodeLabel,
-                        x => ((string[])x).Select(y => y.Replace("a", "x")).ToList())
+                        x => ((string[])x).Select(y => y.Replace("a", "x")).ToList(),
+                        optional: true)
                     .Map(
                         x => x.RelationshipType,
                         "Relationship",
                         EntityMappingSource.RelationshipType,
-                        x => x?.ToString()?.ToLower()));
+                        x => x?.ToString()?.ToLower(),
+                        optional: true));
         }
     }
 
@@ -105,7 +111,7 @@ public class LabelCaptureTests
     {
         RecordObjectMapping.RegisterProvider<CustomMapper>();
         var node = new Node(1, new[] { "Alpha", "Bravo", "Charlie" }, new Dictionary<string, object>());
-        var record = new Record(new[] { "Person" }, new object[] { node });
+        var record = TestRecord.Create(new[] { "Person" }, new object[] { node });
 
         var mapped = record.AsObject<TestMappedClass>();
 
@@ -118,7 +124,7 @@ public class LabelCaptureTests
     {
         RecordObjectMapping.RegisterProvider<CustomMapper>();
         var node = new Relationship(1, 2, 3, "ACTED_IN", new Dictionary<string, object>());
-        var record = new Record(new[] { "Relationship" }, new object[] { node });
+        var record = TestRecord.Create(new[] { "Relationship" }, new object[] { node });
 
         var mapped = record.AsObject<TestMappedClass>();
 

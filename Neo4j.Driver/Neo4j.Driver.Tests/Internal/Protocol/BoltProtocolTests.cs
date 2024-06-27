@@ -448,8 +448,12 @@ public class BoltProtocolTests
 
             mockConn.Verify(x => x.ConfigureMode(AccessMode.Read), Times.Once);
             mockConn.Verify(
-                x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()),
-                Times.Exactly(2));
+                x => x.EnqueueAsync(
+                    It.IsAny<RunWithMetadataMessage>(),
+                    It.IsAny<RunResponseHandler>(),
+                    It.IsAny<PullMessage>(),
+                    It.IsAny<PullResponseHandler>()),
+                Times.Exactly(1));
 
             mockConn.Verify(x => x.SendAsync(), Times.Once);
         }
@@ -761,16 +765,12 @@ public class BoltProtocolTests
                 Times.Once);
 
             mockConn.Verify(
-                x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()),
-                Times.Exactly(2));
-
-            mockConn.Verify(
-                x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<RunResponseHandler>()),
-                Times.Once);
-
-            mockConn.Verify(
-                x => x.EnqueueAsync(It.IsAny<PullMessage>(), It.IsAny<PullResponseHandler>()),
-                Times.Once);
+                x => x.EnqueueAsync(
+                    It.IsNotNull<RunWithMetadataMessage>(),
+                    It.IsNotNull<RunResponseHandler>(),
+                    It.IsNotNull<PullMessage>(),
+                    It.IsNotNull<PullResponseHandler>()),
+                Times.Exactly(1));
 
             mockConn.Verify(x => x.SendAsync(), Times.Once);
             mockConn.Verify(x => x.SyncAsync(), Times.Never);
@@ -1189,15 +1189,11 @@ public class BoltProtocolTests
                 Times.Once);
 
             mockConn.Verify(
-                x => x.EnqueueAsync(It.IsAny<IRequestMessage>(), It.IsAny<IResponseHandler>()),
-                Times.Exactly(2));
-
-            mockConn.Verify(
-                x => x.EnqueueAsync(It.IsAny<RunWithMetadataMessage>(), It.IsAny<RunResponseHandler>()),
-                Times.Once);
-
-            mockConn.Verify(
-                x => x.EnqueueAsync(It.IsAny<PullMessage>(), It.IsAny<PullResponseHandler>()),
+                x => x.EnqueueAsync(
+                    It.IsAny<RunWithMetadataMessage>(),
+                    It.IsAny<RunResponseHandler>(),
+                    It.IsAny<PullMessage>(),
+                    It.IsAny<PullResponseHandler>()),
                 Times.Once);
 
             mockConn.Verify(x => x.SendAsync(), Times.Once);

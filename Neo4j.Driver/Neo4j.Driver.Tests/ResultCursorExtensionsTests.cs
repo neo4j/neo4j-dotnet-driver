@@ -49,7 +49,7 @@ public class ResultCursorExtensionsTests
                 .Returns(enumerator.Object);
 
             var record = await mockCursor.Object.SingleAsync();
-            record.Should().Be(mockRecord.Object);
+            record.Should().BeSameAs(mockRecord.Object);
         }
 
         [Fact]
@@ -161,8 +161,8 @@ public class ResultCursorExtensionsTests
 
             var list = await mockCursor.Object.ToListAsync();
             list.Count.Should().Be(2);
-            list[0].Should().Be(record0);
-            list[1].Should().Be(record1);
+            list[0].Should().BeSameAs(record0);
+            list[1].Should().BeSameAs(record1);
         }
 
         [Fact]
@@ -212,7 +212,7 @@ public class ResultCursorExtensionsTests
                 r =>
                 {
                     index++;
-                    r.Should().Be(index == 1 ? mockRecord.Object : mockRecord2.Object);
+                    r.Should().BeSameAs(index == 1 ? mockRecord.Object : mockRecord2.Object);
                 });
         }
     }

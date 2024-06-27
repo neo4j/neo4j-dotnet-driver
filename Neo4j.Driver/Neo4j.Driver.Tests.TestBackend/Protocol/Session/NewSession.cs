@@ -19,6 +19,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Auth;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
 using Neo4j.Driver.Tests.TestBackend.Protocol.BookmarkManager;
 using Neo4j.Driver.Tests.TestBackend.Protocol.Driver;
 using Newtonsoft.Json;
