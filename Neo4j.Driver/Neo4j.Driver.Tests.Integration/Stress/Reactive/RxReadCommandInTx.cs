@@ -1,7 +1,5 @@
 // Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -19,7 +17,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.Internal;
-using static Neo4j.Driver.Tests.Assertions;
+using static Neo4j.Driver.Tests.TestUtil.Assertions;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 

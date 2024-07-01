@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -23,9 +21,9 @@ namespace Neo4j.Driver.Internal.Util;
 
 internal class ServerVersion : IComparable<ServerVersion>
 {
-    public const string Neo4jProduct = "Neo4j";
+    private const string Neo4jProduct = "Neo4j";
     private const string InDevVersionString = "Neo4j/dev";
-    public static readonly ServerVersion VInDev = new(int.MaxValue, int.MaxValue, int.MaxValue, InDevVersionString);
+    private static readonly ServerVersion VInDev = new(int.MaxValue, int.MaxValue, int.MaxValue, InDevVersionString);
 
     private static readonly Regex VersionRegex =
         new(

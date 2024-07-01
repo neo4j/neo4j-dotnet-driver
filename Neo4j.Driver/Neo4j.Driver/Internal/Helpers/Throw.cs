@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -15,38 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-
-namespace Neo4j.Driver.Internal;
+namespace Neo4j.Driver.Internal.Helpers;
 
 internal static class Throw
 {
     public static class ProtocolException
     {
-        public static void IfNotEqual(int first, int second, string firstParam, string secondParam)
-        {
-            If(() => first != second, first, second, firstParam, secondParam);
-        }
-
-        internal static void IfNotEqual(object first, object second, string firstParam, string secondParam)
-        {
-            if (first == null && second == null)
-            {
-                return;
-            }
-
-            If(() => first == null || second == null || !first.Equals(second), first, second, firstParam, secondParam);
-        }
-
-        public static void If(Func<bool> func, object first, object second, string firstParam, string secondParam)
-        {
-            if (func())
-            {
-                throw new Neo4j.Driver.ProtocolException(
-                    $"{firstParam} ({first}) does not equal to {secondParam} ({second})");
-            }
-        }
-
         public static void IfFalse(bool value, string nameofValue)
         {
             if (!value)

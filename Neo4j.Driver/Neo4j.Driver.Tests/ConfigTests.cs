@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -16,168 +14,238 @@
 // limitations under the License.
 
 using System;
+using System.IO;
+using System.Net.Security;
+using System.Security.Authentication;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector.Trust;
 using Neo4j.Driver.Internal.Logging;
+using Neo4j.Driver.Preview.Auth;
 using Xunit;
 
-namespace Neo4j.Driver.Tests
+namespace Neo4j.Driver.Tests;
+
+public class ConfigTests
 {
-    public class ConfigTests
+    public class DefaultConfigTests
     {
-        public class DefaultConfigTests
+        [Fact]
+        public void DefaultConfigShouldGiveCorrectValueBack()
         {
-            [Fact]
-            public void DefaultConfigShouldGiveCorrectValueBack()
-            {
-                var config = new Config();
-                config.EncryptionLevel.Should().Be(EncryptionLevel.None);
-                config.TrustManager.Should().BeNull();
-                config.Logger.Should().BeOfType<NullLogger>();
-                config.MaxIdleConnectionPoolSize.Should().Be(100);
-                config.ConnectionTimeout.Should().Be(TimeSpan.FromSeconds(30));
-            }
-
-            [Fact]
-            public void ShouldUseMaxConnectionValueIfMaxIdleValueIsNotSpecified()
-            {
-                var config = new Config { MaxConnectionPoolSize = 50 };
-                config.MaxConnectionPoolSize.Should().Be(50);
-                config.MaxIdleConnectionPoolSize.Should().Be(50);
-            }
-
-            [Fact]
-            public void ShouldSetMaxIdleValueWhenSetSeparately()
-            {
-                var config = new Config { MaxIdleConnectionPoolSize = 20, MaxConnectionPoolSize = 50 };
-                config.MaxConnectionPoolSize.Should().Be(50);
-                config.MaxIdleConnectionPoolSize.Should().Be(20);
-            }
-
-            [Fact]
-            public void ShouldDefaultToNoEncryptionAndNoTrust()
-            {
-                var config = new Config();
-                config.NullableEncryptionLevel.Should().BeNull();
-                config.EncryptionLevel.Should().Be(EncryptionLevel.None);
-                config.TrustManager.Should().BeNull();
-            }
-
-            [Fact]
-            public void ShouldSetEncryptionAndTrust()
-            {
-                var config = new Config
-                {
-                    EncryptionLevel = EncryptionLevel.None,
-                    TrustManager = null
-                };
-
-                config.NullableEncryptionLevel.Should().Be(EncryptionLevel.None);
-                config.EncryptionLevel.Should().Be(EncryptionLevel.None);
-                config.TrustManager.Should().BeNull();
-            }
+            var config = new Config();
+            config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+            config.TrustManager.Should().BeNull();
+            config.Logger.Should().BeOfType<NullLogger>();
+            config.MaxIdleConnectionPoolSize.Should().Be(100);
+            config.ConnectionTimeout.Should().Be(TimeSpan.FromSeconds(30));
+            config.TlsVersion.Should().Be(SslProtocols.Tls12);
+            config.TlsNegotiator.Should().BeNull();
         }
 
-        public class ConfigBuilderTests
+        [Fact]
+        public void ShouldUseMaxConnectionValueIfMaxIdleValueIsNotSpecified()
         {
-            [Fact]
-            public void ShouldUseDefaultValueIfNotSpecified()
+            var config = new Config { MaxConnectionPoolSize = 50 };
+            config.MaxConnectionPoolSize.Should().Be(50);
+            config.MaxIdleConnectionPoolSize.Should().Be(50);
+        }
+
+        [Fact]
+        public void ShouldSetMaxIdleValueWhenSetSeparately()
+        {
+            var config = new Config { MaxIdleConnectionPoolSize = 20, MaxConnectionPoolSize = 50 };
+            config.MaxConnectionPoolSize.Should().Be(50);
+            config.MaxIdleConnectionPoolSize.Should().Be(20);
+        }
+
+        [Fact]
+        public void ShouldDefaultToNoEncryptionAndNoTrust()
+        {
+            var config = new Config();
+            config.NullableEncryptionLevel.Should().BeNull();
+            config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+            config.TrustManager.Should().BeNull();
+        }
+
+        [Fact]
+        public void ShouldSetEncryptionAndTrust()
+        {
+            var config = new Config
             {
-                var config = new Config { EncryptionLevel = EncryptionLevel.Encrypted };
+                EncryptionLevel = EncryptionLevel.None,
+                TrustManager = null
+            };
 
-                config.EncryptionLevel.Should().Be(EncryptionLevel.Encrypted);
-                config.TrustManager.Should().BeNull();
-                config.Logger.Should().BeOfType<NullLogger>();
-                config.MaxIdleConnectionPoolSize.Should().Be(100);
-            }
+            config.NullableEncryptionLevel.Should().Be(EncryptionLevel.None);
+            config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+            config.TrustManager.Should().BeNull();
+        }
+    }
 
-            [Fact]
-            public void ShouldUseMaxConnectionValueIfMaxIdleValueIsNotSpecified()
+    public class ConfigBuilderTests
+    {
+        [Fact]
+        public void ShouldUseDefaultValueIfNotSpecified()
+        {
+            var config = new Config { EncryptionLevel = EncryptionLevel.Encrypted };
+
+            config.EncryptionLevel.Should().Be(EncryptionLevel.Encrypted);
+            config.TrustManager.Should().BeNull();
+            config.Logger.Should().BeOfType<NullLogger>();
+            config.MaxIdleConnectionPoolSize.Should().Be(100);
+        }
+
+        [Fact]
+        public void ShouldUseMaxConnectionValueIfMaxIdleValueIsNotSpecified()
+        {
+            var config = Config.Builder.WithMaxConnectionPoolSize(50).Build();
+            config.MaxConnectionPoolSize.Should().Be(50);
+            config.MaxIdleConnectionPoolSize.Should().Be(50);
+        }
+
+        [Fact]
+        public void ShouldSetMaxIdleValueWhenSetSeparately()
+        {
+            var config = Config.Builder.WithMaxConnectionPoolSize(50).WithMaxIdleConnectionPoolSize(20).Build();
+            config.MaxConnectionPoolSize.Should().Be(50);
+            config.MaxIdleConnectionPoolSize.Should().Be(20);
+        }
+
+        [Fact]
+        public void WithLoggingShouldModifyTheSingleValue()
+        {
+            var mockLogger = new Mock<ILogger>();
+            var config = Config.Builder.WithLogger(mockLogger.Object).Build();
+            config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+            config.TrustManager.Should().BeNull();
+            config.Logger.Should().Be(mockLogger.Object);
+            config.MaxIdleConnectionPoolSize.Should().Be(100);
+        }
+
+        [Fact]
+        public void WithLoggingShouldRemainNullSafe()
+        {
+            var config = Config.Builder.WithLogger(null).Build();
+            config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+            config.TrustManager.Should().BeNull();
+            config.Logger.Should().Be(NullLogger.Instance);
+            config.MaxIdleConnectionPoolSize.Should().Be(100);
+        }
+
+        [Fact]
+        public void WithPoolSizeShouldModifyTheSingleValue()
+        {
+            var config = Config.Builder.WithMaxIdleConnectionPoolSize(3).Build();
+            config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+            config.TrustManager.Should().BeNull();
+            config.Logger.Should().BeOfType<NullLogger>();
+            config.MaxIdleConnectionPoolSize.Should().Be(3);
+        }
+
+        [Fact]
+        public void WithEncryptionLevelShouldModifyTheNullableValue()
+        {
+            var config = Config.Builder.WithEncryptionLevel(EncryptionLevel.None).Build();
+            config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+            config.NullableEncryptionLevel.Should().Be(EncryptionLevel.None);
+            config.TrustManager.Should().BeNull();
+            config.Logger.Should().BeOfType<NullLogger>();
+            config.MaxIdleConnectionPoolSize.Should().Be(100);
+        }
+
+        [Fact]
+        public void WithTrustManagerShouldModifyTheSingleValue()
+        {
+            var config = Config.Builder.WithTrustManager(TrustManager.CreateChainTrust()).Build();
+            config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+            config.TrustManager.Should().BeOfType<ChainTrustManager>();
+            config.Logger.Should().BeOfType<NullLogger>();
+            config.MaxIdleConnectionPoolSize.Should().Be(100);
+        }
+
+        [Fact]
+        public void ChangingNewConfigShouldNotAffectOtherConfig()
+        {
+            var config = new Config();
+            var config1 = Config.Builder.WithMaxIdleConnectionPoolSize(3).Build();
+            var mockLogger = new Mock<ILogger>();
+            var config2 = Config.Builder.WithLogger(mockLogger.Object).Build();
+
+            config2.Logger.Should().Be(mockLogger.Object);
+            config2.MaxIdleConnectionPoolSize.Should().Be(100);
+
+            config1.MaxIdleConnectionPoolSize.Should().Be(3);
+            config1.Logger.Should().BeOfType<NullLogger>();
+
+            config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+            config.TrustManager.Should().BeNull();
+            config.Logger.Should().BeOfType<NullLogger>();
+            config.MaxIdleConnectionPoolSize.Should().Be(100);
+        }
+
+        [Fact]
+        public void WithClientCertificateShouldModifyTheSingleValue()
+        {
+            var provider = new Mock<IClientCertificateProvider>();
+            var config = Config.Builder.WithClientCertificateProvider(provider.Object).Build();
+            config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+            config.TrustManager.Should().BeNull();
+            config.Logger.Should().BeOfType<NullLogger>();
+            config.MaxIdleConnectionPoolSize.Should().Be(100);
+            config.ClientCertificateProvider.Should().Be(provider.Object);
+        }
+
+#if NET5_0_OR_GREATER
+        [Fact]
+        public void WithTlsVersionShouldModifyTheSingleValue()
+        {
+            var config = Config.Builder.WithTls13().Build();
+            config.EncryptionLevel.Should().Be(EncryptionLevel.None);
+            config.TrustManager.Should().BeNull();
+            config.MaxIdleConnectionPoolSize.Should().Be(100);
+            config.TlsVersion.Should().Be(SslProtocols.Tls13);
+        }
+#endif
+
+        [Fact]
+        public void WithTlsNegotiator_ShouldSetTlsNegotiator()
+        {
+            var mockTlsNegotiator = new Mock<ITlsNegotiator>();
+            var configBuilder = new ConfigBuilder(new Config());
+
+            configBuilder.WithTlsNegotiator(mockTlsNegotiator.Object);
+
+            configBuilder.Build().TlsNegotiator.Should().Be(mockTlsNegotiator.Object);
+        }
+
+        [Fact]
+        public void WithTlsNegotiatorDelegate_ShouldSetTlsNegotiator()
+        {
+            var configBuilder = new ConfigBuilder(new Config());
+
+            configBuilder.WithTlsNegotiator((stream, host) => null);
+
+            configBuilder.Build().TlsNegotiator.Should().BeOfType<DelegateTlsNegotiator>();
+        }
+
+        [Fact]
+        public void WithTlsNegotiatorGeneric_ShouldSetTlsNegotiator()
+        {
+            var configBuilder = new ConfigBuilder(new Config());
+
+            configBuilder.WithTlsNegotiator<MockTlsNegotiator>();
+
+            configBuilder.Build().TlsNegotiator.Should().BeOfType<MockTlsNegotiator>();
+        }
+
+        private class MockTlsNegotiator : ITlsNegotiator
+        {
+            /// <inheritdoc />
+            public SslStream NegotiateTls(Uri uri, Stream stream)
             {
-                var config = Config.Builder.WithMaxConnectionPoolSize(50).Build();
-                config.MaxConnectionPoolSize.Should().Be(50);
-                config.MaxIdleConnectionPoolSize.Should().Be(50);
-            }
-
-            [Fact]
-            public void ShouldSetMaxIdleValueWhenSetSeparately()
-            {
-                var config = Config.Builder.WithMaxConnectionPoolSize(50).WithMaxIdleConnectionPoolSize(20).Build();
-                config.MaxConnectionPoolSize.Should().Be(50);
-                config.MaxIdleConnectionPoolSize.Should().Be(20);
-            }
-
-            [Fact]
-            public void WithLoggingShouldModifyTheSingleValue()
-            {
-                var mockLogger = new Mock<ILogger>();
-                var config = Config.Builder.WithLogger(mockLogger.Object).Build();
-                config.EncryptionLevel.Should().Be(EncryptionLevel.None);
-                config.TrustManager.Should().BeNull();
-                config.Logger.Should().Be(mockLogger.Object);
-                config.MaxIdleConnectionPoolSize.Should().Be(100);
-            }
-
-            [Fact]
-            public void WithLoggingShouldRemainNullSafe()
-            {
-                var config = Config.Builder.WithLogger(null).Build();
-                config.EncryptionLevel.Should().Be(EncryptionLevel.None);
-                config.TrustManager.Should().BeNull();
-                config.Logger.Should().Be(NullLogger.Instance);
-                config.MaxIdleConnectionPoolSize.Should().Be(100);
-            }
-
-            [Fact]
-            public void WithPoolSizeShouldModifyTheSingleValue()
-            {
-                var config = Config.Builder.WithMaxIdleConnectionPoolSize(3).Build();
-                config.EncryptionLevel.Should().Be(EncryptionLevel.None);
-                config.TrustManager.Should().BeNull();
-                config.Logger.Should().BeOfType<NullLogger>();
-                config.MaxIdleConnectionPoolSize.Should().Be(3);
-            }
-
-            [Fact]
-            public void WithEncryptionLevelShouldModifyTheNullableValue()
-            {
-                var config = Config.Builder.WithEncryptionLevel(EncryptionLevel.None).Build();
-                config.EncryptionLevel.Should().Be(EncryptionLevel.None);
-                config.NullableEncryptionLevel.Should().Be(EncryptionLevel.None);
-                config.TrustManager.Should().BeNull();
-                config.Logger.Should().BeOfType<NullLogger>();
-                config.MaxIdleConnectionPoolSize.Should().Be(100);
-            }
-
-            [Fact]
-            public void WithTrustManagerShouldModifyTheSingleValue()
-            {
-                var config = Config.Builder.WithTrustManager(TrustManager.CreateChainTrust()).Build();
-                config.EncryptionLevel.Should().Be(EncryptionLevel.None);
-                config.TrustManager.Should().BeOfType<ChainTrustManager>();
-                config.Logger.Should().BeOfType<NullLogger>();
-                config.MaxIdleConnectionPoolSize.Should().Be(100);
-            }
-
-            [Fact]
-            public void ChangingNewConfigShouldNotAffectOtherConfig()
-            {
-                var config = new Config();
-                var config1 = Config.Builder.WithMaxIdleConnectionPoolSize(3).Build();
-                var mockLogger = new Mock<ILogger>();
-                var config2 = Config.Builder.WithLogger(mockLogger.Object).Build();
-
-                config2.Logger.Should().Be(mockLogger.Object);
-                config2.MaxIdleConnectionPoolSize.Should().Be(100);
-
-                config1.MaxIdleConnectionPoolSize.Should().Be(3);
-                config1.Logger.Should().BeOfType<NullLogger>();
-
-                config.EncryptionLevel.Should().Be(EncryptionLevel.None);
-                config.TrustManager.Should().BeNull();
-                config.Logger.Should().BeOfType<NullLogger>();
-                config.MaxIdleConnectionPoolSize.Should().Be(100);
+                return null;
             }
         }
     }

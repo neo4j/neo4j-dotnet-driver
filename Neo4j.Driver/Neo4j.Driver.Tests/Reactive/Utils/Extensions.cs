@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -22,13 +20,12 @@ using System.Reactive;
 using System.Reactive.Linq;
 using Microsoft.Reactive.Testing;
 
-namespace Neo4j.Driver.Reactive
+namespace Neo4j.Driver.Tests.Reactive.Utils;
+
+public static class Extensions
 {
-    public static class Extensions
+    public static IEnumerable<Recorded<Notification<T>>> WaitForCompletion<T>(this IObservable<T> observable)
     {
-        public static IEnumerable<Recorded<Notification<T>>> WaitForCompletion<T>(this IObservable<T> observable)
-        {
-            return observable.Materialize().Select(n => new Recorded<Notification<T>>(0, n)).ToEnumerable().ToList();
-        }
+        return observable.Materialize().Select(n => new Recorded<Notification<T>>(0, n)).ToEnumerable().ToList();
     }
 }

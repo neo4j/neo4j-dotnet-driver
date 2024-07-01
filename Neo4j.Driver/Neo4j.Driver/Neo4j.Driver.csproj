@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <Import Project="..\common.props" />
     <PropertyGroup>
-        <TargetFrameworks>net6.0;netstandard2.0</TargetFrameworks>
         <AssemblyName>Neo4j.Driver</AssemblyName>
         <PackageId>Neo4j.Driver$(PackageIdSuffix)</PackageId>
         <Authors>Neo4j</Authors>
@@ -23,8 +22,9 @@
         <Configurations>Debug;Release;ReleaseSigned;DebugDelaySigned</Configurations>
         <LangVersion>latest</LangVersion>
         <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Neo4j.Driver.xml</DocumentationFile>
-        <Version>5.14.0</Version>
-        <LangVersion>10.0</LangVersion>
+        <Version>5.22.0</Version>
+        <LangVersion>latestmajor</LangVersion>
+        <TargetFrameworks>net6.0;netstandard2.0;net8.0</TargetFrameworks>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net6.0|AnyCPU'">
         <WarningLevel>2</WarningLevel>
@@ -48,12 +48,14 @@
     </ItemGroup>
     <ItemGroup>
         <None Remove="Internal\Temporal\windowsZones.xml" />
+        <None Remove="Neo4j.Driver.csproj.DotSettings" />
     </ItemGroup>
     <ItemGroup>
         <EmbeddedResource Include="Internal\Temporal\windowsZones.xml" />
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="5.0.0" />
+        <PackageReference Include="System.IO.Pipelines" Version="7.0.0" />
         <PackageReference Include="System.ValueTuple" Version="4.5.0" />
     </ItemGroup>
 </Project>

@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -20,87 +18,86 @@ using System.Runtime.InteropServices;
 using Neo4j.Driver.Internal;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.TestUtil
+namespace Neo4j.Driver.Tests.Filters;
+
+public class OSFactAttribute : FactAttribute
 {
-    public class OSFactAttribute : FactAttribute
+    public OSFactAttribute(params OSPlatform[] onPlatforms)
     {
-        public OSFactAttribute(params OSPlatform[] onPlatforms)
-        {
-            var shouldSkip = onPlatforms.All(platform => !RuntimeInformation.IsOSPlatform(platform));
+        var shouldSkip = onPlatforms.All(platform => !RuntimeInformation.IsOSPlatform(platform));
 
-            if (shouldSkip)
-            {
-                Skip = $"Test is supposed to be run only on platforms '{onPlatforms.ToContentString()}'";
-            }
+        if (shouldSkip)
+        {
+            Skip = $"Test is supposed to be run only on platforms '{onPlatforms.ToContentString()}'";
         }
     }
+}
 
-    public class WindowsFactAttribute : OSFactAttribute
+public class WindowsFactAttribute : OSFactAttribute
+{
+    public WindowsFactAttribute() : base(OSPlatform.Windows)
     {
-        public WindowsFactAttribute() : base(OSPlatform.Windows)
+    }
+}
+
+public class LinuxFactAttribute : OSFactAttribute
+{
+    public LinuxFactAttribute() : base(OSPlatform.Linux)
+    {
+    }
+}
+
+public class OSXFactAttribute : OSFactAttribute
+{
+    public OSXFactAttribute() : base(OSPlatform.OSX)
+    {
+    }
+}
+
+public class UnixFactAttribute : OSFactAttribute
+{
+    public UnixFactAttribute() : base(OSPlatform.Linux, OSPlatform.OSX)
+    {
+    }
+}
+
+public class OSTheoryAttribute : TheoryAttribute
+{
+    public OSTheoryAttribute(params OSPlatform[] onPlatforms)
+    {
+        var shouldSkip = onPlatforms.All(platform => !RuntimeInformation.IsOSPlatform(platform));
+
+        if (shouldSkip)
         {
+            Skip = $"Test is supposed to be run only on platforms '{onPlatforms.ToContentString()}'";
         }
     }
+}
 
-    public class LinuxFactAttribute : OSFactAttribute
+public class WindowsTheoryAttribute : OSTheoryAttribute
+{
+    public WindowsTheoryAttribute() : base(OSPlatform.Windows)
     {
-        public LinuxFactAttribute() : base(OSPlatform.Linux)
-        {
-        }
     }
+}
 
-    public class OSXFactAttribute : OSFactAttribute
+public class LinuxTheoryAttribute : OSTheoryAttribute
+{
+    public LinuxTheoryAttribute() : base(OSPlatform.Linux)
     {
-        public OSXFactAttribute() : base(OSPlatform.OSX)
-        {
-        }
     }
+}
 
-    public class UnixFactAttribute : OSFactAttribute
+public class OSXTheoryAttribute : OSTheoryAttribute
+{
+    public OSXTheoryAttribute() : base(OSPlatform.OSX)
     {
-        public UnixFactAttribute() : base(OSPlatform.Linux, OSPlatform.OSX)
-        {
-        }
     }
+}
 
-    public class OSTheoryAttribute : TheoryAttribute
+public class UnixTheoryAttribute : OSTheoryAttribute
+{
+    public UnixTheoryAttribute() : base(OSPlatform.Linux, OSPlatform.OSX)
     {
-        public OSTheoryAttribute(params OSPlatform[] onPlatforms)
-        {
-            var shouldSkip = onPlatforms.All(platform => !RuntimeInformation.IsOSPlatform(platform));
-
-            if (shouldSkip)
-            {
-                Skip = $"Test is supposed to be run only on platforms '{onPlatforms.ToContentString()}'";
-            }
-        }
-    }
-
-    public class WindowsTheoryAttribute : OSTheoryAttribute
-    {
-        public WindowsTheoryAttribute() : base(OSPlatform.Windows)
-        {
-        }
-    }
-
-    public class LinuxTheoryAttribute : OSTheoryAttribute
-    {
-        public LinuxTheoryAttribute() : base(OSPlatform.Linux)
-        {
-        }
-    }
-
-    public class OSXTheoryAttribute : OSTheoryAttribute
-    {
-        public OSXTheoryAttribute() : base(OSPlatform.OSX)
-        {
-        }
-    }
-
-    public class UnixTheoryAttribute : OSTheoryAttribute
-    {
-        public UnixTheoryAttribute() : base(OSPlatform.Linux, OSPlatform.OSX)
-        {
-        }
     }
 }

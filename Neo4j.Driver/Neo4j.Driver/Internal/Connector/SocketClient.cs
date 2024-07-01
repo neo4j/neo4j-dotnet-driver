@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -17,12 +15,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.Connector;
 
@@ -36,8 +34,6 @@ internal sealed class SocketClient : ISocketClient
     private readonly Uri _uri;
     private readonly ILogger _logger;
     private readonly IPackStreamFactory _packstreamFactory;
-    private readonly MemoryStream _readBufferStream;
-    private readonly ByteBuffers _readerBuffers = new();
     private readonly ITcpSocketClient _tcpSocketClient;
     private IChunkWriter _chunkWriter;
 
@@ -64,7 +60,6 @@ internal sealed class SocketClient : ISocketClient
         _connectionIoFactory = connectionIoFactory ?? SocketClientIoFactory.Default;
         _handshaker = boltHandshaker ?? BoltHandshaker.Default;
 
-        _readBufferStream = new MemoryStream(context.Config.MaxReadBufferSize);
         _tcpSocketClient = _connectionIoFactory.TcpSocketClient(context, _logger);
     }
 
@@ -81,10 +76,9 @@ internal sealed class SocketClient : ISocketClient
             .DoHandshakeAsync(_tcpSocketClient, _logger, cancellationToken)
             .ConfigureAwait(false);
 
-        _format = _connectionIoFactory.Format(Version);
-        _messageReader = _connectionIoFactory.Readers(_tcpSocketClient, Context, _logger);
+        _format = _connectionIoFactory.Format(Version, Context);
+        _messageReader = _connectionIoFactory.MessageReader(_tcpSocketClient, Context, _logger);
         (_chunkWriter, _messageWriter) = _connectionIoFactory.Writers(_tcpSocketClient, Context, _logger);
-
         SetOpened();
     }
 
@@ -92,11 +86,11 @@ internal sealed class SocketClient : ISocketClient
 
     public async Task SendAsync(IEnumerable<IRequestMessage> messages)
     {
+        var writer = _packstreamFactory.BuildWriter(_format, _chunkWriter);
         try
         {
             foreach (var message in messages)
             {
-                var writer = _packstreamFactory.BuildWriter(_format, _chunkWriter);
                 _messageWriter.Write(message, writer);
                 _logger.Debug(MessagePattern, message);
             }
@@ -123,8 +117,7 @@ internal sealed class SocketClient : ISocketClient
     {
         try
         {
-            var reader = _packstreamFactory.BuildReader(_format, _readBufferStream, _readerBuffers);
-            await _messageReader.ReadAsync(responsePipeline, reader).ConfigureAwait(false);
+            await _messageReader.ReadAsync(responsePipeline, _format).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -154,7 +147,6 @@ internal sealed class SocketClient : ISocketClient
     {
         var ms = seconds * 1000;
         _messageReader.SetReadTimeoutInMs(ms);
-        _tcpSocketClient.ReaderStream.ReadTimeout = ms;
     }
 
     public void UseUtcEncoded()
@@ -162,15 +154,13 @@ internal sealed class SocketClient : ISocketClient
         _format.UseUtcEncoder();
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (Interlocked.CompareExchange(ref _closedMarker, 1, 0) == 0)
         {
-            _readBufferStream.Dispose();
+            await (_messageReader?.DisposeAsync() ?? new ValueTask(Task.CompletedTask));
             _tcpSocketClient.Dispose();
         }
-
-        return default;
     }
 
     private void SetOpened()

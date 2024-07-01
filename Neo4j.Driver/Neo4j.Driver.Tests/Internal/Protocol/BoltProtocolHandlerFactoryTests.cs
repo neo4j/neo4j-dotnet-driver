@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -18,41 +16,42 @@
 using System;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Xunit;
 using Record = Xunit.Record;
 
-namespace Neo4j.Driver.Internal.Protocol
+namespace Neo4j.Driver.Tests.Internal.Protocol;
+
+public class BoltProtocolHandlerFactoryTests
 {
-    public class BoltProtocolHandlerFactoryTests
+    public class NewResultCursorBuilderTests
     {
-        public class NewResultCursorBuilderTests
+        [Fact]
+        public void ShouldAllowNullFunctions()
         {
-            [Fact]
-            public void ShouldAllowNullFunctions()
-            {
-                var summaryBuilder = new SummaryBuilder(
-                    new Query("..."),
-                    new ServerInfo(new Uri("bolt://127.0.0.1:7687")));
+            var summaryBuilder = new SummaryBuilder(
+                new Query("..."),
+                new ServerInfo(new Uri("bolt://127.0.0.1:7687")));
 
-                var ex = Record.Exception(
-                    () =>
-                    {
-                        BoltProtocolHandlerFactory.Instance.NewResultCursorBuilder(
-                            summaryBuilder,
-                            new Mock<IConnection>().Object,
-                            null,
-                            null,
-                            null,
-                            null,
-                            -1,
-                            true,
-                            It.IsAny<IInternalAsyncTransaction>());
-                    });
+            var ex = Record.Exception(
+                () =>
+                {
+                    BoltProtocolHandlerFactory.Instance.NewResultCursorBuilder(
+                        summaryBuilder,
+                        new Mock<IConnection>().Object,
+                        null,
+                        null,
+                        null,
+                        null,
+                        -1,
+                        true,
+                        It.IsAny<IInternalAsyncTransaction>());
+                });
 
-                ex.Should().BeNull();
-            }
+            ex.Should().BeNull();
         }
     }
 }

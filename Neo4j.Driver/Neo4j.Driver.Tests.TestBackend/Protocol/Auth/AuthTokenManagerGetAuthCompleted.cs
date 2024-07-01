@@ -15,9 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
 
-internal class AuthTokenManagerGetAuthCompleted : IProtocolObject
+internal class AuthTokenManagerGetAuthCompleted : ProtocolObject
 {
     public AuthTokenManagerGetAuthCompletedDto data { get; set; }
 

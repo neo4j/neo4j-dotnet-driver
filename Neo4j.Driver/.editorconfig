@@ -13,7 +13,7 @@ ij_formatter_tags_enabled = false
 ij_smart_tabs = false
 ij_visual_guides = none
 ij_wrap_on_typing = false
-file_header_template = Copyright (c) "Neo4j"\nNeo4j Sweden AB [http://neo4j.com]\n\nThis file is part of Neo4j.\n\nLicensed under the Apache License, Version 2.0 (the "License").\nYou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n    http://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an "AS IS" BASIS, \nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.
+file_header_template = Copyright (c) "Neo4j"\nNeo4j Sweden AB [https://neo4j.com]\n\nLicensed under the Apache License, Version 2.0 (the "License").\nYou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n    http://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an "AS IS" BASIS, \nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.
 
 # Microsoft .NET properties
 csharp_indent_braces = false
@@ -241,7 +241,7 @@ dotnet_diagnostic.fs3520.severity = warning
 dotnet_diagnostic.wme006.severity = warning
 dotnet_naming_rule.constants_rule.import_to_resharper = as_predefined
 dotnet_naming_rule.constants_rule.severity = warning
-dotnet_naming_rule.constants_rule.style = upper_camel_case_style
+dotnet_naming_rule.constants_rule.resharper_style = AaBb, Neo4j + AaBb, AaBb + Neo4j
 dotnet_naming_rule.constants_rule.symbols = constants_symbols
 dotnet_naming_rule.event_rule.import_to_resharper = as_predefined
 dotnet_naming_rule.event_rule.resharper_style = AaBb, Neo4j + AaBb, AaBb + Neo4j
@@ -1132,6 +1132,8 @@ resharper_convert_to_vb_auto_property_with_private_setter_highlighting = hint
 resharper_convert_type_check_pattern_to_null_check_highlighting = warning
 resharper_convert_type_check_to_null_check_highlighting = warning
 resharper_co_variant_array_conversion_highlighting = warning
+resharper_csharp_naming_rule.types_and_namespaces = AaBb, Neo4j+AaBb
+resharper_csharp_naming_rule.private_constants = AaBb, Neo4j+AaBb
 resharper_c_sharp_build_cs_invalid_module_name_highlighting = warning
 resharper_c_sharp_missing_plugin_dependency_highlighting = warning
 resharper_default_value_attribute_for_optional_parameter_highlighting = warning

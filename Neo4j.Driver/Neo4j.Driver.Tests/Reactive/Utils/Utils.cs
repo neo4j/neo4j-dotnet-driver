@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -16,68 +14,63 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using FluentAssertions;
 using FluentAssertions.Equivalency;
-using Neo4j.Driver.Internal;
-using static Neo4j.Driver.Tests.Assertions;
+using Neo4j.Driver.Tests.TestUtil;
+using static Neo4j.Driver.Tests.TestUtil.Assertions;
 
-namespace Neo4j.Driver.Reactive
+namespace Neo4j.Driver.Tests.Reactive.Utils;
+
+public static class Utils
 {
-    public static class Utils
+    public static object Record(string[] keys, params object[] fields)
     {
-        public static object Record(string[] keys, params object[] fields)
+        if (keys.Length != fields.Length)
         {
-            if (keys.Length != fields.Length)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(keys),
-                    $"{nameof(keys)} and {nameof(fields)} should be of same size.");
-            }
-
-            if (keys.Length == 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(keys), $"{nameof(keys)} should contain at least 1 item.");
-            }
-
-            return new
-            {
-                Keys = keys,
-                Values = Enumerable.Range(0, keys.Length)
-                    .Select(i => new KeyValuePair<string, object>(keys[i], fields[i]))
-                    .ToDictionary()
-            };
+            throw new ArgumentOutOfRangeException(
+                nameof(keys),
+                $"{nameof(keys)} and {nameof(fields)} should be of same size.");
         }
 
-        public static Func<string[], bool> MatchesKeys(params string[] keys)
+        if (keys.Length == 0)
         {
-            return r => Matches(() => r.Should().BeEquivalentTo(keys));
+            throw new ArgumentOutOfRangeException(nameof(keys), $"{nameof(keys)} should contain at least 1 item.");
         }
 
-        public static Func<IRecord, bool> MatchesRecord(string[] keys, params object[] fields)
-        {
-            return r => Matches(() => r.Should().BeEquivalentTo(Record(keys, fields)));
-        }
+        return TestRecord.Create(keys, fields);
+    }
 
-        public static Func<IResultSummary, bool> MatchesSummary(
-            object sample,
-            Func<EquivalencyAssertionOptions<object>, EquivalencyAssertionOptions<object>> options = null)
-        {
-            return s => Matches(() => s.Should().BeEquivalentTo(sample, options ?? (o => o)));
-        }
+    public static Func<string[], bool> MatchesKeys(params string[] keys)
+    {
+        return r => Matches(() => r.Should().BeEquivalentTo(keys));
+    }
 
-        public static Func<Exception, bool> MatchesException<TExpected>()
-            where TExpected : Exception
+    public static Func<IRecord, bool> MatchesRecord(string[] keys, params object[] fields)
+    {
+        return Matches<IRecord>(rec =>
         {
-            return MatchesException<TExpected>(exc => true);
-        }
+            rec.Keys.Should().BeEquivalentTo(keys);
+            rec.Values.Values.Should().BeEquivalentTo(fields);
+        });
+    }
 
-        public static Func<Exception, bool> MatchesException<TExpected>(Expression<Func<TExpected, bool>> predicate)
-            where TExpected : Exception
-        {
-            return e => Matches(() => e.Should().BeAssignableTo<TExpected>().Which.Should().Match(predicate));
-        }
+    public static Func<IResultSummary, bool> MatchesSummary(
+        object sample,
+        Func<EquivalencyAssertionOptions<object>, EquivalencyAssertionOptions<object>> options = null)
+    {
+        return s => Matches(() => s.Should().BeEquivalentTo(sample, options ?? (o => o)));
+    }
+
+    public static Func<Exception, bool> MatchesException<TExpected>()
+        where TExpected : Exception
+    {
+        return MatchesException<TExpected>(exc => true);
+    }
+
+    public static Func<Exception, bool> MatchesException<TExpected>(Expression<Func<TExpected, bool>> predicate)
+        where TExpected : Exception
+    {
+        return e => Matches(() => e.Should().BeAssignableTo<TExpected>().Which.Should().Match(predicate));
     }
 }

@@ -1,7 +1,5 @@
 // Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -49,10 +47,9 @@ internal class RetryLogic : IRetryLogic
     public T Retry<T>(Func<T> work)
     {
         var exceptions = new List<Exception>();
-        var delay = TimeSpan.Zero;
         var delayMs = _initialDelay;
         var retryCount = 0;
-        var shouldRetry = false;
+        bool shouldRetry;
 
         var timer = Stopwatch.StartNew();
         do
@@ -71,7 +68,7 @@ internal class RetryLogic : IRetryLogic
 
                 if (shouldRetry)
                 {
-                    delay = TimeSpan.FromMilliseconds(ComputeNextDelay(delayMs));
+                    var delay = TimeSpan.FromMilliseconds(ComputeNextDelay(delayMs));
                     _logger?.Warn(e, $"Transaction failed and will be retried in {delay}ms.");
                     Thread.Sleep(delay);
                     delayMs *= _delayMultiplier;

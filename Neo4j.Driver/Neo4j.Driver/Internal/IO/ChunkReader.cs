@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -18,6 +16,7 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Helpers;
 
 namespace Neo4j.Driver.Internal.IO;
 
@@ -28,13 +27,13 @@ internal sealed class ChunkReader : IChunkReader
     private const int ChunkHeaderSize = 2;
     private int _readTimeoutMs = -1;
 
-    internal ChunkReader(Stream downStream)
+    internal ChunkReader(Stream networkStream)
     {
-        InputStream = downStream ?? throw new ArgumentNullException(nameof(downStream));
-        Throw.ArgumentOutOfRangeException.IfFalse(downStream.CanRead, nameof(downStream.CanRead));
+        NetworkStream = networkStream ?? throw new ArgumentNullException(nameof(networkStream));
+        Throw.ArgumentOutOfRangeException.IfFalse(networkStream.CanRead, nameof(networkStream.CanRead));
     }
 
-    private Stream InputStream { get; }
+    private Stream NetworkStream { get; }
     private MemoryStream ChunkBuffer { get; set; }
     private long ChunkBufferRemaining => ChunkBuffer.Length - ChunkBuffer.Position;
 
@@ -99,7 +98,7 @@ internal sealed class ChunkReader : IChunkReader
 
         while (requiredSize > 0)
         {
-            var numBytesRead = await InputStream
+            var numBytesRead = await NetworkStream
                 .ReadWithTimeoutAsync(data, 0, bufferSize, _readTimeoutMs)
                 .ConfigureAwait(false);
 

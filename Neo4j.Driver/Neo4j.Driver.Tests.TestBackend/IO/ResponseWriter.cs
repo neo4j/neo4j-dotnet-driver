@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -18,8 +16,9 @@
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using Neo4j.Driver.Tests.TestBackend.Protocol;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.IO;
 
 internal class ResponseWriter
 {
@@ -33,7 +32,7 @@ internal class ResponseWriter
 
     private StreamWriter WriterTarget { get; }
 
-    public async Task<string> WriteResponseAsync(IProtocolObject protocolObject)
+    public async Task<string> WriteResponseAsync(ProtocolObject protocolObject)
     {
         return await WriteResponseAsync(protocolObject.Respond());
     }

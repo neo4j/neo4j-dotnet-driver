@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -20,7 +18,8 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Microsoft.Reactive.Testing;
 using Neo4j.Driver.IntegrationTests.Internals;
-using Neo4j.Driver.Reactive;
+using Neo4j.Driver.Tests.Reactive;
+using Neo4j.Driver.Tests.Reactive.Utils;
 using Xunit;
 using Xunit.Abstractions;
 using static Microsoft.Reactive.Testing.ReactiveTest;

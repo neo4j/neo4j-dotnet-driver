@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -19,11 +17,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
+using Neo4j.Driver.Tests.TestBackend.Protocol.BookmarkManager;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Driver;
+using Neo4j.Driver.Tests.TestBackend.Protocol.JsonConverters;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Result;
+using Neo4j.Driver.Tests.TestBackend.Types;
 using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.DriverQuery;
 
-internal class ExecuteQuery : IProtocolObject
+internal class ExecuteQuery : ProtocolObject
 {
     public ExecuteQueryDto data { get; set; }
 
@@ -71,12 +75,26 @@ internal class ExecuteQuery : IProtocolObject
             }
         }
 
+        var transactionConfig = new TransactionConfig
+        {
+            Timeout = data.config.timeout.HasValue ? TimeSpan.FromMilliseconds(data.config.timeout.Value) : null,
+            Metadata = data.config.txMeta != null ? CypherToNativeObject.ConvertDictionaryToNative(data.config.txMeta) : new Dictionary<string, object>()
+        };
+
+        var authToken = data.config.authorizationToken switch
+        {
+            null => null,
+            not null => data.config.authorizationToken.AsToken()
+        };
+
         return new QueryConfig(
             routingControl,
             data.config.database,
             data.config.impersonatedUser,
             bookmarkManager,
-            enableBookmarkManager);
+            enableBookmarkManager,
+            transactionConfig,
+            authToken);
     }
 
     public override string Respond()
@@ -119,5 +137,9 @@ internal class ExecuteQuery : IProtocolObject
         public string database { get; set; }
         public string impersonatedUser { get; set; }
         public string bookmarkManagerId { get; set; }
+        public int? timeout { get; set; }
+        [JsonConverter(typeof(QueryParameterConverter))]
+        public Dictionary<string, CypherToNativeObject> txMeta { get; set; }
+        public AuthorizationToken authorizationToken { get; set; }
     }
 }

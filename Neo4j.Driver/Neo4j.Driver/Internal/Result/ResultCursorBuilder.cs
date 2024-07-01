@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -17,6 +15,8 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -26,7 +26,7 @@ namespace Neo4j.Driver.Internal.Result;
 
 internal class ResultCursorBuilder : IResultCursorBuilder
 {
-    private readonly Func<Task> _advanceFunction;
+    private readonly Func<Task> _advanceAsync;
     private readonly IAutoPullHandler _autoPullHandler;
     private readonly Func<IResultStreamBuilder, long, Task> _cancelFunction;
     private readonly CancellationTokenSource _cancellationSource;
@@ -37,17 +37,18 @@ internal class ResultCursorBuilder : IResultCursorBuilder
     private readonly IResultResourceHandler _resourceHandler;
     private readonly IInternalAsyncTransaction _transaction;
     private readonly SummaryBuilder _summaryBuilder;
-    private string[] _fields;
+
+    private Dictionary<string, int> _fieldLookup;
+    private Dictionary<string, int> _invariantFieldLookup;
 
     private IResponsePipelineError _pendingError;
-    public ResponsePipelineError PendingError => _pendingError as ResponsePipelineError;
     private long _queryId;
 
     private volatile int _state;
 
     public ResultCursorBuilder(
         SummaryBuilder summaryBuilder,
-        Func<Task> advanceFunction,
+        Func<Task> advancedAsync,
         Func<IResultStreamBuilder, long, long, Task> moreFunction,
         Func<IResultStreamBuilder, long, Task> cancelFunction,
         IResultResourceHandler resourceHandler,
@@ -56,11 +57,10 @@ internal class ResultCursorBuilder : IResultCursorBuilder
         IInternalAsyncTransaction transaction)
     {
         _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
-        _advanceFunction =
-            WrapAdvanceFunc(advanceFunction ?? throw new ArgumentNullException(nameof(advanceFunction)));
+        _advanceAsync = advancedAsync ?? throw new ArgumentNullException(nameof(advancedAsync));
 
-        _moreFunction = moreFunction ?? ((s, id, n) => Task.CompletedTask);
-        _cancelFunction = cancelFunction ?? ((s, id) => Task.CompletedTask);
+        _moreFunction = moreFunction ?? ((_, _, _) => Task.CompletedTask);
+        _cancelFunction = cancelFunction ?? ((_, _) => Task.CompletedTask);
         _cancellationSource = new CancellationTokenSource();
         _resourceHandler = resourceHandler;
         _transaction = transaction;
@@ -69,7 +69,8 @@ internal class ResultCursorBuilder : IResultCursorBuilder
 
         _state = (int)(reactive ? State.RunRequested : State.RunAndRecordsRequested);
         _queryId = NoQueryId;
-        _fields = null;
+        _fieldLookup = null;
+        _invariantFieldLookup = null;
         _fetchSize = fetchSize;
         _autoPullHandler = new AutoPullHandler(_fetchSize);
     }
@@ -80,17 +81,17 @@ internal class ResultCursorBuilder : IResultCursorBuilder
         set => _state = (int)value;
     }
 
-    public async Task<string[]> GetKeysAsync()
+    public async ValueTask<string[]> GetKeysAsync()
     {
         while (CurrentState < State.RunCompleted)
         {
-            await _advanceFunction().ConfigureAwait(false);
+            await AdvanceAsync().ConfigureAwait(false);
         }
 
-        return _fields ?? new string[0];
+        return _fieldLookup?.Keys.ToArray() ?? Array.Empty<string>();
     }
 
-    public async Task<IRecord> NextRecordAsync()
+    public async ValueTask<IRecord> NextRecordAsync()
     {
         if (_cancellationSource.IsCancellationRequested)
         {
@@ -103,7 +104,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
             _autoPullHandler.TryEnableAutoPull(_records.Count);
             if (CurrentState < State.Completed && _autoPullHandler.AutoPull)
             {
-                await _advanceFunction().ConfigureAwait(false);
+                await AdvanceAsync().ConfigureAwait(false);
             }
 
             return record;
@@ -111,7 +112,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
 
         while (CurrentState < State.Completed && _records.IsEmpty)
         {
-            await _advanceFunction().ConfigureAwait(false);
+            await AdvanceAsync().ConfigureAwait(false);
         }
 
         if (_records.TryDequeue(out record))
@@ -129,11 +130,11 @@ internal class ResultCursorBuilder : IResultCursorBuilder
         _cancellationSource.Cancel();
     }
 
-    public async Task<IResultSummary> ConsumeAsync()
+    public async ValueTask<IResultSummary> ConsumeAsync()
     {
         while (CurrentState < State.Completed)
         {
-            await _advanceFunction().ConfigureAwait(false);
+            await AdvanceAsync().ConfigureAwait(false);
         }
 
         _pendingError?.EnsureThrown();
@@ -143,7 +144,20 @@ internal class ResultCursorBuilder : IResultCursorBuilder
     public void RunCompleted(long queryId, string[] fields, IResponsePipelineError error)
     {
         _queryId = queryId;
-        _fields = fields;
+
+        if (fields is not null)
+        {
+            _invariantFieldLookup = new Dictionary<string, int>(
+                fields.Length,
+                StringComparer.InvariantCultureIgnoreCase);
+
+            _fieldLookup = new Dictionary<string, int>(fields.Length);
+            for (var i = 0; i < fields.Length; i++)
+            {
+                _invariantFieldLookup.Add(fields[i], i);
+                _fieldLookup.Add(fields[i], i);
+            }
+        }
 
         CheckAndUpdateState(State.RunCompleted, State.RunRequested);
     }
@@ -155,7 +169,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
 
     public void PushRecord(object[] fieldValues)
     {
-        _records.Enqueue(new Record(_fields, fieldValues));
+        _records.Enqueue(new Record(_fieldLookup, _invariantFieldLookup, fieldValues));
         _autoPullHandler.TryDisableAutoPull(_records.Count);
 
         UpdateState(State.RecordsStreaming);
@@ -163,7 +177,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
 
     public IInternalResultCursor CreateCursor()
     {
-        return new ConsumableResultCursor(new ResultCursor(this));
+        return new ResultCursor(this);
     }
 
     private void ClearRecords()
@@ -176,55 +190,52 @@ internal class ResultCursorBuilder : IResultCursorBuilder
     private void AssertTransactionValid()
     {
         _pendingError?.EnsureThrown();
-        if (_transaction.IsErrored(out var error) )
+        if (_transaction.IsErrored(out var error))
         {
             throw new TransactionTerminatedException(error);
         }
     }
-    
-    private Func<Task> WrapAdvanceFunc(Func<Task> advanceFunc)
+
+    private async Task AdvanceAsync()
     {
-        return async () =>
+        AssertTransactionValid();
+
+        if (CheckAndUpdateState(State.RecordsRequested, State.RunCompleted))
         {
-            AssertTransactionValid();
-            
-            if (CheckAndUpdateState(State.RecordsRequested, State.RunCompleted))
+            if (_cancellationSource.IsCancellationRequested)
             {
-                if (_cancellationSource.IsCancellationRequested)
-                {
-                    await _cancelFunction(this, _queryId).ConfigureAwait(false);
-                }
-                else
-                {
-                    await _moreFunction(this, _queryId, _fetchSize).ConfigureAwait(false);
-                }
+                await _cancelFunction(this, _queryId).ConfigureAwait(false);
             }
-
-            if (CurrentState < State.Completed)
+            else
             {
-                try
-                {
-                    await advanceFunc().ConfigureAwait(false);
-                }
-                catch (ProtocolException)
-                {
-                    UpdateState(State.Completed);
-                    throw;
-                }
-                catch (Exception exc)
-                {
-                    _pendingError = new ResponsePipelineError(exc);
-
-                    // Ensure that current state is updated and is recognized as Completed
-                    UpdateState(State.Completed);
-                }
+                await _moreFunction(this, _queryId, _fetchSize).ConfigureAwait(false);
             }
+        }
 
-            if (CurrentState == State.Completed && _resourceHandler != null)
+        if (CurrentState < State.Completed)
+        {
+            try
             {
-                await _resourceHandler.OnResultConsumedAsync().ConfigureAwait(false);
+                await _advanceAsync().ConfigureAwait(false);
             }
-        };
+            catch (ProtocolException)
+            {
+                UpdateState(State.Completed);
+                throw;
+            }
+            catch (Exception exc)
+            {
+                _pendingError = new ResponsePipelineError(exc);
+
+                // Ensure that current state is updated and is recognized as Completed
+                UpdateState(State.Completed);
+            }
+        }
+
+        if (CurrentState == State.Completed && _resourceHandler != null)
+        {
+            await _resourceHandler.OnResultConsumedAsync().ConfigureAwait(false);
+        }
     }
 
     private bool CheckAndUpdateState(State desired, State current)

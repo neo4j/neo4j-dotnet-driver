@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -16,17 +14,19 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Services;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Time;
 
 internal class FakeTimeHolder
 {
     internal static IDateTimeProvider OriginalTimeProvider;
 }
 
-internal class FakeTimeInstall : IProtocolObject
+internal class FakeTimeInstall : ProtocolObject
 {
     public object data { get; set; }
 
@@ -44,9 +44,9 @@ internal class FakeTimeInstall : IProtocolObject
     }
 }
 
-internal class FakeTimeTick : IProtocolObject
+internal class FakeTimeTick : ProtocolObject
 {
-    public DataType data { get; set; }
+    public FakeTimeTickDto data { get; set; }
 
     public override Task Process()
     {
@@ -59,17 +59,17 @@ internal class FakeTimeTick : IProtocolObject
         return new ProtocolResponse("FakeTimeAck").Encode();
     }
 
-    public record DataType(int incrementMs);
+    public record FakeTimeTickDto(int incrementMs);
 }
 
-internal class FakeTimeUninstall : IProtocolObject
+internal class FakeTimeUninstall : ProtocolObject
 {
     public object data { get; set; }
 
     public override Task Process()
     {
         DateTimeProvider.StaticInstance = FakeTimeHolder.OriginalTimeProvider;
-        FakeTime.Instance.Unfreeze();
+        FakeTime.Instance.Uninstall();
         return Task.CompletedTask;
     }
 
@@ -79,15 +79,23 @@ internal class FakeTimeUninstall : IProtocolObject
     }
 }
 
-public class FakeTime : IDateTimeProvider
+internal class FakeTime : IDateTimeProvider
 {
-    public static FakeTime Instance = new();
+    public static readonly FakeTime Instance = new();
 
     private DateTime? _frozenTime;
+    private readonly List<FakeTimer> _timers = new();
 
     public DateTime Now()
     {
         return _frozenTime ?? DateTime.Now;
+    }
+
+    public ITimer NewTimer()
+    {
+        var fakeTimer = new FakeTimer();
+        _timers.Add(fakeTimer);
+        return fakeTimer;
     }
 
     public void Freeze()
@@ -98,10 +106,36 @@ public class FakeTime : IDateTimeProvider
     public void Advance(int milliseconds)
     {
         _frozenTime = Now().AddMilliseconds(milliseconds);
+        foreach (var timer in _timers)
+        {
+            timer.Advance(milliseconds);
+        }
     }
 
-    public void Unfreeze()
+    public void Uninstall()
     {
         _frozenTime = null;
+        _timers.Clear();
+    }
+}
+
+internal class FakeTimer : ITimer
+{
+    private long _advanced;
+    
+    public void Advance(int milliseconds)
+    {
+        _advanced += milliseconds;
+    }
+
+    public long ElapsedMilliseconds => _advanced;
+    
+    public void Reset()
+    {
+        _advanced = 0;
+    }
+
+    public void Start()
+    {
     }
 }

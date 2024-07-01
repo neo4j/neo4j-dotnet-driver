@@ -1,7 +1,5 @@
 // Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -18,22 +16,21 @@
 using Microsoft.Reactive.Testing;
 using Xunit.Abstractions;
 
-namespace Neo4j.Driver.Reactive
+namespace Neo4j.Driver.Tests.Reactive;
+
+public abstract class AbstractRxTest : ReactiveTest
 {
-    public abstract class AbstractRxTest : ReactiveTest
+    protected AbstractRxTest()
+        : this(null)
     {
-        protected AbstractRxTest()
-            : this(null)
-        {
-        }
-
-        protected AbstractRxTest(ITestOutputHelper output)
-        {
-            Output = output;
-            Scheduler = new TestScheduler();
-        }
-
-        protected ITestOutputHelper Output { get; }
-        protected TestScheduler Scheduler { get; }
     }
+
+    protected AbstractRxTest(ITestOutputHelper output)
+    {
+        Output = output;
+        Scheduler = new TestScheduler();
+    }
+
+    protected ITestOutputHelper Output { get; }
+    protected TestScheduler Scheduler { get; }
 }

@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -23,41 +21,40 @@ using Moq;
 using Neo4j.Driver.Internal.Connector;
 using Xunit;
 
-namespace Neo4j.Driver.Tests.Connector
+namespace Neo4j.Driver.Tests.Connector;
+
+public class DelegatedConnectionTests
 {
-    public class DelegatedConnectionTests
+    internal class TestDelegatedConnection : DelegatedConnection
     {
-        internal class TestDelegatedConnection : DelegatedConnection
+        public TestDelegatedConnection(IConnection connection) : base(connection)
         {
-            public TestDelegatedConnection(IConnection connection) : base(connection)
-            {
-            }
-
-            public IList<Exception> ErrorList { get; } = new List<Exception>();
-
-            internal override Task OnErrorAsync(Exception error)
-            {
-                ErrorList.Add(error);
-                return Task.FromException(error);
-            }
         }
 
-        public class ModeProperty
+        public IList<Exception> ErrorList { get; } = new List<Exception>();
+
+        internal override Task OnErrorAsync(Exception error)
         {
-            [Theory]
-            [InlineData(AccessMode.Read)]
-            [InlineData(AccessMode.Write)]
-            public void ShouldGetModeFromDelegate(AccessMode mode)
-            {
-                var connMock = new Mock<IConnection>();
-                connMock.Setup(x => x.Mode).Returns(mode);
+            ErrorList.Add(error);
+            return Task.FromException(error);
+        }
+    }
 
-                var delegateConnection = new TestDelegatedConnection(connMock.Object);
+    public class ModeProperty
+    {
+        [Theory]
+        [InlineData(AccessMode.Read)]
+        [InlineData(AccessMode.Write)]
+        public void ShouldGetModeFromDelegate(AccessMode mode)
+        {
+            var connMock = new Mock<IConnection>();
+            connMock.Setup(x => x.Mode).Returns(mode);
 
-                delegateConnection.Mode.Should().Be(mode);
+            var delegateConnection = new TestDelegatedConnection(connMock.Object);
 
-                connMock.VerifyGet(x => x.Mode);
-            }
+            delegateConnection.Mode.Should().Be(mode);
+
+            connMock.VerifyGet(x => x.Mode);
         }
     }
 }

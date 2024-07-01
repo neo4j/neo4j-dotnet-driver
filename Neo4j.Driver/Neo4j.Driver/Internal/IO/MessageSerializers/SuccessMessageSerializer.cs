@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -15,22 +13,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO.MessageSerializers;
 
-internal sealed class SuccessMessageSerializer : ReadOnlySerializer
+internal sealed class SuccessMessageSerializer : ReadOnlySerializer, IPackStreamMessageDeserializer
 {
     internal static SuccessMessageSerializer Instance = new();
 
     private static readonly byte[] StructTags = { MessageFormat.MsgSuccess };
-    public override IEnumerable<byte> ReadableStructs => StructTags;
+    public override byte[] ReadableStructs => StructTags;
 
     public override object Deserialize(PackStreamReader reader)
     {
         var map = reader.ReadMap();
+        return new SuccessMessage(map);
+    }
 
+    public IResponseMessage DeserializeMessage(BoltProtocolVersion formatVersion, SpanPackStreamReader packStreamReader)
+    {
+        var map = packStreamReader.ReadMap();
         return new SuccessMessage(map);
     }
 }

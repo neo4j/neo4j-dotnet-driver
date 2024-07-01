@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -20,29 +18,28 @@ using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Messages
+namespace Neo4j.Driver.Tests.Internal.MessageHandling.Messages;
+
+public class DiscardMessageTests
 {
-    public class DiscardMessageTests
+    [Fact]
+    public void ShouldHaveCorrectSerializer()
     {
-        [Fact]
-        public void ShouldHaveCorrectSerializer()
-        {
-            var message = new DiscardMessage(10);
-            message.Serializer.Should().BeOfType<DiscardMessageSerializer>();
-        }
+        var message = new DiscardMessage(10);
+        message.Serializer.Should().BeOfType<DiscardMessageSerializer>();
+    }
 
-        [Fact]
-        public void ShouldSkipNullQueryId()
-        {
-            var message = new DiscardMessage(10);
-            message.ToString().Should().Be("DISCARD [{n, 10}]");
-        }
+    [Fact]
+    public void ShouldSkipNullQueryId()
+    {
+        var message = new DiscardMessage(10);
+        message.ToString().Should().Be("DISCARD [{n, 10}]");
+    }
 
-        [Fact]
-        public void ShouldHandleValues()
-        {
-            var message = new DiscardMessage(42, 10);
-            message.ToString().Should().Be("DISCARD [{n, 10}, {qid, 42}]");
-        }
+    [Fact]
+    public void ShouldHandleValues()
+    {
+        var message = new DiscardMessage(42, 10);
+        message.ToString().Should().Be("DISCARD [{n, 10}, {qid, 42}]");
     }
 }

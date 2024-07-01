@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -20,20 +18,19 @@ using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Messages
-{
-    public class PullAllMessageTests
-    {
-        [Fact]
-        public void ShouldHaveCorrectSerializer()
-        {
-            PullAllMessage.Instance.Serializer.Should().BeOfType<PullAllMessageSerializer>();
-        }
+namespace Neo4j.Driver.Tests.Internal.MessageHandling.Messages;
 
-        [Fact]
-        public void ShouldHavePullAllMessage()
-        {
-            PullAllMessage.Instance.ToString().Should().Be("PULLALL");
-        }
+public class PullAllMessageTests
+{
+    [Fact]
+    public void ShouldHaveCorrectSerializer()
+    {
+        PullAllMessage.Instance.Serializer.Should().BeOfType<PullAllMessageSerializer>();
+    }
+
+    [Fact]
+    public void ShouldHavePullAllMessage()
+    {
+        PullAllMessage.Instance.ToString().Should().Be("PULLALL");
     }
 }

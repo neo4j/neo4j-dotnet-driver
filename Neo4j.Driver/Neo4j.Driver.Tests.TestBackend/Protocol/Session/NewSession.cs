@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -21,11 +19,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Auth;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
+using Neo4j.Driver.Tests.TestBackend.Protocol.BookmarkManager;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Driver;
 using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Session;
 
-internal class NewSession : IProtocolObject
+internal class NewSession : ProtocolObject
 {
     public enum SessionState
     {

@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -20,6 +18,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 using static Neo4j.Driver.Internal.IO.PackStream;
 
 namespace Neo4j.Driver.Internal.IO;
@@ -145,29 +144,32 @@ internal sealed class PackStreamWriter
 
     public void WriteLong(long value)
     {
-        if (value >= Minus2ToThe4 && value < Plus2ToThe7)
+        switch (value)
         {
-            _stream.WriteByte((byte)value);
-        }
-        else if (value is >= Minus2ToThe7 and < Minus2ToThe4)
-        {
-            _stream.WriteByte(Int8);
-            _stream.Write(PackStreamBitConverter.GetBytes((byte)value));
-        }
-        else if (value >= Minus2ToThe15 && value < Plus2ToThe15)
-        {
-            _stream.WriteByte(PackStream.Int16);
-            _stream.Write(PackStreamBitConverter.GetBytes((short)value));
-        }
-        else if (value >= Minus2ToThe31 && value < Plus2ToThe31)
-        {
-            _stream.WriteByte(PackStream.Int32);
-            _stream.Write(PackStreamBitConverter.GetBytes((int)value));
-        }
-        else
-        {
-            _stream.WriteByte(PackStream.Int64);
-            _stream.Write(PackStreamBitConverter.GetBytes(value));
+            case >= Minus2ToThe4 and < Plus2ToThe7: _stream.WriteByte((byte)value);
+                break;
+
+            case >= Minus2ToThe7 and < Minus2ToThe4:
+                _stream.WriteByte(Int8);
+                // we will discard the first 56 bits
+                // ReSharper disable once IntVariableOverflowInUncheckedContext
+                _stream.Write(PackStreamBitConverter.GetBytes((byte)value));
+                break;
+
+            case >= Minus2ToThe15 and < Plus2ToThe15:
+                _stream.WriteByte(PackStream.Int16);
+                _stream.Write(PackStreamBitConverter.GetBytes((short)value));
+                break;
+
+            case >= Minus2ToThe31 and < Plus2ToThe31:
+                _stream.WriteByte(PackStream.Int32);
+                _stream.Write(PackStreamBitConverter.GetBytes((int)value));
+                break;
+
+            default:
+                _stream.WriteByte(PackStream.Int64);
+                _stream.Write(PackStreamBitConverter.GetBytes(value));
+                break;
         }
     }
 

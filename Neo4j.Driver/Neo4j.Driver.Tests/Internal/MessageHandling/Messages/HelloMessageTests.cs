@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -21,147 +19,147 @@ using FluentAssertions;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Messages
+namespace Neo4j.Driver.Tests.Internal.MessageHandling.Messages;
+
+public class HelloMessageTests
 {
-    public class HelloMessageTests
+    [Fact]
+    public void ShouldHaveCorrectSerializer()
     {
-        [Fact]
-        public void ShouldHaveCorrectSerializer()
+        var helloMessage = new HelloMessage(
+            BoltProtocolVersion.V3_0,
+            null,
+            null,
+            (IDictionary<string, string>)null);
+
+        helloMessage.Serializer.Should().BeOfType<HelloMessageSerializer>();
+    }
+
+    [Theory]
+    [InlineData(3, 0)]
+    [InlineData(4, 0)]
+    public void ShouldHandleNullValues(int major, int minor)
+    {
+        var helloMessage = new HelloMessage(
+            new BoltProtocolVersion(major, minor),
+            null,
+            null,
+            (IDictionary<string, string>)null);
+
+        helloMessage.ToString().Should().Be("HELLO [{user_agent, NULL}]");
+    }
+
+    [Theory]
+    [InlineData(3, 0)]
+    [InlineData(4, 0)]
+    public void ShouldHandleValues(int major, int minor)
+    {
+        var helloMessage = new HelloMessage(
+            new BoltProtocolVersion(major, minor),
+            "jeff",
+            null,
+            (IDictionary<string, string>)null);
+
+        helloMessage.Metadata.Should().ContainKey("user_agent").WhichValue.Should().Be("jeff");
+        helloMessage.ToString().Should().Be("HELLO [{user_agent, jeff}]");
+    }
+
+    [Theory]
+    [InlineData(4, 1)]
+    [InlineData(4, 2)]
+    public void ShouldIncludeRoutingKeyAboveV40(int major, int minor)
+    {
+        var helloMessage = new HelloMessage(
+            new BoltProtocolVersion(major, minor),
+            null,
+            null,
+            (IDictionary<string, string>)null);
+
+        helloMessage.ToString().Should().Be("HELLO [{user_agent, NULL}, {routing, NULL}]");
+    }
+
+    [Theory]
+    [InlineData(4, 1)]
+    [InlineData(4, 2)]
+    [InlineData(5, 0)]
+    public void ShouldIncludeRoutingDetailsAboveV40(int major, int minor)
+    {
+        var meta = new Dictionary<string, string>
         {
-            var helloMessage = new HelloMessage(
-                BoltProtocolVersion.V3_0,
-                null,
-                null,
-                (IDictionary<string, string>)null);
+            ["a"] = "b"
+        };
 
-            helloMessage.Serializer.Should().BeOfType<HelloMessageSerializer>();
-        }
+        var helloMessage = new HelloMessage(new BoltProtocolVersion(major, minor), null, null, meta);
 
-        [Theory]
-        [InlineData(3, 0)]
-        [InlineData(4, 0)]
-        public void ShouldHandleNullValues(int major, int minor)
-        {
-            var helloMessage = new HelloMessage(
-                new BoltProtocolVersion(major, minor),
-                null,
-                null,
-                (IDictionary<string, string>)null);
+        helloMessage.ToString().Should().Be("HELLO [{user_agent, NULL}, {routing, [{a, b}]}]");
+    }
 
-            helloMessage.ToString().Should().Be("HELLO [{user_agent, NULL}]");
-        }
+    [Theory]
+    [InlineData(4, 3)]
+    [InlineData(4, 4)]
+    public void ShouldIncludePatchBolt(int major, int minor)
+    {
+        var helloMessage = new HelloMessage(
+            new BoltProtocolVersion(major, minor),
+            null,
+            null,
+            (IDictionary<string, string>)null);
 
-        [Theory]
-        [InlineData(3, 0)]
-        [InlineData(4, 0)]
-        public void ShouldHandleValues(int major, int minor)
-        {
-            var helloMessage = new HelloMessage(
-                new BoltProtocolVersion(major, minor),
-                "jeff",
-                null,
-                (IDictionary<string, string>)null);
+        helloMessage.ToString().Should().Be("HELLO [{user_agent, NULL}, {routing, NULL}, {patch_bolt, [utc]}]");
+    }
 
-            helloMessage.Metadata.Should().ContainKey("user_agent").WhichValue.Should().Be("jeff");
-            helloMessage.ToString().Should().Be("HELLO [{user_agent, jeff}]");
-        }
+    [Theory]
+    [InlineData(5, 0)]
+    public void ShouldIncludeAuth(int major, int minor)
+    {
+        var helloMessage = new HelloMessage(
+            new BoltProtocolVersion(major, minor),
+            null,
+            AuthTokens.Basic("jeff", "hidden").AsDictionary(),
+            null);
 
-        [Theory]
-        [InlineData(4, 1)]
-        [InlineData(4, 2)]
-        public void ShouldIncludeRoutingKeyAboveV40(int major, int minor)
-        {
-            var helloMessage = new HelloMessage(
-                new BoltProtocolVersion(major, minor),
-                null,
-                null,
-                (IDictionary<string, string>)null);
+        helloMessage.Serializer.Should().BeOfType<HelloMessageSerializer>();
+        helloMessage.Metadata.Should().ContainKey("scheme").WhichValue.Should().Be("basic");
+        helloMessage.Metadata.Should().ContainKey("principal").WhichValue.Should().Be("jeff");
+        helloMessage.Metadata.Should().ContainKey("credentials").WhichValue.Should().Be("hidden");
+        helloMessage.ToString()
+            .Should()
+            .Be(
+                "HELLO [{scheme, basic}, {principal, jeff}, {credentials, ******}, {user_agent, NULL}, {routing, NULL}]");
+    }
 
-            helloMessage.ToString().Should().Be("HELLO [{user_agent, NULL}, {routing, NULL}]");
-        }
-
-        [Theory]
-        [InlineData(4, 1)]
-        [InlineData(4, 2)]
-        [InlineData(5, 0)]
-        public void ShouldIncludeRoutingDetailsAboveV40(int major, int minor)
-        {
-            var meta = new Dictionary<string, string>
+    [Theory]
+    [InlineData(5, 1)]
+    [InlineData(6, 0)]
+    public void ShouldThrowIfPassingAuthToHelloMessageAbove51(int major, int minor)
+    {
+        var exception = Record.Exception(
+            () =>
             {
-                ["a"] = "b"
-            };
-
-            var helloMessage = new HelloMessage(new BoltProtocolVersion(major, minor), null, null, meta);
-
-            helloMessage.ToString().Should().Be("HELLO [{user_agent, NULL}, {routing, [{a, b}]}]");
-        }
-
-        [Theory]
-        [InlineData(4, 3)]
-        [InlineData(4, 4)]
-        public void ShouldIncludePatchBolt(int major, int minor)
-        {
-            var helloMessage = new HelloMessage(
-                new BoltProtocolVersion(major, minor),
-                null,
-                null,
-                (IDictionary<string, string>)null);
-
-            helloMessage.ToString().Should().Be("HELLO [{user_agent, NULL}, {routing, NULL}, {patch_bolt, [utc]}]");
-        }
-
-        [Theory]
-        [InlineData(5, 0)]
-        public void ShouldIncludeAuth(int major, int minor)
-        {
-            var helloMessage = new HelloMessage(
-                new BoltProtocolVersion(major, minor),
-                null,
-                AuthTokens.Basic("jeff", "hidden").AsDictionary(),
-                null);
-
-            helloMessage.Serializer.Should().BeOfType<HelloMessageSerializer>();
-            helloMessage.Metadata.Should().ContainKey("scheme").WhichValue.Should().Be("basic");
-            helloMessage.Metadata.Should().ContainKey("principal").WhichValue.Should().Be("jeff");
-            helloMessage.Metadata.Should().ContainKey("credentials").WhichValue.Should().Be("hidden");
-            helloMessage.ToString()
-                .Should()
-                .Be(
-                    "HELLO [{scheme, basic}, {principal, jeff}, {credentials, ******}, {user_agent, NULL}, {routing, NULL}]");
-        }
-
-        [Theory]
-        [InlineData(5, 1)]
-        [InlineData(6, 0)]
-        public void ShouldThrowIfPassingAuthToHelloMessageAbove51(int major, int minor)
-        {
-            var exception = Record.Exception(
-                () =>
-                {
-                    new HelloMessage(
-                        new BoltProtocolVersion(major, minor),
-                        null,
-                        AuthTokens.Basic("jeff", "hidden").AsDictionary(),
-                        null);
-                });
-
-            exception.Should().BeOfType<ArgumentOutOfRangeException>();
-        }
-
-        [Theory]
-        [InlineData(5, 3)]
-        public void ShouldContainBoltAgentAbove53(int major, int minor)
-        {
-            var message =
                 new HelloMessage(
                     new BoltProtocolVersion(major, minor),
-                    "User-Agent",
                     null,
-                    default(INotificationsConfig));
+                    AuthTokens.Basic("jeff", "hidden").AsDictionary(),
+                    null);
+            });
 
-            message.Metadata.Should().ContainKey("bolt_agent");
-        }
+        exception.Should().BeOfType<ArgumentOutOfRangeException>();
+    }
+
+    [Theory]
+    [InlineData(5, 3)]
+    public void ShouldContainBoltAgentAbove53(int major, int minor)
+    {
+        var message =
+            new HelloMessage(
+                new BoltProtocolVersion(major, minor),
+                "User-Agent",
+                null,
+                default(INotificationsConfig));
+
+        message.Metadata.Should().ContainKey("bolt_agent");
     }
 }

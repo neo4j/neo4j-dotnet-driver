@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -20,20 +18,19 @@ using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Messages
-{
-    public class RollbackMessageTests
-    {
-        [Fact]
-        public void ShouldHaveCorrectSerializer()
-        {
-            RollbackMessage.Instance.Serializer.Should().BeOfType<RollbackMessageSerializer>();
-        }
+namespace Neo4j.Driver.Tests.Internal.MessageHandling.Messages;
 
-        [Fact]
-        public void ShouldHaveRollbackMessage()
-        {
-            RollbackMessage.Instance.ToString().Should().Be("ROLLBACK");
-        }
+public class RollbackMessageTests
+{
+    [Fact]
+    public void ShouldHaveCorrectSerializer()
+    {
+        RollbackMessage.Instance.Serializer.Should().BeOfType<RollbackMessageSerializer>();
+    }
+
+    [Fact]
+    public void ShouldHaveRollbackMessage()
+    {
+        RollbackMessage.Instance.ToString().Should().Be("ROLLBACK");
     }
 }

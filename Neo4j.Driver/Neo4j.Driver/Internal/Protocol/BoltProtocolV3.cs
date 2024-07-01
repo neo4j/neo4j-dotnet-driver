@@ -1,7 +1,5 @@
 // Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -21,10 +19,10 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol.Utility;
 using Neo4j.Driver.Internal.Result;
-using Neo4j.Driver.Internal.Telemetry;
 
-namespace Neo4j.Driver.Internal;
+namespace Neo4j.Driver.Internal.Protocol;
 
 internal sealed class BoltProtocolV3 : IBoltProtocol
 {
@@ -154,8 +152,8 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             autoCommitParams,
             notificationsConfig);
 
-        await connection.EnqueueAsync(autoCommitMessage, runHandler).ConfigureAwait(false);
-        await connection.EnqueueAsync(PullAllMessage.Instance, pullAllHandler).ConfigureAwait(false);
+        await connection.EnqueueAsync(autoCommitMessage, runHandler, PullAllMessage.Instance, pullAllHandler)
+            .ConfigureAwait(false);
 
         await connection.SendAsync().ConfigureAwait(false);
         return streamBuilder.CreateCursor();
@@ -210,8 +208,9 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
 
         var message = _protocolMessageFactory.NewRunWithMetadataMessage(connection, query, null);
 
-        await connection.EnqueueAsync(message, runHandler).ConfigureAwait(false);
-        await connection.EnqueueAsync(PullAllMessage.Instance, pullAllHandler).ConfigureAwait(false);
+        await connection.EnqueueAsync(message, runHandler, PullAllMessage.Instance, pullAllHandler)
+            .ConfigureAwait(false);
+        
         await connection.SendAsync().ConfigureAwait(false);
 
         return streamBuilder.CreateCursor();

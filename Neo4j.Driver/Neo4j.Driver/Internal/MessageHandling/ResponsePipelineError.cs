@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -16,9 +14,12 @@
 // limitations under the License.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Neo4j.Driver.Internal.MessageHandling;
 
+// we sometimes access the _thrown field without locking, but it's fine because it's only a volatile bool
+[SuppressMessage("ReSharper", "InconsistentlySynchronizedField")]
 internal sealed class ResponsePipelineError : IResponsePipelineError
 {
     private volatile bool _thrown;

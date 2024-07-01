@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -19,11 +17,10 @@ using System;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Internals;
-using Neo4j.Driver.Tests;
+using Neo4j.Driver.Tests.Result;
 using Xunit;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
-using static Neo4j.Driver.SessionConfigBuilder;
 
 namespace Neo4j.Driver.IntegrationTests.Direct;
 
@@ -349,11 +346,11 @@ public sealed class ResultIT : DirectDriverTestBase
 
     private static async Task AssertCannotAccessRecords(IResultCursor cursor)
     {
-        await ConsumedException.ThrowsResultConsumedException(() => cursor.FetchAsync());
-        await ConsumedException.ThrowsResultConsumedException(() => cursor.PeekAsync());
-        ConsumedException.ThrowsResultConsumedException(() => cursor.Current);
-        await ConsumedException.ThrowsResultConsumedException(() => cursor.SingleAsync());
-        await ConsumedException.ThrowsResultConsumedException(() => cursor.ToListAsync());
-        await ConsumedException.ThrowsResultConsumedException(() => cursor.ForEachAsync(_ => {}));
+        await ResultCursorTests.ConsumedException.ThrowsResultConsumedException(() => cursor.FetchAsync());
+        await ResultCursorTests.ConsumedException.ThrowsResultConsumedException(() => cursor.PeekAsync());
+        ResultCursorTests.ConsumedException.ThrowsResultConsumedException(() => cursor.Current);
+        await ResultCursorTests.ConsumedException.ThrowsResultConsumedException(() => cursor.SingleAsync());
+        await ResultCursorTests.ConsumedException.ThrowsResultConsumedException(() => cursor.ToListAsync());
+        await ResultCursorTests.ConsumedException.ThrowsResultConsumedException(() => cursor.ForEachAsync(_ => {}));
     }
 }

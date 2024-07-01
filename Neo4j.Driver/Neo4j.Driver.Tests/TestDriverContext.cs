@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -17,30 +15,29 @@
 
 using System;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Auth;
 
-namespace Neo4j.Driver.Tests
+namespace Neo4j.Driver.Tests;
+
+internal static class TestDriverContext
 {
-    internal static class TestDriverContext
+    static TestDriverContext()
     {
-        static TestDriverContext()
-        {
-            MockContext = new DriverContext(new Uri("bolt://localhost:7687"), AuthTokenManagers.None, new Config());
-        }
+        MockContext = new DriverContext(new Uri("bolt://localhost:7687"), AuthTokenManagers.None,
+            new ConfigBuilder(new Config()).Build());
+    }
 
-        public static DriverContext MockContext { get; }
+    public static DriverContext MockContext { get; }
 
-        public static DriverContext With(
-            Uri uri = null,
-            IAuthTokenManager authTokenManagers = null,
-            Action<ConfigBuilder> config = null)
-        {
-            var cb = new ConfigBuilder(new Config());
-            config?.Invoke(cb);
-            return new DriverContext(
-                uri ?? MockContext.InitialUri,
-                authTokenManagers ?? MockContext.AuthTokenManager,
-                cb.Build());
-        }
+    public static DriverContext With(
+        Uri uri = null,
+        IAuthTokenManager authTokenManagers = null,
+        Action<ConfigBuilder> config = null)
+    {
+        var cb = new ConfigBuilder(new Config());
+        config?.Invoke(cb);
+        return new DriverContext(
+            uri ?? MockContext.InitialUri,
+            authTokenManagers ?? MockContext.AuthTokenManager,
+            cb.Build());
     }
 }

@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -18,6 +16,8 @@
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Neo4j.Driver.Internal.Protocol;
+using Neo4j.Driver.Internal.Services;
 
 namespace Neo4j.Driver.Internal.Connector;
 
@@ -32,10 +32,11 @@ internal class PooledConnection : DelegatedConnection, IPooledConnection
         : base(conn)
     {
         _releaseManager = releaseManager;
+        
         // IdleTimer starts to count when the connection is put back to the pool.
-        IdleTimer = new StopwatchBasedTimer();
+        IdleTimer = DateTimeProvider.StaticInstance.NewTimer();
         // LifetimeTimer starts to count once the connection is created.
-        LifetimeTimer = new StopwatchBasedTimer();
+        LifetimeTimer = DateTimeProvider.StaticInstance.NewTimer();
         LifetimeTimer.Start();
     }
 
@@ -125,12 +126,7 @@ internal class PooledConnection : DelegatedConnection, IPooledConnection
 
 internal class StopwatchBasedTimer : ITimer
 {
-    private readonly Stopwatch _stopwatch;
-
-    public StopwatchBasedTimer()
-    {
-        _stopwatch = new Stopwatch();
-    }
+    private readonly Stopwatch _stopwatch = new();
 
     public long ElapsedMilliseconds => _stopwatch.ElapsedMilliseconds;
 

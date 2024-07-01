@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -18,35 +16,35 @@
 using System;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.Internal;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.BookmarkManager
+namespace Neo4j.Driver.Tests.Internal.BookmarkManager;
+
+public class BookmarkManagerFactoryTests
 {
-    public class BookmarkManagerFactoryTests
+    [Fact]
+    public void ShouldReturnNewBookmarkManager()
     {
-        [Fact]
-        public void ShouldReturnNewBookmarkManager()
-        {
-            var factory = new BookmarkManagerFactory();
+        var factory = new BookmarkManagerFactory();
 
-            var config = new BookmarkManagerConfig(
-                Array.Empty<string>(),
-                _ => Task.FromResult(Array.Empty<string>()),
-                (_, _) => Task.CompletedTask);
+        var config = new BookmarkManagerConfig(
+            Array.Empty<string>(),
+            _ => Task.FromResult(Array.Empty<string>()),
+            (_, _) => Task.CompletedTask);
 
-            var bookmarkManager = factory.NewBookmarkManager(config);
+        var bookmarkManager = factory.NewBookmarkManager(config);
 
-            bookmarkManager.Should().BeAssignableTo<DefaultBookmarkManager>();
-        }
+        bookmarkManager.Should().BeAssignableTo<DefaultBookmarkManager>();
+    }
 
-        [Fact]
-        public void ShouldReturnDefaultBookmarkManagerWhenNoConfigSupplied()
-        {
-            var factory = new BookmarkManagerFactory();
+    [Fact]
+    public void ShouldReturnDefaultBookmarkManagerWhenNoConfigSupplied()
+    {
+        var factory = new BookmarkManagerFactory();
 
-            var bookmarkManager = factory.NewBookmarkManager();
+        var bookmarkManager = factory.NewBookmarkManager();
 
-            bookmarkManager.Should().BeAssignableTo<DefaultBookmarkManager>();
-        }
+        bookmarkManager.Should().BeAssignableTo<DefaultBookmarkManager>();
     }
 }

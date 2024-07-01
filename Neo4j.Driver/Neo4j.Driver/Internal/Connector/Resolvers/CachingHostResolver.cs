@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -21,7 +19,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Internal.Connector;
+namespace Neo4j.Driver.Internal.Connector.Resolvers;
 
 internal class CachingHostResolver : IHostResolver
 {
@@ -54,7 +52,8 @@ internal class CachingHostResolver : IHostResolver
                         Addresses = resolved
                     };
 
-                    entry = _cache.AddOrUpdate(hostname, entry, (key, existingEntry) => entry);
+                    var captured = entry;
+                    entry = _cache.AddOrUpdate(hostname, entry, (_, _) => captured);
                 }
             }
             finally
@@ -83,7 +82,8 @@ internal class CachingHostResolver : IHostResolver
                         Addresses = resolved
                     };
 
-                    entry = _cache.AddOrUpdate(hostname, entry, (key, existingEntry) => entry);
+                    var captured = entry;
+                    entry = _cache.AddOrUpdate(hostname, entry, (_, _) => captured);
                 }
             }
             finally

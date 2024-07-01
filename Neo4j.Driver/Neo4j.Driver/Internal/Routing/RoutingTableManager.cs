@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -373,7 +371,7 @@ internal class RoutingTableManager : IRoutingTableManager
             is (FatalDiscoveryException // Neo.ClientError.Database.DatabaseNotFound
             or InvalidBookmarkException // Neo.ClientError.Transaction.InvalidBookmark
             or InvalidBookmarkMixtureException // Neo.ClientError.Transaction.InvalidBookmarkMixture
-            or ArgumentErrorException // Neo.ClientError.Statement.ArgumentError
+            or StatementArgumentException // Neo.ClientError.Statement.ArgumentError
             or ProtocolException // Neo.ClientError.Request.Invalid and (special to .NET driver) Neo.ClientError.Request.InvalidFormat
             or TypeException // Neo.ClientError.Statement.TypeError
             or SecurityException // Neo.ClientError.Security.*

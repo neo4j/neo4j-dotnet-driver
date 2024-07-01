@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -17,73 +15,74 @@
 
 using System.Collections.Generic;
 using FluentAssertions;
+using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.MessageHandling.Metadata;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata
+namespace Neo4j.Driver.Tests.Internal.MessageHandling.Metadata;
+
+public class ConnectionIdCollectorTests
 {
-    public class ConnectionIdCollectorTests
+    private const string Key = ConnectionIdCollector.ConnectionIdKey;
+
+    internal static KeyValuePair<string, object> TestMetadata => new(Key, "id-1");
+
+    internal static string TestMetadataCollected => "id-1";
+
+    [Fact]
+    public void ShouldNotCollectIfMetadataIsNull()
     {
-        private const string Key = ConnectionIdCollector.ConnectionIdKey;
+        var collector = new ConnectionIdCollector();
 
-        internal static KeyValuePair<string, object> TestMetadata => new(Key, "id-1");
+        collector.Collect(null);
 
-        internal static string TestMetadataCollected => "id-1";
+        collector.Collected.Should().BeNull();
+    }
 
-        [Fact]
-        public void ShouldNotCollectIfMetadataIsNull()
-        {
-            var collector = new ConnectionIdCollector();
+    [Fact]
+    public void ShouldNotCollectIfNoValueIsGiven()
+    {
+        var collector = new ConnectionIdCollector();
 
-            collector.Collect(null);
+        collector.Collect(new Dictionary<string, object>());
 
-            collector.Collected.Should().BeNull();
-        }
+        collector.Collected.Should().BeNull();
+    }
 
-        [Fact]
-        public void ShouldNotCollectIfNoValueIsGiven()
-        {
-            var collector = new ConnectionIdCollector();
+    [Fact]
+    public void ShouldThrowIfValueIsOfWrongType()
+    {
+        var metadata = new Dictionary<string, object> { { Key, 5 } };
+        var collector = new ConnectionIdCollector();
 
-            collector.Collect(new Dictionary<string, object>());
+        var ex = Record.Exception(() => collector.Collect(metadata));
 
-            collector.Collected.Should().BeNull();
-        }
+        ex.Should()
+            .BeOfType<ProtocolException>()
+            .Which
+            .Message.Should()
+            .Contain($"Expected '{Key}' metadata to be of type 'String', but got 'Int32'.");
+    }
 
-        [Fact]
-        public void ShouldThrowIfValueIsOfWrongType()
-        {
-            var metadata = new Dictionary<string, object> { { Key, 5 } };
-            var collector = new ConnectionIdCollector();
+    [Fact]
+    public void ShouldCollect()
+    {
+        var metadata = new Dictionary<string, object> { { Key, "id-5" } };
+        var collector = new ConnectionIdCollector();
 
-            var ex = Record.Exception(() => collector.Collect(metadata));
+        collector.Collect(metadata);
 
-            ex.Should()
-                .BeOfType<ProtocolException>()
-                .Which
-                .Message.Should()
-                .Contain($"Expected '{Key}' metadata to be of type 'String', but got 'Int32'.");
-        }
+        collector.Collected.Should().Be("id-5");
+    }
 
-        [Fact]
-        public void ShouldCollect()
-        {
-            var metadata = new Dictionary<string, object> { { Key, "id-5" } };
-            var collector = new ConnectionIdCollector();
+    [Fact]
+    public void ShouldReturnSameCollected()
+    {
+        var metadata = new Dictionary<string, object> { { Key, "id-5" } };
+        var collector = new ConnectionIdCollector();
 
-            collector.Collect(metadata);
+        collector.Collect(metadata);
 
-            collector.Collected.Should().Be("id-5");
-        }
-
-        [Fact]
-        public void ShouldReturnSameCollected()
-        {
-            var metadata = new Dictionary<string, object> { { Key, "id-5" } };
-            var collector = new ConnectionIdCollector();
-
-            collector.Collect(metadata);
-
-            ((IMetadataCollector)collector).Collected.Should().BeSameAs(collector.Collected);
-        }
+        ((IMetadataCollector)collector).Collected.Should().BeSameAs(collector.Collected);
     }
 }

@@ -1,7 +1,5 @@
 // Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -19,8 +17,8 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Microsoft.Reactive.Testing;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Reactive;
-using static Neo4j.Driver.Reactive.Utils;
+using Neo4j.Driver.Tests.Reactive.Utils;
+using static Neo4j.Driver.Tests.Reactive.Utils.Utils;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
@@ -41,7 +39,7 @@ public sealed class RxFailingCommandInTx: RxCommand
                     .Run("UNWIND [10, 5, 0] AS x RETURN 10 / x")
                     .Records()
                     .Select(r => r[0].As<int>())
-                    .CatchAndThrow(exc => txc.Rollback<int>())
+                    .CatchAndThrow(_ => txc.Rollback<int>())
                     .Concat(txc.Commit<int>()))
             .CatchAndThrow(_ => session.Close<int>())
             .Concat(session.Close<int>())

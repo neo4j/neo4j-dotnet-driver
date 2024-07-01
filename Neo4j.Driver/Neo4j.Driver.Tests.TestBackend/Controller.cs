@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -20,6 +18,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Neo4j.Driver.Tests.TestBackend.Exceptions;
+using Neo4j.Driver.Tests.TestBackend.IO;
+using Neo4j.Driver.Tests.TestBackend.Protocol;
+using Neo4j.Driver.Tests.TestBackend.Transaction;
 using Newtonsoft.Json;
 
 namespace Neo4j.Driver.Tests.TestBackend;
@@ -57,7 +59,7 @@ internal class Controller
         BreakProcessLoop = false; //Ensure that any process loops that this one is running within still continue.
     }
 
-    public async Task<IProtocolObject> TryConsumeStreamObjectOfType(Type type)
+    public async Task<ProtocolObject> TryConsumeStreamObjectOfType(Type type)
     {
         //Read the next incoming request message
         await RequestReader.ParseNextRequest().ConfigureAwait(false);
@@ -72,7 +74,7 @@ internal class Controller
         return ProtocolObjectFactory.CreateObject(RequestReader.CurrentObjectData);
     }
 
-    public async Task<T> TryConsumeStreamObjectOfType<T>() where T : IProtocolObject
+    public async Task<T> TryConsumeStreamObjectOfType<T>() where T : ProtocolObject
     {
         var result = await TryConsumeStreamObjectOfType(typeof(T)).ConfigureAwait(false);
         return (T)result;
@@ -189,7 +191,7 @@ internal class Controller
         BreakProcessLoop = true;
     }
 
-    public async Task SendResponse(IProtocolObject protocolObject)
+    public async Task SendResponse(ProtocolObject protocolObject)
     {
         await ResponseWriter.WriteResponseAsync(protocolObject).ConfigureAwait(false);
     }

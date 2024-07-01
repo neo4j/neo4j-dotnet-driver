@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -19,6 +17,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using Neo4j.Driver.Tests.TestBackend.IO;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
@@ -42,7 +41,7 @@ public class Program
 
                 try
                 {
-                    controller.Process(true, e => { return true; }).Wait();
+                    controller.Process(true, _ => { return true; }).Wait();
                 }
                 catch (Exception ex)
                 {

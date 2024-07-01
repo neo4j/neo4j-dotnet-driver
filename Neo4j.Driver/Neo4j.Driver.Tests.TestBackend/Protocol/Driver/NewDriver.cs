@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -19,34 +17,37 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Neo4j.Driver.Auth;
+using Neo4j.Driver.Preview.Auth;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
+using Neo4j.Driver.Tests.TestBackend.Resolvers;
 using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Driver;
 
-internal class NewDriver : IProtocolObject
+internal class NewDriver : ProtocolObject
 {
     public NewDriverType data { get; set; } = new();
 
-    [JsonIgnore] public IDriver Driver { get; set; }
+    [JsonIgnore]
+    public IDriver Driver { get; set; }
 
-    [JsonIgnore] private Controller Control { get; set; }
+    [JsonIgnore]
+    private Controller Control { get; set; }
 
     public override Task Process(Controller controller)
     {
         Control = controller;
 
-
         if (data.authorizationToken != null)
         {
-            IAuthToken authToken = data.authorizationToken.AsToken();
-           
+            var authToken = data.authorizationToken.AsToken();
+
             Driver = GraphDatabase.Driver(data.uri, authToken, DriverConfig);
         }
         else
         {
             var authDataManager = ObjManager.GetObject(data.authTokenManagerId);
-            
+
             if (authDataManager is NewNeo4jAuthTokenManager atm)
             {
                 Driver = GraphDatabase.Driver(data.uri, atm.TokenManager, DriverConfig);
@@ -67,6 +68,8 @@ internal class NewDriver : IProtocolObject
 
     private void DriverConfig(ConfigBuilder configBuilder)
     {
+        configBuilder.WithMetricsEnabled(true).WithIpv6Enabled(true);
+
         if (!string.IsNullOrEmpty(data.userAgent))
         {
             configBuilder.WithUserAgent(data.userAgent);
@@ -152,14 +155,32 @@ internal class NewDriver : IProtocolObject
                 var cats = data.notificationsDisabledCategories
                     ?.Select(x => Enum.Parse<Category>(x, true))
                     .ToArray();
-                
+
                 configBuilder.WithNotifications(sev, cats);
             }
         }
 
-        if(data.telemetryDisabled.HasValue && data.telemetryDisabled.Value)
+        if (data.telemetryDisabled.HasValue && data.telemetryDisabled.Value)
         {
             configBuilder.WithTelemetryDisabled();
+        }
+
+        if (data.clientCertificate != null)
+        {
+            configBuilder.WithClientCertificateProvider(
+                ClientCertificateProviders.Static(data.clientCertificate.Certificate));
+        }
+
+        if(data.clientCertificateProviderId != null)
+        {
+            var provider = (NewClientCertificateProvider)ObjManager.GetObject(data.clientCertificateProviderId);
+            configBuilder.WithClientCertificateProvider(provider);
+        }
+
+        if (data.livenessCheckTimeoutMs.HasValue)
+        {
+            configBuilder.WithConnectionLivenessCheckTimeout(
+                TimeSpan.FromMilliseconds(data.livenessCheckTimeoutMs.Value));
         }
 
         var logger = new SimpleLogger();
@@ -169,6 +190,9 @@ internal class NewDriver : IProtocolObject
     [JsonConverter(typeof(NewDriverConverter))]
     public class NewDriverType
     {
+        // * NOTE: this class is not automatically deserialized, it is done by the NewDriverConverter class
+        // so if you add a new property here, make sure to add it to the NewDriverConverter class as well
+
         private string[] _trustedCertificates = {};
 
         public long? fetchSize;
@@ -187,6 +211,8 @@ internal class NewDriver : IProtocolObject
         public int? maxConnectionPoolSize { get; set; }
         public int? connectionAcquisitionTimeoutMs { get; set; }
         public bool? telemetryDisabled { get; set; }
+        public ClientCertificate clientCertificate { get; set; }
+        public string clientCertificateProviderId { get; set; }
 
         public string[] trustedCertificates
         {
@@ -202,5 +228,6 @@ internal class NewDriver : IProtocolObject
 
         public string notificationsMinSeverity { get; set; }
         public string[] notificationsDisabledCategories { get; set; }
+        public int? livenessCheckTimeoutMs { get; set; }
     }
 }

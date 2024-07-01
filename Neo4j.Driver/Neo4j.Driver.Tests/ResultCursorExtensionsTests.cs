@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -16,120 +14,206 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Neo4j.Driver.Internal;
 using Xunit;
 
-namespace Neo4j.Driver.Tests
+namespace Neo4j.Driver.Tests;
+
+public class ResultCursorExtensionsTests
 {
-    public class ResultCursorExtensionsTests
+    public class SingleAsyncMethod
     {
-        public class SingleAsyncMethod
+        [Fact]
+        public async Task ShouldReturnSingleRecord()
         {
-            [Fact]
-            public async Task ShouldReturnSingleRecord()
-            {
-                var mock = new Mock<IResultCursor>();
-                var recordMock = new Mock<IRecord>();
-                mock.SetupSequence(x => x.FetchAsync()).ReturnsAsync(true).ReturnsAsync(false);
-                mock.Setup(x => x.Current).Returns(recordMock.Object);
+            var mockRecord = new Mock<IRecord>();
+            var enumerator = new Mock<IAsyncEnumerator<IRecord>>();
+            enumerator
+                .SetupSequence(x => x.MoveNextAsync())
+                .ReturnsAsync(true)
+                .ReturnsAsync(false);
 
-                var record = await mock.Object.SingleAsync();
-                record.Should().Be(recordMock.Object);
-            }
+            enumerator
+                .SetupSequence(x => x.Current)
+                .Returns(mockRecord.Object)
+                .Returns(default(IRecord));
 
-            [Fact]
-            public async Task ShouldThrowExceptionIfMoreThanOneRecord()
-            {
-                var mock = new Mock<IResultCursor>();
-                var recordMock = new Mock<IRecord>();
-                mock.SetupSequence(x => x.FetchAsync()).ReturnsAsync(true).ReturnsAsync(true);
-                mock.Setup(x => x.Current).Returns(recordMock.Object);
+            var mockCursor = new Mock<IResultCursor>();
+            mockCursor
+                .Setup(x => x.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
+                .Returns(enumerator.Object);
 
-                var exception = await Record.ExceptionAsync(() => mock.Object.SingleAsync());
-                exception.Should().BeOfType<InvalidOperationException>();
-                exception.Message.Should().Contain("more than one");
-            }
-
-            [Fact]
-            public async Task ShouldThrowExceptionIfNoRecord()
-            {
-                var mock = new Mock<IResultCursor>();
-                var recordMock = new Mock<IRecord>();
-                mock.Setup(x => x.FetchAsync()).ReturnsAsync(false);
-                mock.Setup(x => x.Current).Returns(recordMock.Object);
-
-                var exception = await Record.ExceptionAsync(() => mock.Object.SingleAsync());
-                exception.Should().BeOfType<InvalidOperationException>();
-                exception.Message.Should().Contain("empty");
-            }
-
-            [Fact]
-            public async Task ShouldThrowExceptionIfNullResult()
-            {
-                IResultCursor result = null;
-                var exception = await Record.ExceptionAsync(() => result.SingleAsync());
-                exception.Should().BeOfType<ArgumentNullException>();
-            }
+            var record = await mockCursor.Object.SingleAsync();
+            record.Should().BeSameAs(mockRecord.Object);
         }
 
-        public class ToListAsyncMethod
+        [Fact]
+        public async Task ShouldThrowExceptionIfMoreThanOneRecord()
         {
-            [Fact]
-            public async Task ShouldReturnEmptyListIfNoRecord()
-            {
-                var mock = new Mock<IResultCursor>();
-                mock.Setup(x => x.FetchAsync()).ReturnsAsync(false);
+            var mockRecord = new Mock<IRecord>();
+            var enumerator = new Mock<IAsyncEnumerator<IRecord>>();
+            enumerator
+                .SetupSequence(x => x.MoveNextAsync())
+                .ReturnsAsync(true)
+                .ReturnsAsync(true)
+                .ReturnsAsync(false);
 
-                var list = await mock.Object.ToListAsync();
-                list.Should().BeEmpty();
-            }
+            enumerator
+                .SetupSequence(x => x.Current)
+                .Returns(mockRecord.Object)
+                .Returns(mockRecord.Object)
+                .Returns(default(IRecord));
 
-            [Fact]
-            public async Task ShouldReturnList()
-            {
-                var mock = new Mock<IResultCursor>();
-                mock.SetupSequence(x => x.FetchAsync()).ReturnsAsync(true).ReturnsAsync(true).ReturnsAsync(false);
-                var record0 = new Mock<IRecord>().Object;
-                var record1 = new Mock<IRecord>().Object;
-                mock.SetupSequence(x => x.Current).Returns(record0).Returns(record1);
+            var mockCursor = new Mock<IResultCursor>();
+            mockCursor
+                .Setup(x => x.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
+                .Returns(enumerator.Object);
 
-                var list = await mock.Object.ToListAsync();
-                list.Count.Should().Be(2);
-                list[0].Should().Be(record0);
-                list[1].Should().Be(record1);
-            }
+            var exception = await Record.ExceptionAsync(() => mockCursor.Object.SingleAsync());
 
-            [Fact]
-            public async Task ShouldThrowExceptionIfNullResult()
-            {
-                IResultCursor result = null;
-                var exception = await Record.ExceptionAsync(() => result.ToListAsync());
-                exception.Should().BeOfType<ArgumentNullException>();
-            }
+            exception.Should()
+                .BeOfType<InvalidOperationException>()
+                .Which.Message.Should()
+                .Contain("more than one");
         }
 
-        public class ForEachAsyncMethod
+        [Fact]
+        public async Task ShouldThrowExceptionIfNoRecord()
         {
-            [Fact]
-            public async Task ShouldThrowExceptionIfNullResult()
-            {
-                IResultCursor result = null;
-                var exception = await Record.ExceptionAsync(() => result.ForEachAsync(r => {}));
-                exception.Should().BeOfType<ArgumentNullException>();
-            }
+            var enumerator = new Mock<IAsyncEnumerator<IRecord>>();
+            enumerator
+                .SetupSequence(x => x.MoveNextAsync())
+                .ReturnsAsync(false);
 
-            [Fact]
-            public async Task ShouldApplyOnEachElement()
-            {
-                var mock = new Mock<IResultCursor>();
-                mock.SetupSequence(x => x.FetchAsync()).ReturnsAsync(true).ReturnsAsync(true).ReturnsAsync(false);
-                var record = new Mock<IRecord>().Object;
-                mock.SetupSequence(x => x.Current).Returns(record).Returns(record);
+            enumerator
+                .SetupSequence(x => x.Current)
+                .Returns(default(IRecord));
 
-                await mock.Object.ForEachAsync(r => { r.Should().Be(record); });
-            }
+            var mockCursor = new Mock<IResultCursor>();
+            mockCursor
+                .Setup(x => x.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
+                .Returns(enumerator.Object);
+
+            var exception = await Record.ExceptionAsync(() => mockCursor.Object.SingleAsync());
+            exception.Should().BeOfType<InvalidOperationException>();
+            exception.Message.Should().Contain("empty");
+        }
+
+        [Fact]
+        public async Task ShouldThrowExceptionIfNullResult()
+        {
+            IResultCursor result = null;
+            var exception = await Record.ExceptionAsync(() => result.SingleAsync());
+            exception.Should().BeOfType<ArgumentNullException>();
+        }
+    }
+
+    public class ToListAsyncMethod
+    {
+        [Fact]
+        public async Task ShouldReturnEmptyListIfNoRecord()
+        {
+            var enumerator = new Mock<IAsyncEnumerator<IRecord>>();
+            enumerator
+                .SetupSequence(x => x.MoveNextAsync())
+                .ReturnsAsync(false);
+
+            enumerator
+                .SetupSequence(x => x.Current)
+                .Returns(default(IRecord));
+
+            var mockCursor = new Mock<IResultCursor>();
+            mockCursor
+                .Setup(x => x.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
+                .Returns(enumerator.Object);
+
+            var list = await mockCursor.Object.ToListAsync();
+            list.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task ShouldReturnList()
+        {
+            var record0 = new Mock<IRecord>().Object;
+            var record1 = new Mock<IRecord>().Object;
+            var enumerator = new Mock<IAsyncEnumerator<IRecord>>();
+            enumerator
+                .SetupSequence(x => x.MoveNextAsync())
+                .ReturnsAsync(true)
+                .ReturnsAsync(true)
+                .ReturnsAsync(false);
+
+            enumerator
+                .SetupSequence(x => x.Current)
+                .Returns(record0)
+                .Returns(record1)
+                .Returns(default(IRecord));
+
+            var mockCursor = new Mock<IResultCursor>();
+            mockCursor
+                .Setup(x => x.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
+                .Returns(enumerator.Object);
+
+            var list = await mockCursor.Object.ToListAsync();
+            list.Count.Should().Be(2);
+            list[0].Should().BeSameAs(record0);
+            list[1].Should().BeSameAs(record1);
+        }
+
+        [Fact]
+        public async Task ShouldThrowExceptionIfNullResult()
+        {
+            IResultCursor result = null;
+            var exception = await Record.ExceptionAsync(() => result.ToListAsync());
+            exception.Should().BeOfType<ArgumentNullException>();
+        }
+    }
+
+    public class ForEachAsyncMethod
+    {
+        [Fact]
+        public async Task ShouldThrowExceptionIfNullResult()
+        {
+            IResultCursor result = null;
+            var exception = await Record.ExceptionAsync(() => result.ForEachAsync(_ => {}));
+            exception.Should().BeOfType<ArgumentNullException>();
+        }
+
+        [Fact]
+        public async Task ShouldApplyOnEachElement()
+        {
+            var mockRecord = new Mock<IRecord>();
+            var mockRecord2 = new Mock<IRecord>();
+
+            var enumerator = new Mock<IAsyncEnumerator<IRecord>>();
+            enumerator
+                .SetupSequence(x => x.MoveNextAsync())
+                .ReturnsAsync(true)
+                .ReturnsAsync(true)
+                .ReturnsAsync(false);
+
+            enumerator
+                .SetupSequence(x => x.Current)
+                .Returns(mockRecord.Object)
+                .Returns(mockRecord2.Object);
+
+            var mockCursor = new Mock<IInternalResultCursor>();
+            mockCursor
+                .Setup(x => x.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
+                .Returns(enumerator.Object);
+
+            var index = 0;
+            await mockCursor.Object.ForEachAsync(
+                r =>
+                {
+                    index++;
+                    r.Should().BeSameAs(index == 1 ? mockRecord.Object : mockRecord2.Object);
+                });
         }
     }
 }

@@ -15,11 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Diagnostics;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
 
-namespace Neo4j.Driver.Tests.TestBackend;
-
-internal class BasicAuthTokenProviderCompleted : IProtocolObject
+internal class BasicAuthTokenProviderCompleted : ProtocolObject
 {
     public BasicAuthTokenProviderCompletedDto data { get; set; }
 

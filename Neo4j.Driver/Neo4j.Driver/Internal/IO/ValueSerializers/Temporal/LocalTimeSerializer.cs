@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -17,6 +15,8 @@
 
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.Helpers;
+using Neo4j.Driver.Internal.Protocol;
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers.Temporal;
 
@@ -27,7 +27,7 @@ internal sealed class LocalTimeSerializer : IPackStreamSerializer
     public const byte StructType = (byte)'t';
     public const int StructSize = 1;
 
-    public IEnumerable<byte> ReadableStructs => new[] { StructType };
+    public byte[] ReadableStructs => new[] { StructType };
 #if NET6_0_OR_GREATER
     public IEnumerable<Type> WritableTypes => new[] { typeof(LocalTime), typeof(TimeOnly) };
 #else
@@ -43,6 +43,7 @@ internal sealed class LocalTimeSerializer : IPackStreamSerializer
         return TemporalHelpers.NanoOfDayToTime(nanosOfDay);
     }
 
+
     public void Serialize(BoltProtocolVersion _, PackStreamWriter writer, object value)
     {
 #if NET6_0_OR_GREATER
@@ -53,6 +54,13 @@ internal sealed class LocalTimeSerializer : IPackStreamSerializer
         }
 #endif
         WriteLocalTime(writer, value);
+    }
+
+    public (object, int) DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    {
+        PackStream.EnsureStructSize("LocalTime", StructSize, size);
+        var nanosOfDay = reader.ReadLong();
+        return (TemporalHelpers.NanoOfDayToTime(nanosOfDay), reader.Index);
     }
 
 #if NET6_0_OR_GREATER

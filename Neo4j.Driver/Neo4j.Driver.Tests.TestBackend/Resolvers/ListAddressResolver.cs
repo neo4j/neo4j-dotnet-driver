@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -18,8 +16,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Neo4j.Driver.Tests.TestBackend.Protocol;
+using Neo4j.Driver.Tests.TestBackend.Protocol.SupportFunctions;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Resolvers;
 
 internal class ListAddressResolver : IServerAddressResolver
 {

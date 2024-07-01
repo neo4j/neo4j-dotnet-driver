@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -19,30 +17,30 @@ using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol;
 
 internal static class ProtocolObjectFactory
 {
     public static ProtocolObjectManager ObjManager { get; set; }
 
-    public static IProtocolObject CreateObject(string jsonString)
+    public static ProtocolObject CreateObject(string jsonString)
     {
         var type = GetObjectType(jsonString);
         Protocol.ValidateType(type);
         return CreateObject(type, jsonString);
     }
 
-    public static T CreateObject<T>() where T : IProtocolObject
+    public static T CreateObject<T>() where T : ProtocolObject
     {
         Protocol.ValidateType(typeof(T));
         return (T)CreateObject(typeof(T));
     }
 
-    private static IProtocolObject CreateObject(Type type, string jsonString = null)
+    private static ProtocolObject CreateObject(Type type, string jsonString = null)
     {
         try
         {
-            var newObject = (IProtocolObject)CreateNewObjectOfType(
+            var newObject = (ProtocolObject)CreateNewObjectOfType(
                 type,
                 jsonString,
                 new JsonSerializerSettings
@@ -64,19 +62,13 @@ internal static class ProtocolObjectFactory
     public static Type GetObjectType(string jsonString)
     {
         var objectTypeName = GetObjectTypeName(jsonString);
-        Protocol.ValidateType(objectTypeName);
-        return Type.GetType(typeof(ProtocolObjectFactory).Namespace + "." + objectTypeName, true);
+        return Protocol.GetValidProtocolType(objectTypeName);
     }
 
     private static string GetObjectTypeName(string jsonString)
     {
         var jsonObject = JObject.Parse(jsonString);
         return (string)jsonObject["name"];
-    }
-
-    public static T CreateObject<T>(string jsonString = null) where T : IProtocolObject, new()
-    {
-        return (T)CreateObject(jsonString);
     }
 
     private static object CreateNewObjectOfType(
@@ -97,7 +89,7 @@ internal static class ProtocolObjectFactory
         return string.IsNullOrEmpty(jsonString) ? new T() : JsonConvert.DeserializeObject<T>(jsonString, settings);
     }
 
-    private static void ProcessNewObject(IProtocolObject newObject)
+    private static void ProcessNewObject(ProtocolObject newObject)
     {
         newObject.SetObjectManager(ObjManager);
         ObjManager.AddProtocolObject(newObject);

@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -16,10 +14,11 @@
 // limitations under the License.
 
 using System;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Driver;
 
 internal class NewDriverConverter : JsonConverter<NewDriver.NewDriverType>
 {
@@ -51,6 +50,9 @@ internal class NewDriverConverter : JsonConverter<NewDriver.NewDriverType>
         newDriverRequest.maxTxRetryTimeMs = jsonObj["maxTxRetryTimeMs"]?.Value<long?>();
         newDriverRequest.notificationsMinSeverity = jsonObj["notificationsMinSeverity"]?.Value<string>();
         newDriverRequest.telemetryDisabled = jsonObj["telemetryDisabled"]?.Value<bool?>();
+        newDriverRequest.livenessCheckTimeoutMs = jsonObj["livenessCheckTimeoutMs"]?.Value<int?>();
+        newDriverRequest.clientCertificate = jsonObj["clientCertificate"]?.ToObject<ClientCertificate>();
+        newDriverRequest.clientCertificateProviderId = jsonObj["clientCertificateProviderId"]?.Value<string>();
 
         if (jsonObj.TryGetValue("trustedCertificates", out var token))
         {

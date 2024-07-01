@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -33,18 +31,20 @@ internal static class SupportedFeatures
             "Feature:API:BookmarkManager",
             "Feature:API:ConnectionAcquisitionTimeout",
             "Feature:API:Driver.ExecuteQuery",
+            "Feature:API:Driver.ExecuteQuery:WithAuth",
             "Feature:API:Driver:GetServerInfo",
             "Feature:API:Driver.IsEncrypted",
             "Feature:API:Driver:NotificationsConfig",
             "Feature:API:Driver.VerifyAuthentication",
             "Feature:API:Driver.VerifyConnectivity",
             "Feature:API:Driver.SupportsSessionAuth",
-            //"Feature:API:Liveness.Check",
+            "Feature:API:Liveness.Check",
             "Feature:API:Result.List",
             "Feature:API:Result.Peek",
             "Feature:API:Result.Single",
             "Feature:API:Session:NotificationsConfig",
             "Feature:API:Session:AuthConfig",
+            "Feature:API:SSLClientCertificate",
             "Feature:API:SSLConfig",
             "Feature:API:SSLSchemes",
             "Feature:API:Type.Temporal",

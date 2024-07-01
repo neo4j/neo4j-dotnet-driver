@@ -1,7 +1,5 @@
 // Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -16,7 +14,6 @@
 // limitations under the License.
 
 #if !NET6_0_OR_GREATER
-using Neo4j.Driver.Internal.Extensions;
 #endif
 using System;
 using System.Collections.Generic;
@@ -27,7 +24,7 @@ using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using static System.Security.Authentication.SslProtocols;
+using Neo4j.Driver.Internal.Auth;
 
 namespace Neo4j.Driver.Internal.Connector;
 
@@ -57,16 +54,18 @@ internal sealed class TcpSocketClient : ITcpSocketClient
             try
             {
                 var sslStream = CreateSecureStream(uri);
+                var clientCertificates = await GetClientCertificates().ConfigureAwait(false);
+                var protocol = DriverContext.Config.TlsVersion;
 
                 await sslStream
-                    .AuthenticateAsClientAsync(uri.Host, null, Tls12, false)
+                    .AuthenticateAsClientAsync(uri.Host, clientCertificates, protocol, false)
                     .ConfigureAwait(false);
 
                 ReaderStream = sslStream;
             }
             catch (Exception e)
             {
-                throw new SecurityException($"Failed to establish encrypted connection with server {uri}.", e);
+                throw new ServiceUnavailableException($"Failed to establish encrypted connection with server {uri}.", e);
             }
         }
     }
@@ -86,6 +85,20 @@ internal sealed class TcpSocketClient : ITcpSocketClient
             _client = null;
             ReaderStream = null;
         }
+    }
+
+    private async ValueTask<X509CertificateCollection> GetClientCertificates()
+    {
+        if (DriverContext.Config.ClientCertificateProvider == null)
+        {
+            return null;
+        }
+
+        var certificate = await DriverContext.Config.ClientCertificateProvider
+            .GetCertificateAsync()
+            .ConfigureAwait(false);
+
+        return new X509CertificateCollection(new[] { certificate });
     }
 
     //Marked as internal for testing purposes.
@@ -198,38 +211,17 @@ internal sealed class TcpSocketClient : ITcpSocketClient
             _client.DualMode = true;
         }
 
-        _client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, DriverContext.Config.SocketKeepAlive);
+        _client.SetSocketOption(
+            SocketOptionLevel.Socket,
+            SocketOptionName.KeepAlive,
+            DriverContext.Config.SocketKeepAlive);
     }
 
     private SslStream CreateSecureStream(Uri uri)
     {
-        return new SslStream(
-            ReaderStream,
-            true,
-            (_, certificate, chain, errors) =>
-            {
-                if (errors.HasFlag(SslPolicyErrors.RemoteCertificateNotAvailable))
-                {
-                    _logger?.Error(null, $"{GetType().Name}: Certificate not available.");
-                    return false;
-                }
+        var negotiator = DriverContext.Config.TlsNegotiator ??
+            new DefaultTlsNegotiator(_logger, DriverContext.EncryptionManager);
 
-                var trust = DriverContext.EncryptionManager.TrustManager.ValidateServerCertificate(
-                    uri,
-                    new X509Certificate2(certificate.Export(X509ContentType.Cert)),
-                    chain,
-                    errors);
-
-                if (trust)
-                {
-                    _logger?.Debug("Trust is established, resuming connection.");
-                }
-                else
-                {
-                    _logger?.Error(null, "Trust not established, aborting communication.");
-                }
-
-                return trust;
-            });
+        return negotiator.NegotiateTls(uri, ReaderStream);
     }
 }

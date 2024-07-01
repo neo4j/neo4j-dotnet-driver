@@ -1,7 +1,5 @@
 // Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -20,7 +18,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Microsoft.Reactive.Testing;
 using Neo4j.Driver.Internal;
-using static Neo4j.Driver.Reactive.Utils;
+using static Neo4j.Driver.Tests.Reactive.Utils.Utils;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
@@ -41,7 +39,7 @@ public sealed class RxWrongCommandInTx : RxCommand
                     txc => txc
                         .Run("RETURN")
                         .Records()
-                        .CatchAndThrow(exc => txc.Rollback<IRecord>())
+                        .CatchAndThrow(_ => txc.Rollback<IRecord>())
                         .Concat(txc.Commit<IRecord>()))
                 .CatchAndThrow(_ => session.Close<IRecord>())
                 .Concat(session.Close<IRecord>())

@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -17,75 +15,76 @@
 
 using System.Collections.Generic;
 using FluentAssertions;
+using Neo4j.Driver.Internal.MessageHandling;
+using Neo4j.Driver.Internal.MessageHandling.Metadata;
 using Neo4j.Driver.Internal.Result;
 using Xunit;
 using Record = Xunit.Record;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Metadata
+namespace Neo4j.Driver.Tests.Internal.MessageHandling.Metadata;
+
+public class DatabaseInfoCollectorTests
 {
-    public class DatabaseInfoCollectorTests
+    private const string Key = DatabaseInfoCollector.DbKey;
+
+    internal static KeyValuePair<string, object> TestMetadata => new(Key, "foo");
+
+    internal static IDatabaseInfo TestMetadataCollected => new DatabaseInfo("foo");
+
+    [Fact]
+    public void ShouldCollectFalseIfMetadataIsNull()
     {
-        private const string Key = DatabaseInfoCollector.DbKey;
+        var collector = new DatabaseInfoCollector();
 
-        internal static KeyValuePair<string, object> TestMetadata => new(Key, "foo");
+        collector.Collect(null);
 
-        internal static IDatabaseInfo TestMetadataCollected => new DatabaseInfo("foo");
+        collector.Collected.Name.Should().BeNull();
+    }
 
-        [Fact]
-        public void ShouldCollectFalseIfMetadataIsNull()
-        {
-            var collector = new DatabaseInfoCollector();
+    [Fact]
+    public void ShouldCollectFalseIfNoValueIsGiven()
+    {
+        var collector = new DatabaseInfoCollector();
 
-            collector.Collect(null);
+        collector.Collect(new Dictionary<string, object>());
 
-            collector.Collected.Name.Should().BeNull();
-        }
+        collector.Collected.Name.Should().BeNull();
+    }
 
-        [Fact]
-        public void ShouldCollectFalseIfNoValueIsGiven()
-        {
-            var collector = new DatabaseInfoCollector();
+    [Fact]
+    public void ShouldThrowIfValueIsOfWrongType()
+    {
+        var metadata = new Dictionary<string, object> { { Key, 1L } };
+        var collector = new DatabaseInfoCollector();
 
-            collector.Collect(new Dictionary<string, object>());
+        var ex = Record.Exception(() => collector.Collect(metadata));
 
-            collector.Collected.Name.Should().BeNull();
-        }
+        ex.Should()
+            .BeOfType<ProtocolException>()
+            .Which
+            .Message.Should()
+            .Contain($"Expected '{Key}' metadata to be of type 'string', but got 'Int64'.");
+    }
 
-        [Fact]
-        public void ShouldThrowIfValueIsOfWrongType()
-        {
-            var metadata = new Dictionary<string, object> { { Key, 1L } };
-            var collector = new DatabaseInfoCollector();
+    [Fact]
+    public void ShouldCollect()
+    {
+        var metadata = new Dictionary<string, object> { { Key, "my-database" } };
+        var collector = new DatabaseInfoCollector();
 
-            var ex = Record.Exception(() => collector.Collect(metadata));
+        collector.Collect(metadata);
 
-            ex.Should()
-                .BeOfType<ProtocolException>()
-                .Which
-                .Message.Should()
-                .Contain($"Expected '{Key}' metadata to be of type 'string', but got 'Int64'.");
-        }
+        collector.Collected.Name.Should().Be("my-database");
+    }
 
-        [Fact]
-        public void ShouldCollect()
-        {
-            var metadata = new Dictionary<string, object> { { Key, "my-database" } };
-            var collector = new DatabaseInfoCollector();
+    [Fact]
+    public void ShouldReturnSameCollected()
+    {
+        var metadata = new Dictionary<string, object> { { Key, "my-database" } };
+        var collector = new DatabaseInfoCollector();
 
-            collector.Collect(metadata);
+        collector.Collect(metadata);
 
-            collector.Collected.Name.Should().Be("my-database");
-        }
-
-        [Fact]
-        public void ShouldReturnSameCollected()
-        {
-            var metadata = new Dictionary<string, object> { { Key, "my-database" } };
-            var collector = new DatabaseInfoCollector();
-
-            collector.Collect(metadata);
-
-            ((IMetadataCollector)collector).Collected.Should().Be(collector.Collected);
-        }
+        ((IMetadataCollector)collector).Collected.Should().Be(collector.Collected);
     }
 }

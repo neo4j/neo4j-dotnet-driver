@@ -1,7 +1,5 @@
 // Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -17,8 +15,7 @@
 
 using System;
 using System.Diagnostics;
-using Neo4j.Driver.Auth;
-using Neo4j.Driver.TestUtil;
+using Neo4j.Driver.Tests.TestUtil;
 
 namespace Neo4j.Driver.IntegrationTests.Internals;
 
@@ -26,10 +23,10 @@ public static class DefaultInstallation
 {
     public static readonly string User = "neo4j";
     public static readonly string Password = "neo4j";
-    public static readonly string HttpUri = "http://127.0.0.1:7474";
+    public const string HttpUri = "http://127.0.0.1:7474";
 
-    public static readonly string BoltHeader = "bolt://";
-    private static readonly string BoltHost = "127.0.0.1";
+    public const string BoltHeader = "bolt://";
+    public static readonly string BoltHost = "127.0.0.1";
     public static readonly string BoltPort = "7687";
 
     static DefaultInstallation()

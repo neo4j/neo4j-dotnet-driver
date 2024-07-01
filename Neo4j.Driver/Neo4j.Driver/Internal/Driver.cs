@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -153,12 +151,11 @@ internal sealed class Driver : IInternalDriver
         Query query,
         QueryConfig config,
         Action<IRecord> streamProcessor,
-        CancellationToken cancellationToken
-    )
+        CancellationToken cancellationToken)
     {
         async Task<int> Process(IAsyncEnumerable<IRecord> records)
         {
-            await foreach (var record in records.ConfigureAwait(false))
+            await foreach (var record in records.ConfigureAwait(false).WithCancellation(cancellationToken))
             {
                 streamProcessor(record);
             }
@@ -235,11 +232,13 @@ internal sealed class Driver : IInternalDriver
         {
             if (config.Routing == RoutingControl.Readers)
             {
-                return await session.PipelinedExecuteReadAsync(x => Work(query, x, cursorProcessor, cancellationToken))
+                return await session.PipelinedExecuteReadAsync(x => Work(query, x, cursorProcessor, cancellationToken),
+                        config.TransactionConfig)
                     .ConfigureAwait(false);
             }
 
-            return await session.PipelinedExecuteWriteAsync(x => Work(query, x, cursorProcessor, cancellationToken))
+            return await session.PipelinedExecuteWriteAsync(x => Work(query, x, cursorProcessor, cancellationToken),
+                    config.TransactionConfig)
                 .ConfigureAwait(false);
         }
     }
@@ -275,6 +274,11 @@ internal sealed class Driver : IInternalDriver
         if (config.EnableBookmarkManager)
         {
             sessionConfigBuilder.WithBookmarkManager(config.BookmarkManager ?? _bookmarkManager);
+        }
+
+        if(config.AuthToken != null)
+        {
+            sessionConfigBuilder.WithAuthToken(config.AuthToken);
         }
 
         sessionConfigBuilder.WithDefaultAccessMode(

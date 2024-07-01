@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -15,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
 using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver.Internal.IO.ValueSerializers;
@@ -24,7 +21,7 @@ internal sealed class ElementUnboundRelationshipSerializer : ReadOnlySerializer
 {
     public const byte UnboundRelationship = (byte)'r';
     internal static readonly ElementUnboundRelationshipSerializer Instance = new();
-    public override IEnumerable<byte> ReadableStructs => new[] { UnboundRelationship };
+    public override byte[] ReadableStructs => new[] { UnboundRelationship };
 
     public override object Deserialize(PackStreamReader reader)
     {
@@ -36,5 +33,17 @@ internal sealed class ElementUnboundRelationshipSerializer : ReadOnlySerializer
         var urn = reader.ReadString();
 
         return new Relationship(relId, urn, -1, -1, "-1", "-1", relType, props);
+    }
+
+    public override (object, int) DeserializeSpan(SpanPackStreamReader reader)
+    {
+        var relId = reader.ReadLong();
+
+        var relType = reader.ReadString();
+        var props = reader.ReadMap();
+
+        var urn = reader.ReadString();
+
+        return (new Relationship(relId, urn, -1, -1, "-1", "-1", relType, props), reader.Index);
     }
 }

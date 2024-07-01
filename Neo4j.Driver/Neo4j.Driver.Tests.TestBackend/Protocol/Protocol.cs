@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -22,7 +20,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol;
 
 public class TestKitProtocolException : Exception
 {
@@ -44,19 +42,18 @@ public static class Protocol
         Assembly
             .GetExecutingAssembly()
             .DefinedTypes
-            .Where(t => t.IsAssignableTo(typeof(IProtocolObject))));
+            .Where(t => t.IsAssignableTo(typeof(ProtocolObject))));
 
-    public static void ValidateType(string typeName)
+    public static Type GetValidProtocolType(string typeName)
     {
-        try
-        {
-            var objectType = Type.GetType(typeof(Protocol).Namespace + "." + typeName, true);
-            ValidateType(objectType);
-        }
-        catch
+        var type = ProtocolTypes.FirstOrDefault(t => t.Name == typeName);
+
+        if (type == null)
         {
             throw new TestKitProtocolException($"Attempting to use an unrecognized protocol type: {typeName}");
         }
+
+        return type;
     }
 
     public static void ValidateType(Type objectType)
@@ -68,7 +65,7 @@ public static class Protocol
     }
 }
 
-internal abstract class IProtocolObject
+internal abstract class ProtocolObject
 {
     public string name { get; set; }
 
@@ -99,9 +96,8 @@ internal abstract class IProtocolObject
         await Task.CompletedTask;
     }
 
-    public virtual async Task
-        Process(
-            Controller controller) //Default is to not use the controller object. But option to override this method and use it if necessary.
+    //Default is to not use the controller object. But option to override this method and use it if necessary.
+    public virtual async Task Process(Controller controller)
     {
         await Process();
     }

@@ -16,16 +16,15 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Auth;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Auth;
+using Neo4j.Driver.Tests.TestBackend.Protocol.Time;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
 
-internal abstract class TestAuthTokenManager : IProtocolObject, IAuthTokenManager
+internal abstract class TestAuthTokenManager : ProtocolObject, IAuthTokenManager
 {
     public abstract ValueTask<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default);
 
@@ -35,7 +34,7 @@ internal abstract class TestAuthTokenManager : IProtocolObject, IAuthTokenManage
         CancellationToken cancellationToken = default);
 }
 
-internal class NewNeo4jAuthTokenManager : IProtocolObject
+internal class NewNeo4jAuthTokenManager : ProtocolObject
 {
     protected Controller _controller;
     public IAuthTokenManager TokenManager;

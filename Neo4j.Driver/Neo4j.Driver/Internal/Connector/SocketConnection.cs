@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -20,10 +18,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Neo4j.Driver.Auth;
+using Neo4j.Driver.Internal.Helpers;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Internal.Util;
 
@@ -74,7 +73,7 @@ internal sealed class SocketConnection : IConnection
         ServerInfo server,
         IResponsePipeline responsePipeline = null,
         IAuthTokenManager authTokenManager = null,
-        IBoltProtocolFactory protocolFactory = null, 
+        IBoltProtocolFactory protocolFactory = null,
         DriverContext context = null)
     {
         _client = socketClient ?? throw new ArgumentNullException(nameof(socketClient));
@@ -89,6 +88,7 @@ internal sealed class SocketConnection : IConnection
     }
 
     internal IReadOnlyList<IRequestMessage> Messages => _messages.ToList();
+    public DriverContext Context { get; }
 
     public AccessMode? Mode { get; private set; }
 
@@ -139,7 +139,11 @@ internal sealed class SocketConnection : IConnection
 
         try
         {
-            await BoltProtocol.AuthenticateAsync(this, Context.Config.UserAgent, authToken, Context.Config.NotificationsConfig)
+            await BoltProtocol.AuthenticateAsync(
+                    this,
+                    Context.Config.UserAgent,
+                    authToken,
+                    Context.Config.NotificationsConfig)
                 .ConfigureAwait(false);
         }
         catch (Exception ex)
@@ -243,6 +247,27 @@ internal sealed class SocketConnection : IConnection
         }
     }
 
+    public async ValueTask EnqueueAsync(
+        IRequestMessage message1,
+        IResponseHandler handler1,
+        IRequestMessage message2,
+        IResponseHandler handler2)
+    {
+        await _sendLock.WaitAsync().ConfigureAwait(false);
+
+        try
+        {
+            _messages.Enqueue(message1);
+            _messages.Enqueue(message2);
+            _responsePipeline.Enqueue(handler1);
+            _responsePipeline.Enqueue(handler2);
+        }
+        finally
+        {
+            _sendLock.Release();
+        }
+    }
+
     public Task ResetAsync()
     {
         return BoltProtocol.ResetAsync(this);
@@ -252,7 +277,6 @@ internal sealed class SocketConnection : IConnection
     public IServerInfo Server => _serverInfo;
 
     public bool UtcEncodedDateTime { get; private set; }
-    public DriverContext Context { get; }
     public IAuthToken AuthToken { get; private set; }
     public bool TelemetryEnabled { get; set; }
 
@@ -264,7 +288,7 @@ internal sealed class SocketConnection : IConnection
             newConnId);
 
         _id = newConnId;
-        
+
         if (_logger is PrefixLogger logger)
         {
             logger.Prefix = FormatPrefix(_id);
@@ -418,7 +442,10 @@ internal sealed class SocketConnection : IConnection
         return BoltProtocol.BeginTransactionAsync(this, beginParams);
     }
 
-    public Task<IResultCursor> RunInExplicitTransactionAsync(Query query, bool reactive, long fetchSize,
+    public Task<IResultCursor> RunInExplicitTransactionAsync(
+        Query query,
+        bool reactive,
+        long fetchSize,
         IInternalAsyncTransaction transaction)
     {
         return BoltProtocol.RunInExplicitTransactionAsync(this, query, reactive, fetchSize, transaction);

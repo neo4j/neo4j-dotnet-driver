@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -24,18 +22,11 @@ internal interface IResponsePipeline
 {
     bool HasNoPendingMessages { get; }
     bool IsHealthy(out Exception error);
-
     void Enqueue(IResponseHandler handler);
-
     void OnSuccess(IDictionary<string, object> metadata);
-
     void OnRecord(object[] fieldValues);
-
     void OnFailure(string code, string message);
-
     void OnIgnored();
-
     void AssertNoFailure();
-
     void AssertNoProtocolViolation();
 }

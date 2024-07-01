@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -17,10 +15,13 @@
 
 using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol;
 
 internal class ProtocolResponse
 {
+    public string name { get; }
+    public object data { get; set; }
+
     public ProtocolResponse(string newName, string newId)
     {
         data = new ResponseType();
@@ -39,9 +40,6 @@ internal class ProtocolResponse
         name = newName;
         data = null;
     }
-
-    public string name { get; }
-    public object data { get; set; }
 
     public string Encode()
     {

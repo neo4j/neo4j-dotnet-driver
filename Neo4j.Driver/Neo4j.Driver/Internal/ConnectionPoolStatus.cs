@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -28,5 +26,10 @@ internal sealed class ConnectionPoolStatus
     private ConnectionPoolStatus(PoolStatus code)
     {
         _code = code;
+    }
+
+    public override string ToString()
+    {
+        return $"{nameof(ConnectionPoolStatus)} {{{_code}}}";
     }
 }

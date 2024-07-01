@@ -1,7 +1,5 @@
 // Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -19,22 +17,21 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Xunit;
 
-namespace Neo4j.Driver.Simple.Internal
+namespace Neo4j.Driver.Tests.Simple.Internal;
+
+public static class InternalTransactionTests
 {
-    public static class InternalTransactionTests
+    public class TransactionConfig
     {
-        public class TransactionConfig
+        [Fact]
+        public void ShouldDelegateToAsyncTransaction()
         {
-            [Fact]
-            public void ShouldDelegateToAsyncTransaction()
-            {
-                var asyncTx = new Mock<IInternalAsyncTransaction>();
-                var tx = new InternalTransaction(asyncTx.Object, Mock.Of<BlockingExecutor>());
+            var asyncTx = new Mock<IInternalAsyncTransaction>();
+            var tx = new InternalTransaction(asyncTx.Object, Mock.Of<BlockingExecutor>());
 
-                var config = tx.TransactionConfig;
+            var config = tx.TransactionConfig;
 
-                asyncTx.Verify(x => x.TransactionConfig, Times.Once);
-            }
+            asyncTx.Verify(x => x.TransactionConfig, Times.Once);
         }
     }
 }

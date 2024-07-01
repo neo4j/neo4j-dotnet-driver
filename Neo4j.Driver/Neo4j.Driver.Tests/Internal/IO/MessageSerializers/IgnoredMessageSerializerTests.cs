@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -16,24 +14,25 @@
 // limitations under the License.
 
 using FluentAssertions;
+using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.IO.MessageSerializers
-{
-    public class IgnoredMessageSerializerTests
-    {
-        [Fact]
-        public void StructTagsAreSuccess()
-        {
-            IgnoredMessageSerializer.Instance.ReadableStructs.Should().ContainEquivalentOf(MessageFormat.MsgIgnored);
-        }
+namespace Neo4j.Driver.Tests.Internal.IO.MessageSerializers;
 
-        [Fact]
-        public void ShouldReturnIgnoredMessage()
-        {
-            var message = IgnoredMessageSerializer.Instance.Deserialize(null);
-            message.Should().Be(IgnoredMessage.Instance);
-        }
+public class IgnoredMessageSerializerTests
+{
+    [Fact]
+    public void StructTagsAreSuccess()
+    {
+        IgnoredMessageSerializer.Instance.ReadableStructs.Should().ContainEquivalentOf(MessageFormat.MsgIgnored);
+    }
+
+    [Fact]
+    public void ShouldReturnIgnoredMessage()
+    {
+        var message = IgnoredMessageSerializer.Instance.Deserialize(null);
+        message.Should().Be(IgnoredMessage.Instance);
     }
 }

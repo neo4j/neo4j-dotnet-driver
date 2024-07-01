@@ -1,7 +1,5 @@
 // Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -21,31 +19,30 @@ using Moq;
 using Neo4j.Driver.Internal;
 using Xunit;
 
-namespace Neo4j.Driver.Reactive
+namespace Neo4j.Driver.Tests.Reactive;
+
+public class DriverExtensionsTests
 {
-    public class DriverExtensionsTests
+    [Fact]
+    public void ShouldThrowIfDriverIsNotOfExpectedType()
     {
-        [Fact]
-        public void ShouldThrowIfDriverIsNotOfExpectedType()
-        {
-            Action act = () => NewSession(Mock.Of<IDriver>());
+        Action act = () => NewSession(Mock.Of<IDriver>());
 
-            act.Should().Throw<ArgumentOutOfRangeException>();
-        }
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
 
-        [Fact]
-        public void ShouldReturnRxSession()
-        {
-            var driver = GraphDatabase.Driver("bolt://localhost");
+    [Fact]
+    public void ShouldReturnRxSession()
+    {
+        var driver = GraphDatabase.Driver("bolt://localhost");
 
-            NewSession(driver).Should().BeOfType<InternalRxSession>();
-        }
+        NewSession(driver).Should().BeOfType<InternalRxSession>();
+    }
 
-        private static IRxSession NewSession(IDriver driver)
-        {
-            return driver.RxSession(
-                o =>
-                    o.WithDefaultAccessMode(AccessMode.Write).WithBookmarks(Bookmarks.From("1", "3")));
-        }
+    private static IRxSession NewSession(IDriver driver)
+    {
+        return driver.RxSession(
+            o =>
+                o.WithDefaultAccessMode(AccessMode.Write).WithBookmarks(Bookmarks.From("1", "3")));
     }
 }

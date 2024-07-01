@@ -1,7 +1,5 @@
 // Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -44,7 +42,7 @@ internal static class CollectionExtensions
 
     public static T GetValue<T>(this IDictionary<string, object> dict, string key, T defaultValue)
     {
-        return dict.ContainsKey(key) ? (T)dict[key] : defaultValue;
+        return dict.TryGetValue(key, out var value) ? (T)value : defaultValue;
     }
 
     public static bool TryGetValue<T>(this IDictionary<string, object> dict, string key, T defaultValue, out T value)

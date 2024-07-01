@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -22,7 +20,7 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Types;
 
-internal class Node : INode
+internal sealed class Node : INode
 {
     public Node(long id, IReadOnlyList<string> labels, IReadOnlyDictionary<string, object> prop)
     {
@@ -45,6 +43,26 @@ internal class Node : INode
 
     public string ElementId { get; }
     public IReadOnlyList<string> Labels { get; }
+
+    /// <inheritdoc />
+    public T Get<T>(string key)
+    {
+        return Properties[key].As<T>();
+    }
+
+    /// <inheritdoc />
+    public bool TryGet<T>(string key, out T value)
+    {
+        if (Properties.TryGetValue(key, out var obj))
+        {
+            value = obj.As<T>();
+            return true;
+        }
+
+        value = default;
+        return false;
+    }
+
     public IReadOnlyDictionary<string, object> Properties { get; }
     public object this[string key] => Properties[key];
 

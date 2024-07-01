@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -16,11 +14,13 @@
 // limitations under the License.
 
 using System.Threading.Tasks;
+using Neo4j.Driver.Tests.TestBackend.Protocol.JsonConverters;
+using Neo4j.Driver.Tests.TestBackend.Transaction;
 using Newtonsoft.Json;
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.Session;
 
-internal class SessionBeginTransaction : IProtocolObject
+internal class SessionBeginTransaction : ProtocolObject
 {
     public SessionBeginTransactionType data { get; set; } = new();
 
@@ -35,7 +35,7 @@ internal class SessionBeginTransaction : IProtocolObject
                 transaction,
                 async cursor =>
                 {
-                    var result = ProtocolObjectFactory.CreateObject<Result>();
+                    var result = ProtocolObjectFactory.CreateObject<Result.Result>();
                     result.ResultCursor = cursor;
 
                     return await Task.FromResult(result.uniqueId);

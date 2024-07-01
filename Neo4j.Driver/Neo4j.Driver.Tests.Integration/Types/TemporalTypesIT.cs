@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -22,9 +20,11 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Neo4j.Driver.IntegrationTests.Direct;
 using Neo4j.Driver.IntegrationTests.Internals;
-using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Helpers;
 using Xunit.Abstractions;
 using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
+
+#pragma warning disable CS0618 // Type or member is obsolete - but we still test obsolete members
 
 namespace Neo4j.Driver.IntegrationTests.Types;
 

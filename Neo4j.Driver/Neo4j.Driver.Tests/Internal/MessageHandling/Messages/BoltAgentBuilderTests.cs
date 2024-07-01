@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -19,21 +17,20 @@ using FluentAssertions;
 using Neo4j.Driver.Internal.Messaging.Utils;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling.Messages
+namespace Neo4j.Driver.Tests.Internal.MessageHandling.Messages;
+
+public class BoltAgentBuilderTests
 {
-    public class BoltAgentBuilderTests
+    [Fact]
+    public void ShouldReturnBoltAgent()
     {
-        [Fact]
-        public void ShouldReturnBoltAgent()
-        {
-            var agent = BoltAgentBuilder.Agent;
-            agent.Should()
-                .HaveCount(3)
-                .And.ContainKey("platform")
-                .And.ContainKey("language_details")
-                .And.ContainKey("product")
-                .WhichValue.Should()
-                .MatchRegex(@"^neo4j-dotnet/\d\.\d+\.\d+$");
-        }
+        var agent = BoltAgentBuilder.Agent;
+        agent.Should()
+            .HaveCount(3)
+            .And.ContainKey("platform")
+            .And.ContainKey("language_details")
+            .And.ContainKey("product")
+            .WhichValue.Should()
+            .MatchRegex(@"^neo4j-dotnet/\d\.\d+\.\d+$");
     }
 }

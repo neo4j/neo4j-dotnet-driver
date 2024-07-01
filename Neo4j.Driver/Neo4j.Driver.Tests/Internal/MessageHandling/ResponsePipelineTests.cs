@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -20,401 +18,401 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal.Logging;
+using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
 using Xunit;
 
-namespace Neo4j.Driver.Internal.MessageHandling
+namespace Neo4j.Driver.Tests.Internal.MessageHandling;
+
+public class ResponsePipelineTests
 {
-    public class ResponsePipelineTests
+    [Fact]
+    public void ShouldStartWithNoPendingMessages()
+    {
+        var pipeline = new ResponsePipeline(null);
+
+        pipeline.HasNoPendingMessages.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ShouldThrowOnCurrentIfNoPendingMessages()
+    {
+        var pipeline = new ResponsePipeline(null);
+
+        var exc = Record.Exception(() => pipeline.Peek());
+
+        exc.Should().BeOfType<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void ShouldThrowIfEnqueuedHandlerIsNull()
+    {
+        var pipeline = new ResponsePipeline(null);
+
+        var exc = Record.Exception(() => pipeline.Enqueue(null));
+
+        exc.Should()
+            .BeOfType<ArgumentNullException>()
+            .Which.ParamName.Should()
+            .Be("handler");
+    }
+
+    [Fact]
+    public void ShouldEnqueueResponseHandlers()
+    {
+        var handler = new Mock<IResponseHandler>();
+        var pipeline = new ResponsePipeline(null);
+
+        pipeline.Enqueue(handler.Object);
+
+        pipeline.HasNoPendingMessages.Should().BeFalse();
+        pipeline.Peek().Should().Be(handler.Object);
+    }
+
+    [Fact]
+    public void ShouldDequeueResponseHandlers()
+    {
+        var handler = new Mock<IResponseHandler>();
+        var pipeline = new ResponsePipeline(null);
+
+        pipeline.Enqueue(handler.Object);
+        pipeline.HasNoPendingMessages.Should().BeFalse();
+
+        pipeline.Dequeue();
+        pipeline.HasNoPendingMessages.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ShouldDequeueResponseHandlersInOrder()
+    {
+        var handler1 = new Mock<IResponseHandler>();
+        var handler2 = new Mock<IResponseHandler>();
+        var pipeline = new ResponsePipeline(null);
+
+        pipeline.Enqueue(handler1.Object);
+        pipeline.Enqueue(handler2.Object);
+
+        pipeline.HasNoPendingMessages.Should().BeFalse();
+        pipeline.Peek().Should().Be(handler1.Object);
+        pipeline.Dequeue();
+
+        pipeline.HasNoPendingMessages.Should().BeFalse();
+        pipeline.Peek().Should().Be(handler2.Object);
+        pipeline.Dequeue();
+
+        pipeline.HasNoPendingMessages.Should().BeTrue();
+    }
+
+    private static ResponsePipeline CreatePipelineWithHandler(ILogger logger = null)
+    {
+        var pipeline = new ResponsePipeline(logger ?? NullLogger.Instance);
+
+        var handler = new Mock<IResponseHandler>();
+        pipeline.Enqueue(handler.Object);
+
+        return pipeline;
+    }
+
+    public class OnSuccessAsync
     {
         [Fact]
-        public void ShouldStartWithNoPendingMessages()
+        public void ShouldLog()
         {
-            var pipeline = new ResponsePipeline(null);
+            var log = new Mock<ILogger>();
+            log.Setup(x => x.IsDebugEnabled()).Returns(true);
+
+            var pipeline = CreatePipelineWithHandler(log.Object);
+            var metadata = new Dictionary<string, object> { { "x", 1 }, { "y", true } };
+
+            pipeline.OnSuccess(metadata);
+
+            log.Verify(x => x.Debug("S: {0}", It.Is<SuccessMessage>(m => m.Meta.Equals(metadata))), Times.Once);
+        }
+
+        [Fact]
+        public void ShouldNotLogIfDebugDisabled()
+        {
+            var log = new Mock<ILogger>();
+            log.Setup(x => x.IsDebugEnabled()).Returns(false);
+
+            var pipeline = CreatePipelineWithHandler(log.Object);
+            var metadata = new Dictionary<string, object> { { "x", 1 }, { "y", true } };
+
+            pipeline.OnSuccess(metadata);
+
+            log.Verify(x => x.Debug("S: {0}", It.IsAny<object[]>()), Times.Never);
+        }
+
+        [Fact]
+        public void ShouldDequeue()
+        {
+            var pipeline = CreatePipelineWithHandler();
+            var metadata = new Dictionary<string, object> { { "x", 1 }, { "y", true } };
+
+            pipeline.HasNoPendingMessages.Should().BeFalse();
+
+            pipeline.OnSuccess(metadata);
 
             pipeline.HasNoPendingMessages.Should().BeTrue();
         }
 
         [Fact]
-        public void ShouldThrowOnCurrentIfNoPendingMessages()
+        public void ShouldInvokeHandler()
         {
-            var pipeline = new ResponsePipeline(null);
+            var pipeline = new ResponsePipeline(NullLogger.Instance);
 
-            var exc = Record.Exception(() => pipeline.Peek());
+            var handler = new Mock<IResponseHandler>();
+            pipeline.Enqueue(handler.Object);
 
-            exc.Should().BeOfType<InvalidOperationException>();
+            var metadata = new Dictionary<string, object> { { "x", 1 }, { "y", true } };
+            pipeline.OnSuccess(metadata);
+
+            handler.Verify(x => x.OnSuccess(metadata), Times.Once);
+        }
+    }
+
+    public class OnRecordAsync
+    {
+        [Fact]
+        public void ShouldLog()
+        {
+            var log = new Mock<ILogger>();
+            log.Setup(x => x.IsDebugEnabled()).Returns(true);
+
+            var pipeline = CreatePipelineWithHandler(log.Object);
+            var fields = new object[] { 1, true, "string" };
+
+            pipeline.OnRecord(fields);
+
+            log.Verify(x => x.Debug("S: {0}", It.Is<RecordMessage>(m => m.Fields.Equals(fields))), Times.Once);
         }
 
         [Fact]
-        public void ShouldThrowIfEnqueuedHandlerIsNull()
+        public void ShouldNotLogIfDebugDisabled()
         {
-            var pipeline = new ResponsePipeline(null);
+            var log = new Mock<ILogger>();
+            log.Setup(x => x.IsDebugEnabled()).Returns(false);
 
-            var exc = Record.Exception(() => pipeline.Enqueue(null));
+            var pipeline = CreatePipelineWithHandler(log.Object);
+            var fields = new object[] { 1, true, "string" };
+
+            pipeline.OnRecord(fields);
+
+            log.Verify(x => x.Debug("S: {0}", It.IsAny<object[]>()), Times.Never);
+        }
+
+        [Fact]
+        public void ShouldNotDequeue()
+        {
+            var pipeline = CreatePipelineWithHandler();
+            var fields = new object[] { 1, true, "string" };
+
+            pipeline.HasNoPendingMessages.Should().BeFalse();
+            pipeline.OnRecord(fields);
+
+            pipeline.HasNoPendingMessages.Should().BeFalse();
+            pipeline.OnRecord(fields);
+
+            pipeline.HasNoPendingMessages.Should().BeFalse();
+        }
+
+        [Fact]
+        public void ShouldInvokeHandler()
+        {
+            var pipeline = new ResponsePipeline(NullLogger.Instance);
+
+            var handler = new Mock<IResponseHandler>();
+            pipeline.Enqueue(handler.Object);
+
+            var fields = new object[] { 1, true, "string" };
+            pipeline.OnRecord(fields);
+
+            handler.Verify(x => x.OnRecord(fields), Times.Once);
+        }
+    }
+
+    public class OnFailureAsync
+    {
+        [Fact]
+        public void ShouldLog()
+        {
+            var log = new Mock<ILogger>();
+            log.Setup(x => x.IsDebugEnabled()).Returns(true);
+
+            var pipeline = CreatePipelineWithHandler(log.Object);
+            var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
+
+            pipeline.OnFailure(code, message);
+
+            log.Verify(
+                x => x.Debug(
+                    "S: {0}",
+                    It.Is<FailureMessage>(m => m.Code.Equals(code) && m.Message.Equals(message))),
+                Times.Once);
+        }
+
+        [Fact]
+        public void ShouldNotLogIfDebugDisabled()
+        {
+            var log = new Mock<ILogger>();
+            log.Setup(x => x.IsDebugEnabled()).Returns(false);
+
+            var pipeline = CreatePipelineWithHandler(log.Object);
+            var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
+
+            pipeline.OnFailure(code, message);
+
+            log.Verify(x => x.Debug("S: {0}", It.IsAny<object[]>()), Times.Never);
+        }
+
+        [Fact]
+        public void ShouldDequeue()
+        {
+            var pipeline = CreatePipelineWithHandler();
+            var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
+
+            pipeline.HasNoPendingMessages.Should().BeFalse();
+
+            pipeline.OnFailure(code, message);
+
+            pipeline.HasNoPendingMessages.Should().BeTrue();
+        }
+
+        [Fact]
+        public void ShouldInvokeHandler()
+        {
+            var pipeline = new ResponsePipeline(NullLogger.Instance);
+            var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
+
+            var handler = new Mock<IResponseHandler>();
+            pipeline.Enqueue(handler.Object);
+
+            pipeline.OnFailure(code, message);
+
+            handler.Verify(
+                x => x.OnFailure(It.IsNotNull<ResponsePipelineError>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public void ShouldRecordErrorAndThrowOnAssertNoFailure()
+        {
+            var pipeline = CreatePipelineWithHandler();
+            var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
+
+            pipeline.OnFailure(code, message);
+
+            var exc = Record.Exception(() => pipeline.AssertNoFailure());
 
             exc.Should()
-                .BeOfType<ArgumentNullException>()
-                .Which.ParamName.Should()
-                .Be("handler");
+                .BeOfType<TransientException>()
+                .Which
+                .Message.Should()
+                .Be("transaction terminated.");
         }
 
         [Fact]
-        public void ShouldEnqueueResponseHandlers()
+        public void ShouldRecordErrorAndNotThrowOnAssertNoProtocolViolation()
         {
-            var handler = new Mock<IResponseHandler>();
-            var pipeline = new ResponsePipeline(null);
+            var pipeline = CreatePipelineWithHandler();
+            var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
 
-            pipeline.Enqueue(handler.Object);
+            pipeline.OnFailure(code, message);
 
-            pipeline.HasNoPendingMessages.Should().BeFalse();
-            pipeline.Peek().Should().Be(handler.Object);
+            var exc = Record.Exception(() => pipeline.AssertNoProtocolViolation());
+
+            exc.Should().BeNull();
         }
 
         [Fact]
-        public void ShouldDequeueResponseHandlers()
+        public void ShouldRecordErrorAndThrowOnAssertNoProtocolViolation()
         {
-            var handler = new Mock<IResponseHandler>();
-            var pipeline = new ResponsePipeline(null);
+            var pipeline = new ResponsePipeline(NullLogger.Instance);
+            var (code, message) = ("Neo.ClientError.Request.Invalid", "protocol exception.");
 
+            var handler = new Mock<IResponseHandler>();
             pipeline.Enqueue(handler.Object);
+
+            pipeline.OnFailure(code, message);
+
+            var exc = Record.Exception(() => pipeline.AssertNoProtocolViolation());
+
+            exc.Should()
+                .BeOfType<ProtocolException>()
+                .Which
+                .Message.Should()
+                .Be("protocol exception.");
+        }
+    }
+
+    public class OnIgnoredAsync
+    {
+        [Fact]
+        public void ShouldLog()
+        {
+            var log = new Mock<ILogger>();
+            log.Setup(x => x.IsDebugEnabled()).Returns(true);
+
+            var pipeline = CreatePipelineWithHandler(log.Object);
+
+            pipeline.OnIgnored();
+
+            log.Verify(x => x.Debug("S: {0}", It.IsAny<IgnoredMessage>()), Times.Once);
+        }
+
+        [Fact]
+        public void ShouldNotLogIfDebugDisabled()
+        {
+            var log = new Mock<ILogger>();
+            log.Setup(x => x.IsDebugEnabled()).Returns(false);
+
+            var pipeline = CreatePipelineWithHandler(log.Object);
+
+            pipeline.OnIgnored();
+
+            log.Verify(x => x.Debug("S: {0}", It.IsAny<object[]>()), Times.Never);
+        }
+
+        [Fact]
+        public void ShouldDequeue()
+        {
+            var pipeline = CreatePipelineWithHandler();
+
             pipeline.HasNoPendingMessages.Should().BeFalse();
 
-            pipeline.Dequeue();
+            pipeline.OnIgnored();
+
             pipeline.HasNoPendingMessages.Should().BeTrue();
         }
 
         [Fact]
-        public void ShouldDequeueResponseHandlersInOrder()
+        public void ShouldInvokeHandler()
         {
-            var handler1 = new Mock<IResponseHandler>();
-            var handler2 = new Mock<IResponseHandler>();
-            var pipeline = new ResponsePipeline(null);
-
-            pipeline.Enqueue(handler1.Object);
-            pipeline.Enqueue(handler2.Object);
-
-            pipeline.HasNoPendingMessages.Should().BeFalse();
-            pipeline.Peek().Should().Be(handler1.Object);
-            pipeline.Dequeue();
-
-            pipeline.HasNoPendingMessages.Should().BeFalse();
-            pipeline.Peek().Should().Be(handler2.Object);
-            pipeline.Dequeue();
-
-            pipeline.HasNoPendingMessages.Should().BeTrue();
-        }
-
-        private static ResponsePipeline CreatePipelineWithHandler(ILogger logger = null)
-        {
-            var pipeline = new ResponsePipeline(logger ?? NullLogger.Instance);
+            var pipeline = new ResponsePipeline(NullLogger.Instance);
 
             var handler = new Mock<IResponseHandler>();
             pipeline.Enqueue(handler.Object);
 
-            return pipeline;
+            pipeline.OnIgnored();
+
+            handler.Verify(x => x.OnIgnored(), Times.Once);
         }
 
-        public class OnSuccessAsync
+        [Fact]
+        public void ShouldInvokeOnFailureAsyncOfHandlerIfHasRecordedError()
         {
-            [Fact]
-            public void ShouldLog()
-            {
-                var log = new Mock<ILogger>();
-                log.Setup(x => x.IsDebugEnabled()).Returns(true);
+            var pipeline = CreatePipelineWithHandler();
+            var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
+            pipeline.OnFailure(code, message);
 
-                var pipeline = CreatePipelineWithHandler(log.Object);
-                var metadata = new Dictionary<string, object> { { "x", 1 }, { "y", true } };
+            var handler = new Mock<IResponseHandler>();
+            pipeline.Enqueue(handler.Object);
 
-                pipeline.OnSuccess(metadata);
+            pipeline.OnIgnored();
 
-                log.Verify(x => x.Debug("S: {0}", It.Is<SuccessMessage>(m => m.Meta.Equals(metadata))), Times.Once);
-            }
-
-            [Fact]
-            public void ShouldNotLogIfDebugDisabled()
-            {
-                var log = new Mock<ILogger>();
-                log.Setup(x => x.IsDebugEnabled()).Returns(false);
-
-                var pipeline = CreatePipelineWithHandler(log.Object);
-                var metadata = new Dictionary<string, object> { { "x", 1 }, { "y", true } };
-
-                pipeline.OnSuccess(metadata);
-
-                log.Verify(x => x.Debug("S: {0}", It.IsAny<object[]>()), Times.Never);
-            }
-
-            [Fact]
-            public void ShouldDequeue()
-            {
-                var pipeline = CreatePipelineWithHandler();
-                var metadata = new Dictionary<string, object> { { "x", 1 }, { "y", true } };
-
-                pipeline.HasNoPendingMessages.Should().BeFalse();
-
-                pipeline.OnSuccess(metadata);
-
-                pipeline.HasNoPendingMessages.Should().BeTrue();
-            }
-
-            [Fact]
-            public void ShouldInvokeHandler()
-            {
-                var pipeline = new ResponsePipeline(NullLogger.Instance);
-
-                var handler = new Mock<IResponseHandler>();
-                pipeline.Enqueue(handler.Object);
-
-                var metadata = new Dictionary<string, object> { { "x", 1 }, { "y", true } };
-                pipeline.OnSuccess(metadata);
-
-                handler.Verify(x => x.OnSuccess(metadata), Times.Once);
-            }
-        }
-
-        public class OnRecordAsync
-        {
-            [Fact]
-            public void ShouldLog()
-            {
-                var log = new Mock<ILogger>();
-                log.Setup(x => x.IsDebugEnabled()).Returns(true);
-
-                var pipeline = CreatePipelineWithHandler(log.Object);
-                var fields = new object[] { 1, true, "string" };
-
-                pipeline.OnRecord(fields);
-
-                log.Verify(x => x.Debug("S: {0}", It.Is<RecordMessage>(m => m.Fields.Equals(fields))), Times.Once);
-            }
-
-            [Fact]
-            public void ShouldNotLogIfDebugDisabled()
-            {
-                var log = new Mock<ILogger>();
-                log.Setup(x => x.IsDebugEnabled()).Returns(false);
-
-                var pipeline = CreatePipelineWithHandler(log.Object);
-                var fields = new object[] { 1, true, "string" };
-
-                pipeline.OnRecord(fields);
-
-                log.Verify(x => x.Debug("S: {0}", It.IsAny<object[]>()), Times.Never);
-            }
-
-            [Fact]
-            public void ShouldNotDequeue()
-            {
-                var pipeline = CreatePipelineWithHandler();
-                var fields = new object[] { 1, true, "string" };
-
-                pipeline.HasNoPendingMessages.Should().BeFalse();
-                pipeline.OnRecord(fields);
-
-                pipeline.HasNoPendingMessages.Should().BeFalse();
-                pipeline.OnRecord(fields);
-
-                pipeline.HasNoPendingMessages.Should().BeFalse();
-            }
-
-            [Fact]
-            public void ShouldInvokeHandler()
-            {
-                var pipeline = new ResponsePipeline(NullLogger.Instance);
-
-                var handler = new Mock<IResponseHandler>();
-                pipeline.Enqueue(handler.Object);
-
-                var fields = new object[] { 1, true, "string" };
-                pipeline.OnRecord(fields);
-
-                handler.Verify(x => x.OnRecord(fields), Times.Once);
-            }
-        }
-
-        public class OnFailureAsync
-        {
-            [Fact]
-            public void ShouldLog()
-            {
-                var log = new Mock<ILogger>();
-                log.Setup(x => x.IsDebugEnabled()).Returns(true);
-
-                var pipeline = CreatePipelineWithHandler(log.Object);
-                var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
-
-                pipeline.OnFailure(code, message);
-
-                log.Verify(
-                    x => x.Debug(
-                        "S: {0}",
-                        It.Is<FailureMessage>(m => m.Code.Equals(code) && m.Message.Equals(message))),
-                    Times.Once);
-            }
-
-            [Fact]
-            public void ShouldNotLogIfDebugDisabled()
-            {
-                var log = new Mock<ILogger>();
-                log.Setup(x => x.IsDebugEnabled()).Returns(false);
-
-                var pipeline = CreatePipelineWithHandler(log.Object);
-                var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
-
-                pipeline.OnFailure(code, message);
-
-                log.Verify(x => x.Debug("S: {0}", It.IsAny<object[]>()), Times.Never);
-            }
-
-            [Fact]
-            public void ShouldDequeue()
-            {
-                var pipeline = CreatePipelineWithHandler();
-                var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
-
-                pipeline.HasNoPendingMessages.Should().BeFalse();
-
-                pipeline.OnFailure(code, message);
-
-                pipeline.HasNoPendingMessages.Should().BeTrue();
-            }
-
-            [Fact]
-            public void ShouldInvokeHandler()
-            {
-                var pipeline = new ResponsePipeline(NullLogger.Instance);
-                var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
-
-                var handler = new Mock<IResponseHandler>();
-                pipeline.Enqueue(handler.Object);
-
-                pipeline.OnFailure(code, message);
-
-                handler.Verify(
-                    x => x.OnFailure(It.IsNotNull<ResponsePipelineError>()),
-                    Times.Once);
-            }
-
-            [Fact]
-            public void ShouldRecordErrorAndThrowOnAssertNoFailure()
-            {
-                var pipeline = CreatePipelineWithHandler();
-                var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
-
-                pipeline.OnFailure(code, message);
-
-                var exc = Record.Exception(() => pipeline.AssertNoFailure());
-
-                exc.Should()
-                    .BeOfType<TransientException>()
-                    .Which
-                    .Message.Should()
-                    .Be("transaction terminated.");
-            }
-
-            [Fact]
-            public void ShouldRecordErrorAndNotThrowOnAssertNoProtocolViolation()
-            {
-                var pipeline = CreatePipelineWithHandler();
-                var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
-
-                pipeline.OnFailure(code, message);
-
-                var exc = Record.Exception(() => pipeline.AssertNoProtocolViolation());
-
-                exc.Should().BeNull();
-            }
-
-            [Fact]
-            public void ShouldRecordErrorAndThrowOnAssertNoProtocolViolation()
-            {
-                var pipeline = new ResponsePipeline(NullLogger.Instance);
-                var (code, message) = ("Neo.ClientError.Request.Invalid", "protocol exception.");
-
-                var handler = new Mock<IResponseHandler>();
-                pipeline.Enqueue(handler.Object);
-
-                pipeline.OnFailure(code, message);
-
-                var exc = Record.Exception(() => pipeline.AssertNoProtocolViolation());
-
-                exc.Should()
-                    .BeOfType<ProtocolException>()
-                    .Which
-                    .Message.Should()
-                    .Be("protocol exception.");
-            }
-        }
-
-        public class OnIgnoredAsync
-        {
-            [Fact]
-            public void ShouldLog()
-            {
-                var log = new Mock<ILogger>();
-                log.Setup(x => x.IsDebugEnabled()).Returns(true);
-
-                var pipeline = CreatePipelineWithHandler(log.Object);
-
-                pipeline.OnIgnored();
-
-                log.Verify(x => x.Debug("S: {0}", It.IsAny<IgnoredMessage>()), Times.Once);
-            }
-
-            [Fact]
-            public void ShouldNotLogIfDebugDisabled()
-            {
-                var log = new Mock<ILogger>();
-                log.Setup(x => x.IsDebugEnabled()).Returns(false);
-
-                var pipeline = CreatePipelineWithHandler(log.Object);
-
-                pipeline.OnIgnored();
-
-                log.Verify(x => x.Debug("S: {0}", It.IsAny<object[]>()), Times.Never);
-            }
-
-            [Fact]
-            public void ShouldDequeue()
-            {
-                var pipeline = CreatePipelineWithHandler();
-
-                pipeline.HasNoPendingMessages.Should().BeFalse();
-
-                pipeline.OnIgnored();
-
-                pipeline.HasNoPendingMessages.Should().BeTrue();
-            }
-
-            [Fact]
-            public void ShouldInvokeHandler()
-            {
-                var pipeline = new ResponsePipeline(NullLogger.Instance);
-
-                var handler = new Mock<IResponseHandler>();
-                pipeline.Enqueue(handler.Object);
-
-                pipeline.OnIgnored();
-
-                handler.Verify(x => x.OnIgnored(), Times.Once);
-            }
-
-            [Fact]
-            public void ShouldInvokeOnFailureAsyncOfHandlerIfHasRecordedError()
-            {
-                var pipeline = CreatePipelineWithHandler();
-                var (code, message) = ("Neo.TransientError.Transaction.Terminated", "transaction terminated.");
-                pipeline.OnFailure(code, message);
-
-                var handler = new Mock<IResponseHandler>();
-                pipeline.Enqueue(handler.Object);
-
-                pipeline.OnIgnored();
-
-                handler.Verify(
-                    x => x.OnFailure(It.IsNotNull<ResponsePipelineError>()),
-                    Times.Once);
-            }
+            handler.Verify(
+                x => x.OnFailure(It.IsNotNull<ResponsePipelineError>()),
+                Times.Once);
         }
     }
 }

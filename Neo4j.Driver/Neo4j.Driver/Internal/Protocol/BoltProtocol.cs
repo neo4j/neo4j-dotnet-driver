@@ -1,7 +1,5 @@
 // Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -21,9 +19,10 @@ using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Internal.Protocol.Utility;
 using Neo4j.Driver.Internal.Result;
 
-namespace Neo4j.Driver.Internal;
+namespace Neo4j.Driver.Internal.Protocol;
 
 internal sealed class BoltProtocol : IBoltProtocol
 {
@@ -86,7 +85,7 @@ internal sealed class BoltProtocol : IBoltProtocol
             ? GetRoutingTableWithRouteMessageAsync(connection, database, sessionConfig?.ImpersonatedUser, bookmarks)
             : GetRoutingTableWithQueryAsync(connection, database, bookmarks);
     }
-    
+
     public async Task<IResultCursor> RunInAutoCommitTransactionAsync(
         IConnection connection,
         AutoCommitParams autoCommitParams,
@@ -116,7 +115,6 @@ internal sealed class BoltProtocol : IBoltProtocol
         var runHandler = _protocolHandlerFactory.NewRunResponseHandler(streamBuilder, summaryBuilder);
 
         await AddTelemetryAsync(connection, autoCommitParams.TransactionInfo).ConfigureAwait(false);
-        await connection.EnqueueAsync(runMessage, runHandler).ConfigureAwait(false);
 
         if (!autoCommitParams.Reactive)
         {
@@ -126,7 +124,11 @@ internal sealed class BoltProtocol : IBoltProtocol
                 streamBuilder,
                 summaryBuilder);
 
-            await connection.EnqueueAsync(pullMessage, pullHandler).ConfigureAwait(false);
+            await connection.EnqueueAsync(runMessage, runHandler, pullMessage, pullHandler).ConfigureAwait(false);
+        }
+        else
+        {
+            await connection.EnqueueAsync(runMessage, runHandler).ConfigureAwait(false);
         }
 
         await connection.SendAsync().ConfigureAwait(false);
@@ -165,17 +167,29 @@ internal sealed class BoltProtocol : IBoltProtocol
         var runMessage = _protocolMessageFactory.NewRunWithMetadataMessage(connection, query, null);
         var runHandler = _protocolHandlerFactory.NewRunResponseHandler(streamBuilder, summaryBuilder);
 
-        await connection.EnqueueAsync(runMessage, runHandler).ConfigureAwait(false);
-
         if (!reactive)
         {
             var pullMessage = _protocolMessageFactory.NewPullMessage(fetchSize);
             var pullHandler = _protocolHandlerFactory.NewPullResponseHandler(null, streamBuilder, summaryBuilder);
-            await connection.EnqueueAsync(pullMessage, pullHandler).ConfigureAwait(false);
+            await connection.EnqueueAsync(runMessage, runHandler, pullMessage, pullHandler).ConfigureAwait(false);
+        }
+        else
+        {
+            await connection.EnqueueAsync(runMessage, runHandler).ConfigureAwait(false);
         }
 
         await connection.SendAsync().ConfigureAwait(false);
         return streamBuilder.CreateCursor();
+    }
+
+    public Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker)
+    {
+        return _boltProtocolV3.CommitTransactionAsync(connection, bookmarksTracker);
+    }
+
+    public Task RollbackTransactionAsync(IConnection connection)
+    {
+        return _boltProtocolV3.RollbackTransactionAsync(connection);
     }
 
     private Task AddTelemetryAsync(IConnection connection, TransactionInfo info)
@@ -188,16 +202,6 @@ internal sealed class BoltProtocol : IBoltProtocol
         var message = _protocolMessageFactory.NewTelemetryMessage(connection, info);
         var handler = _protocolHandlerFactory.NewTelemetryResponseHandler(info);
         return connection.EnqueueAsync(message, handler);
-    }
-
-    public Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker)
-    {
-        return _boltProtocolV3.CommitTransactionAsync(connection, bookmarksTracker);
-    }
-
-    public Task RollbackTransactionAsync(IConnection connection)
-    {
-        return _boltProtocolV3.RollbackTransactionAsync(connection);
     }
 
     private async Task AuthenticateWithLogonAsync(

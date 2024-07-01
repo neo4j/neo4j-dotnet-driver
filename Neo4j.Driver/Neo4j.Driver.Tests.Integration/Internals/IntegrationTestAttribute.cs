@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -16,9 +14,16 @@
 // limitations under the License.
 
 using System;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
+using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal.Util;
 using Xunit;
+
+// disable this warning for the Skip property which comes from Xunit
+// ReSharper disable VirtualMemberCallInConstructor
 
 namespace Neo4j.Driver.IntegrationTests.Internals;
 
@@ -294,6 +299,32 @@ public sealed class RequireServerWithIPv6FactAttribute : RequireServerFactAttrib
             {
                 Skip = "IPv6 is disabled";
             }
+
+            if (string.IsNullOrEmpty(Skip))
+            {
+                var host = DefaultInstallation.BoltHost;
+                if (!CanResolveToIPv6(host))
+                {
+                    Skip = $"Hostname '{host}' cannot resolve to an IPv6 address";
+                }
+            }
+        }
+    }
+
+    private static bool CanResolveToIPv6(string hostname)
+    {
+        try
+        {
+            // Get host addresses
+            var hostAddresses = Dns.GetHostAddresses(hostname);
+
+            // Check if any of the addresses is an IPv6 address
+            return hostAddresses.Any(address => address.AddressFamily == AddressFamily.InterNetworkV6);
+        }
+        catch (Exception)
+        {
+            // If an exception occurs (like the hostname is not valid or not reachable), return false
+            return false;
         }
     }
 }

@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -17,46 +15,46 @@
 
 using System;
 using System.IO;
+using Neo4j.Driver.Internal.IO;
 
-namespace Neo4j.Driver.Internal.IO.Utils
+namespace Neo4j.Driver.Tests.Internal.IO.Utils;
+
+public class PackStreamWriterMachine
 {
-    public class PackStreamWriterMachine
+    private readonly MemoryStream _output;
+
+    internal PackStreamWriterMachine(Func<Stream, PackStreamWriter> writerFactory)
     {
-        private readonly MemoryStream _output;
-
-        internal PackStreamWriterMachine(Func<Stream, PackStreamWriter> writerFactory)
-        {
-            _output = new MemoryStream();
-            Writer = writerFactory(_output);
-        }
-
-        internal PackStreamWriter Writer { get; }
-
-        public void Reset()
-        {
-            _output.SetLength(0);
-        }
-
-        public byte[] GetOutput()
-        {
-            return _output.ToArray();
-        }
+        _output = new MemoryStream();
+        Writer = writerFactory(_output);
     }
 
-    public class PackStreamReaderMachine
+    internal PackStreamWriter Writer { get; }
+
+    public void Reset()
     {
-        private readonly MemoryStream _input;
-        private readonly PackStreamReader _reader;
+        _output.SetLength(0);
+    }
 
-        internal PackStreamReaderMachine(byte[] bytes, Func<MemoryStream, PackStreamReader> readerFactory)
-        {
-            _input = new MemoryStream(bytes);
-            _reader = readerFactory(_input);
-        }
+    public byte[] GetOutput()
+    {
+        return _output.ToArray();
+    }
+}
 
-        internal PackStreamReader Reader()
-        {
-            return _reader;
-        }
+public class PackStreamReaderMachine
+{
+    private readonly MemoryStream _input;
+    private readonly PackStreamReader _reader;
+
+    internal PackStreamReaderMachine(byte[] bytes, Func<MemoryStream, PackStreamReader> readerFactory)
+    {
+        _input = new MemoryStream(bytes);
+        _reader = readerFactory(_input);
+    }
+
+    internal PackStreamReader Reader()
+    {
+        return _reader;
     }
 }

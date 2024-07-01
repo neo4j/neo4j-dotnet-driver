@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 
 RUN apt update \
 	&& ln -fs /usr/share/zoneinfo/Europe/London /etc/localtime \
@@ -9,6 +9,10 @@ RUN apt update \
 RUN apt update \
 	&& apt install -y python3 \
 	&& rm -rf /var/lib/apt/lists/*
+
+# install .NET runtime 6.0.0
+RUN wget https://dot.net/v1/dotnet-install.sh
+RUN bash dotnet-install.sh --channel 6.0 --install-dir /usr/share/dotnet
 
 ENV PYTHON=python3
 ENV DOTNET_DRIVER_USING_LOCAL_SERVER=true

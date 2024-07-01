@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -15,11 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Neo4j.Driver.Tests.TestBackend;
+namespace Neo4j.Driver.Tests.TestBackend.Protocol.BookmarkManager;
 
-internal class BookmarksConsumerCompleted : IProtocolObject
+internal class BookmarksConsumerCompleted : ProtocolObject
 {
+#pragma warning disable CS0649 // field will only be assigned to during deserialization from JSON message
     public BookmarksConsumerCompletedDto data;
+#pragma warning restore CS0649
 
     public class BookmarksConsumerCompletedDto
     {
