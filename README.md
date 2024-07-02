@@ -96,3 +96,45 @@ var (result, _, _) = await driver.ExecutableQuery(query)
     .WithMap(record => new EntityDTO { id = record["id"].As<long>() })
     .ExecuteAsync();
 ```
+
+## Types
+
+Values in a record are currently exposed as of `object` type.
+The underlying types of these values are determined by their Cypher types.
+
+The mapping between driver types and Cypher types are listed in the table bellow:
+
+|  Cypher Type | Driver Type                 
+|-------------:|:----------------------------|
+|       *null* | null                        |
+|         List | IList< object >             |
+|          Map | IDictionary<string, object> |
+|      Boolean | boolean                     |
+|      Integer | long                        |
+|        Float | float                       |
+|       String | string                      |
+|    ByteArray | byte[]                      |
+|        Point | Point                       |
+|         Node | INode                       |
+| Relationship | IRelationship               |
+|         Path | IPath                       |
+
+To convert from `object` to the driver type, a helper method `ValueExtensions#As<T>` can be used:
+
+```csharp
+IRecord record = await result.SingleAsync();
+string name = record["name"].As<string>();
+```
+
+#### Temporal Types - Date and Time
+The mapping among the Cypher temporal types, driver types, and convertible CLR temporal types - DateTime, TimeSpan and DateTimeOffset - (via `IConvertible` interface) are as follows:
+
+|  Cypher Type  |  Driver Type  | Convertible CLR Type |
+|:-------------:|:-------------:|:--------------------:|
+|     Date      |   LocalDate   |DateTime, DateOnly(.NET6+)|
+|     Time      |  OffsetTime   |TimeOnly(.NET6+)|
+|   LocalTime   |   LocalTime   |  TimeSpan, DateTime  |
+|   DateTime    | ZonedDateTime |    DateTimeOffset    |
+| LocalDateTime | LocalDateTime |       DateTime       |
+|   Duration    |   Duration    |         ---          |
+
