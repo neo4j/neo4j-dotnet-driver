@@ -8,10 +8,11 @@ This document covers the usage of the driver; for contribution guidance, see [Co
 Neo4j publishes its .NET libraries to NuGet with the following targets:
 - [.NET Standard 2.0](https://learn.microsoft.com/en-us/dotnet/api/?view=netstandard-2.0), for more info: https://learn.microsoft.com/en-us/dotnet/standard/net-standard?tabs=net-standard-2-0
 - [.NET 6.0](https://learn.microsoft.com/en-us/dotnet/api/?view=net-6.0)
+- [.NET 8.0](https://learn.microsoft.com/en-us/dotnet/api/?view=net-8.0) as of 5.17
 
 To add the latest [NuGet package](https://www.nuget.org/packages/Neo4j.Driver):
 ```posh
-PM> dotnet add package Neo4j.Driver
+> dotnet add package Neo4j.Driver
 ```
 
 ### Versions
@@ -31,7 +32,7 @@ their respective packages with strong-name compliance. _Consider using the stron
 
 To add the strong-named version of the driver to your project using the NuGet Package Manager:
 ```posh
-PM> Install-Package Neo4j.Driver.Signed
+> Install-Package Neo4j.Driver.Signed
 ```
 
 ## Getting started
