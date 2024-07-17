@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Neo4j.Driver.Internal.Result;
@@ -67,6 +68,40 @@ internal class NotificationsCollector : IMetadataCollector<IList<INotification>>
             ? new InputPosition((int)offset, (int)line, (int)column)
             : null;
 
-        return new Notification(code, title, description, position, severity, category);
+        var gqlStatusCode = "03N42";
+        var gqlStatusDescription = description;
+        if (Notification.ParseSeverity(severity) == NotificationSeverity.Warning)
+        {
+            gqlStatusCode = "01N42";
+            if (gqlStatusDescription is null or "null")
+            {
+                gqlStatusDescription = "warning: unknown warning";
+            }
+        }
+        else
+        {
+            if (gqlStatusDescription is null or "null")
+            {
+                gqlStatusDescription = "info: unknown notification";
+            }
+        }
+
+        var diagnosticRecord = new Dictionary<string, object>(3)
+        {
+            ["OPERATION"] = "",
+            ["OPERATION_CODE"] = "0",
+            ["CURRENT_SCHEMA"] = "/"
+        };
+
+        return new Notification(
+            gqlStatusCode,
+            gqlStatusDescription,
+            diagnosticRecord,
+            code,
+            title,
+            description,
+            position,
+            severity,
+            category);
     }
 }

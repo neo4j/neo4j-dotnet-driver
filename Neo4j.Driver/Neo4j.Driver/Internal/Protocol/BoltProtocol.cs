@@ -122,7 +122,8 @@ internal sealed class BoltProtocol : IBoltProtocol
             var pullHandler = _protocolHandlerFactory.NewPullResponseHandler(
                 autoCommitParams.BookmarksTracker,
                 streamBuilder,
-                summaryBuilder);
+                summaryBuilder,
+                connection.Version < BoltProtocolVersion.V5_5);
 
             await connection.EnqueueAsync(runMessage, runHandler, pullMessage, pullHandler).ConfigureAwait(false);
         }
@@ -170,7 +171,12 @@ internal sealed class BoltProtocol : IBoltProtocol
         if (!reactive)
         {
             var pullMessage = _protocolMessageFactory.NewPullMessage(fetchSize);
-            var pullHandler = _protocolHandlerFactory.NewPullResponseHandler(null, streamBuilder, summaryBuilder);
+            var pullHandler = _protocolHandlerFactory.NewPullResponseHandler(
+                null,
+                streamBuilder,
+                summaryBuilder,
+                connection.Version < BoltProtocolVersion.V5_5);
+
             await connection.EnqueueAsync(runMessage, runHandler, pullMessage, pullHandler).ConfigureAwait(false);
         }
         else
@@ -302,7 +308,8 @@ internal sealed class BoltProtocol : IBoltProtocol
             var pullResponseHandler = _protocolHandlerFactory.NewPullResponseHandler(
                 bookmarksTracker,
                 streamBuilder,
-                summaryBuilder);
+                summaryBuilder,
+                connection.Version < BoltProtocolVersion.V5_5);
 
             await connection.EnqueueAsync(pullMessage, pullResponseHandler).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
@@ -322,7 +329,8 @@ internal sealed class BoltProtocol : IBoltProtocol
             var pullResponseHandler = _protocolHandlerFactory.NewPullResponseHandler(
                 bookmarksTracker,
                 streamBuilder,
-                summaryBuilder);
+                summaryBuilder,
+                connection.Version < BoltProtocolVersion.V5_5);
 
             await connection.EnqueueAsync(discardMessage, pullResponseHandler).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);

@@ -19,7 +19,7 @@ namespace Neo4j.Driver;
 /// Represents the category of server notifications surfaced by <see cref="INotification"/>.<br/> Used in
 /// conjunction with <see cref="NotificationSeverity"/>.
 /// </summary>
-public enum NotificationCategory
+public enum NotificationClassification
 {
     /// <summary>the <see cref="INotification"/>'s category is a value unknown to this driver version.</summary>
     Unknown,
@@ -52,4 +52,63 @@ public enum NotificationCategory
 
     /// <summary>Notification not covered by other categories.</summary>
     Generic
+}
+
+public struct NotificationCategory
+{
+    /// <summary>
+    /// Determines whether the specified <see cref="NotificationCategory"/> is equal to the current
+    /// <see cref="NotificationCategory"/>.
+    /// </summary>
+    public bool Equals(NotificationCategory other)
+    {
+        return _notificationClassification == other._notificationClassification;
+    }
+
+    /// <inheritdoc />
+    public override bool Equals(object obj)
+    {
+        return obj is NotificationCategory other && Equals(other);
+    }
+
+    /// <inheritdoc />
+    public override int GetHashCode()
+    {
+        return (int)_notificationClassification;
+    }
+
+    public static NotificationCategory Unknown => new(NotificationClassification.Unknown);
+    public static NotificationCategory Hint => new(NotificationClassification.Hint);
+    public static NotificationCategory Unrecognized => new(NotificationClassification.Unrecognized);
+    public static NotificationCategory Unsupported => new(NotificationClassification.Unsupported);
+    public static NotificationCategory Performance => new(NotificationClassification.Performance);
+    public static NotificationCategory Deprecation => new(NotificationClassification.Deprecation);
+    public static NotificationCategory Security => new(NotificationClassification.Security);
+    public static NotificationCategory Topology => new(NotificationClassification.Topology);
+    public static NotificationCategory Generic => new(NotificationClassification.Generic);
+
+    private NotificationClassification _notificationClassification;
+
+    public NotificationCategory(NotificationClassification notificationClassification)
+    {
+        _notificationClassification = notificationClassification;
+    }
+
+    // implicit casts to and from NotificationClassification
+    public static implicit operator NotificationClassification(NotificationCategory category) => category._notificationClassification;
+    public static implicit operator NotificationCategory(NotificationClassification notificationClassification) => new(notificationClassification);
+
+    /// <inheritdoc />
+    public override string ToString() => _notificationClassification.ToString();
+
+    public static bool operator ==(NotificationCategory a, NotificationCategory b)
+    {
+        return a._notificationClassification == b._notificationClassification;
+    }
+
+    // and the != operator
+    public static bool operator !=(NotificationCategory a, NotificationCategory b)
+    {
+        return a._notificationClassification != b._notificationClassification;
+    }
 }

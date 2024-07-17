@@ -51,7 +51,16 @@ public class NotificationsCollectorTests
 
     internal static IList<INotification> TestMetadataCollected => new List<INotification>
     {
-        new Notification("code1", "title1", "description1", new InputPosition(1, 2, 3), "severity1", "category1")
+        new Notification(
+            "gqlStatus",
+            "statusDescription",
+            null,
+            "code1",
+            "title1",
+            "description1",
+            new InputPosition(1, 2, 3),
+            "severity1",
+            "category1")
     };
 
     [Fact]
@@ -134,6 +143,14 @@ public class NotificationsCollectorTests
         collector.Collected.Should()
             .BeEquivalentTo(
                 new Notification(
+                    "03N42",
+                    "description1",
+                    new Dictionary<string, object>
+                    {
+                        ["OPERATION"] = "",
+                        ["OPERATION_CODE"] = "0",
+                        ["CURRENT_SCHEMA"] = "/"
+                    },
                     "code1",
                     "title1",
                     "description1",
@@ -176,6 +193,14 @@ public class NotificationsCollectorTests
         collector.Collected.Should()
             .BeEquivalentTo(
                 new Notification(
+                    "03N42",
+                    "description1",
+                    new Dictionary<string, object>
+                    {
+                        ["OPERATION"] = "",
+                        ["OPERATION_CODE"] = "0",
+                        ["CURRENT_SCHEMA"] = "/"
+                    },
                     "code1",
                     "title1",
                     "description1",
@@ -232,6 +257,14 @@ public class NotificationsCollectorTests
         collector.Collected.Should()
             .BeEquivalentTo(
                 new Notification(
+                    "03N42",
+                    "description1",
+                    new Dictionary<string, object>
+                    {
+                        ["OPERATION"] = "",
+                        ["OPERATION_CODE"] = "0",
+                        ["CURRENT_SCHEMA"] = "/"
+                    },
                     "code1",
                     "title1",
                     "description1",
@@ -239,45 +272,54 @@ public class NotificationsCollectorTests
                     "severity1",
                     null),
                 new Notification(
+                    "03N42",
+                    "description2",
+                    new Dictionary<string, object>
+                    {
+                        ["OPERATION"] = "",
+                        ["OPERATION_CODE"] = "0",
+                        ["CURRENT_SCHEMA"] = "/"
+                    },
                     "code2",
                     "title2",
                     "description2",
                     new InputPosition(4, 5, 0),
                     "severity2",
                     null));
-    }
+}
 
-    [Fact]
-    public void ShouldReturnSameCollected()
+[Fact]
+public void ShouldReturnSameCollected()
+{
+    var metadata = new Dictionary<string, object>
     {
-        var metadata = new Dictionary<string, object>
         {
+            Key, new List<object>
             {
-                Key, new List<object>
+                new Dictionary<string, object>
                 {
-                    new Dictionary<string, object>
+                    { "code", "code1" },
+                    { "title", "title1" },
+                    { "description", "description1" },
+                    { "severity", "severity1" },
                     {
-                        { "code", "code1" },
-                        { "title", "title1" },
-                        { "description", "description1" },
-                        { "severity", "severity1" },
+                        "position", new Dictionary<string, object>
                         {
-                            "position", new Dictionary<string, object>
-                            {
-                                { "offset", 1L },
-                                { "line", 2L },
-                                { "column", 3L }
-                            }
+                            { "offset", 1L },
+                            { "line", 2L },
+                            { "column", 3L }
                         }
                     }
                 }
             }
-        };
+        }
+    };
 
-        var collector = new NotificationsCollector();
+    var collector = new NotificationsCollector();
 
-        collector.Collect(metadata);
+    collector.Collect(metadata);
 
-        ((IMetadataCollector)collector).Collected.Should().BeSameAs(collector.Collected);
-    }
+    ((IMetadataCollector)collector).Collected.Should().BeSameAs(collector.Collected);
+}
+
 }

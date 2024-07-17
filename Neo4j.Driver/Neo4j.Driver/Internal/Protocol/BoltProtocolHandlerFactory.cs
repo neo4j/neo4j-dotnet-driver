@@ -41,7 +41,8 @@ internal interface IBoltProtocolHandlerFactory
     PullResponseHandler NewPullResponseHandler(
         IBookmarksTracker bookmarksTracker,
         IResultStreamBuilder cursorBuilder,
-        SummaryBuilder summaryBuilder);
+        SummaryBuilder summaryBuilder,
+        bool legacyNotifications);
 
     RouteResponseHandler NewRouteResponseHandler();
     HelloResponseHandler NewHelloResponseHandler(IConnection connection);
@@ -54,8 +55,9 @@ internal interface IBoltProtocolHandlerFactory
     PullAllResponseHandler NewPullAllResponseHandler(
         IResultCursorBuilder streamBuilder,
         SummaryBuilder summaryBuilder,
-        IBookmarksTracker bookmarksTracker);
-    
+        IBookmarksTracker bookmarksTracker,
+        bool legacyNotifications);
+
     TelemetryResponseHandler NewTelemetryResponseHandler(TransactionInfo info);
 }
 
@@ -93,9 +95,10 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
     public PullResponseHandler NewPullResponseHandler(
         IBookmarksTracker bookmarksTracker,
         IResultStreamBuilder cursorBuilder,
-        SummaryBuilder summaryBuilder)
+        SummaryBuilder summaryBuilder,
+        bool legacyNotifications)
     {
-        return new PullResponseHandler(cursorBuilder, summaryBuilder, bookmarksTracker);
+        return new PullResponseHandler(cursorBuilder, summaryBuilder, bookmarksTracker, legacyNotifications);
     }
 
     public RouteResponseHandler NewRouteResponseHandler()
@@ -123,9 +126,10 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
     public PullAllResponseHandler NewPullAllResponseHandler(
         IResultCursorBuilder streamBuilder,
         SummaryBuilder summaryBuilder,
-        IBookmarksTracker bookmarksTracker)
+        IBookmarksTracker bookmarksTracker,
+        bool legacyNotifications)
     {
-        return new PullAllResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
+        return new PullAllResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker, legacyNotifications);
     }
 
     public TelemetryResponseHandler NewTelemetryResponseHandler(TransactionInfo info)

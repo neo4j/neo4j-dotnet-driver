@@ -34,6 +34,7 @@ internal class SummaryBuilder
     public virtual IPlan Plan { get; set; }
     public virtual IProfiledPlan Profile { get; set; }
     public virtual IList<INotification> Notifications { get; set; }
+    public virtual IList<IGqlStatusObject> GqlStatusObjects { get; set; }
     public virtual long ResultAvailableAfter { get; set; } = -1L;
     public virtual long ResultConsumedAfter { get; set; } = -1L;
     public virtual IDatabaseInfo Database { get; set; }
@@ -43,7 +44,7 @@ internal class SummaryBuilder
         return new ResultSummary(this);
     }
 
-    private class ResultSummary : IResultSummary
+    public class ResultSummary : IResultSummary
     {
         public ResultSummary(SummaryBuilder builder)
         {
@@ -53,6 +54,7 @@ internal class SummaryBuilder
             Profile = builder.Profile;
             Plan = Profile ?? builder.Plan;
             Notifications = builder.Notifications;
+            GqlStatusObjects = builder.GqlStatusObjects;
             ResultAvailableAfter = TimeSpan.FromMilliseconds(builder.ResultAvailableAfter);
             ResultConsumedAfter = TimeSpan.FromMilliseconds(builder.ResultConsumedAfter);
             Server = builder.Server;
@@ -67,6 +69,7 @@ internal class SummaryBuilder
         public IPlan Plan { get; }
         public IProfiledPlan Profile { get; }
         public IList<INotification> Notifications { get; }
+        public IList<IGqlStatusObject> GqlStatusObjects { get; set; }
         public TimeSpan ResultAvailableAfter { get; }
         public TimeSpan ResultConsumedAfter { get; }
         public IServerInfo Server { get; }

@@ -712,12 +712,13 @@ public class BoltProtocolTests
                     x => x.NewPullResponseHandler(
                         mockBt.Object,
                         resultCursorBuilderMock.Object,
-                        It.IsNotNull<SummaryBuilder>()))
+                        It.IsNotNull<SummaryBuilder>(),
+                        true))
                 .Returns(
                     new PullResponseHandler(
                         resultCursorBuilderMock.Object,
                         new SummaryBuilder(new Query("..."), new ServerInfo(new Uri("http://0.0.0.0"))),
-                        mockBt.Object));
+                        mockBt.Object, true));
 
             handlerFactory.Setup(
                     x => x.NewResultCursorBuilder(
@@ -1132,12 +1133,14 @@ public class BoltProtocolTests
                     x => x.NewPullResponseHandler(
                         null,
                         resultCursorBuilderMock.Object,
-                        It.IsNotNull<SummaryBuilder>()))
+                        It.IsNotNull<SummaryBuilder>(),
+                        true))
                 .Returns(
                     new PullResponseHandler(
                         resultCursorBuilderMock.Object,
                         new SummaryBuilder(new Query("..."), new ServerInfo(new Uri("http://0.0.0.0"))),
-                        null));
+                        null,
+                        true));
 
             var mockV3 = new Mock<IBoltProtocol>();
 
@@ -1266,8 +1269,9 @@ public class BoltProtocolTests
                     x => x.NewPullResponseHandler(
                         mockBt.Object,
                         resultCursorBuilderMock.Object,
-                        It.IsNotNull<SummaryBuilder>()))
-                .Returns(new PullResponseHandler(resultCursorBuilderMock.Object, sb, mockBt.Object));
+                        It.IsNotNull<SummaryBuilder>(),
+                        true))
+                .Returns(new PullResponseHandler(resultCursorBuilderMock.Object, sb, mockBt.Object, true));
 
             handlerFactory.Setup(
                     x => x.NewResultCursorBuilder(
@@ -1290,7 +1294,7 @@ public class BoltProtocolTests
 
             msgFactory.Verify(x => x.NewPullMessage(1, 10), Times.Once);
             handlerFactory.Verify(
-                x => x.NewPullResponseHandler(mockBt.Object, resultCursorBuilderMock.Object, sb),
+                x => x.NewPullResponseHandler(mockBt.Object, resultCursorBuilderMock.Object, sb, true),
                 Times.Once);
 
             mockConn.Verify(
@@ -1298,6 +1302,8 @@ public class BoltProtocolTests
                 Times.Once);
 
             mockConn.Verify(x => x.SendAsync(), Times.Once);
+            mockConn.Verify(x => x.Version, Times.Once);
+
             mockConn.VerifyNoOtherCalls();
         }
     }
@@ -1331,8 +1337,9 @@ public class BoltProtocolTests
                     x => x.NewPullResponseHandler(
                         mockBt.Object,
                         resultCursorBuilderMock.Object,
-                        It.IsNotNull<SummaryBuilder>()))
-                .Returns(new PullResponseHandler(resultCursorBuilderMock.Object, sb, mockBt.Object));
+                        It.IsNotNull<SummaryBuilder>(),
+                        true))
+                .Returns(new PullResponseHandler(resultCursorBuilderMock.Object, sb, mockBt.Object, true));
 
             handlerFactory.Setup(
                     x => x.NewResultCursorBuilder(
@@ -1355,7 +1362,7 @@ public class BoltProtocolTests
 
             msgFactory.Verify(x => x.NewDiscardMessage(1, -1), Times.Once);
             handlerFactory.Verify(
-                x => x.NewPullResponseHandler(mockBt.Object, resultCursorBuilderMock.Object, sb),
+                x => x.NewPullResponseHandler(mockBt.Object, resultCursorBuilderMock.Object, sb, true),
                 Times.Once);
 
             mockConn.Verify(
@@ -1363,6 +1370,7 @@ public class BoltProtocolTests
                 Times.Once);
 
             mockConn.Verify(x => x.SendAsync(), Times.Once);
+            mockConn.Verify(x => x.Version, Times.Once);
             mockConn.VerifyNoOtherCalls();
         }
     }

@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Neo4j.Driver.Internal.MessageHandling.Metadata;
 using Neo4j.Driver.Internal.Result;
 
@@ -23,17 +24,20 @@ namespace Neo4j.Driver.Internal.MessageHandling.V3;
 internal sealed class PullAllResponseHandler : MetadataCollectingResponseHandler
 {
     private readonly IBookmarksTracker _bookmarksTracker;
+    private readonly bool _legacyNotifications;
     private readonly IResultStreamBuilder _streamBuilder;
     private readonly SummaryBuilder _summaryBuilder;
 
     public PullAllResponseHandler(
         IResultStreamBuilder streamBuilder,
         SummaryBuilder summaryBuilder,
-        IBookmarksTracker bookmarksTracker)
+        IBookmarksTracker bookmarksTracker,
+        bool legacyNotifications)
     {
         _streamBuilder = streamBuilder ?? throw new ArgumentNullException(nameof(streamBuilder));
         _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
         _bookmarksTracker = bookmarksTracker;
+        _legacyNotifications = legacyNotifications;
 
         AddMetadata<BookmarksCollector, Bookmarks>();
         AddMetadata<TimeToLastCollector, long>();
@@ -41,7 +45,7 @@ internal sealed class PullAllResponseHandler : MetadataCollectingResponseHandler
         AddMetadata<CountersCollector, ICounters>();
         AddMetadata<PlanCollector, IPlan>();
         AddMetadata<ProfiledPlanCollector, IProfiledPlan>();
-        AddMetadata<NotificationsCollector, IList<INotification>>();
+        AddMetadata(new GqlStatusObjectsAndNotificationsCollector(legacyNotifications));
     }
 
     public override void OnSuccess(IDictionary<string, object> metadata)
@@ -53,10 +57,18 @@ internal sealed class PullAllResponseHandler : MetadataCollectingResponseHandler
 
         _summaryBuilder.ResultConsumedAfter = GetMetadata<TimeToLastCollector, long>();
         _summaryBuilder.Counters = GetMetadata<CountersCollector, ICounters>();
-        _summaryBuilder.Notifications = GetMetadata<NotificationsCollector, IList<INotification>>();
         _summaryBuilder.Plan = GetMetadata<PlanCollector, IPlan>();
         _summaryBuilder.Profile = GetMetadata<ProfiledPlanCollector, IProfiledPlan>();
         _summaryBuilder.QueryType = GetMetadata<TypeCollector, QueryType>();
+
+        var gqlStatusObjectsAndNotifications =
+            GetMetadata<GqlStatusObjectsAndNotificationsCollector, GqlStatusObjectsAndNotifications>();
+
+        _summaryBuilder.Notifications = _legacyNotifications
+            ? gqlStatusObjectsAndNotifications.Notifications
+            : gqlStatusObjectsAndNotifications.GqlStatusObjects.OfType<INotification>().ToList();
+
+        _summaryBuilder.GqlStatusObjects = gqlStatusObjectsAndNotifications.GqlStatusObjects;
 
         _streamBuilder.PullCompleted(false, null);
     }
