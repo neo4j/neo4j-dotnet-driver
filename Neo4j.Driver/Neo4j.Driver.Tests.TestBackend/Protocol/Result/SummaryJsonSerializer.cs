@@ -37,7 +37,7 @@ internal static class SummaryJsonSerializer
                     notifications = CreateNotificationList(summary),
                     database = summary.Database?.Name,
                     serverInfo = GetServerInfo(summary),
-                    counters = GetCountersFromSummary(summary),
+                    counters = GetCountersFromSummary(summary.Counters),
                     profile = MapToProfilePlan(summary.Profile),
                     resultAvailableAfter = GetTotalMilliseconds(summary.ResultAvailableAfter),
                     resultConsumedAfter = GetTotalMilliseconds(summary.ResultConsumedAfter)
@@ -95,24 +95,24 @@ internal static class SummaryJsonSerializer
             };
     }
 
-    private static object GetCountersFromSummary(IResultSummary summary)
+    private static object GetCountersFromSummary(ICounters counters)
     {
         return new
         {
-            constraintsAdded = summary.Counters.ConstraintsAdded,
-            constraintsRemoved = summary.Counters.ConstraintsRemoved,
-            nodesCreated = summary.Counters.NodesCreated,
-            nodesDeleted = summary.Counters.NodesDeleted,
-            relationshipsCreated = summary.Counters.RelationshipsCreated,
-            relationshipsDeleted = summary.Counters.RelationshipsDeleted,
-            propertiesSet = summary.Counters.PropertiesSet,
-            labelsAdded = summary.Counters.LabelsAdded,
-            labelsRemoved = summary.Counters.LabelsRemoved,
-            indexesAdded = summary.Counters.IndexesAdded,
-            indexesRemoved = summary.Counters.IndexesRemoved,
-            systemUpdates = summary.Counters.SystemUpdates,
-            containsUpdates = summary.Counters.ContainsUpdates,
-            containsSystemUpdates = summary.Counters.ContainsSystemUpdates
+            constraintsAdded = counters.ConstraintsAdded,
+            constraintsRemoved = counters.ConstraintsRemoved,
+            nodesCreated = counters.NodesCreated,
+            nodesDeleted = counters.NodesDeleted,
+            relationshipsCreated = counters.RelationshipsCreated,
+            relationshipsDeleted = counters.RelationshipsDeleted,
+            propertiesSet = counters.PropertiesSet,
+            labelsAdded = counters.LabelsAdded,
+            labelsRemoved = counters.LabelsRemoved,
+            indexesAdded = counters.IndexesAdded,
+            indexesRemoved = counters.IndexesRemoved,
+            systemUpdates = counters.SystemUpdates,
+            containsUpdates = counters.ContainsUpdates,
+            containsSystemUpdates = counters.ContainsSystemUpdates
         };
     }
 
