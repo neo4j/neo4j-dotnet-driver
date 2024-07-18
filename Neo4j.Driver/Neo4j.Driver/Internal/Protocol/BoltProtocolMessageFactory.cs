@@ -85,11 +85,6 @@ internal class BoltProtocolMessageFactory : IBoltProtocolMessageFactory
         return new RunWithMetadataMessage(connection.Version, query, notificationsConfig: notificationsConfig);
     }
 
-    public TelemetryMessage NewTelemetryMessage(QueryApiType apiUsage)
-    {
-        return new TelemetryMessage(apiUsage);
-    }
-
     public PullMessage NewPullMessage(long fetchSize)
     {
         return new PullMessage(fetchSize);

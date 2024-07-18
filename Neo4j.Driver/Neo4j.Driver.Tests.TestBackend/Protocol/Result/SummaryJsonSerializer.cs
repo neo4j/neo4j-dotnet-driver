@@ -14,7 +14,10 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using Neo4j.Driver.Internal.Protocol;
+using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Tests.TestBackend.Types;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -33,14 +36,17 @@ internal static class SummaryJsonSerializer
                 {
                     query = GetQuery(summary),
                     queryType = GetQueryTypeAsStringCode(summary),
-                    plan = GetPlan(summary),
-                    notifications = CreateNotificationList(summary),
+                    plan = MapToPlanJson(summary?.Plan),
+                    notifications = MapNotifications(summary?.Notifications, ((ServerInfo)summary.Server).Protocol),
                     database = summary.Database?.Name,
                     serverInfo = GetServerInfo(summary),
                     counters = GetCountersFromSummary(summary.Counters),
                     profile = MapToProfilePlan(summary.Profile),
                     resultAvailableAfter = GetTotalMilliseconds(summary.ResultAvailableAfter),
-                    resultConsumedAfter = GetTotalMilliseconds(summary.ResultConsumedAfter)
+                    resultConsumedAfter = GetTotalMilliseconds(summary.ResultConsumedAfter),
+                    gqlStatusObjects = MapGqlStatusObjects(
+                        summary.GqlStatusObjects,
+                        ((ServerInfo)summary.Server).Protocol)
                 }));
     }
 
@@ -75,13 +81,6 @@ internal static class SummaryJsonSerializer
             QueryType.Unknown => null,
             _ => throw new ArgumentOutOfRangeException()
         };
-    }
-
-    private static object GetPlan(IResultSummary summary)
-    {
-        return summary?.Plan == null
-            ? null
-            : MapToPlanJson(summary.Plan);
     }
 
     private static object GetServerInfo(IResultSummary summary)
@@ -153,6 +152,11 @@ internal static class SummaryJsonSerializer
 
     private static object MapToPlanJson(IPlan plan)
     {
+        if (plan == null)
+        {
+            return null;
+        }
+
         return new
         {
             args = plan.Arguments,
@@ -162,22 +166,22 @@ internal static class SummaryJsonSerializer
         };
     }
 
-    private static object CreateNotificationList(IResultSummary summary)
+    private static object MapNotifications(IList<INotification> notifications, BoltProtocolVersion serverProtocol)
     {
-        if (summary?.Notifications == null)
+        if (notifications == null)
         {
             return null;
         }
 
-        if (summary.Notifications.All(x => x.Position == null))
+        if (notifications.All(x => x.Position == null))
         {
-            return summary.Notifications.Select(
+            return notifications.Select(
                     x => new
                     {
-                        rawCategory = x.RawCategory ?? String.Empty,
+                        rawCategory = x.RawCategory ?? string.Empty,
                         category = x.Category.ToString().ToUpper(),
                         severity = x.Severity,
-                        rawSeverityLevel = x.RawSeverityLevel ?? String.Empty,
+                        rawSeverityLevel = x.RawSeverityLevel ?? string.Empty,
                         severityLevel = x.SeverityLevel.ToString().ToUpper(),
                         description = x.Description,
                         code = x.Code,
@@ -186,13 +190,13 @@ internal static class SummaryJsonSerializer
                 .ToList();
         }
 
-        return summary.Notifications.Select(
+        return notifications.Select(
                 x => new
                 {
-                    rawCategory = x.RawCategory ?? String.Empty,
+                    rawCategory = x.RawCategory ?? string.Empty,
                     category = x.Category.ToString().ToUpper(),
                     severity = x.Severity,
-                    rawSeverityLevel = x.RawSeverityLevel ?? String.Empty,
+                    rawSeverityLevel = x.RawSeverityLevel ?? string.Empty,
                     severityLevel = x.SeverityLevel.ToString().ToUpper(),
                     description = x.Description,
                     code = x.Code,
@@ -207,5 +211,67 @@ internal static class SummaryJsonSerializer
                         }
                 })
             .ToList();
+    }
+
+    private static object MapGqlStatusObjects(IList<IGqlStatusObject> statusObjects, BoltProtocolVersion _)
+    {
+        if (statusObjects == null)
+        {
+            return Array.Empty<object>();
+        }
+
+        return statusObjects.Select(
+            x =>
+            {
+                var diag = new Dictionary<string, object>()
+                {
+                    ["OPERATION"] = NativeToCypher.Convert(x.DiagnosticRecord["OPERATION"]),
+                    ["OPERATION_CODE"] = NativeToCypher.Convert(x.DiagnosticRecord["OPERATION_CODE"]),
+                    ["CURRENT_SCHEMA"] = NativeToCypher.Convert(x.DiagnosticRecord["CURRENT_SCHEMA"])
+                };
+
+                if (x.DiagnosticRecord.TryGetValue("_severity", out var severity))
+                {
+                    diag["_severity"] = NativeToCypher.Convert(severity);
+                }
+
+                if (x.DiagnosticRecord.TryGetValue("_classification", out var classification))
+                {
+                    diag["_classification"] = NativeToCypher.Convert(classification);
+                }
+
+                if (x.DiagnosticRecord.TryGetValue("_position", out var value) &&
+                    value is IDictionary<string, object> position)
+                {
+                    diag["_position"] = new
+                    {
+                        column = NativeToCypher.Convert(position["column"]),
+                        offset = NativeToCypher.Convert(position["offset"]),
+                        line = NativeToCypher.Convert(position["line"])
+                    };
+                }
+                
+                return new Dictionary<string, object>()
+                {
+                    ["gqlStatus"] = x.GqlStatus,
+                    ["statusDescription"] = x.StatusDescription,
+                    ["position"] = x.Position == null
+                        ? null
+                        // ReSharper disable once SimilarAnonymousTypeNearby, not the same
+                        : new
+                        {
+                            column = x.Position.Column,
+                            offset = x.Position.Offset,
+                            line = x.Position.Line
+                        },
+                    ["classification"] = x.Classification.ToString().ToUpper(),
+                    ["severity"] = x.Severity.ToString().ToUpper(),
+                    ["rawClassification"] = x.RawClassification,
+                    ["rawSeverity"] = x.RawSeverity,
+                    ["diagnosticRecord"] = diag,
+                    ["isNotification"] = x.IsNotification
+                };
+                
+            });
     }
 }

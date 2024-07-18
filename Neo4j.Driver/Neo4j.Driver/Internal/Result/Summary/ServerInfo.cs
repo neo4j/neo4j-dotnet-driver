@@ -15,7 +15,7 @@ internal class ServerInfo : IServerInfo, IUpdateableInfo
     public string ProtocolVersion => Protocol?.ToString() ?? "0.0";
 
     public string Agent { get; set; }
-
+    
     public string Address { get; }
 
     public void Update(BoltProtocolVersion boltVersion, string agent)

@@ -18,7 +18,7 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Result;
 
-internal class SummaryBuilder
+internal sealed class SummaryBuilder
 {
     public SummaryBuilder(Query query, IServerInfo serverInfo)
     {
@@ -29,24 +29,24 @@ internal class SummaryBuilder
     public Query Query { get; }
     public IServerInfo Server { get; }
 
-    public virtual QueryType QueryType { get; set; }
-    public virtual ICounters Counters { get; set; }
-    public virtual IPlan Plan { get; set; }
-    public virtual IProfiledPlan Profile { get; set; }
-    public virtual IList<INotification> Notifications { get; set; }
-    public virtual IList<IGqlStatusObject> GqlStatusObjects { get; set; }
-    public virtual long ResultAvailableAfter { get; set; } = -1L;
-    public virtual long ResultConsumedAfter { get; set; } = -1L;
-    public virtual IDatabaseInfo Database { get; set; }
+    public QueryType QueryType { get; set; }
+    public ICounters Counters { get; set; }
+    public IPlan Plan { get; set; }
+    public IProfiledPlan Profile { get; set; }
+    public IList<INotification> Notifications { get; set; }
+    public IList<IGqlStatusObject> GqlStatusObjects { get; set; }
+    public long ResultAvailableAfter { get; set; } = -1L;
+    public long ResultConsumedAfter { get; set; } = -1L;
+    public IDatabaseInfo Database { get; set; }
 
-    public IResultSummary Build()
+    public IResultSummary Build(CursorMetadata cursorMetadata)
     {
-        return new ResultSummary(this);
+        return new ResultSummary(this, cursorMetadata);
     }
 
     public class ResultSummary : IResultSummary
     {
-        public ResultSummary(SummaryBuilder builder)
+        public ResultSummary(SummaryBuilder builder, CursorMetadata cursorMetadata)
         {
             Query = builder.Query;
             QueryType = builder.QueryType;
@@ -54,7 +54,7 @@ internal class SummaryBuilder
             Profile = builder.Profile;
             Plan = Profile ?? builder.Plan;
             Notifications = builder.Notifications;
-            GqlStatusObjects = builder.GqlStatusObjects;
+            GqlStatusObjects = cursorMetadata.BuildStatusObjects(builder.GqlStatusObjects);
             ResultAvailableAfter = TimeSpan.FromMilliseconds(builder.ResultAvailableAfter);
             ResultConsumedAfter = TimeSpan.FromMilliseconds(builder.ResultConsumedAfter);
             Server = builder.Server;
@@ -69,7 +69,7 @@ internal class SummaryBuilder
         public IPlan Plan { get; }
         public IProfiledPlan Profile { get; }
         public IList<INotification> Notifications { get; }
-        public IList<IGqlStatusObject> GqlStatusObjects { get; set; }
+        public IList<IGqlStatusObject> GqlStatusObjects { get; }
         public TimeSpan ResultAvailableAfter { get; }
         public TimeSpan ResultConsumedAfter { get; }
         public IServerInfo Server { get; }

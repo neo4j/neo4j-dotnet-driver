@@ -1,20 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Result;
 
-internal class Notification : GqlStatusObject, INotification
+internal sealed class Notification : INotification
 {
     public Notification(
-        string gqlStatus,
-        string statusDescription,
-        IDictionary<string, object> diagnosticRecord,
         string code,
         string title,
         string description,
         IInputPosition position,
         string rawSeverity,
-        string rawCategory) : base (gqlStatus, statusDescription, diagnosticRecord)
+        string rawCategory)
     {
         Code = code;
         Title = title;
@@ -50,7 +46,7 @@ internal class Notification : GqlStatusObject, INotification
                 "security" => NotificationCategory.Security,
                 "topology" => NotificationCategory.Topology,
                 "generic" => NotificationCategory.Generic,
-                var _ => NotificationCategory.Unknown
+                _ => NotificationCategory.Unknown
             };
         }
         catch
@@ -65,7 +61,7 @@ internal class Notification : GqlStatusObject, INotification
         {
             "information" => NotificationSeverity.Information,
             "warning" => NotificationSeverity.Warning,
-            var _ => NotificationSeverity.Unknown
+            _ => NotificationSeverity.Unknown
         };
     }
 
@@ -77,9 +73,6 @@ internal class Notification : GqlStatusObject, INotification
         return string.Concat(
             nameof(Notification),
             "{",
-            nameof(GqlStatus), equals, GqlStatus, space,
-            nameof(StatusDescription), equals, StatusDescription, space,
-            nameof(DiagnosticRecord), equals, DiagnosticRecord.ToContentString(), space,
             nameof(Code), equals, Code, space,
             nameof(Title), equals, Title, space,
             nameof(Description), equals, Description, space,

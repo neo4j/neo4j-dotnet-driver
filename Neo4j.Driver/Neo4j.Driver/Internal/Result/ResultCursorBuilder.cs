@@ -35,10 +35,11 @@ internal class ResultCursorBuilder : IResultCursorBuilder
 
     private readonly ConcurrentQueue<IRecord> _records;
     private readonly IResultResourceHandler _resourceHandler;
-    private readonly IInternalAsyncTransaction _transaction;
     private readonly SummaryBuilder _summaryBuilder;
+    private readonly IInternalAsyncTransaction _transaction;
 
     private Dictionary<string, int> _fieldLookup;
+    private long _hadRecords;
     private Dictionary<string, int> _invariantFieldLookup;
 
     private IResponsePipelineError _pendingError;
@@ -138,7 +139,10 @@ internal class ResultCursorBuilder : IResultCursorBuilder
         }
 
         _pendingError?.EnsureThrown();
-        return _summaryBuilder.Build();
+        return _summaryBuilder.Build(
+            new CursorMetadata(
+                Interlocked.Read(ref _hadRecords) == 1L,
+                (await GetKeysAsync().ConfigureAwait(false)).Any()));
     }
 
     public void RunCompleted(long queryId, string[] fields, IResponsePipelineError error)
@@ -169,6 +173,7 @@ internal class ResultCursorBuilder : IResultCursorBuilder
 
     public void PushRecord(object[] fieldValues)
     {
+        Interlocked.CompareExchange(ref _hadRecords, 1L, 0L);
         _records.Enqueue(new Record(_fieldLookup, _invariantFieldLookup, fieldValues));
         _autoPullHandler.TryDisableAutoPull(_records.Count);
 

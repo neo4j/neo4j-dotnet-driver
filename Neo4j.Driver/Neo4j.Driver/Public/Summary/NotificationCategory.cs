@@ -16,7 +16,7 @@
 namespace Neo4j.Driver;
 
 /// <summary>
-/// Represents the category of server notifications surfaced by <see cref="INotification"/>.<br/> Used in
+/// Represents the category of server notifications surfaced by <see cref="IGqlStatusObject"/>.<br/> Used in
 /// conjunction with <see cref="NotificationSeverity"/>.
 /// </summary>
 public enum NotificationClassification

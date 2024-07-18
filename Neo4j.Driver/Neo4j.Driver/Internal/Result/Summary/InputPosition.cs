@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Result;
 
@@ -59,5 +60,23 @@ internal class InputPosition : IInputPosition
         return $"{GetType().Name}{{{nameof(Offset)}={Offset}, " +
             $"{nameof(Line)}={Line}, " +
             $"{nameof(Column)}={Column}}}";
+    }
+
+    internal static InputPosition ConvertFromDictionary(IDictionary<string, object> parent, string key)
+    {
+        if (!parent.TryGetValue(key, out var x) || x is not IDictionary<string, object> positionDictionary)
+        {
+            return null;
+        }
+
+        var offsetFound = positionDictionary.TryGetValue("offset", 0L, out var offset);
+        var lineFound = positionDictionary.TryGetValue("line", 0L, out var line);
+        var columnFound = positionDictionary.TryGetValue("column", 0L, out var column);
+        if (offsetFound && lineFound && columnFound)
+        {
+            return new InputPosition((int)offset, (int)line, (int)column);
+        }
+
+        return null;
     }
 }

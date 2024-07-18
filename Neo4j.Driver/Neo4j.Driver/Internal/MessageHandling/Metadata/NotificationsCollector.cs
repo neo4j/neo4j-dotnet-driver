@@ -94,9 +94,6 @@ internal class NotificationsCollector : IMetadataCollector<IList<INotification>>
         };
 
         return new Notification(
-            gqlStatusCode,
-            gqlStatusDescription,
-            diagnosticRecord,
             code,
             title,
             description,

@@ -69,7 +69,13 @@ public interface IResultSummary
     /// notifications do not affect the execution of a query.
     /// </remarks>
     IList<INotification> Notifications { get; }
-
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    [Obsolete("This is an experimental API and may change between minor versions.")]
+    IList<IGqlStatusObject> GqlStatusObjects { get; }
+    
     /// <summary>
     /// The time it took the server to make the result available for consumption. Default to <c>-00:00:00.001</c> if
     /// the server version does not support this field in summary.

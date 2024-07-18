@@ -14,7 +14,6 @@
 // limitations under the License.
 
 using System.Collections.Generic;
-using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver;
 
@@ -22,7 +21,8 @@ namespace Neo4j.Driver;
 /// The GQL-status object as defined by the GQL standard.
 /// </summary>
 /// <since>5.22.0</since>
-/// <seealso cref="Notification">Notification subtype of the GQL-status object</seealso>
+/// <seealso cref="Noti+
+/// fication">Notification subtype of the GQL-status object</seealso>
 public interface IGqlStatusObject
 {
     /// <summary>
@@ -37,9 +37,21 @@ public interface IGqlStatusObject
     /// <returns>The GQLSTATUS description.</returns>
     string StatusDescription { get; }
 
+    IInputPosition Position { get; }
+
+    NotificationClassification Classification { get; }
+
+    string RawClassification { get; }
+
+    NotificationSeverity Severity { get; }
+
+    string RawSeverity { get; }
+
     /// <summary>
     /// Returns the diagnostic record.
     /// </summary>
     /// <returns>The diagnostic record.</returns>
-    IDictionary<string, object> DiagnosticRecord { get; }
+    IReadOnlyDictionary<string, object> DiagnosticRecord { get; }
+
+    bool IsNotification { get; }
 }

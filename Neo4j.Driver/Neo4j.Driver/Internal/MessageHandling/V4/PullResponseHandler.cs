@@ -58,23 +58,23 @@ internal sealed class PullResponseHandler : MetadataCollectingResponseHandler
             GetMetadata<BookmarksCollector, Bookmarks>(),
             GetMetadata<DatabaseInfoCollector, IDatabaseInfo>());
 
-        _summaryBuilder.ResultConsumedAfter = GetMetadata<TimeToLastCollector, long>();
-        _summaryBuilder.Counters = GetMetadata<CountersCollector, ICounters>();
-        _summaryBuilder.Plan = GetMetadata<PlanCollector, IPlan>();
-        _summaryBuilder.Profile = GetMetadata<ProfiledPlanCollector, IProfiledPlan>();
-        _summaryBuilder.QueryType = GetMetadata<TypeCollector, QueryType>();
-        _summaryBuilder.Database = GetMetadata<DatabaseInfoCollector, IDatabaseInfo>();
+        var hasMore = GetMetadata<HasMoreCollector, bool>();
+        if (!hasMore)
+        {
+            _summaryBuilder.ResultConsumedAfter = GetMetadata<TimeToLastCollector, long>();
+            _summaryBuilder.Counters = GetMetadata<CountersCollector, ICounters>();
+            _summaryBuilder.Plan = GetMetadata<PlanCollector, IPlan>();
+            _summaryBuilder.Profile = GetMetadata<ProfiledPlanCollector, IProfiledPlan>();
+            _summaryBuilder.QueryType = GetMetadata<TypeCollector, QueryType>();
+            _summaryBuilder.Database = GetMetadata<DatabaseInfoCollector, IDatabaseInfo>();
+            var gqlStatusObjectsAndNotifications =
+                GetMetadata<GqlStatusObjectsAndNotificationsCollector, GqlStatusObjectsAndNotifications>();
 
-        var gqlStatusObjectsAndNotifications =
-            GetMetadata<GqlStatusObjectsAndNotificationsCollector, GqlStatusObjectsAndNotifications>();
+            _summaryBuilder.Notifications = gqlStatusObjectsAndNotifications.Notifications;
+            _summaryBuilder.GqlStatusObjects = gqlStatusObjectsAndNotifications.GqlStatusObjects;
+        }
 
-        _summaryBuilder.Notifications = _legacyNotifications
-            ? gqlStatusObjectsAndNotifications.Notifications
-            : gqlStatusObjectsAndNotifications.GqlStatusObjects.OfType<INotification>().ToList();
-
-        _summaryBuilder.GqlStatusObjects = gqlStatusObjectsAndNotifications.GqlStatusObjects;
-
-        _streamBuilder.PullCompleted(GetMetadata<HasMoreCollector, bool>(), null);
+        _streamBuilder.PullCompleted(hasMore, null);
     }
 
     public override void OnFailure(IResponsePipelineError error)

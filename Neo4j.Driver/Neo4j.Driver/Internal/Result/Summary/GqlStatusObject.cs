@@ -15,97 +15,74 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace Neo4j.Driver.Internal.Result;
 
-internal class GqlStatusObject : IGqlStatusObject
+internal sealed record GqlStatusObject(
+    string GqlStatus,
+    string StatusDescription,
+    IInputPosition Position,
+    string RawClassification,
+    string RawSeverity,
+    IReadOnlyDictionary<string, object> DiagnosticRecord,
+    bool IsNotification)
+    : IGqlStatusObject
 {
-    public static readonly IGqlStatusObject Success = new GqlStatusObject(
-        "00000",
-        "note: successful completion",
-        new Dictionary<string, object>
-        {
-            { "CURRENT_SCHEMA", "/" },
-            { "OPERATION", "" },
-            { "OPERATION_CODE", "0" }
-        });
+    private GqlStatusObject(string gqlStatus, string description): this(
+        gqlStatus,
+        description,
+        null,
+        null,
+        null,
+        new ReadOnlyDictionary<string, object>(
+            new Dictionary<string, object>
+            {
+                ["OPERATION"] = string.Empty,
+                ["OPERATION_CODE"] = "0",
+                ["CURRENT_SCHEMA"] = "/"
+            }),
+        false)
+    {
+    }
 
-    public static readonly IGqlStatusObject NoData = new GqlStatusObject(
-        "02000",
-        "note: no data",
-        new Dictionary<string, object>
-        {
-            { "CURRENT_SCHEMA", "/" },
-            { "OPERATION", "" },
-            { "OPERATION_CODE", "0" }
-        });
+    public string GqlStatus { get; } = GqlStatus ?? throw new ArgumentNullException(nameof(GqlStatus));
 
-    public static readonly IGqlStatusObject NoDataUnknown = new GqlStatusObject(
-        "02N42",
-        "note: no data - unknown subcondition",
-        new Dictionary<string, object>
-        {
-            { "CURRENT_SCHEMA", "/" },
-            { "OPERATION", "" },
-            { "OPERATION_CODE", "0" }
-        });
+    public string StatusDescription { get; } =
+        StatusDescription ?? throw new ArgumentNullException(nameof(StatusDescription));
 
-    public static readonly IGqlStatusObject OmittedResult = new GqlStatusObject(
+    public NotificationClassification Classification => ClassificationFrom(RawClassification);
+
+    private NotificationClassification ClassificationFrom(string rawClassification)
+    {
+        return rawClassification.ToLowerInvariant() switch
+        {
+            "hint" => NotificationClassification.Hint,
+            _ => NotificationClassification.Unknown
+        };
+    }
+
+    public NotificationSeverity Severity => Notification.ParseSeverity(RawSeverity);
+
+    public IReadOnlyDictionary<string, object> DiagnosticRecord { get; } =
+        DiagnosticRecord ?? throw new ArgumentNullException(nameof(DiagnosticRecord));
+
+    internal static readonly IGqlStatusObject OmittedResult = new GqlStatusObject(
         "00001",
-        "note: successful completion - omitted result",
-        new Dictionary<string, object>
-        {
-            { "CURRENT_SCHEMA", "/" },
-            { "OPERATION", "" },
-            { "OPERATION_CODE", "0" }
-        });
+        "note: successful completion - omitted result");
 
-    public static readonly Dictionary<string, object> DefaultDiagnosticRecord = new Dictionary<string, object>
-    {
-        { "CURRENT_SCHEMA", "/" },
-        { "OPERATION", "" },
-        { "OPERATION_CODE", "0" }
-    };
+    internal static IGqlStatusObject Success = new GqlStatusObject(
+        "00000",
+        "note: successful completion");
 
-    private readonly string _gqlStatus;
-    private readonly string _statusDescription;
-    private readonly IDictionary<string, object> _diagnosticRecord;
 
-    public GqlStatusObject(string gqlStatus, string statusDescription, IDictionary<string, object> diagnosticRecord)
-    {
-        _gqlStatus = gqlStatus ?? throw new ArgumentNullException(nameof(gqlStatus));
-        _statusDescription = statusDescription ?? throw new ArgumentNullException(nameof(statusDescription));
-        _diagnosticRecord = diagnosticRecord ?? throw new ArgumentNullException(nameof(diagnosticRecord));
-    }
+    internal static readonly IGqlStatusObject NoData = new GqlStatusObject(
+        "02000",
+        "note: no data"
+     );
 
-    public string GqlStatus => _gqlStatus;
-    public string StatusDescription => _statusDescription;
-    public IDictionary<string, object> DiagnosticRecord => _diagnosticRecord;
-
-    public override bool Equals(object obj)
-    {
-        return obj is GqlStatusObject other &&
-            _gqlStatus == other._gqlStatus &&
-            _statusDescription == other._statusDescription &&
-            _diagnosticRecord.Matches(other._diagnosticRecord);
-    }
-
-    public override int GetHashCode()
-    {
-        unchecked
-        {
-            var hash = 17;
-            hash = hash * 23 + (_gqlStatus?.GetHashCode() ?? 0);
-            hash = hash * 23 + (_statusDescription?.GetHashCode() ?? 0);
-            hash = hash * 23 + (_diagnosticRecord != null ? _diagnosticRecord.GetHashCode() : 0);
-            return hash;
-        }
-    }
-
-    public override string ToString()
-    {
-        return
-            $"GqlStatusObject{{gqlStatus='{_gqlStatus}', statusDescription='{_statusDescription}', " +
-            $"diagnosticRecord={_diagnosticRecord.ToContentString()}}}";
-    }
+    internal static readonly IGqlStatusObject NoDataUnknown = new GqlStatusObject(
+        "02N42",
+        "note: no data - unknown subcondition"
+      );
 }

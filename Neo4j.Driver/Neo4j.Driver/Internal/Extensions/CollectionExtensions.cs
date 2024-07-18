@@ -57,16 +57,6 @@ internal static class CollectionExtensions
         return false;
     }
 
-    public static void ApplyValues<TKey, TValue>(
-        this IDictionary<TKey, TValue> dict,
-        IDictionary<TKey, TValue> otherDict)
-    {
-        foreach (var kvp in otherDict)
-        {
-            dict[kvp.Key] = kvp.Value;
-        }
-    }
-
     private static string ToContentString(this IDictionary dict, string separator)
     {
         var dictStrings = dict.Keys.Cast<object>()
