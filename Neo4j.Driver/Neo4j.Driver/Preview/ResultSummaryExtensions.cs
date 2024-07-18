@@ -16,7 +16,7 @@
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Result;
 
-namespace Neo4j.Driver.Preview.Auth;
+namespace Neo4j.Driver.Preview;
 
 /// <summary>
 /// Contains methods for preview features related to <see cref="IResultSummary"/>.
