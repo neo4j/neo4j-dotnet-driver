@@ -27,14 +27,14 @@ internal record struct CursorMetadata(bool ResultHadRecords, bool ResultHadKeys)
         var result = new IGqlStatusObject[length];
         for (var i = 1; i < length; i++)
         {
-            result[i] = builderGqlStatusObjects[i - 1];
+            result[i] = builderGqlStatusObjects![i - 1];
         }
 
         result[0] = ResultHadRecords switch
         {
             true => GqlStatusObject.Success,
             false when ResultHadKeys => GqlStatusObject.NoData,
-            false when !ResultHadKeys => GqlStatusObject.OmittedResult
+            _ => GqlStatusObject.OmittedResult
         };
 
         return result;
