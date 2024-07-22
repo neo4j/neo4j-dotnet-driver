@@ -55,9 +55,16 @@ internal sealed record GqlStatusObject(
 
     private NotificationClassification ClassificationFrom(string rawClassification)
     {
-        return rawClassification.ToLowerInvariant() switch
+        return rawClassification?.ToLowerInvariant() switch
         {
             "hint" => NotificationClassification.Hint,
+            "unrecognized" => NotificationClassification.Unrecognized,
+            "unsupported" => NotificationClassification.Unsupported,
+            "performance" => NotificationClassification.Performance,
+            "deprecation" => NotificationClassification.Deprecation,
+            "security" => NotificationClassification.Security,
+            "topology" => NotificationClassification.Topology,
+            "generic" => NotificationClassification.Generic,
             _ => NotificationClassification.Unknown
         };
     }

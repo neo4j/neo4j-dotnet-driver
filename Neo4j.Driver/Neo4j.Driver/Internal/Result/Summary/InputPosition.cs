@@ -1,16 +1,41 @@
-﻿using System;
+﻿// Copyright (c) "Neo4j"
+// Neo4j Sweden AB [https://neo4j.com]
+// 
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Result;
 
 internal class InputPosition : IInputPosition
 {
+    public InputPosition(int offset, int line, int column)
+    {
+        Offset = offset;
+        Line = line;
+        Column = column;
+    }
+
+    public int Offset { get; }
+    public int Line { get; }
+    public int Column { get; }
+
     protected bool Equals(InputPosition other)
     {
         return Offset == other.Offset && Line == other.Line && Column == other.Column;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override bool Equals(object obj)
     {
         if (ReferenceEquals(null, obj))
@@ -23,7 +48,7 @@ internal class InputPosition : IInputPosition
             return true;
         }
 
-        if (obj.GetType() != this.GetType())
+        if (obj.GetType() != GetType())
         {
             return false;
         }
@@ -31,7 +56,7 @@ internal class InputPosition : IInputPosition
         return Equals((InputPosition)obj);
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override int GetHashCode()
     {
         unchecked
@@ -43,17 +68,6 @@ internal class InputPosition : IInputPosition
             return hash;
         }
     }
-
-    public InputPosition(int offset, int line, int column)
-    {
-        Offset = offset;
-        Line = line;
-        Column = column;
-    }
-
-    public int Offset { get; }
-    public int Line { get; }
-    public int Column { get; }
 
     public override string ToString()
     {

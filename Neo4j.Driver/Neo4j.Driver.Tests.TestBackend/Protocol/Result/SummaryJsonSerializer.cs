@@ -240,15 +240,9 @@ internal static class SummaryJsonSerializer
                     diag["_classification"] = NativeToCypher.Convert(classification);
                 }
 
-                if (x.DiagnosticRecord.TryGetValue("_position", out var value) &&
-                    value is IDictionary<string, object> position)
+                if (x.DiagnosticRecord.TryGetValue("_position", out var value))
                 {
-                    diag["_position"] = new
-                    {
-                        column = NativeToCypher.Convert(position["column"]),
-                        offset = NativeToCypher.Convert(position["offset"]),
-                        line = NativeToCypher.Convert(position["line"])
-                    };
+                    diag["_position"] = NativeToCypher.Convert(value);
                 }
                 
                 return new Dictionary<string, object>()

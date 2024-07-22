@@ -13,14 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
 
 namespace Neo4j.Driver.Internal.Result;
 
-/// <summary>
-/// For passing information from cursor to the summary builder.
-/// </summary>
+/// <summary>For passing information from cursor to the summary builder.</summary>
 /// <param name="ResultHadRecords"></param>
 internal record struct CursorMetadata(bool ResultHadRecords, bool ResultHadKeys)
 {
@@ -28,7 +25,7 @@ internal record struct CursorMetadata(bool ResultHadRecords, bool ResultHadKeys)
     {
         var length = (builderGqlStatusObjects?.Count ?? 0) + 1;
         var result = new IGqlStatusObject[length];
-        for (int i = 1; i < length; i++)
+        for (var i = 1; i < length; i++)
         {
             result[i] = builderGqlStatusObjects[i - 1];
         }
@@ -39,7 +36,7 @@ internal record struct CursorMetadata(bool ResultHadRecords, bool ResultHadKeys)
             false when ResultHadKeys => GqlStatusObject.NoData,
             false when !ResultHadKeys => GqlStatusObject.OmittedResult
         };
-        
+
         return result;
     }
 }

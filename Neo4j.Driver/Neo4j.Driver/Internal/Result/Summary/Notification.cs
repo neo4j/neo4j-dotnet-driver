@@ -1,4 +1,19 @@
-﻿using System;
+﻿// Copyright (c) "Neo4j"
+// Neo4j Sweden AB [https://neo4j.com]
+// 
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using System;
 
 namespace Neo4j.Driver.Internal.Result;
 
@@ -34,25 +49,18 @@ internal sealed class Notification : INotification
 
     private NotificationCategory ParseCategory(string category)
     {
-        try
+        return category?.ToLowerInvariant() switch
         {
-            return category?.ToLowerInvariant() switch
-            {
-                "hint" => NotificationCategory.Hint,
-                "unrecognized" => NotificationCategory.Unrecognized,
-                "unsupported" => NotificationCategory.Unsupported,
-                "performance" => NotificationCategory.Performance,
-                "deprecation" => NotificationCategory.Deprecation,
-                "security" => NotificationCategory.Security,
-                "topology" => NotificationCategory.Topology,
-                "generic" => NotificationCategory.Generic,
-                _ => NotificationCategory.Unknown
-            };
-        }
-        catch
-        {
-            return NotificationCategory.Unknown;
-        }
+            "hint" => NotificationCategory.Hint,
+            "unrecognized" => NotificationCategory.Unrecognized,
+            "unsupported" => NotificationCategory.Unsupported,
+            "performance" => NotificationCategory.Performance,
+            "deprecation" => NotificationCategory.Deprecation,
+            "security" => NotificationCategory.Security,
+            "topology" => NotificationCategory.Topology,
+            "generic" => NotificationCategory.Generic,
+            _ => NotificationCategory.Unknown
+        };
     }
 
     public static NotificationSeverity ParseSeverity(string severity)
@@ -73,14 +81,37 @@ internal sealed class Notification : INotification
         return string.Concat(
             nameof(Notification),
             "{",
-            nameof(Code), equals, Code, space,
-            nameof(Title), equals, Title, space,
-            nameof(Description), equals, Description, space,
-            nameof(Position), equals, Position.ToString(), space,
-            nameof(SeverityLevel), equals, SeverityLevel.ToString(), space,
-            nameof(Category), equals, Category.ToString(), space,
-            nameof(RawSeverityLevel), equals, RawSeverityLevel, space,
-            nameof(RawCategory), equals, RawCategory, //no space
+            nameof(Code),
+            equals,
+            Code,
+            space,
+            nameof(Title),
+            equals,
+            Title,
+            space,
+            nameof(Description),
+            equals,
+            Description,
+            space,
+            nameof(Position),
+            equals,
+            Position.ToString(),
+            space,
+            nameof(SeverityLevel),
+            equals,
+            SeverityLevel.ToString(),
+            space,
+            nameof(Category),
+            equals,
+            Category.ToString(),
+            space,
+            nameof(RawSeverityLevel),
+            equals,
+            RawSeverityLevel,
+            space,
+            nameof(RawCategory),
+            equals,
+            RawCategory, //no space
             "}");
     }
 
@@ -109,7 +140,7 @@ internal sealed class Notification : INotification
 
     public override int GetHashCode()
     {
-        int hash = 17;
+        var hash = 17;
         hash = hash * 23 + (Code?.GetHashCode() ?? 0);
         hash = hash * 23 + (Title?.GetHashCode() ?? 0);
         hash = hash * 23 + (Description?.GetHashCode() ?? 0);

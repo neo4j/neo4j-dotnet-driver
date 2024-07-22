@@ -126,8 +126,15 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool legacyNotif
         {
             diagnosticRecord["_position"] = notification["position"];
         }
-        diagnosticRecord["_severity"] = severity;
-        diagnosticRecord["_classification"] = category;
+        if (severity != null)
+        {
+            diagnosticRecord["_severity"] = severity;
+
+        }
+        if (category != null)
+        {
+            diagnosticRecord["_classification"] = category;
+        }
         
         return new GqlStatusObject(
             status,
