@@ -267,32 +267,4 @@ internal static class CollectionExtensions
 
         return true;
     }
-
-    public static bool Matches<TKey, TValue>(
-        this IDictionary<TKey, TValue> thisDict,
-        IDictionary<TKey, TValue> otherDict)
-    {
-        if (thisDict.Count != otherDict.Count)
-        {
-            return false;
-        }
-
-        foreach (var kvp in thisDict)
-        {
-            var (key, value) = kvp;
-
-            if (!otherDict.TryGetValue(key, out value))
-            {
-                return false;
-            }
-
-            if (!Equals(thisDict[key], value))
-            {
-                return false;
-            }
-        }
-
-        // make sure there are no keys in otherDict that are not in thisDict
-        return otherDict.Keys.All(thisDict.ContainsKey);
-    }
 }
