@@ -392,6 +392,7 @@ public static class ResultTests
         public IPlan Plan { get; }
         public IProfiledPlan Profile { get; }
         public IList<INotification> Notifications { get; }
+        public IList<IGqlStatusObject> GqlStatusObjects { get; }
         public TimeSpan ResultAvailableAfter { get; }
         public TimeSpan ResultConsumedAfter { get; }
         public IServerInfo Server { get; }

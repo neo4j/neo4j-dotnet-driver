@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using Neo4j.Driver.Internal.MessageHandling.Metadata;
 
 namespace Neo4j.Driver.Internal.Result;
 
@@ -33,8 +34,7 @@ internal sealed class SummaryBuilder
     public ICounters Counters { get; set; }
     public IPlan Plan { get; set; }
     public IProfiledPlan Profile { get; set; }
-    public IList<INotification> Notifications { get; set; }
-    public IList<IGqlStatusObject> GqlStatusObjects { get; set; }
+    public GqlStatusObjectsAndNotifications StatusObjects { get; set; }
     public long ResultAvailableAfter { get; set; } = -1L;
     public long ResultConsumedAfter { get; set; } = -1L;
     public IDatabaseInfo Database { get; set; }
@@ -53,8 +53,8 @@ internal sealed class SummaryBuilder
             Counters = builder.Counters ?? new Counters();
             Profile = builder.Profile;
             Plan = Profile ?? builder.Plan;
-            Notifications = builder.Notifications;
-            GqlStatusObjects = cursorMetadata.BuildStatusObjects(builder.GqlStatusObjects);
+            Notifications = builder.StatusObjects?.FinalizeNotifications(cursorMetadata);
+            GqlStatusObjects = builder.StatusObjects?.FinalizeStatusObjects(cursorMetadata);
             ResultAvailableAfter = TimeSpan.FromMilliseconds(builder.ResultAvailableAfter);
             ResultConsumedAfter = TimeSpan.FromMilliseconds(builder.ResultConsumedAfter);
             Server = builder.Server;

@@ -26,6 +26,7 @@ internal sealed record GqlStatusObject(
     string RawClassification,
     string RawSeverity,
     IReadOnlyDictionary<string, object> DiagnosticRecord,
+    string Title,
     bool IsNotification)
     : IGqlStatusObject
 {
@@ -42,6 +43,7 @@ internal sealed record GqlStatusObject(
                 ["OPERATION_CODE"] = "0",
                 ["CURRENT_SCHEMA"] = "/"
             }),
+        null,
         false)
     {
     }

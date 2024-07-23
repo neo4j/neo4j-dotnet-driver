@@ -129,7 +129,7 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
         IBookmarksTracker bookmarksTracker,
         bool legacyNotifications)
     {
-        return new PullAllResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker, legacyNotifications);
+        return new PullAllResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
     }
 
     public TelemetryResponseHandler NewTelemetryResponseHandler(TransactionInfo info)

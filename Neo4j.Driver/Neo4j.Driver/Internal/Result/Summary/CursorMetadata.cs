@@ -13,30 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
-
 namespace Neo4j.Driver.Internal.Result;
 
-/// <summary>For passing information from cursor to the summary builder.</summary>
-/// <param name="ResultHadRecords"></param>
+/// <summary>A simple value holder for metadata about a cursor.</summary>
 internal record struct CursorMetadata(bool ResultHadRecords, bool ResultHadKeys)
 {
-    public IList<IGqlStatusObject> BuildStatusObjects(IList<IGqlStatusObject> builderGqlStatusObjects)
-    {
-        var length = (builderGqlStatusObjects?.Count ?? 0) + 1;
-        var result = new IGqlStatusObject[length];
-        for (var i = 1; i < length; i++)
-        {
-            result[i] = builderGqlStatusObjects![i - 1];
-        }
-
-        result[0] = ResultHadRecords switch
-        {
-            true => GqlStatusObject.Success,
-            false when ResultHadKeys => GqlStatusObject.NoData,
-            _ => GqlStatusObject.OmittedResult
-        };
-
-        return result;
-    }
 }

@@ -424,7 +424,7 @@ public static class InternalRxResultTests
             return new ListBasedRecordCursor(
                 fields,
                 () => CreateRecords(fields, recordCount, delayMs),
-                () => summaryBuilder.Build());
+                () => summaryBuilder.Build(new CursorMetadata(true, true)));
         }
 
         public static void VerifyKeys(IRxResult result, params string[] keys)

@@ -115,7 +115,7 @@ public class ExecutableQueryTests
         var query = new Query("fake cypher");
         var summary = new SummaryBuilder(
             query,
-            autoMock.GetMock<IServerInfo>().Object).Build();
+            autoMock.GetMock<IServerInfo>().Object).Build(new CursorMetadata(true, true));
 
         var keys = new[] { "alpha", "bravo", "charlie" };
 

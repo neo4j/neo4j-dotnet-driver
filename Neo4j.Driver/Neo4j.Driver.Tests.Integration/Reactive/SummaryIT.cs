@@ -262,9 +262,6 @@ public abstract class SummaryIT
                         Notifications = new[]
                         {
                             new Notification(
-                                "gqlStatus",
-                                "statusDescription",
-                                null,
                                 "Neo.ClientNotification.Statement.UnknownLabelWarning",
                                 null,
                                 null,
@@ -292,9 +289,6 @@ public abstract class SummaryIT
                         Notifications = new[]
                         {
                             new Notification(
-                                "gqlStatus",
-                                "statusDescription",
-                                null,
                                 "Neo.ClientNotification.Statement.UnknownLabelWarning",
                                 null,
                                 null,

@@ -123,7 +123,7 @@ internal sealed class BoltProtocol : IBoltProtocol
                 autoCommitParams.BookmarksTracker,
                 streamBuilder,
                 summaryBuilder,
-                connection.Version < BoltProtocolVersion.V5_5);
+                connection.Version < BoltProtocolVersion.V5_6);
 
             await connection.EnqueueAsync(runMessage, runHandler, pullMessage, pullHandler).ConfigureAwait(false);
         }

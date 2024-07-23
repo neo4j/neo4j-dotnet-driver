@@ -51,7 +51,7 @@ public class SummaryBuilderTests
     public void ShouldReturnEmptyDatabaseInfoIfNotSet()
     {
         var builder = new SummaryBuilder(new Query("RETURN 1"), new ServerInfo(new Uri("bolt://localhost")));
-        var summary = builder.Build();
+        var summary = builder.Build(new CursorMetadata(true, true));
 
         summary.Database.Should().NotBeNull();
         summary.Database.Name.Should().BeNull();

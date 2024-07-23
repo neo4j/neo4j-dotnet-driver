@@ -21,8 +21,7 @@ namespace Neo4j.Driver;
 /// The GQL-status object as defined by the GQL standard.
 /// </summary>
 /// <since>5.22.0</since>
-/// <seealso cref="Noti+
-/// fication">Notification subtype of the GQL-status object</seealso>
+/// <seealso cref="INotification">Notification subtype of the GQL-status object</seealso>
 public interface IGqlStatusObject
 {
     /// <summary>
@@ -52,6 +51,4 @@ public interface IGqlStatusObject
     /// </summary>
     /// <returns>The diagnostic record.</returns>
     IReadOnlyDictionary<string, object> DiagnosticRecord { get; }
-
-    bool IsNotification { get; }
 }

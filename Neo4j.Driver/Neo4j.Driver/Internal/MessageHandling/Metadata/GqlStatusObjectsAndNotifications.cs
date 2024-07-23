@@ -14,9 +14,45 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.Linq;
+using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
 
 internal record GqlStatusObjectsAndNotifications(
     IList<INotification> Notifications,
-    IList<IGqlStatusObject> GqlStatusObjects);
+    IList<IGqlStatusObject> GqlStatusObjects,
+    bool PolyfiledNotifications)
+{
+    public IList<IGqlStatusObject> FinalizeStatusObjects(CursorMetadata cursorMetadata)
+    {
+        if (!PolyfiledNotifications)
+        {
+            return GqlStatusObjects ?? [];
+        }
+
+        return (GqlStatusObjects ?? [])
+            .Append(
+                cursorMetadata.ResultHadRecords switch
+                {
+                    true => GqlStatusObject.Success,
+                    false when cursorMetadata.ResultHadKeys => GqlStatusObject.NoData,
+                    _ => GqlStatusObject.OmittedResult
+                })
+            .OrderBy(
+                x => x.GqlStatus?.Substring(0, 2) switch
+                {
+                    "02" => 0,
+                    "01" => 1,
+                    "00" => 2,
+                    "03" => 3,
+                    _ => int.MaxValue
+                })
+            .ToList();
+    }
+
+    public IList<INotification> FinalizeNotifications(CursorMetadata cursorMetadata)
+    {
+        return Notifications;
+    }
+}

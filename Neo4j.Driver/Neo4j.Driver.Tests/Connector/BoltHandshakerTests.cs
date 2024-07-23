@@ -40,7 +40,7 @@ public class BoltHandshakerTests
             new Mock<ILogger>().Object,
             CancellationToken.None);
 
-        boltProtocolVersion.Should().Equals(new BoltProtocolVersion(4, 4));
+        boltProtocolVersion.Should().Be(new BoltProtocolVersion(4, 4));
     }
 
     [Fact]

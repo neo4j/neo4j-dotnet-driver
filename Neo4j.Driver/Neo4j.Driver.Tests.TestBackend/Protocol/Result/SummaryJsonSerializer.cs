@@ -220,52 +220,27 @@ internal static class SummaryJsonSerializer
             return Array.Empty<object>();
         }
 
-        return statusObjects.Select(
-            x =>
-            {
-                var diag = new Dictionary<string, object>()
-                {
-                    ["OPERATION"] = NativeToCypher.Convert(x.DiagnosticRecord["OPERATION"]),
-                    ["OPERATION_CODE"] = NativeToCypher.Convert(x.DiagnosticRecord["OPERATION_CODE"]),
-                    ["CURRENT_SCHEMA"] = NativeToCypher.Convert(x.DiagnosticRecord["CURRENT_SCHEMA"])
-                };
-
-                if (x.DiagnosticRecord.TryGetValue("_severity", out var severity))
-                {
-                    diag["_severity"] = NativeToCypher.Convert(severity);
-                }
-
-                if (x.DiagnosticRecord.TryGetValue("_classification", out var classification))
-                {
-                    diag["_classification"] = NativeToCypher.Convert(classification);
-                }
-
-                if (x.DiagnosticRecord.TryGetValue("_position", out var value))
-                {
-                    diag["_position"] = NativeToCypher.Convert(value);
-                }
-                
-                return new Dictionary<string, object>()
+        return statusObjects
+            .OfType<GqlStatusObject>()
+            .Select(
+                x => new Dictionary<string, object>
                 {
                     ["gqlStatus"] = x.GqlStatus,
                     ["statusDescription"] = x.StatusDescription,
+                    ["diagnosticRecord"] = x.DiagnosticRecord.ToDictionary(y => y.Key, y => NativeToCypher.Convert(y.Value)),
+                    ["classification"] = x.Classification.ToString().ToUpper(),
+                    ["rawClassification"] = x.RawClassification,
+                    ["rawSeverity"] = x.RawSeverity,
+                    ["severity"] = x.Severity.ToString().ToUpper(),
                     ["position"] = x.Position == null
                         ? null
-                        // ReSharper disable once SimilarAnonymousTypeNearby, not the same
                         : new
                         {
                             column = x.Position.Column,
                             offset = x.Position.Offset,
                             line = x.Position.Line
                         },
-                    ["classification"] = x.Classification.ToString().ToUpper(),
-                    ["severity"] = x.Severity.ToString().ToUpper(),
-                    ["rawClassification"] = x.RawClassification,
-                    ["rawSeverity"] = x.RawSeverity,
-                    ["diagnosticRecord"] = diag,
                     ["isNotification"] = x.IsNotification
-                };
-                
-            });
+                });
     }
 }

@@ -39,16 +39,16 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool legacyNotif
 
         var notifications = ConvertObjects(metadata, NotificationsKey, ConvertNotification);
         var statuses = ConvertObjects(metadata, StatusesKey, ConvertStatus);
+        if (statuses == null && notifications != null && legacyNotifications)
+        {
+            statuses = ConvertObjects(metadata, NotificationsKey, ConvertNotificationValuesToStatus);
+        }
         if (notifications == null && statuses != null)
         {
             notifications = ConvertObjects(metadata, StatusesKey, ConvertStatusValuesToNotification);
         }
-        if (statuses == null && notifications != null)
-        {
-            statuses = ConvertObjects(metadata, NotificationsKey, ConvertNotificationValuesToStatus);
-        }
         
-        Collected = new GqlStatusObjectsAndNotifications(notifications, statuses);
+        Collected = new GqlStatusObjectsAndNotifications(notifications, statuses, legacyNotifications);
     }
 
     private static IList<T> ConvertObjects<T>(IDictionary<string, object> metadata, string key, Func<IDictionary<string, object>, T> parse)
@@ -58,6 +58,7 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool legacyNotif
             return statuses
                 .OfType<IDictionary<string, object>>()
                 .Select(parse)
+                .Where(x => x is not null)
                 .ToList();
         }
 
@@ -85,21 +86,23 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool legacyNotif
     private static IGqlStatusObject ConvertStatus(IDictionary<string, object> gqlStatus)
     {
         var status = gqlStatus.GetValue<string>("gql_status", null);
-        var code = gqlStatus.GetValue<string>("code", null);
         var description = gqlStatus.GetValue<string>("status_description", null);
         var diagnosticRecord = CreateDiagnosticRecord(gqlStatus);
         var position = InputPosition.ConvertFromDictionary(diagnosticRecord, "_position");
         var severity = diagnosticRecord.GetValue<string>("_severity", null);
         var classification = diagnosticRecord.GetValue<string>("_classification", null);
+        var title = gqlStatus.GetValue<string>("title", null);
+        var isNotification = !string.IsNullOrEmpty(gqlStatus.GetValue<string>("neo4j_code", null));
 
         return new GqlStatusObject(
             status,
             description,
             position,
-            severity,
             classification,
+            severity,
             diagnosticRecord,
-            !string.IsNullOrEmpty(code));
+            title,
+            isNotification);
     }
 
     private static IGqlStatusObject ConvertNotificationValuesToStatus(IDictionary<string, object> notification)
@@ -135,6 +138,9 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool legacyNotif
         {
             diagnosticRecord["_classification"] = category;
         }
+
+        var title = notification.GetValue<string>("title", null);
+
         
         return new GqlStatusObject(
             status,
@@ -143,14 +149,19 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool legacyNotif
             category,
             severity,
             diagnosticRecord,
+            title,
             !string.IsNullOrEmpty(code));
     }
 
     private static INotification ConvertStatusValuesToNotification(IDictionary<string, object> gqlStatus)
     {
-        var title = gqlStatus.GetValue<string>("title", null);
         var code = gqlStatus.GetValue<string>("neo4j_code", null);
-        var description = gqlStatus.GetValue<string>("status_description", null);
+        if (code == null)
+        {
+            return null;
+        }
+        var title = gqlStatus.GetValue<string>("title", null);
+        var description = gqlStatus.GetValue<string>("description", null);
         var diagnosticRecord = CreateDiagnosticRecord(gqlStatus);
         var position = InputPosition.ConvertFromDictionary(diagnosticRecord, "_position");
 
