@@ -53,7 +53,7 @@ internal sealed record GqlStatusObject(
     public string StatusDescription { get; } =
         StatusDescription ?? throw new ArgumentNullException(nameof(StatusDescription));
 
-    public NotificationClassification Classification => ClassificationFrom(RawClassification);
+    public NotificationClassification NotificationClassification => ClassificationFrom(RawClassification);
 
     private NotificationClassification ClassificationFrom(string rawClassification)
     {

@@ -58,7 +58,7 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool legacyNotif
             return statuses
                 .OfType<IDictionary<string, object>>()
                 .Select(parse)
-                .Where(x => x is not null)
+                .Where(y => y is not null)
                 .ToList();
         }
 

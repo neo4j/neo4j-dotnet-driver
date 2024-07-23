@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 
 namespace Neo4j.Driver;
@@ -22,6 +23,7 @@ namespace Neo4j.Driver;
 /// </summary>
 /// <since>5.22.0</since>
 /// <seealso cref="INotification">Notification subtype of the GQL-status object</seealso>
+[Obsolete("Preview API")]
 public interface IGqlStatusObject
 {
     /// <summary>
@@ -38,7 +40,7 @@ public interface IGqlStatusObject
 
     IInputPosition Position { get; }
 
-    NotificationClassification Classification { get; }
+    NotificationClassification NotificationClassification { get; }
 
     string RawClassification { get; }
 

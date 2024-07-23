@@ -286,7 +286,7 @@ public abstract class SummaryIT
                 MatchesSummary(
                     new
                     {
-                        Notifications = new[]
+                        Notifications = new INotification[]
                         {
                             new Notification(
                                 "Neo.ClientNotification.Statement.UnknownLabelWarning",
