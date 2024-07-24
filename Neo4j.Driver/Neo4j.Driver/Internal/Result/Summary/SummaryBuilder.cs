@@ -34,7 +34,7 @@ internal sealed class SummaryBuilder
     public ICounters Counters { get; set; }
     public IPlan Plan { get; set; }
     public IProfiledPlan Profile { get; set; }
-    public GqlStatusObjectsAndNotifications StatusObjects { get; set; }
+    public GqlStatusObjectsAndNotifications StatusAndNotifications { get; set; }
     public long ResultAvailableAfter { get; set; } = -1L;
     public long ResultConsumedAfter { get; set; } = -1L;
     public IDatabaseInfo Database { get; set; }
@@ -53,8 +53,8 @@ internal sealed class SummaryBuilder
             Counters = builder.Counters ?? new Counters();
             Profile = builder.Profile;
             Plan = Profile ?? builder.Plan;
-            Notifications = builder.StatusObjects?.FinalizeNotifications(cursorMetadata);
-            GqlStatusObjects = builder.StatusObjects?.FinalizeStatusObjects(cursorMetadata);
+            Notifications = builder.StatusAndNotifications?.FinalizeNotifications(cursorMetadata);
+            GqlStatusObjects = builder.StatusAndNotifications?.FinalizeStatusObjects(cursorMetadata);
             ResultAvailableAfter = TimeSpan.FromMilliseconds(builder.ResultAvailableAfter);
             ResultConsumedAfter = TimeSpan.FromMilliseconds(builder.ResultConsumedAfter);
             Server = builder.Server;

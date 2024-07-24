@@ -82,9 +82,16 @@ internal abstract class TransactionStartingMessage : IRequestMessage
             }
         }
 
-        if (notificationsConfig != null && boltProtocolVersion >= BoltProtocolVersion.V5_2)
+        if (notificationsConfig != null &&
+            boltProtocolVersion >= BoltProtocolVersion.V5_2 &&
+            boltProtocolVersion < BoltProtocolVersion.V5_5)
         {
             NotificationsMetadataWriter.AddNotificationsConfigToMetadata(result, notificationsConfig);
+        }
+
+        if (notificationsConfig != null && boltProtocolVersion >= BoltProtocolVersion.V5_5)
+        {
+            NotificationsMetadataWriter.AddGqlStatusConfigToMetadata(result, notificationsConfig);
         }
 
         Metadata = result;

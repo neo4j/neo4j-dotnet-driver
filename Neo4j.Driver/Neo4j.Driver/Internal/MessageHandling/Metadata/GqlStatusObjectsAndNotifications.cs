@@ -22,11 +22,11 @@ namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
 internal record GqlStatusObjectsAndNotifications(
     IList<INotification> Notifications,
     IList<IGqlStatusObject> GqlStatusObjects,
-    bool PolyfiledNotifications)
+    bool UseStatusesAsProvided)
 {
     public IList<IGqlStatusObject> FinalizeStatusObjects(CursorMetadata cursorMetadata)
     {
-        if (!PolyfiledNotifications)
+        if (UseStatusesAsProvided)
         {
             return GqlStatusObjects ?? [];
         }

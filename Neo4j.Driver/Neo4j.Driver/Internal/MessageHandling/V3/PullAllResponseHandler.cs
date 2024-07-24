@@ -57,7 +57,7 @@ internal sealed class PullAllResponseHandler : MetadataCollectingResponseHandler
         _summaryBuilder.Plan = GetMetadata<PlanCollector, IPlan>();
         _summaryBuilder.Profile = GetMetadata<ProfiledPlanCollector, IProfiledPlan>();
         _summaryBuilder.QueryType = GetMetadata<TypeCollector, QueryType>();
-        _summaryBuilder.StatusObjects =
+        _summaryBuilder.StatusAndNotifications =
             GetMetadata<GqlStatusObjectsAndNotificationsCollector, GqlStatusObjectsAndNotifications>();
 
         _streamBuilder.PullCompleted(false, null);

@@ -353,6 +353,43 @@ public sealed class SessionConfigBuilder
         _config.NotificationsConfig = new NotificationsConfig(minimumSeverity, disabledCategories);
         return this;
     }
+    
+    /// <summary>
+    /// Override configuration for which <see cref="INotification"/>s should be emitted for the lifetime of the
+    /// session. <br/> Unspecified configuration will be provided by configuration specified in the server or the driver's
+    /// <see cref="ConfigBuilder.WithNotifications"/>. <br/> If the driver has disabled notifications with
+    /// <see cref="ConfigBuilder.WithNotificationsDisabled"/>, the unspecified values will be provided by the server. <br/>
+    /// Disabling categories or severities allows the server to skip analysis for those, which can speed up query execution.
+    /// </summary>
+    /// <remarks>Cannot be used with: <see cref="WithNotificationsDisabled"/>.</remarks>
+    /// <param name="minimumSeverity">
+    /// Optional parameter to override the minimum severity of notifications emitted. <br/> By
+    /// leaving null, the value will inherit configuration from <see cref="ConfigBuilder.WithNotifications"/> or the server.
+    /// </param>
+    /// <param name="disabledClassifications">
+    /// Optional parameter to override the category of notifications emitted. <br/> By passing
+    /// an empty collection, all categories are enabled.<br/> By leaving null, the value will inherit configuration from
+    /// <see cref="ConfigBuilder.WithNotifications"/> or the server.
+    /// </param>
+    /// <exception cref="ArgumentException">Thrown when both parameters are null.</exception>
+    /// <returns>A <see cref="SessionConfigBuilder"/> instance for further configuration options.</returns>
+    /// <seealso cref="WithNotificationsDisabled"/>
+    /// <seealso cref="ConfigBuilder.WithNotifications"/>
+    /// <seealso cref="ConfigBuilder.WithNotificationsDisabled"/>
+    public SessionConfigBuilder WithNotifications(
+        Severity? minimumSeverity,
+        Classification[] disabledClassifications)
+    {
+        if (minimumSeverity == null && disabledClassifications == null)
+        {
+            throw new ArgumentException(
+                $"Both {nameof(minimumSeverity)} and {nameof(disabledClassifications)} are both null, at least one must be non-null.");
+        }
+
+        _config.NotificationsConfig = new NotificationsConfig(minimumSeverity,
+            disabledClassifications.Select(x => (Category)(int)x).ToArray());
+        return this;
+    }
 
     /// <summary>Disable all notifications for the lifetime of the session.</summary>
     /// <remarks>Cannot be used with: <see cref="WithNotifications"/>.</remarks>

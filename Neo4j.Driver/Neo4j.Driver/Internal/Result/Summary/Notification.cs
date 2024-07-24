@@ -95,7 +95,7 @@ internal sealed class Notification : INotification
             space,
             nameof(Position),
             equals,
-            Position.ToString(),
+            Position?.ToString(),
             space,
             nameof(SeverityLevel),
             equals,

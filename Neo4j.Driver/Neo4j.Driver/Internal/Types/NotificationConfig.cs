@@ -14,7 +14,6 @@
 // limitations under the License.
 
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Neo4j.Driver.Internal.Types;
 
@@ -27,11 +26,9 @@ internal sealed class NotificationsConfig : INotificationsConfig
         if (disabledCategories != null)
         {
             DisabledCategories = [..disabledCategories];
-            DisabledClassifications = [..disabledCategories.Select(x => (NotificationClassification)(int)x)];
         }
     }
 
     public Severity? MinimumSeverity { get; set; }
     public HashSet<Category> DisabledCategories { get; set; }
-    public HashSet<NotificationClassification> DisabledClassifications { get; set; }
 }

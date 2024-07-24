@@ -48,7 +48,7 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool legacyNotif
             notifications = ConvertObjects(metadata, StatusesKey, ConvertStatusValuesToNotification);
         }
         
-        Collected = new GqlStatusObjectsAndNotifications(notifications, statuses, legacyNotifications);
+        Collected = new GqlStatusObjectsAndNotifications(notifications, statuses, !legacyNotifications);
     }
 
     private static IList<T> ConvertObjects<T>(IDictionary<string, object> metadata, string key, Func<IDictionary<string, object>, T> parse)
