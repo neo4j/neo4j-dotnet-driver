@@ -25,7 +25,7 @@ internal sealed class NotificationsConfig : INotificationsConfig
 
         if (disabledCategories != null)
         {
-            DisabledCategories = [..disabledCategories];
+            DisabledCategories = new HashSet<Category>(disabledCategories);
         }
     }
 
