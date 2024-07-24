@@ -86,7 +86,7 @@ internal class InputPosition : IInputPosition
         var offsetFound = positionDictionary.TryGetValue("offset", 0L, out var offset);
         var lineFound = positionDictionary.TryGetValue("line", 0L, out var line);
         var columnFound = positionDictionary.TryGetValue("column", 0L, out var column);
-        if (offsetFound && lineFound && columnFound)
+        if (offsetFound || lineFound || columnFound)
         {
             return new InputPosition((int)offset, (int)line, (int)column);
         }

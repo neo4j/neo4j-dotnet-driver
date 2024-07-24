@@ -67,13 +67,13 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool legacyNotif
 
     private static INotification ConvertNotification(IDictionary<string, object> notification)
     {
-        var code = notification.GetValue<string>("code", null);
-        var title = notification.GetValue<string>("title", null);
-        var description = notification.GetValue<string>("description", null);
-        var severity = notification.GetValue<string>("severity", null);
-        var category = notification.GetValue<string>("category", null);
+        var code = notification.GetValue("code", string.Empty);
+        var title = notification.GetValue("title", string.Empty);
+        var description = notification.GetValue("description", string.Empty);
+        var severity = notification.GetValue("severity", string.Empty);
+        var category = notification.GetValue("category", default(string));
         var position = InputPosition.ConvertFromDictionary(notification, "position");
-
+        
         return new Notification(
             code,
             title,
@@ -132,7 +132,6 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool legacyNotif
         if (severity != null)
         {
             diagnosticRecord["_severity"] = severity;
-
         }
         if (category != null)
         {
