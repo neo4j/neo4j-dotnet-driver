@@ -114,41 +114,4 @@ internal sealed class Notification : INotification
             RawCategory, //no space
             "}");
     }
-
-    public override bool Equals(object obj)
-    {
-        if (ReferenceEquals(this, obj))
-        {
-            return true;
-        }
-
-        if (obj == null || GetType() != obj.GetType() || !base.Equals(obj))
-        {
-            return false;
-        }
-
-        var other = (Notification)obj;
-        return Code == other.Code &&
-            Title == other.Title &&
-            Description == other.Description &&
-            SeverityLevel == other.SeverityLevel &&
-            RawSeverityLevel == other.RawSeverityLevel &&
-            Category == other.Category &&
-            RawCategory == other.RawCategory &&
-            Equals(Position, other.Position);
-    }
-
-    public override int GetHashCode()
-    {
-        var hash = 17;
-        hash = hash * 23 + (Code?.GetHashCode() ?? 0);
-        hash = hash * 23 + (Title?.GetHashCode() ?? 0);
-        hash = hash * 23 + (Description?.GetHashCode() ?? 0);
-        hash = hash * 23 + SeverityLevel.GetHashCode();
-        hash = hash * 23 + (RawSeverityLevel?.GetHashCode() ?? 0);
-        hash = hash * 23 + Category.GetHashCode();
-        hash = hash * 23 + (RawCategory?.GetHashCode() ?? 0);
-        hash = hash * 23 + (Position?.GetHashCode() ?? 0);
-        return hash;
-    }
 }
