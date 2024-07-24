@@ -65,7 +65,7 @@ internal sealed class PullResponseHandler : MetadataCollectingResponseHandler
             _summaryBuilder.QueryType = GetMetadata<TypeCollector, QueryType>();
             _summaryBuilder.Database = GetMetadata<DatabaseInfoCollector, IDatabaseInfo>();
 
-            _summaryBuilder.StatusObjects =
+            _summaryBuilder.StatusAndNotifications =
                 GetMetadata<GqlStatusObjectsAndNotificationsCollector, GqlStatusObjectsAndNotifications>();
         }
 
