@@ -20,7 +20,7 @@ using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
 
-internal sealed class GqlStatusObjectsAndNotificationsCollector(bool legacyNotifications)
+internal sealed class GqlStatusObjectsAndNotificationsCollector(bool useRawStatuses)
     : IMetadataCollector<GqlStatusObjectsAndNotifications>
 {
     private const string StatusesKey = "statuses";
@@ -39,7 +39,7 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool legacyNotif
 
         var notifications = ConvertObjects(metadata, NotificationsKey, ConvertNotification);
         var statuses = ConvertObjects(metadata, StatusesKey, ConvertStatus);
-        if (statuses == null && notifications != null && legacyNotifications)
+        if (statuses == null && notifications != null && !useRawStatuses)
         {
             statuses = ConvertObjects(metadata, NotificationsKey, ConvertNotificationValuesToStatus);
         }
@@ -48,7 +48,7 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool legacyNotif
             notifications = ConvertObjects(metadata, StatusesKey, ConvertStatusValuesToNotification);
         }
         
-        Collected = new GqlStatusObjectsAndNotifications(notifications, statuses, !legacyNotifications);
+        Collected = new GqlStatusObjectsAndNotifications(notifications, statuses, useRawStatuses);
     }
 
     private static IList<T> ConvertObjects<T>(IDictionary<string, object> metadata, string key, Func<IDictionary<string, object>, T> parse)

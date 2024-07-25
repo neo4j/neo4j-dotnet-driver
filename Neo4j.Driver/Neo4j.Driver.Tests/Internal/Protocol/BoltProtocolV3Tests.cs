@@ -360,8 +360,7 @@ public class BoltProtocolV3Tests
                     x => x.NewPullAllResponseHandler(
                         resultCursorBuilderMock.Object,
                         It.IsNotNull<SummaryBuilder>(),
-                        mockBt.Object,
-                        true))
+                        mockBt.Object))
                 .Returns(new PullAllResponseHandler(resultCursorBuilderMock.Object, summaryBuilder, mockBt.Object));
 
             handlerFactory.Setup(
@@ -637,8 +636,7 @@ public class BoltProtocolV3Tests
                     x => x.NewPullAllResponseHandler(
                         resultCursorBuilderMock.Object,
                         It.IsNotNull<SummaryBuilder>(),
-                        null,
-                        true))
+                        null))
                 .Returns(new PullAllResponseHandler(resultCursorBuilderMock.Object, summaryBuilder, null));
 
             handlerFactory.Setup(

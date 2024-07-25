@@ -19,11 +19,12 @@ using System.Collections.Generic;
 namespace Neo4j.Driver;
 
 /// <summary>
-/// The GQL-status object as defined by the GQL standard.
+/// This is a preview API, This API may change between minor revisions.<br/>
+/// The GQL-status object as defined by the GQL standard. Returned by <see cref="IResultSummary.GqlStatusObjects"/>
 /// </summary>
-/// <since>5.22.0</since>
-/// <seealso cref="INotification">Notification subtype of the GQL-status object</seealso>
-[Obsolete("Preview API")]
+/// <seealso cref="IResultSummary.GqlStatusObjects" />
+/// <since>5.23.0</since>
+[Obsolete("This is a Preview API and may change between minor versions. Obsolete will be removed in a later revision.")]
 public interface IGqlStatusObject
 {
     /// <summary>
@@ -37,20 +38,33 @@ public interface IGqlStatusObject
     /// </summary>
     /// <returns>The GQLSTATUS description.</returns>
     string StatusDescription { get; }
-
+    
+    /// <summary>
+    /// Gets the position in the query where the <see cref="IGqlStatusObject"/> instance points to. Not all notifications
+    /// have a unique position to point to and in that case the position would be set to all 0s.
+    /// </summary>
     IInputPosition Position { get; }
 
-    NotificationClassification NotificationClassification { get; }
+    /// <summary>Gets the parsed <see cref="RawClassification"/> of the <see cref="IGqlStatusObject"/> instance.</summary>
+    NotificationClassification Classification { get; }
 
+    /// <summary>Gets the unparsed string value for <see cref="Classification"/> of the <see cref="IGqlStatusObject"/> instance.</summary>
     string RawClassification { get; }
 
+    /// <summary>Gets the parsed <see cref="RawSeverity"/> of the <see cref="IGqlStatusObject"/> instance.</summary>
     NotificationSeverity Severity { get; }
 
+    /// <summary>Gets the unparsed string value for <see cref="Severity"/> of the <see cref="IGqlStatusObject"/> instance.</summary>
     string RawSeverity { get; }
 
     /// <summary>
-    /// Returns the diagnostic record.
+    /// Gets the GQL Status diagnostic record.
     /// </summary>
-    /// <returns>The diagnostic record.</returns>
+    /// <returns>The diagnostic record as a dictionary.</returns>
     IReadOnlyDictionary<string, object> DiagnosticRecord { get; }
+
+    /// <summary>
+    /// Gets the GQL Status as string representation
+    /// </summary>
+    string RawDiagnosticRecord { get; }
 }

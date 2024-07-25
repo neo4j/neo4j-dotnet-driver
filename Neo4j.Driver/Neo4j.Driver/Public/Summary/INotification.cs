@@ -48,7 +48,7 @@ public interface INotification
     /// <summary>Gets the unparsed string value for <see cref="Category"/> of the <see cref="INotification"/> instance.</summary>
     string RawCategory { get; }
 
-    /// <summary>Gets the parses <see cref="RawSeverityLevel"/> of the <see cref="INotification"/> instance.</summary>
+    /// <summary>Gets the parsed <see cref="RawSeverityLevel"/> of the <see cref="INotification"/> instance.</summary>
     NotificationSeverity SeverityLevel { get; }
 
     /// <summary>Gets the parsed <see cref="RawCategory"/> of the <see cref="INotification"/> instance.</summary>

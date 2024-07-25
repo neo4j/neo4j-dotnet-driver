@@ -13,47 +13,81 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+
 namespace Neo4j.Driver;
 
+/// <summary>
+/// This is a preview API, This API may change between minor revisions.<br/> Used In conjunction with
+/// <see cref="Severity"/> to filter which <see cref="IGqlStatusObject"/> and <see cref="INotification"/>s will be sent in
+/// <see cref="IResultSummary.GqlStatusObjects"/> and  <see cref="IResultSummary.Notifications"/> .<br/> Can be used in
+/// <see cref="ConfigBuilder.WithNotifications(Severity?, Classification[])"/> and
+/// <see cref="SessionConfigBuilder.WithNotifications(Severity?, Classification[])"/>.
+/// </summary>
+/// <since>5.23.0</since>
+[Obsolete("This is a Preview API and may change between minor versions. Obsolete will be removed in a later revision.")]
 public enum Classification
 {
     /// <summary>Receive notifications when a hint in query cannot be satisfied.</summary>
-    /// <remarks>Returned as <see cref="NotificationCategory.Hint"/></remarks>
+    /// <remarks>
+    /// Returned as <see cref="NotificationClassification.Hint"/> in <see cref="IGqlStatusObject.Classification"/> as
+    /// <see cref="NotificationCategory.Hint"/> in <see cref="INotification.Category"/>.
+    /// </remarks>
     Hint,
 
-    /// <summary>
-    /// Receive notifications when a query or command mentions entities that are unknown to the system.
-    /// </summary>
-    /// <remarks>Returned as <see cref="NotificationCategory.Unrecognized"/></remarks>
+    /// <summary>Receive notifications when a query or command mentions entities that are unknown to the system.</summary>
+    /// <remarks>
+    /// Returned as <see cref="NotificationClassification.Unrecognized"/> in
+    /// <see cref="IGqlStatusObject.Classification"/> as <see cref="NotificationCategory.Unrecognized"/> in
+    /// <see cref="INotification.Category"/>.
+    /// </remarks>
     Unrecognized,
 
     /// <summary>
     /// Receive notifications when a query/command is trying to use features that are not supported by the current
     /// system or using features that are experimental and should not be used in production.
     /// </summary>
-    /// <remarks>Returned as <see cref="NotificationCategory.Unsupported"/></remarks>
+    /// <remarks>
+    /// Returned as <see cref="NotificationClassification.Unsupported"/> in
+    /// <see cref="IGqlStatusObject.Classification"/> as <see cref="NotificationCategory.Unsupported"/> in
+    /// <see cref="INotification.Category"/>.
+    /// </remarks>
     Unsupported,
 
     /// <summary>Receive notifications when a query uses costly operations and might be slow.</summary>
-    /// <remarks>Returned as <see cref="NotificationCategory.Performance"/></remarks>
+    /// <remarks>
+    /// Returned as <see cref="NotificationClassification.Performance"/> in
+    /// <see cref="IGqlStatusObject.Classification"/> as <see cref="NotificationCategory.Performance"/> in
+    /// <see cref="INotification.Category"/>.
+    /// </remarks>
     Performance,
 
     /// <summary>Receive notifications when a query/command use deprecated features that should be replaced.</summary>
-    /// <remarks>Returned as <see cref="NotificationCategory.Deprecation"/></remarks>
+    /// <remarks>
+    /// Returned as <see cref="NotificationClassification.Deprecation"/> in
+    /// <see cref="IGqlStatusObject.Classification"/> as <see cref="NotificationCategory.Deprecation"/> in
+    /// <see cref="INotification.Category"/>.
+    /// </remarks>
     Deprecation,
 
-    /// <summary>
-    /// Receive notifications when the result of the query or command indicates a
-    /// potential security issue.
-    /// </summary>
-    /// <remarks>Returned as <see cref="NotificationCategory.Security"/></remarks>
+    /// <summary>Receive notifications when the result of the query or command indicates a potential security issue.</summary>
+    /// <remarks>
+    /// Returned as <see cref="NotificationClassification.Security"/> in <see cref="IGqlStatusObject.Classification"/>
+    /// as <see cref="NotificationCategory.Security"/> in <see cref="INotification.Category"/>.
+    /// </remarks>
     Security,
 
     /// <summary>Receive notifications related to managing databases and servers.</summary>
-    /// <remarks>Returned as <see cref="NotificationCategory.Topology"/></remarks>
+    /// <remarks>
+    /// Returned as <see cref="NotificationClassification.Topology"/> in <see cref="IGqlStatusObject.Classification"/>
+    /// as <see cref="NotificationCategory.Topology"/> in <see cref="INotification.Category"/>.
+    /// </remarks>
     Topology,
 
     /// <summary>Receive notifications not covered by other categories.</summary>
-    /// <remarks>Returned as <see cref="NotificationCategory.Generic"/></remarks>
+    /// <remarks>
+    /// Returned as <see cref="NotificationClassification.Generic"/> in <see cref="IGqlStatusObject.Classification"/>
+    /// as <see cref="NotificationCategory.Generic"/> in <see cref="INotification.Category"/>.
+    /// </remarks>
     Generic
 }

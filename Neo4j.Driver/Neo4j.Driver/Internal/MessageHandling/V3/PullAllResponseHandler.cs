@@ -42,7 +42,7 @@ internal sealed class PullAllResponseHandler : MetadataCollectingResponseHandler
         AddMetadata<CountersCollector, ICounters>();
         AddMetadata<PlanCollector, IPlan>();
         AddMetadata<ProfiledPlanCollector, IProfiledPlan>();
-        AddMetadata(new GqlStatusObjectsAndNotificationsCollector(true));
+        AddMetadata(new GqlStatusObjectsAndNotificationsCollector(false));
     }
 
     public override void OnSuccess(IDictionary<string, object> metadata)

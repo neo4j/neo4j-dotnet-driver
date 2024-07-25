@@ -139,10 +139,10 @@ internal class ResultCursorBuilder : IResultCursorBuilder
         }
 
         _pendingError?.EnsureThrown();
-        return _summaryBuilder.Build(
-            new CursorMetadata(
-                Interlocked.Read(ref _hadRecords) == 1L,
-                (await GetKeysAsync().ConfigureAwait(false)).Any()));
+        var hadRecords = Interlocked.Read(ref _hadRecords) == 1;
+        var keys = await GetKeysAsync().ConfigureAwait(false);
+        var hadKeys = keys.Any();
+        return _summaryBuilder.Build(new CursorMetadata(hadRecords, hadKeys));
     }
 
     public void RunCompleted(long queryId, string[] fields, IResponsePipelineError error)

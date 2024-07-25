@@ -71,9 +71,12 @@ public interface IResultSummary
     IList<INotification> Notifications { get; }
     
     /// <summary>
-    /// 
+    /// This is a preview API, This API may change between minor revisions.<br/>
+    /// Gets the GQL statuses produced by the server when executing a statement or query.
     /// </summary>
-    [Obsolete("This is an experimental API and may change between minor versions.")]
+    /// <seealso cref="IGqlStatusObject">For more information about GQL Statuses</seealso>
+    /// <since>5.23.0</since>
+    [Obsolete("This is a Preview API and may change between minor versions. Obsolete will be removed in a later revision.")]
     IList<IGqlStatusObject> GqlStatusObjects { get; }
     
     /// <summary>

@@ -148,8 +148,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         var pullAllHandler = _protocolHandlerFactory.NewPullAllResponseHandler(
             streamBuilder,
             summaryBuilder,
-            autoCommitParams.BookmarksTracker,
-            connection.Version < BoltProtocolVersion.V5_5);
+            autoCommitParams.BookmarksTracker);
 
         var autoCommitMessage = _protocolMessageFactory.NewRunWithMetadataMessage(
             connection,
@@ -211,8 +210,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         var pullAllHandler = _protocolHandlerFactory.NewPullAllResponseHandler(
             streamBuilder,
             summaryBuilder,
-            null,
-            connection.Version < BoltProtocolVersion.V5_5);
+            null);
 
         var message = _protocolMessageFactory.NewRunWithMetadataMessage(connection, query, null);
 

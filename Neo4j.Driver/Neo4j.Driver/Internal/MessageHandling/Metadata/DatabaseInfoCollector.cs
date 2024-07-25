@@ -18,7 +18,7 @@ using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
 
-internal class DatabaseInfoCollector : IMetadataCollector<IDatabaseInfo>
+internal sealed class DatabaseInfoCollector : IMetadataCollector<IDatabaseInfo>
 {
     internal const string DbKey = "db";
     object IMetadataCollector.Collected => Collected;

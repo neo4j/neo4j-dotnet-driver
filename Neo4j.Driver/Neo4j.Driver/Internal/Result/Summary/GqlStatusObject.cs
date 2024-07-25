@@ -53,7 +53,7 @@ internal sealed record GqlStatusObject(
     public string StatusDescription { get; } =
         StatusDescription ?? throw new ArgumentNullException(nameof(StatusDescription));
 
-    public NotificationClassification NotificationClassification => ClassificationFrom(RawClassification);
+    public NotificationClassification Classification => ClassificationFrom(RawClassification);
 
     private NotificationClassification ClassificationFrom(string rawClassification)
     {
@@ -76,6 +76,8 @@ internal sealed record GqlStatusObject(
     public IReadOnlyDictionary<string, object> DiagnosticRecord { get; } =
         DiagnosticRecord ?? throw new ArgumentNullException(nameof(DiagnosticRecord));
 
+    public string RawDiagnosticRecord => DiagnosticRecord.ToContentString();
+
     internal static readonly IGqlStatusObject OmittedResult = new GqlStatusObject(
         "00001",
         "note: successful completion - omitted result");
@@ -89,9 +91,4 @@ internal sealed record GqlStatusObject(
         "02000",
         "note: no data"
      );
-
-    internal static readonly IGqlStatusObject NoDataUnknown = new GqlStatusObject(
-        "02N42",
-        "note: no data - unknown subcondition"
-      );
 }

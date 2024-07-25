@@ -30,7 +30,7 @@ internal sealed class PullResponseHandler : MetadataCollectingResponseHandler
         IResultStreamBuilder streamBuilder,
         SummaryBuilder summaryBuilder,
         IBookmarksTracker bookmarksTracker,
-        bool legacyNotifications)
+        bool useRawStatuses)
     {
         _streamBuilder = streamBuilder ?? throw new ArgumentNullException(nameof(streamBuilder));
         _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
@@ -44,7 +44,7 @@ internal sealed class PullResponseHandler : MetadataCollectingResponseHandler
         AddMetadata<PlanCollector, IPlan>();
         AddMetadata<ProfiledPlanCollector, IProfiledPlan>();
         AddMetadata<DatabaseInfoCollector, IDatabaseInfo>();
-        AddMetadata(new GqlStatusObjectsAndNotificationsCollector(legacyNotifications));
+        AddMetadata(new GqlStatusObjectsAndNotificationsCollector(useRawStatuses));
     }
 
     public override void OnSuccess(IDictionary<string, object> metadata)
@@ -55,20 +55,16 @@ internal sealed class PullResponseHandler : MetadataCollectingResponseHandler
             GetMetadata<BookmarksCollector, Bookmarks>(),
             GetMetadata<DatabaseInfoCollector, IDatabaseInfo>());
 
+        _summaryBuilder.ResultConsumedAfter = GetMetadata<TimeToLastCollector, long>();
+        _summaryBuilder.Counters = GetMetadata<CountersCollector, ICounters>();
+        _summaryBuilder.Plan = GetMetadata<PlanCollector, IPlan>();
+        _summaryBuilder.Profile = GetMetadata<ProfiledPlanCollector, IProfiledPlan>();
+        _summaryBuilder.QueryType = GetMetadata<TypeCollector, QueryType>();
+        _summaryBuilder.Database = GetMetadata<DatabaseInfoCollector, IDatabaseInfo>();
+        _summaryBuilder.StatusAndNotifications =
+            GetMetadata<GqlStatusObjectsAndNotificationsCollector, GqlStatusObjectsAndNotifications>();
+
         var hasMore = GetMetadata<HasMoreCollector, bool>();
-        if (!hasMore)
-        {
-            _summaryBuilder.ResultConsumedAfter = GetMetadata<TimeToLastCollector, long>();
-            _summaryBuilder.Counters = GetMetadata<CountersCollector, ICounters>();
-            _summaryBuilder.Plan = GetMetadata<PlanCollector, IPlan>();
-            _summaryBuilder.Profile = GetMetadata<ProfiledPlanCollector, IProfiledPlan>();
-            _summaryBuilder.QueryType = GetMetadata<TypeCollector, QueryType>();
-            _summaryBuilder.Database = GetMetadata<DatabaseInfoCollector, IDatabaseInfo>();
-
-            _summaryBuilder.StatusAndNotifications =
-                GetMetadata<GqlStatusObjectsAndNotificationsCollector, GqlStatusObjectsAndNotifications>();
-        }
-
         _streamBuilder.PullCompleted(hasMore, null);
     }
 

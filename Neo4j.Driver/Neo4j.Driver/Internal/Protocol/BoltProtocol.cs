@@ -120,10 +120,10 @@ internal sealed class BoltProtocol : IBoltProtocol
         {
             var pullMessage = _protocolMessageFactory.NewPullMessage(autoCommitParams.FetchSize);
             var pullHandler = _protocolHandlerFactory.NewPullResponseHandler(
+                connection,
                 autoCommitParams.BookmarksTracker,
                 streamBuilder,
-                summaryBuilder,
-                connection.Version < BoltProtocolVersion.V5_6);
+                summaryBuilder);
 
             await connection.EnqueueAsync(runMessage, runHandler, pullMessage, pullHandler).ConfigureAwait(false);
         }
@@ -172,10 +172,10 @@ internal sealed class BoltProtocol : IBoltProtocol
         {
             var pullMessage = _protocolMessageFactory.NewPullMessage(fetchSize);
             var pullHandler = _protocolHandlerFactory.NewPullResponseHandler(
+                connection,
                 null,
                 streamBuilder,
-                summaryBuilder,
-                connection.Version < BoltProtocolVersion.V5_5);
+                summaryBuilder);
 
             await connection.EnqueueAsync(runMessage, runHandler, pullMessage, pullHandler).ConfigureAwait(false);
         }
@@ -306,10 +306,10 @@ internal sealed class BoltProtocol : IBoltProtocol
         {
             var pullMessage = _protocolMessageFactory.NewPullMessage(id, n);
             var pullResponseHandler = _protocolHandlerFactory.NewPullResponseHandler(
+                connection,
                 bookmarksTracker,
                 streamBuilder,
-                summaryBuilder,
-                connection.Version < BoltProtocolVersion.V5_5);
+                summaryBuilder);
 
             await connection.EnqueueAsync(pullMessage, pullResponseHandler).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);
@@ -327,10 +327,10 @@ internal sealed class BoltProtocol : IBoltProtocol
         {
             var discardMessage = _protocolMessageFactory.NewDiscardMessage(id, ResultHandleMessage.All);
             var pullResponseHandler = _protocolHandlerFactory.NewPullResponseHandler(
+                connection,
                 bookmarksTracker,
                 streamBuilder,
-                summaryBuilder,
-                connection.Version < BoltProtocolVersion.V5_5);
+                summaryBuilder);
 
             await connection.EnqueueAsync(discardMessage, pullResponseHandler).ConfigureAwait(false);
             await connection.SendAsync().ConfigureAwait(false);

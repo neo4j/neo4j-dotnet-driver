@@ -39,10 +39,10 @@ internal interface IBoltProtocolHandlerFactory
     RunResponseHandler NewRunResponseHandler(IResultCursorBuilder streamBuilder, SummaryBuilder summaryBuilder);
 
     PullResponseHandler NewPullResponseHandler(
+        IConnection connection,
         IBookmarksTracker bookmarksTracker,
         IResultStreamBuilder cursorBuilder,
-        SummaryBuilder summaryBuilder,
-        bool legacyNotifications);
+        SummaryBuilder summaryBuilder);
 
     RouteResponseHandler NewRouteResponseHandler();
     HelloResponseHandler NewHelloResponseHandler(IConnection connection);
@@ -55,8 +55,7 @@ internal interface IBoltProtocolHandlerFactory
     PullAllResponseHandler NewPullAllResponseHandler(
         IResultCursorBuilder streamBuilder,
         SummaryBuilder summaryBuilder,
-        IBookmarksTracker bookmarksTracker,
-        bool legacyNotifications);
+        IBookmarksTracker bookmarksTracker);
 
     TelemetryResponseHandler NewTelemetryResponseHandler(TransactionInfo info);
 }
@@ -93,12 +92,12 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
     }
 
     public PullResponseHandler NewPullResponseHandler(
+        IConnection connection,
         IBookmarksTracker bookmarksTracker,
         IResultStreamBuilder cursorBuilder,
-        SummaryBuilder summaryBuilder,
-        bool legacyNotifications)
+        SummaryBuilder summaryBuilder)
     {
-        return new PullResponseHandler(cursorBuilder, summaryBuilder, bookmarksTracker, legacyNotifications);
+        return new PullResponseHandler(cursorBuilder, summaryBuilder, bookmarksTracker, connection.Version >= BoltProtocolVersion.V5_5);
     }
 
     public RouteResponseHandler NewRouteResponseHandler()
@@ -126,8 +125,7 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
     public PullAllResponseHandler NewPullAllResponseHandler(
         IResultCursorBuilder streamBuilder,
         SummaryBuilder summaryBuilder,
-        IBookmarksTracker bookmarksTracker,
-        bool legacyNotifications)
+        IBookmarksTracker bookmarksTracker)
     {
         return new PullAllResponseHandler(streamBuilder, summaryBuilder, bookmarksTracker);
     }

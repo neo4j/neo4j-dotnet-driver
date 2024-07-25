@@ -710,10 +710,10 @@ public class BoltProtocolTests
             handlerFactory
                 .Setup(
                     x => x.NewPullResponseHandler(
+                        mockConn.Object,
                         mockBt.Object,
                         resultCursorBuilderMock.Object,
-                        It.IsNotNull<SummaryBuilder>(),
-                        true))
+                        It.IsNotNull<SummaryBuilder>()))
                 .Returns(
                     new PullResponseHandler(
                         resultCursorBuilderMock.Object,
@@ -1131,10 +1131,10 @@ public class BoltProtocolTests
             handlerFactory
                 .Setup(
                     x => x.NewPullResponseHandler(
+                        mockConn.Object,
                         null,
                         resultCursorBuilderMock.Object,
-                        It.IsNotNull<SummaryBuilder>(),
-                        true))
+                        It.IsNotNull<SummaryBuilder>()))
                 .Returns(
                     new PullResponseHandler(
                         resultCursorBuilderMock.Object,
@@ -1267,10 +1267,10 @@ public class BoltProtocolTests
             handlerFactory
                 .Setup(
                     x => x.NewPullResponseHandler(
+                        mockConn.Object,
                         mockBt.Object,
                         resultCursorBuilderMock.Object,
-                        It.IsNotNull<SummaryBuilder>(),
-                        true))
+                        It.IsNotNull<SummaryBuilder>()))
                 .Returns(new PullResponseHandler(resultCursorBuilderMock.Object, sb, mockBt.Object, true));
 
             handlerFactory.Setup(
@@ -1294,7 +1294,7 @@ public class BoltProtocolTests
 
             msgFactory.Verify(x => x.NewPullMessage(1, 10), Times.Once);
             handlerFactory.Verify(
-                x => x.NewPullResponseHandler(mockBt.Object, resultCursorBuilderMock.Object, sb, true),
+                x => x.NewPullResponseHandler(mockConn.Object, mockBt.Object, resultCursorBuilderMock.Object, sb),
                 Times.Once);
 
             mockConn.Verify(
@@ -1335,10 +1335,10 @@ public class BoltProtocolTests
             handlerFactory
                 .Setup(
                     x => x.NewPullResponseHandler(
+                        mockConn.Object,
                         mockBt.Object,
                         resultCursorBuilderMock.Object,
-                        It.IsNotNull<SummaryBuilder>(),
-                        true))
+                        It.IsNotNull<SummaryBuilder>()))
                 .Returns(new PullResponseHandler(resultCursorBuilderMock.Object, sb, mockBt.Object, true));
 
             handlerFactory.Setup(
@@ -1362,7 +1362,7 @@ public class BoltProtocolTests
 
             msgFactory.Verify(x => x.NewDiscardMessage(1, -1), Times.Once);
             handlerFactory.Verify(
-                x => x.NewPullResponseHandler(mockBt.Object, resultCursorBuilderMock.Object, sb, true),
+                x => x.NewPullResponseHandler(mockConn.Object, mockBt.Object, resultCursorBuilderMock.Object, sb),
                 Times.Once);
 
             mockConn.Verify(
@@ -1370,7 +1370,6 @@ public class BoltProtocolTests
                 Times.Once);
 
             mockConn.Verify(x => x.SendAsync(), Times.Once);
-            mockConn.Verify(x => x.Version, Times.Once);
             mockConn.VerifyNoOtherCalls();
         }
     }

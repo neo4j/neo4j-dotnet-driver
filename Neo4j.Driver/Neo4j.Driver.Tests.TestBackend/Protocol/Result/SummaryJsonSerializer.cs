@@ -228,7 +228,7 @@ internal static class SummaryJsonSerializer
                     ["gqlStatus"] = x.GqlStatus,
                     ["statusDescription"] = x.StatusDescription,
                     ["diagnosticRecord"] = x.DiagnosticRecord.ToDictionary(y => y.Key, y => NativeToCypher.Convert(y.Value)),
-                    ["classification"] = x.NotificationClassification.ToString().ToUpper(),
+                    ["classification"] = x.Classification.ToString().ToUpper(),
                     ["rawClassification"] = x.RawClassification,
                     ["rawSeverity"] = x.RawSeverity,
                     ["severity"] = x.Severity.ToString().ToUpper(),

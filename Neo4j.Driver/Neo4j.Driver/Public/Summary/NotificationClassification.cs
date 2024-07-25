@@ -13,15 +13,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+
 namespace Neo4j.Driver;
 
 /// <summary>
+/// This is a preview API, This API may change between minor revisions.<br/>
 /// Represents the classification of server notifications surfaced by <see cref="IGqlStatusObject"/>.<br/> Used in
 /// conjunction with <see cref="NotificationSeverity"/>.
 /// </summary>
+/// <since>5.23.0</since>
+[Obsolete("This is a Preview API and may change between minor versions. Obsolete will be removed in a later revision.")]
 public enum NotificationClassification
 {
-    /// <summary>the <see cref="INotification"/>'s category is a value unknown to this driver version.</summary>
+    /// <summary>the <see cref="IGqlStatusObject"/>'s classification is a value unknown to this driver version.</summary>
     Unknown,
 
     /// <summary>The given hint cannot be satisfied.</summary>
