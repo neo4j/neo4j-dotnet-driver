@@ -19,7 +19,7 @@ using Neo4j.Driver.Internal.Result;
 
 namespace Neo4j.Driver.Internal.MessageHandling.Metadata;
 
-internal record GqlStatusObjectsAndNotifications(
+internal sealed record GqlStatusObjectsAndNotifications(
     IList<INotification> Notifications,
     IList<IGqlStatusObject> GqlStatusObjects,
     bool UseRawStatuses)

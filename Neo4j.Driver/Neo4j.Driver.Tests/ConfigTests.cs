@@ -22,6 +22,7 @@ using Moq;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector.Trust;
 using Neo4j.Driver.Internal.Logging;
+using Neo4j.Driver.Internal.Types;
 using Neo4j.Driver.Preview.Auth;
 using Xunit;
 
@@ -240,9 +241,159 @@ public class ConfigTests
             configBuilder.Build().TlsNegotiator.Should().BeOfType<MockTlsNegotiator>();
         }
 
+        [Theory]
+        [InlineData(Classification.Hint, Category.Hint)]
+        [InlineData(Classification.Unrecognized, Category.Unrecognized)]
+        [InlineData(Classification.Unsupported, Category.Unsupported)]
+        [InlineData(Classification.Performance, Category.Performance)]
+        [InlineData(Classification.Deprecation, Category.Deprecation)]
+        [InlineData(Classification.Security, Category.Security)]
+        [InlineData(Classification.Topology, Category.Topology)]
+        [InlineData(Classification.Generic, Category.Generic)]
+        public void WithNotifications_ShouldSetCategoryWithClassification(
+            Classification classification,
+            Category category)
+        {
+            var configBuilder = new ConfigBuilder(new Config());
+
+            configBuilder.WithNotifications(null, [classification]);
+
+            var config = configBuilder.Build()
+                .NotificationsConfig.Should()
+                .BeOfType<NotificationsConfig>();
+
+            config
+                .Which
+                .DisabledCategories.Should()
+                .BeEquivalentTo([category]);
+
+            config
+                .Which
+                .MinimumSeverity.Should()
+                .Be(null);
+        }
+
+        [Theory]
+        [InlineData(Category.Hint, Category.Hint)]
+        [InlineData(Category.Unrecognized, Category.Unrecognized)]
+        [InlineData(Category.Unsupported, Category.Unsupported)]
+        [InlineData(Category.Performance, Category.Performance)]
+        [InlineData(Category.Deprecation, Category.Deprecation)]
+        [InlineData(Category.Security, Category.Security)]
+        [InlineData(Category.Topology, Category.Topology)]
+        [InlineData(Category.Generic, Category.Generic)]
+        public void WithNotifications_ShouldSetCategory(
+            Category inCat,
+            Category outCat)
+        {
+            var configBuilder = new ConfigBuilder(new Config());
+
+            configBuilder.WithNotifications(null, [inCat]);
+
+            var config = configBuilder.Build()
+                .NotificationsConfig.Should()
+                .BeOfType<NotificationsConfig>();
+            config
+                .Which
+                .DisabledCategories.Should()
+                .BeEquivalentTo([outCat]);
+            config
+                .Which
+                .MinimumSeverity.Should()
+                .Be(null);
+        }
+
+        [Fact]
+        public void WithNotifications_ShouldSetMultipleCategories()
+        {
+            var configBuilder = new ConfigBuilder(new Config());
+
+            configBuilder.WithNotifications(null, [Category.Deprecation, Category.Hint]);
+
+            var config = configBuilder.Build()
+                .NotificationsConfig.Should()
+                .BeOfType<NotificationsConfig>();
+
+            config
+                .Which
+                .DisabledCategories.Should()
+                .BeEquivalentTo([Category.Deprecation, Category.Hint]);
+
+            config
+                .Which
+                .MinimumSeverity.Should()
+                .Be(null);
+        }
+
+        [Fact]
+        public void WithNotifications_ShouldSetMultipleClassifications()
+        {
+            var configBuilder = new ConfigBuilder(new Config());
+
+            configBuilder.WithNotifications(null, [Classification.Deprecation, Classification.Hint]);
+
+            var config = configBuilder.Build()
+                .NotificationsConfig.Should()
+                .BeOfType<NotificationsConfig>();
+
+            config
+                .Which
+                .DisabledCategories.Should()
+                .BeEquivalentTo([Category.Deprecation, Category.Hint]);
+
+            config
+                .Which
+                .MinimumSeverity.Should()
+                .Be(null);
+        }
+
+        [Fact]
+        public void WithNotifications_ShouldSetSeverity()
+        {
+            var configBuilder = new ConfigBuilder(new Config());
+
+            configBuilder.WithNotifications(Severity.Information, Array.Empty<Category>());
+
+            var config = configBuilder.Build()
+                .NotificationsConfig.Should()
+                .BeOfType<NotificationsConfig>();
+
+            config
+                .Which
+                .DisabledCategories.Should()
+                .BeEquivalentTo([]);
+
+            config
+                .Which
+                .MinimumSeverity.Should()
+                .Be(Severity.Information);
+        }
+
+        [Fact]
+        public void WithNotifications_ShouldSetSeverityWhenUsingClassification()
+        {
+            var configBuilder = new ConfigBuilder(new Config());
+
+            configBuilder.WithNotifications(Severity.Warning, Array.Empty<Classification>());
+
+            var config = configBuilder.Build()
+                .NotificationsConfig.Should()
+                .BeOfType<NotificationsConfig>();
+
+            config
+                .Which
+                .DisabledCategories.Should()
+                .BeEquivalentTo([]);
+
+            config
+                .Which
+                .MinimumSeverity.Should()
+                .Be(Severity.Warning);
+        }
+        
         private class MockTlsNegotiator : ITlsNegotiator
         {
-            /// <inheritdoc />
+            /// <inheritdoc/>
             public SslStream NegotiateTls(Uri uri, Stream stream)
             {
                 return null;
