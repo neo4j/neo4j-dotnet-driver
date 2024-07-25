@@ -139,7 +139,6 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool useRawStatu
         }
 
         var title = notification.GetValue<string>("title", null);
-
         
         return new GqlStatusObject(
             status,
@@ -159,12 +158,12 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool useRawStatu
         {
             return null;
         }
-        var title = gqlStatus.GetValue<string>("title", null);
-        var description = gqlStatus.GetValue<string>("description", null);
+        var title = gqlStatus.GetValue("title", string.Empty);
+        var description = gqlStatus.GetValue("description", string.Empty);
         var diagnosticRecord = CreateDiagnosticRecord(gqlStatus);
         var position = InputPosition.ConvertFromDictionary(diagnosticRecord, "_position");
 
-        var severity = diagnosticRecord.GetValue<string>("_severity", null);
+        var severity = diagnosticRecord.GetValue("_severity", string.Empty);
         var classification = diagnosticRecord.GetValue<string>("_classification", null);
 
         return new Notification(
