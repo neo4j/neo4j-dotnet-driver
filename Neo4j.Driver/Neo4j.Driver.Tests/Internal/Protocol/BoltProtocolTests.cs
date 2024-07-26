@@ -1302,8 +1302,6 @@ public class BoltProtocolTests
                 Times.Once);
 
             mockConn.Verify(x => x.SendAsync(), Times.Once);
-            mockConn.Verify(x => x.Version, Times.Once);
-
             mockConn.VerifyNoOtherCalls();
         }
     }
