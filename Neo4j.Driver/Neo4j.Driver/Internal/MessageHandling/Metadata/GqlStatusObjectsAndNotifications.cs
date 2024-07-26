@@ -40,7 +40,7 @@ internal sealed record GqlStatusObjectsAndNotifications(
                     _ => GqlStatusObject.OmittedResult
                 })
             .OrderBy(
-                x => x.GqlStatus?.Substring(0, 2) switch
+                x => GetStatusOrderingValue(x) switch
                 {
                     "02" => 0,
                     "01" => 1,
@@ -49,6 +49,12 @@ internal sealed record GqlStatusObjectsAndNotifications(
                     _ => int.MaxValue
                 })
             .ToList();
+    }
+
+    private static string GetStatusOrderingValue(IGqlStatusObject x)
+    {
+        var status = x.GqlStatus;
+        return status?.Length > 1 ? status.Substring(0, 2) : "";
     }
 
     public IList<INotification> FinalizeNotifications(CursorMetadata cursorMetadata)

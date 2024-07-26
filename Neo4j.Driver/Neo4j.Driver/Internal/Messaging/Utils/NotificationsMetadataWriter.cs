@@ -85,5 +85,4 @@ internal static class NotificationsMetadataWriter
                 return;
         }
     }
-
 }

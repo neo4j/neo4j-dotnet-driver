@@ -20,6 +20,7 @@ using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
+using Neo4j.Driver.Internal.Types;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.MessageHandling.Messages;
@@ -161,5 +162,53 @@ public class HelloMessageTests
                 default(INotificationsConfig));
 
         message.Metadata.Should().ContainKey("bolt_agent");
+    }
+
+    [Theory]
+    [InlineData(5, 2)]
+    [InlineData(5, 3)]
+    [InlineData(5, 4)]
+    public void ShouldAddNotificationsCategories(int major, int minor)
+    {
+        var cfg = new NotificationsConfig(Severity.Information, [Category.Hint]);
+        var helloMessage = new HelloMessage(
+            new BoltProtocolVersion(major, minor),
+            null,
+            null,
+            cfg);
+
+        helloMessage.Metadata.Should()
+            .ContainKey("notifications_disabled_categories")
+            .WhichValue.Should()
+            .BeEquivalentTo(new[] { "HINT" });
+
+        helloMessage.Metadata.Should()
+            .ContainKey("notifications_minimum_severity")
+            .WhichValue.Should()
+            .Be("INFORMATION");
+    }
+
+    [Theory]
+    [InlineData(5, 5)]
+    [InlineData(5, 6)]
+    [InlineData(6, 0)]
+    public void ShouldAddNotificationsClassifications(int major, int minor)
+    {
+        var cfg = new NotificationsConfig(Severity.Information, [Category.Hint]);
+        var helloMessage = new HelloMessage(
+            new BoltProtocolVersion(major, minor),
+            null,
+            null,
+            cfg);
+
+        helloMessage.Metadata.Should()
+            .ContainKey("notifications_disabled_classifications")
+            .WhichValue.Should()
+            .BeEquivalentTo(new[] { "HINT" });
+
+        helloMessage.Metadata.Should()
+            .ContainKey("notifications_minimum_severity")
+            .WhichValue.Should()
+            .Be("INFORMATION");
     }
 }

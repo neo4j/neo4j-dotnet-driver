@@ -20,6 +20,7 @@ using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
+using Neo4j.Driver.Internal.Types;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Internal.MessageHandling.Messages;
@@ -92,5 +93,52 @@ public class RunWithMetaDataMessageTests
             .Should()
             .Be(
                 "RUN `...`, [] [{bookmarks, [bm:a]}, {tx_timeout, 1000}, {tx_metadata, [{a, b}]}, {mode, r}, {db, neo4j}, {imp_user, jeff}]");
+    }
+
+
+    [Theory]
+    [InlineData(5, 2)]
+    [InlineData(5, 3)]
+    [InlineData(5, 4)]
+    public void ShouldAddNotificationsCategories(int major, int minor)
+    {
+        var cfg = new NotificationsConfig(Severity.Information, [Category.Hint]);
+        var runMessage = new RunWithMetadataMessage(
+            new BoltProtocolVersion(major, minor),
+            new Query(""),
+            notificationsConfig: cfg);
+
+        runMessage.Metadata.Should()
+            .ContainKey("notifications_disabled_categories")
+            .WhichValue.Should()
+            .BeEquivalentTo(new[] { "HINT" });
+
+        runMessage.Metadata.Should()
+            .ContainKey("notifications_minimum_severity")
+            .WhichValue.Should()
+            .Be("INFORMATION");
+    }
+
+    [Theory]
+    [InlineData(5, 5)]
+    [InlineData(5, 6)]
+    [InlineData(6, 0)]
+    public void ShouldAddNotificationsClassifications(int major, int minor)
+    {
+        var cfg = new NotificationsConfig(Severity.Information, [Category.Hint]);
+        var runMessage = new RunWithMetadataMessage(
+            new BoltProtocolVersion(major, minor),
+            new Query(""),
+            notificationsConfig: cfg);
+
+        runMessage.Metadata.Should()
+            .ContainKey("notifications_disabled_classifications")
+            .WhichValue.Should()
+            .BeEquivalentTo(new[] { "HINT" });
+
+        runMessage.Metadata.Should()
+            .ContainKey("notifications_minimum_severity")
+            .WhichValue.Should()
+            .Be("INFORMATION");
     }
 }

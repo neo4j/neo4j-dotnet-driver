@@ -212,4 +212,59 @@ public class BeginMessageTests
             .Should()
             .BeOfType<ArgumentOutOfRangeException>();
     }
+
+
+    [Theory]
+    [InlineData(5, 2)]
+    [InlineData(5, 3)]
+    [InlineData(5, 4)]
+    public void ShouldAddNotificationsCategories(int major, int minor)
+    {
+        var cfg = new NotificationsConfig(Severity.Information, [Category.Hint]);
+        var beginMessage = new BeginMessage(
+            new BoltProtocolVersion(major, minor),
+            null,
+            null,
+            null,
+            AccessMode.Read,
+            null,
+            cfg);
+
+        beginMessage.Metadata.Should()
+            .ContainKey("notifications_disabled_categories")
+            .WhichValue.Should()
+            .BeEquivalentTo(new[] { "HINT" });
+
+        beginMessage.Metadata.Should()
+            .ContainKey("notifications_minimum_severity")
+            .WhichValue.Should()
+            .Be("INFORMATION");
+    }
+
+    [Theory]
+    [InlineData(5, 5)]
+    [InlineData(5, 6)]
+    [InlineData(6, 0)]
+    public void ShouldAddNotificationsClassifications(int major, int minor)
+    {
+        var cfg = new NotificationsConfig(Severity.Information, [Category.Hint]);
+        var beginMessage = new BeginMessage(
+            new BoltProtocolVersion(major, minor),
+            null,
+            null,
+            null,
+            AccessMode.Read,
+            null,
+            cfg);
+
+        beginMessage.Metadata.Should()
+            .ContainKey("notifications_disabled_classifications")
+            .WhichValue.Should()
+            .BeEquivalentTo(new[] { "HINT" });
+
+        beginMessage.Metadata.Should()
+            .ContainKey("notifications_minimum_severity")
+            .WhichValue.Should()
+            .Be("INFORMATION");
+    }
 }
