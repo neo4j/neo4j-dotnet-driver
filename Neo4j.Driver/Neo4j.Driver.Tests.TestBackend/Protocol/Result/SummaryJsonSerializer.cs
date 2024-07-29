@@ -16,7 +16,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Tests.TestBackend.Types;
 using Newtonsoft.Json;
@@ -37,7 +36,7 @@ internal static class SummaryJsonSerializer
                     query = GetQuery(summary),
                     queryType = GetQueryTypeAsStringCode(summary),
                     plan = MapToPlanJson(summary?.Plan),
-                    notifications = MapNotifications(summary?.Notifications, ((ServerInfo)summary.Server).Protocol),
+                    notifications = MapNotifications(summary?.Notifications),
                     database = summary.Database?.Name,
                     serverInfo = GetServerInfo(summary),
                     counters = GetCountersFromSummary(summary.Counters),
@@ -45,8 +44,7 @@ internal static class SummaryJsonSerializer
                     resultAvailableAfter = GetTotalMilliseconds(summary.ResultAvailableAfter),
                     resultConsumedAfter = GetTotalMilliseconds(summary.ResultConsumedAfter),
                     gqlStatusObjects = MapGqlStatusObjects(
-                        summary.GqlStatusObjects,
-                        ((ServerInfo)summary.Server).Protocol)
+                        summary.GqlStatusObjects)
                 }));
     }
 
@@ -166,7 +164,7 @@ internal static class SummaryJsonSerializer
         };
     }
 
-    private static object MapNotifications(IList<INotification> notifications, BoltProtocolVersion serverProtocol)
+    private static object MapNotifications(IList<INotification> notifications)
     {
         if (notifications == null)
         {
@@ -213,7 +211,7 @@ internal static class SummaryJsonSerializer
             .ToList();
     }
 
-    private static object MapGqlStatusObjects(IList<IGqlStatusObject> statusObjects, BoltProtocolVersion _)
+    private static object MapGqlStatusObjects(IList<IGqlStatusObject> statusObjects)
     {
         if (statusObjects == null)
         {
