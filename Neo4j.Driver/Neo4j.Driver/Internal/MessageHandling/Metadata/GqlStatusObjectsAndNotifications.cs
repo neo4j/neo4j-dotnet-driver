@@ -39,6 +39,10 @@ internal sealed record GqlStatusObjectsAndNotifications(
                     false when cursorMetadata.ResultHadKeys => GqlStatusObject.NoData,
                     _ => GqlStatusObject.OmittedResult
                 })
+            //`GQL` spec requires the objects follows the precedence:
+            // * A “no data” (`02xxx`) has precedence over a warning;
+            // * A warning (`01xxx`) has precedence over a success.
+            // * A success (`00xxx`) has precedence over anything informational (`03xxx`)
             .OrderBy(
                 x => GetStatusOrderingValue(x) switch
                 {
