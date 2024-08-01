@@ -142,6 +142,9 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             NullTransaction.Instance);
 
         var runHandler = _protocolHandlerFactory.NewRunResponseHandlerV3(streamBuilder, summaryBuilder);
+
+        // if connection protocol is less than 5.0, use legacy notifications
+
         var pullAllHandler = _protocolHandlerFactory.NewPullAllResponseHandler(
             streamBuilder,
             summaryBuilder,
@@ -204,7 +207,10 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             transaction);
 
         var runHandler = _protocolHandlerFactory.NewRunResponseHandlerV3(streamBuilder, summaryBuilder);
-        var pullAllHandler = _protocolHandlerFactory.NewPullAllResponseHandler(streamBuilder, summaryBuilder, null);
+        var pullAllHandler = _protocolHandlerFactory.NewPullAllResponseHandler(
+            streamBuilder,
+            summaryBuilder,
+            null);
 
         var message = _protocolMessageFactory.NewRunWithMetadataMessage(connection, query, null);
 

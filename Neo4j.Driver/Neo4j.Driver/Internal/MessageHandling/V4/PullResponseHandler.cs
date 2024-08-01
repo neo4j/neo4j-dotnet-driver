@@ -29,7 +29,8 @@ internal sealed class PullResponseHandler : MetadataCollectingResponseHandler
     public PullResponseHandler(
         IResultStreamBuilder streamBuilder,
         SummaryBuilder summaryBuilder,
-        IBookmarksTracker bookmarksTracker)
+        IBookmarksTracker bookmarksTracker,
+        bool useRawStatuses)
     {
         _streamBuilder = streamBuilder ?? throw new ArgumentNullException(nameof(streamBuilder));
         _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
@@ -42,8 +43,8 @@ internal sealed class PullResponseHandler : MetadataCollectingResponseHandler
         AddMetadata<CountersCollector, ICounters>();
         AddMetadata<PlanCollector, IPlan>();
         AddMetadata<ProfiledPlanCollector, IProfiledPlan>();
-        AddMetadata<NotificationsCollector, IList<INotification>>();
         AddMetadata<DatabaseInfoCollector, IDatabaseInfo>();
+        AddMetadata(new GqlStatusObjectsAndNotificationsCollector(useRawStatuses));
     }
 
     public override void OnSuccess(IDictionary<string, object> metadata)
@@ -56,13 +57,15 @@ internal sealed class PullResponseHandler : MetadataCollectingResponseHandler
 
         _summaryBuilder.ResultConsumedAfter = GetMetadata<TimeToLastCollector, long>();
         _summaryBuilder.Counters = GetMetadata<CountersCollector, ICounters>();
-        _summaryBuilder.Notifications = GetMetadata<NotificationsCollector, IList<INotification>>();
         _summaryBuilder.Plan = GetMetadata<PlanCollector, IPlan>();
         _summaryBuilder.Profile = GetMetadata<ProfiledPlanCollector, IProfiledPlan>();
         _summaryBuilder.QueryType = GetMetadata<TypeCollector, QueryType>();
         _summaryBuilder.Database = GetMetadata<DatabaseInfoCollector, IDatabaseInfo>();
+        _summaryBuilder.StatusAndNotifications =
+            GetMetadata<GqlStatusObjectsAndNotificationsCollector, GqlStatusObjectsAndNotifications>();
 
-        _streamBuilder.PullCompleted(GetMetadata<HasMoreCollector, bool>(), null);
+        var hasMore = GetMetadata<HasMoreCollector, bool>();
+        _streamBuilder.PullCompleted(hasMore, null);
     }
 
     public override void OnFailure(IResponsePipelineError error)

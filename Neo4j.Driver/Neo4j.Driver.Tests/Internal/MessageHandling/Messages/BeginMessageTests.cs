@@ -79,6 +79,7 @@ public class BeginMessageTests
     [Theory]
     [InlineData(4, 4)]
     [InlineData(5, 0)]
+    [InlineData(5, 1)]
     public void ShouldIgnoreNotificationConfig(int major, int minor)
     {
         var txMeta = new Dictionary<string, object>
@@ -111,7 +112,7 @@ public class BeginMessageTests
 
     [Theory]
     [InlineData(5, 2)]
-    [InlineData(6, 0)]
+    [InlineData(5, 4)]
     public void ShouldHandleSetValuesWithNotifications(int major, int minor)
     {
         var txMeta = new Dictionary<string, object>
@@ -147,6 +148,48 @@ public class BeginMessageTests
                 "BEGIN [{bookmarks, [bm:a]}, {tx_timeout, 1000}, {tx_metadata, [{a, b}]}, {mode, r}, {db, neo4j}, {imp_user, Douglas Fir}, {notifications_minimum_severity, WARNING}, {notifications_disabled_categories, [GENERIC]}]");
     }
 
+    [Theory]
+    [InlineData(5, 5)]
+    [InlineData(6, 0)]
+    public void ShouldHandleSetValuesWithNotificationsClassifications(int major, int minor)
+    {
+        var txMeta = new Dictionary<string, object>
+        {
+            ["a"] = "b"
+        };
+
+        var bookmarks = new InternalBookmarks("bm:a");
+        var message = new BeginMessage(
+            new BoltProtocolVersion(major, minor),
+            "neo4j",
+            bookmarks,
+            new TransactionConfig { Metadata = txMeta, Timeout = TimeSpan.FromSeconds(1) },
+            AccessMode.Read,
+            new SessionConfig("Douglas Fir"),
+            new NotificationsConfig(Severity.Warning, [Category.Generic]));
+
+        message.Metadata.Should().ContainKey("bookmarks").WhichValue.Should().BeEquivalentTo(new[] { "bm:a" });
+        message.Metadata.Should().ContainKey("imp_user").WhichValue.Should().BeEquivalentTo("Douglas Fir");
+        message.Metadata.Should().ContainKey("tx_timeout").WhichValue.Should().BeEquivalentTo(1000L);
+        message.Metadata.Should().ContainKey("tx_metadata").WhichValue.Should().BeEquivalentTo(txMeta);
+        message.Metadata.Should().ContainKey("mode").WhichValue.Should().BeEquivalentTo("r");
+        message.Metadata.Should().ContainKey("db").WhichValue.Should().BeEquivalentTo("neo4j");
+        message.Metadata.Should()
+            .ContainKey("notifications_minimum_severity")
+            .WhichValue.Should()
+            .BeEquivalentTo("WARNING");
+
+        message.Metadata.Should()
+            .ContainKey("notifications_disabled_classifications")
+            .WhichValue.Should()
+            .BeEquivalentTo(new[] { "GENERIC" });
+
+        message.ToString()
+            .Should()
+            .Be(
+                "BEGIN [{bookmarks, [bm:a]}, {tx_timeout, 1000}, {tx_metadata, [{a, b}]}, {mode, r}, {db, neo4j}, {imp_user, Douglas Fir}, {notifications_minimum_severity, WARNING}, {notifications_disabled_classifications, [GENERIC]}]");
+    }
+    
     [Fact]
     public void ShouldThrowIfBoltVersionLessThan44()
     {
@@ -168,5 +211,60 @@ public class BeginMessageTests
                     null))
             .Should()
             .BeOfType<ArgumentOutOfRangeException>();
+    }
+
+
+    [Theory]
+    [InlineData(5, 2)]
+    [InlineData(5, 3)]
+    [InlineData(5, 4)]
+    public void ShouldAddNotificationsCategories(int major, int minor)
+    {
+        var cfg = new NotificationsConfig(Severity.Information, [Category.Hint]);
+        var beginMessage = new BeginMessage(
+            new BoltProtocolVersion(major, minor),
+            null,
+            null,
+            null,
+            AccessMode.Read,
+            null,
+            cfg);
+
+        beginMessage.Metadata.Should()
+            .ContainKey("notifications_disabled_categories")
+            .WhichValue.Should()
+            .BeEquivalentTo(new[] { "HINT" });
+
+        beginMessage.Metadata.Should()
+            .ContainKey("notifications_minimum_severity")
+            .WhichValue.Should()
+            .Be("INFORMATION");
+    }
+
+    [Theory]
+    [InlineData(5, 5)]
+    [InlineData(5, 6)]
+    [InlineData(6, 0)]
+    public void ShouldAddNotificationsClassifications(int major, int minor)
+    {
+        var cfg = new NotificationsConfig(Severity.Information, [Category.Hint]);
+        var beginMessage = new BeginMessage(
+            new BoltProtocolVersion(major, minor),
+            null,
+            null,
+            null,
+            AccessMode.Read,
+            null,
+            cfg);
+
+        beginMessage.Metadata.Should()
+            .ContainKey("notifications_disabled_classifications")
+            .WhichValue.Should()
+            .BeEquivalentTo(new[] { "HINT" });
+
+        beginMessage.Metadata.Should()
+            .ContainKey("notifications_minimum_severity")
+            .WhichValue.Should()
+            .Be("INFORMATION");
     }
 }

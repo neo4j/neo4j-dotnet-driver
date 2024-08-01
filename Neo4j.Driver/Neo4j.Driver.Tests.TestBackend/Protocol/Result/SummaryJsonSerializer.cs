@@ -14,7 +14,9 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using Neo4j.Driver.Internal.Result;
 using Neo4j.Driver.Tests.TestBackend.Types;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -33,14 +35,16 @@ internal static class SummaryJsonSerializer
                 {
                     query = GetQuery(summary),
                     queryType = GetQueryTypeAsStringCode(summary),
-                    plan = GetPlan(summary),
-                    notifications = CreateNotificationList(summary),
+                    plan = MapToPlanJson(summary?.Plan),
+                    notifications = MapNotifications(summary?.Notifications),
                     database = summary.Database?.Name,
                     serverInfo = GetServerInfo(summary),
-                    counters = GetCountersFromSummary(summary),
+                    counters = GetCountersFromSummary(summary.Counters),
                     profile = MapToProfilePlan(summary.Profile),
                     resultAvailableAfter = GetTotalMilliseconds(summary.ResultAvailableAfter),
-                    resultConsumedAfter = GetTotalMilliseconds(summary.ResultConsumedAfter)
+                    resultConsumedAfter = GetTotalMilliseconds(summary.ResultConsumedAfter),
+                    gqlStatusObjects = MapGqlStatusObjects(
+                        summary.GqlStatusObjects)
                 }));
     }
 
@@ -77,13 +81,6 @@ internal static class SummaryJsonSerializer
         };
     }
 
-    private static object GetPlan(IResultSummary summary)
-    {
-        return summary?.Plan == null
-            ? null
-            : MapToPlanJson(summary.Plan);
-    }
-
     private static object GetServerInfo(IResultSummary summary)
     {
         return summary?.Server == null
@@ -95,24 +92,24 @@ internal static class SummaryJsonSerializer
             };
     }
 
-    private static object GetCountersFromSummary(IResultSummary summary)
+    private static object GetCountersFromSummary(ICounters counters)
     {
         return new
         {
-            constraintsAdded = summary.Counters.ConstraintsAdded,
-            constraintsRemoved = summary.Counters.ConstraintsRemoved,
-            nodesCreated = summary.Counters.NodesCreated,
-            nodesDeleted = summary.Counters.NodesDeleted,
-            relationshipsCreated = summary.Counters.RelationshipsCreated,
-            relationshipsDeleted = summary.Counters.RelationshipsDeleted,
-            propertiesSet = summary.Counters.PropertiesSet,
-            labelsAdded = summary.Counters.LabelsAdded,
-            labelsRemoved = summary.Counters.LabelsRemoved,
-            indexesAdded = summary.Counters.IndexesAdded,
-            indexesRemoved = summary.Counters.IndexesRemoved,
-            systemUpdates = summary.Counters.SystemUpdates,
-            containsUpdates = summary.Counters.ContainsUpdates,
-            containsSystemUpdates = summary.Counters.ContainsSystemUpdates
+            constraintsAdded = counters.ConstraintsAdded,
+            constraintsRemoved = counters.ConstraintsRemoved,
+            nodesCreated = counters.NodesCreated,
+            nodesDeleted = counters.NodesDeleted,
+            relationshipsCreated = counters.RelationshipsCreated,
+            relationshipsDeleted = counters.RelationshipsDeleted,
+            propertiesSet = counters.PropertiesSet,
+            labelsAdded = counters.LabelsAdded,
+            labelsRemoved = counters.LabelsRemoved,
+            indexesAdded = counters.IndexesAdded,
+            indexesRemoved = counters.IndexesRemoved,
+            systemUpdates = counters.SystemUpdates,
+            containsUpdates = counters.ContainsUpdates,
+            containsSystemUpdates = counters.ContainsSystemUpdates
         };
     }
 
@@ -153,6 +150,11 @@ internal static class SummaryJsonSerializer
 
     private static object MapToPlanJson(IPlan plan)
     {
+        if (plan == null)
+        {
+            return null;
+        }
+
         return new
         {
             args = plan.Arguments,
@@ -162,22 +164,22 @@ internal static class SummaryJsonSerializer
         };
     }
 
-    private static object CreateNotificationList(IResultSummary summary)
+    private static object MapNotifications(IList<INotification> notifications)
     {
-        if (summary?.Notifications == null)
+        if (notifications == null)
         {
             return null;
         }
 
-        if (summary.Notifications.All(x => x.Position == null))
+        if (notifications.All(x => x.Position == null))
         {
-            return summary.Notifications.Select(
+            return notifications.Select(
                     x => new
                     {
-                        rawCategory = x.RawCategory ?? String.Empty,
+                        rawCategory = x.RawCategory ?? string.Empty,
                         category = x.Category.ToString().ToUpper(),
                         severity = x.Severity,
-                        rawSeverityLevel = x.RawSeverityLevel ?? String.Empty,
+                        rawSeverityLevel = x.RawSeverityLevel ?? string.Empty,
                         severityLevel = x.SeverityLevel.ToString().ToUpper(),
                         description = x.Description,
                         code = x.Code,
@@ -186,13 +188,13 @@ internal static class SummaryJsonSerializer
                 .ToList();
         }
 
-        return summary.Notifications.Select(
+        return notifications.Select(
                 x => new
                 {
-                    rawCategory = x.RawCategory ?? String.Empty,
+                    rawCategory = x.RawCategory ?? string.Empty,
                     category = x.Category.ToString().ToUpper(),
                     severity = x.Severity,
-                    rawSeverityLevel = x.RawSeverityLevel ?? String.Empty,
+                    rawSeverityLevel = x.RawSeverityLevel ?? string.Empty,
                     severityLevel = x.SeverityLevel.ToString().ToUpper(),
                     description = x.Description,
                     code = x.Code,
@@ -207,5 +209,36 @@ internal static class SummaryJsonSerializer
                         }
                 })
             .ToList();
+    }
+
+    private static object MapGqlStatusObjects(IList<IGqlStatusObject> statusObjects)
+    {
+        if (statusObjects == null)
+        {
+            return Array.Empty<object>();
+        }
+
+        return statusObjects
+            .OfType<GqlStatusObject>()
+            .Select(
+                x => new Dictionary<string, object>
+                {
+                    ["gqlStatus"] = x.GqlStatus,
+                    ["statusDescription"] = x.StatusDescription,
+                    ["diagnosticRecord"] = x.DiagnosticRecord.ToDictionary(y => y.Key, y => NativeToCypher.Convert(y.Value)),
+                    ["classification"] = x.Classification.ToString().ToUpper(),
+                    ["rawClassification"] = x.RawClassification,
+                    ["rawSeverity"] = x.RawSeverity,
+                    ["severity"] = x.Severity.ToString().ToUpper(),
+                    ["position"] = x.Position == null
+                        ? null
+                        : new
+                        {
+                            column = x.Position.Column,
+                            offset = x.Position.Offset,
+                            line = x.Position.Line
+                        },
+                    ["isNotification"] = x.IsNotification
+                });
     }
 }

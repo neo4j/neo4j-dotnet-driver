@@ -120,6 +120,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         {
             var pullMessage = _protocolMessageFactory.NewPullMessage(autoCommitParams.FetchSize);
             var pullHandler = _protocolHandlerFactory.NewPullResponseHandler(
+                connection,
                 autoCommitParams.BookmarksTracker,
                 streamBuilder,
                 summaryBuilder);
@@ -170,7 +171,12 @@ internal sealed class BoltProtocol : IBoltProtocol
         if (!reactive)
         {
             var pullMessage = _protocolMessageFactory.NewPullMessage(fetchSize);
-            var pullHandler = _protocolHandlerFactory.NewPullResponseHandler(null, streamBuilder, summaryBuilder);
+            var pullHandler = _protocolHandlerFactory.NewPullResponseHandler(
+                connection,
+                null,
+                streamBuilder,
+                summaryBuilder);
+
             await connection.EnqueueAsync(runMessage, runHandler, pullMessage, pullHandler).ConfigureAwait(false);
         }
         else
@@ -300,6 +306,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         {
             var pullMessage = _protocolMessageFactory.NewPullMessage(id, n);
             var pullResponseHandler = _protocolHandlerFactory.NewPullResponseHandler(
+                connection,
                 bookmarksTracker,
                 streamBuilder,
                 summaryBuilder);
@@ -320,6 +327,7 @@ internal sealed class BoltProtocol : IBoltProtocol
         {
             var discardMessage = _protocolMessageFactory.NewDiscardMessage(id, ResultHandleMessage.All);
             var pullResponseHandler = _protocolHandlerFactory.NewPullResponseHandler(
+                connection,
                 bookmarksTracker,
                 streamBuilder,
                 summaryBuilder);

@@ -82,7 +82,7 @@ internal sealed class HelloMessage : IRequestMessage
 
         Metadata[RoutingMetadataKey] = routingContext;
 
-        if (version >= BoltProtocolVersion.V5_2)
+        if (version >= BoltProtocolVersion.V5_2 && version < BoltProtocolVersion.V5_5)
         {
             NotificationsMetadataWriter.AddNotificationsConfigToMetadata(Metadata, notificationsConfig);
         }
@@ -90,6 +90,11 @@ internal sealed class HelloMessage : IRequestMessage
         if (version >= BoltProtocolVersion.V5_3)
         {
             Metadata.Add(BoltAgentMetadataKey, BoltAgentBuilder.Agent);
+        }
+
+        if (version >= BoltProtocolVersion.V5_5)
+        {
+            NotificationsMetadataWriter.AddGqlStatusConfigToMetadata(Metadata, notificationsConfig);
         }
     }
 

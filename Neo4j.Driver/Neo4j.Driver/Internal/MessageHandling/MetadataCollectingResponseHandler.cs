@@ -51,20 +51,19 @@ internal abstract class MetadataCollectingResponseHandler : IResponseHandler
     protected void AddMetadata<TCollector, TMetadata>()
         where TCollector : class, IMetadataCollector<TMetadata>, new()
     {
-        AddMetadata<TCollector, TMetadata>(new TCollector());
+        AddMetadata(new TCollector());
     }
 
-    protected void AddMetadata<TCollector, TMetadata>(TCollector collector)
-        where TCollector : class, IMetadataCollector<TMetadata>
+    protected void AddMetadata<TMetadata>(IMetadataCollector<TMetadata> collector)
     {
-        var collectorType = typeof(TCollector);
+        var collectorType = collector.GetType();
         if (_metadataCollectors.ContainsKey(collectorType))
         {
             throw new InvalidOperationException(
-                $"A metadata collector of type {typeof(TCollector).Name} is already registered.");
+                $"A metadata collector of type {collectorType.Name} is already registered.");
         }
 
-        _metadataCollectors.Add(collectorType, collector ?? throw new ArgumentNullException(nameof(collector)));
+        _metadataCollectors.Add(collectorType, collector);
     }
 
     protected TMetadata GetMetadata<TCollector, TMetadata>()

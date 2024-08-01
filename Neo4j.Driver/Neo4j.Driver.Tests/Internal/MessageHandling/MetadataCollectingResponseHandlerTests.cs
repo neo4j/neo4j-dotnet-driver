@@ -57,7 +57,7 @@ public class MetadataCollectingResponseHandlerTests
         public void AddCollector<TCollector, TMetadata>(TCollector collector)
             where TCollector : class, IMetadataCollector<TMetadata>
         {
-            AddMetadata<TCollector, TMetadata>(collector);
+            AddMetadata(collector);
         }
     }
 }

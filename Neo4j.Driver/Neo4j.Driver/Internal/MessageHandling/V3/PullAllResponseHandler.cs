@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Neo4j.Driver.Internal.MessageHandling.Metadata;
 using Neo4j.Driver.Internal.Result;
 
@@ -41,7 +42,7 @@ internal sealed class PullAllResponseHandler : MetadataCollectingResponseHandler
         AddMetadata<CountersCollector, ICounters>();
         AddMetadata<PlanCollector, IPlan>();
         AddMetadata<ProfiledPlanCollector, IProfiledPlan>();
-        AddMetadata<NotificationsCollector, IList<INotification>>();
+        AddMetadata(new GqlStatusObjectsAndNotificationsCollector(false));
     }
 
     public override void OnSuccess(IDictionary<string, object> metadata)
@@ -53,10 +54,11 @@ internal sealed class PullAllResponseHandler : MetadataCollectingResponseHandler
 
         _summaryBuilder.ResultConsumedAfter = GetMetadata<TimeToLastCollector, long>();
         _summaryBuilder.Counters = GetMetadata<CountersCollector, ICounters>();
-        _summaryBuilder.Notifications = GetMetadata<NotificationsCollector, IList<INotification>>();
         _summaryBuilder.Plan = GetMetadata<PlanCollector, IPlan>();
         _summaryBuilder.Profile = GetMetadata<ProfiledPlanCollector, IProfiledPlan>();
         _summaryBuilder.QueryType = GetMetadata<TypeCollector, QueryType>();
+        _summaryBuilder.StatusAndNotifications =
+            GetMetadata<GqlStatusObjectsAndNotificationsCollector, GqlStatusObjectsAndNotifications>();
 
         _streamBuilder.PullCompleted(false, null);
     }

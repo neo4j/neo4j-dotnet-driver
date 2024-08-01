@@ -51,7 +51,7 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
                 {
                     goGoBolt,
                     // 4 versions max.
-                    BoltProtocolVersion.V5_4.PackToIntRange(BoltProtocolVersion.V5_0),
+                    BoltProtocolVersion.V5_6.PackToIntRange(BoltProtocolVersion.V5_0),
                     BoltProtocolVersion.V4_4.PackToIntRange(BoltProtocolVersion.V4_2),
                     BoltProtocolVersion.V4_1.PackToInt(),
                     BoltProtocolVersion.V3_0.PackToInt()
@@ -78,7 +78,7 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
             { MajorVersion: 0, MinorVersion: 0 } => throw new NotSupportedException(NoAgreedVersion),
             { MajorVersion: 3, MinorVersion: 0 } => BoltProtocolV3.Instance,
             { MajorVersion: 4, MinorVersion: <= 4, MinorVersion: >= 1 } => BoltProtocol.Instance,
-            { MajorVersion: 5, MinorVersion: <= 4, MinorVersion: >= 0 } => BoltProtocol.Instance,
+            { MajorVersion: 5, MinorVersion: <= 6, MinorVersion: >= 0 } => BoltProtocol.Instance,
             _ => throw new NotSupportedException(
                 $"Protocol error, server suggested unexpected protocol version: {version}")
         };

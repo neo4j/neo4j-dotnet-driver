@@ -40,6 +40,8 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
     public static readonly BoltProtocolVersion V5_2 = new(5, 2);
     public static readonly BoltProtocolVersion V5_3 = new(5, 3);
     public static readonly BoltProtocolVersion V5_4 = new(5, 4);
+    public static readonly BoltProtocolVersion V5_5 = new(5, 5);
+    public static readonly BoltProtocolVersion V5_6 = new(5, 6);
     // ReSharper restore InconsistentNaming
 
     private readonly int _compValue;

@@ -406,7 +406,7 @@ public sealed class ConfigBuilder
     /// <exception cref="ArgumentException">Thrown when both parameters are null.</exception>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     /// <seealso cref="WithNotificationsDisabled"/>
-    /// <seealso cref="SessionConfigBuilder.WithNotifications"/>
+    /// <seealso cref="SessionConfigBuilder.WithNotifications(Severity?, Category[])"/>"/>
     /// <seealso cref="SessionConfigBuilder.WithNotificationsDisabled"/>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithNotifications(
@@ -424,14 +424,61 @@ public sealed class ConfigBuilder
     }
 
     /// <summary>Disable all notifications for the lifetime of the driver.</summary>
-    /// <remarks>Cannot be used with: <see cref="WithNotifications"/>.</remarks>
+    /// <remarks>Cannot be used with: <see cref="WithNotifications(Severity?, Category[])"/>.</remarks>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
-    /// <seealso cref="WithNotifications"/>
-    /// <seealso cref="SessionConfigBuilder.WithNotifications"/>
+    /// <seealso cref="WithNotifications(Severity?, Category[])"/>
+    /// <seealso cref="SessionConfigBuilder.WithNotifications(Severity?, Category[])"/>
     /// <seealso cref="SessionConfigBuilder.WithNotificationsDisabled"/>
     public ConfigBuilder WithNotificationsDisabled()
     {
         _config.NotificationsConfig = new NotificationsDisabledConfig();
+        return this;
+    }
+
+        
+    /// <summary>
+    /// This is a preview API, This API may change between minor revisions.<br/>
+    /// 
+    /// Override configuration for which <see cref="IGqlStatusObject"/> and <see cref="INotification"/> should be emitted
+    /// for the lifetime of the session. <br/> Unspecified configuration will be provided by configuration specified in
+    /// the server or the driver's <see cref="ConfigBuilder.WithNotifications(Severity?, Classification[])"/> or
+    /// <see cref="ConfigBuilder.WithNotifications(Severity?, Category[])"/>. <br/> If the driver has disabled
+    /// notifications with <see cref="ConfigBuilder.WithNotificationsDisabled"/>, the unspecified values will be
+    /// provided by the server. <br/> Disabling categories, classifications or severities allows the server to skip
+    /// analysis for those which can speed up query execution.
+    /// </summary>
+    /// <remarks>Cannot be used with: <see cref="WithNotificationsDisabled"/> or
+    /// <see cref="WithNotifications(Severity?, Category[])"/>.</remarks>
+    /// <param name="minimumSeverity">
+    /// Optional parameter to override the minimum severity of notifications emitted. <br/> By
+    /// leaving null, the value will inherit configuration of <see cref="Config.NotificationsConfig"/> or the server.
+    /// </param>
+    /// <param name="disabledClassifications">
+    /// Optional parameter to override the category of notifications and classifications of GQL Statuses emitted. <br/>
+    /// By passing an empty collection, all categories are enabled.<br/> By leaving null, the value will inherit
+    /// configuration from <see cref="Config.NotificationsConfig"/> or the server.
+    /// </param>
+    /// <exception cref="ArgumentException">Thrown when both parameters are null.</exception>
+    /// <returns>A <see cref="SessionConfigBuilder"/> instance for further configuration options.</returns>
+    /// <seealso cref="WithNotificationsDisabled"/>
+    /// <seealso cref="WithNotifications(Severity?, Category[])"/>
+    /// <seealso cref="ConfigBuilder.WithNotifications(Severity?, Category[])"/>
+    /// <seealso cref="ConfigBuilder.WithNotifications(Severity?, Classification[])"/>
+    /// <seealso cref="ConfigBuilder.WithNotificationsDisabled"/>
+    /// <since>5.23.0</since>
+    [Obsolete("This is a Preview API and may change between minor versions. Obsolete will be removed in a later revision.")]
+    public ConfigBuilder WithNotifications(
+        Severity? minimumSeverity,
+        Classification[] disabledClassifications)
+    {
+        if (minimumSeverity == null && disabledClassifications == null)
+        {
+            throw new ArgumentException(
+                $"Both {nameof(minimumSeverity)} and {nameof(disabledClassifications)} are both null, at least one must be non-null.");
+        }
+
+        _config.NotificationsConfig = new NotificationsConfig(minimumSeverity,
+            disabledClassifications.Select(x => (Category)(int)x).ToArray());
         return this;
     }
 
@@ -501,11 +548,11 @@ public sealed class ConfigBuilder
         return this;
     }
 
-    // TODO
-    // This method is internal, and an extension method allows the user to call it,
-    // because the extension method is in the preview namespace allowing the interface to be
-    // changed before full release. This method should be made public in the future, and the
-    // extension method removed.
+    // TODO:
+    //  This method is internal, and an extension method allows the user to call it,
+    //  because the extension method is in the preview namespace allowing the interface to be
+    //  changed before full release. This method should be made public in the future, and the
+    //  extension method removed.
     /// <summary>
     /// Sets the <see cref="IClientCertificateProvider"/> to use if mTLS authentication is required. The provider will
     /// be called to provide the client certificate when establishing a new connection.
@@ -532,7 +579,7 @@ public sealed class ConfigBuilder
 #endif
 
     /// <summary>
-    /// Sets a custome <see cref="ITlsNegotiator"/> to use when establishing a TLS connection.
+    /// Sets a custom <see cref="ITlsNegotiator"/> to use when establishing a TLS connection.
     /// </summary>
     /// <param name="tlsNegotiator">The <see cref="ITlsNegotiator"/> to use.</param>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>

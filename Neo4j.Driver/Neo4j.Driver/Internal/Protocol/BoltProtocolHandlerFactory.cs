@@ -39,6 +39,7 @@ internal interface IBoltProtocolHandlerFactory
     RunResponseHandler NewRunResponseHandler(IResultCursorBuilder streamBuilder, SummaryBuilder summaryBuilder);
 
     PullResponseHandler NewPullResponseHandler(
+        IConnection connection,
         IBookmarksTracker bookmarksTracker,
         IResultStreamBuilder cursorBuilder,
         SummaryBuilder summaryBuilder);
@@ -55,7 +56,7 @@ internal interface IBoltProtocolHandlerFactory
         IResultCursorBuilder streamBuilder,
         SummaryBuilder summaryBuilder,
         IBookmarksTracker bookmarksTracker);
-    
+
     TelemetryResponseHandler NewTelemetryResponseHandler(TransactionInfo info);
 }
 
@@ -91,11 +92,12 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
     }
 
     public PullResponseHandler NewPullResponseHandler(
+        IConnection connection,
         IBookmarksTracker bookmarksTracker,
         IResultStreamBuilder cursorBuilder,
         SummaryBuilder summaryBuilder)
     {
-        return new PullResponseHandler(cursorBuilder, summaryBuilder, bookmarksTracker);
+        return new PullResponseHandler(cursorBuilder, summaryBuilder, bookmarksTracker, connection.Version >= BoltProtocolVersion.V5_5);
     }
 
     public RouteResponseHandler NewRouteResponseHandler()
