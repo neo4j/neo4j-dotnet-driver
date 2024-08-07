@@ -17,6 +17,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace Neo4j.Driver.Mapping;
@@ -39,6 +41,7 @@ public interface IMappingRegistry
 internal interface IRecordObjectMapping
 {
     object Map(IRecord record, Type type);
+    TResult MapFromBlueprint<TResult>(IRecord record, TResult blueprint);
 }
 
 /// <summary>
@@ -151,10 +154,37 @@ public class RecordObjectMapping : IMappingRegistry, IRecordObjectMapping
         return ((IRecordObjectMapping)Instance).Map(record, type);
     }
 
+    /// <summary>
+    /// Maps a record to a new object of the same type as the provided blueprint object.
+    /// </summary>
+    /// <param name="record">The record to be mapped.</param>
+    /// <param name="blueprint">An object of the type to be mapped, used to determine the type of the
+    /// object to be created. Any values in the properties of the blueprint object will be discarded.</param>
+    /// <typeparam name="T">The type of object that will be mapped.</typeparam>
+    /// <returns>The mapped object.</returns>
+    public static T MapFromBlueprint<T>(IRecord record, T blueprint)
+    {
+        return ((IRecordObjectMapping)Instance).MapFromBlueprint(record, blueprint);
+    }
+
     object IRecordObjectMapping.Map(IRecord record, Type type)
     {
         var mapMethod = Instance.GetMapMethodForType(type);
         var mapperForType = GetMapperForType(type);
-        return mapMethod.Invoke(mapperForType, new[] { (object)record });
+
+        try
+        {
+            return mapMethod.Invoke(mapperForType, [record]);
+        }
+        catch (Exception ex)
+        {
+            var inner = ex is TargetInvocationException tie ? tie.InnerException : ex;
+            throw new MappingFailedException($"Failed to map record to type {type.Name}.", inner);
+        }
+    }
+
+    T IRecordObjectMapping.MapFromBlueprint<T>(IRecord record, T blueprint)
+    {
+        return (T)Map(record, typeof(T));
     }
 }
