@@ -258,6 +258,32 @@ public class RecordMappingTests
     }
 
     [Fact]
+    public void ShouldMapAllRecordsFromBlueprint()
+    {
+        Task<EagerResult<IReadOnlyList<IRecord>>> GetRecordsAsync()
+        {
+            var record1 = TestRecord.Create(["name", "born"], ["Bob", 1977]);
+            var record2 = TestRecord.Create(["name", "born"], ["Alice", 1988]);
+            var record3 = TestRecord.Create(["name", "born"], ["Eve", 1999]);
+
+            var result = new EagerResult<IReadOnlyList<IRecord>>(
+                new List<IRecord> { record1, record2, record3 },
+                null,
+                ["name", "born"]);
+
+            return Task.FromResult(result);
+        }
+
+        GetRecordsAsync()
+            .AsObjectsFromBlueprintAsync(new { name = "", born = 0 })
+            .Result.Should()
+            .BeEquivalentTo(
+                new { name = "Bob", born = 1977 },
+                new { name = "Alice", born = 1988 },
+                new { name = "Eve", born = 1999 });
+    }
+
+    [Fact]
     public async Task ShouldMapAllRecordsFromCursor()
     {
         async IAsyncEnumerable<IRecord> GetRecordsAsync()
@@ -281,6 +307,33 @@ public class RecordMappingTests
                 new TestPerson { Name = "Bob" },
                 new TestPerson { Name = "Alice", Born = 1988 },
                 new TestPerson { Name = "Eve", Born = 1999 });
+    }
+
+    [Fact]
+    public async Task ShouldMapAllRecordsFromCursorWithBlueprint()
+    {
+        async IAsyncEnumerable<IRecord> GetRecordsAsync()
+        {
+            var record1 = TestRecord.Create(["name", "born"], ["Bob", 1977]);
+            var record2 = TestRecord.Create(["name", "born"], ["Alice", 1988]);
+            var record3 = TestRecord.Create(["name", "born"], ["Eve", 1999]);
+
+            var result = new List<IRecord> { record1, record2, record3 };
+
+            foreach (var record in result)
+            {
+                await Task.Yield();
+                yield return record;
+            }
+        }
+
+        var blueprint = new { name = "", born = 0 };
+        var result = await GetRecordsAsync().ToListFromBlueprintAsync(blueprint);
+        result.Should()
+            .BeEquivalentTo(
+                new { name = "Bob", born = 1977 },
+                new { name = "Alice", born = 1988 },
+                new { name = "Eve", born = 1999 });
     }
 
     [Fact]
@@ -585,7 +638,7 @@ public class RecordMappingTests
     {
         var record = TestRecord.Create(["x", "y"], [69, "test"]);
 
-        var result = record.AsObject(new { x = 0, y = string.Empty });
+        var result = record.AsObject((int x, string y) => new { x, y });
 
         result.x.Should().Be(69);
         result.y.Should().Be("test");
@@ -596,7 +649,7 @@ public class RecordMappingTests
     {
         var record = TestRecord.Create(("x", 69), ("y", "test"));
 
-        var result = record.AsObject((x, y) => new { x = x.As<int>(), y = y.As<string>() });
+        var result = record.AsObject((int x, string y) => new { x, y });
 
         result.x.Should().Be(69);
         result.y.Should().Be("test");
@@ -611,7 +664,7 @@ public class RecordMappingTests
     {
         var record = TestRecord.Create(("x", 69), ("y", "test"));
 
-        var result = record.AsObject<TestXY>((int x, string y) => new TestXY(x, y));
+        var result = record.AsObject((int x, string y) => new TestXY(x, y));
 
         result.X.Should().Be(69);
         result.Y.Should().Be("test");

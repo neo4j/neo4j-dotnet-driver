@@ -15,30 +15,36 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Reflection;
 using Neo4j.Driver.Mapping;
 
 namespace Neo4j.Driver.Preview.Mapping;
 
-internal class LambdaMapper
+internal class DelegateMapper
 {
-    internal static T Map<T>(IRecord record, LambdaExpression mapFunction)
+    internal static T MapWithMethodInfo<T>(IRecord record, MethodInfo mapFunction, object target)
     {
         var paramValues = new List<object>();
-        foreach (var param in mapFunction.Parameters)
+        foreach (var param in mapFunction.GetParameters())
         {
             if (record.TryGet(param.Name, out object value))
             {
                 object valueToUse;
                 try
                 {
-                    valueToUse = value.AsType(param.Type);
+                    valueToUse = value.AsType(param.ParameterType);
                 }
                 catch (InvalidCastException) when (value is IEntity or IReadOnlyDictionary<string, object>)
                 {
                     var objToMap = new DictAsRecord(value, null);
-                    valueToUse = RecordObjectMapping.Map(objToMap, param.Type);
+                    valueToUse = RecordObjectMapping.Map(objToMap, param.ParameterType);
+                }
+                catch (Exception ex)
+                {
+                    throw new MappingFailedException(
+                        $"Failed to map parameter {param.Name}: " +
+                        $"Could not convert value of field {param.Name} to required type.",
+                        ex);
                 }
 
                 paramValues.Add(valueToUse);
@@ -52,14 +58,12 @@ internal class LambdaMapper
         try
         {
             return (T)
-                mapFunction
-                    .Compile()
-                    .DynamicInvoke(paramValues.ToArray());
+                mapFunction.Invoke(target, paramValues.ToArray());
         }
         catch (Exception ex)
         {
             var inner = ex is TargetInvocationException tie ? tie.InnerException : ex;
-            throw new MappingFailedException("Failed to map record to blueprint.", inner);
+            throw new MappingFailedException("Failed to map record.", inner);
         }
     }
 }
