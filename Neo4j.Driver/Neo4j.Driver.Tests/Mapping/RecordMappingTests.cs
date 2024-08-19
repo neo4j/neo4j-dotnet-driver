@@ -669,4 +669,16 @@ public class RecordMappingTests
         result.X.Should().Be(69);
         result.Y.Should().Be("test");
     }
+
+    [Fact]
+    public void AsObject_ShouldMapRecordToObjectType()
+    {
+        var record = TestRecord.Create(("Name", "Alice"), ("Born", 1988));
+        var expectedPerson = new { Name = "Alice", Born = 1988 };
+
+        var result = record.AsObject(expectedPerson.GetType());
+
+        result.Should().BeOfType(expectedPerson.GetType());
+        result.Should().BeEquivalentTo(expectedPerson);
+    }
 }

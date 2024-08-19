@@ -29,7 +29,14 @@ public class BlueprintMappingTests
     {
         var record = TestRecord.Create(("name", "Alice"), ("age", 69), ("isAdult", true));
 
-        var result = record.AsObjectFromBlueprint(new { name = "", age = 0, isAdult = false });
+        var result = record.AsObjectFromBlueprint(
+            new
+            {
+                name = "",
+                age = 0,
+                isAdult = false
+            });
+
         result.name.Should().Be("Alice");
         result.age.Should().Be(69);
         result.isAdult.Should().Be(true);
@@ -132,9 +139,16 @@ public class BlueprintMappingTests
             ("point", new Dictionary<string, object> { ["x"] = 1, ["y"] = 2 }),
             ("color", "red"));
 
-        var blueprint = new { point = new { x = 0, y = 0 }, color = string.Empty };
-
-        var result = record.AsObjectFromBlueprint(blueprint);
+        var result = record.AsObjectFromBlueprint(
+            new
+            {
+                point = new
+                {
+                    x = 0,
+                    y = 0
+                },
+                color = string.Empty
+            });
 
         result.point.x.Should().Be(1);
         result.point.y.Should().Be(2);
