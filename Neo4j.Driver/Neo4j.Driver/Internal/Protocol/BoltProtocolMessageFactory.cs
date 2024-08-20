@@ -17,7 +17,6 @@ using System;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.Messaging;
-using Neo4j.Driver.Internal.Telemetry;
 
 namespace Neo4j.Driver.Internal.Protocol;
 

@@ -16,12 +16,15 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neo4j.Driver.Preview.Mapping;
 
+/// <summary>
+/// Provides extension methods for materializing <see cref="IAsyncEnumerable{T}"/> into lists of objects
+/// by mapping each record in the enumerable to an object using provided delegates.
+/// </summary>
 public static class DelegateAsyncEnumerableExtensions
 {
     private static async ValueTask<IReadOnlyList<TResult>> ToListAsyncImpl<TResult>(

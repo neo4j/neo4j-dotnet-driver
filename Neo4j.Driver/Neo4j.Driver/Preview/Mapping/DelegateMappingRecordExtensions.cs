@@ -14,7 +14,6 @@
 // limitations under the License.
 
 using System;
-using System.Linq.Expressions;
 
 namespace Neo4j.Driver.Preview.Mapping;
 
