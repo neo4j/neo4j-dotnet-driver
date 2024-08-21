@@ -58,6 +58,7 @@ internal sealed class Notification : INotification
             "deprecation" => NotificationCategory.Deprecation,
             "security" => NotificationCategory.Security,
             "topology" => NotificationCategory.Topology,
+            "schema" => NotificationCategory.Schema,
             "generic" => NotificationCategory.Generic,
             _ => NotificationCategory.Unknown
         };

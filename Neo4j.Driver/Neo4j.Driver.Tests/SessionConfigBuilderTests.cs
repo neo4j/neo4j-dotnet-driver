@@ -30,6 +30,7 @@ public class SessionConfigBuilderTests
     [InlineData(Classification.Deprecation, Category.Deprecation)]
     [InlineData(Classification.Security, Category.Security)]
     [InlineData(Classification.Topology, Category.Topology)]
+    [InlineData(Classification.Schema, Category.Schema)]
     [InlineData(Classification.Generic, Category.Generic)]
     public void WithNotifications_ShouldSetCategoryWithClassification(
         Classification classification,
@@ -62,6 +63,7 @@ public class SessionConfigBuilderTests
     [InlineData(Category.Deprecation, Category.Deprecation)]
     [InlineData(Category.Security, Category.Security)]
     [InlineData(Category.Topology, Category.Topology)]
+    [InlineData(Category.Schema, Category.Schema)]
     [InlineData(Category.Generic, Category.Generic)]
     public void WithNotifications_ShouldSetCategory(
         Category inCat,
