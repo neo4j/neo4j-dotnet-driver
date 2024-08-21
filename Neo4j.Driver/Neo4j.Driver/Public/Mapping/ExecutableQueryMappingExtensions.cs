@@ -40,4 +40,20 @@ public static class ExecutableQueryMappingExtensions
         var records = await recordsTask.ConfigureAwait(false);
         return records.Result.Select(RecordObjectMapping.Map<T>).ToList();
     }
+
+    /// <summary>
+    /// Add this method to an <see cref="ExecutableQuery{TIn,TOut}"/> method chain to map the results to objects
+    /// as part of the query execution.
+    /// </summary>
+    /// <seealso cref="RecordObjectMapping.Map{T}"/>
+    /// <param name="recordsTask">The task that will return the records.</param>
+    /// <typeparam name="T">The type to map to.</typeparam>
+    /// <returns>A task that will return the mapped objects.</returns>
+    public static async Task<IReadOnlyList<T>> AsObjectsFromBlueprintAsync<T>(
+        this Task<EagerResult<IReadOnlyList<IRecord>>> recordsTask,
+        T blueprint)
+    {
+        var records = await recordsTask.ConfigureAwait(false);
+        return records.Result.Select(r => r.AsObjectFromBlueprint(blueprint)).ToList();
+    }
 }

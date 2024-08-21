@@ -15,6 +15,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+
 namespace Neo4j.Driver.Mapping;
 
 /// <summary>
@@ -32,5 +34,31 @@ public static class RecordExtensions
     public static T AsObject<T>(this IRecord record)
     {
         return RecordObjectMapping.Map<T>(record);
+    }
+
+    /// <summary>
+    /// Converts the record to an object of the given type according to the global mapping configuration.
+    /// </summary>
+    /// <seealso cref="RecordObjectMapping.Map"/>
+    /// <param name="record">The record to convert.</param>
+    /// <param name="objectType">The type to map to.</param>
+    /// <returns>The mapped object.</returns>
+    public static object AsObject(this IRecord record, Type objectType)
+    {
+        return ((IRecordObjectMapping)RecordObjectMapping.Instance).Map(record, objectType);
+    }
+
+    /// <summary>
+    /// Converts the record to an object of the same type as the given blueprint according to the global
+    /// mapping configuration.
+    /// </summary>
+    /// <param name="record">The record to convert.</param>
+    /// <param name="blueprint">An object to be used as a blueprint for the mapping. This could be an object of an
+    /// anonymous type.</param>
+    /// <typeparam name="T">The type that will be mapped to.</typeparam>
+    /// <returns>The mapped object.</returns>
+    public static T AsObjectFromBlueprint<T>(this IRecord record, T blueprint)
+    {
+        return RecordObjectMapping.MapFromBlueprint(record, blueprint);
     }
 }

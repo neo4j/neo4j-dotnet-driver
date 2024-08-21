@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using FluentAssertions;
 using Neo4j.Driver.Mapping;
 using Neo4j.Driver.Tests.TestUtil;
@@ -128,5 +129,76 @@ public class MappingProviderTests
 
         obj.Name.Should().Be("Bob");
         obj.Age.Should().Be(23);
+    }
+
+    private class FirstNameMappingTestObject
+    {
+        public string FavouriteColor { get; set; }
+        public int LuckyNumber { get; set; }
+    }
+
+    private class SecondNameMappingTestObject
+    {
+        public string JobTitle { get; set; }
+        public int YearsOfService { get; set; }
+    }
+
+    private class NamingConventionTranslator<T> : IRecordMapper<T>
+    {
+        private string GetTranslatedPropertyName(string fieldName)
+        {
+            // convert from snake_case to PascalCase
+            var capitaliseNext = true;
+            var result = "";
+            foreach (var c in fieldName)
+            {
+                if (c == '_')
+                {
+                    capitaliseNext = true;
+                }
+                else
+                {
+                    result += capitaliseNext ? char.ToUpper(c) : c;
+                    capitaliseNext = false;
+                }
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc />
+        public T Map(IRecord record)
+        {
+            var type = typeof(T);
+            var obj = Activator.CreateInstance(type);
+            foreach (var field in record.Keys)
+            {
+                var property = type.GetProperty(GetTranslatedPropertyName(field));
+                if (property != null)
+                {
+                    property.SetValue(obj, record[field]);
+                }
+            }
+
+            return (T)obj;
+        }
+    }
+
+    [Fact]
+    public void ShouldUseCustomMapper()
+    {
+        var record1 = TestRecord.Create(("favourite_color", "blue"), ("lucky_number", 7));
+        var record2 = TestRecord.Create(("job_title", "developer"), ("years_of_service", 5));
+
+        RecordObjectMapping.Register(new NamingConventionTranslator<FirstNameMappingTestObject>());
+        RecordObjectMapping.Register(new NamingConventionTranslator<SecondNameMappingTestObject>());
+
+        var obj1 = record1.AsObject<FirstNameMappingTestObject>();
+        var obj2 = record2.AsObject<SecondNameMappingTestObject>();
+
+        obj1.FavouriteColor.Should().Be("blue");
+        obj1.LuckyNumber.Should().Be(7);
+        obj2.JobTitle.Should().Be("developer");
+        obj2.YearsOfService.Should().Be(5);
     }
 }

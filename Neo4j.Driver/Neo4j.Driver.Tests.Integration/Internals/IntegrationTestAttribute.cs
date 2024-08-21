@@ -18,7 +18,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using Neo4j.Driver.IntegrationTests.Internals;
 using Neo4j.Driver.Internal.Util;
 using Xunit;
 

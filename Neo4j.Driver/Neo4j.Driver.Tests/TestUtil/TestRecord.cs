@@ -31,4 +31,11 @@ internal static class TestRecord
         var invariantLookup = new Dictionary<string, int>(lookup, StringComparer.InvariantCultureIgnoreCase);
         return new Record(lookup, invariantLookup, values);
     }
+
+    public static Record Create(params (string key, object value)[] keyValuePairs)
+    {
+        var keys = keyValuePairs.Select(pair => pair.key).ToArray();
+        var values = keyValuePairs.Select(pair => pair.value).ToArray();
+        return Create(keys, values);
+    }
 }

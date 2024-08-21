@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using FluentAssertions;
 using Neo4j.Driver.Mapping;
 using Neo4j.Driver.Tests.TestUtil;
