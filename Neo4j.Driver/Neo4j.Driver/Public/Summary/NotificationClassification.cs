@@ -55,6 +55,11 @@ public enum NotificationClassification
     /// </summary>
     Topology,
 
+    /// <summary>
+    /// Schema notifications provide additional information related to managing indexes and constraints.
+    /// </summary>
+    Schema,
+
     /// <summary>Notification not covered by other categories.</summary>
     Generic
 }

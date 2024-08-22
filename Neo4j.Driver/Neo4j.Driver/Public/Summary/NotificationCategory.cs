@@ -46,9 +46,14 @@ public enum NotificationCategory
     Security,
 
     /// <summary>
-    /// Topology notifications provide additional information related to managing databases and servers.
+    /// Information provided while executing database and server related commands.
     /// </summary>
     Topology,
+
+    /// <summary>
+    /// Information provided while managing indexes and constraints.
+    /// </summary>
+    Schema,
 
     /// <summary>Notification not covered by other categories.</summary>
     Generic

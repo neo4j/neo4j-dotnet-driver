@@ -30,15 +30,15 @@ public enum Classification
 {
     /// <summary>Receive notifications when a hint in query cannot be satisfied.</summary>
     /// <remarks>
-    /// Returned as <see cref="NotificationClassification.Hint"/> in <see cref="IGqlStatusObject.Classification"/> as
-    /// <see cref="NotificationCategory.Hint"/> in <see cref="INotification.Category"/>.
+    /// Returned as <see cref="NotificationClassification.Hint"/> in <see cref="IGqlStatusObject.Classification"/> and
+    /// as <see cref="NotificationCategory.Hint"/> in <see cref="INotification.Category"/>.
     /// </remarks>
     Hint,
 
     /// <summary>Receive notifications when a query or command mentions entities that are unknown to the system.</summary>
     /// <remarks>
     /// Returned as <see cref="NotificationClassification.Unrecognized"/> in
-    /// <see cref="IGqlStatusObject.Classification"/> as <see cref="NotificationCategory.Unrecognized"/> in
+    /// <see cref="IGqlStatusObject.Classification"/> and as <see cref="NotificationCategory.Unrecognized"/> in
     /// <see cref="INotification.Category"/>.
     /// </remarks>
     Unrecognized,
@@ -49,7 +49,7 @@ public enum Classification
     /// </summary>
     /// <remarks>
     /// Returned as <see cref="NotificationClassification.Unsupported"/> in
-    /// <see cref="IGqlStatusObject.Classification"/> as <see cref="NotificationCategory.Unsupported"/> in
+    /// <see cref="IGqlStatusObject.Classification"/> and as <see cref="NotificationCategory.Unsupported"/> in
     /// <see cref="INotification.Category"/>.
     /// </remarks>
     Unsupported,
@@ -57,7 +57,7 @@ public enum Classification
     /// <summary>Receive notifications when a query uses costly operations and might be slow.</summary>
     /// <remarks>
     /// Returned as <see cref="NotificationClassification.Performance"/> in
-    /// <see cref="IGqlStatusObject.Classification"/> as <see cref="NotificationCategory.Performance"/> in
+    /// <see cref="IGqlStatusObject.Classification"/> and as <see cref="NotificationCategory.Performance"/> in
     /// <see cref="INotification.Category"/>.
     /// </remarks>
     Performance,
@@ -65,7 +65,7 @@ public enum Classification
     /// <summary>Receive notifications when a query/command use deprecated features that should be replaced.</summary>
     /// <remarks>
     /// Returned as <see cref="NotificationClassification.Deprecation"/> in
-    /// <see cref="IGqlStatusObject.Classification"/> as <see cref="NotificationCategory.Deprecation"/> in
+    /// <see cref="IGqlStatusObject.Classification"/> and as <see cref="NotificationCategory.Deprecation"/> in
     /// <see cref="INotification.Category"/>.
     /// </remarks>
     Deprecation,
@@ -73,21 +73,27 @@ public enum Classification
     /// <summary>Receive notifications when the result of the query or command indicates a potential security issue.</summary>
     /// <remarks>
     /// Returned as <see cref="NotificationClassification.Security"/> in <see cref="IGqlStatusObject.Classification"/>
-    /// as <see cref="NotificationCategory.Security"/> in <see cref="INotification.Category"/>.
+    /// and as <see cref="NotificationCategory.Security"/> in <see cref="INotification.Category"/>.
     /// </remarks>
     Security,
 
     /// <summary>Receive notifications related to managing databases and servers.</summary>
     /// <remarks>
     /// Returned as <see cref="NotificationClassification.Topology"/> in <see cref="IGqlStatusObject.Classification"/>
-    /// as <see cref="NotificationCategory.Topology"/> in <see cref="INotification.Category"/>.
+    /// and as <see cref="NotificationCategory.Topology"/> in <see cref="INotification.Category"/>.
     /// </remarks>
     Topology,
+
+    /// <summary>Receive notifications related to managing indexes and constraints.</summary>
+    /// <remarks> Returned as <see cref="NotificationClassification.Schema"/> in <see cref="IGqlStatusObject.Classification"/>
+    /// and as <see cref="NotificationCategory.Schema"/> in <see cref="INotification.Category"/>.
+    /// </remarks>
+    Schema,
 
     /// <summary>Receive notifications not covered by other categories.</summary>
     /// <remarks>
     /// Returned as <see cref="NotificationClassification.Generic"/> in <see cref="IGqlStatusObject.Classification"/>
-    /// as <see cref="NotificationCategory.Generic"/> in <see cref="INotification.Category"/>.
+    /// and as <see cref="NotificationCategory.Generic"/> in <see cref="INotification.Category"/>.
     /// </remarks>
     Generic
 }

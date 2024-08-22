@@ -59,6 +59,10 @@ public enum Category
     /// <remarks>Returned as <see cref="NotificationCategory.Topology"/></remarks>
     Topology,
 
+    /// <summary> Receive notifications related to managing indexes and constraints.</summary>
+    /// <remarks>Returned as <see cref="NotificationCategory.Schema"/></remarks>
+    Schema,
+
     /// <summary>Receive notifications not covered by other categories.</summary>
     /// <remarks>Returned as <see cref="NotificationCategory.Generic"/></remarks>
     Generic

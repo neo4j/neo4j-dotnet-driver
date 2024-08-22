@@ -66,6 +66,7 @@ internal sealed record GqlStatusObject(
             "deprecation" => NotificationClassification.Deprecation,
             "security" => NotificationClassification.Security,
             "topology" => NotificationClassification.Topology,
+            "schema" => NotificationClassification.Schema,
             "generic" => NotificationClassification.Generic,
             _ => NotificationClassification.Unknown
         };
