@@ -87,6 +87,7 @@ internal static class ExceptionManager
             var newError = ProtocolObjectFactory.CreateObject<Protocol.ProtocolException>();
             newError.ExceptionObj = ex;
             var errorCode = ex is Neo4jException ? ((Neo4jException)ex).Code : type;
+            var isRetriable = ex is Neo4jException ? ((Neo4jException)ex).IsRetriable : false;
             return new ProtocolResponse(
                 "DriverError",
                 new
@@ -94,7 +95,8 @@ internal static class ExceptionManager
                     id = newError.uniqueId,
                     errorType = type,
                     msg = exceptionMessage,
-                    code = errorCode
+                    code = errorCode,
+                    retryable = isRetriable
                 });
         }
 
@@ -107,7 +109,8 @@ internal static class ExceptionManager
                 {
                     id = newError.uniqueId,
                     errorType = ex.InnerException?.GetType().Name ?? ex.GetType().Name,
-                    msg = exceptionMessage
+                    msg = exceptionMessage,
+                    retryable = false
                 });
         }
 

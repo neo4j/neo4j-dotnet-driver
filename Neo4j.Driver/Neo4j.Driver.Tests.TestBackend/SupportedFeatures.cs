@@ -43,6 +43,7 @@ internal static class SupportedFeatures
             "Feature:API:Result.Peek",
             "Feature:API:Result.Single",
             "Feature:API:Session:NotificationsConfig",
+            "Feature:API:RetryableExceptions",
             "Feature:API:Session:AuthConfig",
             "Feature:API:SSLClientCertificate",
             "Feature:API:SSLConfig",
