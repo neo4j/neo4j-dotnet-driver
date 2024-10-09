@@ -14,7 +14,6 @@
 // limitations under the License.
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using FluentAssertions;
 using Neo4j.Driver.Mapping;
 using Neo4j.Driver.Tests.TestUtil;
