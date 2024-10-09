@@ -74,7 +74,7 @@ internal class MappingBuilder<T> : IMappingBuilder<T>
     /// <inheritdoc />
     public IMappingBuilder<T> UseDefaultMapping()
     {
-        _builtMapper.AddWholeObjectMapping(r => DefaultMapper.Get<T>().Map(r));
+        _builtMapper.AddWholeObjectMapping(r => DefaultMapper.Get<T>(_builtMapper.MappedSetters).Map(r));
         return this;
     }
 

@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using FluentAssertions;
 using Neo4j.Driver.Mapping;
 using Neo4j.Driver.Tests.TestUtil;
@@ -200,5 +201,36 @@ public class MappingProviderTests
         obj1.LuckyNumber.Should().Be(7);
         obj2.JobTitle.Should().Be("developer");
         obj2.YearsOfService.Should().Be(5);
+    }
+
+    private class NameAndGuid
+    {
+        public string Name { get; set; } = null!;
+        public Guid Guid { get; set; }
+    }
+
+    private class MappingProviderThatUsesDefaultMappingAndOverridesAGuidProperty : IMappingProvider
+    {
+        public void CreateMappers(IMappingRegistry registry)
+        {
+            registry.RegisterMapping<NameAndGuid>(
+                b => b
+                    .UseDefaultMapping()
+                    .Map(x => x.Guid, "G+uid", converter: x => Guid.Parse(x.As<string>())));
+        }
+    }
+
+
+    [Fact]
+    public void ShouldNotFailWhenUsingDefaultMapperButMappingSomePropertiesExplicitly()
+    {
+        var guid = Guid.NewGuid();
+        var testRecord = TestRecord.Create(("Name", "Alice"), ("Guid", guid.ToString()));
+        RecordObjectMapping.RegisterProvider<MappingProviderThatUsesDefaultMappingAndOverridesAGuidProperty>();
+
+        var obj = testRecord.AsObject<NameAndGuid>();
+
+        obj.Name.Should().Be("Alice");
+        obj.Guid.Should().Be(guid);
     }
 }

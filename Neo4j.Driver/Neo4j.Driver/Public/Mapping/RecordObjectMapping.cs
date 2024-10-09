@@ -84,7 +84,7 @@ public class RecordObjectMapping : IMappingRegistry, IRecordObjectMapping
         // no mapper registered for this type, so use the default mapper
         var openGenericMethod = typeof(DefaultMapper).GetMethod(nameof(DefaultMapper.Get));
         var closedGenericMethod = openGenericMethod!.MakeGenericMethod(type);
-        return closedGenericMethod.Invoke(null, null);
+        return closedGenericMethod.Invoke(null, [null]);
     }
 
     /// <summary>

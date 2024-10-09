@@ -355,7 +355,7 @@ public class DefaultMapperTests
     [Fact]
     public void ShouldThrowIfClassHasNoConstructors()
     {
-        var act = DefaultMapper.Get<NoConstructors>;
+        var act = () => DefaultMapper.Get<NoConstructors>(null);
         act.Should().Throw<InvalidOperationException>();
     }
 }
