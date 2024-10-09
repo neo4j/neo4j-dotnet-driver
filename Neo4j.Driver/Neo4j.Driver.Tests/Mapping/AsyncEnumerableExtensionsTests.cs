@@ -14,15 +14,17 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Neo4j.Driver.Mapping;
 using Neo4j.Driver.Preview.Mapping;
 using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.Mapping;
 
-public class DelegateAsyncEnumerableExtensionsTests
+public class AsyncEnumerableExtensionsTests
 {
     [Fact]
     public async Task ShouldMapAllRecordsFromCursor_01_Property()
@@ -443,5 +445,53 @@ public class DelegateAsyncEnumerableExtensionsTests
                     name = "Bob", age = 30, city = "Los Angeles", country = "USA", job = "Doctor", hobby = "Swimming",
                     pet = "Cat", car = "BMW", food = "Burger", sport = "Football"
                 });
+    }
+
+    [Fact]
+    public async Task AsObjectsFromBlueprintAsync_ShouldMapRecordsToObjects()
+    {
+        async IAsyncEnumerable<IRecord> GetRecordsAsync()
+        {
+            var record1 = TestRecord.Create(
+                ("name", "Alice"),
+                ("age", 25),
+                ("city", "New York"));
+
+            var record2 = TestRecord.Create(
+                ("name", "Bob"),
+                ("age", 30),
+                ("city", "Los Angeles"));
+
+            await Task.Yield();
+            yield return record1;
+            yield return record2;
+        }
+
+        var result = await GetRecordsAsync()
+            .AsObjectsFromBlueprintAsync(new { name = string.Empty, age = 0, city = string.Empty })
+            .ToArrayAsync();
+
+        result.Should()
+            .BeEquivalentTo(
+            [
+                new { name = "Alice", age = 25, city = "New York" },
+                new { name = "Bob", age = 30, city = "Los Angeles" }
+            ]);
+    }
+
+    [Fact]
+    public async Task AsObjectsFromBlueprintAsync_ShouldHandleEmptyEnumerable()
+    {
+        async IAsyncEnumerable<IRecord> GetRecordsAsync()
+        {
+            await Task.Yield();
+            yield break;
+        }
+
+        var result = await GetRecordsAsync()
+            .AsObjectsFromBlueprintAsync(new { name = string.Empty, age = 0, city = string.Empty })
+            .ToArrayAsync();
+
+        result.Should().BeEmpty();
     }
 }

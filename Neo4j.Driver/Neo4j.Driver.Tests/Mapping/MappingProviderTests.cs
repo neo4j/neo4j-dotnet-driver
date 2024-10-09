@@ -208,28 +208,45 @@ public class MappingProviderTests
         public Guid Guid { get; set; }
     }
 
-    private class MappingProviderThatUsesDefaultMappingAndOverridesAGuidProperty : IMappingProvider
+    private class MappingProviderThatUsesDefaultMappingAndOverridesAGuidProperty(bool overrideGuid): IMappingProvider
     {
         public void CreateMappers(IMappingRegistry registry)
         {
             registry.RegisterMapping<NameAndGuid>(
-                b => b
-                    .UseDefaultMapping()
-                    .Map(x => x.Guid, "G+uid", converter: x => Guid.Parse(x.As<string>())));
+                b =>
+                {
+                    b.UseDefaultMapping();
+                    if(overrideGuid)
+                    {
+                        b.Map(x => x.Guid, "Guid", converter: x => Guid.Parse(x.As<string>()));
+                    }
+                });
         }
     }
-
 
     [Fact]
     public void ShouldNotFailWhenUsingDefaultMapperButMappingSomePropertiesExplicitly()
     {
         var guid = Guid.NewGuid();
         var testRecord = TestRecord.Create(("Name", "Alice"), ("Guid", guid.ToString()));
-        RecordObjectMapping.RegisterProvider<MappingProviderThatUsesDefaultMappingAndOverridesAGuidProperty>();
+        RecordObjectMapping.RegisterProvider(
+            new MappingProviderThatUsesDefaultMappingAndOverridesAGuidProperty(true));
 
         var obj = testRecord.AsObject<NameAndGuid>();
 
         obj.Name.Should().Be("Alice");
         obj.Guid.Should().Be(guid);
+    }
+
+    [Fact]
+    public void ShouldFailWhenUsingDefaultMapperWithoutOverriding()
+    {
+        var guid = Guid.NewGuid();
+        var testRecord = TestRecord.Create(("Name", "Alice"), ("Guid", guid.ToString()));
+        RecordObjectMapping.RegisterProvider(
+            new MappingProviderThatUsesDefaultMappingAndOverridesAGuidProperty(false));
+
+        var act = () => testRecord.AsObject<NameAndGuid>();
+        act.Should().Throw<InvalidCastException>();
     }
 }
