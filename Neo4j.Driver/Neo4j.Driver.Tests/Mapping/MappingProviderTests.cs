@@ -247,6 +247,6 @@ public class MappingProviderTests
             new MappingProviderThatUsesDefaultMappingAndOverridesAGuidProperty(false));
 
         var act = () => testRecord.AsObject<NameAndGuid>();
-        act.Should().Throw<InvalidCastException>();
+        act.Should().Throw<MappingFailedException>();
     }
 }
