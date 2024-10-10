@@ -60,6 +60,7 @@ public class RecordObjectMapping : IMappingRegistry, IRecordObjectMapping
     {
         // discard the current instance and create a new one, which will have no mappers registered
         Instance = new RecordObjectMapping();
+        DefaultMapper.Reset();
     }
 
     /// <summary>

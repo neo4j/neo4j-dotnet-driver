@@ -14,7 +14,6 @@
 // limitations under the License.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -23,6 +22,11 @@ namespace Neo4j.Driver.Mapping;
 internal static class DefaultMapper
 {
     private static readonly Dictionary<Type, object> Mappers = new();
+
+    public static void Reset()
+    {
+        Mappers.Clear();
+    }
 
     public static IRecordMapper<T> Get<T>(HashSet<MethodInfo> mappedSetters = null)
     {

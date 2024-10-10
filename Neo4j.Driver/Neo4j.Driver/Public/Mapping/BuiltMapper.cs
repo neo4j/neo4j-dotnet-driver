@@ -154,7 +154,7 @@ internal class BuiltMapper<T> : IRecordMapper<T>
 
             if (mappableValueFound)
             {
-                propertySetter.Invoke(obj, new[] { mappableValue });
+                propertySetter.Invoke(obj, [mappableValue]);
             }
             else if(!optional)
             {
