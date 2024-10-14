@@ -28,6 +28,7 @@ internal class BuiltMapper<T> : IRecordMapper<T>
 
     private Func<IRecord, T> _wholeObjectMapping;
     private readonly List<Action<T, IRecord>> _propertyMappings = new();
+    public HashSet<MethodInfo> MappedSetters { get; } = [];
 
     public T Map(IRecord record)
     {
@@ -139,6 +140,7 @@ internal class BuiltMapper<T> : IRecordMapper<T>
     {
         // this part only happens once, at the time of building the mapper
         _propertyMappings.Add(MapFromRecord);
+        MappedSetters.Add(propertySetter);
         return;
 
         // this part happens every time a record is mapped
@@ -152,7 +154,7 @@ internal class BuiltMapper<T> : IRecordMapper<T>
 
             if (mappableValueFound)
             {
-                propertySetter.Invoke(obj, new[] { mappableValue });
+                propertySetter.Invoke(obj, [mappableValue]);
             }
             else if(!optional)
             {

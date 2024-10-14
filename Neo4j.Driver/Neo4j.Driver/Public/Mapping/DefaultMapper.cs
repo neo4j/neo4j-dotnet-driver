@@ -23,8 +23,14 @@ internal static class DefaultMapper
 {
     private static readonly Dictionary<Type, object> Mappers = new();
 
-    public static IRecordMapper<T> Get<T>()
+    public static void Reset()
     {
+        Mappers.Clear();
+    }
+
+    public static IRecordMapper<T> Get<T>(HashSet<MethodInfo> mappedSetters = null)
+    {
+        mappedSetters ??= [];
         var type = typeof(T);
 
         // if we already have a mapper for this type, return it
@@ -45,9 +51,11 @@ internal static class DefaultMapper
         var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
         foreach (var property in properties)
         {
-            // ignore properties without a setter or with MappingIgnoredAttribute, or compiler generated
+            // ignore properties without a setter or with MappingIgnoredAttribute, or compiler generated,
+            // or if the setter has already been mapped elsewhere (e.g. custom mapping config)
             if (property.SetMethod is null ||
-                property.GetCustomAttribute<MappingIgnoredAttribute>() is not null)
+                property.GetCustomAttribute<MappingIgnoredAttribute>() is not null ||
+                mappedSetters.Contains(property.SetMethod))
             {
                 continue;
             }
