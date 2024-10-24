@@ -14,7 +14,6 @@
 // limitations under the License.
 
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using FluentAssertions;
 using Neo4j.Driver.Internal.ExceptionHandling;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
