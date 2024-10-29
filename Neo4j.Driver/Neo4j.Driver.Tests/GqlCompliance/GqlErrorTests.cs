@@ -64,7 +64,7 @@ public class GqlErrorTests
         result.GqlDiagnosticRecord.Should().ContainKey("OPERATION");
         result.GqlDiagnosticRecord["OPERATION"].Should().Be("");
         result.GqlDiagnosticRecord.Should().ContainKey("OPERATION_CODE");
-        result.GqlDiagnosticRecord["OPERATION_CODE"].Should().Be("");
+        result.GqlDiagnosticRecord["OPERATION_CODE"].Should().Be("0");
         result.GqlDiagnosticRecord.Should().ContainKey("CURRENT_SCHEMA");
         result.GqlDiagnosticRecord["CURRENT_SCHEMA"].Should().Be("/");
 
