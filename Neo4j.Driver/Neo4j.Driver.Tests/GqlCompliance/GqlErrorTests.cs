@@ -68,7 +68,7 @@ public class GqlErrorTests
         result.GqlDiagnosticRecord.Should().ContainKey("CURRENT_SCHEMA");
         result.GqlDiagnosticRecord["CURRENT_SCHEMA"].Should().Be("/");
 
-        result.GqlRawClassification.Should().Be("");
+        result.GqlRawClassification.Should().Be(null);
         result.GqlClassification.Should().Be("UNKNOWN");
     }
 
