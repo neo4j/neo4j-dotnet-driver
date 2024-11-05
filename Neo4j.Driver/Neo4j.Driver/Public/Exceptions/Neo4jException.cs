@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Preview.GqlErrors;
 
 namespace Neo4j.Driver;
 
@@ -26,33 +27,28 @@ namespace Neo4j.Driver;
 /// The base class for all Neo4j exceptions.
 /// </summary>
 [DataContract]
-public class Neo4jException : Exception
+public class Neo4jException : Exception, IGqlErrorPreview
 {
-    /// <summary>
-    /// Gets or sets the GQL status of the exception.
-    /// </summary>
-    public string GqlStatus { get; set; }
+    private readonly string _gqlStatus;
+    private readonly string _gqlStatusDescription;
+    private readonly string _gqlClassification;
+    private readonly string _gqlRawClassification;
+    private readonly Dictionary<string, object> _gqlDiagnosticRecord;
 
-    /// <summary>
-    /// Gets or sets the GQL status description of the exception.
-    /// </summary>
-    public string GqlStatusDescription { get; set; }
+    /// <inheritdoc />
+    string IGqlErrorPreview.GqlStatus => _gqlStatus;
 
-    /// <summary>
-    /// Gets or sets the GQL classification of the exception.
-    /// </summary>
-    public string GqlClassification { get; set; }
+    /// <inheritdoc />
+    string IGqlErrorPreview.GqlStatusDescription => _gqlStatusDescription;
 
-    /// <summary>
-    /// The raw classification as received from the server.
-    /// </summary>
-    public string GqlRawClassification { get; set; }
+    /// <inheritdoc />
+    string IGqlErrorPreview.GqlClassification => _gqlClassification;
 
-    /// <summary>
-    /// GqlDiagnosticRecord returns further information about the status for diagnostic purposes.
-    /// GqlDiagnosticRecord is part of the GQL compliant errors preview feature.
-    /// </summary>
-    public Dictionary<string, object> GqlDiagnosticRecord { get; set; }
+    /// <inheritdoc />
+    string IGqlErrorPreview.GqlRawClassification => _gqlRawClassification;
+
+    /// <inheritdoc />
+    Dictionary<string, object> IGqlErrorPreview.GqlDiagnosticRecord => _gqlDiagnosticRecord;
 
     /// <summary>
     /// Gets whether the exception retriable or not.
@@ -80,11 +76,11 @@ public class Neo4jException : Exception
         : base(failureMessage.Message, innerException)
     {
         Code = failureMessage.Code;
-        GqlStatus = failureMessage.GqlStatus;
-        GqlStatusDescription = failureMessage.GqlStatusDescription;
-        GqlClassification = failureMessage.GqlClassification;
-        GqlRawClassification = failureMessage.GqlRawClassification;
-        GqlDiagnosticRecord = failureMessage.GqlDiagnosticRecord;
+        _gqlStatus = failureMessage.GqlStatus;
+        _gqlStatusDescription = failureMessage.GqlStatusDescription;
+        _gqlClassification = failureMessage.GqlClassification;
+        _gqlRawClassification = failureMessage.GqlRawClassification;
+        _gqlDiagnosticRecord = failureMessage.GqlDiagnosticRecord;
     }
 
     internal static Neo4jException Create(FailureMessage failureMessage)
@@ -138,6 +134,4 @@ public class Neo4jException : Exception
     {
         Code = code;
     }
-
-
 }

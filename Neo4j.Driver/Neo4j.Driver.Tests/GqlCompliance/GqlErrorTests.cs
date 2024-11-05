@@ -18,6 +18,7 @@ using FluentAssertions;
 using Neo4j.Driver.Internal.ExceptionHandling;
 using Neo4j.Driver.Internal.IO.MessageSerializers;
 using Neo4j.Driver.Internal.Messaging;
+using Neo4j.Driver.Preview.GqlErrors;
 using Xunit;
 
 namespace Neo4j.Driver.Tests.GqlCompliance;
@@ -107,23 +108,26 @@ public class GqlErrorTests
         // Assert
         result.Code.Should().Be("Neo.ClientError.Transaction.Terminated");
         result.Message.Should().Be("Transaction terminated");
-        result.GqlStatus.Should().Be("GQL_STATUS_OUTER");
-        result.GqlStatusDescription.Should().Be("Outer status description");
-        result.GqlDiagnosticRecord.Should().NotBeNull();
-        result.GqlDiagnosticRecord["outer_key"].Should().Be("outer_value");
-        result.GqlRawClassification.Should().Be("OUTER_CLASSIFICATION");
-        result.GqlClassification.Should().Be("DATABASE_ERROR");
+
+        var gqlError = result.GetGqlErrorPreview();
+        gqlError.GqlStatus.Should().Be("GQL_STATUS_OUTER");
+        gqlError.GqlStatusDescription.Should().Be("Outer status description");
+        gqlError.GqlDiagnosticRecord.Should().NotBeNull();
+        gqlError.GqlDiagnosticRecord["outer_key"].Should().Be("outer_value");
+        gqlError.GqlRawClassification.Should().Be("OUTER_CLASSIFICATION");
+        gqlError.GqlClassification.Should().Be("DATABASE_ERROR");
 
         var innerException = (Neo4jException)result.InnerException;
+        gqlError = innerException.GetGqlErrorPreview();
         innerException.Should().NotBeNull();
         innerException.Should().BeOfType<ClientException>();
         innerException.Code.Should().Be("Neo.ClientError.Transaction.LockClientStopped");
         innerException.Message.Should().Be("Lock client stopped");
-        innerException.GqlStatus.Should().Be("GQL_STATUS_INNER");
-        innerException.GqlStatusDescription.Should().Be("Inner status description");
-        innerException.GqlDiagnosticRecord.Should().NotBeNull();
-        innerException.GqlDiagnosticRecord["inner_key"].Should().Be("inner_value");
-        innerException.GqlRawClassification.Should().Be("INNER_CLASSIFICATION");
-        innerException.GqlClassification.Should().Be("CLIENT_ERROR");
+        gqlError.GqlStatus.Should().Be("GQL_STATUS_INNER");
+        gqlError.GqlStatusDescription.Should().Be("Inner status description");
+        gqlError.GqlDiagnosticRecord.Should().NotBeNull();
+        gqlError.GqlDiagnosticRecord["inner_key"].Should().Be("inner_value");
+        gqlError.GqlRawClassification.Should().Be("INNER_CLASSIFICATION");
+        gqlError.GqlClassification.Should().Be("CLIENT_ERROR");
     }
 }

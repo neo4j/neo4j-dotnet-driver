@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
+using Neo4j.Driver.Preview.GqlErrors;
 using Neo4j.Driver.Tests.TestBackend.Protocol;
 using Neo4j.Driver.Tests.TestBackend.Types;
 
@@ -80,6 +81,7 @@ internal static class ExceptionManager
     internal static ProtocolResponse GenerateExceptionResponse(Exception ex)
     {
         var type = TypeMap.GetValueOrDefault(ex.GetType());
+        //var exceptionMessage = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
 
         if (type is not null)
         {
@@ -100,7 +102,7 @@ internal static class ExceptionManager
                 {
                     id = newError.uniqueId,
                     errorType = ex.InnerException?.GetType().Name ?? ex.GetType().Name,
-                    msg = ex.Message,
+                    msg = ex.InnerException != null ? ex.InnerException.Message : ex.Message,
                     retryable = false
                 });
         }
@@ -127,7 +129,8 @@ internal static class ExceptionManager
         bool isCause = false)
     {
         var ne = ex as Neo4jException;
-        var diagnosticRecord = ne?.GqlDiagnosticRecord?.ToDictionary(y => y.Key, y => NativeToCypher.Convert(y.Value));
+        var gqlError = ne?.GetGqlErrorPreview();
+        var diagnosticRecord = gqlError?.GqlDiagnosticRecord?.ToDictionary(y => y.Key, y => NativeToCypher.Convert(y.Value));
         var data = new Dictionary<string, object>();
 
         if (!isCause)
@@ -141,11 +144,11 @@ internal static class ExceptionManager
         data.OverwriteFrom(
             null,
             ("msg", exceptionMessage),
-            ("gqlStatus", ne?.GqlStatus),
-            ("statusDescription", ne?.GqlStatusDescription),
+            ("gqlStatus", gqlError?.GqlStatus),
+            ("statusDescription", gqlError?.GqlStatusDescription),
             ("diagnosticRecord", diagnosticRecord),
-            ("rawClassification", ne?.GqlRawClassification),
-            ("classification", ne?.GqlClassification));
+            ("rawClassification", gqlError?.GqlRawClassification),
+            ("classification", gqlError?.GqlClassification));
 
         if (ne?.InnerException != null)
         {
