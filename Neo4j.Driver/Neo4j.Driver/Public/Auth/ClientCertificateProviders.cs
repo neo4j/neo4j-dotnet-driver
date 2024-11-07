@@ -16,16 +16,14 @@
 using System.Security.Cryptography.X509Certificates;
 using Neo4j.Driver.Internal.Auth;
 
-namespace Neo4j.Driver.Preview.Auth;
+namespace Neo4j.Driver;
 
 /// <summary>
-/// This class is in preview and is subject to change or removal in the future.
+/// This class provides static methods to create basic client certificate providers.
 /// </summary>
 public static class ClientCertificateProviders
 {
     /// <summary>
-    /// This method is in preview and is subject to change or removal in the future.
-    /// <para/>
     /// Creates a new static client certificate provider with the given certificate.
     /// </summary>
     /// <param name="certificate">The certificate.</param>
@@ -36,8 +34,6 @@ public static class ClientCertificateProviders
     }
 
     /// <summary>
-    /// This method is in preview and is subject to change or removal in the future.
-    /// <para/>
     /// Creates a new rotating client certificate provider with the given certificate as the initial certificate.
     /// </summary>
     /// <param name="certificate">The initial certificate.</param>

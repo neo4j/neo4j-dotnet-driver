@@ -15,16 +15,15 @@
 
 using System.Security.Cryptography.X509Certificates;
 
-namespace Neo4j.Driver.Preview.Auth;
+namespace Neo4j.Driver;
 
 /// <summary>
-/// This interface is in preview and is subject to change or removal in the future.
+/// This interface allows for the implementation of a client certificate provider that can be updated with
+/// new certificates.
 /// </summary>
 public interface IRotatingClientCertificateProvider : IClientCertificateProvider
 {
     /// <summary>
-    /// This interface is in preview and is subject to change or removal in the future.
-    /// <para/>
     /// Updates the certificate stored in the provider.
     /// <para/>
     /// To be called by user-code when a new client certificate is available. This method must be thread-safe.

@@ -23,7 +23,6 @@ using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Connector.Trust;
 using Neo4j.Driver.Internal.Logging;
 using Neo4j.Driver.Internal.Types;
-using Neo4j.Driver.Preview.Auth;
 using Xunit;
 
 namespace Neo4j.Driver.Tests;

@@ -16,7 +16,6 @@
 using System;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
-using Neo4j.Driver.Preview.Auth;
 
 namespace Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
 

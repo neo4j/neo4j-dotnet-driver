@@ -16,11 +16,9 @@
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Preview.Auth;
+namespace Neo4j.Driver;
 
 /// <summary>
-/// This interface is in preview and is subject to change or removal in the future.
-/// <para/>
 /// Provides a client certificate to the driver for mutual TLS.
 /// <para/>
 /// The driver will call <see cref="GetCertificateAsync"/> to get the latest certificate to use for new connections.
@@ -37,8 +35,6 @@ namespace Neo4j.Driver.Preview.Auth;
 public interface IClientCertificateProvider
 {
     /// <summary>
-    /// This interface is in preview and is subject to change or removal in the future.
-    /// <para/>
     /// Returns the certificate to use for new connections. Must be thread-safe. The driver will call this
     /// method every time it makes a new connection.
     /// </summary>

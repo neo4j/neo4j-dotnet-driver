@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Neo4j.Driver.Preview.Auth;
 using Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
 using Neo4j.Driver.Tests.TestBackend.Resolvers;
 using Newtonsoft.Json;
