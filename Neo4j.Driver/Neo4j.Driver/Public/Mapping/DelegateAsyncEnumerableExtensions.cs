@@ -19,7 +19,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Neo4j.Driver.Preview.Mapping;
+namespace Neo4j.Driver.Mapping;
 
 /// <summary>
 /// Provides extension methods for materializing <see cref="IAsyncEnumerable{T}"/> into lists of objects

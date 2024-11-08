@@ -18,9 +18,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal;
-using Neo4j.Driver.Mapping;
 
-namespace Neo4j.Driver.Preview.Mapping;
+namespace Neo4j.Driver.Mapping;
 
 /// <summary>
 /// Contains extensions for using delegate mapping with the driver's <see cref="ExecutableQuery{TIn,TOut}"/>

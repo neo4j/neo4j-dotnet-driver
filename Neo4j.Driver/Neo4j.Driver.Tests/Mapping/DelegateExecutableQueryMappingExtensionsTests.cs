@@ -16,7 +16,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Neo4j.Driver.Preview.Mapping;
 using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
 
