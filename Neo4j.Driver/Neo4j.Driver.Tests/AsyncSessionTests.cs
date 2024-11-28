@@ -43,7 +43,11 @@ public class AsyncSessionTests
             0,
             new Driver.SessionConfig(),
             reactive,
-            false);
+            false,
+            new DriverContext(
+                new Uri("neo4j://myTest.org"),
+                AuthTokenManagers.Static(AuthTokens.Basic("neo4j", "neo4j")),
+                new Config()));
     }
 
     internal static Mock<IConnection> NewMockedConnection(Mock<IBoltProtocol> protocol = null)
@@ -297,7 +301,11 @@ public class AsyncSessionTests
                 0,
                 new Driver.SessionConfig(),
                 false,
-                false);
+                false,
+                new DriverContext(
+                    new Uri("neo4j://myTest.org"),
+                    AuthTokenManagers.Static(AuthTokens.Basic("neo4j", "neo4j")),
+                    new Config()));
 
             await session.PipelinedExecuteReadAsync(_ => Task.FromResult(null as EagerResult<IRecord[]>), new TransactionConfig());
 
@@ -481,7 +489,18 @@ public class AsyncSessionTests
                 .WithBookmarkManager(bookmarkManager.Object)
                 .Build();
 
-            using (var session = new AsyncSession(null, null, null, 0, cfg, false, false))
+            using (var session = new AsyncSession(
+                       null,
+                       null,
+                       null,
+                       0,
+                       cfg,
+                       false,
+                       false,
+                       new DriverContext(
+                           new Uri("neo4j://myTest.org"),
+                           AuthTokenManagers.Static(AuthTokens.Basic("neo4j", "neo4j")),
+                           new Config())))
             {
                 session.UpdateBookmarks(new InternalBookmarks("a"));
                 bookmarkManager.Verify(

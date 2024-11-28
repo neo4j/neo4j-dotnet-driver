@@ -39,6 +39,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     private readonly ILogger _logger;
     private readonly INotificationsConfig _notificationsConfig;
     private readonly bool _reactive;
+    private readonly DriverContext _driverContext;
 
     private readonly IAsyncRetryLogic _retryLogic;
     private readonly bool _useBookmarkManager;
@@ -60,13 +61,15 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         long defaultFetchSize,
         SessionConfig config,
         bool reactive,
-        bool telemetryEnabled)
+        bool telemetryEnabled,
+        DriverContext driverContext)
     {
         SessionConfig = config;
         _connectionProvider = provider;
         _logger = logger;
         _retryLogic = retryLogic;
         _reactive = reactive;
+        _driverContext = driverContext;
 
         _database = config.Database;
         _defaultMode = config.DefaultAccessMode;
@@ -376,6 +379,18 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
             LastBookmarks = await GetBookmarksAsync().ConfigureAwait(false);
         }
 
+        // if no database is set, try to get the home database from the cache
+        var usingHomeDb = string.IsNullOrWhiteSpace(_database);
+        if(usingHomeDb)
+        {
+            // see if we can get the database from the cache
+            var (found, homeDb) = await TryGetCachedHomeDatabase().ConfigureAwait(false);
+            if (found)
+            {
+                _database = homeDb;
+            }
+        }
+
         _connection = await _connectionProvider.AcquireAsync(
                 mode,
                 _database,
@@ -384,9 +399,36 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                 forceAuth)
             .ConfigureAwait(false);
 
-        //Update the database. If a routing request occurred it may have returned a differing DB alias name that needs to be used for the
-        //rest of the sessions lifetime.
+        // Update the database. If a routing request occurred it may have returned a differing DB alias name that needs to be used for the
+        // rest of the session's lifetime.
         _database = _connection.Database;
+        if(usingHomeDb)
+        {
+            // cache the home database
+            if (_driverContext?.HomeDbCache != null)
+            {
+                _driverContext.HomeDbCache[SessionConfig.AuthToken] = _database;
+            }
+        }
+    }
+
+    private async Task<(bool found, string database)> TryGetCachedHomeDatabase()
+    {
+        var token = SessionConfig.AuthToken;
+        if (token == null && _driverContext?.AuthTokenManager != null)
+        {
+            token = await _driverContext.AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
+        }
+
+        if (token != null && _driverContext?.HomeDbCache != null)
+        {
+            if (_driverContext.HomeDbCache.TryGetValue(token, out var cachedDatabase))
+            {
+                return (true, cachedDatabase);
+            }
+        }
+
+        return (false, null);
     }
 
     protected override void Dispose(bool disposing)
