@@ -16,7 +16,6 @@
 using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Auth;
-using static Neo4j.Driver.Internal.Auth.AuthToken;
 
 namespace Neo4j.Driver;
 
@@ -27,7 +26,7 @@ namespace Neo4j.Driver;
 /// <remarks>
 ///     <see cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder})"/>
 /// </remarks>
-public class AuthTokens
+public static class AuthTokens
 {
     /// <summary>
     /// Gets an authentication token that can be used to connect to Neo4j instances with auth disabled. This will only
@@ -36,7 +35,7 @@ public class AuthTokens
     /// <remarks>
     ///     <see cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder})"/>
     /// </remarks>
-    public static IAuthToken None => new AuthToken(new Dictionary<string, object> { { SchemeKey, "none" } });
+    public static IAuthToken None => new AuthToken(new Dictionary<string, object> { { AuthToken.SchemeKey, "none" } });
 
     /// <summary>The basic authentication scheme, using a username and a password.</summary>
     /// <param name="username">This is the "principal", identifying who this token represents.</param>
@@ -47,7 +46,7 @@ public class AuthTokens
     /// </remarks>
     public static IAuthToken Basic(string username, string password)
     {
-        return Basic(username, password, null);
+        return new BasicAuthToken(username, password);
     }
 
     /// <summary>The basic authentication scheme, using a username and a password.</summary>
@@ -59,43 +58,22 @@ public class AuthTokens
     /// </param>
     /// <returns>An authentication token that can be used to connect to Neo4j.</returns>
     /// <remarks>
-    ///     <see
-    ///         cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder})"/>
+    ///     <see cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder})"/>
     /// </remarks>
     public static IAuthToken Basic(string username, string password, string realm)
     {
-        var token = new Dictionary<string, object>
-        {
-            { SchemeKey, "basic" },
-            { PrincipalKey, username },
-            { CredentialsKey, password }
-        };
-
-        if (realm != null)
-        {
-            token.Add(RealmKey, realm);
-        }
-
-        return new AuthToken(token);
+        return new BasicAuthToken(username, password, realm);
     }
 
     /// <summary>The kerberos authentication scheme, using a base64 encoded ticket.</summary>
     /// <param name="base64EncodedTicket">A base64 encoded service ticket.</param>
     /// <returns>an authentication token that can be used to connect to Neo4j.</returns>
     /// <remarks>
-    ///     <see
-    ///         cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder})"/>
+    ///     <see cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder})"/>
     /// </remarks>
     public static IAuthToken Kerberos(string base64EncodedTicket)
     {
-        var token = new Dictionary<string, object>
-        {
-            { SchemeKey, "kerberos" },
-            { PrincipalKey, string.Empty }, //This empty string is required for backwards compatibility.
-            { CredentialsKey, base64EncodedTicket }
-        };
-
-        return new AuthToken(token);
+        return new KerberosAuthToken(base64EncodedTicket);
     }
 
     /// <summary>
@@ -103,8 +81,7 @@ public class AuthTokens
     /// work if authentication is disabled on the Neo4j Instance we are connecting to.
     /// </summary>
     /// <remarks>
-    ///     <see
-    ///         cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder})"/>
+    ///     <see cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder})"/>
     /// </remarks>
     /// <param name="principal">This is used to identify who this token represents.</param>
     /// <param name="credentials">This is credentials authenticating the principal.</param>
@@ -113,7 +90,7 @@ public class AuthTokens
     /// <returns>An authentication token that can be used to connect to Neo4j.</returns>
     public static IAuthToken Custom(string principal, string credentials, string realm, string scheme)
     {
-        return Custom(principal, credentials, realm, scheme, null);
+        return new CustomAuthToken(principal, credentials, realm, scheme);
     }
 
     /// <summary>
@@ -121,8 +98,7 @@ public class AuthTokens
     /// work if authentication is disabled on the Neo4j Instance we are connecting to.
     /// </summary>
     /// <remarks>
-    ///     <see
-    ///         cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder})"/>
+    ///     <see cref="GraphDatabase.Driver(string, IAuthToken, System.Action{Neo4j.Driver.ConfigBuilder})"/>
     /// </remarks>
     /// <param name="principal">This is used to identify who this token represents.</param>
     /// <param name="credentials">This is credentials authenticating the principal.</param>
@@ -133,40 +109,9 @@ public class AuthTokens
     /// parameters will be added.
     /// </param>
     /// <returns>An authentication token that can be used to connect to Neo4j.</returns>
-    public static IAuthToken Custom(
-        string principal,
-        string credentials,
-        string realm,
-        string scheme,
-        Dictionary<string, object> parameters)
+    public static IAuthToken Custom(string principal, string credentials, string realm, string scheme, Dictionary<string, object> parameters)
     {
-        var token = new Dictionary<string, object>();
-        if (principal is not null)
-        {
-            token.Add(PrincipalKey, principal);
-        }
-
-        if (!string.IsNullOrEmpty(scheme))
-        {
-            token.Add(SchemeKey, scheme);
-        }
-
-        if (!string.IsNullOrEmpty(credentials))
-        {
-            token.Add(CredentialsKey, credentials);
-        }
-
-        if (!string.IsNullOrEmpty(realm))
-        {
-            token.Add(RealmKey, realm);
-        }
-
-        if (parameters is not null)
-        {
-            token.Add(ParametersKey, parameters);
-        }
-
-        return new AuthToken(token);
+        return new CustomAuthToken(principal, credentials, realm, scheme, parameters);
     }
 
     /// <summary>
@@ -180,17 +125,6 @@ public class AuthTokens
     /// <returns>An authentication token that can be used to connect to Neo4j.</returns>
     public static IAuthToken Bearer(string token)
     {
-        if (string.IsNullOrEmpty(token))
-        {
-            throw new ArgumentException("Bearer token cannot be null or an empty string");
-        }
-
-        var authtoken = new Dictionary<string, object>
-        {
-            { SchemeKey, "bearer" },
-            { CredentialsKey, token }
-        };
-
-        return new AuthToken(authtoken);
+        return new BearerAuthToken(token);
     }
 }

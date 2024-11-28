@@ -20,7 +20,7 @@ using System.Linq;
 namespace Neo4j.Driver.Internal.Auth;
 
 /// <summary>A simple common token for authentication schemes that easily convert to an auth token map</summary>
-internal sealed class AuthToken : IAuthToken
+internal class AuthToken : IAuthToken
 {
     public const string SchemeKey = "scheme";
     public const string PrincipalKey = "principal";
@@ -28,7 +28,7 @@ internal sealed class AuthToken : IAuthToken
     public const string RealmKey = "realm";
     public const string ParametersKey = "parameters";
 
-    public AuthToken(IDictionary<string, object> content)
+    internal AuthToken(IDictionary<string, object> content)
     {
         content = content ?? throw new ArgumentNullException(nameof(content));
         Content = new Dictionary<string, object>();
@@ -39,6 +39,10 @@ internal sealed class AuthToken : IAuthToken
                 Content[key] = value;
             }
         }
+    }
+
+    protected AuthToken() : this(new Dictionary<string, object>())
+    {
     }
 
     public IDictionary<string, object> Content { get; }
@@ -68,19 +72,22 @@ internal sealed class AuthToken : IAuthToken
     }
 }
 
-internal static class AuthTokenExtensions
+internal abstract class FullTokenCacheKeyAuthToken : AuthToken
 {
-    public static IDictionary<string, object> AsDictionary(this IAuthToken authToken)
+    /// <inheritdoc />
+    public override int GetHashCode()
     {
-        if (authToken is not AuthToken token)
+        // combine hash codes of all key-value pairs in the dictionary. We sort the dictionary by key to ensure
+        // that the hash code is the same for all dictionaries that have the same key-value pairs but in different
+        // order.
+
+        var hash = 17;
+        foreach (var kvp in Content.OrderBy(kvp => kvp.Key))
         {
-            throw new ClientException(
-                $"Unknown authentication token, `{authToken}`. Please use one of the supported " +
-                $"tokens from `{nameof(AuthTokens)}`.");
+            hash = hash * 31 + (kvp.Key?.GetHashCode() ?? 0);
+            hash = hash * 31 + (kvp.Value?.GetHashCode() ?? 0);
         }
 
-        return token.Content
-            .Where(kvp => kvp.Value is not null)
-            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        return hash;
     }
 }
