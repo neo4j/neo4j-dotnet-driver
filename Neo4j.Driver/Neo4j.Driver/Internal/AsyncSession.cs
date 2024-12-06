@@ -407,7 +407,7 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
             // cache the home database
             if (_driverContext?.HomeDbCache != null)
             {
-                _driverContext.HomeDbCache[SessionConfig.AuthToken] = _database;
+                _driverContext.HomeDbCache[_connection.AuthToken] = _database;
             }
         }
     }
