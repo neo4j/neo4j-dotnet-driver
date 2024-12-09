@@ -22,7 +22,7 @@ namespace Neo4j.Driver;
 
 /// <summary>
 /// Provides access to the result as an asynchronous stream of <see cref="IRecord"/>s. The records in the result
-/// is lazily retrieved and could only be visited once in a sequential order.
+/// is lazily retrieved and can be visited only once in a sequential order.
 /// </summary>
 /// <remarks> Calling <see cref="ResultCursorExtensions.ToListAsync(IResultCursor, CancellationToken)"/> will enumerate the entire stream.</remarks>
 public interface IResultCursor : IAsyncEnumerable<IRecord>
