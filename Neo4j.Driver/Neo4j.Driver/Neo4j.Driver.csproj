@@ -38,14 +38,6 @@
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='DebugDelaySigned|net6.0|AnyCPU'">
         <WarningLevel>2</WarningLevel>
     </PropertyGroup>
-    <ItemGroup Condition="'$(TargetFramework)' == 'net5.0'">
-        <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
-        <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
-        <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
-        <PackageReference Include="System.Net.Security" Version="4.3.2" />
-        <PackageReference Include="System.Net.Sockets" Version="4.3.0" />
-        <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
-    </ItemGroup>
     <ItemGroup>
         <None Remove="Internal\Temporal\windowsZones.xml" />
         <None Remove="Neo4j.Driver.csproj.DotSettings" />
@@ -54,8 +46,9 @@
         <EmbeddedResource Include="Internal\Temporal\windowsZones.xml" />
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="5.0.0" />
-        <PackageReference Include="System.IO.Pipelines" Version="7.0.0" />
-        <PackageReference Include="System.ValueTuple" Version="4.5.0" />
+        <PackageReference Include="System.IO.Pipelines" Version="8.0.0" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="6.0.0" />
     </ItemGroup>
 </Project>
