@@ -182,7 +182,9 @@ public class AsyncSessionTests
                 x =>
                     x.BeginTransactionAsync(
                         It.IsAny<IConnection>(),
-                        It.Is<BeginTransactionParams>(y => y.TransactionInfo.AwaitBegin == true)),
+                        It.Is<BeginTransactionParams>(y => y.TransactionInfo.AwaitBegin == true),
+                        TODO,
+                        TODO),
                 Times.Once);
         }
 
@@ -231,7 +233,9 @@ public class AsyncSessionTests
                     x =>
                         x.BeginTransactionAsync(
                             It.IsAny<IConnection>(),
-                            It.IsAny<BeginTransactionParams>()))
+                            It.IsAny<BeginTransactionParams>(),
+                            TODO,
+                            TODO))
                 .Throws(new IOException("Triggered an error when beginTx"));
 
             var session = NewSession(mockConn.Object);
@@ -256,7 +260,9 @@ public class AsyncSessionTests
                     x =>
                         x.BeginTransactionAsync(
                             It.IsAny<IConnection>(),
-                            It.IsAny<BeginTransactionParams>()))
+                            It.IsAny<BeginTransactionParams>(),
+                            TODO,
+                            TODO))
                 .Returns(Task.CompletedTask)
                 .Callback(
                     () =>
@@ -313,7 +319,9 @@ public class AsyncSessionTests
                 x =>
                     x.BeginTransactionAsync(
                         It.IsAny<IConnection>(),
-                        It.Is<BeginTransactionParams>(y => y.TransactionInfo.AwaitBegin == false)),
+                        It.Is<BeginTransactionParams>(y => y.TransactionInfo.AwaitBegin == false),
+                        TODO,
+                        TODO),
                 Times.Once);
         }
     }
@@ -329,7 +337,9 @@ public class AsyncSessionTests
                     x =>
                         x.BeginTransactionAsync(
                             It.IsAny<IConnection>(),
-                            It.IsAny<BeginTransactionParams>()))
+                            It.IsAny<BeginTransactionParams>(),
+                            TODO,
+                            TODO))
                 .Throws(new IOException("Triggered an error when beginTx"));
 
             var session = NewSession(mockConn.Object);

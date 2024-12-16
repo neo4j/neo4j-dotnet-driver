@@ -896,7 +896,9 @@ public class BoltProtocolTests
                         TransactionConfig.Default,
                         new SessionConfig("Douglas Fir"),
                         null,
-                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
+                    TODO,
+                    TODO));
 
             exception.Should().BeOfType<ArgumentException>();
         }
@@ -920,7 +922,9 @@ public class BoltProtocolTests
                         TransactionConfig.Default,
                         null,
                         new NotificationsDisabledConfig(),
-                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
+                    TODO,
+                    TODO));
 
             exception.Should().BeOfType<ArgumentOutOfRangeException>();
         }
@@ -943,7 +947,9 @@ public class BoltProtocolTests
                         TransactionConfig.Default,
                         null,
                         new NotificationsDisabledConfig(),
-                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
+                    TODO,
+                    TODO));
 
             exception.Should().BeNull();
         }
@@ -967,7 +973,9 @@ public class BoltProtocolTests
                         TransactionConfig.Default,
                         new SessionConfig("Douglas Fir"),
                         null,
-                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
+                    TODO,
+                    TODO));
 
             exception.Should().BeNull();
         }
@@ -993,7 +1001,9 @@ public class BoltProtocolTests
                     config,
                     sessionConfig,
                     null,
-                    new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)));
+                    new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
+                TODO,
+                TODO);
 
             mockV3.Verify(
                 x => x.BeginTransactionAsync(
@@ -1004,11 +1014,13 @@ public class BoltProtocolTests
                         config,
                         sessionConfig,
                         null,
-                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))),
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
+                    TODO,
+                    TODO),
                 Times.Once);
 
             mockConn.Verify(
-                x => x.BeginTransactionAsync(It.IsAny<BeginTransactionParams>()),
+                x => x.BeginTransactionAsync(It.IsAny<BeginTransactionParams>(), TODO),
                 Times.Never);
         }
     }

@@ -191,7 +191,8 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
                                 TelemetryEnabled,
                                 false)
                         },
-                        _notificationsConfig)
+                        _notificationsConfig,
+                        _driverContext.HomeDbCache)
                     .ConfigureAwait(false);
             });
 
@@ -365,7 +366,8 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
             _reactive,
             _fetchSize,
             SessionConfig,
-            _notificationsConfig);
+            _notificationsConfig,
+            _driverContext);
 
         await tx.BeginTransactionAsync(config, transactionInfo).ConfigureAwait(false);
         _transaction = tx;
@@ -379,17 +381,6 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
             LastBookmarks = await GetBookmarksAsync().ConfigureAwait(false);
         }
 
-        // if no database is set, try to get the home database from the cache
-        var usingHomeDb = string.IsNullOrWhiteSpace(_database);
-        if(usingHomeDb)
-        {
-            // see if we can get the database from the cache
-            var (found, homeDb) = await TryGetCachedHomeDatabase().ConfigureAwait(false);
-            if (found)
-            {
-                _database = homeDb;
-            }
-        }
 
         _connection = await _connectionProvider.AcquireAsync(
                 mode,
@@ -401,35 +392,11 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
 
         // Update the database. If a routing request occurred it may have returned a differing DB alias name that needs to be used for the
         // rest of the session's lifetime.
+        // if we passed a blank database we shouldn't do this until we get a success message
         _database = _connection.Database;
-        if(usingHomeDb)
-        {
-            // cache the home database
-            if (_driverContext?.HomeDbCache != null)
-            {
-                _driverContext.HomeDbCache[_connection.AuthToken] = _database;
-            }
-        }
     }
 
-    private async Task<(bool found, string database)> TryGetCachedHomeDatabase()
-    {
-        var token = SessionConfig.AuthToken;
-        if (token == null && _driverContext?.AuthTokenManager != null)
-        {
-            token = await _driverContext.AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
-        }
 
-        if (token != null && _driverContext?.HomeDbCache != null)
-        {
-            if (_driverContext.HomeDbCache.TryGetValue(token, out var cachedDatabase))
-            {
-                return (true, cachedDatabase);
-            }
-        }
-
-        return (false, null);
-    }
 
     protected override void Dispose(bool disposing)
     {

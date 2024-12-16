@@ -425,7 +425,9 @@ public class BoltProtocolV3Tests
                         TransactionConfig.Default,
                         null,
                         null,
-                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
+                    TODO,
+                    TODO));
 
             exception.Should().BeOfType<ArgumentException>();
         }
@@ -449,7 +451,9 @@ public class BoltProtocolV3Tests
                         TransactionConfig.Default,
                         null,
                         new NotificationsDisabledConfig(),
-                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
+                    TODO,
+                    TODO));
 
             exception.Should().BeOfType<ArgumentOutOfRangeException>();
         }
@@ -472,7 +476,9 @@ public class BoltProtocolV3Tests
                         TransactionConfig.Default,
                         null,
                         new NotificationsDisabledConfig(),
-                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
+                    TODO,
+                    TODO));
 
             exception.Should().BeNull();
         }
@@ -492,7 +498,9 @@ public class BoltProtocolV3Tests
                         TransactionConfig.Default,
                         null,
                         null,
-                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
+                    TODO,
+                    TODO));
 
             exception.Should().BeOfType<ClientException>();
         }
@@ -513,7 +521,9 @@ public class BoltProtocolV3Tests
                         TransactionConfig.Default,
                         null,
                         null,
-                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true))));
+                        new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
+                    TODO,
+                    TODO));
 
             exception.Should().BeOfType<InvalidOperationException>();
         }
@@ -549,7 +559,9 @@ public class BoltProtocolV3Tests
                     tc,
                     null,
                     null,
-                    new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)));
+                    new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
+                TODO,
+                TODO);
 
             msgFactory.Verify(
                 x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
@@ -594,7 +606,9 @@ public class BoltProtocolV3Tests
                     tc,
                     null,
                     null,
-                    new TransactionInfo(QueryApiType.UnmanagedTransaction, false, false)));
+                    new TransactionInfo(QueryApiType.UnmanagedTransaction, false, false)),
+                TODO,
+                TODO);
 
             msgFactory.Verify(
                 x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),

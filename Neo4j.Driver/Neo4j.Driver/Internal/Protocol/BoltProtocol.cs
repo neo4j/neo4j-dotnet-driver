@@ -73,7 +73,8 @@ internal sealed class BoltProtocol : IBoltProtocol
         IConnection connection,
         string database,
         SessionConfig sessionConfig,
-        Bookmarks bookmarks)
+        Bookmarks bookmarks,
+        IDictionary<IAuthToken, string> homeDbCache)
     {
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
@@ -83,13 +84,14 @@ internal sealed class BoltProtocol : IBoltProtocol
 
         return connection.Version >= BoltProtocolVersion.V4_3
             ? GetRoutingTableWithRouteMessageAsync(connection, database, sessionConfig?.ImpersonatedUser, bookmarks)
-            : GetRoutingTableWithQueryAsync(connection, database, bookmarks);
+            : GetRoutingTableWithQueryAsync(connection, database, bookmarks, homeDbCache);
     }
 
     public async Task<IResultCursor> RunInAutoCommitTransactionAsync(
         IConnection connection,
         AutoCommitParams autoCommitParams,
-        INotificationsConfig notificationsConfig)
+        INotificationsConfig notificationsConfig,
+        IDictionary<IAuthToken, string> homeDbCache)
     {
         BoltProtocolV3.ValidateImpersonatedUserForVersion(connection);
         BoltProtocolV3.ValidateNotificationsForVersion(connection, notificationsConfig);
@@ -112,7 +114,11 @@ internal sealed class BoltProtocol : IBoltProtocol
             autoCommitParams,
             notificationsConfig);
 
-        var runHandler = _protocolHandlerFactory.NewRunResponseHandler(streamBuilder, summaryBuilder);
+        var runHandler = _protocolHandlerFactory.NewRunResponseHandler(
+            streamBuilder,
+            summaryBuilder,
+            autoCommitParams.SessionConfig?.AuthToken,
+            homeDbCache);
 
         await AddTelemetryAsync(connection, autoCommitParams.TransactionInfo).ConfigureAwait(false);
 
@@ -136,13 +142,17 @@ internal sealed class BoltProtocol : IBoltProtocol
         return streamBuilder.CreateCursor();
     }
 
-    public async Task BeginTransactionAsync(IConnection connection, BeginTransactionParams beginParams)
+    public async Task BeginTransactionAsync(
+        IConnection connection,
+        BeginTransactionParams beginParams,
+        IAuthToken cacheKey,
+        IDictionary<IAuthToken, string> homeDbCache)
     {
         connection.SessionConfig = beginParams.SessionConfig;
         BoltProtocolV3.ValidateImpersonatedUserForVersion(connection);
         BoltProtocolV3.ValidateNotificationsForVersion(connection, beginParams.NotificationsConfig);
         await AddTelemetryAsync(connection, beginParams.TransactionInfo).ConfigureAwait(false);
-        await _boltProtocolV3.BeginTransactionAsync(connection, beginParams).ConfigureAwait(false);
+        await _boltProtocolV3.BeginTransactionAsync(connection, beginParams, cacheKey, homeDbCache).ConfigureAwait(false);
     }
 
     public async Task<IResultCursor> RunInExplicitTransactionAsync(
@@ -150,7 +160,9 @@ internal sealed class BoltProtocol : IBoltProtocol
         Query query,
         bool reactive,
         long fetchSize,
-        IInternalAsyncTransaction transaction)
+        IInternalAsyncTransaction transaction,
+        IAuthToken cacheKey,
+        IDictionary<IAuthToken, string> homeDbCache)
     {
         var summaryBuilder = new SummaryBuilder(query, connection.Server);
 
@@ -166,7 +178,11 @@ internal sealed class BoltProtocol : IBoltProtocol
             transaction);
 
         var runMessage = _protocolMessageFactory.NewRunWithMetadataMessage(connection, query, null);
-        var runHandler = _protocolHandlerFactory.NewRunResponseHandler(streamBuilder, summaryBuilder);
+        var runHandler = _protocolHandlerFactory.NewRunResponseHandler(
+            streamBuilder,
+            summaryBuilder,
+            cacheKey,
+            homeDbCache);
 
         if (!reactive)
         {
@@ -228,7 +244,8 @@ internal sealed class BoltProtocol : IBoltProtocol
     private async Task<IReadOnlyDictionary<string, object>> GetRoutingTableWithQueryAsync(
         IConnection connection,
         string database,
-        Bookmarks bookmarks)
+        Bookmarks bookmarks,
+        IDictionary<IAuthToken, string> homeDbCache)
     {
         connection.ConfigureMode(AccessMode.Read);
 
@@ -250,7 +267,9 @@ internal sealed class BoltProtocol : IBoltProtocol
             Bookmarks = bookmarks
         };
 
-        var result = await RunInAutoCommitTransactionAsync(connection, autoCommitParams, null).ConfigureAwait(false);
+        var result = await RunInAutoCommitTransactionAsync(connection, autoCommitParams, null, homeDbCache)
+            .ConfigureAwait(false);
+
         var record = await result.SingleAsync().ConfigureAwait(false);
 
         //Since 4.4 the Routing information will contain a db.

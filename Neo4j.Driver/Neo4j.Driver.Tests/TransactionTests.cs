@@ -52,7 +52,9 @@ public class TransactionTests
             mockProtocol.Verify(
                 x => x.BeginTransactionAsync(
                     It.IsAny<IConnection>(),
-                    It.IsAny<BeginTransactionParams>()),
+                    It.IsAny<BeginTransactionParams>(),
+                    TODO,
+                    TODO),
                 Times.Once);
         }
     }
@@ -74,7 +76,9 @@ public class TransactionTests
             protocol.Verify(
                 x => x.BeginTransactionAsync(
                     It.IsAny<IConnection>(),
-                    It.IsAny<BeginTransactionParams>()),
+                    It.IsAny<BeginTransactionParams>(),
+                    TODO,
+                    TODO),
                 Times.Once);
         }
     }

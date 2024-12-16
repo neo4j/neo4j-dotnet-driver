@@ -68,7 +68,7 @@ public class ClusterDiscoveryTests
 
             // When
             var manager = new ClusterDiscovery();
-            var table = await manager.DiscoverAsync(mockConn.Object, "test", sessionConfig, bookmarks);
+            var table = await manager.DiscoverAsync(mockConn.Object, "test", sessionConfig, bookmarks, TODO);
 
             // Then
             table.Database.Should().Be("test");

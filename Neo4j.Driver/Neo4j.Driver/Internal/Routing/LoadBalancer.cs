@@ -49,7 +49,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
 
         _logger = driverContext.Logger;
         _initialServerAddressProvider = new InitialServerAddressProvider(parsedUri, driverContext.Config.Resolver);
-        _routingTableManager = new RoutingTableManager(_initialServerAddressProvider, this, _logger);
+        _routingTableManager = new RoutingTableManager(_initialServerAddressProvider, this, DriverContext, _logger);
         _loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy(
             _clusterConnectionPool,
             _logger);
@@ -114,6 +114,25 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         }
 
         return conn;
+    }
+
+    private async Task<(bool found, string database)> TryGetCachedHomeDatabase(SessionConfig sessionConfig)
+    {
+        var token = sessionConfig.AuthToken;
+        if (token == null && DriverContext?.AuthTokenManager != null)
+        {
+            token = await DriverContext.AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
+        }
+
+        if (token != null && DriverContext?.HomeDbCache != null)
+        {
+            if (DriverContext.HomeDbCache.TryGetValue(token, out var cachedDatabase))
+            {
+                return (true, cachedDatabase);
+            }
+        }
+
+        return (false, null);
     }
 
     public async Task<IServerInfo> VerifyConnectivityAndGetInfoAsync()
@@ -223,8 +242,21 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         Bookmarks bookmarks,
         bool forceAuth)
     {
+        var logger = DriverContext.Logger;
+        var cachedDatabaseUsed = false;
+        string databaseForRouting = database;
+
+        if (string.IsNullOrWhiteSpace(database) && _clusterConnectionPool.CanUseHomeDbCache())
+        {
+            (cachedDatabaseUsed, databaseForRouting) = await TryGetCachedHomeDatabase(sessionConfig).ConfigureAwait(false);
+            if(cachedDatabaseUsed)
+            {
+                logger.Debug($"Using cached home database {databaseForRouting}.");
+            }
+        }
+
         var routingTable = await _routingTableManager
-            .EnsureRoutingTableForModeAsync(mode, database, sessionConfig, bookmarks)
+            .EnsureRoutingTableForModeAsync(mode, databaseForRouting, cachedDatabaseUsed, sessionConfig, bookmarks)
             .ConfigureAwait(false);
 
         while (true)

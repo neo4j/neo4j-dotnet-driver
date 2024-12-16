@@ -95,6 +95,7 @@ internal class NewDriver : ProtocolObject
                 TimeSpan.FromMilliseconds(data.connectionAcquisitionTimeoutMs.Value));
         }
 
+
         if (data.ModifiedTrustedCertificates)
         {
             var certificateTrustStrategy = data?.trustedCertificates switch

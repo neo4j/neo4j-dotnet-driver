@@ -83,7 +83,8 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         IConnection connection,
         string database,
         SessionConfig sessionConfig,
-        Bookmarks bookmarks)
+        Bookmarks bookmarks,
+        IDictionary<IAuthToken, string> homeDbCache)
     {
         connection = connection ??
             throw new ProtocolException("Attempting to get a routing table on a null connection");
@@ -108,7 +109,9 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             ResultResourceHandler = resourceHandler
         };
 
-        var result = await RunInAutoCommitTransactionAsync(connection, autoCommitParams, null).ConfigureAwait(false);
+        var result = await RunInAutoCommitTransactionAsync(connection, autoCommitParams, null, homeDbCache)
+            .ConfigureAwait(false);
+
         var record = await result.SingleAsync().ConfigureAwait(false);
 
         //Since 4.4 the Routing information will contain a db.
@@ -122,7 +125,8 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
     public async Task<IResultCursor> RunInAutoCommitTransactionAsync(
         IConnection connection,
         AutoCommitParams autoCommitParams,
-        INotificationsConfig notificationsConfig)
+        INotificationsConfig notificationsConfig,
+        IDictionary<IAuthToken, string> homeDbCache)
     {
         connection.SessionConfig = autoCommitParams.SessionConfig;
         ValidateImpersonatedUserForVersion(connection);
@@ -141,6 +145,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             false,
             NullTransaction.Instance);
 
+        var cacheKey = connection.SessionConfig.AuthToken;
         var runHandler = _protocolHandlerFactory.NewRunResponseHandlerV3(streamBuilder, summaryBuilder);
 
         // if connection protocol is less than 5.0, use legacy notifications
@@ -162,7 +167,11 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         return streamBuilder.CreateCursor();
     }
 
-    public async Task BeginTransactionAsync(IConnection connection, BeginTransactionParams beginParams)
+    public async Task BeginTransactionAsync(
+        IConnection connection,
+        BeginTransactionParams beginParams,
+        IAuthToken cacheKey,
+        IDictionary<IAuthToken, string> homeDbCache)
     {
         connection.SessionConfig = beginParams.SessionConfig;
         ValidateImpersonatedUserForVersion(connection);
@@ -180,7 +189,11 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             mode,
             beginParams.NotificationsConfig);
 
-        await connection.EnqueueAsync(message, NoOpResponseHandler.Instance).ConfigureAwait(false);
+        var responseHandler = _protocolHandlerFactory.NewBeginResponseHandler(
+            cacheKey,
+            homeDbCache);
+
+        await connection.EnqueueAsync(message, responseHandler).ConfigureAwait(false);
         if (beginParams.TransactionInfo.AwaitBegin)
         {
             await connection.SyncAsync().ConfigureAwait(false);
@@ -192,7 +205,9 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
         Query query,
         bool reactive,
         long _,
-        IInternalAsyncTransaction transaction)
+        IInternalAsyncTransaction transaction,
+        IAuthToken cacheKey,
+        IDictionary<IAuthToken, string> homeDbCache)
     {
         var summaryBuilder = new SummaryBuilder(query, connection.Server);
         var streamBuilder = _protocolHandlerFactory.NewResultCursorBuilder(

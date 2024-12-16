@@ -50,6 +50,7 @@ internal sealed class HelloResponseHandler : MetadataCollectingResponseHandler
 
         UpdateReadTimeout(configMetadata);
         UpdateTelemetryEnabled(configMetadata);
+        UpdateSsrEnabled(configMetadata);
     }
 
     private void UpdateUtcEncodedDateTime()
@@ -92,6 +93,20 @@ internal sealed class HelloResponseHandler : MetadataCollectingResponseHandler
         if (found && value is bool telemetryEnabled)
         {
             _connection.TelemetryEnabled = telemetryEnabled;
+        }
+    }
+
+    private void UpdateSsrEnabled(Dictionary<string, object> configMetadata)
+    {
+        if (configMetadata == null || _connection.Version < BoltProtocolVersion.V5_8)
+        {
+            return;
+        }
+
+        var found = configMetadata.TryGetValue("ssr.enabled", out var value);
+        if (found && value is bool ssrEnabled)
+        {
+            _connection.SsrEnabled = ssrEnabled;
         }
     }
 

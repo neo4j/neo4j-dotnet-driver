@@ -25,15 +25,24 @@ internal sealed class RunResponseHandler : MetadataCollectingResponseHandler
 {
     private readonly IResultStreamBuilder _streamBuilder;
     private readonly SummaryBuilder _summaryBuilder;
+    private readonly IAuthToken _cacheKey;
+    private readonly IDictionary<IAuthToken, string> _homeDbCache;
 
-    public RunResponseHandler(IResultStreamBuilder streamBuilder, SummaryBuilder summaryBuilder)
+    public RunResponseHandler(
+        IResultStreamBuilder streamBuilder,
+        SummaryBuilder summaryBuilder,
+        IAuthToken cacheKey,
+        IDictionary<IAuthToken, string> homeDbCache)
     {
         _streamBuilder = streamBuilder ?? throw new ArgumentNullException(nameof(streamBuilder));
         _summaryBuilder = summaryBuilder ?? throw new ArgumentNullException(nameof(summaryBuilder));
+        _cacheKey = cacheKey;
+        _homeDbCache = homeDbCache;
 
         AddMetadata<FieldsCollector, string[]>();
         AddMetadata<QueryIdCollector, long>();
         AddMetadata<TimeToFirstCollector, long>();
+        AddMetadata<DatabaseInfoCollector, IDatabaseInfo>();
     }
 
     public override void OnSuccess(IDictionary<string, object> metadata)
@@ -46,6 +55,12 @@ internal sealed class RunResponseHandler : MetadataCollectingResponseHandler
             GetMetadata<QueryIdCollector, long>(),
             GetMetadata<FieldsCollector, string[]>(),
             null);
+
+        var dbInfo = GetMetadata<DatabaseInfoCollector, IDatabaseInfo>();
+        if (_homeDbCache != null && dbInfo?.Name != null)
+        {
+            _homeDbCache[_cacheKey] = dbInfo.Name;
+        }
     }
 
     public override void OnFailure(IResponsePipelineError error)

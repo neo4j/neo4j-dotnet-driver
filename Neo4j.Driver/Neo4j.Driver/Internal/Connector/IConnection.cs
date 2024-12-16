@@ -62,6 +62,8 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
     public SessionConfig SessionConfig { get; set; }
     bool TelemetryEnabled { get; set; }
 
+    bool SsrEnabled {get; set; }
+
     void ConfigureMode(AccessMode? mode);
     void Configure(string database, AccessMode? mode);
 
@@ -122,19 +124,22 @@ internal interface IConnectionRunner
     Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         string database,
         SessionConfig sessionConfig,
-        Bookmarks bookmarks);
+        Bookmarks bookmarks,
+        IDictionary<IAuthToken, string> homeDbCache);
 
     Task<IResultCursor> RunInAutoCommitTransactionAsync(
         AutoCommitParams autoCommitParams,
-        INotificationsConfig notificationsConfig);
+        INotificationsConfig notificationsConfig,
+        IDictionary<IAuthToken, string> homeDbCache);
 
-    Task BeginTransactionAsync(BeginTransactionParams beginParams);
+    Task BeginTransactionAsync(BeginTransactionParams beginParams, IDictionary<IAuthToken, string> homeDbCache);
 
     Task<IResultCursor> RunInExplicitTransactionAsync(
         Query query,
         bool reactive,
         long fetchSize,
-        IInternalAsyncTransaction transaction);
+        IInternalAsyncTransaction transaction,
+        IDictionary<IAuthToken, string> homeDbCache);
 
     Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker);
     Task RollbackTransactionAsync();

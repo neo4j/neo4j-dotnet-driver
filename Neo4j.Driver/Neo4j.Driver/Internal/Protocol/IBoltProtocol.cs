@@ -36,21 +36,29 @@ internal interface IBoltProtocol
         IConnection connection,
         string database,
         SessionConfig sessionConfig,
-        Bookmarks bookmarks);
+        Bookmarks bookmarks,
+        IDictionary<IAuthToken, string> homeDbCache);
 
     Task<IResultCursor> RunInAutoCommitTransactionAsync(
         IConnection connection,
         AutoCommitParams autoCommitParams,
-        INotificationsConfig notificationsConfig);
+        INotificationsConfig notificationsConfig,
+        IDictionary<IAuthToken, string> homeDbCache);
 
-    Task BeginTransactionAsync(IConnection connection, BeginTransactionParams beginParams);
+    Task BeginTransactionAsync(
+        IConnection connection,
+        BeginTransactionParams beginParams,
+        IAuthToken cacheKey,
+        IDictionary<IAuthToken, string> homeDbCache);
 
     Task<IResultCursor> RunInExplicitTransactionAsync(
         IConnection connection,
         Query query,
         bool reactive,
         long fetchSize,
-        IInternalAsyncTransaction transaction);
+        IInternalAsyncTransaction transaction,
+        IAuthToken cacheKey,
+        IDictionary<IAuthToken, string> homeDbCache);
 
     Task CommitTransactionAsync(IConnection connection, IBookmarksTracker bookmarksTracker);
     Task RollbackTransactionAsync(IConnection connection);

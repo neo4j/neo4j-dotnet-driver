@@ -178,7 +178,7 @@ public static class RoutingTableManagerTests
                 .ReturnsAsync(Mock.Of<IConnection>());
 
             var discovery = new Mock<IDiscovery>();
-            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty))
+            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty, TODO))
                 .ReturnsAsync(Mock.Of<IRoutingTable>());
 
             var manager = NewRoutingTableManager(routingTableMock.Object, poolManagerMock.Object, discovery.Object);
@@ -221,7 +221,7 @@ public static class RoutingTableManagerTests
             mockProvider.Setup(x => x.Get()).Returns(initialUriSet);
 
             var discovery = new Mock<IDiscovery>();
-            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty))
+            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty, TODO))
                 .ReturnsAsync(Mock.Of<IRoutingTable>());
 
             var manager =
@@ -257,7 +257,7 @@ public static class RoutingTableManagerTests
                 .ReturnsAsync((ClusterConnection)null);
 
             var discovery = new Mock<IDiscovery>();
-            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty))
+            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty, TODO))
                 .Throws<NotSupportedException>();
 
             var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object);
@@ -289,16 +289,16 @@ public static class RoutingTableManagerTests
                 .ReturnsAsync(connB);
 
             var discovery = new Mock<IDiscovery>();
-            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), null, null, Bookmarks.Empty))
+            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), null, null, Bookmarks.Empty, TODO))
                 .Callback(
                     (IConnection c, string _, SessionConfig _, Bookmarks _) =>
                         throw new NotSupportedException($"Unknown uri: {c.Server.Address}"));
 
-            discovery.Setup(x => x.DiscoverAsync(connA, "", null, Bookmarks.Empty))
+            discovery.Setup(x => x.DiscoverAsync(connA, "", null, Bookmarks.Empty, TODO))
                 .Callback((IConnection _, string _, SessionConfig _, Bookmarks _) => routingTable.Remove(uriA))
                 .Throws(new SessionExpiredException("failed init"));
 
-            discovery.Setup(x => x.DiscoverAsync(connB, "", null, Bookmarks.Empty))
+            discovery.Setup(x => x.DiscoverAsync(connB, "", null, Bookmarks.Empty, TODO))
                 .ReturnsAsync(NewRoutingTable(new[] { uriA }, new[] { uriA }, new[] { uriA }));
 
             var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object);
@@ -323,7 +323,7 @@ public static class RoutingTableManagerTests
                 .Returns(Task.FromResult(new Mock<IConnection>().Object));
 
             var discovery = new Mock<IDiscovery>();
-            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty)).Throws(error);
+            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty, TODO)).Throws(error);
 
             var logger = new Mock<ILogger>();
             logger.Setup(x => x.Warn(It.IsAny<Exception>(), It.IsAny<string>(), It.IsAny<object[]>()));
@@ -350,7 +350,7 @@ public static class RoutingTableManagerTests
                 .ReturnsAsync(new Mock<IConnection>().Object);
 
             var discovery = new Mock<IDiscovery>();
-            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty)).Throws(error);
+            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty, TODO)).Throws(error);
 
             var logger = new Mock<ILogger>();
             logger.Setup(x => x.Error(It.IsAny<Exception>(), It.IsAny<string>(), It.IsAny<object[]>()));
@@ -381,7 +381,7 @@ public static class RoutingTableManagerTests
 
             var discovery = new Mock<IDiscovery>();
             discovery.Setup(
-                    x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.From("Invalid bookmark")))
+                    x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.From("Invalid bookmark"), TODO))
                 .Throws(error);
 
             var logger = new Mock<ILogger>();
@@ -426,15 +426,15 @@ public static class RoutingTableManagerTests
                 .ReturnsAsync(connB);
 
             var discovery = new Mock<IDiscovery>();
-            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty))
+            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty, TODO))
                 .Callback(
                     (IConnection c, string _, SessionConfig _, Bookmarks _) =>
                         throw new NotSupportedException($"Unknown uri: {c.Server.Address}"));
 
-            discovery.Setup(x => x.DiscoverAsync(connA, "", null, Bookmarks.Empty))
+            discovery.Setup(x => x.DiscoverAsync(connA, "", null, Bookmarks.Empty, TODO))
                 .ReturnsAsync(NewRoutingTable(new[] { uriX }, new Uri[0], new[] { uriX }));
 
-            discovery.Setup(x => x.DiscoverAsync(connB, "", null, Bookmarks.Empty))
+            discovery.Setup(x => x.DiscoverAsync(connB, "", null, Bookmarks.Empty, TODO))
                 .ReturnsAsync(NewRoutingTable(new[] { uriY }, new[] { uriY }, new[] { uriY }));
 
             var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object);
@@ -466,12 +466,12 @@ public static class RoutingTableManagerTests
                 .ReturnsAsync(connA);
 
             var discovery = new Mock<IDiscovery>();
-            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty))
+            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty, TODO))
                 .Callback(
                     (IConnection c, string _, SessionConfig _, Bookmarks _) =>
                         throw new NotSupportedException($"Unknown uri: {c.Server?.Address}"));
 
-            discovery.Setup(x => x.DiscoverAsync(connA, "", null, Bookmarks.Empty))
+            discovery.Setup(x => x.DiscoverAsync(connA, "", null, Bookmarks.Empty, TODO))
                 .ReturnsAsync(NewRoutingTable(new[] { uriX }, new[] { uriX }));
 
             var manager = NewRoutingTableManager(routingTable, poolManagerMock.Object, discovery.Object);
@@ -514,11 +514,11 @@ public static class RoutingTableManagerTests
 
             var discovery = new Mock<IDiscovery>();
             discovery
-                .Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty))
+                .Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty, TODO))
                 .Throws(new ServiceUnavailableException("something went wrong"));
 
             discovery
-                .Setup(x => x.DiscoverAsync(connE, "", null, Bookmarks.Empty))
+                .Setup(x => x.DiscoverAsync(connE, "", null, Bookmarks.Empty, TODO))
                 .ReturnsAsync(routingTable);
 
             var logger = new Mock<ILogger>();
@@ -540,10 +540,10 @@ public static class RoutingTableManagerTests
             result.Should().Be(routingTable);
             discovery
                 .Verify(
-                    x => x.DiscoverAsync(It.Is<IConnection>(c => c != connE), "", null, Bookmarks.Empty),
+                    x => x.DiscoverAsync(It.Is<IConnection>(c => c != connE), "", null, Bookmarks.Empty, TODO),
                     Times.Exactly(4));
 
-            discovery.Verify(x => x.DiscoverAsync(connE, "", null, Bookmarks.Empty), Times.Once);
+            discovery.Verify(x => x.DiscoverAsync(connE, "", null, Bookmarks.Empty, TODO), Times.Once);
             logger.Verify(
                 x =>
                     x.Warn(
@@ -575,10 +575,10 @@ public static class RoutingTableManagerTests
                 .ReturnsAsync(connE);
 
             var discovery = new Mock<IDiscovery>();
-            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty))
+            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty, TODO))
                 .Throws(new ServiceUnavailableException("something went wrong"));
 
-            discovery.Setup(x => x.DiscoverAsync(connE, "", null, Bookmarks.Empty)).ReturnsAsync(routingTable);
+            discovery.Setup(x => x.DiscoverAsync(connE, "", null, Bookmarks.Empty, TODO)).ReturnsAsync(routingTable);
 
             var logger = new Mock<ILogger>();
             logger.Setup(
@@ -610,10 +610,11 @@ public static class RoutingTableManagerTests
                         It.Is<IConnection>(c => c != connE),
                         "",
                         null,
-                        Bookmarks.Empty),
+                        Bookmarks.Empty,
+                        TODO),
                     Times.Never);
 
-            discovery.Verify(x => x.DiscoverAsync(connE, "", null, Bookmarks.Empty), Times.Once);
+            discovery.Verify(x => x.DiscoverAsync(connE, "", null, Bookmarks.Empty, TODO), Times.Once);
             logger.Verify(
                 x => x.Warn(
                     It.IsAny<Neo4jException>(),
@@ -722,13 +723,13 @@ public static class RoutingTableManagerTests
                 new RoutingTable("bar", new[] { server07 }, new[] { server08 }, new[] { server09 }, 100);
 
             var discovery = new Mock<IDiscovery>();
-            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty))
+            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty, TODO))
                 .ReturnsAsync(defaultRoutingTable);
 
-            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", null, Bookmarks.Empty))
+            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", null, Bookmarks.Empty, TODO))
                 .ReturnsAsync(fooRoutingTable);
 
-            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "bar", null, Bookmarks.Empty))
+            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "bar", null, Bookmarks.Empty, TODO))
                 .ReturnsAsync(barRoutingTable);
 
             var poolManager = new Mock<IClusterConnectionPoolManager>();
@@ -773,10 +774,10 @@ public static class RoutingTableManagerTests
                 new RoutingTable("bar", new[] { server07 }, new[] { server08 }, new[] { server09 }, 4);
 
             var discovery = new Mock<IDiscovery>();
-            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", null, Bookmarks.Empty))
+            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", null, Bookmarks.Empty, TODO))
                 .ReturnsAsync(fooRoutingTable);
 
-            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "bar", null, Bookmarks.Empty))
+            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "bar", null, Bookmarks.Empty, TODO))
                 .ReturnsAsync(barRoutingTable);
 
             var poolManager = new Mock<IClusterConnectionPoolManager>();
@@ -821,13 +822,13 @@ public static class RoutingTableManagerTests
                 new RoutingTable("foo", new[] { server04 }, new[] { server05 }, new[] { server06 }, 80);
 
             var discovery = new Mock<IDiscovery>();
-            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty))
+            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "", null, Bookmarks.Empty, TODO))
                 .ReturnsAsync(defaultRoutingTable);
 
-            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", null, Bookmarks.Empty))
+            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", null, Bookmarks.Empty, TODO))
                 .ReturnsAsync(fooRoutingTable);
 
-            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "bar", null, Bookmarks.Empty))
+            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "bar", null, Bookmarks.Empty, TODO))
                 .ThrowsAsync(new FatalDiscoveryException("message"));
 
             var poolManager = new Mock<IClusterConnectionPoolManager>();
@@ -868,7 +869,7 @@ public static class RoutingTableManagerTests
             var error = new FatalDiscoveryException("message");
 
             var discovery = new Mock<IDiscovery>();
-            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "bar", null, Bookmarks.Empty))
+            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "bar", null, Bookmarks.Empty, TODO))
                 .ThrowsAsync(error);
 
             var poolManager = new Mock<IClusterConnectionPoolManager>();
@@ -899,7 +900,7 @@ public static class RoutingTableManagerTests
             var rt = new RoutingTable("foo", new[] { server01 }, new[] { server02 }, new[] { server03 }, 10);
 
             var discovery = new Mock<IDiscovery>();
-            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", null, bookmark))
+            discovery.Setup(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", null, bookmark, TODO))
                 .ReturnsAsync(rt);
 
             var poolManager = new Mock<IClusterConnectionPoolManager>();
@@ -920,7 +921,7 @@ public static class RoutingTableManagerTests
                 await manager.EnsureRoutingTableForModeAsync(AccessMode.Write, "foo", null, bookmark);
 
             routingTable.Should().Be(rt);
-            discovery.Verify(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", null, bookmark), Times.Once);
+            discovery.Verify(x => x.DiscoverAsync(It.IsAny<IConnection>(), "foo", null, bookmark, TODO), Times.Once);
         }
     }
 }

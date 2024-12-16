@@ -34,6 +34,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
     private readonly long _fetchSize;
     private readonly ILogger _logger;
     private readonly INotificationsConfig _notificationsConfig;
+    private readonly DriverContext _driverContext;
     private readonly bool _reactive;
     private readonly ITransactionResourceHandler _resourceHandler;
 
@@ -54,7 +55,8 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         bool reactive = false,
         long fetchSize = Config.Infinite,
         SessionConfig sessionConfig = null,
-        INotificationsConfig notificationsConfig = null)
+        INotificationsConfig notificationsConfig = null,
+        DriverContext driverContext = null)
     {
         _connection = new TransactionConnection(this, connection);
         _resourceHandler = resourceHandler ?? throw new ArgumentNullException(nameof(resourceHandler));
@@ -65,6 +67,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         _fetchSize = fetchSize;
         _sessionConfig = sessionConfig;
         _notificationsConfig = notificationsConfig;
+        _driverContext = driverContext;
     }
 
     private string Database { get; set; }
@@ -110,7 +113,17 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         {
             throw new TransactionTerminatedException(TransactionError);
         }
-        var result = _state.RunAsync(query, _connection, _logger, _reactive, _fetchSize, this,  out var nextState);
+
+        var result = _state.RunAsync(
+            query,
+            _connection,
+            _logger,
+            _reactive,
+            _fetchSize,
+            this,
+            _driverContext.HomeDbCache,
+            out var nextState);
+
         _state = nextState;
         _results.Add(result);
         return result;
@@ -122,6 +135,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         {
             throw new TransactionTerminatedException(TransactionError);
         }
+
         try
         {
             await DiscardUnconsumed().ConfigureAwait(false);
@@ -153,7 +167,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
     public Task BeginTransactionAsync(TransactionConfig config, TransactionInfo transactionInfo)
     {
         TransactionConfig = config;
-        
+
         return _connection.BeginTransactionAsync(
             new BeginTransactionParams(
                 Database,
@@ -161,7 +175,8 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
                 TransactionConfig,
                 _sessionConfig,
                 _notificationsConfig,
-                transactionInfo));
+                transactionInfo),
+            _driverContext.HomeDbCache);
     }
 
     public async Task MarkToCloseAsync()
@@ -245,6 +260,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             bool reactive,
             long fetchSize,
             AsyncTransaction transaction,
+            IDictionary<IAuthToken, string> homeDbCache,
             out IState nextState);
 
         Task CommitAsync(
@@ -267,10 +283,11 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             bool reactive,
             long fetchSize,
             AsyncTransaction transaction,
+            IDictionary<IAuthToken, string> homeDbCache,
             out IState nextState)
         {
             nextState = Active;
-            return connection.RunInExplicitTransactionAsync(query, reactive, fetchSize, transaction);
+            return connection.RunInExplicitTransactionAsync(query, reactive, fetchSize, transaction, homeDbCache);
         }
 
         public Task CommitAsync(
@@ -301,6 +318,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             bool reactive,
             long fetchSize,
             AsyncTransaction transaction,
+            IDictionary<IAuthToken, string> homeDbCache,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -335,6 +353,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             bool reactive,
             long fetchSize,
             AsyncTransaction transaction,
+            IDictionary<IAuthToken, string> homeDbCache,
             out IState nextState)
         {
             throw new TransactionClosedException(
@@ -369,6 +388,7 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
             bool reactive,
             long fetchSize,
             AsyncTransaction transaction,
+            IDictionary<IAuthToken, string> homeDbCache,
             out IState nextState)
         {
             throw new TransactionTerminatedException(transaction.TransactionError);

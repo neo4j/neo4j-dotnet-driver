@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
@@ -36,7 +37,11 @@ internal interface IBoltProtocolHandlerFactory
         bool reactive,
         IInternalAsyncTransaction transaction);
 
-    RunResponseHandler NewRunResponseHandler(IResultCursorBuilder streamBuilder, SummaryBuilder summaryBuilder);
+    RunResponseHandler NewRunResponseHandler(
+        IResultCursorBuilder streamBuilder,
+        SummaryBuilder summaryBuilder,
+        IAuthToken cacheKey,
+        IDictionary<IAuthToken, string> homeDbCache);
 
     PullResponseHandler NewPullResponseHandler(
         IConnection connection,
@@ -58,6 +63,8 @@ internal interface IBoltProtocolHandlerFactory
         IBookmarksTracker bookmarksTracker);
 
     TelemetryResponseHandler NewTelemetryResponseHandler(TransactionInfo info);
+
+    BeginResponseHandler NewBeginResponseHandler(IAuthToken cacheKey, IDictionary<IAuthToken, string> homeDbCache);
 }
 
 internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
@@ -86,9 +93,13 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
             transaction);
     }
 
-    public RunResponseHandler NewRunResponseHandler(IResultCursorBuilder streamBuilder, SummaryBuilder summaryBuilder)
+    public RunResponseHandler NewRunResponseHandler(
+        IResultCursorBuilder streamBuilder,
+        SummaryBuilder summaryBuilder,
+        IAuthToken cacheKey,
+        IDictionary<IAuthToken, string> homeDbCache)
     {
-        return new RunResponseHandler(streamBuilder, summaryBuilder);
+        return new RunResponseHandler(streamBuilder, summaryBuilder, cacheKey, homeDbCache);
     }
 
     public PullResponseHandler NewPullResponseHandler(
@@ -97,7 +108,11 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
         IResultStreamBuilder cursorBuilder,
         SummaryBuilder summaryBuilder)
     {
-        return new PullResponseHandler(cursorBuilder, summaryBuilder, bookmarksTracker, connection.Version >= BoltProtocolVersion.V5_5);
+        return new PullResponseHandler(
+            cursorBuilder,
+            summaryBuilder,
+            bookmarksTracker,
+            connection.Version >= BoltProtocolVersion.V5_5);
     }
 
     public RouteResponseHandler NewRouteResponseHandler()
@@ -133,5 +148,13 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
     public TelemetryResponseHandler NewTelemetryResponseHandler(TransactionInfo info)
     {
         return new TelemetryResponseHandler(info);
+    }
+
+    /// <inheritdoc />
+    public BeginResponseHandler NewBeginResponseHandler(
+        IAuthToken cacheKey,
+        IDictionary<IAuthToken, string> homeDbCache)
+    {
+        return new BeginResponseHandler(cacheKey, homeDbCache);
     }
 }

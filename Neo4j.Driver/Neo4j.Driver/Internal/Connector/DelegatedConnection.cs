@@ -213,6 +213,12 @@ internal abstract class DelegatedConnection : IConnection
         set => Delegate.TelemetryEnabled = value;
     }
 
+    public bool SsrEnabled
+    {
+        get => Delegate.SsrEnabled;
+        set => Delegate.SsrEnabled = value;
+    }
+
     public Task LoginAsync(string userAgent, IAuthToken authToken, INotificationsConfig notificationsConfig)
     {
         return BoltProtocol.AuthenticateAsync(this, userAgent, authToken, notificationsConfig);
@@ -231,30 +237,42 @@ internal abstract class DelegatedConnection : IConnection
     public Task<IReadOnlyDictionary<string, object>> GetRoutingTableAsync(
         string database,
         SessionConfig sessionConfig,
-        Bookmarks bookmarks)
+        Bookmarks bookmarks,
+        IDictionary<IAuthToken, string> homeDbCache)
     {
-        return BoltProtocol.GetRoutingTableAsync(this, database, sessionConfig, bookmarks);
+        return BoltProtocol.GetRoutingTableAsync(this, database, sessionConfig, bookmarks, homeDbCache);
     }
 
     public Task<IResultCursor> RunInAutoCommitTransactionAsync(
         AutoCommitParams autoCommitParams,
-        INotificationsConfig notificationsConfig)
+        INotificationsConfig notificationsConfig,
+        IDictionary<IAuthToken, string> homeDbCache)
     {
-        return BoltProtocol.RunInAutoCommitTransactionAsync(this, autoCommitParams, notificationsConfig);
+        return BoltProtocol.RunInAutoCommitTransactionAsync(this, autoCommitParams, notificationsConfig, homeDbCache);
     }
 
-    public Task BeginTransactionAsync(BeginTransactionParams beginTransactionParams)
+    public Task BeginTransactionAsync(
+        BeginTransactionParams beginTransactionParams,
+        IDictionary<IAuthToken, string> homeDbCache)
     {
-        return BoltProtocol.BeginTransactionAsync(this, beginTransactionParams);
+        return BoltProtocol.BeginTransactionAsync(this, beginTransactionParams, AuthToken, homeDbCache);
     }
 
     public Task<IResultCursor> RunInExplicitTransactionAsync(
         Query query,
         bool reactive,
         long fetchSize,
-        IInternalAsyncTransaction transaction)
+        IInternalAsyncTransaction transaction,
+        IDictionary<IAuthToken, string> homeDbCache)
     {
-        return BoltProtocol.RunInExplicitTransactionAsync(this, query, reactive, fetchSize, transaction);
+        return BoltProtocol.RunInExplicitTransactionAsync(
+            this,
+            query,
+            reactive,
+            fetchSize,
+            transaction,
+            AuthToken,
+            homeDbCache);
     }
 
     public Task CommitTransactionAsync(IBookmarksTracker bookmarksTracker)

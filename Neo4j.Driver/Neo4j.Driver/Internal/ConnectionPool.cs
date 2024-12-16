@@ -54,6 +54,9 @@ internal sealed class ConnectionPool : IConnectionPool
 
     private ConnectionPoolStatus _poolStatus = Active;
 
+    private int _connectionsWithSsrEnabled;
+    private int _connectionsWithSsrDisabled;
+
     public ConnectionPool(
         Uri uri,
         IPooledConnectionFactory connectionFactory,
@@ -103,6 +106,8 @@ internal sealed class ConnectionPool : IConnectionPool
     internal int PoolSize => Interlocked.CompareExchange(ref _poolSize, -1, -1);
     public int NumberOfInUseConnections => _inUseConnections.Count;
     public int NumberOfIdleConnections => _idleConnections.Count;
+    public int NumberOfConnectionsWithSsrEnabled => _connectionsWithSsrEnabled;
+    public int NumberOfConnectionsWithSsrDisabled => _connectionsWithSsrDisabled;
 
     public ConnectionPoolStatus Status
     {
@@ -358,6 +363,15 @@ internal sealed class ConnectionPool : IConnectionPool
             return;
         }
 
+        if(conn.SsrEnabled)
+        {
+            Interlocked.Decrement(ref _connectionsWithSsrEnabled);
+        }
+        else
+        {
+            Interlocked.Decrement(ref _connectionsWithSsrDisabled);
+        }
+
         _poolMetricsListener?.ConnectionClosing();
         try
         {
@@ -487,6 +501,14 @@ internal sealed class ConnectionPool : IConnectionPool
     private async ValueTask AddConnectionAsync(IPooledConnection connection)
     {
         _inUseConnections.TryAdd(connection);
+        if (connection.SsrEnabled)
+        {
+            Interlocked.Increment(ref _connectionsWithSsrEnabled);
+        }
+        else
+        {
+            Interlocked.Increment(ref _connectionsWithSsrDisabled);
+        }
 
         if (!IsClosed)
         {

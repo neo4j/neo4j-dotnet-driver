@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Neo4j.Driver.Internal.Connector;
 
@@ -24,5 +25,6 @@ internal interface IDiscovery
         IConnection connection,
         string database,
         SessionConfig sessionConfig,
-        Bookmarks bookmarks);
+        Bookmarks bookmarks,
+        IDictionary<IAuthToken, string> homeDbCache);
 }
