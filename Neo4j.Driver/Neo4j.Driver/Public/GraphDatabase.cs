@@ -1,12 +1,12 @@
 ﻿// Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,7 +31,7 @@ public static class GraphDatabase
     /// </summary>
     public static IBookmarkManagerFactory BookmarkManagerFactory => new BookmarkManagerFactory();
 
-    /// <summary>Returns a driver for a Neo4j instance with default configuration settings.</summary>
+    /// <summary>Returns a driver for a Neo4j instance with default configuration settings and disabled authentication.</summary>
     /// <param name="uri">
     /// The URI to the Neo4j instance. Should be in the form
     /// <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>. If <c>port</c> is not supplied the default of <c>7687</c> will
@@ -47,7 +47,7 @@ public static class GraphDatabase
         return Driver(new Uri(uri));
     }
 
-    /// <summary>Returns a driver for a Neo4j instance with default configuration settings.</summary>
+    /// <summary>Returns a driver for a Neo4j instance with default configuration settings and disabled authentication.</summary>
     /// <param name="uri">
     /// The URI to the Neo4j instance. Should be in the form
     /// <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>. If <c>port</c> is not supplied the default of <c>7687</c> will
@@ -63,7 +63,7 @@ public static class GraphDatabase
         return Driver(uri, (Action<ConfigBuilder>)null);
     }
 
-    /// <summary>Returns a driver for a Neo4j instance with custom configuration.</summary>
+    /// <summary>Returns a driver for a Neo4j instance with custom configuration and disabled authentication.</summary>
     /// <param name="uri">
     /// The URI to the Neo4j instance. Should be in the form
     /// <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>. If <c>port</c> is not supplied the default of <c>7687</c> will
@@ -84,7 +84,7 @@ public static class GraphDatabase
         return Driver(new Uri(uri), action);
     }
 
-    /// <summary>Returns a driver for a Neo4j instance with custom configuration.</summary>
+    /// <summary>Returns a driver for a Neo4j instance with custom configuration and disabled authentication.</summary>
     /// <param name="uri">
     /// The URI to the Neo4j instance. Should be in the form
     /// <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>. If <c>port</c> is not supplied the default of <c>7687</c> will
@@ -242,7 +242,7 @@ public static class GraphDatabase
         var builder = Config.Builder;
         action?.Invoke(builder);
         var config = builder.Build();
-        
+
         var context = new DriverContext(uri, authTokenManager, config);
         var connectionFactory = new PooledConnectionFactory(context);
 
