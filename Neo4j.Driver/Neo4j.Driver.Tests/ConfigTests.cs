@@ -256,7 +256,7 @@ public class ConfigTests
         {
             var configBuilder = new ConfigBuilder(new Config());
 
-            configBuilder.WithNotifications(null, [classification]);
+            configBuilder.WithNotifications(null, disabledClassifications: [classification]);
 
             var config = configBuilder.Build()
                 .NotificationsConfig.Should()
@@ -331,7 +331,9 @@ public class ConfigTests
         {
             var configBuilder = new ConfigBuilder(new Config());
 
-            configBuilder.WithNotifications(null, [Classification.Deprecation, Classification.Hint]);
+            configBuilder.WithNotifications(
+                null,
+                disabledClassifications: [Classification.Deprecation, Classification.Hint]);
 
             var config = configBuilder.Build()
                 .NotificationsConfig.Should()
@@ -375,7 +377,7 @@ public class ConfigTests
         {
             var configBuilder = new ConfigBuilder(new Config());
 
-            configBuilder.WithNotifications(Severity.Warning, Array.Empty<Classification>());
+            configBuilder.WithNotifications(Severity.Warning, disabledClassifications: Array.Empty<Classification>());
 
             var config = configBuilder.Build()
                 .NotificationsConfig.Should()
@@ -391,7 +393,30 @@ public class ConfigTests
                 .MinimumSeverity.Should()
                 .Be(Severity.Warning);
         }
-        
+
+        [Fact]
+        public void WithNotifications_ShouldWorkWithSecondParameterNull()
+        {
+            var configBuilder = new ConfigBuilder(new Config());
+
+            // this line would fail to compile before the fix
+            configBuilder.WithNotifications(Severity.Warning, null);
+
+            var config = configBuilder.Build()
+                .NotificationsConfig.Should()
+                .BeOfType<NotificationsConfig>();
+
+            config
+                .Which
+                .DisabledCategories.Should()
+                .BeEquivalentTo([]);
+
+            config
+                .Which
+                .MinimumSeverity.Should()
+                .Be(Severity.Warning);
+        }
+
         private class MockTlsNegotiator : ITlsNegotiator
         {
             /// <inheritdoc/>

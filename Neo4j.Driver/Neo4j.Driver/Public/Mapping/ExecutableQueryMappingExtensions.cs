@@ -47,6 +47,7 @@ public static class ExecutableQueryMappingExtensions
     /// </summary>
     /// <seealso cref="RecordObjectMapping.Map{T}"/>
     /// <param name="recordsTask">The task that will return the records.</param>
+    /// <param name="blueprint">The blueprint to use for mapping.</param>
     /// <typeparam name="T">The type to map to.</typeparam>
     /// <returns>A task that will return the mapped objects.</returns>
     public static async Task<IReadOnlyList<T>> AsObjectsFromBlueprintAsync<T>(

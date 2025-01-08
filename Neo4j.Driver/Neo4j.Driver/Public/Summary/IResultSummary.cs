@@ -76,7 +76,6 @@ public interface IResultSummary
     /// </summary>
     /// <seealso cref="IGqlStatusObject">For more information about GQL Statuses</seealso>
     /// <since>5.23.0</since>
-    [Obsolete("This is a Preview API and may change between minor versions. Obsolete will be removed in a later revision.")]
     IList<IGqlStatusObject> GqlStatusObjects { get; }
     
     /// <summary>

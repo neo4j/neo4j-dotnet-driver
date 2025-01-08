@@ -387,6 +387,18 @@ public sealed class ConfigBuilder
         return WithCertificateTrustRule(certificateTrustRule, certs);
     }
 
+    /// <summary>Disable all notifications for the lifetime of the driver.</summary>
+    /// <remarks>Cannot be used with: <see cref="WithNotifications(Severity?, Category[], Classification[])"/>.</remarks>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
+    /// <seealso cref="WithNotifications(Severity?, Category[], Classification[])"/>
+    /// <seealso cref="SessionConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/>
+    /// <seealso cref="SessionConfigBuilder.WithNotificationsDisabled"/>
+    public ConfigBuilder WithNotificationsDisabled()
+    {
+        _config.NotificationsConfig = new NotificationsDisabledConfig();
+        return this;
+    }
+
     /// <summary>
     /// Override configuration for which <see cref="INotification"/>s should be emitted for the lifetime of the
     /// driver. <br/> Unspecified configuration will be provided by configuration in the server. <br/> Disabling categories or
@@ -402,82 +414,32 @@ public sealed class ConfigBuilder
     /// an empty collection, all categories are enabled.<br/> By leaving null, the value will inherit configuration from the
     /// server.
     /// </param>
-    /// <exception cref="ArgumentException">Thrown when both parameters are null.</exception>
-    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
-    /// <seealso cref="WithNotificationsDisabled"/>
-    /// <seealso cref="SessionConfigBuilder.WithNotifications(Severity?, Category[])"/>"/>
-    /// <seealso cref="SessionConfigBuilder.WithNotificationsDisabled"/>
-    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
-    public ConfigBuilder WithNotifications(
-        Severity? minimumSeverity,
-        Category[] disabledCategories)
-    {
-        if (minimumSeverity == null && disabledCategories == null)
-        {
-            throw new ArgumentException(
-                $"Both {nameof(minimumSeverity)} and {nameof(disabledCategories)} are both null, at least one must be non-null.");
-        }
-
-        _config.NotificationsConfig = new NotificationsConfig(minimumSeverity, disabledCategories);
-        return this;
-    }
-
-    /// <summary>Disable all notifications for the lifetime of the driver.</summary>
-    /// <remarks>Cannot be used with: <see cref="WithNotifications(Severity?, Category[])"/>.</remarks>
-    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
-    /// <seealso cref="WithNotifications(Severity?, Category[])"/>
-    /// <seealso cref="SessionConfigBuilder.WithNotifications(Severity?, Category[])"/>
-    /// <seealso cref="SessionConfigBuilder.WithNotificationsDisabled"/>
-    public ConfigBuilder WithNotificationsDisabled()
-    {
-        _config.NotificationsConfig = new NotificationsDisabledConfig();
-        return this;
-    }
-
-        
-    /// <summary>
-    /// This is a preview API, This API may change between minor revisions.<br/>
-    /// 
-    /// Override configuration for which <see cref="IGqlStatusObject"/> and <see cref="INotification"/> should be emitted
-    /// for the lifetime of the session. <br/> Unspecified configuration will be provided by configuration specified in
-    /// the server or the driver's <see cref="ConfigBuilder.WithNotifications(Severity?, Classification[])"/> or
-    /// <see cref="ConfigBuilder.WithNotifications(Severity?, Category[])"/>. <br/> If the driver has disabled
-    /// notifications with <see cref="ConfigBuilder.WithNotificationsDisabled"/>, the unspecified values will be
-    /// provided by the server. <br/> Disabling categories, classifications or severities allows the server to skip
-    /// analysis for those which can speed up query execution.
-    /// </summary>
-    /// <remarks>Cannot be used with: <see cref="WithNotificationsDisabled"/> or
-    /// <see cref="WithNotifications(Severity?, Category[])"/>.</remarks>
-    /// <param name="minimumSeverity">
-    /// Optional parameter to override the minimum severity of notifications emitted. <br/> By
-    /// leaving null, the value will inherit configuration of <see cref="Config.NotificationsConfig"/> or the server.
-    /// </param>
     /// <param name="disabledClassifications">
-    /// Optional parameter to override the category of notifications and classifications of GQL Statuses emitted. <br/>
-    /// By passing an empty collection, all categories are enabled.<br/> By leaving null, the value will inherit
-    /// configuration from <see cref="Config.NotificationsConfig"/> or the server.
+    /// Optional parameter to override the classification of notifications emitted. <br/> By passing
+    /// an empty collection, all classifications are enabled.<br/> By leaving null, the value will inherit configuration from the
+    /// server.
     /// </param>
-    /// <exception cref="ArgumentException">Thrown when both parameters are null.</exception>
-    /// <returns>A <see cref="SessionConfigBuilder"/> instance for further configuration options.</returns>
+    /// <exception cref="ArgumentException">Thrown when all parameters are null.</exception>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     /// <seealso cref="WithNotificationsDisabled"/>
-    /// <seealso cref="WithNotifications(Severity?, Category[])"/>
-    /// <seealso cref="ConfigBuilder.WithNotifications(Severity?, Category[])"/>
-    /// <seealso cref="ConfigBuilder.WithNotifications(Severity?, Classification[])"/>
-    /// <seealso cref="ConfigBuilder.WithNotificationsDisabled"/>
-    /// <since>5.23.0</since>
-    [Obsolete("This is a Preview API and may change between minor versions. Obsolete will be removed in a later revision.")]
+    /// <seealso cref="SessionConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/>"/>
+    /// <seealso cref="SessionConfigBuilder.WithNotificationsDisabled"/>
+    /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithNotifications(
         Severity? minimumSeverity,
-        Classification[] disabledClassifications)
+        Category[] disabledCategories = null,
+        Classification[] disabledClassifications = null)
     {
-        if (minimumSeverity == null && disabledClassifications == null)
+        if (minimumSeverity == null && disabledCategories == null && disabledClassifications == null)
         {
             throw new ArgumentException(
-                $"Both {nameof(minimumSeverity)} and {nameof(disabledClassifications)} are both null, at least one must be non-null.");
+                $"All {nameof(minimumSeverity)}, {nameof(disabledCategories)} and {nameof(disabledClassifications)} " +
+                "are null, at least one must be non-null.");
         }
 
-        _config.NotificationsConfig = new NotificationsConfig(minimumSeverity,
-            disabledClassifications.Select(x => (Category)(int)x).ToArray());
+        var classificationsAsCategories = disabledClassifications?.Select(x => (Category)(int)x).ToArray() ?? [];
+        var categoriesToDisable = (disabledCategories ?? []).Concat(classificationsAsCategories).ToArray();
+        _config.NotificationsConfig = new NotificationsConfig(minimumSeverity, categoriesToDisable);
         return this;
     }
 
