@@ -294,10 +294,12 @@ public class ConfigTests
             var config = configBuilder.Build()
                 .NotificationsConfig.Should()
                 .BeOfType<NotificationsConfig>();
+
             config
                 .Which
                 .DisabledCategories.Should()
                 .BeEquivalentTo([outCat]);
+
             config
                 .Which
                 .MinimumSeverity.Should()
@@ -410,6 +412,32 @@ public class ConfigTests
                 .Which
                 .DisabledCategories.Should()
                 .BeEquivalentTo([]);
+
+            config
+                .Which
+                .MinimumSeverity.Should()
+                .Be(Severity.Warning);
+        }
+
+        [Fact]
+        public void WithNotifications_ShouldSetMultipleCategoriesAndClassifications()
+        {
+            var configBuilder = new ConfigBuilder(new Config());
+
+            // specify both categories and classifications
+            configBuilder.WithNotifications(
+                Severity.Warning,
+                [Category.Deprecation, Category.Hint],
+                [Classification.Deprecation, Classification.Topology]);
+
+            var config = configBuilder.Build()
+                .NotificationsConfig.Should()
+                .BeOfType<NotificationsConfig>();
+
+            config
+                .Which
+                .DisabledCategories.Should()
+                .BeEquivalentTo([Category.Deprecation, Category.Hint, Category.Topology]);
 
             config
                 .Which
