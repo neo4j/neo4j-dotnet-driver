@@ -23,7 +23,6 @@ namespace Neo4j.Driver;
 /// conjunction with <see cref="NotificationSeverity"/>.
 /// </summary>
 /// <since>5.23.0</since>
-[Obsolete("This is a Preview API and may change between minor versions. Obsolete will be removed in a later revision.")]
 public enum NotificationClassification
 {
     /// <summary>the <see cref="IGqlStatusObject"/>'s classification is a value unknown to this driver version.</summary>

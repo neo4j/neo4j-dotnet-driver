@@ -24,7 +24,6 @@ namespace Neo4j.Driver;
 /// </summary>
 /// <seealso cref="IResultSummary.GqlStatusObjects" />
 /// <since>5.23.0</since>
-[Obsolete("This is a Preview API and may change between minor versions. Obsolete will be removed in a later revision.")]
 public interface IGqlStatusObject
 {
     /// <summary>

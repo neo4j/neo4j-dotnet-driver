@@ -18,14 +18,12 @@ using System;
 namespace Neo4j.Driver;
 
 /// <summary>
-/// This is a preview API, This API may change between minor revisions.<br/> Used In conjunction with
 /// <see cref="Severity"/> to filter which <see cref="IGqlStatusObject"/> and <see cref="INotification"/>s will be sent in
 /// <see cref="IResultSummary.GqlStatusObjects"/> and  <see cref="IResultSummary.Notifications"/> .<br/> Can be used in
-/// <see cref="ConfigBuilder.WithNotifications(Severity?, Classification[])"/> and
-/// <see cref="SessionConfigBuilder.WithNotifications(Severity?, Classification[])"/>.
+/// <see cref="ConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/> and
+/// <see cref="SessionConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/>.
 /// </summary>
 /// <since>5.23.0</since>
-[Obsolete("This is a Preview API and may change between minor versions. Obsolete will be removed in a later revision.")]
 public enum Classification
 {
     /// <summary>Receive notifications when a hint in query cannot be satisfied.</summary>

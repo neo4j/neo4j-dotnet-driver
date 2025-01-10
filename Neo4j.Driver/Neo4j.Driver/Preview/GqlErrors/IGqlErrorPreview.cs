@@ -49,7 +49,7 @@ public interface IGqlErrorPreview
     public Dictionary<string, object> GqlDiagnosticRecord { get; }
 }
 
-public static class Neo4jExceptionExtensions
+internal static class Neo4jExceptionExtensions
 {
     public static IGqlErrorPreview GetGqlErrorPreview(this Neo4jException exception)
     {
