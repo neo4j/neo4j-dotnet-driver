@@ -360,8 +360,13 @@ public sealed class SessionConfigBuilder
                 $"or {nameof(disabledClassifications)} must be set.");
         }
 
-        var classificationsAsCategories = disabledClassifications?.Select(x => (Category)(int)x) ?? [];
-        var categoriesToDisable = (disabledCategories ?? []).Concat(classificationsAsCategories).ToArray();
+        Category[] categoriesToDisable = null;
+        if (disabledCategories != null || disabledClassifications != null)
+        {
+            var classificationsAsCategories = disabledClassifications?.Select(x => (Category)(int)x) ?? [];
+            categoriesToDisable = (disabledCategories ?? []).Concat(classificationsAsCategories).ToArray();
+        }
+
         _config.NotificationsConfig = new NotificationsConfig(minimumSeverity, categoriesToDisable);
         return this;
     }

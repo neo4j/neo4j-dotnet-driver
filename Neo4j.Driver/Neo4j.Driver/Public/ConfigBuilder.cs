@@ -437,9 +437,15 @@ public sealed class ConfigBuilder
                 "are null, at least one must be non-null.");
         }
 
-        var classificationsAsCategories = disabledClassifications?.Select(x => (Category)(int)x).ToArray() ?? [];
-        var categoriesToDisable = (disabledCategories ?? []).Concat(classificationsAsCategories).ToArray();
+        Category[] categoriesToDisable = null;
+        if (disabledCategories != null || disabledClassifications != null)
+        {
+            var classificationsAsCategories = disabledClassifications?.Select(x => (Category)(int)x) ?? [];
+            categoriesToDisable = (disabledCategories ?? []).Concat(classificationsAsCategories).ToArray();
+        }
+
         _config.NotificationsConfig = new NotificationsConfig(minimumSeverity, categoriesToDisable);
+
         return this;
     }
 
