@@ -146,7 +146,7 @@ public class SessionConfigBuilderTests
         config
             .Which
             .DisabledCategories.Should()
-            .BeEquivalentTo([]);
+            .BeNull();
 
         config
             .Which
@@ -168,7 +168,7 @@ public class SessionConfigBuilderTests
         config
             .Which
             .DisabledCategories.Should()
-            .BeEquivalentTo([]);
+            .BeNull();
 
         config
             .Which
