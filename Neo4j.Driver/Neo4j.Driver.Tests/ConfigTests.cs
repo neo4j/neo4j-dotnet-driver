@@ -366,7 +366,7 @@ public class ConfigTests
             config
                 .Which
                 .DisabledCategories.Should()
-                .BeNull();
+                .BeEmpty();
 
             config
                 .Which
@@ -388,7 +388,7 @@ public class ConfigTests
             config
                 .Which
                 .DisabledCategories.Should()
-                .BeNull();
+                .BeEmpty();
 
             config
                 .Which
