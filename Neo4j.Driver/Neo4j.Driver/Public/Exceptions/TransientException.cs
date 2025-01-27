@@ -1,10 +1,8 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
+// Neo4j Sweden AB [https://neo4j.com]
 // 
-// This file is part of Neo4j.
-// 
-// Licensed under the Apache License, Version 2.0 (the "License"):
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -23,36 +21,27 @@ using Neo4j.Driver.Internal.Messaging;
 namespace Neo4j.Driver;
 
 /// <summary>
-/// A <see cref="TransientException"/> signals a failed operation that may be able to succeed 
-/// if this operation is retried without any intervention by application-level functionality. 
-/// The error code provided can be used to determine further details for the problem.
+/// A <see cref="TransientException"/> signals a failed operation that may be able to succeed if this operation is
+/// retried without any intervention by application-level functionality. The error code provided can be used to determine
+/// further details for the problem.
 /// </summary>
 [DataContract]
 [ErrorCode("Neo.TransientError.*")]
 public class TransientException : Neo4jException
 {
-    /// <inheritdoc />
-    public override bool IsRetriable => true;
-
-    /// <summary>
-    /// Create a new <see cref="TransientException"/>.
-    /// </summary>
+    /// <summary>Create a new <see cref="TransientException"/>.</summary>
     public TransientException()
     {
     }
 
-    /// <summary>
-    /// Create a new <see cref="TransientException"/> with an error code and an error message.
-    /// </summary>
+    /// <summary>Create a new <see cref="TransientException"/> with an error code and an error message.</summary>
     /// <param name="code">The error code.</param>
     /// <param name="message">The error message.</param>
     public TransientException(string code, string message) : base(code, message)
     {
     }
 
-    /// <summary>
-    /// Create a new <see cref="TransientException"/> with an error code, an error message and an exception.
-    /// </summary>
+    /// <summary>Create a new <see cref="TransientException"/> with an error code, an error message and an exception.</summary>
     /// <param name="code">The error code.</param>
     /// <param name="message">The error message.</param>
     /// <param name="innerException">The inner exception which caused this error.</param>
@@ -65,4 +54,7 @@ public class TransientException : Neo4jException
         : base(failureMessage, innerException)
     {
     }
+
+    /// <inheritdoc/>
+    public override bool IsRetriable => true;
 }

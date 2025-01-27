@@ -29,18 +29,8 @@ using static Neo4j.Driver.IntegrationTests.Internals.VersionComparison;
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public abstract class StressTest: IDisposable
+public abstract class StressTest : IDisposable
 {
-    private enum StressTestMinLogLevel
-    {
-        Trace,
-        Debug,
-        Info,
-        Warn,
-        Error,
-        None
-    }
-
     private const int DefaultExecutionTime = 30;
 
     private const int StressTestThreadCount = 8;
@@ -107,6 +97,16 @@ public abstract class StressTest: IDisposable
     ~StressTest()
     {
         Dispose(false);
+    }
+
+    private enum StressTestMinLogLevel
+    {
+        Trace,
+        Debug,
+        Info,
+        Warn,
+        Error,
+        None
     }
 
     private class StressTestLogger : ILogger
@@ -272,7 +272,7 @@ public abstract class StressTest: IDisposable
 
     private IList<IAsyncCommand> CreateAsyncCommands()
     {
-        /* 
+        /*
             Optional tests that can be run. Currenlty only want to run the transaction functions as these are what are used with Aura
             AsyncReadCommand
             AsyncReadCommandInTx
@@ -407,7 +407,7 @@ public abstract class StressTest: IDisposable
                     async tx =>
                     {
                         // 1-500, 501-1000
-                        var batches = Enumerable.Range(batchIndex * batchSize + 1, batchSize).Batch(queryBatchSize);    
+                        var batches = Enumerable.Range(batchIndex * batchSize + 1, batchSize).Batch(queryBatchSize);
 
                         foreach (var batch in batches)
                         {

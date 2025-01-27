@@ -474,6 +474,11 @@ public class Examples
                 _driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
             }
 
+            public void Dispose()
+            {
+                _driver?.Dispose();
+            }
+
             public void PrintGreeting(string message)
             {
                 using var session = _driver.Session();
@@ -490,11 +495,6 @@ public class Examples
                     });
 
                 Console.WriteLine(greeting);
-            }
-
-            public void Dispose()
-            {
-                _driver?.Dispose();
             }
 
             public static void Main()

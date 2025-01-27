@@ -53,9 +53,9 @@ public sealed class EncryptionIT : DirectDriverTestBase
     {
         await using var session = driver.AsyncSession();
 
-            var cursor = await session.RunAsync("RETURN 2 as Number");
-            var records = await cursor.ToListAsync(r => r["Number"].As<int>());
+        var cursor = await session.RunAsync("RETURN 2 as Number");
+        var records = await cursor.ToListAsync(r => r["Number"].As<int>());
 
-            records.Should().BeEquivalentTo(2);
+        records.Should().BeEquivalentTo(2);
     }
 }

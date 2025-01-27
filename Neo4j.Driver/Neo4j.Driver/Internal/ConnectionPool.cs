@@ -49,13 +49,13 @@ internal sealed class ConnectionPool : IConnectionPool
     private readonly object _poolSizeSync = new();
 
     private readonly Uri _uri;
+    private int _connectionsWithSsrDisabled;
+
+    private int _connectionsWithSsrEnabled;
 
     private int _poolSize;
 
     private ConnectionPoolStatus _poolStatus = Active;
-
-    private int _connectionsWithSsrEnabled;
-    private int _connectionsWithSsrDisabled;
 
     public ConnectionPool(
         Uri uri,
@@ -363,7 +363,7 @@ internal sealed class ConnectionPool : IConnectionPool
             return;
         }
 
-        if(conn.SsrEnabled)
+        if (conn.SsrEnabled)
         {
             Interlocked.Decrement(ref _connectionsWithSsrEnabled);
         }

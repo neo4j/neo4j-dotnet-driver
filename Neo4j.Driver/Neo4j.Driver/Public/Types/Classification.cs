@@ -13,14 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-
 namespace Neo4j.Driver;
 
 /// <summary>
-/// <see cref="Severity"/> to filter which <see cref="IGqlStatusObject"/> and <see cref="INotification"/>s will be sent in
-/// <see cref="IResultSummary.GqlStatusObjects"/> and  <see cref="IResultSummary.Notifications"/> .<br/> Can be used in
-/// <see cref="ConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/> and
+/// <see cref="Severity"/> to filter which <see cref="IGqlStatusObject"/> and <see cref="INotification"/>s will be
+/// sent in <see cref="IResultSummary.GqlStatusObjects"/> and  <see cref="IResultSummary.Notifications"/> .<br/> Can be
+/// used in <see cref="ConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/> and
 /// <see cref="SessionConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/>.
 /// </summary>
 /// <since>5.23.0</since>
@@ -83,7 +81,8 @@ public enum Classification
     Topology,
 
     /// <summary>Receive notifications related to managing indexes and constraints.</summary>
-    /// <remarks> Returned as <see cref="NotificationClassification.Schema"/> in <see cref="IGqlStatusObject.Classification"/>
+    /// <remarks>
+    /// Returned as <see cref="NotificationClassification.Schema"/> in <see cref="IGqlStatusObject.Classification"/>
     /// and as <see cref="NotificationCategory.Schema"/> in <see cref="INotification.Category"/>.
     /// </remarks>
     Schema,

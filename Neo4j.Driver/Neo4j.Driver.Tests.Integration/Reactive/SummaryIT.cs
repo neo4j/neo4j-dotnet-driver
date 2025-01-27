@@ -221,7 +221,7 @@ public abstract class SummaryIT
                         HasPlan = false, Plan = default(IPlan), HasProfile = false, Profile = default(IProfiledPlan)
                     }));
         }
-        
+
         [RequireServerFact("4.0.0", GreaterThanOrEqualTo, Skip = "Broken with servers 5.6+")]
         public void ShouldReturnPlanButNoProfile()
         {
@@ -276,7 +276,6 @@ public abstract class SummaryIT
                         .Excluding(x => x.SelectedMemberPath == "Notifications[0].Description")));
         }
 
-
         [RequireServerFact("5.7.0", GreaterThanOrEqualTo)]
         public void ShouldReturnNotificationsWithCategory()
         {
@@ -286,7 +285,7 @@ public abstract class SummaryIT
                 MatchesSummary(
                     new
                     {
-                        Notifications = new []
+                        Notifications = new[]
                         {
                             new Notification(
                                 "Neo.ClientNotification.Statement.UnknownLabelWarning",

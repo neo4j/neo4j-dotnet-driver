@@ -67,9 +67,9 @@ public static class AuthTokenManagers
     }
 
     /// <summary>
-    /// An implementation of <see cref="IAuthTokenManager"/> that will call the provided async function whenever
-    /// a token is needed. It will cache the token and will only call the function when a new token is needed or
-    /// the existing cached token has expired.
+    /// An implementation of <see cref="IAuthTokenManager"/> that will call the provided async function whenever a
+    /// token is needed. It will cache the token and will only call the function when a new token is needed or the existing
+    /// cached token has expired.
     /// </summary>
     /// <param name="tokenProviderAsync">A function that will be called when a new token is needed.</param>
     /// <returns>The <see cref="IAuthTokenManager"/> that will call the provided function when a new token is needed.</returns>

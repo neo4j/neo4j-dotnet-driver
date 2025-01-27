@@ -82,10 +82,10 @@ public class RecordTests
     {
         _record.TryGet<string>("Key1", out var value).Should().BeTrue();
         value.Should().Be("Value1");
-        _record.TryGet<string>("KEY1", out _).Should().BeFalse();
+        _record.TryGet<string>("KEY1", out var _).Should().BeFalse();
         _record.TryGet("Key2", out value).Should().BeTrue();
         value.Should().Be("Value2");
-        _record.TryGet<string>("KEY2", out _).Should().BeFalse();
+        _record.TryGet<string>("KEY2", out var _).Should().BeFalse();
     }
 
     [Fact]
@@ -161,7 +161,7 @@ public class RecordTests
         var dictionary = _record as IReadOnlyDictionary<string, object>;
         dictionary.TryGetValue("Key1", out var value).Should().BeTrue();
         value.Should().Be("Value1");
-        dictionary.TryGetValue("NonExistentKey", out _).Should().BeFalse();
+        dictionary.TryGetValue("NonExistentKey", out var _).Should().BeFalse();
     }
 
     [Fact]

@@ -22,8 +22,8 @@ using System.Threading.Tasks;
 namespace Neo4j.Driver.Mapping;
 
 /// <summary>
-/// Provides extension methods for materializing <see cref="IAsyncEnumerable{T}"/> into lists of objects
-/// by mapping each record in the enumerable to an object using provided delegates.
+/// Provides extension methods for materializing <see cref="IAsyncEnumerable{T}"/> into lists of objects by
+/// mapping each record in the enumerable to an object using provided delegates.
 /// </summary>
 public static class DelegateAsyncEnumerableExtensions
 {
@@ -44,8 +44,8 @@ public static class DelegateAsyncEnumerableExtensions
 
     /// <summary>
     /// Materializes the <see cref="IAsyncEnumerable{T}"/> into a list of objects of type
-    /// <typeparamref name="TResult"/>, by mapping each record in the enumerable to an object using
-    /// the provided <paramref name="map"/> delegate.
+    /// <typeparamref name="TResult"/>, by mapping each record in the enumerable to an object using the provided
+    /// <paramref name="map"/> delegate.
     /// </summary>
     /// <param name="asyncEnumerable">The asynchronous source of records.</param>
     /// <param name="map">The delegate to map each record to an object.</param>
@@ -63,8 +63,8 @@ public static class DelegateAsyncEnumerableExtensions
 
     /// <summary>
     /// Materializes the <see cref="IAsyncEnumerable{T}"/> into a list of objects of type
-    /// <typeparamref name="TResult"/>, by mapping each record in the enumerable to an object using
-    /// the provided <paramref name="map"/> delegate.
+    /// <typeparamref name="TResult"/>, by mapping each record in the enumerable to an object using the provided
+    /// <paramref name="map"/> delegate.
     /// </summary>
     /// <param name="asyncEnumerable">The asynchronous source of records.</param>
     /// <param name="map">The delegate to map each record to an object.</param>
@@ -83,8 +83,8 @@ public static class DelegateAsyncEnumerableExtensions
 
     /// <summary>
     /// Materializes the <see cref="IAsyncEnumerable{T}"/> into a list of objects of type
-    /// <typeparamref name="TResult"/>, by mapping each record in the enumerable to an object using
-    /// the provided <paramref name="map"/> delegate.
+    /// <typeparamref name="TResult"/>, by mapping each record in the enumerable to an object using the provided
+    /// <paramref name="map"/> delegate.
     /// </summary>
     /// <param name="asyncEnumerable">The asynchronous source of records.</param>
     /// <param name="map">The delegate to map each record to an object.</param>
@@ -104,8 +104,8 @@ public static class DelegateAsyncEnumerableExtensions
 
     /// <summary>
     /// Materializes the <see cref="IAsyncEnumerable{T}"/> into a list of objects of type
-    /// <typeparamref name="TResult"/>, by mapping each record in the enumerable to an object using
-    /// the provided <paramref name="map"/> delegate.
+    /// <typeparamref name="TResult"/>, by mapping each record in the enumerable to an object using the provided
+    /// <paramref name="map"/> delegate.
     /// </summary>
     /// <param name="asyncEnumerable">The asynchronous source of records.</param>
     /// <param name="map">The delegate to map each record to an object.</param>
@@ -126,8 +126,8 @@ public static class DelegateAsyncEnumerableExtensions
 
     /// <summary>
     /// Materializes the <see cref="IAsyncEnumerable{T}"/> into a list of objects of type
-    /// <typeparamref name="TResult"/>, by mapping each record in the enumerable to an object using
-    /// the provided <paramref name="map"/> delegate.
+    /// <typeparamref name="TResult"/>, by mapping each record in the enumerable to an object using the provided
+    /// <paramref name="map"/> delegate.
     /// </summary>
     /// <param name="asyncEnumerable">The asynchronous source of records.</param>
     /// <param name="map">The delegate to map each record to an object.</param>
@@ -149,8 +149,8 @@ public static class DelegateAsyncEnumerableExtensions
 
     /// <summary>
     /// Materializes the <see cref="IAsyncEnumerable{T}"/> into a list of objects of type
-    /// <typeparamref name="TResult"/>, by mapping each record in the enumerable to an object using
-    /// the provided <paramref name="map"/> delegate.
+    /// <typeparamref name="TResult"/>, by mapping each record in the enumerable to an object using the provided
+    /// <paramref name="map"/> delegate.
     /// </summary>
     /// <param name="asyncEnumerable">The asynchronous source of records.</param>
     /// <param name="map">The delegate to map each record to an object.</param>
@@ -173,8 +173,8 @@ public static class DelegateAsyncEnumerableExtensions
 
     /// <summary>
     /// Materializes the <see cref="IAsyncEnumerable{T}"/> into a list of objects of type
-    /// <typeparamref name="TResult"/>, by mapping each record in the enumerable to an object using
-    /// the provided <paramref name="map"/> delegate.
+    /// <typeparamref name="TResult"/>, by mapping each record in the enumerable to an object using the provided
+    /// <paramref name="map"/> delegate.
     /// </summary>
     /// <param name="asyncEnumerable">The asynchronous source of records.</param>
     /// <param name="map">The delegate to map each record to an object.</param>
@@ -198,8 +198,8 @@ public static class DelegateAsyncEnumerableExtensions
 
     /// <summary>
     /// Materializes the <see cref="IAsyncEnumerable{T}"/> into a list of objects of type
-    /// <typeparamref name="TResult"/>, by mapping each record in the enumerable to an object using
-    /// the provided <paramref name="map"/> delegate.
+    /// <typeparamref name="TResult"/>, by mapping each record in the enumerable to an object using the provided
+    /// <paramref name="map"/> delegate.
     /// </summary>
     /// <param name="asyncEnumerable">The asynchronous source of records.</param>
     /// <param name="map">The delegate to map each record to an object.</param>
@@ -224,8 +224,8 @@ public static class DelegateAsyncEnumerableExtensions
 
     /// <summary>
     /// Materializes the <see cref="IAsyncEnumerable{T}"/> into a list of objects of type
-    /// <typeparamref name="TResult"/>, by mapping each record in the enumerable to an object using
-    /// the provided <paramref name="map"/> delegate.
+    /// <typeparamref name="TResult"/>, by mapping each record in the enumerable to an object using the provided
+    /// <paramref name="map"/> delegate.
     /// </summary>
     /// <param name="asyncEnumerable">The asynchronous source of records.</param>
     /// <param name="map">The delegate to map each record to an object.</param>
@@ -251,8 +251,8 @@ public static class DelegateAsyncEnumerableExtensions
 
     /// <summary>
     /// Materializes the <see cref="IAsyncEnumerable{T}"/> into a list of objects of type
-    /// <typeparamref name="TResult"/>, by mapping each record in the enumerable to an object using
-    /// the provided <paramref name="map"/> delegate.
+    /// <typeparamref name="TResult"/>, by mapping each record in the enumerable to an object using the provided
+    /// <paramref name="map"/> delegate.
     /// </summary>
     /// <param name="asyncEnumerable">The asynchronous source of records.</param>
     /// <param name="map">The delegate to map each record to an object.</param>

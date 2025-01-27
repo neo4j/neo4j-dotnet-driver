@@ -117,7 +117,6 @@ public class PointSerializerTests : PackStreamSerializerTests
         ValidatePoint2D(value);
     }
 
-
     [Fact]
     public void ShouldDeserializeSpanPoint3D()
     {
@@ -144,7 +143,7 @@ public class PointSerializerTests : PackStreamSerializerTests
         value.Should().BeOfType<Point>().Which.Y.Should().Be(-0.105658);
         value.Should().BeOfType<Point>().Which.Z.Should().Be(double.NaN);
     }
-        
+
     private static void ValidatePoint3D(object value)
     {
         value.Should().NotBeNull();

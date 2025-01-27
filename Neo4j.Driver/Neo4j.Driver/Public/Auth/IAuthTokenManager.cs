@@ -19,8 +19,8 @@ using System.Threading.Tasks;
 namespace Neo4j.Driver;
 
 /// <summary>
-/// Common interface for components that can provide auth tokens. For pre-baked implementations
-/// of this interface, see <see cref="AuthTokenManagers"/>.
+/// Common interface for components that can provide auth tokens. For pre-baked implementations of this interface,
+/// see <see cref="AuthTokenManagers"/>.
 /// </summary>
 public interface IAuthTokenManager
 {
@@ -33,16 +33,13 @@ public interface IAuthTokenManager
     ValueTask<IAuthToken> GetTokenAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Handles an error notification thrown by the server if a security error happened.
-    /// <p/>
-    /// This will be called when driver throws a <see cref="SecurityException"/>.
+    /// Handles an error notification thrown by the server if a security error happened. <p/> This will be called when
+    /// driver throws a <see cref="SecurityException"/>.
     /// </summary>
     /// <param name="token">The token.</param>
     /// <param name="exception">The security exception thrown by the server.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
-    /// <returns>
-    /// A <see cref="Task"/> representing the asynchronous operation.
-    /// </returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     ValueTask<bool> HandleSecurityExceptionAsync(
         IAuthToken token,
         SecurityException exception,

@@ -24,7 +24,7 @@ internal interface IMappingSourceDelegateBuilder
 
 internal class MappingSourceDelegateBuilder : IMappingSourceDelegateBuilder
 {
-    private IRecordPathFinder _pathFinder = new RecordPathFinder();
+    private readonly IRecordPathFinder _pathFinder = new RecordPathFinder();
 
     public MappingValueDelegate GetMappingDelegate(EntityMappingInfo entityMappingInfo)
     {

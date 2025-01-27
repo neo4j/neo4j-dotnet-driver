@@ -14,9 +14,9 @@
 // limitations under the License.
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Preview.GqlErrors;
@@ -130,7 +130,9 @@ internal static class ExceptionManager
     {
         var ne = ex as Neo4jException;
         var gqlError = ne?.GetGqlErrorPreview();
-        var diagnosticRecord = gqlError?.GqlDiagnosticRecord?.ToDictionary(y => y.Key, y => NativeToCypher.Convert(y.Value));
+        var diagnosticRecord =
+            gqlError?.GqlDiagnosticRecord?.ToDictionary(y => y.Key, y => NativeToCypher.Convert(y.Value));
+
         var data = new Dictionary<string, object>();
 
         if (!isCause)

@@ -21,15 +21,6 @@ internal class AuthorizationToken : ProtocolObject
 {
     public AuthorizationTokenType data { get; set; } = new();
 
-    public class AuthorizationTokenType
-    {
-        public string scheme { get; set; }
-        public string principal { get; set; }
-        public string credentials { get; set; }
-        public string realm { get; set; }
-        public Dictionary<string, object> parameters { get; set; }
-    }
-
     public IAuthToken AsToken()
     {
         var authTokenData = data;
@@ -44,5 +35,14 @@ internal class AuthorizationToken : ProtocolObject
                 authTokenData.scheme,
                 authTokenData.parameters)
         };
+    }
+
+    public class AuthorizationTokenType
+    {
+        public string scheme { get; set; }
+        public string principal { get; set; }
+        public string credentials { get; set; }
+        public string realm { get; set; }
+        public Dictionary<string, object> parameters { get; set; }
     }
 }

@@ -17,11 +17,8 @@ using System;
 
 namespace Neo4j.Driver.Mapping;
 
-/// <summary>
-/// Indicates that the constructor should be used when mapping a record to an object.
-/// </summary>
+/// <summary>Indicates that the constructor should be used when mapping a record to an object.</summary>
 [AttributeUsage(AttributeTargets.Constructor)]
 public class MappingConstructorAttribute : Attribute
 {
-    
 }

@@ -25,7 +25,8 @@ internal class GetRoutingTable : ProtocolObject
 {
     public GetRoutingTableDataType data { get; set; } = new();
 
-    [JsonIgnore] public IRoutingTable RoutingTable { get; set; }
+    [JsonIgnore]
+    public IRoutingTable RoutingTable { get; set; }
 
     public override async Task Process(Controller controller)
     {

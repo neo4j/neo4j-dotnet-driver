@@ -8,14 +8,14 @@
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-      <NoWarn>1701;1702;1591;CS1591</NoWarn>
+        <NoWarn>1701;1702;1591;CS1591</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Autofac" Version="8.0.0" />
-        <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="9.0.0" />
+        <PackageReference Include="Autofac" Version="8.0.0"/>
+        <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="9.0.0"/>
         <PackageReference Include="Serilog" Version="3.1.1"/>
-        <PackageReference Include="Serilog.Enrichers.Thread" Version="3.1.0" />
+        <PackageReference Include="Serilog.Enrichers.Thread" Version="3.1.0"/>
         <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0"/>
         <PackageReference Include="Serilog.Settings.Configuration" Version="8.0.0"/>
         <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1"/>
@@ -23,14 +23,13 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="Neo4j.Driver.Tests.BenchkitBackend.csproj.DotSettings" />
+        <None Remove="Neo4j.Driver.Tests.BenchkitBackend.csproj.DotSettings"/>
     </ItemGroup>
 
 
     <ItemGroup>
-      <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />
+        <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj"/>
     </ItemGroup>
-
 
 
 </Project>

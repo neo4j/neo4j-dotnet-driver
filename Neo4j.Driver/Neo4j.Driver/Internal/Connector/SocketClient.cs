@@ -26,15 +26,14 @@ namespace Neo4j.Driver.Internal.Connector;
 
 internal sealed class SocketClient : ISocketClient
 {
-    public DriverContext Context { get; }
     private const string MessagePattern = "C: {0}";
     private readonly IConnectionIoFactory _connectionIoFactory;
     private readonly IBoltHandshaker _handshaker;
-
-    private readonly Uri _uri;
     private readonly ILogger _logger;
     private readonly IPackStreamFactory _packstreamFactory;
     private readonly ITcpSocketClient _tcpSocketClient;
+
+    private readonly Uri _uri;
     private IChunkWriter _chunkWriter;
 
     private int _closedMarker = -1;
@@ -62,6 +61,8 @@ internal sealed class SocketClient : ISocketClient
 
         _tcpSocketClient = _connectionIoFactory.TcpSocketClient(context, _logger);
     }
+
+    public DriverContext Context { get; }
 
     public bool IsOpen => _closedMarker == 0;
 

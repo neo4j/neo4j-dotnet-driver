@@ -17,22 +17,16 @@ using System;
 
 namespace Neo4j.Driver.Mapping;
 
-/// <summary>
-/// The exception that is thrown when the mapping of a record to a target type failed.
-/// </summary>
+/// <summary>The exception that is thrown when the mapping of a record to a target type failed.</summary>
 public class MappingFailedException : Neo4jException
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="MappingFailedException"/> class.
-    /// </summary>
+    /// <summary>Initializes a new instance of the <see cref="MappingFailedException"/> class.</summary>
     /// <param name="message">The message that describes the error.</param>
     public MappingFailedException(string message) : base(message)
     {
     }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="MappingFailedException"/> class.
-    /// </summary>
+    /// <summary>Initializes a new instance of the <see cref="MappingFailedException"/> class.</summary>
     /// <param name="message">The message that describes the error.</param>
     /// <param name="innerException">The exception that is the cause of the current exception.</param>
     public MappingFailedException(string message, Exception innerException) : base(message, innerException)

@@ -23,61 +23,6 @@ namespace Neo4j.Driver.Tests.Mapping;
 
 public class MappingProviderTests
 {
-    private class TestObject
-    {
-        [MappingSource("intValue")]
-        public int IntValue { get; set; }
-
-        [MappingSource("stringValue")]
-        public string Text { get; set; } = null!;
-    }
-
-    private class SecondTestObject
-    {
-        public int Number { get; set; }
-        public string Text { get; set; } = null!;
-    }
-
-    private class ThirdTestObject
-    {
-        public int IntValue { get; set; } = -1;
-        public string StringValue { get; set; } = "unset";
-    }
-
-    private class PersonWithAge
-    {
-        [MappingSource("name")]
-        public string Name { get; set; } = null!;
-
-        [MappingOptional]
-        public int Age { get; set; }
-    }
-
-    private class TestMappingProvider : IMappingProvider
-    {
-        public void CreateMappers(IMappingRegistry registry)
-        {
-            registry
-                .RegisterMapping<TestObject>(
-                    b => b
-                        .UseDefaultMapping()
-                        .Map(x => x.Text, "stringValue", converter: x => x.As<string>().ToUpper() + "!"))
-                .RegisterMapping<SecondTestObject>(
-                    b => b
-                        .MapWholeObject(
-                            r => new SecondTestObject
-                            {
-                                Number = r.Get<int>("intValue") + 1,
-                                Text = r.Get<string>("stringValue").ToLower()
-                            }))
-                .RegisterMapping<ThirdTestObject>(_ => {})
-                .RegisterMapping<PersonWithAge>(
-                    b => b
-                        .UseDefaultMapping()
-                        .Map(x => x.Age, r => r.Get<int>("active") - r.Get<int>("born")));
-        }
-    }
-
     public MappingProviderTests()
     {
         RecordObjectMapping.Reset();
@@ -131,6 +76,103 @@ public class MappingProviderTests
         obj.Age.Should().Be(23);
     }
 
+    [Fact]
+    public void ShouldUseCustomMapper()
+    {
+        var record1 = TestRecord.Create(("favourite_color", "blue"), ("lucky_number", 7));
+        var record2 = TestRecord.Create(("job_title", "developer"), ("years_of_service", 5));
+
+        RecordObjectMapping.Register(new NamingConventionTranslator<FirstNameMappingTestObject>());
+        RecordObjectMapping.Register(new NamingConventionTranslator<SecondNameMappingTestObject>());
+
+        var obj1 = record1.AsObject<FirstNameMappingTestObject>();
+        var obj2 = record2.AsObject<SecondNameMappingTestObject>();
+
+        obj1.FavouriteColor.Should().Be("blue");
+        obj1.LuckyNumber.Should().Be(7);
+        obj2.JobTitle.Should().Be("developer");
+        obj2.YearsOfService.Should().Be(5);
+    }
+
+    [Fact]
+    public void ShouldNotFailWhenUsingDefaultMapperButMappingSomePropertiesExplicitly()
+    {
+        var guid = Guid.NewGuid();
+        var testRecord = TestRecord.Create(("Name", "Alice"), ("Guid", guid.ToString()));
+        RecordObjectMapping.RegisterProvider(new MappingProviderThatUsesDefaultMappingAndOverridesAGuidProperty(true));
+
+        var obj = testRecord.AsObject<NameAndGuid>();
+
+        obj.Name.Should().Be("Alice");
+        obj.Guid.Should().Be(guid);
+    }
+
+    [Fact]
+    public void ShouldFailWhenUsingDefaultMapperWithoutOverriding()
+    {
+        var guid = Guid.NewGuid();
+        var testRecord = TestRecord.Create(("Name", "Alice"), ("Guid", guid.ToString()));
+        RecordObjectMapping.RegisterProvider(new MappingProviderThatUsesDefaultMappingAndOverridesAGuidProperty(false));
+
+        var act = () => testRecord.AsObject<NameAndGuid>();
+        act.Should().Throw<MappingFailedException>();
+    }
+
+    private class TestObject
+    {
+        [MappingSource("intValue")]
+        public int IntValue { get; set; }
+
+        [MappingSource("stringValue")]
+        public string Text { get; } = null!;
+    }
+
+    private class SecondTestObject
+    {
+        public int Number { get; set; }
+        public string Text { get; set; } = null!;
+    }
+
+    private class ThirdTestObject
+    {
+        public int IntValue { get; } = -1;
+        public string StringValue { get; } = "unset";
+    }
+
+    private class PersonWithAge
+    {
+        [MappingSource("name")]
+        public string Name { get; } = null!;
+
+        [MappingOptional]
+        public int Age { get; set; }
+    }
+
+    private class TestMappingProvider : IMappingProvider
+    {
+        public void CreateMappers(IMappingRegistry registry)
+        {
+            registry
+                .RegisterMapping<TestObject>(
+                    b => b
+                        .UseDefaultMapping()
+                        .Map(x => x.Text, "stringValue", converter: x => x.As<string>().ToUpper() + "!"))
+                .RegisterMapping<SecondTestObject>(
+                    b => b
+                        .MapWholeObject(
+                            r => new SecondTestObject
+                            {
+                                Number = r.Get<int>("intValue") + 1,
+                                Text = r.Get<string>("stringValue").ToLower()
+                            }))
+                .RegisterMapping<ThirdTestObject>(_ => {})
+                .RegisterMapping<PersonWithAge>(
+                    b => b
+                        .UseDefaultMapping()
+                        .Map(x => x.Age, r => r.Get<int>("active") - r.Get<int>("born")));
+        }
+    }
+
     private class FirstNameMappingTestObject
     {
         public string FavouriteColor { get; set; }
@@ -145,6 +187,23 @@ public class MappingProviderTests
 
     private class NamingConventionTranslator<T> : IRecordMapper<T>
     {
+        /// <inheritdoc/>
+        public T Map(IRecord record)
+        {
+            var type = typeof(T);
+            var obj = Activator.CreateInstance(type);
+            foreach (var field in record.Keys)
+            {
+                var property = type.GetProperty(GetTranslatedPropertyName(field));
+                if (property != null)
+                {
+                    property.SetValue(obj, record[field]);
+                }
+            }
+
+            return (T)obj;
+        }
+
         private string GetTranslatedPropertyName(string fieldName)
         {
             // convert from snake_case to PascalCase
@@ -165,50 +224,15 @@ public class MappingProviderTests
 
             return result;
         }
-
-        /// <inheritdoc />
-        public T Map(IRecord record)
-        {
-            var type = typeof(T);
-            var obj = Activator.CreateInstance(type);
-            foreach (var field in record.Keys)
-            {
-                var property = type.GetProperty(GetTranslatedPropertyName(field));
-                if (property != null)
-                {
-                    property.SetValue(obj, record[field]);
-                }
-            }
-
-            return (T)obj;
-        }
-    }
-
-    [Fact]
-    public void ShouldUseCustomMapper()
-    {
-        var record1 = TestRecord.Create(("favourite_color", "blue"), ("lucky_number", 7));
-        var record2 = TestRecord.Create(("job_title", "developer"), ("years_of_service", 5));
-
-        RecordObjectMapping.Register(new NamingConventionTranslator<FirstNameMappingTestObject>());
-        RecordObjectMapping.Register(new NamingConventionTranslator<SecondNameMappingTestObject>());
-
-        var obj1 = record1.AsObject<FirstNameMappingTestObject>();
-        var obj2 = record2.AsObject<SecondNameMappingTestObject>();
-
-        obj1.FavouriteColor.Should().Be("blue");
-        obj1.LuckyNumber.Should().Be(7);
-        obj2.JobTitle.Should().Be("developer");
-        obj2.YearsOfService.Should().Be(5);
     }
 
     private class NameAndGuid
     {
-        public string Name { get; set; } = null!;
+        public string Name { get; } = null!;
         public Guid Guid { get; set; }
     }
 
-    private class MappingProviderThatUsesDefaultMappingAndOverridesAGuidProperty(bool overrideGuid): IMappingProvider
+    private class MappingProviderThatUsesDefaultMappingAndOverridesAGuidProperty(bool overrideGuid) : IMappingProvider
     {
         public void CreateMappers(IMappingRegistry registry)
         {
@@ -216,37 +240,11 @@ public class MappingProviderTests
                 b =>
                 {
                     b.UseDefaultMapping();
-                    if(overrideGuid)
+                    if (overrideGuid)
                     {
                         b.Map(x => x.Guid, "Guid", converter: x => Guid.Parse(x.As<string>()));
                     }
                 });
         }
-    }
-
-    [Fact]
-    public void ShouldNotFailWhenUsingDefaultMapperButMappingSomePropertiesExplicitly()
-    {
-        var guid = Guid.NewGuid();
-        var testRecord = TestRecord.Create(("Name", "Alice"), ("Guid", guid.ToString()));
-        RecordObjectMapping.RegisterProvider(
-            new MappingProviderThatUsesDefaultMappingAndOverridesAGuidProperty(true));
-
-        var obj = testRecord.AsObject<NameAndGuid>();
-
-        obj.Name.Should().Be("Alice");
-        obj.Guid.Should().Be(guid);
-    }
-
-    [Fact]
-    public void ShouldFailWhenUsingDefaultMapperWithoutOverriding()
-    {
-        var guid = Guid.NewGuid();
-        var testRecord = TestRecord.Create(("Name", "Alice"), ("Guid", guid.ToString()));
-        RecordObjectMapping.RegisterProvider(
-            new MappingProviderThatUsesDefaultMappingAndOverridesAGuidProperty(false));
-
-        var act = () => testRecord.AsObject<NameAndGuid>();
-        act.Should().Throw<MappingFailedException>();
     }
 }

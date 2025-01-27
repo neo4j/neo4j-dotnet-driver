@@ -45,14 +45,10 @@ public enum NotificationCategory
     /// <summary>The result of the query or command indicates a potential security issue.</summary>
     Security,
 
-    /// <summary>
-    /// Information provided while executing database and server related commands.
-    /// </summary>
+    /// <summary>Information provided while executing database and server related commands.</summary>
     Topology,
 
-    /// <summary>
-    /// Information provided while managing indexes and constraints.
-    /// </summary>
+    /// <summary>Information provided while managing indexes and constraints.</summary>
     Schema,
 
     /// <summary>Notification not covered by other categories.</summary>

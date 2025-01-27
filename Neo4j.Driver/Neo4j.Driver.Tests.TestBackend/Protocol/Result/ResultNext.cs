@@ -26,7 +26,8 @@ internal class ResultNext : ProtocolObject
 {
     public ResultNextType data { get; set; } = new();
 
-    [JsonIgnore] public IRecord Records { get; set; }
+    [JsonIgnore]
+    public IRecord Records { get; set; }
 
     public override async Task Process()
     {

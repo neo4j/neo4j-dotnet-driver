@@ -28,13 +28,14 @@ namespace Neo4j.Driver.IntegrationTests.Reactive;
 public abstract class AbstractRxIT : AbstractRxTest, IDisposable
 {
     private readonly List<IRxSession> _sessions = new();
-    protected bool IsDispose { get; private set; }
 
     protected AbstractRxIT(ITestOutputHelper output, StandAloneIntegrationTestFixture fixture)
         : base(output)
     {
         Server = fixture.StandAloneSharedInstance;
     }
+
+    protected bool IsDispose { get; private set; }
 
     protected IStandAlone Server { get; }
 
@@ -43,6 +44,7 @@ public abstract class AbstractRxIT : AbstractRxTest, IDisposable
         switch (IsDispose)
         {
             case true: return;
+
             case false:
                 _sessions.ForEach(x => x.Close<Unit>().WaitForCompletion());
                 _sessions.Clear();

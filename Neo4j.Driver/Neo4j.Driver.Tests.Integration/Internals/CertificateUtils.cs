@@ -69,12 +69,10 @@ public static class CertificateUtils
         if (altNames.Any() || addressAltNames.Any())
         {
             var alternativeNames = new List<Asn1Encodable>();
-            
-            alternativeNames.AddRange(
-                altNames.Select(name => new GeneralName(GeneralName.DnsName, name)));
 
-            alternativeNames.AddRange(
-                addressAltNames.Select(ip => new GeneralName(GeneralName.IPAddress, ip)));
+            alternativeNames.AddRange(altNames.Select(name => new GeneralName(GeneralName.DnsName, name)));
+
+            alternativeNames.AddRange(addressAltNames.Select(ip => new GeneralName(GeneralName.IPAddress, ip)));
 
             certGenerator.AddExtension(
                 X509Extensions.SubjectAlternativeName,

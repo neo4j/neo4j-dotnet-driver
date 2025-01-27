@@ -102,7 +102,7 @@ internal sealed class SocketConnection : IConnection
 
     public AuthorizationStatus AuthorizationStatus { get; set; }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public bool SsrEnabled { get; set; }
 
     public void ConfigureMode(AccessMode? mode)

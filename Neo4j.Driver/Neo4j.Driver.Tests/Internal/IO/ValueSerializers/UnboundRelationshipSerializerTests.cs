@@ -147,7 +147,7 @@ public class UnboundRelationshipSerializerTests : PackStreamSerializerTests
 
         VerifySerializedUnboundRelationship(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
     }
-        
+
     private static void SerializeUnboundRelationship(PackStreamWriter writer)
     {
         writer.WriteStructHeader(3, UnboundRelationshipSerializer.UnboundRelationship);

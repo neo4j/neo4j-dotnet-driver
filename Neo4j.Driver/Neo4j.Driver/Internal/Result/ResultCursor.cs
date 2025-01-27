@@ -22,11 +22,10 @@ namespace Neo4j.Driver.Internal.Result;
 
 internal sealed class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRecord>
 {
-    private bool _isConsumed;
-    
     private readonly IResultStream _resultStream;
     private bool _atEnd;
     private IRecord _current;
+    private bool _isConsumed;
 
     private Task<string[]> _keys;
     private IRecord _peeked;
@@ -93,7 +92,6 @@ internal sealed class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRe
         return _summary;
     }
 
-
     public async Task<IRecord> PeekAsync()
     {
         AssertNotConsumed();
@@ -115,7 +113,6 @@ internal sealed class ResultCursor : IInternalResultCursor, IAsyncEnumerator<IRe
 
         _atEnd = true;
         return null;
-
     }
 
     public Task<bool> FetchAsync()

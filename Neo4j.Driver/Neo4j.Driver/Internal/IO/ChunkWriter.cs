@@ -55,7 +55,7 @@ internal sealed class ChunkWriter : Stream, IChunkWriter
                 $"Parameter {nameof(downStream)} is invalid. " +
                 $"Property:{nameof(downStream.CanWrite)} is false but should be true");
         }
-        
+
         _logger = logger;
         _defaultBufferSize = context.Config.DefaultWriteBufferSize;
         _maxBufferSize = context.Config.MaxWriteBufferSize;

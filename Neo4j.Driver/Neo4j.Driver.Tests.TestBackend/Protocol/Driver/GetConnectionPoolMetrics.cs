@@ -28,7 +28,7 @@ internal class GetConnectionPoolMetrics : ProtocolObject
         {
             throw new Exception("The driver is not an internal driver");
         }
-        
+
         var metrics = driver.Context.Metrics.ConnectionPoolMetrics;
         var address = metrics.Where(x => x.Value.Id.Contains(data.address, StringComparison.OrdinalIgnoreCase))
             .Select(x => x.Value)

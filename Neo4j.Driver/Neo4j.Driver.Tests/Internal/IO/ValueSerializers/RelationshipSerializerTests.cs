@@ -140,7 +140,7 @@ public class RelationshipSerializerTests : PackStreamSerializerTests
 
         VerifySerializedRelationship(value.Should().BeAssignableTo<IDictionary>().Which["x"]);
     }
-        
+
     private static void SerializeRelationship(PackStreamWriter writer)
     {
         writer.WriteStructHeader(5, RelationshipSerializer.Relationship);

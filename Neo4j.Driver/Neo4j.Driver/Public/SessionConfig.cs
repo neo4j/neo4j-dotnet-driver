@@ -16,7 +16,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Neo4j.Driver.Internal;
+using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Types;
 
 namespace Neo4j.Driver;
@@ -44,11 +46,6 @@ public sealed class SessionConfig
     internal SessionConfig(string impersonatedUser) : this()
     {
         _impersonatedUser = impersonatedUser;
-    }
-
-    internal SessionConfig(IAuthToken authToken) : this()
-    {
-        AuthToken = authToken;
     }
 
     internal static SessionConfigBuilder Builder => new(new SessionConfig());
@@ -153,6 +150,13 @@ public sealed class SessionConfig
     /// <seealso cref="INotification"/>
     /// <seealso cref="IResultSummary.Notifications"/>
     public INotificationsConfig NotificationsConfig { get; internal set; }
+
+    internal DriverContext DriverContext { get; set; }
+
+    internal async Task<IAuthToken> AuthTokenForHomeDbCache()
+    {
+        return AuthToken ?? await DriverContext.AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
+    }
 }
 
 /// <summary>The builder to build a <see cref="SessionConfig"/>.</summary>
@@ -322,10 +326,10 @@ public sealed class SessionConfigBuilder
     /// <summary>
     /// Override configuration for which <see cref="INotification"/>s should be emitted for the lifetime of the
     /// session. <br/> Unspecified configuration will be provided by configuration specified in the server or the driver's
-    /// <see cref="ConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/>. <br/> If the driver has disabled notifications
-    /// with <see cref="ConfigBuilder.WithNotificationsDisabled"/>, the unspecified values will be provided by the server.
-    /// <br/> Disabling categories or severities allows the server to skip analysis for those, which can speed up query
-    /// execution.
+    /// <see cref="ConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/>. <br/> If the driver has
+    /// disabled notifications with <see cref="ConfigBuilder.WithNotificationsDisabled"/>, the unspecified values will be
+    /// provided by the server. <br/> Disabling categories or severities allows the server to skip analysis for those, which
+    /// can speed up query execution.
     /// </summary>
     /// <remarks>Cannot be used with: <see cref="WithNotificationsDisabled"/>.</remarks>
     /// <param name="minimumSeverity">
@@ -339,9 +343,9 @@ public sealed class SessionConfigBuilder
     /// <see cref="ConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/> or the server.
     /// </param>
     /// <param name="disabledClassifications">
-    /// Optional parameter to override the classification of notifications emitted. <br/> By passing
-    /// an empty collection, all classifications are enabled.<br/> By leaving null, the value will inherit configuration from the
-    /// server.
+    /// Optional parameter to override the classification of notifications emitted. <br/>
+    /// By passing an empty collection, all classifications are enabled.<br/> By leaving null, the value will inherit
+    /// configuration from the server.
     /// </param>
     /// <exception cref="ArgumentException">Thrown when all parameters are null.</exception>
     /// <returns>A <see cref="SessionConfigBuilder"/> instance for further configuration options.</returns>

@@ -25,12 +25,6 @@ namespace Neo4j.Driver.Tests.Mapping;
 
 public class DefaultMapperTests
 {
-    private class SimpleClass
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = null!;
-    }
-
     [Fact]
     public void ShouldMapSimpleClass()
     {
@@ -41,18 +35,6 @@ public class DefaultMapperTests
 
         result.Id.Should().Be(1);
         result.Name.Should().Be("Foo");
-    }
-
-    private class ConstructorClass
-    {
-        public int Id { get; }
-        public string Name { get; }
-
-        public ConstructorClass(int id, string name)
-        {
-            Id = id;
-            Name = name;
-        }
     }
 
     [Fact]
@@ -67,25 +49,6 @@ public class DefaultMapperTests
         result.Name.Should().Be("Foo");
     }
 
-    private class NonDefaultConstructorClass
-    {
-        public int Id { get; }
-        public string Name { get; }
-
-        public NonDefaultConstructorClass()
-        {
-            Id = -99;
-            Name = "error";
-        }
-
-        [MappingConstructor]
-        public NonDefaultConstructorClass(int id, string name)
-        {
-            Id = id;
-            Name = name;
-        }
-    }
-
     [Fact]
     public void ShouldMapNonDefaultConstructorClass()
     {
@@ -96,20 +59,6 @@ public class DefaultMapperTests
 
         result.Id.Should().Be(1);
         result.Name.Should().Be("Foo");
-    }
-
-    private class Person
-    {
-        public Person(
-            [MappingSource("person.name")] string name,
-            [MappingSource("person.born")] int born)
-        {
-            Name = name;
-            Born = born;
-        }
-
-        public string Name { get; }
-        public int Born { get; }
     }
 
     [Fact]
@@ -151,18 +100,6 @@ public class DefaultMapperTests
         person.Born.Should().Be(1977);
     }
 
-    public class NaturalPhenomenon
-    {
-        public string Name { get; }
-        public List<string> Components { get; }
-
-        public NaturalPhenomenon(string name, List<string> components)
-        {
-            Name = name;
-            Components = components;
-        }
-    }
-
     [Fact]
     public void ShouldMapListsThroughConstructor()
     {
@@ -176,18 +113,6 @@ public class DefaultMapperTests
         result.Components.Should().BeEquivalentTo("wind", "rain");
     }
 
-    public class NaturalPhenomenonCommaSeparated
-    {
-        public string Name { get; }
-        public string Components { get; }
-
-        public NaturalPhenomenonCommaSeparated(string name, string components)
-        {
-            Name = name;
-            Components = components;
-        }
-    }
-
     [Fact]
     public void ShouldMapCommaSeparatedListsThroughConstructor()
     {
@@ -199,18 +124,6 @@ public class DefaultMapperTests
         var result = mapper.Map(record);
         result.Name.Should().Be("Hurricane");
         result.Components.Should().Be("wind,rain");
-    }
-
-    public class HistoricalPhenomenon
-    {
-        public NaturalPhenomenon Phenomenon { get; }
-        public int Year { get; }
-
-        public HistoricalPhenomenon(NaturalPhenomenon phenomenon, int year)
-        {
-            Phenomenon = phenomenon;
-            Year = year;
-        }
     }
 
     [Fact]
@@ -230,18 +143,6 @@ public class DefaultMapperTests
         result.Phenomenon.Name.Should().Be("Hurricane");
         result.Phenomenon.Components.Should().BeEquivalentTo("wind", "rain");
         result.Year.Should().Be(2021);
-    }
-
-    public class YearOfPhenomena
-    {
-        public int Year { get; }
-        public List<NaturalPhenomenon> Phenomena { get; }
-
-        public YearOfPhenomena(int year, List<NaturalPhenomenon> phenomena)
-        {
-            Year = year;
-            Phenomena = phenomena;
-        }
     }
 
     [Fact]
@@ -283,21 +184,6 @@ public class DefaultMapperTests
         result.Phenomena[2].Components.Should().BeEquivalentTo("earth", "quaking");
     }
 
-    private class ClassWithProperties
-    {
-        public ClassWithProperties(int year, string occurrence)
-        {
-            Year = year * 10;
-            Occurrence = occurrence.ToLowerInvariant();
-        }
-
-        public int Year { get; }
-        public string Occurrence { get; }
-
-        [MappingSource("description")]
-        public string Description { get; set; }
-    }
-
     [Fact]
     public void ShouldSetPropertiesNotSetInConstructor()
     {
@@ -311,6 +197,142 @@ public class DefaultMapperTests
         result.Year.Should().Be(20200);
         result.Occurrence.Should().Be("pandemic");
         result.Description.Should().Be("Covid-19");
+    }
+
+    [Fact]
+    public void ShouldSetPropertiesNotSetInConstructorWithMappingHints()
+    {
+        var record = TestRecord.Create(
+            new[] { "year", "occurrence", "description", "something" },
+            new object[] { 2021, "PANDEMIC", "Covid-19", "something" });
+
+        var mapper = DefaultMapper.Get<ClassWithPropertiesWithMappingHints>();
+        var result = mapper.Map(record);
+
+        result.Year.Should().Be(20210);
+        result.Occurrence.Should().Be("pandemic");
+        result.OtherText.Should().Be("Covid-19");
+    }
+
+    [Fact]
+    public void ShouldThrowIfClassHasNoConstructors()
+    {
+        var act = () => DefaultMapper.Get<NoConstructors>();
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    private class SimpleClass
+    {
+        public int Id { get; set; }
+        public string Name { get; } = null!;
+    }
+
+    private class ConstructorClass
+    {
+        public ConstructorClass(int id, string name)
+        {
+            Id = id;
+            Name = name;
+        }
+
+        public int Id { get; }
+        public string Name { get; }
+    }
+
+    private class NonDefaultConstructorClass
+    {
+        public NonDefaultConstructorClass()
+        {
+            Id = -99;
+            Name = "error";
+        }
+
+        [MappingConstructor]
+        public NonDefaultConstructorClass(int id, string name)
+        {
+            Id = id;
+            Name = name;
+        }
+
+        public int Id { get; }
+        public string Name { get; }
+    }
+
+    private class Person
+    {
+        public Person(
+            [MappingSource("person.name")] string name,
+            [MappingSource("person.born")] int born)
+        {
+            Name = name;
+            Born = born;
+        }
+
+        public string Name { get; }
+        public int Born { get; }
+    }
+
+    public class NaturalPhenomenon
+    {
+        public NaturalPhenomenon(string name, List<string> components)
+        {
+            Name = name;
+            Components = components;
+        }
+
+        public string Name { get; }
+        public List<string> Components { get; }
+    }
+
+    public class NaturalPhenomenonCommaSeparated
+    {
+        public NaturalPhenomenonCommaSeparated(string name, string components)
+        {
+            Name = name;
+            Components = components;
+        }
+
+        public string Name { get; }
+        public string Components { get; }
+    }
+
+    public class HistoricalPhenomenon
+    {
+        public HistoricalPhenomenon(NaturalPhenomenon phenomenon, int year)
+        {
+            Phenomenon = phenomenon;
+            Year = year;
+        }
+
+        public NaturalPhenomenon Phenomenon { get; }
+        public int Year { get; }
+    }
+
+    public class YearOfPhenomena
+    {
+        public YearOfPhenomena(int year, List<NaturalPhenomenon> phenomena)
+        {
+            Year = year;
+            Phenomena = phenomena;
+        }
+
+        public int Year { get; }
+        public List<NaturalPhenomenon> Phenomena { get; }
+    }
+
+    private class ClassWithProperties
+    {
+        public ClassWithProperties(int year, string occurrence)
+        {
+            Year = year * 10;
+            Occurrence = occurrence.ToLowerInvariant();
+        }
+
+        public int Year { get; }
+        public string Occurrence { get; }
+
+        [MappingSource("description")]
+        public string Description { get; set; }
     }
 
     private class ClassWithPropertiesWithMappingHints
@@ -330,32 +352,10 @@ public class DefaultMapperTests
         public string OtherText { get; set; }
     }
 
-    [Fact]
-    public void ShouldSetPropertiesNotSetInConstructorWithMappingHints()
-    {
-        var record = TestRecord.Create(
-            new[] { "year", "occurrence", "description", "something" },
-            new object[] { 2021, "PANDEMIC", "Covid-19", "something" });
-
-        var mapper = DefaultMapper.Get<ClassWithPropertiesWithMappingHints>();
-        var result = mapper.Map(record);
-
-        result.Year.Should().Be(20210);
-        result.Occurrence.Should().Be("pandemic");
-        result.OtherText.Should().Be("Covid-19");
-    }
-
     private class NoConstructors
     {
         private NoConstructors()
         {
         }
-    }
-
-    [Fact]
-    public void ShouldThrowIfClassHasNoConstructors()
-    {
-        var act = () => DefaultMapper.Get<NoConstructors>(null);
-        act.Should().Throw<InvalidOperationException>();
     }
 }

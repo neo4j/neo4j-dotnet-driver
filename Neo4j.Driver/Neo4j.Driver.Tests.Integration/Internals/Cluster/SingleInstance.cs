@@ -28,7 +28,7 @@ public class SingleInstance : ISingleInstance
         HttpUri = new Uri(httpUri);
         BoltUri = new Uri(boltUri);
         BoltRoutingUri = new Uri($"{BoltRoutingScheme}{BoltUri.Host}:{BoltUri.Port}");
-        HomePath = homePath == null 
+        HomePath = homePath == null
             ? "UNKNOWN"
             : new DirectoryInfo(homePath).FullName;
 

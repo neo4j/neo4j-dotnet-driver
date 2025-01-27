@@ -74,7 +74,7 @@ internal class AuthToken : IAuthToken
 
 internal abstract class FullTokenCacheKeyAuthToken : AuthToken
 {
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override int GetHashCode()
     {
         // combine hash codes of all key-value pairs in the dictionary. We sort the dictionary by key to ensure

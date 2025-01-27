@@ -114,8 +114,7 @@ public static class InternalRxSessionTests
         public void ShouldReturnObservable()
         {
             var session = new Mock<IInternalAsyncSession>();
-            session.Setup(
-                    x => x.BeginTransactionAsync(It.IsAny<Action<TransactionConfigBuilder>>(), It.IsAny<bool>()))
+            session.Setup(x => x.BeginTransactionAsync(It.IsAny<Action<TransactionConfigBuilder>>(), It.IsAny<bool>()))
                 .ReturnsAsync(Mock.Of<IInternalAsyncTransaction>());
 
             var rxSession = new InternalRxSession(session.Object, Mock.Of<IRxRetryLogic>());

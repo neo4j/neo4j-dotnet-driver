@@ -265,7 +265,7 @@ public class ConfigTests
             config
                 .Which
                 .DisabledCategories.Should()
-                .BeEquivalentTo([category]);
+                .BeEquivalentTo(category);
 
             config
                 .Which
@@ -298,7 +298,7 @@ public class ConfigTests
             config
                 .Which
                 .DisabledCategories.Should()
-                .BeEquivalentTo([outCat]);
+                .BeEquivalentTo(outCat);
 
             config
                 .Which
@@ -320,7 +320,7 @@ public class ConfigTests
             config
                 .Which
                 .DisabledCategories.Should()
-                .BeEquivalentTo([Category.Deprecation, Category.Hint]);
+                .BeEquivalentTo(Category.Deprecation, Category.Hint);
 
             config
                 .Which
@@ -344,7 +344,7 @@ public class ConfigTests
             config
                 .Which
                 .DisabledCategories.Should()
-                .BeEquivalentTo([Category.Deprecation, Category.Hint]);
+                .BeEquivalentTo(Category.Deprecation, Category.Hint);
 
             config
                 .Which
@@ -379,7 +379,7 @@ public class ConfigTests
         {
             var configBuilder = new ConfigBuilder(new Config());
 
-            configBuilder.WithNotifications(Severity.Warning, disabledClassifications: Array.Empty<Classification>());
+            configBuilder.WithNotifications(Severity.Warning, disabledClassifications: []);
 
             var config = configBuilder.Build()
                 .NotificationsConfig.Should()
@@ -402,7 +402,7 @@ public class ConfigTests
             var configBuilder = new ConfigBuilder(new Config());
 
             // this line would fail to compile before the fix
-            configBuilder.WithNotifications(Severity.Warning, null);
+            configBuilder.WithNotifications(Severity.Warning);
 
             var config = configBuilder.Build()
                 .NotificationsConfig.Should()
@@ -437,7 +437,7 @@ public class ConfigTests
             config
                 .Which
                 .DisabledCategories.Should()
-                .BeEquivalentTo([Category.Deprecation, Category.Hint, Category.Topology]);
+                .BeEquivalentTo(Category.Deprecation, Category.Hint, Category.Topology);
 
             config
                 .Which
@@ -451,7 +451,7 @@ public class ConfigTests
             var configBuilder = new ConfigBuilder(new Config());
 
             // this line would fail to compile before the fix
-            configBuilder.WithNotifications(Severity.Warning, null);
+            configBuilder.WithNotifications(Severity.Warning);
 
             var config = configBuilder.Build()
                 .NotificationsConfig.Should()

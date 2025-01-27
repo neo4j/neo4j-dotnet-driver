@@ -18,25 +18,25 @@ using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.OpenSsl;
-using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Pkcs;
+using Org.BouncyCastle.Security;
 using X509Certificate = Org.BouncyCastle.X509.X509Certificate;
 
 namespace Neo4j.Driver.Tests.TestBackend.Protocol.Auth;
 
 internal class ClientCertificate : ProtocolObject
 {
-    public ClientCertificateType data { get; set; } = new();
+    private readonly Lazy<X509Certificate2> _certificate;
 
-    private Lazy<X509Certificate2> _certificate;
-    public X509Certificate2 Certificate => _certificate.Value;
-
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public ClientCertificate()
     {
         _certificate = new Lazy<X509Certificate2>(
             () => ClientCertificateLoader.GetCertificate(data.certfile, data.keyfile, data.password));
     }
+
+    public ClientCertificateType data { get; set; } = new();
+    public X509Certificate2 Certificate => _certificate.Value;
 
     public class ClientCertificateType
     {
@@ -79,6 +79,9 @@ internal static class ClientCertificateLoader
             _password = password;
         }
 
-        public char[] GetPassword() => _password.ToCharArray();
+        public char[] GetPassword()
+        {
+            return _password.ToCharArray();
+        }
     }
 }

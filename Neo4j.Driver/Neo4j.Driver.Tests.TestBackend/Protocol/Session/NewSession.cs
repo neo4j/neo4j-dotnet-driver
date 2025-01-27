@@ -35,11 +35,16 @@ internal class NewSession : ProtocolObject
         RetryAbleNegative
     }
 
-    [JsonIgnore] public SessionState RetryState { get; private set; } = SessionState.RetryAbleNothing;
-    [JsonIgnore] public string RetryableErrorId { get; private set; }
+    [JsonIgnore]
+    public SessionState RetryState { get; private set; } = SessionState.RetryAbleNothing;
+
+    [JsonIgnore]
+    public string RetryableErrorId { get; private set; }
 
     public NewSessionType data { get; set; } = new();
-    [JsonIgnore] public IAsyncSession Session { get; set; }
+
+    [JsonIgnore]
+    public IAsyncSession Session { get; set; }
 
     [JsonIgnore]
     public AccessMode GetAccessMode
@@ -55,7 +60,8 @@ internal class NewSession : ProtocolObject
         }
     }
 
-    [JsonIgnore] public List<string> SessionTransactions { get; } = new();
+    [JsonIgnore]
+    public List<string> SessionTransactions { get; } = new();
 
     private void SessionConfig(SessionConfigBuilder configBuilder)
     {

@@ -17,22 +17,19 @@ using System;
 
 namespace Neo4j.Driver.Mapping;
 
-/// <summary>
-/// Contains extensions for mapping records to objects using delegates.
-/// </summary>
+/// <summary>Contains extensions for mapping records to objects using delegates.</summary>
 public static class DelegateMappingRecordExtensions
 {
-    /// <summary>
-    /// Converts the record to an object using the given delegate.
-    /// </summary>
+    /// <summary>Converts the record to an object using the given delegate.</summary>
     /// <param name="record">The record to convert.</param>
-    /// <param name="map">A delegate that defines the mapping from the record to the result object. The names
-    /// of the parameters accepted by the delegate will be used to lookup values in the record, those values
-    /// will be converted to the types of the parameters, and then the delegate will be invoked to create the result
-    /// object.</param>
+    /// <param name="map">
+    /// A delegate that defines the mapping from the record to the result object. The names of the parameters
+    /// accepted by the delegate will be used to lookup values in the record, those values will be converted to the types of
+    /// the parameters, and then the delegate will be invoked to create the result object.
+    /// </param>
     /// <example>
-    /// Given a record with key <c>a</c>, the following code will map the record to an object with property
-    /// <c>a</c> of type int:
+    /// Given a record with key <c>a</c>, the following code will map the record to an object with property <c>a</c> of type
+    /// int:
     /// <code language="c#">
     /// var record = ...; // obtain a record somehow
     /// var result = record.AsObject((int a) => new { a });
@@ -46,14 +43,13 @@ public static class DelegateMappingRecordExtensions
         return DelegateMapper.MapWithMethodInfo<TResult>(record, map.Method, map.Target);
     }
 
-    /// <summary>
-    /// Converts the record to an object using the given delegate.
-    /// </summary>
+    /// <summary>Converts the record to an object using the given delegate.</summary>
     /// <param name="record">The record to convert.</param>
-    /// <param name="map">A delegate that defines the mapping from the record to the result object. The names
-    /// of the parameters accepted by the delegate will be used to lookup values in the record, those values
-    /// will be converted to the types of the parameters, and then the delegate will be invoked to create the result
-    /// object.</param>
+    /// <param name="map">
+    /// A delegate that defines the mapping from the record to the result object. The names of the parameters
+    /// accepted by the delegate will be used to lookup values in the record, those values will be converted to the types of
+    /// the parameters, and then the delegate will be invoked to create the result object.
+    /// </param>
     /// <example>
     /// Given a record with keys <c>a</c> and <c>b</c>, the following code will map the record to an object with properties
     /// <c>a</c> of type int and <c>b</c> of type string:
@@ -73,17 +69,16 @@ public static class DelegateMappingRecordExtensions
         return DelegateMapper.MapWithMethodInfo<TResult>(record, map.Method, map.Target);
     }
 
-    /// <summary>
-    /// Converts the record to an object using the given delegate.
-    /// </summary>
+    /// <summary>Converts the record to an object using the given delegate.</summary>
     /// <param name="record">The record to convert.</param>
-    /// <param name="map">A delegate that defines the mapping from the record to the result object. The names
-    /// of the parameters accepted by the delegate will be used to lookup values in the record, those values
-    /// will be converted to the types of the parameters, and then the delegate will be invoked to create the result
-    /// object.</param>
+    /// <param name="map">
+    /// A delegate that defines the mapping from the record to the result object. The names of the parameters
+    /// accepted by the delegate will be used to lookup values in the record, those values will be converted to the types of
+    /// the parameters, and then the delegate will be invoked to create the result object.
+    /// </param>
     /// <example>
-    /// Given a record with keys <c>a</c>, <c>b</c> and <c>c</c>, the following code will map the record to an object with properties
-    /// <c>a</c> of type int, <c>b</c> of type string and <c>c</c> of type bool:
+    /// Given a record with keys <c>a</c>, <c>b</c> and <c>c</c>, the following code will map the record to an object with
+    /// properties <c>a</c> of type int, <c>b</c> of type string and <c>c</c> of type bool:
     /// <code language="c#">
     /// var record = ...; // obtain a record somehow
     /// var result = record.AsObject((int a, string b, bool c) => new { a, b, c });
@@ -99,17 +94,16 @@ public static class DelegateMappingRecordExtensions
         return DelegateMapper.MapWithMethodInfo<TResult>(record, map.Method, map.Target);
     }
 
-    /// <summary>
-    /// Converts the record to an object using the given delegate.
-    /// </summary>
+    /// <summary>Converts the record to an object using the given delegate.</summary>
     /// <param name="record">The record to convert.</param>
-    /// <param name="map">A delegate that defines the mapping from the record to the result object. The names
-    /// of the parameters accepted by the delegate will be used to lookup values in the record, those values
-    /// will be converted to the types of the parameters, and then the delegate will be invoked to create the result
-    /// object.</param>
+    /// <param name="map">
+    /// A delegate that defines the mapping from the record to the result object. The names of the parameters
+    /// accepted by the delegate will be used to lookup values in the record, those values will be converted to the types of
+    /// the parameters, and then the delegate will be invoked to create the result object.
+    /// </param>
     /// <example>
-    /// Given a record with keys <c>a</c>, <c>b</c>, <c>c</c> and <c>d</c>, the following code will map the record to an object with properties
-    /// <c>a</c> of type int, <c>b</c> of type string, <c>c</c> of type bool and <c>d</c> of type double:
+    /// Given a record with keys <c>a</c>, <c>b</c>, <c>c</c> and <c>d</c>, the following code will map the record to an object
+    /// with properties <c>a</c> of type int, <c>b</c> of type string, <c>c</c> of type bool and <c>d</c> of type double:
     /// <code language="c#">
     /// var record = ...; // obtain a record somehow
     /// var result = record.AsObject((int a, string b, bool c, double d) => new { a, b, c, d });
@@ -128,17 +122,17 @@ public static class DelegateMappingRecordExtensions
         return DelegateMapper.MapWithMethodInfo<TResult>(record, map.Method, map.Target);
     }
 
-    /// <summary>
-    /// Converts the record to an object using the given delegate.
-    /// </summary>
+    /// <summary>Converts the record to an object using the given delegate.</summary>
     /// <param name="record">The record to convert.</param>
-    /// <param name="map">A delegate that defines the mapping from the record to the result object. The names
-    /// of the parameters accepted by the delegate will be used to lookup values in the record, those values
-    /// will be converted to the types of the parameters, and then the delegate will be invoked to create the result
-    /// object.</param>
+    /// <param name="map">
+    /// A delegate that defines the mapping from the record to the result object. The names of the parameters
+    /// accepted by the delegate will be used to lookup values in the record, those values will be converted to the types of
+    /// the parameters, and then the delegate will be invoked to create the result object.
+    /// </param>
     /// <example>
-    /// Given a record with keys <c>a</c>, <c>b</c>, <c>c</c>, <c>d</c> and <c>e</c>, the following code will map the record to an object with properties
-    /// <c>a</c> of type int, <c>b</c> of type string, <c>c</c> of type bool, <c>d</c> of type double and <c>e</c> of type long:
+    /// Given a record with keys <c>a</c>, <c>b</c>, <c>c</c>, <c>d</c> and <c>e</c>, the following code will map the record to
+    /// an object with properties <c>a</c> of type int, <c>b</c> of type string, <c>c</c> of type bool, <c>d</c> of type double
+    /// and <c>e</c> of type long:
     /// <code language="c#">
     /// var record = ...; // obtain a record somehow
     /// var result = record.AsObject((int a, string b, bool c, double d, long e) => new { a, b, c, d, e });
@@ -158,17 +152,17 @@ public static class DelegateMappingRecordExtensions
         return DelegateMapper.MapWithMethodInfo<TResult>(record, map.Method, map.Target);
     }
 
-    /// <summary>
-    /// Converts the record to an object using the given delegate.
-    /// </summary>
+    /// <summary>Converts the record to an object using the given delegate.</summary>
     /// <param name="record">The record to convert.</param>
-    /// <param name="map">A delegate that defines the mapping from the record to the result object. The names
-    /// of the parameters accepted by the delegate will be used to lookup values in the record, those values
-    /// will be converted to the types of the parameters, and then the delegate will be invoked to create the result
-    /// object.</param>
+    /// <param name="map">
+    /// A delegate that defines the mapping from the record to the result object. The names of the parameters
+    /// accepted by the delegate will be used to lookup values in the record, those values will be converted to the types of
+    /// the parameters, and then the delegate will be invoked to create the result object.
+    /// </param>
     /// <example>
-    /// Given a record with keys <c>a</c>, <c>b</c>, <c>c</c>, <c>d</c>, <c>e</c> and <c>f</c>, the following code will map the record to an object with properties
-    /// <c>a</c> of type int, <c>b</c> of type string, <c>c</c> of type bool, <c>d</c> of type double, <c>e</c> of type long and <c>f</c> of type float:
+    /// Given a record with keys <c>a</c>, <c>b</c>, <c>c</c>, <c>d</c>, <c>e</c> and <c>f</c>, the following code will map the
+    /// record to an object with properties <c>a</c> of type int, <c>b</c> of type string, <c>c</c> of type bool, <c>d</c> of
+    /// type double, <c>e</c> of type long and <c>f</c> of type float:
     /// <code language="c#">
     /// var record = ...; // obtain a record somehow
     /// var result = record.AsObject((int a, string b, bool c, double d, long e, float f) => new { a, b, c, d, e, f });
@@ -189,17 +183,17 @@ public static class DelegateMappingRecordExtensions
         return DelegateMapper.MapWithMethodInfo<TResult>(record, map.Method, map.Target);
     }
 
-    /// <summary>
-    /// Converts the record to an object using the given delegate.
-    /// </summary>
+    /// <summary>Converts the record to an object using the given delegate.</summary>
     /// <param name="record">The record to convert.</param>
-    /// <param name="map">A delegate that defines the mapping from the record to the result object. The names
-    /// of the parameters accepted by the delegate will be used to lookup values in the record, those values
-    /// will be converted to the types of the parameters, and then the delegate will be invoked to create the result
-    /// object.</param>
+    /// <param name="map">
+    /// A delegate that defines the mapping from the record to the result object. The names of the parameters
+    /// accepted by the delegate will be used to lookup values in the record, those values will be converted to the types of
+    /// the parameters, and then the delegate will be invoked to create the result object.
+    /// </param>
     /// <example>
-    /// Given a record with keys <c>a</c>, <c>b</c>, <c>c</c>, <c>d</c>, <c>e</c>, <c>f</c> and <c>g</c>, the following code will map the record to an object with properties
-    /// <c>a</c> of type int, <c>b</c> of type string, <c>c</c> of type bool, <c>d</c> of type double, <c>e</c> of type long, <c>f</c> of type float and <c>g</c> of type decimal:
+    /// Given a record with keys <c>a</c>, <c>b</c>, <c>c</c>, <c>d</c>, <c>e</c>, <c>f</c> and <c>g</c>, the following code
+    /// will map the record to an object with properties <c>a</c> of type int, <c>b</c> of type string, <c>c</c> of type bool,
+    /// <c>d</c> of type double, <c>e</c> of type long, <c>f</c> of type float and <c>g</c> of type decimal:
     /// <code language="c#">
     /// var record = ...; // obtain a record somehow
     /// var result = record.AsObject(
@@ -223,17 +217,18 @@ public static class DelegateMappingRecordExtensions
         return DelegateMapper.MapWithMethodInfo<TResult>(record, map.Method, map.Target);
     }
 
-    /// <summary>
-    /// Converts the record to an object using the given delegate.
-    /// </summary>
+    /// <summary>Converts the record to an object using the given delegate.</summary>
     /// <param name="record">The record to convert.</param>
-    /// <param name="map">A delegate that defines the mapping from the record to the result object. The names
-    /// of the parameters accepted by the delegate will be used to lookup values in the record, those values
-    /// will be converted to the types of the parameters, and then the delegate will be invoked to create the result
-    /// object.</param>
+    /// <param name="map">
+    /// A delegate that defines the mapping from the record to the result object. The names of the parameters
+    /// accepted by the delegate will be used to lookup values in the record, those values will be converted to the types of
+    /// the parameters, and then the delegate will be invoked to create the result object.
+    /// </param>
     /// <example>
-    /// Given a record with keys <c>a</c>, <c>b</c>, <c>c</c>, <c>d</c>, <c>e</c>, <c>f</c>, <c>g</c> and <c>h</c>, the following code will map the record to an object with properties
-    /// <c>a</c> of type int, <c>b</c> of type string, <c>c</c> of type bool, <c>d</c> of type double, <c>e</c> of type long, <c>f</c> of type float, <c>g</c> of type decimal and <c>h</c> of type byte:
+    /// Given a record with keys <c>a</c>, <c>b</c>, <c>c</c>, <c>d</c>, <c>e</c>, <c>f</c>, <c>g</c> and <c>h</c>, the
+    /// following code will map the record to an object with properties <c>a</c> of type int, <c>b</c> of type string, <c>c</c>
+    /// of type bool, <c>d</c> of type double, <c>e</c> of type long, <c>f</c> of type float, <c>g</c> of type decimal and
+    /// <c>h</c> of type byte:
     /// <code language="c#">
     /// var record = ...; // obtain a record somehow
     /// var result = record.AsObject(
@@ -258,17 +253,18 @@ public static class DelegateMappingRecordExtensions
         return DelegateMapper.MapWithMethodInfo<TResult>(record, map.Method, map.Target);
     }
 
-    /// <summary>
-    /// Converts the record to an object using the given delegate.
-    /// </summary>
+    /// <summary>Converts the record to an object using the given delegate.</summary>
     /// <param name="record">The record to convert.</param>
-    /// <param name="map">A delegate that defines the mapping from the record to the result object. The names
-    /// of the parameters accepted by the delegate will be used to lookup values in the record, those values
-    /// will be converted to the types of the parameters, and then the delegate will be invoked to create the result
-    /// object.</param>
+    /// <param name="map">
+    /// A delegate that defines the mapping from the record to the result object. The names of the parameters
+    /// accepted by the delegate will be used to lookup values in the record, those values will be converted to the types of
+    /// the parameters, and then the delegate will be invoked to create the result object.
+    /// </param>
     /// <example>
-    /// Given a record with keys <c>a</c>, <c>b</c>, <c>c</c>, <c>d</c>, <c>e</c>, <c>f</c>, <c>g</c>, <c>h</c> and <c>i</c>, the following code will map the record to an object with properties
-    /// <c>a</c> of type int, <c>b</c> of type string, <c>c</c> of type bool, <c>d</c> of type double, <c>e</c> of type long, <c>f</c> of type float, <c>g</c> of type decimal, <c>h</c> of type byte and <c>i</c> of type short:
+    /// Given a record with keys <c>a</c>, <c>b</c>, <c>c</c>, <c>d</c>, <c>e</c>, <c>f</c>, <c>g</c>, <c>h</c> and <c>i</c>,
+    /// the following code will map the record to an object with properties <c>a</c> of type int, <c>b</c> of type string,
+    /// <c>c</c> of type bool, <c>d</c> of type double, <c>e</c> of type long, <c>f</c> of type float, <c>g</c> of type
+    /// decimal, <c>h</c> of type byte and <c>i</c> of type short:
     /// <code language="c#">
     /// var record = ...; // obtain a record somehow
     /// var result = record.AsObject(
@@ -294,17 +290,18 @@ public static class DelegateMappingRecordExtensions
         return DelegateMapper.MapWithMethodInfo<TResult>(record, map.Method, map.Target);
     }
 
-    /// <summary>
-    /// Converts the record to an object using the given delegate.
-    /// </summary>
+    /// <summary>Converts the record to an object using the given delegate.</summary>
     /// <param name="record">The record to convert.</param>
-    /// <param name="map">A delegate that defines the mapping from the record to the result object. The names
-    /// of the parameters accepted by the delegate will be used to lookup values in the record, those values
-    /// will be converted to the types of the parameters, and then the delegate will be invoked to create the result
-    /// object.</param>
+    /// <param name="map">
+    /// A delegate that defines the mapping from the record to the result object. The names of the parameters
+    /// accepted by the delegate will be used to lookup values in the record, those values will be converted to the types of
+    /// the parameters, and then the delegate will be invoked to create the result object.
+    /// </param>
     /// <example>
-    /// Given a record with keys <c>a</c>, <c>b</c>, <c>c</c>, <c>d</c>, <c>e</c>, <c>f</c>, <c>g</c>, <c>h</c>, <c>i</c> and <c>j</c>, the following code will map the record to an object with properties
-    /// <c>a</c> of type int, <c>b</c> of type string, <c>c</c> of type bool, <c>d</c> of type double, <c>e</c> of type long, <c>f</c> of type float, <c>g</c> of type decimal, <c>h</c> of type byte, <c>i</c> of type short and <c>j</c> of type ushort:
+    /// Given a record with keys <c>a</c>, <c>b</c>, <c>c</c>, <c>d</c>, <c>e</c>, <c>f</c>, <c>g</c>, <c>h</c>, <c>i</c> and
+    /// <c>j</c>, the following code will map the record to an object with properties <c>a</c> of type int, <c>b</c> of type
+    /// string, <c>c</c> of type bool, <c>d</c> of type double, <c>e</c> of type long, <c>f</c> of type float, <c>g</c> of type
+    /// decimal, <c>h</c> of type byte, <c>i</c> of type short and <c>j</c> of type ushort:
     /// <code language="c#">
     /// var record = ...; // obtain a record somehow
     /// var result = record.AsObject(

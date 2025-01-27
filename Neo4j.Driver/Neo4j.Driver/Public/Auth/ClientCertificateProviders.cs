@@ -18,14 +18,10 @@ using Neo4j.Driver.Internal.Auth;
 
 namespace Neo4j.Driver;
 
-/// <summary>
-/// This class provides static methods to create basic client certificate providers.
-/// </summary>
+/// <summary>This class provides static methods to create basic client certificate providers.</summary>
 public static class ClientCertificateProviders
 {
-    /// <summary>
-    /// Creates a new static client certificate provider with the given certificate.
-    /// </summary>
+    /// <summary>Creates a new static client certificate provider with the given certificate.</summary>
     /// <param name="certificate">The certificate.</param>
     /// <returns>The new static client certificate provider.</returns>
     public static IClientCertificateProvider Static(X509Certificate certificate)
@@ -33,9 +29,7 @@ public static class ClientCertificateProviders
         return new StaticClientCertificateProvider(certificate);
     }
 
-    /// <summary>
-    /// Creates a new rotating client certificate provider with the given certificate as the initial certificate.
-    /// </summary>
+    /// <summary>Creates a new rotating client certificate provider with the given certificate as the initial certificate.</summary>
     /// <param name="certificate">The initial certificate.</param>
     /// <returns>The new rotating client certificate provider.</returns>
     public static IRotatingClientCertificateProvider Rotating(X509Certificate certificate)

@@ -164,14 +164,16 @@ public sealed class CertificateTrustIT : IClassFixture<CertificateTrustIT.Certif
 
     private IDriver SetupWithCustomResolver(Uri overridenUri, Config config)
     {
-        var resolver = new CustomHostResolver(Server.BoltUri,
+        var resolver = new CustomHostResolver(
+            Server.BoltUri,
             new SystemNetCoreHostResolver(new SystemHostResolver()));
+
         var driverContext = new DriverContext(
             overridenUri,
             AuthTokenManagers.Static(Server.AuthToken),
             config,
             resolver);
-        
+
         var connectionFactory = new PooledConnectionFactory(driverContext);
 
         return GraphDatabase.CreateDriver(connectionFactory, driverContext);

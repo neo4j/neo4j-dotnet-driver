@@ -82,9 +82,9 @@ internal class FakeTimeUninstall : ProtocolObject
 internal class FakeTime : IDateTimeProvider
 {
     public static readonly FakeTime Instance = new();
+    private readonly List<FakeTimer> _timers = new();
 
     private DateTime? _frozenTime;
-    private readonly List<FakeTimer> _timers = new();
 
     public DateTime Now()
     {
@@ -121,21 +121,19 @@ internal class FakeTime : IDateTimeProvider
 
 internal class FakeTimer : ITimer
 {
-    private long _advanced;
-    
-    public void Advance(int milliseconds)
-    {
-        _advanced += milliseconds;
-    }
+    public long ElapsedMilliseconds { get; private set; }
 
-    public long ElapsedMilliseconds => _advanced;
-    
     public void Reset()
     {
-        _advanced = 0;
+        ElapsedMilliseconds = 0;
     }
 
     public void Start()
     {
+    }
+
+    public void Advance(int milliseconds)
+    {
+        ElapsedMilliseconds += milliseconds;
     }
 }

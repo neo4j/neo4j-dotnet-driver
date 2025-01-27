@@ -56,7 +56,11 @@ internal sealed class LocalDateSerializer : IPackStreamSerializer
         WriteLocalDate(writer, value);
     }
 
-    public (object, int) DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    public (object, int) DeserializeSpan(
+        BoltProtocolVersion version,
+        SpanPackStreamReader reader,
+        byte signature,
+        int size)
     {
         PackStream.EnsureStructSize("Date", StructSize, size);
 

@@ -118,7 +118,12 @@ public class BoltProtocolV3Tests
         public async Task ShouldThrowProtocolExceptionIfNullConnection()
         {
             var ex = await Record.ExceptionAsync(
-                () => BoltProtocolV3.Instance.GetRoutingTableAsync(null, "db", null, null));
+                () => BoltProtocolV3.Instance.GetRoutingTableAsync(
+                    null,
+                    "db",
+                    null,
+                    null,
+                    new Dictionary<IAuthToken, string>()));
 
             ex.Should().BeOfType<ProtocolException>();
         }
@@ -135,7 +140,8 @@ public class BoltProtocolV3Tests
                     mockConn.Object,
                     "db",
                     new SessionConfig("Douglas Fir"),
-                    null));
+                    null,
+                    new Dictionary<IAuthToken, string>()));
 
             ex.Should().BeOfType<ArgumentException>();
         }
@@ -203,7 +209,8 @@ public class BoltProtocolV3Tests
                 mockConn.Object,
                 "test",
                 null,
-                bm);
+                bm,
+                new Dictionary<IAuthToken, string>());
 
             routingTable.Should().Contain(new KeyValuePair<string, object>("db", "test"));
 
@@ -255,7 +262,11 @@ public class BoltProtocolV3Tests
             };
 
             var exception = await Record.ExceptionAsync(
-                () => BoltProtocolV3.Instance.RunInAutoCommitTransactionAsync(mockConn.Object, acp, null));
+                () => BoltProtocolV3.Instance.RunInAutoCommitTransactionAsync(
+                    mockConn.Object,
+                    acp,
+                    null,
+                    new Dictionary<IAuthToken, string>()));
 
             exception.Should().BeOfType<ArgumentException>();
         }
@@ -279,7 +290,8 @@ public class BoltProtocolV3Tests
                 () => BoltProtocolV3.Instance.RunInAutoCommitTransactionAsync(
                     mockConn.Object,
                     acp,
-                    new NotificationsDisabledConfig()));
+                    new NotificationsDisabledConfig(),
+                    new Dictionary<IAuthToken, string>()));
 
             exception.Should().BeOfType<ArgumentOutOfRangeException>();
         }
@@ -302,7 +314,8 @@ public class BoltProtocolV3Tests
                 () => BoltProtocolV3.Instance.RunInAutoCommitTransactionAsync(
                     mockConn.Object,
                     acp,
-                    new NotificationsDisabledConfig()));
+                    new NotificationsDisabledConfig(),
+                    new Dictionary<IAuthToken, string>()));
 
             exception.Should().BeNull();
         }
@@ -319,7 +332,11 @@ public class BoltProtocolV3Tests
             };
 
             var exception = await Record.ExceptionAsync(
-                () => BoltProtocolV3.Instance.RunInAutoCommitTransactionAsync(mockConn.Object, acp, null));
+                () => BoltProtocolV3.Instance.RunInAutoCommitTransactionAsync(
+                    mockConn.Object,
+                    acp,
+                    null,
+                    new Dictionary<IAuthToken, string>()));
 
             exception.Should().BeOfType<ClientException>();
         }
@@ -379,7 +396,11 @@ public class BoltProtocolV3Tests
                 .Returns(resultCursorBuilderMock.Object);
 
             var protocol = new BoltProtocolV3(msgFactory.Object, handlerFactory.Object);
-            await protocol.RunInAutoCommitTransactionAsync(mockConn.Object, acp, null);
+            await protocol.RunInAutoCommitTransactionAsync(
+                mockConn.Object,
+                acp,
+                null,
+                new Dictionary<IAuthToken, string>());
 
             handlerFactory.Verify(
                 x => x.NewResultCursorBuilder(
@@ -426,8 +447,8 @@ public class BoltProtocolV3Tests
                         null,
                         null,
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
-                    TODO,
-                    TODO));
+                    AuthTokens.None,
+                    new Dictionary<IAuthToken, string>()));
 
             exception.Should().BeOfType<ArgumentException>();
         }
@@ -452,8 +473,8 @@ public class BoltProtocolV3Tests
                         null,
                         new NotificationsDisabledConfig(),
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
-                    TODO,
-                    TODO));
+                    AuthTokens.None,
+                    new Dictionary<IAuthToken, string>()));
 
             exception.Should().BeOfType<ArgumentOutOfRangeException>();
         }
@@ -477,8 +498,8 @@ public class BoltProtocolV3Tests
                         null,
                         new NotificationsDisabledConfig(),
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
-                    TODO,
-                    TODO));
+                    AuthTokens.None,
+                    new Dictionary<IAuthToken, string>()));
 
             exception.Should().BeNull();
         }
@@ -499,8 +520,8 @@ public class BoltProtocolV3Tests
                         null,
                         null,
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
-                    TODO,
-                    TODO));
+                    AuthTokens.None,
+                    new Dictionary<IAuthToken, string>()));
 
             exception.Should().BeOfType<ClientException>();
         }
@@ -522,8 +543,8 @@ public class BoltProtocolV3Tests
                         null,
                         null,
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
-                    TODO,
-                    TODO));
+                    AuthTokens.None,
+                    new Dictionary<IAuthToken, string>()));
 
             exception.Should().BeOfType<InvalidOperationException>();
         }
@@ -560,8 +581,8 @@ public class BoltProtocolV3Tests
                     null,
                     null,
                     new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
-                TODO,
-                TODO);
+                AuthTokens.None,
+                new Dictionary<IAuthToken, string>());
 
             msgFactory.Verify(
                 x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
@@ -607,8 +628,8 @@ public class BoltProtocolV3Tests
                     null,
                     null,
                     new TransactionInfo(QueryApiType.UnmanagedTransaction, false, false)),
-                TODO,
-                TODO);
+                AuthTokens.None,
+                new Dictionary<IAuthToken, string>());
 
             msgFactory.Verify(
                 x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
@@ -670,7 +691,14 @@ public class BoltProtocolV3Tests
 
             var protocol = new BoltProtocolV3(msgFactory.Object, handlerFactory.Object);
             var mockTransaction = new Mock<IInternalAsyncTransaction>();
-            await protocol.RunInExplicitTransactionAsync(mockConn.Object, query, false, 0L, mockTransaction.Object);
+            await protocol.RunInExplicitTransactionAsync(
+                mockConn.Object,
+                query,
+                false,
+                0L,
+                mockTransaction.Object,
+                AuthTokens.None,
+                new Dictionary<IAuthToken, string>());
 
             handlerFactory.Verify(
                 x => x.NewResultCursorBuilder(

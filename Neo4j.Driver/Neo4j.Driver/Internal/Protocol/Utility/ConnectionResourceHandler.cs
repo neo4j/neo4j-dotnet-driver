@@ -20,12 +20,12 @@ namespace Neo4j.Driver.Internal.Protocol.Utility;
 
 internal sealed class ConnectionResourceHandler : IResultResourceHandler
 {
+    private readonly IConnection _connection;
+
     public ConnectionResourceHandler(IConnection conn)
     {
         _connection = conn;
     }
-
-    private IConnection _connection;
 
     public Task OnResultConsumedAsync()
     {

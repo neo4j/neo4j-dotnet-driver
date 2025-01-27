@@ -30,7 +30,19 @@ internal sealed record GqlStatusObject(
     bool IsNotification)
     : IGqlStatusObject
 {
-    private GqlStatusObject(string gqlStatus, string description): this(
+    internal static readonly IGqlStatusObject OmittedResult = new GqlStatusObject(
+        "00001",
+        "note: successful completion - omitted result");
+
+    internal static IGqlStatusObject Success = new GqlStatusObject(
+        "00000",
+        "note: successful completion");
+
+    internal static readonly IGqlStatusObject NoData = new GqlStatusObject(
+        "02000",
+        "note: no data");
+
+    private GqlStatusObject(string gqlStatus, string description) : this(
         gqlStatus,
         description,
         null,
@@ -55,6 +67,13 @@ internal sealed record GqlStatusObject(
 
     public NotificationClassification Classification => ClassificationFrom(RawClassification);
 
+    public NotificationSeverity Severity => Notification.ParseSeverity(RawSeverity);
+
+    public IReadOnlyDictionary<string, object> DiagnosticRecord { get; } =
+        DiagnosticRecord ?? throw new ArgumentNullException(nameof(DiagnosticRecord));
+
+    public string RawDiagnosticRecord => DiagnosticRecord.ToContentString();
+
     private NotificationClassification ClassificationFrom(string rawClassification)
     {
         return rawClassification?.ToLowerInvariant() switch
@@ -71,25 +90,4 @@ internal sealed record GqlStatusObject(
             _ => NotificationClassification.Unknown
         };
     }
-
-    public NotificationSeverity Severity => Notification.ParseSeverity(RawSeverity);
-
-    public IReadOnlyDictionary<string, object> DiagnosticRecord { get; } =
-        DiagnosticRecord ?? throw new ArgumentNullException(nameof(DiagnosticRecord));
-
-    public string RawDiagnosticRecord => DiagnosticRecord.ToContentString();
-
-    internal static readonly IGqlStatusObject OmittedResult = new GqlStatusObject(
-        "00001",
-        "note: successful completion - omitted result");
-
-    internal static IGqlStatusObject Success = new GqlStatusObject(
-        "00000",
-        "note: successful completion");
-
-
-    internal static readonly IGqlStatusObject NoData = new GqlStatusObject(
-        "02000",
-        "note: no data"
-     );
 }

@@ -17,34 +17,24 @@ using System.Collections.Generic;
 
 namespace Neo4j.Driver.Preview.GqlErrors;
 
-/// <summary>
-/// Allows users to preview the GQL error functionality. This is a preview feature and may change in the future.
-/// </summary>
+/// <summary>Allows users to preview the GQL error functionality. This is a preview feature and may change in the future.</summary>
 public interface IGqlErrorPreview
 {
-    /// <summary>
-    /// Gets or sets the GQL status of the exception.
-    /// </summary>
+    /// <summary>Gets or sets the GQL status of the exception.</summary>
     public string GqlStatus { get; }
 
-    /// <summary>
-    /// Gets or sets the GQL status description of the exception.
-    /// </summary>
+    /// <summary>Gets or sets the GQL status description of the exception.</summary>
     public string GqlStatusDescription { get; }
 
-    /// <summary>
-    /// Gets or sets the GQL classification of the exception.
-    /// </summary>
+    /// <summary>Gets or sets the GQL classification of the exception.</summary>
     public string GqlClassification { get; }
 
-    /// <summary>
-    /// The raw classification as received from the server.
-    /// </summary>
+    /// <summary>The raw classification as received from the server.</summary>
     public string GqlRawClassification { get; }
 
     /// <summary>
-    /// GqlDiagnosticRecord returns further information about the status for diagnostic purposes.
-    /// GqlDiagnosticRecord is part of the GQL compliant errors preview feature.
+    /// GqlDiagnosticRecord returns further information about the status for diagnostic purposes. GqlDiagnosticRecord
+    /// is part of the GQL compliant errors preview feature.
     /// </summary>
     public Dictionary<string, object> GqlDiagnosticRecord { get; }
 }

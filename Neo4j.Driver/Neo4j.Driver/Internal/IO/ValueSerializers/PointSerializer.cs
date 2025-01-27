@@ -93,7 +93,11 @@ internal sealed class PointSerializer : IPackStreamSerializer
         }
     }
 
-    public (object, int) DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    public (object, int) DeserializeSpan(
+        BoltProtocolVersion version,
+        SpanPackStreamReader reader,
+        byte signature,
+        int size)
     {
         switch (signature)
         {

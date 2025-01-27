@@ -18,16 +18,14 @@ using System.Security.Cryptography.X509Certificates;
 namespace Neo4j.Driver;
 
 /// <summary>
-/// This interface allows for the implementation of a client certificate provider that can be updated with
-/// new certificates.
+/// This interface allows for the implementation of a client certificate provider that can be updated with new
+/// certificates.
 /// </summary>
 public interface IRotatingClientCertificateProvider : IClientCertificateProvider
 {
-    /// <summary>
-    /// Updates the certificate stored in the provider.
+    /// <summary>Updates the certificate stored in the provider.
     /// <para/>
-    /// To be called by user-code when a new client certificate is available. This method must be thread-safe.
-    /// </summary>
+    /// To be called by user-code when a new client certificate is available. This method must be thread-safe.</summary>
     /// <param name="certificate">The new certificate.</param>
     void UpdateCertificate(X509Certificate certificate);
 }

@@ -231,7 +231,9 @@ public class RequireServerFactAttribute : FactAttribute
         VersionComparison versionComparison)
     {
         if (versionComparison != VersionComparison.Between)
+        {
             throw new ArgumentException(nameof(versionComparison));
+        }
 
         _versionComparison = versionComparison;
         var skipText = new StringBuilder();

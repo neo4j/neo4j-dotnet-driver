@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using Neo4j.Driver.Internal.Auth;
 using Neo4j.Driver.Internal.Logging;
@@ -105,9 +106,9 @@ public sealed class ConfigBuilder
     /// Sets the maximum connection acquisition timeout for waiting for a connection to become available in idle
     /// connection pool when <see cref="Config.MaxConnectionPoolSize"/> is reached.
     /// <para/>
-    /// Note that if a client certificate is provided using <see cref="WithClientCertificateProvider"/>, the
-    /// the connection acquisition timeout will be running while the client certificate is being fetched, so
-    /// if the client certificate fetching is slow, it might be necessary to increase the timeout.
+    /// Note that if a client certificate is provided using <see cref="WithClientCertificateProvider"/>, the the connection
+    /// acquisition timeout will be running while the client certificate is being fetched, so if the client certificate
+    /// fetching is slow, it might be necessary to increase the timeout.
     /// </summary>
     /// <param name="timeSpan">The connection acquisition timeout.</param>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
@@ -415,14 +416,15 @@ public sealed class ConfigBuilder
     /// server.
     /// </param>
     /// <param name="disabledClassifications">
-    /// Optional parameter to override the classification of notifications emitted. <br/> By passing
-    /// an empty collection, all classifications are enabled.<br/> By leaving null, the value will inherit configuration from the
-    /// server.
+    /// Optional parameter to override the classification of notifications emitted. <br/>
+    /// By passing an empty collection, all classifications are enabled.<br/> By leaving null, the value will inherit
+    /// configuration from the server.
     /// </param>
     /// <exception cref="ArgumentException">Thrown when all parameters are null.</exception>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     /// <seealso cref="WithNotificationsDisabled"/>
-    /// <seealso cref="SessionConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/>"/>
+    /// <seealso cref="SessionConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/>
+    /// "/>
     /// <seealso cref="SessionConfigBuilder.WithNotificationsDisabled"/>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithNotifications(
@@ -450,19 +452,15 @@ public sealed class ConfigBuilder
     }
 
     /// <summary>
-    /// Disables the driver sending any telemetry data.<br/>
-    /// The telemetry collected covers high level usage of the driver and does not include any queries or
-    /// parameters.<br/>
-    /// Current collected metrics:
+    /// Disables the driver sending any telemetry data.<br/> The telemetry collected covers high level usage of the driver and
+    /// does not include any queries or parameters.<br/> Current collected metrics:
     /// <list type="bullet">
     ///     <item>Which method was used to start a transaction.</item>
     /// </list>
-    /// Telemetry metrics are sent via Bolt to the uri provided when creating a driver instance or servers that make up
-    /// the cluster members and Neo4j makes no attempt to collect these usage metrics from outside of AuraDB
-    /// (Neo4j's cloud offering).<br/>
-    /// Users can configure Neo4j server's collection behavior of client drivers telemetry data and log the
-    /// telemetry data for diagnostics purposes.<br/>
-    /// By default the driver allows the collection of this telemetry.
+    /// Telemetry metrics are sent via Bolt to the uri provided when creating a driver instance or servers that make up the
+    /// cluster members and Neo4j makes no attempt to collect these usage metrics from outside of AuraDB (Neo4j's cloud
+    /// offering).<br/> Users can configure Neo4j server's collection behavior of client drivers telemetry data and log the
+    /// telemetry data for diagnostics purposes.<br/> By default the driver allows the collection of this telemetry.
     /// </summary>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithTelemetryDisabled()
@@ -471,9 +469,7 @@ public sealed class ConfigBuilder
         return this;
     }
 
-    /// <summary>
-    /// Sets the <see cref="MessageReaderConfig"/> config to use in the driver.
-    /// </summary>
+    /// <summary>Sets the <see cref="MessageReaderConfig"/> config to use in the driver.</summary>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithMessageReaderConfig(MessageReaderConfig config)
     {
@@ -483,23 +479,21 @@ public sealed class ConfigBuilder
 
     /// <summary>
     /// Sets the connection liveness timeout. Pooled connections that have been idle in the pool for longer than this
-    /// timeout will be tested before they are used again, to ensure they are still live. If this option is set too low,
-    /// an additional network call will be incurred when acquiring a connection, which causes a performance hit.
+    /// timeout will be tested before they are used again, to ensure they are still live. If this option is set too low, an
+    /// additional network call will be incurred when acquiring a connection, which causes a performance hit.
     /// <para/>
-    /// If this is set high, you may receive sessions that are backed by no longer live connections, which will lead
-    /// to exceptions in your application. Assuming the database is running, these exceptions will go away if you
-    /// retry acquiring sessions.
+    /// If this is set high, you may receive sessions that are backed by no longer live connections, which will lead to
+    /// exceptions in your application. Assuming the database is running, these exceptions will go away if you retry acquiring
+    /// sessions.
     /// <para/>
     /// Hence, this parameter tunes a balance between the likelihood of your application seeing connection problems, and
     /// performance.
     /// <para/>
-    /// You normally should not need to tune this parameter. No connection liveness check is done by default.
-    /// Value 0 means connections will always be tested for validity. Values less than 0 are not allowed.
+    /// You normally should not need to tune this parameter. No connection liveness check is done by default. Value 0 means
+    /// connections will always be tested for validity. Values less than 0 are not allowed.
     /// </summary>
     /// <param name="timeout">The liveness timeout.</param>
-    /// <exception cref="ArgumentOutOfRangeException">
-    /// When <paramref name="timeout"/> is less than <see cref="TimeSpan.Zero"/>.
-    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">When <paramref name="timeout"/> is less than <see cref="TimeSpan.Zero"/>.</exception>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithConnectionLivenessCheckTimeout(TimeSpan timeout)
     {
@@ -535,19 +529,17 @@ public sealed class ConfigBuilder
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithTls13()
     {
-        _config.TlsVersion = System.Security.Authentication.SslProtocols.Tls13;
+        _config.TlsVersion = SslProtocols.Tls13;
         return this;
     }
 #endif
 
-    /// <summary>
-    /// Sets a custom <see cref="ITlsNegotiator"/> to use when establishing a TLS connection.
-    /// </summary>
+    /// <summary>Sets a custom <see cref="ITlsNegotiator"/> to use when establishing a TLS connection.</summary>
     /// <param name="tlsNegotiator">The <see cref="ITlsNegotiator"/> to use.</param>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     /// <warning>
-    /// This option may compromise your application’s security if used improperly.
-    /// Its usage is strongly discouraged and comes without any guarantees.
+    /// This option may compromise your application’s security if used improperly. Its usage is strongly discouraged
+    /// and comes without any guarantees.
     /// </warning>
     public ConfigBuilder WithTlsNegotiator(ITlsNegotiator tlsNegotiator)
     {
@@ -555,14 +547,12 @@ public sealed class ConfigBuilder
         return this;
     }
 
-    /// <summary>
-    /// Sets the custom <see cref="NegotiateTlsDelegate"/> to call when establishing a TLS connection.
-    /// </summary>
+    /// <summary>Sets the custom <see cref="NegotiateTlsDelegate"/> to call when establishing a TLS connection.</summary>
     /// <param name="negotiateTls">The <see cref="NegotiateTlsDelegate"/> to use.</param>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     /// <warning>
-    /// This option may compromise your application’s security if used improperly.
-    /// Its usage is strongly discouraged and comes without any guarantees.
+    /// This option may compromise your application’s security if used improperly. Its usage is strongly discouraged
+    /// and comes without any guarantees.
     /// </warning>
     public ConfigBuilder WithTlsNegotiator(NegotiateTlsDelegate negotiateTls)
     {
@@ -570,14 +560,12 @@ public sealed class ConfigBuilder
         return this;
     }
 
-    /// <summary>
-    /// Sets the type of custom <see cref="ITlsNegotiator"/> to use when establishing a TLS connection.
-    /// </summary>
+    /// <summary>Sets the type of custom <see cref="ITlsNegotiator"/> to use when establishing a TLS connection.</summary>
     /// <typeparam name="T">The <see cref="ITlsNegotiator"/> to use.</typeparam>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     /// <warning>
-    /// This option may compromise your application’s security if used improperly.
-    /// Its usage is strongly discouraged and comes without any guarantees.
+    /// This option may compromise your application’s security if used improperly. Its usage is strongly discouraged
+    /// and comes without any guarantees.
     /// </warning>
     public ConfigBuilder WithTlsNegotiator<T>() where T : ITlsNegotiator, new()
     {

@@ -44,8 +44,7 @@ public class StreamExtensionTests
 
         const int timeout = 100;
 
-        var ex = await Record.ExceptionAsync(
-            () => streamMock.Object.ReadWithTimeoutAsync(new byte[1], 0, 1, timeout));
+        var ex = await Record.ExceptionAsync(() => streamMock.Object.ReadWithTimeoutAsync(new byte[1], 0, 1, timeout));
 
         ex.Should()
             .BeOfType<ConnectionReadTimeoutException>()

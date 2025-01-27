@@ -86,7 +86,7 @@ internal sealed class PathSerializer : ReadOnlySerializer
 
         return new Path(segments.ToList(), nodes.ToList(), rels.ToList());
     }
-    
+
     public override (object, int) DeserializeSpan(SpanPackStreamReader reader)
     {
         // List of unique nodes
@@ -97,6 +97,7 @@ internal sealed class PathSerializer : ReadOnlySerializer
             {
                 throw new ProtocolException("Expecting receivedNode to be true, however the value is false");
             }
+
             uniqNodes[i] = node;
         }
 
@@ -106,8 +107,10 @@ internal sealed class PathSerializer : ReadOnlySerializer
         {
             if (reader.Read() is not Relationship uniqRel)
             {
-                throw new ProtocolException("Expecting receivedUnboundRelationship to be true, however the value is false");
+                throw new ProtocolException(
+                    "Expecting receivedUnboundRelationship to be true, however the value is false");
             }
+
             uniqRels[i] = uniqRel;
         }
 

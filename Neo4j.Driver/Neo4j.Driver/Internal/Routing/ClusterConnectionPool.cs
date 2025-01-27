@@ -132,12 +132,12 @@ internal class ClusterConnectionPool : IClusterConnectionPool
         return 0;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public bool CanUseHomeDbCache()
     {
         // sum the number of connections in all the pools with ssr enabled/disabled
-        int ssrEnabledCount = 0;
-        int ssrDisabledCount = 0;
+        var ssrEnabledCount = 0;
+        var ssrDisabledCount = 0;
         foreach (var pool in _pools.Values)
         {
             ssrEnabledCount += pool.NumberOfConnectionsWithSsrEnabled;

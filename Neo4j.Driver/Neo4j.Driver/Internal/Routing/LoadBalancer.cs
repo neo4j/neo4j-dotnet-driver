@@ -54,10 +54,8 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
             _clusterConnectionPool,
             _logger);
     }
-    
-    /// <summary>
-    /// TEST ONLY.
-    /// </summary>
+
+    /// <summary>TEST ONLY.</summary>
     /// <param name="clusterConnPool"></param>
     /// <param name="routingTableManager"></param>
     internal LoadBalancer(
@@ -114,25 +112,6 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         }
 
         return conn;
-    }
-
-    private async Task<(bool found, string database)> TryGetCachedHomeDatabase(SessionConfig sessionConfig)
-    {
-        var token = sessionConfig.AuthToken;
-        if (token == null && DriverContext?.AuthTokenManager != null)
-        {
-            token = await DriverContext.AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
-        }
-
-        if (token != null && DriverContext?.HomeDbCache != null)
-        {
-            if (DriverContext.HomeDbCache.TryGetValue(token, out var cachedDatabase))
-            {
-                return (true, cachedDatabase);
-            }
-        }
-
-        return (false, null);
     }
 
     public async Task<IServerInfo> VerifyConnectivityAndGetInfoAsync()
@@ -199,6 +178,25 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         _routingTableManager.ForgetWriter(uri, database);
     }
 
+    private async Task<(bool found, string database)> TryGetCachedHomeDatabase(SessionConfig sessionConfig)
+    {
+        var token = sessionConfig.AuthToken;
+        if (token == null && DriverContext?.AuthTokenManager != null)
+        {
+            token = await DriverContext.AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
+        }
+
+        if (token != null && DriverContext?.HomeDbCache != null)
+        {
+            if (DriverContext.HomeDbCache.TryGetValue(token, out var cachedDatabase))
+            {
+                return (true, cachedDatabase);
+            }
+        }
+
+        return (false, null);
+    }
+
     private async Task<T> CheckConnectionSupport<T>(Func<IConnection, T> check)
     {
         var uris = _initialServerAddressProvider.Get();
@@ -244,12 +242,14 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
     {
         var logger = DriverContext.Logger;
         var cachedDatabaseUsed = false;
-        string databaseForRouting = database;
+        var databaseForRouting = database;
 
         if (string.IsNullOrWhiteSpace(database) && _clusterConnectionPool.CanUseHomeDbCache())
         {
-            (cachedDatabaseUsed, databaseForRouting) = await TryGetCachedHomeDatabase(sessionConfig).ConfigureAwait(false);
-            if(cachedDatabaseUsed)
+            (cachedDatabaseUsed, databaseForRouting) =
+                await TryGetCachedHomeDatabase(sessionConfig).ConfigureAwait(false);
+
+            if (cachedDatabaseUsed)
             {
                 logger.Debug($"Using cached home database {databaseForRouting}.");
             }

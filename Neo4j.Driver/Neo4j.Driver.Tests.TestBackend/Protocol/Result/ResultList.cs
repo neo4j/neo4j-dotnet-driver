@@ -25,7 +25,8 @@ internal class ResultList : ProtocolObject
 {
     public ResultListType data { get; set; } = new();
 
-    [JsonIgnore] public List<IRecord> Records { get; set; }
+    [JsonIgnore]
+    public List<IRecord> Records { get; set; }
 
     public override async Task Process()
     {

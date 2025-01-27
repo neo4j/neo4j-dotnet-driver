@@ -47,14 +47,6 @@ namespace Neo4j.Driver;
 /// </remarks>
 public class Config
 {
-    static Config()
-    {
-        var version = Assembly.GetExecutingAssembly().GetName().Version;
-        DefaultUserAgent = $"neo4j-dotnet/{version.Major.ToString()}.{version.Minor.ToString()}";
-    }
-
-    internal static string DefaultUserAgent { get; }
-
     /// <summary>This const defines the value of infinite in terms of configuration properties.</summary>
     public const int Infinite = -1;
 
@@ -62,6 +54,14 @@ public class Config
     public static readonly TimeSpan InfiniteInterval = TimeSpan.FromMilliseconds(-1);
 
     private int _maxIdleConnPoolSize = Infinite;
+
+    static Config()
+    {
+        var version = Assembly.GetExecutingAssembly().GetName().Version;
+        DefaultUserAgent = $"neo4j-dotnet/{version.Major.ToString()}.{version.Minor.ToString()}";
+    }
+
+    internal static string DefaultUserAgent { get; }
 
     /// <summary>Create an instance of <see cref="ConfigBuilder"/> to build a <see cref="Config"/>.</summary>
     internal static ConfigBuilder Builder => new(new Config());
@@ -117,26 +117,26 @@ public class Config
     /// The maximum waiting time to either acquire an idle connection from the pool when connection pool is full or
     /// create a new connection when pool is not full.
     /// <para/>
-    /// Note that if there is a client certificate provider set, the time taken to fetch the certificate will be
-    /// included in the connection acquisition timeout, so if fetching the certificate is particularly slow, it might
-    /// be necessary to increase the timeout.
+    /// Note that if there is a client certificate provider set, the time taken to fetch the certificate will be included in
+    /// the connection acquisition timeout, so if fetching the certificate is particularly slow, it might be necessary to
+    /// increase the timeout.
     /// </summary>
     public TimeSpan ConnectionAcquisitionTimeout { get; internal set; } = TimeSpan.FromMinutes(1);
-    
+
     /// <summary>
     /// Pooled connections that have been idle in the pool for longer than this timeout will be tested before they are
-    /// used again, to ensure they are still live. If this option is set too low, an additional network call will
-    /// be incurred when acquiring a connection, which causes a performance hit.
+    /// used again, to ensure they are still live. If this option is set too low, an additional network call will be incurred
+    /// when acquiring a connection, which causes a performance hit.
     /// <para/>
-    /// If this is set high, you may receive sessions that are backed by no longer live connections, which will lead
-    /// to exceptions in your application. Assuming the database is running, these exceptions will go away if you
-    /// retry acquiring sessions.
+    /// If this is set high, you may receive sessions that are backed by no longer live connections, which will lead to
+    /// exceptions in your application. Assuming the database is running, these exceptions will go away if you retry acquiring
+    /// sessions.
     /// <para/>
     /// Hence, this parameter tunes a balance between the likelihood of your application seeing connection problems, and
     /// performance.
     /// <para/>
-    /// You normally should not need to tune this parameter. No connection liveness check is done by default.
-    /// Value 0 means connections will always be tested for validity. Values less than 0 are not allowed.
+    /// You normally should not need to tune this parameter. No connection liveness check is done by default. Value 0 means
+    /// connections will always be tested for validity. Values less than 0 are not allowed.
     /// </summary>
     public TimeSpan? ConnectionLivenessThreshold { get; internal set; }
 
@@ -223,36 +223,28 @@ public class Config
     public INotificationsConfig NotificationsConfig { get; internal set; }
 
     /// <summary>
-    /// The configuration for whether the driver attempts to send telemetry data.<br/>
-    /// The telemetry collected covers high level usage of the driver and does not include any queries or
-    /// parameters.<br/>
-    /// Current collected metrics:
+    /// The configuration for whether the driver attempts to send telemetry data.<br/> The telemetry collected covers high
+    /// level usage of the driver and does not include any queries or parameters.<br/> Current collected metrics:
     /// <list type="bullet">
     ///     <item>Which method was used to start a transaction.</item>
     /// </list>
-    /// Telemetry metrics are sent via Bolt to the uri provided when creating the driver instance or servers that make up
-    /// the cluster members and Neo4j makes no attempt to collect these usage metrics from outside of AuraDB
-    /// (Neo4j's cloud offering).<br/>
-    /// Users can configure Neo4j server's collection collection behavior of client drivers telemetry data and log the
-    /// telemetry data for diagnostics purposes.<br/>
-    /// By default the driver allows the collection of this telemetry. 
+    /// Telemetry metrics are sent via Bolt to the uri provided when creating the driver instance or servers that make up the
+    /// cluster members and Neo4j makes no attempt to collect these usage metrics from outside of AuraDB (Neo4j's cloud
+    /// offering).<br/> Users can configure Neo4j server's collection collection behavior of client drivers telemetry data and
+    /// log the telemetry data for diagnostics purposes.<br/> By default the driver allows the collection of this telemetry.
     /// </summary>
     public bool TelemetryDisabled { get; set; }
 
-    /// <summary>
-    /// The configuration for the driver's underlying message reading from the network.
-    /// </summary>
+    /// <summary>The configuration for the driver's underlying message reading from the network.</summary>
     public MessageReaderConfig MessageReaderConfig { get; internal set; }
 
     /// <summary>
-    /// A certificate provider that will be used to provide the client certificate when
-    /// a new connection is established.
+    /// A certificate provider that will be used to provide the client certificate when a new connection is
+    /// established.
     /// </summary>
     public IClientCertificateProvider ClientCertificateProvider { get; internal set; }
 
-    /// <summary>
-    /// The TLS version to use when establishing a connection.
-    /// </summary>
+    /// <summary>The TLS version to use when establishing a connection.</summary>
     public SslProtocols TlsVersion { get; internal set; } = SslProtocols.Tls12;
 
     /// <summary>
@@ -262,54 +254,61 @@ public class Config
     public ITlsNegotiator TlsNegotiator { get; internal set; }
 }
 
-/// <summary>
-/// The configuration for the driver's underlying message reading from the network.
-/// </summary>
+/// <summary>The configuration for the driver's underlying message reading from the network.</summary>
 public sealed class MessageReaderConfig
 {
     /// <summary>
-    /// Constructs a new instance of <see cref="MessageReaderConfig"/>.<br/>
-    /// The configuration for the driver's underlying message reading from the network.<br/>
-    /// Using this constructor overrides the <see cref="Config.DefaultReadBufferSize"/> and <see cref="Config.MaxReadBufferSize"/>.
+    /// Constructs a new instance of <see cref="MessageReaderConfig"/>.<br/> The configuration for the driver's
+    /// underlying message reading from the network.<br/> Using this constructor overrides the
+    /// <see cref="Config.DefaultReadBufferSize"/> and <see cref="Config.MaxReadBufferSize"/>.
     /// </summary>
-    /// <param name="memoryPool">The memory pool for creating buffers when reading messages. The PipeReader will borrow
-    /// memory from the pool of at least ReadBufferSize size. The message reader can request larger memory blocks to
-    /// host an entire message. User code can provide an implementation for monitoring; by default, the driver will
-    /// allocate a new array pool that does not take advantage of shared memory pools.</param>
-    /// <param name="minBufferSize">The minimum buffer size to use when renting memory from the pool.
-    /// <br/>The default value is 32,768.</param>
-    /// <param name="maxPooledBufferSize">The maximum buffer size to use when renting memory from neo4j's default pool.
-    /// <br/>The default is 131,072.</param>
+    /// <param name="memoryPool">
+    /// The memory pool for creating buffers when reading messages. The PipeReader will borrow memory
+    /// from the pool of at least ReadBufferSize size. The message reader can request larger memory blocks to host an entire
+    /// message. User code can provide an implementation for monitoring; by default, the driver will allocate a new array pool
+    /// that does not take advantage of shared memory pools.
+    /// </param>
+    /// <param name="minBufferSize">
+    /// The minimum buffer size to use when renting memory from the pool. <br/>The default value is
+    /// 32,768.
+    /// </param>
+    /// <param name="maxPooledBufferSize">
+    /// The maximum buffer size to use when renting memory from neo4j's default pool. <br/>
+    /// The default is 131,072.
+    /// </param>
     /// <seealso cref="PipeReader"/>
     /// <seealso cref="MemoryPool{T}"/>
     /// <seealso cref="StreamPipeReaderOptions"/>
     /// <remarks>
-    /// To optimize the memory usage of the driver pass .NET's shared memory pool(<see cref="MemoryPool{T}.Shared"/>) as
-    /// the <paramref name="memoryPool"/>, this should only be used when there is complete trust over the usage of
-    /// shared memory buffers in the application as other components may be using the same memory pool.
+    /// To optimize the memory usage of the driver pass .NET's shared memory pool(<see cref="MemoryPool{T}.Shared"/>)
+    /// as the <paramref name="memoryPool"/>, this should only be used when there is complete trust over the usage of shared
+    /// memory buffers in the application as other components may be using the same memory pool.
     /// </remarks>
     /// <remarks>
     /// The <paramref name="memoryPool"/> will define it's own maximum pooled buffer size, but must be able to provide
-    /// an memory object upto the limit 2146435071 bytes. The <paramref name="maxPooledBufferSize"/> will not be observed
-    /// when the <paramref name="memoryPool"/> is passed..
+    /// an memory object upto the limit 2146435071 bytes. The <paramref name="maxPooledBufferSize"/> will not be observed when
+    /// the <paramref name="memoryPool"/> is passed..
     /// </remarks>
-    /// <remarks>
-    /// Note using a small value for <paramref name="minBufferSize"/> could cause a degradation in performance.
-    /// </remarks>
+    /// <remarks>Note using a small value for <paramref name="minBufferSize"/> could cause a degradation in performance.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">
-    /// If <paramref name="minBufferSize"/>is less than 1 or greater than 2146435071
+    /// If <paramref name="minBufferSize"/>is less than 1 or greater than
+    /// 2146435071
     /// </exception>
     /// <exception cref="ArgumentOutOfRangeException">
-    /// If <paramref name="maxPooledBufferSize"/> is less than <paramref name="minBufferSize"/> or greater than 2146435071
+    /// If <paramref name="maxPooledBufferSize"/> is less than
+    /// <paramref name="minBufferSize"/> or greater than 2146435071
     /// </exception>
     public MessageReaderConfig(MemoryPool<byte> memoryPool = null, int minBufferSize = -1, int maxPooledBufferSize = -1)
     {
         const int maxArrayLength = 2146435071;
         if (minBufferSize is < -1 or 0 or > maxArrayLength)
         {
-            throw new ArgumentOutOfRangeException(nameof(minBufferSize), minBufferSize,
+            throw new ArgumentOutOfRangeException(
+                nameof(minBufferSize),
+                minBufferSize,
                 "Minimum buffer size must be between 1 and 2146435071, leave as -1 to use default.");
         }
+
         MinBufferSize = minBufferSize == -1 ? Constants.DefaultReadBufferSize : MinBufferSize;
         if (maxPooledBufferSize != -1 && (maxPooledBufferSize < MinBufferSize || maxPooledBufferSize > maxArrayLength))
         {
@@ -318,11 +317,14 @@ public sealed class MessageReaderConfig
                 maxPooledBufferSize,
                 $"Max pooled buffer size buffer size must be greater than minBufferSize({MinBufferSize}), leave as -1 to use default.");
         }
-        
+
         DisablePipelinedMessageReader = false;
-        MemoryPool = memoryPool ?? new PipeReaderMemoryPool(MinBufferSize,
-            maxPooledBufferSize == -1 ? Constants.MaxReadBufferSize : maxPooledBufferSize);
-        StreamPipeReaderOptions = new(MemoryPool, MinBufferSize, leaveOpen: true);
+        MemoryPool = memoryPool ??
+            new PipeReaderMemoryPool(
+                MinBufferSize,
+                maxPooledBufferSize == -1 ? Constants.MaxReadBufferSize : maxPooledBufferSize);
+
+        StreamPipeReaderOptions = new StreamPipeReaderOptions(MemoryPool, MinBufferSize, leaveOpen: true);
     }
 
     internal MessageReaderConfig(Config config)
@@ -330,27 +332,28 @@ public sealed class MessageReaderConfig
         DisablePipelinedMessageReader = false;
         MinBufferSize = config.DefaultReadBufferSize;
         MemoryPool = new PipeReaderMemoryPool(config.DefaultReadBufferSize, config.MaxReadBufferSize);
-        StreamPipeReaderOptions = new(MemoryPool, config.DefaultReadBufferSize, leaveOpen: true);
+        StreamPipeReaderOptions = new StreamPipeReaderOptions(
+            MemoryPool,
+            config.DefaultReadBufferSize,
+            leaveOpen: true);
     }
 
     /// <summary>
-    /// As of 5.15, the driver has migrated the underlying message reading mechanism utilizing <see cref="PipeReader"/>;
-    /// this optimizes the reading and memory usage of the driver, and setting this to true will revert the driver to
-    /// the legacy message reader.
+    /// As of 5.15, the driver has migrated the underlying message reading mechanism utilizing
+    /// <see cref="PipeReader"/>; this optimizes the reading and memory usage of the driver, and setting this to true will
+    /// revert the driver to the legacy message reader.
     /// </summary>
     internal bool DisablePipelinedMessageReader { get; }
-    
+
     /// <summary>
     /// The memory pool for creating buffers when reading messages. The PipeReader will borrow memory from the pool of
-    /// at least <see cref="MinBufferSize"/> size. The message reader can request larger memory blocks to host
-    /// an entire message. User code can provide an implementation for monitoring; by default, the driver will allocate
-    /// a new array pool that does not take advantage of shared memory pools.
+    /// at least <see cref="MinBufferSize"/> size. The message reader can request larger memory blocks to host an entire
+    /// message. User code can provide an implementation for monitoring; by default, the driver will allocate a new array pool
+    /// that does not take advantage of shared memory pools.
     /// </summary>
     public MemoryPool<byte> MemoryPool { get; }
-    
-    /// <summary>
-    /// The minimum buffer size to use when renting memory from the pool. The default value is 65,539.
-    /// </summary>
+
+    /// <summary>The minimum buffer size to use when renting memory from the pool. The default value is 65,539.</summary>
     public int MinBufferSize { get; }
 
     internal StreamPipeReaderOptions StreamPipeReaderOptions { get; }

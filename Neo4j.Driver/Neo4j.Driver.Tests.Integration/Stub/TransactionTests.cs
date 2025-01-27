@@ -31,7 +31,7 @@ internal static class ExceptionExtension
         {
             T => true,
             AggregateException aggregate => aggregate.InnerExceptions.Any(x => x.HasCause<T>()),
-            var _ => exception.InnerException?.HasCause<T>() ?? false
+            _ => exception.InnerException?.HasCause<T>() ?? false
         };
     }
 }

@@ -28,10 +28,8 @@ internal sealed class MessageReader : IMessageReader
     private readonly int _defaultBufferSize;
     private readonly ILogger _logger;
     private readonly int _maxBufferSize;
+    private readonly ByteBuffers _readerBuffers;
     private int _shrinkCounter;
-    readonly ByteBuffers _readerBuffers;
-
-    public MemoryStream BufferStream { get; }
 
     public MessageReader(IChunkReader chunkReader, DriverContext driverContext, ILogger logger)
     {
@@ -43,6 +41,8 @@ internal sealed class MessageReader : IMessageReader
         _readerBuffers = new ByteBuffers();
     }
 
+    public MemoryStream BufferStream { get; }
+
     public async ValueTask ReadAsync(IResponsePipeline pipeline, MessageFormat format)
     {
         var messageCount = await _chunkReader.ReadMessageChunksToBufferStreamAsync(BufferStream).ConfigureAwait(false);
@@ -53,6 +53,12 @@ internal sealed class MessageReader : IMessageReader
     public void SetReadTimeoutInMs(int ms)
     {
         _chunkReader.SetTimeoutInMs(ms);
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        BufferStream.Dispose();
+        return new ValueTask(Task.CompletedTask);
     }
 
     private void ConsumeMessages(IResponsePipeline pipeline, int messages, PackStreamReader packStreamReader)
@@ -104,11 +110,5 @@ internal sealed class MessageReader : IMessageReader
         {
             throw new ProtocolException($"Unknown response message type {message.GetType().FullName}");
         }
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        BufferStream.Dispose();
-        return new ValueTask(Task.CompletedTask);
     }
 }

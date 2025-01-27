@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
 using System.Text;
 using Neo4j.Driver.Internal.IO;
@@ -26,7 +25,7 @@ internal sealed class RouteMessageV43 : IRequestMessage
     public RouteMessageV43(IDictionary<string, string> routingContext, Bookmarks bookmarks, string db)
     {
         Routing = routingContext ?? new Dictionary<string, string>();
-        Bookmarks = bookmarks ?? Bookmarks.From(Array.Empty<string>());
+        Bookmarks = bookmarks ?? Bookmarks.From();
         DatabaseParam = db;
     }
 

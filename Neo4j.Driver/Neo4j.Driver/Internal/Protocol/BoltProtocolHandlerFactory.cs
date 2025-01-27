@@ -150,7 +150,7 @@ internal class BoltProtocolHandlerFactory : IBoltProtocolHandlerFactory
         return new TelemetryResponseHandler(info);
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public BeginResponseHandler NewBeginResponseHandler(
         IAuthToken cacheKey,
         IDictionary<IAuthToken, string> homeDbCache)

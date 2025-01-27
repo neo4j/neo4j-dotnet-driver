@@ -62,7 +62,7 @@ internal interface IConnection : IConnectionDetails, IConnectionRunner
     public SessionConfig SessionConfig { get; set; }
     bool TelemetryEnabled { get; set; }
 
-    bool SsrEnabled {get; set; }
+    bool SsrEnabled { get; set; }
 
     void ConfigureMode(AccessMode? mode);
     void Configure(string database, AccessMode? mode);

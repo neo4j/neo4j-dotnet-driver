@@ -28,6 +28,12 @@ internal sealed record BeginTransactionParams(
 
 internal sealed record TransactionInfo
 {
+    /// <summary>Holds if the driver enables the sending of metrics to Neo4j.</summary>
+    private readonly bool _enabled;
+
+    // This is used to ensure that the transaction meta is only sent once.
+    private long _interlocked;
+
     public TransactionInfo(QueryApiType apiType, bool metricsEnabled, bool awaitBegin)
     {
         ApiType = apiType;
@@ -35,20 +41,10 @@ internal sealed record TransactionInfo
         _enabled = metricsEnabled;
     }
 
-    // This is used to ensure that the transaction meta is only sent once.
-    private long _interlocked;
-
-    /// <summary>
-    /// Holds if the driver enables the sending of metrics to Neo4j.
-    /// </summary>
-    private readonly bool _enabled;
-
     public QueryApiType ApiType { get; }
     public bool AwaitBegin { get; }
 
-    /// <summary>
-    /// Returns true if driver enabled and hasn't been acked yet.
-    /// </summary>
+    /// <summary>Returns true if driver enabled and hasn't been acked yet.</summary>
     public bool TelemetryEnabled => _enabled && !Acked;
 
     public bool Acked => Interlocked.Read(ref _interlocked) > 0;

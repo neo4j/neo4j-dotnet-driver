@@ -114,10 +114,12 @@ internal sealed class BoltProtocol : IBoltProtocol
             autoCommitParams,
             notificationsConfig);
 
+        var authToken = await autoCommitParams.SessionConfig.AuthTokenForHomeDbCache().ConfigureAwait(false);
+
         var runHandler = _protocolHandlerFactory.NewRunResponseHandler(
             streamBuilder,
             summaryBuilder,
-            autoCommitParams.SessionConfig?.AuthToken,
+            authToken,
             homeDbCache);
 
         await AddTelemetryAsync(connection, autoCommitParams.TransactionInfo).ConfigureAwait(false);
@@ -152,7 +154,8 @@ internal sealed class BoltProtocol : IBoltProtocol
         BoltProtocolV3.ValidateImpersonatedUserForVersion(connection);
         BoltProtocolV3.ValidateNotificationsForVersion(connection, beginParams.NotificationsConfig);
         await AddTelemetryAsync(connection, beginParams.TransactionInfo).ConfigureAwait(false);
-        await _boltProtocolV3.BeginTransactionAsync(connection, beginParams, cacheKey, homeDbCache).ConfigureAwait(false);
+        await _boltProtocolV3.BeginTransactionAsync(connection, beginParams, cacheKey, homeDbCache)
+            .ConfigureAwait(false);
     }
 
     public async Task<IResultCursor> RunInExplicitTransactionAsync(

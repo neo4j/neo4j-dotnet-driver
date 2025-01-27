@@ -33,7 +33,8 @@ internal abstract class BaseSessionType
     [JsonProperty(Required = Required.AllowNull)]
     public int? timeout { get; set; }
 
-    [JsonIgnore] public bool TimeoutSet { get; set; }
+    [JsonIgnore]
+    public bool TimeoutSet { get; set; }
 
     public TransactionConfigBuilder ConfigureTxTimeout(TransactionConfigBuilder configBuilder)
     {

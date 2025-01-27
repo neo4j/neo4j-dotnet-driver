@@ -44,13 +44,13 @@ internal sealed class Node : INode
     public string ElementId { get; }
     public IReadOnlyList<string> Labels { get; }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public T Get<T>(string key)
     {
         return Properties[key].As<T>();
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public bool TryGet<T>(string key, out T value)
     {
         if (Properties.TryGetValue(key, out var obj))

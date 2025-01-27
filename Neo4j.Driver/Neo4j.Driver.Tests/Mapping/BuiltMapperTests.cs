@@ -22,16 +22,6 @@ namespace Neo4j.Driver.Tests.Mapping;
 
 public class BuiltMapperTests
 {
-    private class NoParameterlessConstructor
-    {
-        public int Value { get; }
-
-        public NoParameterlessConstructor(int value)
-        {
-            Value = value;
-        }
-    }
-
     [Fact]
     public void ShouldThrowIfNoParameterlessConstructor()
     {
@@ -49,12 +39,6 @@ public class BuiltMapperTests
         mapper.AddConstructorMapping(constructor);
         var result = mapper.Map(TestRecord.Create(new[] { "value" }, new object[] { 48 }));
         result.Value.Should().Be(48);
-    }
-
-    private class TwoPropertyClass
-    {
-        public int Value1 { get; set; }
-        public int Value2 { get; set; }
     }
 
     [Fact]
@@ -82,5 +66,21 @@ public class BuiltMapperTests
         var mapper = builder.Build();
         var act = () => mapper.Map(record);
         act.Should().Throw<MappingFailedException>();
+    }
+
+    private class NoParameterlessConstructor
+    {
+        public NoParameterlessConstructor(int value)
+        {
+            Value = value;
+        }
+
+        public int Value { get; }
+    }
+
+    private class TwoPropertyClass
+    {
+        public int Value1 { get; set; }
+        public int Value2 { get; set; }
     }
 }

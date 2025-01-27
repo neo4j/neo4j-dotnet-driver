@@ -25,11 +25,11 @@ namespace Neo4j.Driver.Internal.Routing;
 internal class RoutingTableManager : IRoutingTableManager
 {
     private readonly IDiscovery _discovery;
+    private readonly DriverContext _driverContext;
     private readonly IInitialServerAddressProvider _initialServerAddressProvider;
     private readonly ILogger _logger;
 
     private readonly IClusterConnectionPoolManager _poolManager;
-    private readonly DriverContext _driverContext;
 
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _routingTableLocks = new();
 

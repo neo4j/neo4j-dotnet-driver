@@ -1,7 +1,5 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-// 
-// This file is part of Neo4j.
+// Neo4j Sweden AB [https://neo4j.com]
 // 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
@@ -32,18 +30,18 @@ namespace Neo4j.Driver.Internal.IO;
 
 internal sealed class PipelinedMessageReader : IMessageReader
 {
-    private readonly Stream _stream;
-    private int _timeoutInMs;
-    private CancellationTokenSource _source;
     private readonly Memory<byte> _headerMemory;
     private readonly PipeReader _pipeReader;
     private readonly MemoryPool<byte> _pool;
+    private readonly Stream _stream;
+    private CancellationTokenSource _source;
+    private int _timeoutInMs;
 
     internal PipelinedMessageReader(Stream inputStream, DriverContext context)
         : this(inputStream, context, inputStream.ReadTimeout)
     {
     }
-    
+
     internal PipelinedMessageReader(Stream inputStream, DriverContext context, int timeout)
     {
         _timeoutInMs = timeout;
@@ -53,7 +51,7 @@ internal sealed class PipelinedMessageReader : IMessageReader
         _headerMemory = new Memory<byte>(new byte[2]);
         _pipeReader = PipeReader.Create(_stream, context.Config.MessageReaderConfig.StreamPipeReaderOptions);
     }
-    
+
     public ValueTask DisposeAsync()
     {
         _source.Dispose();
@@ -77,7 +75,8 @@ internal sealed class PipelinedMessageReader : IMessageReader
             // A timeout has occurred, close the connection.
             await _pipeReader.CompleteAsync(canceledException).ConfigureAwait(false);
             _stream.Close();
-            throw new ConnectionReadTimeoutException("Failed to read message from server within the specified timeout.",
+            throw new ConnectionReadTimeoutException(
+                "Failed to read message from server within the specified timeout.",
                 canceledException);
         }
         catch (Exception ex)
@@ -86,6 +85,11 @@ internal sealed class PipelinedMessageReader : IMessageReader
             // If the exception is a protocol exception, the connection requires reset and subsequent messages can be
             throw;
         }
+    }
+
+    public void SetReadTimeoutInMs(int ms)
+    {
+        _timeoutInMs = ms;
     }
 
     private void ResetCancellation()
@@ -121,13 +125,14 @@ internal sealed class PipelinedMessageReader : IMessageReader
             readResult = await pipeReader.ReadAtLeastAsync(2, _source.Token).ConfigureAwait(false);
             if (readResult is { IsCompleted: true, Buffer.Length: < 2 })
             {
-                throw new IOException("Unexpected end of stream, unable to read expected data from the network connection");
+                throw new IOException(
+                    "Unexpected end of stream, unable to read expected data from the network connection");
             }
 
             var lengthSlice = readResult.Buffer.Slice(0, 2);
             lengthSlice.CopyTo(_headerMemory.Span);
             size = BinaryPrimitives.ReadUInt16BigEndian(_headerMemory.Span);
-            
+
             // if the size is 0, it means the message was a noop message.
             if (size == 0)
             {
@@ -135,9 +140,9 @@ internal sealed class PipelinedMessageReader : IMessageReader
                 pipeReader.AdvanceTo(readResult.Buffer.Slice(2).Start);
                 continue;
             }
-            break;
-        } while(true);
 
+            break;
+        } while (true);
 
         // Read chunks storing the lengths of each chunk.
         // Because the length of the message is unknown until the end of writing allocating a single buffer to read the entire
@@ -187,13 +192,13 @@ internal sealed class PipelinedMessageReader : IMessageReader
         // Otherwise we need to copy the data into a single buffer to parse it.
         return CondenseChunksAndParse(format, pipeReader, totalSize, sizes, readResult);
     }
-    
+
     private static bool SingleSegmentSlice(ReadResult readResult, int totalSize, out ReadOnlySequence<byte> chunkBuffer)
     {
         chunkBuffer = readResult.Buffer.Slice(2, totalSize + 2);
         return chunkBuffer.IsSingleSegment;
     }
-    
+
     private static IResponseMessage RawParse(
         MessageFormat format,
         PipeReader pipeReader,
@@ -209,7 +214,7 @@ internal sealed class PipelinedMessageReader : IMessageReader
         pipeReader.AdvanceTo(buffer.End);
         return message;
     }
-    
+
     private IResponseMessage CondenseChunksAndParse(
         MessageFormat format,
         PipeReader pipeReader,
@@ -238,12 +243,8 @@ internal sealed class PipelinedMessageReader : IMessageReader
             memoryPosition += chunkSize;
             streamStart += chunkSize + 2;
         }
+
         // Advance to end of message by create a buffer slice from the end of the chunk.
         pipeReader.AdvanceTo(readResult.Buffer.Slice(streamStart).Start);
-    }
-
-    public void SetReadTimeoutInMs(int ms)
-    {
-        _timeoutInMs = ms;
     }
 }

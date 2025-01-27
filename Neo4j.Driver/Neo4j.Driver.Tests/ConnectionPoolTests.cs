@@ -24,8 +24,8 @@ using FluentAssertions;
 using Moq;
 using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
-using Neo4j.Driver.Internal.Util;
 using Neo4j.Driver.Internal.Protocol;
+using Neo4j.Driver.Internal.Util;
 using Neo4j.Driver.Tests.TestUtil;
 using Xunit;
 using Xunit.Abstractions;
@@ -291,6 +291,7 @@ public class ConnectionPoolTests
                 validator.Setup(x => x.GetConnectionLifetimeStatus(It.IsAny<IPooledConnection>()))
                     .Returns(AcquireStatus.Healthy);
             }
+
             return validator;
         }
 

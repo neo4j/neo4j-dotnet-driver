@@ -24,12 +24,12 @@ internal interface IRecordPathFinder
 
 internal class RecordPathFinder : IRecordPathFinder
 {
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public bool TryGetValueByPath(IRecord record, string path, out object value)
     {
         value = null;
 
-        if(record is null)
+        if (record is null)
         {
             return false;
         }

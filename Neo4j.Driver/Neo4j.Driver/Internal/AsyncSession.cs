@@ -34,12 +34,12 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
     private readonly IConnectionProvider _connectionProvider;
 
     private readonly AccessMode _defaultMode;
+    private readonly DriverContext _driverContext;
     private readonly long _fetchSize;
 
     private readonly ILogger _logger;
     private readonly INotificationsConfig _notificationsConfig;
     private readonly bool _reactive;
-    private readonly DriverContext _driverContext;
 
     private readonly IAsyncRetryLogic _retryLogic;
     private readonly bool _useBookmarkManager;
@@ -148,8 +148,10 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         var config = BuildTransactionConfig(action);
         return await TryExecuteAsync(
                 _logger,
-                () => BeginTransactionWithoutLoggingAsync(mode,
-                    config, disposeUnconsumedSessionResult,
+                () => BeginTransactionWithoutLoggingAsync(
+                    mode,
+                    config,
+                    disposeUnconsumedSessionResult,
                     new TransactionInfo(QueryApiType.UnmanagedTransaction, TelemetryEnabled, true)))
             .ConfigureAwait(false);
     }
@@ -200,7 +202,8 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         return result;
     }
 
-    public Task<EagerResult<T>> PipelinedExecuteReadAsync<T>(Func<IAsyncQueryRunner, Task<EagerResult<T>>> func,
+    public Task<EagerResult<T>> PipelinedExecuteReadAsync<T>(
+        Func<IAsyncQueryRunner, Task<EagerResult<T>>> func,
         TransactionConfig config)
     {
         return RunTransactionAsync(
@@ -210,22 +213,15 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
             new TransactionInfo(QueryApiType.DriverLevel, TelemetryEnabled, false));
     }
 
-    public Task<EagerResult<T>> PipelinedExecuteWriteAsync<T>(Func<IAsyncQueryRunner, Task<EagerResult<T>>> func,
+    public Task<EagerResult<T>> PipelinedExecuteWriteAsync<T>(
+        Func<IAsyncQueryRunner, Task<EagerResult<T>>> func,
         TransactionConfig config)
     {
-        return RunTransactionAsync(AccessMode.Write, func, config,
+        return RunTransactionAsync(
+            AccessMode.Write,
+            func,
+            config,
             new TransactionInfo(QueryApiType.DriverLevel, TelemetryEnabled, false));
-    }
-
-    private TransactionConfig BuildTransactionConfig(Action<TransactionConfigBuilder> action)
-    {
-        if (action == null)
-        {
-            return TransactionConfig.Default;
-        }
-        var builder = new TransactionConfigBuilder(_logger, new TransactionConfig());
-        action.Invoke(builder);
-        return builder.Build();
     }
 
     public Task<T> ReadTransactionAsync<T>(
@@ -282,6 +278,18 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         return RunTransactionAsync(AccessMode.Write, work, BuildTransactionConfig(action));
     }
 
+    private TransactionConfig BuildTransactionConfig(Action<TransactionConfigBuilder> action)
+    {
+        if (action == null)
+        {
+            return TransactionConfig.Default;
+        }
+
+        var builder = new TransactionConfigBuilder(_logger, new TransactionConfig());
+        action.Invoke(builder);
+        return builder.Build();
+    }
+
     private async Task<Bookmarks> GetBookmarksAsync()
     {
         return _initialBookmarks == null
@@ -314,13 +322,15 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         TransactionConfig config,
         TransactionInfo transactionInfo = null)
     {
-        transactionInfo ??= new TransactionInfo (QueryApiType.TransactionFunction, TelemetryEnabled, true);
+        transactionInfo ??= new TransactionInfo(QueryApiType.TransactionFunction, TelemetryEnabled, true);
         return TryExecuteAsync(
             _logger,
             () => _retryLogic.RetryAsync(
                 async () =>
                 {
-                    var tx = await BeginTransactionWithoutLoggingAsync(mode, config, true, transactionInfo).ConfigureAwait(false);
+                    var tx = await BeginTransactionWithoutLoggingAsync(mode, config, true, transactionInfo)
+                        .ConfigureAwait(false);
+
                     try
                     {
                         var result = await work(tx).ConfigureAwait(false);
@@ -381,7 +391,6 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
             LastBookmarks = await GetBookmarksAsync().ConfigureAwait(false);
         }
 
-
         _connection = await _connectionProvider.AcquireAsync(
                 mode,
                 _database,
@@ -395,8 +404,6 @@ internal partial class AsyncSession : AsyncQueryRunner, IInternalAsyncSession
         // if we passed a blank database we shouldn't do this until we get a success message
         _database = _connection.Database;
     }
-
-
 
     protected override void Dispose(bool disposing)
     {

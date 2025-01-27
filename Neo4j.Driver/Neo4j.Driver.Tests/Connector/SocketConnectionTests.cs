@@ -74,11 +74,13 @@ public class SocketConnectionTests
             var bpFactory = new Mock<IBoltProtocolFactory>();
             bpFactory.Setup(x => x.ForVersion(BoltProtocolVersion.V3_0)).Returns(protocolMock.Object);
 
-            var conn = NewSocketConnection(mockClient.Object, boltProtocolFactory: bpFactory.Object,
+            var conn = NewSocketConnection(
+                mockClient.Object,
+                boltProtocolFactory: bpFactory.Object,
                 context: new DriverContext(new Uri("bolt://localhost:7687"), AuthTokenManagers.None, new Config()));
 
             // When
-            await conn.InitAsync(null);
+            await conn.InitAsync();
 
             // Then
             mockClient.Verify(c => c.ConnectAsync(CancellationToken.None), Times.Once);
@@ -102,7 +104,7 @@ public class SocketConnectionTests
             // ReSharper disable once ObjectCreationAsStatement
             var conn = new SocketConnection(mockClient.Object, AuthToken, Logger, Server);
             // When
-            var error = await Record.ExceptionAsync(() => conn.InitAsync(null));
+            var error = await Record.ExceptionAsync(() => conn.InitAsync());
             // Then
             error.Should().BeOfType<IOException>();
             error.Message.Should().Be("I will stop socket conn from initialization");
@@ -227,7 +229,7 @@ public class SocketConnectionTests
             var h1 = new Mock<IResponseHandler>();
             var m2 = new Mock<IRequestMessage>();
             var h2 = new Mock<IResponseHandler>();
-            
+
             await con.EnqueueAsync(m1.Object, h1.Object, m2.Object, h2.Object);
 
             con.Messages[0].Should().Be(m1.Object);

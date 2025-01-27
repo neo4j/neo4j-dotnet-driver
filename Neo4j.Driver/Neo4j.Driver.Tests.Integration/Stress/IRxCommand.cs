@@ -15,6 +15,6 @@
 
 namespace Neo4j.Driver.IntegrationTests.Stress;
 
-public interface IRxCommand: IAsyncCommand
+public interface IRxCommand : IAsyncCommand
 {
 }

@@ -29,6 +29,7 @@ namespace Neo4j.Driver.Tests.Internal.IO;
 public class ChunkWriterTests
 {
     private readonly Mock<ILogger> _logger = new();
+
     private static DriverContext TestContext(int defaultRead, int defaultWrite, int maxRead, int maxWrite)
     {
         return TestDriverContext.With(

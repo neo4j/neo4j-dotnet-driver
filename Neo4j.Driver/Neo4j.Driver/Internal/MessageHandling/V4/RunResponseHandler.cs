@@ -23,10 +23,10 @@ namespace Neo4j.Driver.Internal.MessageHandling.V4;
 
 internal sealed class RunResponseHandler : MetadataCollectingResponseHandler
 {
-    private readonly IResultStreamBuilder _streamBuilder;
-    private readonly SummaryBuilder _summaryBuilder;
     private readonly IAuthToken _cacheKey;
     private readonly IDictionary<IAuthToken, string> _homeDbCache;
+    private readonly IResultStreamBuilder _streamBuilder;
+    private readonly SummaryBuilder _summaryBuilder;
 
     public RunResponseHandler(
         IResultStreamBuilder streamBuilder,

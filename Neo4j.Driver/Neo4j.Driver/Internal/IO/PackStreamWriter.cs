@@ -146,7 +146,8 @@ internal sealed class PackStreamWriter
     {
         switch (value)
         {
-            case >= Minus2ToThe4 and < Plus2ToThe7: _stream.WriteByte((byte)value);
+            case >= Minus2ToThe4 and < Plus2ToThe7:
+                _stream.WriteByte((byte)value);
                 break;
 
             case >= Minus2ToThe7 and < Minus2ToThe4:

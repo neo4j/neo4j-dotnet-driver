@@ -76,8 +76,7 @@ public class AsyncSessionTests
                     It.IsAny<IRequestMessage>(),
                     It.IsAny<IResponseHandler>()))
             .Returns(Task.CompletedTask)
-            .Callback(
-                (IRequestMessage _, IResponseHandler h1) => { h1.OnSuccess(new Dictionary<string, object>()); });
+            .Callback((IRequestMessage _, IResponseHandler h1) => { h1.OnSuccess(new Dictionary<string, object>()); });
 
         if (protocol == null)
         {
@@ -104,7 +103,8 @@ public class AsyncSessionTests
             mockConn.Verify(
                 x => x.RunInAutoCommitTransactionAsync(
                     It.IsAny<AutoCommitParams>(),
-                    It.IsAny<INotificationsConfig>()),
+                    It.IsAny<INotificationsConfig>(),
+                    new Mock<IDictionary<IAuthToken, string>>().Object),
                 Times.Once);
         }
     }
@@ -183,8 +183,8 @@ public class AsyncSessionTests
                     x.BeginTransactionAsync(
                         It.IsAny<IConnection>(),
                         It.Is<BeginTransactionParams>(y => y.TransactionInfo.AwaitBegin == true),
-                        TODO,
-                        TODO),
+                        AuthTokens.None,
+                        new Dictionary<IAuthToken, string>()),
                 Times.Once);
         }
 
@@ -234,8 +234,8 @@ public class AsyncSessionTests
                         x.BeginTransactionAsync(
                             It.IsAny<IConnection>(),
                             It.IsAny<BeginTransactionParams>(),
-                            TODO,
-                            TODO))
+                            AuthTokens.None,
+                            new Dictionary<IAuthToken, string>()))
                 .Throws(new IOException("Triggered an error when beginTx"));
 
             var session = NewSession(mockConn.Object);
@@ -261,8 +261,8 @@ public class AsyncSessionTests
                         x.BeginTransactionAsync(
                             It.IsAny<IConnection>(),
                             It.IsAny<BeginTransactionParams>(),
-                            TODO,
-                            TODO))
+                            AuthTokens.None,
+                            new Dictionary<IAuthToken, string>()))
                 .Returns(Task.CompletedTask)
                 .Callback(
                     () =>
@@ -313,15 +313,17 @@ public class AsyncSessionTests
                     AuthTokenManagers.Static(AuthTokens.Basic("neo4j", "neo4j")),
                     new Config()));
 
-            await session.PipelinedExecuteReadAsync(_ => Task.FromResult(null as EagerResult<IRecord[]>), new TransactionConfig());
+            await session.PipelinedExecuteReadAsync(
+                _ => Task.FromResult(null as EagerResult<IRecord[]>),
+                new TransactionConfig());
 
             mockProtocol.Verify(
                 x =>
                     x.BeginTransactionAsync(
                         It.IsAny<IConnection>(),
                         It.Is<BeginTransactionParams>(y => y.TransactionInfo.AwaitBegin == false),
-                        TODO,
-                        TODO),
+                        AuthTokens.None,
+                        new Dictionary<IAuthToken, string>()),
                 Times.Once);
         }
     }
@@ -338,8 +340,8 @@ public class AsyncSessionTests
                         x.BeginTransactionAsync(
                             It.IsAny<IConnection>(),
                             It.IsAny<BeginTransactionParams>(),
-                            TODO,
-                            TODO))
+                            AuthTokens.None,
+                            new Dictionary<IAuthToken, string>()))
                 .Throws(new IOException("Triggered an error when beginTx"));
 
             var session = NewSession(mockConn.Object);

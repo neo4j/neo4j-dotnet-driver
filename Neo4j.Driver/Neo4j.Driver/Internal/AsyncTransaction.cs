@@ -31,10 +31,10 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
     private static readonly IState Failed = new FailedState();
 
     private readonly IConnection _connection;
+    private readonly DriverContext _driverContext;
     private readonly long _fetchSize;
     private readonly ILogger _logger;
     private readonly INotificationsConfig _notificationsConfig;
-    private readonly DriverContext _driverContext;
     private readonly bool _reactive;
     private readonly ITransactionResourceHandler _resourceHandler;
 
@@ -81,16 +81,6 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
         }
 
         _bookmarks = bookmarks;
-    }
-
-    /// <summary>
-    /// Sets the error for the transaction if it is not already set.
-    /// This avoids the exception changing if multiple errors occur.
-    /// </summary>
-    /// <param name="ex">The first exception to occur in the transaction.</param>
-    internal void SetErrorIfNull(Exception ex)
-    {
-        TransactionError ??= ex;
     }
 
     public bool IsErrored(out Exception ex)
@@ -163,6 +153,16 @@ internal class AsyncTransaction : AsyncQueryRunner, IInternalAsyncTransaction, I
     }
 
     public TransactionConfig TransactionConfig { get; private set; }
+
+    /// <summary>
+    /// Sets the error for the transaction if it is not already set. This avoids the exception changing if multiple
+    /// errors occur.
+    /// </summary>
+    /// <param name="ex">The first exception to occur in the transaction.</param>
+    internal void SetErrorIfNull(Exception ex)
+    {
+        TransactionError ??= ex;
+    }
 
     public Task BeginTransactionAsync(TransactionConfig config, TransactionInfo transactionInfo)
     {

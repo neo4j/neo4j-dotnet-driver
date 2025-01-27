@@ -28,7 +28,7 @@ public sealed class BlockingWriteCommandUsingReadSessionTxFunc : BlockingCommand
     public override void Execute(StressTestContext context)
     {
         using var session = NewSession(AccessMode.Read, context);
-        
+
         try
         {
             var succeeded = session.ExecuteRead(

@@ -18,11 +18,10 @@ using System;
 namespace Neo4j.Driver.Mapping;
 
 /// <summary>
-/// Instructs the default object mapper not to attempt to map any value to this property.
-/// This attribute does not affect custom-defined mappers.
+/// Instructs the default object mapper not to attempt to map any value to this property. This attribute does not
+/// affect custom-defined mappers.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property)]
 public class MappingIgnoredAttribute : Attribute
 {
-    
 }

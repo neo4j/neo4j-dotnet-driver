@@ -63,12 +63,18 @@ public class ClusterDiscoveryTests
             var sessionConfig = new SessionConfig("fake-person");
 
             var mockConn = new Mock<IConnection>();
-            mockConn.Setup(x => x.GetRoutingTableAsync("test", sessionConfig, bookmarks))
+            mockConn.Setup(
+                    x => x.GetRoutingTableAsync("test", sessionConfig, bookmarks, new Dictionary<IAuthToken, string>()))
                 .ReturnsAsync(routingTable);
 
             // When
             var manager = new ClusterDiscovery();
-            var table = await manager.DiscoverAsync(mockConn.Object, "test", sessionConfig, bookmarks, TODO);
+            var table = await manager.DiscoverAsync(
+                mockConn.Object,
+                "test",
+                sessionConfig,
+                bookmarks,
+                new Dictionary<IAuthToken, string>());
 
             // Then
             table.Database.Should().Be("test");

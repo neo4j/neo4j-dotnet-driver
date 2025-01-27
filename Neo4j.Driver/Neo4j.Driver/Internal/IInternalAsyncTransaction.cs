@@ -19,6 +19,6 @@ namespace Neo4j.Driver.Internal;
 
 internal interface IInternalAsyncTransaction : IAsyncTransaction
 {
-    bool IsErrored(out Exception ex);
     bool IsOpen { get; }
+    bool IsErrored(out Exception ex);
 }

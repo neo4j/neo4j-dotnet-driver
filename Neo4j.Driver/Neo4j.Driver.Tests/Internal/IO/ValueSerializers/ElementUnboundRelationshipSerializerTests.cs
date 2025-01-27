@@ -42,6 +42,7 @@ public class ElementUnboundRelationshipSerializerTests : PackStreamSerializerTes
             {
                 { "prop3", true }
             });
+
         writer.Write("r1");
 
         var readerMachine = CreateReaderMachine(writerMachine.GetOutput());
@@ -64,6 +65,7 @@ public class ElementUnboundRelationshipSerializerTests : PackStreamSerializerTes
             {
                 { "prop3", true }
             });
+
         writer.Write("r1");
 
         var readerMachine = CreateSpanReader(writerMachine.GetOutput());

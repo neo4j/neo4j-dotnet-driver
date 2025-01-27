@@ -76,9 +76,7 @@ public class QueryConfig
     /// <summary>Enables or disables the use of an <see cref="IBookmarkManager"/> for causal chaining.</summary>
     public bool EnableBookmarkManager { get; }
 
-    /// <summary>
-    /// Auth token to use for the session executing the query.
-    /// </summary>
+    /// <summary>Auth token to use for the session executing the query.</summary>
     public IAuthToken AuthToken { get; }
 }
 

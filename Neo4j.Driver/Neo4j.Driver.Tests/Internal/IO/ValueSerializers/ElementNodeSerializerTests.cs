@@ -89,6 +89,7 @@ public class ElementNodeSerializerTests : PackStreamSerializerTests
                 { "prop2", 15 },
                 { "prop3", true }
             });
+
         writer.Write("1");
 
         var readerMachine = CreateSpanReader(writerMachine.GetOutput());

@@ -75,7 +75,11 @@ internal sealed class UtcZonedDateTimeSerializer : IPackStreamSerializer
         }
     }
 
-    public (object, int) DeserializeSpan(BoltProtocolVersion version, SpanPackStreamReader reader, byte signature, int size)
+    public (object, int) DeserializeSpan(
+        BoltProtocolVersion version,
+        SpanPackStreamReader reader,
+        byte signature,
+        int size)
     {
         PackStream.EnsureStructSize($"ZonedDateTime[{(char)signature}]", StructSize, size);
 

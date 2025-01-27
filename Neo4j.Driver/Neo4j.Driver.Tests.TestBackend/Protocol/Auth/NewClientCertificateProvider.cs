@@ -23,14 +23,8 @@ internal class NewClientCertificateProvider : ProtocolObject, IClientCertificate
 {
     private Controller _controller;
     public object data { get; set; } = new();
-    
-    public override Task Process(Controller controller)
-    {
-        _controller = controller;
-        return Task.CompletedTask;
-    }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public async ValueTask<X509Certificate> GetCertificateAsync()
     {
         var requestId = Guid.NewGuid().ToString();
@@ -38,6 +32,7 @@ internal class NewClientCertificateProvider : ProtocolObject, IClientCertificate
                 "ClientCertificateProviderRequest",
                 new { clientCertificateProviderId = uniqueId, id = requestId })
             .Encode();
+
         await _controller.SendResponse(request).ConfigureAwait(false);
         var result = await _controller.TryConsumeStreamObjectOfType<ClientCertificateProviderCompleted>()
             .ConfigureAwait(false);
@@ -51,6 +46,12 @@ internal class NewClientCertificateProvider : ProtocolObject, IClientCertificate
         }
 
         throw new Exception("GetCertificateAsync: request IDs did not match");
+    }
+
+    public override Task Process(Controller controller)
+    {
+        _controller = controller;
+        return Task.CompletedTask;
     }
 
     public override string Respond()

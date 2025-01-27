@@ -18,9 +18,9 @@ using System;
 namespace Neo4j.Driver.Mapping;
 
 /// <summary>
-/// If a property or is decorated with this attribute, it will be considered optional. The
-/// mapper will not throw an exception if it cannot find the named value in the record. This
-/// attribute will have no effect when using custom-defined mappers.
+/// If a property or is decorated with this attribute, it will be considered optional. The mapper will not throw
+/// an exception if it cannot find the named value in the record. This attribute will have no effect when using
+/// custom-defined mappers.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property)]
 public class MappingOptionalAttribute : Attribute
@@ -28,17 +28,14 @@ public class MappingOptionalAttribute : Attribute
 }
 
 /// <summary>
-/// If a property is decorated with this attribute, it will be considered optional. The
-/// mapper will not throw an exception if it cannot find the named value in the record; instead,
-/// it will use the default value provided. This attribute will have no effect when using
-/// custom-defined mappers.
+/// If a property is decorated with this attribute, it will be considered optional. The mapper will not throw an
+/// exception if it cannot find the named value in the record; instead, it will use the default value provided. This
+/// attribute will have no effect when using custom-defined mappers.
 /// </summary>
 /// <param name="defaultValue">The default value to use if the property is not present in the record.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public class MappingDefaultValueAttribute(object defaultValue) : MappingOptionalAttribute
 {
-    /// <summary>
-    /// The default value to use if the property is not present in the record.
-    /// </summary>
+    /// <summary>The default value to use if the property is not present in the record.</summary>
     public object DefaultValue => defaultValue;
 }

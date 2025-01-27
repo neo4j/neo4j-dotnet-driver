@@ -43,15 +43,19 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool useRawStatu
         {
             statuses = ConvertObjects(metadata, NotificationsKey, ConvertNotificationValuesToStatus);
         }
+
         if (notifications == null && statuses != null)
         {
             notifications = ConvertObjects(metadata, StatusesKey, ConvertStatusValuesToNotification);
         }
-        
+
         Collected = new GqlStatusObjectsAndNotifications(notifications, statuses, useRawStatuses);
     }
 
-    private static IList<T> ConvertObjects<T>(IDictionary<string, object> metadata, string key, Func<IDictionary<string, object>, T> parse)
+    private static IList<T> ConvertObjects<T>(
+        IDictionary<string, object> metadata,
+        string key,
+        Func<IDictionary<string, object>, T> parse)
     {
         if (metadata.TryGetValue(key, out var x) && x is IList<object> statuses)
         {
@@ -73,7 +77,7 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool useRawStatu
         var severity = notification.GetValue("severity", string.Empty);
         var category = notification.GetValue("category", default(string));
         var position = InputPosition.ConvertFromDictionary(notification, "position");
-        
+
         return new Notification(
             code,
             title,
@@ -112,10 +116,11 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool useRawStatu
             severity,
             nameof(NotificationSeverity.Warning),
             StringComparison.InvariantCultureIgnoreCase);
+
         var status = isWarning
             ? "01N42"
             : "03N42";
-        
+
         var code = notification.GetValue<string>("code", null);
         var description = notification.GetValue<string>("description", null) ??
             (isWarning
@@ -129,17 +134,19 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool useRawStatu
         {
             diagnosticRecord["_position"] = notification["position"];
         }
+
         if (severity != null)
         {
             diagnosticRecord["_severity"] = severity;
         }
+
         if (category != null)
         {
             diagnosticRecord["_classification"] = category;
         }
 
         var title = notification.GetValue<string>("title", null);
-        
+
         return new GqlStatusObject(
             status,
             description,
@@ -158,6 +165,7 @@ internal sealed class GqlStatusObjectsAndNotificationsCollector(bool useRawStatu
         {
             return null;
         }
+
         var title = gqlStatus.GetValue("title", string.Empty);
         var description = gqlStatus.GetValue("description", string.Empty);
         var diagnosticRecord = CreateDiagnosticRecord(gqlStatus);

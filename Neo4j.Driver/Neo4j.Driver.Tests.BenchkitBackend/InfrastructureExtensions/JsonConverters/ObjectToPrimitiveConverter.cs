@@ -20,8 +20,8 @@ namespace Neo4j.Driver.Tests.BenchkitBackend.InfrastructureExtensions;
 
 /// <summary>
 /// The purpose of this class is to ensure that when the destination type is "object" that we don't deserialize a
-/// primitive into a JsonElement of some kind, which causes issues when trying to write the value to a PackStream,
-/// but instead deserialize it into a primitive type.
+/// primitive into a JsonElement of some kind, which causes issues when trying to write the value to a PackStream, but
+/// instead deserialize it into a primitive type.
 /// </summary>
 internal class ObjectToPrimitiveConverter : JsonConverter<object>
 {
@@ -36,9 +36,9 @@ internal class ObjectToPrimitiveConverter : JsonConverter<object>
         {
             JsonTokenType.True => true,
             JsonTokenType.False => false,
-            JsonTokenType.Number when reader.TryGetInt64(out long l) => l,
+            JsonTokenType.Number when reader.TryGetInt64(out var l) => l,
             JsonTokenType.Number => reader.GetDouble(),
-            JsonTokenType.String when reader.TryGetDateTime(out DateTime datetime) => datetime,
+            JsonTokenType.String when reader.TryGetDateTime(out var datetime) => datetime,
             JsonTokenType.String => reader.GetString()!,
             _ => JsonDocument.ParseValue(ref reader).RootElement.Clone()
         };

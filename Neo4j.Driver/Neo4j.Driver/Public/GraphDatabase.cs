@@ -242,7 +242,7 @@ public static class GraphDatabase
         var builder = Config.Builder;
         action?.Invoke(builder);
         var config = builder.Build();
-        
+
         var context = new DriverContext(uri, authTokenManager, config);
         var connectionFactory = new PooledConnectionFactory(context);
 

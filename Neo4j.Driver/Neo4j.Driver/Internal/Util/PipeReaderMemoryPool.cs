@@ -18,14 +18,12 @@ using System.Buffers;
 
 namespace Neo4j.Driver.Internal.Util;
 
-/// <summary>
-/// Simple memory pool based on the .NET's Pool.
-/// </summary>
+/// <summary>Simple memory pool based on the .NET's Pool.</summary>
 internal sealed class PipeReaderMemoryPool : MemoryPool<byte>
 {
     private readonly int _defaultSize;
     private readonly ArrayPool<byte> _pool;
-    
+
     public PipeReaderMemoryPool(int defaultBufferSize, int maxPooledBufferSize)
     {
         _defaultSize = defaultBufferSize;
@@ -40,12 +38,15 @@ internal sealed class PipeReaderMemoryPool : MemoryPool<byte>
         {
             minimumBufferSize = _defaultSize;
         }
-        
+
         if (minimumBufferSize < 0 || minimumBufferSize > MaxBufferSize)
         {
-            throw new ArgumentOutOfRangeException(nameof(minimumBufferSize), minimumBufferSize, "requested size is invalid");
+            throw new ArgumentOutOfRangeException(
+                nameof(minimumBufferSize),
+                minimumBufferSize,
+                "requested size is invalid");
         }
-        
+
         return new PooledMemory(minimumBufferSize, _pool);
     }
 
@@ -55,8 +56,8 @@ internal sealed class PipeReaderMemoryPool : MemoryPool<byte>
 
     private sealed class PooledMemory : IMemoryOwner<byte>
     {
-        private byte[] _array;
         private readonly ArrayPool<byte> _pool;
+        private byte[] _array;
 
         public PooledMemory(int size, ArrayPool<byte> pool)
         {
@@ -81,7 +82,7 @@ internal sealed class PipeReaderMemoryPool : MemoryPool<byte>
         public void Dispose()
         {
             var array = _array;
-            
+
             if (array == null)
             {
                 return;

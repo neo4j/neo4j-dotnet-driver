@@ -22,8 +22,8 @@ namespace Neo4j.Driver.Internal.Auth;
 
 internal sealed class DefaultTlsNegotiator : ITlsNegotiator
 {
-    private readonly ILogger _logger;
     private readonly EncryptionManager _encryptionManager;
+    private readonly ILogger _logger;
 
     public DefaultTlsNegotiator(ILogger logger, EncryptionManager encryptionManager)
     {
@@ -31,7 +31,7 @@ internal sealed class DefaultTlsNegotiator : ITlsNegotiator
         _encryptionManager = encryptionManager;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public SslStream NegotiateTls(Uri uri, Stream stream)
     {
         return new SslStream(

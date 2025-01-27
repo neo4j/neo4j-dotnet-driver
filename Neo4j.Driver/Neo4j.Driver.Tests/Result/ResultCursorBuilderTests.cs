@@ -32,8 +32,14 @@ public class ResultCursorBuilderTests
     public void ShouldStartInRunRequestedStateRx()
     {
         var builder =
-            new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null,
-                1000, true,
+            new ResultCursorBuilder(
+                CreateSummaryBuilder(),
+                CreateTaskQueue(),
+                null,
+                null,
+                null,
+                1000,
+                true,
                 new Mock<IInternalAsyncTransaction>().Object);
 
         builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunRequested);
@@ -43,8 +49,14 @@ public class ResultCursorBuilderTests
     public void ShouldStartInRunAndRecordsRequestedState()
     {
         var builder =
-            new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null,
-                1000, false,
+            new ResultCursorBuilder(
+                CreateSummaryBuilder(),
+                CreateTaskQueue(),
+                null,
+                null,
+                null,
+                1000,
+                false,
                 new Mock<IInternalAsyncTransaction>().Object);
 
         builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunAndRecordsRequested);
@@ -54,7 +66,14 @@ public class ResultCursorBuilderTests
     public void ShouldTransitionToRunCompletedWhenRunCompletedRx()
     {
         var builder =
-            new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null, 1000, true,
+            new ResultCursorBuilder(
+                CreateSummaryBuilder(),
+                CreateTaskQueue(),
+                null,
+                null,
+                null,
+                1000,
+                true,
                 new Mock<IInternalAsyncTransaction>().Object);
 
         builder.CurrentState.Should().Be(ResultCursorBuilder.State.RunRequested);
@@ -67,7 +86,12 @@ public class ResultCursorBuilderTests
     public void ShouldNotTransitionToRunCompletedWhenRunCompleted()
     {
         var builder =
-            new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null,
+            new ResultCursorBuilder(
+                CreateSummaryBuilder(),
+                CreateTaskQueue(),
+                null,
+                null,
+                null,
                 1000,
                 false,
                 new Mock<IInternalAsyncTransaction>().Object);
@@ -82,7 +106,12 @@ public class ResultCursorBuilderTests
     public void ShouldTransitionToRecordsStreamingStreamingWhenRecordIsPushedRx()
     {
         var builder =
-            new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null,
+            new ResultCursorBuilder(
+                CreateSummaryBuilder(),
+                CreateTaskQueue(),
+                null,
+                null,
+                null,
                 1000,
                 true,
                 new Mock<IInternalAsyncTransaction>().Object);
@@ -100,7 +129,12 @@ public class ResultCursorBuilderTests
     public void ShouldTransitionToRecordsStreamingStreamingWhenRecordIsPushed()
     {
         var builder =
-            new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null,
+            new ResultCursorBuilder(
+                CreateSummaryBuilder(),
+                CreateTaskQueue(),
+                null,
+                null,
+                null,
                 1000,
                 false,
                 new Mock<IInternalAsyncTransaction>().Object);
@@ -118,7 +152,12 @@ public class ResultCursorBuilderTests
     public void ShouldTransitionToRunCompletedWhenPullCompletedWithHasMore()
     {
         var builder =
-            new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null,
+            new ResultCursorBuilder(
+                CreateSummaryBuilder(),
+                CreateTaskQueue(),
+                null,
+                null,
+                null,
                 1000,
                 false,
                 new Mock<IInternalAsyncTransaction>().Object)
@@ -134,7 +173,12 @@ public class ResultCursorBuilderTests
     public void ShouldTransitionToCompletedWhenPullCompleted()
     {
         var builder =
-            new ResultCursorBuilder(CreateSummaryBuilder(), CreateTaskQueue(), null, null, null,
+            new ResultCursorBuilder(
+                CreateSummaryBuilder(),
+                CreateTaskQueue(),
+                null,
+                null,
+                null,
                 1000,
                 false,
                 new Mock<IInternalAsyncTransaction>().Object)
@@ -454,10 +498,10 @@ public class ResultCursorBuilderTests
         [Fact]
         public async Task ShouldThrowIfTranasactionTerminatedOnFetch()
         {
-            var expected = new ClientException("Neo.Broken.Db","it's broken!") as Exception;
+            var expected = new ClientException("Neo.Broken.Db", "it's broken!") as Exception;
             var mockTx = new Mock<IInternalAsyncTransaction>();
             mockTx.Setup(x => x.IsErrored(out expected)).Returns(true).Verifiable();
-                
+
             var builder =
                 new ResultCursorBuilder(
                     CreateSummaryBuilder(),
@@ -468,6 +512,7 @@ public class ResultCursorBuilderTests
                     1000,
                     true,
                     mockTx.Object);
+
             var cursor = builder.CreateCursor();
             var exception = await Record.ExceptionAsync(() => cursor.FetchAsync());
 

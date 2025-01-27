@@ -39,7 +39,7 @@ internal static class SettingsHelper
         using var writer =
             new StreamWriter(new FileStream(configFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite));
 
-        while (reader.ReadLine() is { } line)
+        while (reader.ReadLine() is {} line)
         {
             if (line.Trim() == string.Empty || line.Trim().StartsWith("#"))
             {

@@ -22,7 +22,7 @@ internal class ClassNameEnricher : ILogEventEnricher
 {
     public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
     {
-        if (logEvent.Properties.TryGetValue("SourceContext", out LogEventPropertyValue? value) &&
+        if (logEvent.Properties.TryGetValue("SourceContext", out var value) &&
             value is ScalarValue { Value: string sourceContext })
         {
             var className = sourceContext.Split('.').Last();

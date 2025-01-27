@@ -23,7 +23,7 @@ namespace Neo4j.Driver.Internal;
 
 internal static class ErrorExtensions
 {
-    private static Neo4jExceptionFactory _exceptionFactory = new();
+    private static readonly Neo4jExceptionFactory _exceptionFactory = new();
 
     public static Neo4jException ParseServerException(FailureMessage failureMessage)
     {

@@ -1,14 +1,12 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-//
-// This file is part of Neo4j.
-//
+// Neo4j Sweden AB [https://neo4j.com]
+// 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-//
+// 
 //     http://www.apache.org/licenses/LICENSE-2.0
-//
+// 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,7 +41,7 @@ internal class NewNeo4jAuthTokenManager : ProtocolObject
 internal class NewBasicAuthTokenManager : NewNeo4jAuthTokenManager
 {
     public object data { get; set; }
-    
+
     public override Task Process(Controller controller)
     {
         _controller = controller;
@@ -71,7 +69,7 @@ internal class NewBasicAuthTokenManager : NewNeo4jAuthTokenManager
     {
         return new ProtocolResponse("BasicAuthTokenManager", uniqueId).Encode();
     }
-    
+
     protected string GetAuthRequest(string requestId)
     {
         return new ProtocolResponse(

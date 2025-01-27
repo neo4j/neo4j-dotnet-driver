@@ -1,5 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-    <Import Project="..\common.props" />
+    <Import Project="..\common.props"/>
     <PropertyGroup>
         <IsPackable>false</IsPackable>
         <OutputType>Exe</OutputType>
@@ -10,12 +10,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="BouncyCastle.Cryptography" Version="2.4.0" />
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+        <PackageReference Include="BouncyCastle.Cryptography" Version="2.4.0"/>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.1"/>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj" />
+        <ProjectReference Include="..\Neo4j.Driver\Neo4j.Driver.csproj"/>
     </ItemGroup>
 
 

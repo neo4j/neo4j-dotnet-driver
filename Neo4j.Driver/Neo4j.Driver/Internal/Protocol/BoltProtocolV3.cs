@@ -199,7 +199,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             await connection.SyncAsync().ConfigureAwait(false);
         }
     }
-    
+
     public async Task<IResultCursor> RunInExplicitTransactionAsync(
         IConnection connection,
         Query query,
@@ -231,7 +231,7 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
 
         await connection.EnqueueAsync(message, runHandler, PullAllMessage.Instance, pullAllHandler)
             .ConfigureAwait(false);
-        
+
         await connection.SendAsync().ConfigureAwait(false);
 
         return streamBuilder.CreateCursor();

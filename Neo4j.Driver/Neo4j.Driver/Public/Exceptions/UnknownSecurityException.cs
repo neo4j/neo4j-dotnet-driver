@@ -1,10 +1,8 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
+// Neo4j Sweden AB [https://neo4j.com]
 // 
-// This file is part of Neo4j.
-// 
-// Licensed under the Apache License, Version 2.0 (the "License"):
-// you may not use this file except in compliance with the License.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 // 
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -22,16 +20,12 @@ using Neo4j.Driver.Internal.Messaging;
 
 namespace Neo4j.Driver;
 
-/// <summary>
-/// An unknown security error occurred.
-/// </summary>
+/// <summary>An unknown security error occurred.</summary>
 [DataContract]
 [ErrorCode("Neo.ClientError.Security.*")]
 public class UnknownSecurityException : SecurityException
 {
-    /// <summary>
-    /// Create a new <see cref="UnknownSecurityException" /> with an error message.
-    /// </summary>
+    /// <summary>Create a new <see cref="UnknownSecurityException"/> with an error message.</summary>
     /// <param name="message">The error message.</param>
     public UnknownSecurityException(string message) : base(message)
     {

@@ -25,14 +25,14 @@ internal sealed class IgnoredMessageSerializer : ReadOnlySerializer, IPackStream
     private static readonly byte[] StructTags = { MessageFormat.MsgIgnored };
     public override byte[] ReadableStructs => StructTags;
 
-    public override object Deserialize(PackStreamReader _)
+    public IResponseMessage DeserializeMessage(
+        BoltProtocolVersion formatVersion,
+        SpanPackStreamReader packStreamReader)
     {
         return IgnoredMessage.Instance;
     }
 
-    public IResponseMessage DeserializeMessage(
-        BoltProtocolVersion formatVersion,
-        SpanPackStreamReader packStreamReader)
+    public override object Deserialize(PackStreamReader _)
     {
         return IgnoredMessage.Instance;
     }

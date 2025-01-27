@@ -23,7 +23,8 @@ internal class CheckMultiDBSupport : ProtocolObject
 {
     public CheckMultiDBSupportType data { get; set; } = new();
 
-    [JsonIgnore] private bool MutlitDBSupportAvailable { get; set; }
+    [JsonIgnore]
+    private bool MutlitDBSupportAvailable { get; set; }
 
     public override async Task Process()
     {

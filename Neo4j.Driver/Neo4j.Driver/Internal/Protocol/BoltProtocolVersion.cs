@@ -28,24 +28,6 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
 
     public static readonly BoltProtocolVersion Unknown = new(1, 0);
 
-    // ReSharper disable InconsistentNaming
-    public static readonly BoltProtocolVersion V3_0 = new(3, 0);
-    public static readonly BoltProtocolVersion V4_0 = new(4, 0);
-    public static readonly BoltProtocolVersion V4_1 = new(4, 1);
-    public static readonly BoltProtocolVersion V4_2 = new(4, 2);
-    public static readonly BoltProtocolVersion V4_3 = new(4, 3);
-    public static readonly BoltProtocolVersion V4_4 = new(4, 4);
-    public static readonly BoltProtocolVersion V5_0 = new(5, 0);
-    public static readonly BoltProtocolVersion V5_1 = new(5, 1);
-    public static readonly BoltProtocolVersion V5_2 = new(5, 2);
-    public static readonly BoltProtocolVersion V5_3 = new(5, 3);
-    public static readonly BoltProtocolVersion V5_4 = new(5, 4);
-    public static readonly BoltProtocolVersion V5_5 = new(5, 5);
-    public static readonly BoltProtocolVersion V5_6 = new(5, 6);
-    public static readonly BoltProtocolVersion V5_7 = new(5, 7);
-    public static readonly BoltProtocolVersion V5_8 = new(5, 8);
-    // ReSharper restore InconsistentNaming
-
     private readonly int _compValue;
 
     public BoltProtocolVersion(int majorVersion, int minorVersion)
@@ -191,4 +173,23 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>
     {
         return $"{MajorVersion}.{MinorVersion}";
     }
+
+    // ReSharper disable InconsistentNaming
+    public static readonly BoltProtocolVersion V3_0 = new(3, 0);
+    public static readonly BoltProtocolVersion V4_0 = new(4, 0);
+    public static readonly BoltProtocolVersion V4_1 = new(4, 1);
+    public static readonly BoltProtocolVersion V4_2 = new(4, 2);
+    public static readonly BoltProtocolVersion V4_3 = new(4, 3);
+    public static readonly BoltProtocolVersion V4_4 = new(4, 4);
+    public static readonly BoltProtocolVersion V5_0 = new(5, 0);
+    public static readonly BoltProtocolVersion V5_1 = new(5, 1);
+    public static readonly BoltProtocolVersion V5_2 = new(5, 2);
+    public static readonly BoltProtocolVersion V5_3 = new(5, 3);
+    public static readonly BoltProtocolVersion V5_4 = new(5, 4);
+    public static readonly BoltProtocolVersion V5_5 = new(5, 5);
+    public static readonly BoltProtocolVersion V5_6 = new(5, 6);
+    public static readonly BoltProtocolVersion V5_7 = new(5, 7);
+
+    public static readonly BoltProtocolVersion V5_8 = new(5, 8);
+    // ReSharper restore InconsistentNaming
 }

@@ -43,6 +43,7 @@ public abstract class DirectDriverTestBase : IDisposable
         switch (_disposed)
         {
             case true: return;
+
             case false:
             {
                 using var session = Server.Driver.Session();

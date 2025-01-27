@@ -169,7 +169,7 @@ public sealed class PointsIT : DirectDriverTestBase
             1 => new Point(Wgs843DSrId, GenerateRandomX(), GenerateRandomY(), GenerateRandomZ()),
             2 => new Point(CartesianSrId, GenerateRandomX(), GenerateRandomY()),
             3 => new Point(Cartesian3DSrId, GenerateRandomX(), GenerateRandomY(), GenerateRandomZ()),
-            var _ => throw new ArgumentOutOfRangeException()
+            _ => throw new ArgumentOutOfRangeException()
         };
     }
 

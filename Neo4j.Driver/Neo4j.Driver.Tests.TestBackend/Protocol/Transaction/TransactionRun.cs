@@ -27,7 +27,8 @@ internal class TransactionRun : ProtocolObject
 {
     public TransactionRunType data { get; set; } = new();
 
-    [JsonIgnore] private string ResultId { get; set; }
+    [JsonIgnore]
+    private string ResultId { get; set; }
 
     public override async Task Process(Controller controller)
     {

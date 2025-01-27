@@ -25,15 +25,15 @@ internal sealed class SuccessMessageSerializer : ReadOnlySerializer, IPackStream
     private static readonly byte[] StructTags = { MessageFormat.MsgSuccess };
     public override byte[] ReadableStructs => StructTags;
 
-    public override object Deserialize(PackStreamReader reader)
-    {
-        var map = reader.ReadMap();
-        return new SuccessMessage(map);
-    }
-
     public IResponseMessage DeserializeMessage(BoltProtocolVersion formatVersion, SpanPackStreamReader packStreamReader)
     {
         var map = packStreamReader.ReadMap();
+        return new SuccessMessage(map);
+    }
+
+    public override object Deserialize(PackStreamReader reader)
+    {
+        var map = reader.ReadMap();
         return new SuccessMessage(map);
     }
 }

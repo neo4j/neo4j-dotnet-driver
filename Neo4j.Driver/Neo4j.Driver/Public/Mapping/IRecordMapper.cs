@@ -15,15 +15,11 @@
 
 namespace Neo4j.Driver.Mapping;
 
-/// <summary>
-/// Interface to be implemented by a class that maps records to objects of type <typeparamref name="T"/>.
-/// </summary>
+/// <summary>Interface to be implemented by a class that maps records to objects of type <typeparamref name="T"/>.</summary>
 /// <typeparam name="T">The type of object to which records will be mapped.</typeparam>
 public interface IRecordMapper<out T>
 {
-    /// <summary>
-    /// Maps the given record to an object of type <typeparamref name="T"/>.
-    /// </summary>
+    /// <summary>Maps the given record to an object of type <typeparamref name="T"/>.</summary>
     /// <param name="record">The record to map.</param>
     /// <returns>The mapped object.</returns>
     T Map(IRecord record);

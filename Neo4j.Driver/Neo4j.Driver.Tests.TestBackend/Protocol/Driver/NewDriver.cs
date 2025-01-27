@@ -95,7 +95,6 @@ internal class NewDriver : ProtocolObject
                 TimeSpan.FromMilliseconds(data.connectionAcquisitionTimeoutMs.Value));
         }
 
-
         if (data.ModifiedTrustedCertificates)
         {
             var certificateTrustStrategy = data?.trustedCertificates switch
@@ -171,7 +170,7 @@ internal class NewDriver : ProtocolObject
                 ClientCertificateProviders.Static(data.clientCertificate.Certificate));
         }
 
-        if(data.clientCertificateProviderId != null)
+        if (data.clientCertificateProviderId != null)
         {
             var provider = (NewClientCertificateProvider)ObjManager.GetObject(data.clientCertificateProviderId);
             configBuilder.WithClientCertificateProvider(provider);

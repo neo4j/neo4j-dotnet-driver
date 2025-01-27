@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
 using Neo4j.Driver.Internal.Auth;
 
@@ -109,7 +108,12 @@ public static class AuthTokens
     /// parameters will be added.
     /// </param>
     /// <returns>An authentication token that can be used to connect to Neo4j.</returns>
-    public static IAuthToken Custom(string principal, string credentials, string realm, string scheme, Dictionary<string, object> parameters)
+    public static IAuthToken Custom(
+        string principal,
+        string credentials,
+        string realm,
+        string scheme,
+        Dictionary<string, object> parameters)
     {
         return new CustomAuthToken(principal, credentials, realm, scheme, parameters);
     }

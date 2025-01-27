@@ -28,8 +28,8 @@ namespace Neo4j.Driver.Mapping;
 public static class DelegateExecutableQueryMappingExtensions
 {
     /// <summary>
-    /// Add this method to an <see cref="ExecutableQuery{TIn,TOut}"/> method chain to map the results to objects
-    /// using a delegate as part of the query execution.
+    /// Add this method to an <see cref="ExecutableQuery{TIn,TOut}"/> method chain to map the results to objects using
+    /// a delegate as part of the query execution.
     /// </summary>
     /// <seealso cref="RecordObjectMapping.Map{T}"/>
     /// <param name="recordsTask">The task that will return the records.</param>
@@ -45,9 +45,7 @@ public static class DelegateExecutableQueryMappingExtensions
         return records.Result.Select(r => r.AsObject(map)).ToList();
     }
 
-    /// <summary>
-    /// Maps the results to objects using a delegate as part of the query execution.
-    /// </summary>
+    /// <summary>Maps the results to objects using a delegate as part of the query execution.</summary>
     /// <param name="recordsTask">The task that will return the records.</param>
     /// <param name="map">The delegate to use to map the records to objects.</param>
     /// <typeparam name="TResult">The type to map to.</typeparam>
@@ -62,9 +60,7 @@ public static class DelegateExecutableQueryMappingExtensions
         return records.Result.Select(r => r.AsObject(map)).ToList();
     }
 
-    /// <summary>
-    /// Maps the results to objects using a delegate as part of the query execution.
-    /// </summary>
+    /// <summary>Maps the results to objects using a delegate as part of the query execution.</summary>
     /// <param name="recordsTask">The task that will return the records.</param>
     /// <param name="map">The delegate to use to map the records to objects.</param>
     /// <typeparam name="TResult">The type to map to.</typeparam>
@@ -80,9 +76,7 @@ public static class DelegateExecutableQueryMappingExtensions
         return records.Result.Select(r => r.AsObject(map)).ToList();
     }
 
-    /// <summary>
-    /// Maps the results to objects using a delegate as part of the query execution.
-    /// </summary>
+    /// <summary>Maps the results to objects using a delegate as part of the query execution.</summary>
     /// <param name="recordsTask">The task that will return the records.</param>
     /// <param name="map">The delegate to use to map the records to objects.</param>
     /// <typeparam name="TResult">The type to map to.</typeparam>
@@ -99,9 +93,7 @@ public static class DelegateExecutableQueryMappingExtensions
         return records.Result.Select(r => r.AsObject(map)).ToList();
     }
 
-    /// <summary>
-    /// Maps the results to objects using a delegate as part of the query execution.
-    /// </summary>
+    /// <summary>Maps the results to objects using a delegate as part of the query execution.</summary>
     /// <param name="recordsTask">The task that will return the records.</param>
     /// <param name="map">The delegate to use to map the records to objects.</param>
     /// <typeparam name="TResult">The type to map to.</typeparam>
@@ -119,9 +111,7 @@ public static class DelegateExecutableQueryMappingExtensions
         return records.Result.Select(r => r.AsObject(map)).ToList();
     }
 
-    /// <summary>
-    /// Maps the results to objects using a delegate as part of the query execution.
-    /// </summary>
+    /// <summary>Maps the results to objects using a delegate as part of the query execution.</summary>
     /// <param name="recordsTask">The task that will return the records.</param>
     /// <param name="map">The delegate to use to map the records to objects.</param>
     /// <typeparam name="TResult">The type to map to.</typeparam>
@@ -140,9 +130,7 @@ public static class DelegateExecutableQueryMappingExtensions
         return records.Result.Select(r => r.AsObject(map)).ToList();
     }
 
-    /// <summary>
-    /// Maps the results to objects using a delegate as part of the query execution.
-    /// </summary>
+    /// <summary>Maps the results to objects using a delegate as part of the query execution.</summary>
     /// <param name="recordsTask">The task that will return the records.</param>
     /// <param name="map">The delegate to use to map the records to objects.</param>
     /// <typeparam name="TResult">The type to map to.</typeparam>
@@ -162,9 +150,7 @@ public static class DelegateExecutableQueryMappingExtensions
         return records.Result.Select(r => r.AsObject(map)).ToList();
     }
 
-    /// <summary>
-    /// Maps the results to objects using a delegate as part of the query execution.
-    /// </summary>
+    /// <summary>Maps the results to objects using a delegate as part of the query execution.</summary>
     /// <param name="recordsTask">The task that will return the records.</param>
     /// <param name="map">The delegate to use to map the records to objects.</param>
     /// <typeparam name="TResult">The type to map to.</typeparam>
@@ -185,9 +171,7 @@ public static class DelegateExecutableQueryMappingExtensions
         return records.Result.Select(r => r.AsObject(map)).ToList();
     }
 
-    /// <summary>
-    /// Maps the results to objects using a delegate as part of the query execution.
-    /// </summary>
+    /// <summary>Maps the results to objects using a delegate as part of the query execution.</summary>
     /// <param name="recordsTask">The task that will return the records.</param>
     /// <param name="map">The delegate to use to map the records to objects.</param>
     /// <typeparam name="TResult">The type to map to.</typeparam>
@@ -209,9 +193,7 @@ public static class DelegateExecutableQueryMappingExtensions
         return records.Result.Select(r => r.AsObject(map)).ToList();
     }
 
-    /// <summary>
-    /// Maps the results to objects using a delegate as part of the query execution.
-    /// </summary>
+    /// <summary>Maps the results to objects using a delegate as part of the query execution.</summary>
     /// <param name="recordsTask">The task that will return the records.</param>
     /// <param name="map">The delegate to use to map the records to objects.</param>
     /// <typeparam name="TResult">The type to map to.</typeparam>

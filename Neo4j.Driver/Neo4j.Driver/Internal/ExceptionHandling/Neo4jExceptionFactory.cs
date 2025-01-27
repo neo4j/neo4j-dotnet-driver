@@ -1,14 +1,12 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-//
-// This file is part of Neo4j.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"):
-// you may not use this file except in compliance with the License.
+// Neo4j Sweden AB [https://neo4j.com]
+// 
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-//
+// 
 //     http://www.apache.org/licenses/LICENSE-2.0
-//
+// 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,8 +24,6 @@ namespace Neo4j.Driver.Internal.ExceptionHandling;
 
 internal class Neo4jExceptionFactory
 {
-    private record FactoryInfo(string Code, Func<FailureMessage, Exception, Neo4jException> ExceptionFactory);
-
     private readonly List<FactoryInfo> _exceptionFactories = new();
     private readonly SimpleWildcardHelper _simpleWildcardHelper = new();
 
@@ -103,7 +99,6 @@ internal class Neo4jExceptionFactory
                     $"Neo4jException type {type.FullName} does not have a constructor that takes " +
                     $"a {nameof(FailureMessage)} and an {nameof(Exception)}");
             }
-
         }
     }
 
@@ -122,4 +117,6 @@ internal class Neo4jExceptionFactory
         var exception = factoryInfo.ExceptionFactory(failureMessage, innerException);
         return exception;
     }
+
+    private record FactoryInfo(string Code, Func<FailureMessage, Exception, Neo4jException> ExceptionFactory);
 }

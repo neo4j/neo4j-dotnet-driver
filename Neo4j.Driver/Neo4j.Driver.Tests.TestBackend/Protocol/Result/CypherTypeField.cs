@@ -26,9 +26,11 @@ namespace Neo4j.Driver.Tests.TestBackend.Protocol.Result;
 
 internal class CypherTypeField : ProtocolObject
 {
-    [JsonProperty("data")] public CypherTypeFieldRequest RequestData { get; set; } = new();
+    [JsonProperty("data")]
+    public CypherTypeFieldRequest RequestData { get; set; } = new();
 
-    [JsonIgnore] public object Field { get; set; }
+    [JsonIgnore]
+    public object Field { get; set; }
 
     public override async Task Process()
     {

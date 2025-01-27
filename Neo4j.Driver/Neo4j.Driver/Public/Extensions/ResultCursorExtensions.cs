@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+
 // ReSharper disable NotDisposedResource
 
 namespace Neo4j.Driver;
@@ -92,12 +93,16 @@ public static class ResultCursorExtensions
 
     /// <summary>Pull all records in the result stream into memory and return in a list.</summary>
     /// <param name="result"> The result stream.</param>
-    /// <param name="initialCapacity">Optional, the driver has no knowledge of the expected result size so use the
-    /// default <see cref="List{T}"/> constructor: <see cref="List{T}()"/>. a capacity can be provided to cost of
-    /// extending this list.</param>
+    /// <param name="initialCapacity">
+    /// Optional, the driver has no knowledge of the expected result size so use the default
+    /// <see cref="List{T}"/> constructor: <see cref="List{T}()"/>. a capacity can be provided to cost of extending this list.
+    /// </param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// <returns>A list with all records in the result stream.</returns>
-    public static async Task<List<IRecord>> ToListAsync(this IResultCursor result, int initialCapacity = 0, CancellationToken cancellationToken = default)
+    public static async Task<List<IRecord>> ToListAsync(
+        this IResultCursor result,
+        int initialCapacity = 0,
+        CancellationToken cancellationToken = default)
     {
         if (result == null)
         {
@@ -129,11 +134,14 @@ public static class ResultCursorExtensions
     /// <typeparam name="T">The return type of the list</typeparam>
     /// <param name="result">The result stream.</param>
     /// <param name="operation">The operation to carry out on each record.</param>
-    /// <param name="initialCapacity">Optional, the driver has no knowledge of the expected result size so use the
-    /// default <see cref="List{T}"/> constructor: <see cref="List{T}()"/>. a capacity can be provided to cost of
-    /// extending this list.</param>
+    /// <param name="initialCapacity">
+    /// Optional, the driver has no knowledge of the expected result size so use the default
+    /// <see cref="List{T}"/> constructor: <see cref="List{T}()"/>. a capacity can be provided to cost of extending this list.
+    /// </param>
     /// <returns>A list of collected operation result.</returns>
-    public static async Task<List<T>> ToListAsync<T>(this IResultCursor result, Func<IRecord, T> operation,
+    public static async Task<List<T>> ToListAsync<T>(
+        this IResultCursor result,
+        Func<IRecord, T> operation,
         int initialCapacity = 0)
     {
         if (result == null)

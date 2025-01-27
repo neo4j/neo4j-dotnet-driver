@@ -1,4 +1,19 @@
-﻿#pragma warning disable CS0618 // Type or member is obsolete
+﻿// Copyright (c) "Neo4j"
+// Neo4j Sweden AB [https://neo4j.com]
+// 
+// Licensed under the Apache License, Version 2.0 (the "License").
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#pragma warning disable CS0618 // Type or member is obsolete
 // Copyright (c) "Neo4j"
 // Neo4j Sweden AB [https://neo4j.com]
 // 
@@ -123,6 +138,7 @@ public class GqlStatusObjectsAndNotificationsCollectorTests
                             ["column"] = 3L
                         }
                     };
+
                     first.GqlStatus.Should().Be("000000");
                     first.StatusDescription.Should().Be("it is a status");
                     first.Position.Should().Be(new InputPosition(1, 2, 3));
@@ -136,7 +152,7 @@ public class GqlStatusObjectsAndNotificationsCollectorTests
                     first.Title.Should().Be("blah");
                 });
     }
-    
+
     [Fact]
     public void ShouldCollectMinimalGqlStatuses()
     {
@@ -165,8 +181,9 @@ public class GqlStatusObjectsAndNotificationsCollectorTests
                     {
                         ["CURRENT_SCHEMA"] = "/",
                         ["OPERATION"] = "",
-                        ["OPERATION_CODE"] = "0",
+                        ["OPERATION_CODE"] = "0"
                     };
+
                     first.GqlStatus.Should().Be("030000");
                     first.StatusDescription.Should().Be("it is a status");
                     first.Position.Should().BeNull();
@@ -196,8 +213,8 @@ public class GqlStatusObjectsAndNotificationsCollectorTests
                         ["diagnostic_record"] = new Dictionary<string, object>
                         {
                             ["Example"] = "blah-de-blah",
-                            ["OPERATION"] = "OP!",
-                        },
+                            ["OPERATION"] = "OP!"
+                        }
                     }
                 }
             });
@@ -214,13 +231,13 @@ public class GqlStatusObjectsAndNotificationsCollectorTests
                         ["Example"] = "blah-de-blah",
                         ["CURRENT_SCHEMA"] = "/",
                         ["OPERATION"] = "OP!",
-                        ["OPERATION_CODE"] = "0",
+                        ["OPERATION_CODE"] = "0"
                     };
 
                     first.DiagnosticRecord.Should().BeEquivalentTo(dict);
                 });
     }
-    
+
     [Fact]
     public void ShouldPolyfilGqlStatusesIntoNotifications()
     {
@@ -366,9 +383,7 @@ public class GqlStatusObjectsAndNotificationsCollectorTests
             {
                 ["notifications"] = new List<object>
                 {
-                    new Dictionary<string, object>
-                    {
-                    }
+                    new Dictionary<string, object>()
                 }
             });
 
@@ -413,8 +428,9 @@ public class GqlStatusObjectsAndNotificationsCollectorTests
                     {
                         ["CURRENT_SCHEMA"] = "/",
                         ["OPERATION"] = "",
-                        ["OPERATION_CODE"] = "0",
+                        ["OPERATION_CODE"] = "0"
                     };
+
                     var first = x.Should().BeOfType<GqlStatusObject>().Which;
                     first.GqlStatus.Should().Be("03N42");
                     first.Title.Should().BeNull();
@@ -462,16 +478,17 @@ public class GqlStatusObjectsAndNotificationsCollectorTests
                     var dict = new Dictionary<string, object>
                     {
                         ["_severity"] = "WARNING",
-                        ["_position"] = new Dictionary<string, object> 
-                            {
-                                ["offset"] = 1L,
-                                ["line"] = 2L,
-                                ["column"] = 3L
-                            },
+                        ["_position"] = new Dictionary<string, object>
+                        {
+                            ["offset"] = 1L,
+                            ["line"] = 2L,
+                            ["column"] = 3L
+                        },
                         ["CURRENT_SCHEMA"] = "/",
                         ["OPERATION"] = "",
-                        ["OPERATION_CODE"] = "0",
+                        ["OPERATION_CODE"] = "0"
                     };
+
                     var first = x.Should().BeOfType<GqlStatusObject>().Which;
                     first.GqlStatus.Should().Be("01N42");
                     first.Title.Should().Be("blah");
@@ -484,7 +501,7 @@ public class GqlStatusObjectsAndNotificationsCollectorTests
                     first.DiagnosticRecord.Should().BeEquivalentTo(dict);
                 });
     }
-    
+
     [Fact]
     public void ShouldNotPolyfilWhenProvidedGqlStatus()
     {

@@ -22,7 +22,9 @@ internal static class TestDriverContext
 {
     static TestDriverContext()
     {
-        MockContext = new DriverContext(new Uri("bolt://localhost:7687"), AuthTokenManagers.None,
+        MockContext = new DriverContext(
+            new Uri("bolt://localhost:7687"),
+            AuthTokenManagers.None,
             new ConfigBuilder(new Config()).Build());
     }
 

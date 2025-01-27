@@ -1,14 +1,12 @@
 ﻿// Copyright (c) "Neo4j"
-// Neo4j Sweden AB [http://neo4j.com]
-//
-// This file is part of Neo4j.
-//
+// Neo4j Sweden AB [https://neo4j.com]
+// 
 // Licensed under the Apache License, Version 2.0 (the "License").
 // You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-//
+// 
 //     http://www.apache.org/licenses/LICENSE-2.0
-//
+// 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,19 +19,10 @@ using System.Reflection;
 
 namespace Neo4j.Driver.Mapping;
 
-/// <summary>
-/// This class wraps the <see cref="BuiltMapper{T}"/> and exposes a fluent API for building the mapper.
-/// </summary>
+/// <summary>This class wraps the <see cref="BuiltMapper{T}"/> and exposes a fluent API for building the mapper.</summary>
 internal class MappingBuilder<T> : IMappingBuilder<T>
 {
     private readonly BuiltMapper<T> _builtMapper = new();
-
-    internal void Map(
-        MethodInfo propertySetter,
-        EntityMappingInfo entityMappingInfo)
-    {
-        _builtMapper.AddMappingBySetter(propertySetter, entityMappingInfo);
-    }
 
     public IMappingBuilder<T> Map<TProperty>(
         Expression<Func<T, TProperty>> destination,
@@ -65,16 +54,23 @@ internal class MappingBuilder<T> : IMappingBuilder<T>
         return this;
     }
 
-    internal IMappingBuilder<T> UseConstructor(ConstructorInfo constructor)
-    {
-        _builtMapper.AddConstructorMapping(constructor);
-        return this;
-    }
-
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IMappingBuilder<T> UseDefaultMapping()
     {
         _builtMapper.AddWholeObjectMapping(r => DefaultMapper.Get<T>(_builtMapper.MappedSetters).Map(r));
+        return this;
+    }
+
+    internal void Map(
+        MethodInfo propertySetter,
+        EntityMappingInfo entityMappingInfo)
+    {
+        _builtMapper.AddMappingBySetter(propertySetter, entityMappingInfo);
+    }
+
+    internal IMappingBuilder<T> UseConstructor(ConstructorInfo constructor)
+    {
+        _builtMapper.AddConstructorMapping(constructor);
         return this;
     }
 
@@ -84,8 +80,8 @@ internal class MappingBuilder<T> : IMappingBuilder<T>
     }
 
     /// <summary>
-    /// Given an expression that represents a property (e.g. <c>o => o.Name</c>),
-    /// return the <see cref="MethodInfo"/> for the setter for that property.
+    /// Given an expression that represents a property (e.g. <c>o => o.Name</c>), return the <see cref="MethodInfo"/>
+    /// for the setter for that property.
     /// </summary>
     private static MethodInfo GetPropertySetter<TProperty>(Expression<Func<T, TProperty>> destination)
     {
