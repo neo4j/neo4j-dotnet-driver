@@ -30,7 +30,7 @@ public class DefaultMapperTests
     {
         var mapper = DefaultMapper.Get<SimpleClass>();
 
-        var record = TestRecord.Create(new[] { "Id", "Name" }, new object[] { 1, "Foo" });
+        var record = TestRecord.Create(["Id", "Name"], [1, "Foo"]);
         var result = mapper.Map(record);
 
         result.Id.Should().Be(1);
@@ -224,7 +224,7 @@ public class DefaultMapperTests
     private class SimpleClass
     {
         public int Id { get; set; }
-        public string Name { get; } = null!;
+        public string Name { get; set; } = null!;
     }
 
     private class ConstructorClass

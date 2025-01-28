@@ -145,7 +145,6 @@ internal sealed class BoltProtocolV3 : IBoltProtocol
             false,
             NullTransaction.Instance);
 
-        var cacheKey = connection.SessionConfig.AuthToken;
         var runHandler = _protocolHandlerFactory.NewRunResponseHandlerV3(streamBuilder, summaryBuilder);
 
         // if connection protocol is less than 5.0, use legacy notifications

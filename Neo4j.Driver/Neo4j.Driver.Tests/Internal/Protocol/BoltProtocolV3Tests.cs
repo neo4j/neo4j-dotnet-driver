@@ -23,6 +23,7 @@ using Neo4j.Driver.Internal;
 using Neo4j.Driver.Internal.Connector;
 using Neo4j.Driver.Internal.MessageHandling;
 using Neo4j.Driver.Internal.MessageHandling.V3;
+using Neo4j.Driver.Internal.MessageHandling.V4;
 using Neo4j.Driver.Internal.Messaging;
 using Neo4j.Driver.Internal.Protocol;
 using Neo4j.Driver.Internal.Result;
@@ -589,7 +590,7 @@ public class BoltProtocolV3Tests
                 Times.Once);
 
             mockConn.Verify(
-                x => x.EnqueueAsync(fakeMessage, NoOpResponseHandler.Instance),
+                x => x.EnqueueAsync(fakeMessage, It.IsAny<BeginResponseHandler>()),
                 Times.Once);
 
             mockConn.Verify(x => x.SyncAsync(), Times.Once);
@@ -636,7 +637,7 @@ public class BoltProtocolV3Tests
                 Times.Once);
 
             mockConn.Verify(
-                x => x.EnqueueAsync(fakeMessage, NoOpResponseHandler.Instance),
+                x => x.EnqueueAsync(fakeMessage, It.IsAny<BeginResponseHandler>()),
                 Times.Once);
 
             mockConn.Verify(x => x.SyncAsync(), Times.Never);

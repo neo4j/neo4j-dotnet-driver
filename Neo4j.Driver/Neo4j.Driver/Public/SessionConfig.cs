@@ -155,7 +155,17 @@ public sealed class SessionConfig
 
     internal async Task<IAuthToken> AuthTokenForHomeDbCache()
     {
-        return AuthToken ?? await DriverContext.AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
+        if (AuthToken != null)
+        {
+            return AuthToken;
+        }
+
+        if(DriverContext?.AuthTokenManager != null)
+        {
+            return await DriverContext.AuthTokenManager.GetTokenAsync().ConfigureAwait(false);
+        }
+
+        return null;
     }
 }
 

@@ -114,7 +114,9 @@ internal sealed class BoltProtocol : IBoltProtocol
             autoCommitParams,
             notificationsConfig);
 
-        var authToken = await autoCommitParams.SessionConfig.AuthTokenForHomeDbCache().ConfigureAwait(false);
+        var authToken = autoCommitParams.SessionConfig is null
+            ? null
+            : await autoCommitParams.SessionConfig.AuthTokenForHomeDbCache().ConfigureAwait(false);
 
         var runHandler = _protocolHandlerFactory.NewRunResponseHandler(
             streamBuilder,

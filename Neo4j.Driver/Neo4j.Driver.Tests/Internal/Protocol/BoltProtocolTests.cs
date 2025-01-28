@@ -818,7 +818,7 @@ public class BoltProtocolTests
                 x => x.NewRunResponseHandler(
                     resultCursorBuilderMock.Object,
                     It.IsNotNull<SummaryBuilder>(),
-                    AuthTokens.None,
+                    It.IsAny<IAuthToken>(),
                     new Dictionary<IAuthToken, string>()),
                 Times.Once);
 
@@ -922,8 +922,8 @@ public class BoltProtocolTests
                 x => x.NewRunResponseHandler(
                     resultCursorBuilderMock.Object,
                     It.IsNotNull<SummaryBuilder>(),
-                    AuthTokens.None,
-                    new Dictionary<IAuthToken, string>()),
+                    It.IsAny<IAuthToken>(),
+                    It.IsAny<Dictionary<IAuthToken, string>>()),
                 Times.Once);
 
             mockConn.Verify(

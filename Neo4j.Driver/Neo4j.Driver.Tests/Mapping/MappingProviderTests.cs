@@ -124,7 +124,7 @@ public class MappingProviderTests
         public int IntValue { get; set; }
 
         [MappingSource("stringValue")]
-        public string Text { get; } = null!;
+        public string Text { get; set; } = null!;
     }
 
     private class SecondTestObject
@@ -135,14 +135,14 @@ public class MappingProviderTests
 
     private class ThirdTestObject
     {
-        public int IntValue { get; } = -1;
+        public int IntValue { get; set; } = -1;
         public string StringValue { get; } = "unset";
     }
 
     private class PersonWithAge
     {
         [MappingSource("name")]
-        public string Name { get; } = null!;
+        public string Name { get; set; } = null!;
 
         [MappingOptional]
         public int Age { get; set; }
@@ -228,7 +228,7 @@ public class MappingProviderTests
 
     private class NameAndGuid
     {
-        public string Name { get; } = null!;
+        public string Name { get; set; } = null!;
         public Guid Guid { get; set; }
     }
 
