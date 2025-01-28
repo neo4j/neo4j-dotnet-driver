@@ -440,7 +440,7 @@ public class BoltProtocolTests
                 "test",
                 null,
                 bm,
-                new Dictionary<IAuthToken, string>());
+                It.IsAny<IDictionary<IAuthToken, string>>());
 
             routingTable.Should().Contain(new KeyValuePair<string, object>("db", "test"));
 
@@ -534,7 +534,7 @@ public class BoltProtocolTests
                 dbName,
                 null,
                 null,
-                new Dictionary<IAuthToken, string>());
+                It.IsAny<IDictionary<IAuthToken, string>>());
 
             queryParams.Should().NotBeNull();
             queryParams.Query.Parameters.Should().HaveCount(2).And.ContainKeys("context", "database");
@@ -567,7 +567,7 @@ public class BoltProtocolTests
                 dbName,
                 null,
                 null,
-                new Dictionary<IAuthToken, string>());
+                It.IsAny<IDictionary<IAuthToken, string>>());
 
             msgFactory.Verify(
                 x => x.NewRouteMessageV43(
@@ -598,7 +598,7 @@ public class BoltProtocolTests
                 dbName,
                 null,
                 null,
-                new Dictionary<IAuthToken, string>());
+                It.IsAny<IDictionary<IAuthToken, string>>());
 
             msgFactory.Verify(
                 x => x.NewRouteMessage(
@@ -634,7 +634,7 @@ public class BoltProtocolTests
                     mockConn.Object,
                     acp,
                     null,
-                    new Dictionary<IAuthToken, string>()));
+                    It.IsAny<IDictionary<IAuthToken, string>>()));
 
             exception.Should().BeOfType<ArgumentException>();
         }
@@ -660,7 +660,7 @@ public class BoltProtocolTests
                     mockConn.Object,
                     acp,
                     null,
-                    new Dictionary<IAuthToken, string>()));
+                    It.IsAny<IDictionary<IAuthToken, string>>()));
 
             exception.Should().BeNull();
         }
@@ -684,7 +684,7 @@ public class BoltProtocolTests
                     mockConn.Object,
                     acp,
                     new NotificationsDisabledConfig(),
-                    new Dictionary<IAuthToken, string>()));
+                    It.IsAny<IDictionary<IAuthToken, string>>()));
 
             exception.Should().BeOfType<ArgumentOutOfRangeException>();
         }
@@ -708,7 +708,7 @@ public class BoltProtocolTests
                     mockConn.Object,
                     acp,
                     new NotificationsDisabledConfig(),
-                    new Dictionary<IAuthToken, string>()));
+                    It.IsAny<IDictionary<IAuthToken, string>>()));
 
             exception.Should().BeNull();
         }
@@ -747,13 +747,13 @@ public class BoltProtocolTests
                         resultCursorBuilderMock.Object,
                         It.IsNotNull<SummaryBuilder>(),
                         AuthTokens.None,
-                        new Dictionary<IAuthToken, string>()))
+                        It.IsAny<IDictionary<IAuthToken, string>>()))
                 .Returns(
                     new RunResponseHandler(
                         resultCursorBuilderMock.Object,
                         new SummaryBuilder(new Query("..."), new ServerInfo(new Uri("http://0.0.0.0"))),
                         AuthTokens.None,
-                        new Dictionary<IAuthToken, string>()));
+                        It.IsAny<IDictionary<IAuthToken, string>>()));
 
             handlerFactory
                 .Setup(
@@ -790,7 +790,7 @@ public class BoltProtocolTests
                 mockConn.Object,
                 acp,
                 null,
-                new Dictionary<IAuthToken, string>());
+                It.IsAny<IDictionary<IAuthToken, string>>());
 
             msgFactory.Verify(
                 x => x.NewRunWithMetadataMessage(
@@ -819,13 +819,13 @@ public class BoltProtocolTests
                     resultCursorBuilderMock.Object,
                     It.IsNotNull<SummaryBuilder>(),
                     It.IsAny<IAuthToken>(),
-                    new Dictionary<IAuthToken, string>()),
+                    It.IsAny<IDictionary<IAuthToken, string>>()),
                 Times.Once);
 
             mockConn.Verify(
                 x => x.EnqueueAsync(
                     It.IsNotNull<RunWithMetadataMessage>(),
-                    It.IsNotNull<RunResponseHandler>(),
+                    It.IsAny<RunResponseHandler>(),
                     It.IsNotNull<PullMessage>(),
                     It.IsNotNull<PullResponseHandler>()),
                 Times.Exactly(1));
@@ -864,14 +864,14 @@ public class BoltProtocolTests
                     x => x.NewRunResponseHandler(
                         resultCursorBuilderMock.Object,
                         It.IsNotNull<SummaryBuilder>(),
-                        AuthTokens.None,
-                        new Dictionary<IAuthToken, string>()))
+                        null,
+                        It.IsAny<IDictionary<IAuthToken, string>>()))
                 .Returns(
                     new RunResponseHandler(
                         resultCursorBuilderMock.Object,
                         new SummaryBuilder(new Query("..."), new ServerInfo(new Uri("http://0.0.0.0"))),
                         AuthTokens.None,
-                        new Dictionary<IAuthToken, string>()));
+                        It.IsAny<IDictionary<IAuthToken, string>>()));
 
             handlerFactory.Setup(
                     x => x.NewResultCursorBuilder(
@@ -894,7 +894,7 @@ public class BoltProtocolTests
                 mockConn.Object,
                 acp,
                 null,
-                new Dictionary<IAuthToken, string>());
+                It.IsAny<IDictionary<IAuthToken, string>>());
 
             msgFactory.Verify(
                 x => x.NewRunWithMetadataMessage(
@@ -967,7 +967,7 @@ public class BoltProtocolTests
                         null,
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
                     AuthTokens.None,
-                    new Dictionary<IAuthToken, string>()));
+                    It.IsAny<IDictionary<IAuthToken, string>>()));
 
             exception.Should().BeOfType<ArgumentException>();
         }
@@ -993,7 +993,7 @@ public class BoltProtocolTests
                         new NotificationsDisabledConfig(),
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
                     AuthTokens.None,
-                    new Dictionary<IAuthToken, string>()));
+                    It.IsAny<IDictionary<IAuthToken, string>>()));
 
             exception.Should().BeOfType<ArgumentOutOfRangeException>();
         }
@@ -1018,7 +1018,7 @@ public class BoltProtocolTests
                         new NotificationsDisabledConfig(),
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
                     AuthTokens.None,
-                    new Dictionary<IAuthToken, string>()));
+                    It.IsAny<IDictionary<IAuthToken, string>>()));
 
             exception.Should().BeNull();
         }
@@ -1044,7 +1044,7 @@ public class BoltProtocolTests
                         null,
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
                     AuthTokens.None,
-                    new Dictionary<IAuthToken, string>()));
+                    It.IsAny<IDictionary<IAuthToken, string>>()));
 
             exception.Should().BeNull();
         }
@@ -1072,7 +1072,7 @@ public class BoltProtocolTests
                     null,
                     new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
                 AuthTokens.None,
-                new Dictionary<IAuthToken, string>());
+                It.IsAny<IDictionary<IAuthToken, string>>());
 
             mockV3.Verify(
                 x => x.BeginTransactionAsync(
@@ -1085,11 +1085,11 @@ public class BoltProtocolTests
                         null,
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
                     AuthTokens.None,
-                    new Dictionary<IAuthToken, string>()),
+                    It.IsAny<IDictionary<IAuthToken, string>>()),
                 Times.Once);
 
             mockConn.Verify(
-                x => x.BeginTransactionAsync(It.IsAny<BeginTransactionParams>(), new Dictionary<IAuthToken, string>()),
+                x => x.BeginTransactionAsync(It.IsAny<BeginTransactionParams>(), It.IsAny<IDictionary<IAuthToken, string>>()),
                 Times.Never);
         }
     }
@@ -1117,13 +1117,13 @@ public class BoltProtocolTests
                         resultCursorBuilderMock.Object,
                         It.IsNotNull<SummaryBuilder>(),
                         AuthTokens.None,
-                        new Dictionary<IAuthToken, string>()))
+                        It.IsAny<IDictionary<IAuthToken, string>>()))
                 .Returns(
                     new RunResponseHandler(
                         resultCursorBuilderMock.Object,
                         new SummaryBuilder(new Query("..."), new ServerInfo(new Uri("http://0.0.0.0"))),
                         AuthTokens.None,
-                        new Dictionary<IAuthToken, string>()));
+                        It.IsAny<IDictionary<IAuthToken, string>>()));
 
             handlerFactory.Setup(
                     x => x.NewResultCursorBuilder(
@@ -1149,7 +1149,7 @@ public class BoltProtocolTests
                 10,
                 new Mock<IInternalAsyncTransaction>().Object,
                 AuthTokens.None,
-                new Dictionary<IAuthToken, string>());
+                It.IsAny<IDictionary<IAuthToken, string>>());
 
             msgFactory.Verify(
                 x => x.NewRunWithMetadataMessage(mockConn.Object, query, null),
@@ -1175,7 +1175,7 @@ public class BoltProtocolTests
                     resultCursorBuilderMock.Object,
                     It.IsNotNull<SummaryBuilder>(),
                     AuthTokens.None,
-                    new Dictionary<IAuthToken, string>()),
+                    It.IsAny<IDictionary<IAuthToken, string>>()),
                 Times.Once);
 
             mockConn.Verify(
@@ -1215,13 +1215,13 @@ public class BoltProtocolTests
                         resultCursorBuilderMock.Object,
                         It.IsNotNull<SummaryBuilder>(),
                         AuthTokens.None,
-                        new Dictionary<IAuthToken, string>()))
+                        It.IsAny<IDictionary<IAuthToken, string>>()))
                 .Returns(
                     new RunResponseHandler(
                         resultCursorBuilderMock.Object,
                         new SummaryBuilder(new Query("..."), new ServerInfo(new Uri("http://0.0.0.0"))),
                         AuthTokens.None,
-                        new Dictionary<IAuthToken, string>()));
+                        It.IsAny<IDictionary<IAuthToken, string>>()));
 
             handlerFactory
                 .Setup(
@@ -1263,7 +1263,7 @@ public class BoltProtocolTests
                 10,
                 new Mock<IInternalAsyncTransaction>().Object,
                 AuthTokens.None,
-                new Dictionary<IAuthToken, string>());
+                It.IsAny<IDictionary<IAuthToken, string>>());
 
             msgFactory.Verify(
                 x => x.NewRunWithMetadataMessage(mockConn.Object, query, null),
@@ -1289,7 +1289,7 @@ public class BoltProtocolTests
                     resultCursorBuilderMock.Object,
                     It.IsNotNull<SummaryBuilder>(),
                     AuthTokens.None,
-                    new Dictionary<IAuthToken, string>()),
+                    It.IsAny<IDictionary<IAuthToken, string>>()),
                 Times.Once);
 
             mockConn.Verify(
@@ -1364,13 +1364,13 @@ public class BoltProtocolTests
                         resultCursorBuilderMock.Object,
                         It.IsNotNull<SummaryBuilder>(),
                         AuthTokens.None,
-                        new Dictionary<IAuthToken, string>()))
+                        It.IsAny<IDictionary<IAuthToken, string>>()))
                 .Returns(
                     new RunResponseHandler(
                         resultCursorBuilderMock.Object,
                         sb,
                         AuthTokens.None,
-                        new Dictionary<IAuthToken, string>()));
+                        It.IsAny<IDictionary<IAuthToken, string>>()));
 
             handlerFactory
                 .Setup(
@@ -1437,13 +1437,13 @@ public class BoltProtocolTests
                         resultCursorBuilderMock.Object,
                         It.IsNotNull<SummaryBuilder>(),
                         AuthTokens.None,
-                        new Dictionary<IAuthToken, string>()))
+                        It.IsAny<IDictionary<IAuthToken, string>>()))
                 .Returns(
                     new RunResponseHandler(
                         resultCursorBuilderMock.Object,
                         sb,
                         AuthTokens.None,
-                        new Dictionary<IAuthToken, string>()));
+                        It.IsAny<IDictionary<IAuthToken, string>>()));
 
             handlerFactory
                 .Setup(

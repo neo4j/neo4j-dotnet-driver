@@ -44,7 +44,8 @@ public class TransactionTests
                 Mock.Of<ITransactionResourceHandler>(),
                 null,
                 null,
-                bookmarks);
+                bookmarks,
+                driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             await tx.BeginTransactionAsync(
                 null,
@@ -54,8 +55,8 @@ public class TransactionTests
                 x => x.BeginTransactionAsync(
                     It.IsAny<IConnection>(),
                     It.IsAny<BeginTransactionParams>(),
-                    AuthTokens.None,
-                    new Dictionary<IAuthToken, string>()),
+                    null,
+                    It.IsAny<IDictionary<IAuthToken,string>>()),
                 Times.Once);
         }
     }
@@ -70,7 +71,8 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance);
+                NullLogger.Instance,
+                driverContext: new DriverContext(new ("bolt://localhost"), null, new Config()));
 
             await tx.BeginTransactionAsync(
                 TransactionConfig.Default,
@@ -80,8 +82,8 @@ public class TransactionTests
                 x => x.BeginTransactionAsync(
                     It.IsAny<IConnection>(),
                     It.IsAny<BeginTransactionParams>(),
-                    AuthTokens.None,
-                    new Dictionary<IAuthToken, string>()),
+                     null,
+                    It.IsAny<Dictionary<IAuthToken, string>>()),
                 Times.Once);
         }
     }
@@ -93,7 +95,8 @@ public class TransactionTests
         {
             var mockProtocol = new Mock<IBoltProtocol>();
             var mockConn = NewMockedConnection(mockProtocol);
-            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>(), NullLogger.Instance);
+            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>(), NullLogger.Instance,
+                driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             var query = new Query("lala");
             await tx.RunAsync(query);
@@ -106,8 +109,8 @@ public class TransactionTests
                         false,
                         It.IsAny<long>(),
                         It.IsAny<IInternalAsyncTransaction>(),
-                        AuthTokens.None,
-                        new Dictionary<IAuthToken, string>()));
+                        null,
+                        It.IsAny<IDictionary<IAuthToken,string>>()));
         }
 
         [Fact]
@@ -117,7 +120,8 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance);
+                NullLogger.Instance,
+                driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             tx.TransactionError = new Exception();
             await tx.MarkToCloseAsync();
@@ -134,7 +138,8 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance);
+                NullLogger.Instance,
+                driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             var query = new Query("lala");
 
@@ -146,8 +151,8 @@ public class TransactionTests
                             false,
                             It.IsAny<long>(),
                             It.IsAny<IInternalAsyncTransaction>(),
-                            AuthTokens.None,
-                            new Dictionary<IAuthToken, string>()))
+                            null,
+                            It.IsAny<IDictionary<IAuthToken, string>>()))
                 .Throws<Neo4jException>();
 
             var error = await ExceptionAsync(() => tx.RunAsync(query));
@@ -163,7 +168,8 @@ public class TransactionTests
             var mockProtocol = new Mock<IBoltProtocol>();
             var mockConn = NewMockedConnection(mockProtocol);
             var mockHandler = new Mock<ITransactionResourceHandler>();
-            var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object, NullLogger.Instance);
+            var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object, NullLogger.Instance,
+                driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             mockConn.Invocations.Clear();
             await tx.CommitAsync();
@@ -178,7 +184,8 @@ public class TransactionTests
             var mockProtocol = new Mock<IBoltProtocol>();
             var mockConn = NewMockedConnection(mockProtocol);
             var mockHandler = new Mock<ITransactionResourceHandler>();
-            var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object, NullLogger.Instance);
+            var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object, NullLogger.Instance,
+                driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             mockConn.Invocations.Clear();
             await tx.RollbackAsync();
@@ -191,7 +198,8 @@ public class TransactionTests
         {
             var mockConn = NewMockedConnection();
             var mockHandler = new Mock<ITransactionResourceHandler>();
-            var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object, NullLogger.Instance);
+            var tx = new AsyncTransaction(mockConn.Object, mockHandler.Object, NullLogger.Instance,
+                driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             mockConn.Invocations.Clear();
             await tx.CommitAsync();
@@ -208,7 +216,8 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance);
+                NullLogger.Instance,
+                driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             mockConn.Invocations.Clear();
 
@@ -225,7 +234,8 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance);
+                NullLogger.Instance,
+                driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             mockConn.Invocations.Clear();
             tx.TransactionError = new Exception();
@@ -246,7 +256,8 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance);
+                NullLogger.Instance,
+                driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             mockConn.Invocations.Clear();
             tx.TransactionError = new Exception();
@@ -266,7 +277,8 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance);
+                NullLogger.Instance,
+                driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             mockConn.Invocations.Clear();
 
@@ -283,7 +295,8 @@ public class TransactionTests
         public async Task ShouldBeOpenWhenConstructed()
         {
             var mockConn = NewMockedConnection();
-            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>(), NullLogger.Instance);
+            var tx = new AsyncTransaction(mockConn.Object, Mock.Of<ITransactionResourceHandler>(), NullLogger.Instance,
+                driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             await tx.BeginTransactionAsync(
                 TransactionConfig.Default,
@@ -299,7 +312,8 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance);
+                NullLogger.Instance,
+                driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             await tx.BeginTransactionAsync(
                 TransactionConfig.Default,
@@ -317,7 +331,8 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance);
+                NullLogger.Instance,
+                driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             await tx.BeginTransactionAsync(
                 TransactionConfig.Default,
@@ -335,7 +350,8 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance);
+                NullLogger.Instance,
+                driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             await tx.BeginTransactionAsync(
                 TransactionConfig.Default,
@@ -353,7 +369,8 @@ public class TransactionTests
             var tx = new AsyncTransaction(
                 mockConn.Object,
                 Mock.Of<ITransactionResourceHandler>(),
-                NullLogger.Instance);
+                NullLogger.Instance,
+                driverContext: new DriverContext(new("bolt://localhost"), null, new Config()));
 
             await tx.BeginTransactionAsync(
                 TransactionConfig.Default,

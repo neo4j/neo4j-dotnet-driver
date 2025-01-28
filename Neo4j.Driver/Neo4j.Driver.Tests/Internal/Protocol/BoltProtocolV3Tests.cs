@@ -124,7 +124,7 @@ public class BoltProtocolV3Tests
                     "db",
                     null,
                     null,
-                    new Dictionary<IAuthToken, string>()));
+                    It.IsAny<IDictionary<IAuthToken, string>>()));
 
             ex.Should().BeOfType<ProtocolException>();
         }
@@ -142,7 +142,7 @@ public class BoltProtocolV3Tests
                     "db",
                     new SessionConfig("Douglas Fir"),
                     null,
-                    new Dictionary<IAuthToken, string>()));
+                    It.IsAny<IDictionary<IAuthToken, string>>()));
 
             ex.Should().BeOfType<ArgumentException>();
         }
@@ -211,7 +211,7 @@ public class BoltProtocolV3Tests
                 "test",
                 null,
                 bm,
-                new Dictionary<IAuthToken, string>());
+                It.IsAny<IDictionary<IAuthToken, string>>());
 
             routingTable.Should().Contain(new KeyValuePair<string, object>("db", "test"));
 
@@ -267,7 +267,7 @@ public class BoltProtocolV3Tests
                     mockConn.Object,
                     acp,
                     null,
-                    new Dictionary<IAuthToken, string>()));
+                    It.IsAny<IDictionary<IAuthToken, string>>()));
 
             exception.Should().BeOfType<ArgumentException>();
         }
@@ -292,7 +292,7 @@ public class BoltProtocolV3Tests
                     mockConn.Object,
                     acp,
                     new NotificationsDisabledConfig(),
-                    new Dictionary<IAuthToken, string>()));
+                    It.IsAny<IDictionary<IAuthToken, string>>()));
 
             exception.Should().BeOfType<ArgumentOutOfRangeException>();
         }
@@ -316,7 +316,7 @@ public class BoltProtocolV3Tests
                     mockConn.Object,
                     acp,
                     new NotificationsDisabledConfig(),
-                    new Dictionary<IAuthToken, string>()));
+                    It.IsAny<IDictionary<IAuthToken, string>>()));
 
             exception.Should().BeNull();
         }
@@ -337,7 +337,7 @@ public class BoltProtocolV3Tests
                     mockConn.Object,
                     acp,
                     null,
-                    new Dictionary<IAuthToken, string>()));
+                    It.IsAny<IDictionary<IAuthToken, string>>()));
 
             exception.Should().BeOfType<ClientException>();
         }
@@ -401,7 +401,7 @@ public class BoltProtocolV3Tests
                 mockConn.Object,
                 acp,
                 null,
-                new Dictionary<IAuthToken, string>());
+                It.IsAny<IDictionary<IAuthToken, string>>());
 
             handlerFactory.Verify(
                 x => x.NewResultCursorBuilder(
@@ -449,7 +449,7 @@ public class BoltProtocolV3Tests
                         null,
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
                     AuthTokens.None,
-                    new Dictionary<IAuthToken, string>()));
+                    It.IsAny<IDictionary<IAuthToken, string>>()));
 
             exception.Should().BeOfType<ArgumentException>();
         }
@@ -475,7 +475,7 @@ public class BoltProtocolV3Tests
                         new NotificationsDisabledConfig(),
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
                     AuthTokens.None,
-                    new Dictionary<IAuthToken, string>()));
+                    It.IsAny<IDictionary<IAuthToken, string>>()));
 
             exception.Should().BeOfType<ArgumentOutOfRangeException>();
         }
@@ -500,7 +500,7 @@ public class BoltProtocolV3Tests
                         new NotificationsDisabledConfig(),
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
                     AuthTokens.None,
-                    new Dictionary<IAuthToken, string>()));
+                    It.IsAny<IDictionary<IAuthToken, string>>()));
 
             exception.Should().BeNull();
         }
@@ -522,7 +522,7 @@ public class BoltProtocolV3Tests
                         null,
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
                     AuthTokens.None,
-                    new Dictionary<IAuthToken, string>()));
+                    It.IsAny<IDictionary<IAuthToken, string>>()));
 
             exception.Should().BeOfType<ClientException>();
         }
@@ -545,7 +545,7 @@ public class BoltProtocolV3Tests
                         null,
                         new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
                     AuthTokens.None,
-                    new Dictionary<IAuthToken, string>()));
+                    It.IsAny<IDictionary<IAuthToken, string>>()));
 
             exception.Should().BeOfType<InvalidOperationException>();
         }
@@ -583,7 +583,7 @@ public class BoltProtocolV3Tests
                     null,
                     new TransactionInfo(QueryApiType.UnmanagedTransaction, false, true)),
                 AuthTokens.None,
-                new Dictionary<IAuthToken, string>());
+                It.IsAny<IDictionary<IAuthToken, string>>());
 
             msgFactory.Verify(
                 x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
@@ -630,7 +630,7 @@ public class BoltProtocolV3Tests
                     null,
                     new TransactionInfo(QueryApiType.UnmanagedTransaction, false, false)),
                 AuthTokens.None,
-                new Dictionary<IAuthToken, string>());
+                It.IsAny<IDictionary<IAuthToken, string>>());
 
             msgFactory.Verify(
                 x => x.NewBeginMessage(mockConn.Object, null, bookmarks, tc, AccessMode.Write, null),
@@ -699,7 +699,7 @@ public class BoltProtocolV3Tests
                 0L,
                 mockTransaction.Object,
                 AuthTokens.None,
-                new Dictionary<IAuthToken, string>());
+                It.IsAny<IDictionary<IAuthToken, string>>());
 
             handlerFactory.Verify(
                 x => x.NewResultCursorBuilder(

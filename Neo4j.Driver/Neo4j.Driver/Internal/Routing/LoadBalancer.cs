@@ -240,7 +240,6 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
         Bookmarks bookmarks,
         bool forceAuth)
     {
-        var logger = DriverContext.Logger;
         var cachedDatabaseUsed = false;
         var databaseForRouting = database;
 
@@ -251,7 +250,7 @@ internal class LoadBalancer : IConnectionProvider, IErrorHandler, IClusterConnec
 
             if (cachedDatabaseUsed)
             {
-                logger.Debug($"Using cached home database {databaseForRouting}.");
+                _logger.Debug($"Using cached home database {databaseForRouting}.");
             }
         }
 

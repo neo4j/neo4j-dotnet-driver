@@ -327,7 +327,7 @@ internal class RoutingTableManager : IRoutingTableManager
                                     database,
                                     sessionConfig,
                                     bookmarks,
-                                    _driverContext.HomeDbCache)
+                                    _driverContext?.HomeDbCache)
                                 .ConfigureAwait(false);
 
                         if (!newRoutingTable.IsStale(mode))

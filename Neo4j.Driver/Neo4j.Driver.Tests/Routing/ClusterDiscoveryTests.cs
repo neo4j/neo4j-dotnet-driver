@@ -64,7 +64,7 @@ public class ClusterDiscoveryTests
 
             var mockConn = new Mock<IConnection>();
             mockConn.Setup(
-                    x => x.GetRoutingTableAsync("test", sessionConfig, bookmarks, new Dictionary<IAuthToken, string>()))
+                    x => x.GetRoutingTableAsync("test", sessionConfig, bookmarks, It.IsAny<IDictionary<IAuthToken, string>>()))
                 .ReturnsAsync(routingTable);
 
             // When
@@ -74,7 +74,7 @@ public class ClusterDiscoveryTests
                 "test",
                 sessionConfig,
                 bookmarks,
-                new Dictionary<IAuthToken, string>());
+                It.IsAny<IDictionary<IAuthToken, string>>());
 
             // Then
             table.Database.Should().Be("test");

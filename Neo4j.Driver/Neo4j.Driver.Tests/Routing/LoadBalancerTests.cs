@@ -83,11 +83,14 @@ public class LoadBalancerTests
         public async Task ShouldThrowSessionExpiredExceptionIfNoServerAvailable(AccessMode mode)
         {
             // Given
-            var mock = new Mock<IRoutingTableManager>();
-            mock.Setup(x => x.EnsureRoutingTableForModeAsync(mode, null, false, null, Bookmarks.Empty))
+            var mockRoutingTableManager = new Mock<IRoutingTableManager>();
+            mockRoutingTableManager.Setup(x => x.EnsureRoutingTableForModeAsync(mode, null, false, null, Bookmarks.Empty))
                 .ReturnsAsync(NewMockedRoutingTable(mode, null, string.Empty).Object);
 
-            var balancer = new LoadBalancer(null, mock.Object);
+            var mockClusterConnectionPool = new Mock<IClusterConnectionPool>();
+            mockClusterConnectionPool.Setup(x => x.CanUseHomeDbCache()).Returns(false);
+
+            var balancer = new LoadBalancer(mockClusterConnectionPool.Object, mockRoutingTableManager.Object);
 
             // When
             var error = await Record.ExceptionAsync(() => balancer.AcquireAsync(mode, null, null, Bookmarks.Empty));
