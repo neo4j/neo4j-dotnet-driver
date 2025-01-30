@@ -18,6 +18,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using Neo4j.Driver.Tests.TestBackend.IO;
+using Neo4j.Driver.Tests.TestBackend.Protocol.UI;
 
 namespace Neo4j.Driver.Tests.TestBackend;
 
@@ -28,7 +29,7 @@ public class Program
 
     private static void Main(string[] args)
     {
-        var consoleTraceListener = new TextWriterTraceListener(Console.Out);
+        var consoleTraceListener = new TextWriterTraceListener(new ConsoleTextWriter());
         Trace.Listeners.Add(consoleTraceListener);
 
         try

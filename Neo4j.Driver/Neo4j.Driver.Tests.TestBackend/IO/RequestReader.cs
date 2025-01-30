@@ -46,7 +46,7 @@ internal class RequestReader
         {
         }
 
-        Trace.WriteLine($"\nRequest received: {CurrentObjectData}");
+        Trace.WriteLine($"Request received: {CurrentObjectData}");
 
         return !string.IsNullOrEmpty(CurrentObjectData);
     }
