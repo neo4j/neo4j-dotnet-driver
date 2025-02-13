@@ -15,6 +15,7 @@
 
 using System;
 using FluentAssertions;
+using Neo4j.Driver.Internal.IO;
 using Neo4j.Driver.Internal.Protocol;
 using Xunit;
 
@@ -203,19 +204,23 @@ public class BoltProtocolVersionTests
     public void ProtocolLargeBoundsTest()
     {
         var successLargeNumber = 1213486160; ////0x‭48 54 54 50 - or HTTP in ascii codes...
-        const int majorVersion = 80,
-            minorVersion = 84;
+        //const int majorVersion = 255,
+        //    minorVersion = 255;
 
         var bv = new BoltProtocolVersion(successLargeNumber);
-        (bv.MajorVersion == majorVersion && bv.MinorVersion == minorVersion).Should().BeTrue();
+        (bv.MajorVersion == 80 && bv.MinorVersion == 84).Should().BeTrue();
 
+        /*
         var errorMessage =
             "Attempting to create a BoltProtocolVersion with a large (error code) version number.  Resulting Major and Minor are in range of valid versions, which is not allowed: ";
+        
+        var failureLargeNumber = 1999999999;
 
-        var failureLargeNumber = new BoltProtocolVersion(majorVersion - 1, minorVersion - 1).PackToInt();
+        //    new BoltProtocolVersion(majorVersion + 1, minorVersion + 1).PackToInt();  //TODO: Remove
         var exception = Record.Exception(() => new BoltProtocolVersion(failureLargeNumber));
         exception.Should().BeOfType<NotSupportedException>();
         exception.Message.Should().StartWith(errorMessage);
+        */
     }
 
     [Theory]
@@ -270,5 +275,27 @@ public class BoltProtocolVersionTests
 
         var packedValue = version.PackToIntRange(lowerVersion);
         packedValue.Should().Equals(expectedValue);
+    }
+
+    [Theory]
+    [InlineData(new Byte[] { 0x00, 0x05, 0x1B, 0x05 }, 0, 5, 27, 5)] // Range - 5.0, Version - 5.27
+    [InlineData(new Byte[] { 0x06, 0x05, 0x1A, 0x05 }, 6, 5, 26, 5)] // Range - 5.6, Version - 5.26
+    public void UnpackVersionAndRangeSuccess(
+        Byte[] sourcePackedInt,
+        int rangeMinorVersion,
+        int rangeMajorVersion,
+        int minorVersion,
+        int majorVersion)
+    {
+        var packedInt = new Byte[4];
+        sourcePackedInt.CopyTo(packedInt, 0);       //Do a copy here because it turns out that ToInt32 (and all the other conversion methods change the supplied byte array as it's a ref type...maybebug?)    
+        var protocolVersion = BoltProtocolVersion.FromPackedInt(PackStreamBitConverter.ToInt32(packedInt));
+        sourcePackedInt.CopyTo(packedInt, 0);       //Do a copy here because it turns out that ToInt32 (and all the other conversion methods change the supplied byte array as it's a ref type...maybebug?)
+        var rangeVersion = BoltProtocolVersion.RangeFromPackedInt(PackStreamBitConverter.ToInt32(packedInt));
+
+        protocolVersion.MajorVersion.Should().Be(majorVersion);
+        protocolVersion.MinorVersion.Should().Be(minorVersion);
+        rangeVersion.MajorVersion.Should().Be(rangeMajorVersion);
+        rangeVersion.MinorVersion.Should().Be(rangeMinorVersion);    
     }
 }

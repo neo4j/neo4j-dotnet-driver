@@ -25,4 +25,6 @@ internal interface ITcpSocketClient : IDisposable
     Stream ReaderStream { get; }
     Stream WriterStream { get; }
     Task ConnectAsync(Uri uri, CancellationToken cancellationToken = default);
+
+    Uri ConnectionUri { get; }
 }
