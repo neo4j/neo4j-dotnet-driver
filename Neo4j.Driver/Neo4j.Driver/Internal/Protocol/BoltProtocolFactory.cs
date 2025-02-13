@@ -107,7 +107,7 @@ internal class BoltProtocolFactory : IBoltProtocolFactory
         };
     }
     
-    public static (BoltProtocolVersion version, BoltProtocolVersion range) UnpackAgreedVersion(byte[] data)
+    public static (BoltProtocolVersion version, int range) UnpackAgreedVersion(byte[] data)
     {
         var packedInt = PackStreamBitConverter.ToInt32(data);
         return (BoltProtocolVersion.FromPackedInt(packedInt),

@@ -45,7 +45,7 @@ internal sealed class BoltHandshaker : IBoltHandshaker
     {
     }
 
-    private static async Task<(BoltProtocolVersion version, BoltProtocolVersion range)> ParseProtocolVersionResponse(ITcpSocketClient socketClient, CancellationToken cancellationToken)
+    private static async Task<(BoltProtocolVersion version, int range)> ParseProtocolVersionResponse(ITcpSocketClient socketClient, CancellationToken cancellationToken)
     {
         var responseBytes = new byte[4];
 
@@ -119,15 +119,16 @@ internal sealed class BoltHandshaker : IBoltHandshaker
                 .ConfigureAwait(false);
 
             var protocolVersionAndRange = BoltProtocolFactory.UnpackAgreedVersion(responseBytes);
+            var lowestVersion = new BoltProtocolVersion(protocolVersionAndRange.version.MajorVersion,
+                                                         protocolVersionAndRange.version.MinorVersion - protocolVersionAndRange.range);
             
             foreach (var protocol in BoltProtocolFactory.SupportedVersions)
             {
-                if (protocol >= protocolVersionAndRange.range && protocol <= protocolVersionAndRange.version)
+                if (protocol >= lowestVersion && protocol <= protocolVersionAndRange.version)
                 {
                     _protocolVersions.Add(protocol);
                 }   
-            }
-            //TODO: debug this   
+            }  
         }                                                                                     
     }
 
@@ -157,7 +158,7 @@ internal sealed class BoltHandshaker : IBoltHandshaker
         await socketClient.WriterStream.WriteAsync(
                 byteData,
                 0,
-                versionData.Length,
+                byteData.Length,
                 cancellationToken)
             .ConfigureAwait(false);
 

@@ -125,10 +125,10 @@ internal sealed class BoltProtocolVersion : IEquatable<BoltProtocolVersion>, ICo
         return new BoltProtocolVersion(UnpackMajor(rawVersion), UnpackMinor(rawVersion));
     }
 
-    public static BoltProtocolVersion RangeFromPackedInt(int rawVersion)
+    public static int RangeFromPackedInt(int rawVersion)
     {
         var shiftedRawVersion = rawVersion >> 16;
-        return new BoltProtocolVersion(UnpackMajor(shiftedRawVersion), UnpackMinor(shiftedRawVersion));
+        return UnpackMajor(shiftedRawVersion);
     }
 
     public void CheckVersionRange(BoltProtocolVersion minVersion)

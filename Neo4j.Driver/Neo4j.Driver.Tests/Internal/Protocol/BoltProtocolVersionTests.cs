@@ -278,12 +278,11 @@ public class BoltProtocolVersionTests
     }
 
     [Theory]
-    [InlineData(new Byte[] { 0x00, 0x05, 0x1B, 0x05 }, 0, 5, 27, 5)] // Range - 5.0, Version - 5.27
-    [InlineData(new Byte[] { 0x06, 0x05, 0x1A, 0x05 }, 6, 5, 26, 5)] // Range - 5.6, Version - 5.26
+    [InlineData(new Byte[] { 0x00, 0x1B, 0x1B, 0x05 }, 27, 27, 5)] // Range - 6, Version - 5.27
+    [InlineData(new Byte[] { 0x00, 0x05, 0x1A, 0x05 }, 5, 26, 5)] // Range - 5, Version - 5.26
     public void UnpackVersionAndRangeSuccess(
         Byte[] sourcePackedInt,
-        int rangeMinorVersion,
-        int rangeMajorVersion,
+        int range,
         int minorVersion,
         int majorVersion)
     {
@@ -291,11 +290,10 @@ public class BoltProtocolVersionTests
         sourcePackedInt.CopyTo(packedInt, 0);       //Do a copy here because it turns out that ToInt32 (and all the other conversion methods change the supplied byte array as it's a ref type...maybebug?)    
         var protocolVersion = BoltProtocolVersion.FromPackedInt(PackStreamBitConverter.ToInt32(packedInt));
         sourcePackedInt.CopyTo(packedInt, 0);       //Do a copy here because it turns out that ToInt32 (and all the other conversion methods change the supplied byte array as it's a ref type...maybebug?)
-        var rangeVersion = BoltProtocolVersion.RangeFromPackedInt(PackStreamBitConverter.ToInt32(packedInt));
+        var rangeValue = BoltProtocolVersion.RangeFromPackedInt(PackStreamBitConverter.ToInt32(packedInt));
 
         protocolVersion.MajorVersion.Should().Be(majorVersion);
         protocolVersion.MinorVersion.Should().Be(minorVersion);
-        rangeVersion.MajorVersion.Should().Be(rangeMajorVersion);
-        rangeVersion.MinorVersion.Should().Be(rangeMinorVersion);    
+        rangeValue.Should().Be(range);
     }
 }
