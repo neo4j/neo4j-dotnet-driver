@@ -28,7 +28,7 @@ public class BoltHandshakerTests
 { 
     [Theory]
     //Server response Legacy Handshake
-    [InlineData(new byte[] { 0x00, 0x00, 4, 4 }, 4, 4, 0)] //Capabilities not used in this test 
+    [InlineData(new byte[] { 0x00, 0x00, 4, 4 }, 4, 4)] //Capabilities not used in this test 
     //Modern negotiation with manifest
     [InlineData(new byte[]
     {
@@ -39,7 +39,7 @@ public class BoltHandshakerTests
         0x00, 0x00, 0x07, 0x05,     //Supports version 5.7
         0x8F,                       //Support capabilities 1-4 inclusive
         0x01                        //Support capability 8
-    }, 5, 7, 0x8F)] 
+    }, 5, 7)] 
     //Should handle zero capabilities
     [InlineData(
         new byte[]
@@ -50,8 +50,7 @@ public class BoltHandshakerTests
             0x00, //no capability flags set
         },
         5,
-        7,
-        0x00)]
+        7)]
     [InlineData(
         new byte[]
         {
@@ -61,9 +60,8 @@ public class BoltHandshakerTests
             0x00, //no capability flags set
         },
         5,
-        7,
-        0x00)]      
-    private async Task DoHandshakeAsyncShouldReturnBoltVersionAndCapabilities(byte[] streamData, int majorVersion, int minorVersion, long capabilities)
+        7)]      
+    private async Task DoHandshakeAsyncShouldReturnBoltVersion(byte[] streamData, int majorVersion, int minorVersion)
     {
         var version = new BoltProtocolVersion(majorVersion, minorVersion);
         var readerStream = new MemoryStream(streamData);
@@ -79,7 +77,6 @@ public class BoltHandshakerTests
             CancellationToken.None);
 
         boltProtocolVersion.Should().Be(version);
-        BoltHandshaker.Default.CapabilitiesBitmask.Should().Be(capabilities);
     }
     
    [Fact]

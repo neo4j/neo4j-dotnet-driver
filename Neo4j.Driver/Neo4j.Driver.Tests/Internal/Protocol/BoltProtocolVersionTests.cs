@@ -204,23 +204,9 @@ public class BoltProtocolVersionTests
     public void ProtocolLargeBoundsTest()
     {
         var successLargeNumber = 1213486160; ////0x‭48 54 54 50 - or HTTP in ascii codes...
-        //const int majorVersion = 255,
-        //    minorVersion = 255;
-
+        
         var bv = new BoltProtocolVersion(successLargeNumber);
         (bv.MajorVersion == 80 && bv.MinorVersion == 84).Should().BeTrue();
-
-        /*
-        var errorMessage =
-            "Attempting to create a BoltProtocolVersion with a large (error code) version number.  Resulting Major and Minor are in range of valid versions, which is not allowed: ";
-        
-        var failureLargeNumber = 1999999999;
-
-        //    new BoltProtocolVersion(majorVersion + 1, minorVersion + 1).PackToInt();  //TODO: Remove
-        var exception = Record.Exception(() => new BoltProtocolVersion(failureLargeNumber));
-        exception.Should().BeOfType<NotSupportedException>();
-        exception.Message.Should().StartWith(errorMessage);
-        */
     }
 
     [Theory]

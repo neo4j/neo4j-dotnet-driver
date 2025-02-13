@@ -37,15 +37,12 @@ internal interface IBoltHandshaker
 internal sealed class BoltHandshaker : IBoltHandshaker
 {
     internal static BoltHandshaker Default = new();
-    private List<BoltProtocolVersion> _protocolVersions = new List<BoltProtocolVersion>();
-    public long CapabilitiesBitmask { get; private set; }
-    public BoltProtocolVersion SelectedVersion { get; private set; }
-
+    
     private BoltHandshaker()
     {
     }
 
-    private static async Task<(BoltProtocolVersion version, int range)> ParseProtocolVersionResponse(ITcpSocketClient socketClient, CancellationToken cancellationToken)
+    private static async Task<(BoltProtocolVersion version, int range)> ParseProtocolVersionResponse(ITcpSocketClient socketClient, ILogger logger, CancellationToken cancellationToken)
     {
         var responseBytes = new byte[4];
 
@@ -53,6 +50,8 @@ internal sealed class BoltHandshaker : IBoltHandshaker
         var read = await socketClient.ReaderStream
             .ReadAsync(responseBytes, 0, responseBytes.Length, cancellationToken)
             .ConfigureAwait(false);
+
+        logger.Debug("S: [HANDSHAKE] Suggested protocol version - {0}", responseBytes.ToHexString());
 
         if (read < responseBytes.Length)
         {
@@ -69,11 +68,12 @@ internal sealed class BoltHandshaker : IBoltHandshaker
         return (version.MajorVersion == BoltProtocolVersion.ManifestSchema);
     }
 
-    private static async Task<VarLong> ReadVariableLengthData(ITcpSocketClient socketClient, CancellationToken cancellationToken)
+    private static async Task<VarLong> ReadVariableLengthData(ITcpSocketClient socketClient, ILogger logger, CancellationToken cancellationToken)
     {
         VarLong resultVariable = new VarLong();
         var responseByte = new byte[1];
         var moreData = true;
+        var serverResponse = String.Empty; 
 
         while (moreData)
         {
@@ -85,30 +85,38 @@ internal sealed class BoltHandshaker : IBoltHandshaker
 
             //If most significant bit of the byte is 1 then there are further bytes of the VarInt128 to follow
             moreData = (responseByte[0] >> 7) == 1;
+
+            serverResponse += responseByte.ToHexString() + " ";
         }
 
+        logger.Debug("S: [HANDSHAKE] VarInt -  {0}", serverResponse);
         return resultVariable;
     }
 
     private static async Task<long> ParseNumProtocolVersions(
         ITcpSocketClient socketClient,
+        ILogger logger,
         CancellationToken cancellationToken)
     {   
-        var numProtocolVersions = await ReadVariableLengthData(socketClient, cancellationToken).ConfigureAwait(false);
+        var numProtocolVersions = await ReadVariableLengthData(socketClient, logger, cancellationToken).ConfigureAwait(false);
         return numProtocolVersions.Value;
     }
     
-    private async Task ParseSupportedProtocolVersions(
-        ITcpSocketClient sockeClient, 
+    private async Task<List<BoltProtocolVersion>> ParseSupportedProtocolVersions(
+        ITcpSocketClient sockeClient,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
-        var numProtocolVersions = await ParseNumProtocolVersions(sockeClient, cancellationToken)
+        var numProtocolVersions = await ParseNumProtocolVersions(sockeClient, logger, cancellationToken)
             .ConfigureAwait(false);
 
         if (numProtocolVersions <= 0)
         {
             throw new ProtocolException("Server supplied a zero size list of acceptable protocols");
         }
+
+
+        var protocolVersions = new List<BoltProtocolVersion>();
 
         var responseBytes = new byte[4];       
         //Loop through the protocol versions reading each in and adding to supported list
@@ -118,6 +126,8 @@ internal sealed class BoltHandshaker : IBoltHandshaker
                 .ReadAsync(responseBytes, 0, responseBytes.Length, cancellationToken)
                 .ConfigureAwait(false);
 
+            logger.Debug("S: [HANDSHAKE] Supported protocol version and range - {0}", responseBytes.ToHexString());
+
             var protocolVersionAndRange = BoltProtocolFactory.UnpackAgreedVersion(responseBytes);
             var lowestVersion = new BoltProtocolVersion(protocolVersionAndRange.version.MajorVersion,
                                                          protocolVersionAndRange.version.MinorVersion - protocolVersionAndRange.range);
@@ -126,31 +136,37 @@ internal sealed class BoltHandshaker : IBoltHandshaker
             {
                 if (protocol >= lowestVersion && protocol <= protocolVersionAndRange.version)
                 {
-                    _protocolVersions.Add(protocol);
+                    protocolVersions.Add(protocol);
                 }   
             }  
-        }                                                                                     
+        }
+
+        return protocolVersions;
     }
 
-    private async Task ParseCapabilityBitmask(
+    private async Task<long> ParseCapabilityBitmask(
         ITcpSocketClient socketClient,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
-        var bitmask = await ReadVariableLengthData(socketClient, cancellationToken).ConfigureAwait(false);
-        CapabilitiesBitmask = bitmask.Value;
+        var bitmask = await ReadVariableLengthData(socketClient, logger, cancellationToken).ConfigureAwait(false);
+        return bitmask.Value;
     }
 
-    private void SelectProtocolVersion()
+    private BoltProtocolVersion SelectProtocolVersion(List<BoltProtocolVersion> protocolVersions)
     {
         //We iterate through the versions supplied by the server in the manifest and select the newest one (highest version number)
-        SelectedVersion = _protocolVersions.Max();    
+        return protocolVersions.Max();    
     }
 
     private async Task EncodeAndSendHandshakeResponseAsync(
         ITcpSocketClient socketClient,
+        BoltProtocolVersion selectedVersion,
+        long capabilitiesBitMask,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
-        var versionData = PackStreamBitConverter.GetBytes(SelectedVersion.PackToInt());
+        var versionData = PackStreamBitConverter.GetBytes(selectedVersion.PackToInt());
         var compatabilityData = new byte[] { 0x00 }; //TODO: method that will eventually return a bitmask built using VarInt
 
         var byteData = versionData.Concat(compatabilityData).ToArray(); //for performance can be changed to use block copy or similar
@@ -163,6 +179,8 @@ internal sealed class BoltHandshaker : IBoltHandshaker
             .ConfigureAwait(false);
 
         await socketClient.WriterStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+        logger.Debug("C: [HANDSHAKE] Selected version and capabilities {0}", byteData.ToHexString());
     }
 
     private void CheckManifestVersion(BoltProtocolVersion version, Uri connectionUri)
@@ -183,11 +201,11 @@ internal sealed class BoltHandshaker : IBoltHandshaker
         await socketClient.WriterStream.WriteAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(false);
         await socketClient.WriterStream.FlushAsync(cancellationToken).ConfigureAwait(false);
 
-        logger.Debug("C: [HANDSHAKE] {0}", data.ToHexString());
+        logger.Debug("C: [HANDSHAKE] Driver supported versions - {0}", data.ToHexString());
 
         //if the server has not responded indicating a manifest handshake is in effect
         //then it has responded with a protocol version that the driver should use. 
-        var serverVersionResponse = await ParseProtocolVersionResponse(socketClient, cancellationToken).ConfigureAwait(false);
+        var serverVersionResponse = await ParseProtocolVersionResponse(socketClient, logger, cancellationToken).ConfigureAwait(false);
         if (!IsManifestSytleHandshake(serverVersionResponse.version))
         {
             return serverVersionResponse.version;
@@ -197,17 +215,14 @@ internal sealed class BoltHandshaker : IBoltHandshaker
 
         CheckManifestVersion(serverVersionResponse.version, socketClient.ConnectionUri);
         
-        await ParseSupportedProtocolVersions(socketClient, cancellationToken).ConfigureAwait(false);
+        var protocolVersions = await ParseSupportedProtocolVersions(socketClient, logger, cancellationToken).ConfigureAwait(false);
 
-        await ParseCapabilityBitmask(socketClient, cancellationToken).ConfigureAwait(false);
+        var capabilitiesBitMask = await ParseCapabilityBitmask(socketClient, logger, cancellationToken).ConfigureAwait(false);
+        
+        var selectedVersion = SelectProtocolVersion(protocolVersions);
 
-        //TODO: logging for all this new handshake stuff.
-        //logger.Debug("S: [HANDSHAKE] {0}.{1}", serverVersionResponse.MajorVersion, serverVersionResponse.MinorVersion);
+        await EncodeAndSendHandshakeResponseAsync(socketClient, selectedVersion, capabilitiesBitMask, logger, cancellationToken);
 
-        SelectProtocolVersion();
-
-        await EncodeAndSendHandshakeResponseAsync(socketClient, cancellationToken);
-
-        return SelectedVersion;
+        return selectedVersion;
     }
 }
