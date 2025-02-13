@@ -31,7 +31,7 @@ public static class GraphDatabase
     /// </summary>
     public static IBookmarkManagerFactory BookmarkManagerFactory => new BookmarkManagerFactory();
 
-    /// <summary>Returns a driver for a Neo4j instance with default configuration settings.</summary>
+    /// <summary>Returns a driver for a Neo4j instance with default configuration settings and disabled authentication.</summary>
     /// <param name="uri">
     /// The URI to the Neo4j instance. Should be in the form
     /// <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>. If <c>port</c> is not supplied the default of <c>7687</c> will
@@ -47,7 +47,7 @@ public static class GraphDatabase
         return Driver(new Uri(uri));
     }
 
-    /// <summary>Returns a driver for a Neo4j instance with default configuration settings.</summary>
+    /// <summary>Returns a driver for a Neo4j instance with default configuration settings and disabled authentication.</summary>
     /// <param name="uri">
     /// The URI to the Neo4j instance. Should be in the form
     /// <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>. If <c>port</c> is not supplied the default of <c>7687</c> will
@@ -63,7 +63,7 @@ public static class GraphDatabase
         return Driver(uri, (Action<ConfigBuilder>)null);
     }
 
-    /// <summary>Returns a driver for a Neo4j instance with custom configuration.</summary>
+    /// <summary>Returns a driver for a Neo4j instance with custom configuration and disabled authentication.</summary>
     /// <param name="uri">
     /// The URI to the Neo4j instance. Should be in the form
     /// <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>. If <c>port</c> is not supplied the default of <c>7687</c> will
@@ -84,7 +84,7 @@ public static class GraphDatabase
         return Driver(new Uri(uri), action);
     }
 
-    /// <summary>Returns a driver for a Neo4j instance with custom configuration.</summary>
+    /// <summary>Returns a driver for a Neo4j instance with custom configuration and disabled authentication.</summary>
     /// <param name="uri">
     /// The URI to the Neo4j instance. Should be in the form
     /// <c>protocol://&lt;server location&gt;:&lt;port&gt;</c>. If <c>port</c> is not supplied the default of <c>7687</c> will

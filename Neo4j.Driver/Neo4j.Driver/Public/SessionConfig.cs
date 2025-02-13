@@ -334,10 +334,10 @@ public sealed class SessionConfigBuilder
     /// <summary>
     /// Override configuration for which <see cref="INotification"/>s should be emitted for the lifetime of the
     /// session. <br/> Unspecified configuration will be provided by configuration specified in the server or the driver's
-    /// <see cref="ConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/>. <br/> If the driver has
-    /// disabled notifications with <see cref="ConfigBuilder.WithNotificationsDisabled"/>, the unspecified values will be
-    /// provided by the server. <br/> Disabling categories or severities allows the server to skip analysis for those, which
-    /// can speed up query execution.
+    /// <see cref="ConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/>. <br/> If the driver has disabled notifications
+    /// with <see cref="ConfigBuilder.WithNotificationsDisabled"/>, the unspecified values will be provided by the server.
+    /// <br/> Disabling categories or severities allows the server to skip analysis for those, which can speed up query
+    /// execution.
     /// </summary>
     /// <remarks>Cannot be used with: <see cref="WithNotificationsDisabled"/>.</remarks>
     /// <param name="minimumSeverity">
@@ -351,9 +351,9 @@ public sealed class SessionConfigBuilder
     /// <see cref="ConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/> or the server.
     /// </param>
     /// <param name="disabledClassifications">
-    /// Optional parameter to override the classification of notifications emitted. <br/>
-    /// By passing an empty collection, all classifications are enabled.<br/> By leaving null, the value will inherit
-    /// configuration from the server.
+    /// Optional parameter to override the classification of notifications emitted. <br/> By passing
+    /// an empty collection, all classifications are enabled.<br/> By leaving null, the value will inherit configuration from the
+    /// server.
     /// </param>
     /// <exception cref="ArgumentException">Thrown when all parameters are null.</exception>
     /// <returns>A <see cref="SessionConfigBuilder"/> instance for further configuration options.</returns>

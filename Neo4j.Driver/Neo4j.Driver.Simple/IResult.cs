@@ -20,7 +20,7 @@ namespace Neo4j.Driver;
 
 /// <summary>
 /// Provides access to the result as an <see cref="IEnumerable{T}"/> of <see cref="IRecord"/>s. The records in the
-/// result is lazily retrieved and could only be visited once.
+/// result is lazily retrieved and can be visited only once.
 /// </summary>
 /// <remarks> Calling <see cref="Enumerable.ToList{TSource}"/> will enumerate the entire stream.</remarks>
 public interface IResult : IEnumerable<IRecord>

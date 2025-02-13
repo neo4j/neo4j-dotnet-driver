@@ -17,8 +17,8 @@ namespace Neo4j.Driver;
 
 /// <summary>
 /// Used In conjunction with <see cref="Severity"/> to filter which <see cref="INotification"/>s will be sent in
-/// <see cref="IResultSummary.Notifications"/>.<br/><br/> Can be used in
-/// <see cref="ConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/> and
+/// <see cref="IResultSummary.Notifications"/>.<br/><br/>
+/// Can be used in <see cref="ConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/> and
 /// <see cref="SessionConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/>.
 /// </summary>
 public enum Category

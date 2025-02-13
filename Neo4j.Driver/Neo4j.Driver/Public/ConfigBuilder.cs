@@ -416,15 +416,14 @@ public sealed class ConfigBuilder
     /// server.
     /// </param>
     /// <param name="disabledClassifications">
-    /// Optional parameter to override the classification of notifications emitted. <br/>
-    /// By passing an empty collection, all classifications are enabled.<br/> By leaving null, the value will inherit
-    /// configuration from the server.
+    /// Optional parameter to override the classification of notifications emitted. <br/> By passing
+    /// an empty collection, all classifications are enabled.<br/> By leaving null, the value will inherit configuration from the
+    /// server.
     /// </param>
     /// <exception cref="ArgumentException">Thrown when all parameters are null.</exception>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     /// <seealso cref="WithNotificationsDisabled"/>
-    /// <seealso cref="SessionConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/>
-    /// "/>
+    /// <seealso cref="SessionConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/>"/>
     /// <seealso cref="SessionConfigBuilder.WithNotificationsDisabled"/>
     /// <returns>A <see cref="ConfigBuilder"/> instance for further configuration options.</returns>
     public ConfigBuilder WithNotifications(

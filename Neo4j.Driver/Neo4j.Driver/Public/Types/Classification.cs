@@ -16,9 +16,9 @@
 namespace Neo4j.Driver;
 
 /// <summary>
-/// <see cref="Severity"/> to filter which <see cref="IGqlStatusObject"/> and <see cref="INotification"/>s will be
-/// sent in <see cref="IResultSummary.GqlStatusObjects"/> and  <see cref="IResultSummary.Notifications"/> .<br/> Can be
-/// used in <see cref="ConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/> and
+/// <see cref="Severity"/> to filter which <see cref="IGqlStatusObject"/> and <see cref="INotification"/>s will be sent in
+/// <see cref="IResultSummary.GqlStatusObjects"/> and  <see cref="IResultSummary.Notifications"/> .<br/> Can be used in
+/// <see cref="ConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/> and
 /// <see cref="SessionConfigBuilder.WithNotifications(Severity?, Category[], Classification[])"/>.
 /// </summary>
 /// <since>5.23.0</since>
